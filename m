@@ -1,62 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2KSCRf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 21:17:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:52741 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab2KSCRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 21:17:32 -0500
-Date: Sun, 18 Nov 2012 18:18:30 -0800
-From: GregKH <greg@kroah.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>, s.hauer@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] w1: mxc_w1: Adapt the clock name to the new clock
- framework
-Message-ID: <20121119021830.GA29111@kroah.com>
-References: <1346950139-17059-1-git-send-email-fabio.estevam@freescale.com>
- <5069D830.6070307@freescale.com>
- <20121002053223.GA20786@ioremap.net>
- <CAOMZO5Aun8OMKY0wPm9TZfyqWwCNGa7xvWyR7W-bzwG_=1iecQ@mail.gmail.com>
- <20121003072815.GA1590@ioremap.net>
- <CAOMZO5C_uPVwNNhu+eUQCK9+J3xV5BNChf2nsjdNgEWRrQd4fA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5C_uPVwNNhu+eUQCK9+J3xV5BNChf2nsjdNgEWRrQd4fA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753173Ab2KSCR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 21:17:57 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47823 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab2KSCQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 21:16:06 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 21/27] sched: Implement slow start for working set sampling
+Date: Mon, 19 Nov 2012 03:14:38 +0100
+Message-Id: <1353291284-2998-22-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 11:56:13PM -0200, Fabio Estevam wrote:
-> Hi Sascha,
-> 
-> On Wed, Oct 3, 2012 at 4:28 AM, Evgeniy Polyakov <zbr@ioremap.net> wrote:
-> > On Tue, Oct 02, 2012 at 10:04:19PM -0300, Fabio Estevam (festevam@gmail.com) wrote:
-> >> > I have no objections per se, but I'm hardly an expert in imx clock
-> >> > framework :)
-> >> >
-> >> > Since it is only one patch in set of 3, I suppose it will be pushed
-> >> > through different tree than w1. Feel free to add my ack.
-> >> >
-> >> > Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-> >>
-> >> Could this series go via your tree?
-> >
-> > Please send it to Greg (added to CC), but I would like someone who knows
-> > this platform (and not only w1 bits, which look good) to acknowledge changes,
-> > feel free to add mine.
-> 
-> Could you please ack this series?
-> 
-> Greg,
-> 
-> Should I re-send the patches with  Evgeniy and Sascha's acks?
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Please do so, so that I can apply them to my tree.
+Add a 1 second delay before starting to scan the working set of
+a task and starting to balance it amongst nodes.
 
-thanks,
+[ note that before the constant per task WSS sampling rate patch
+  the initial scan would happen much later still, in effect that
+  patch caused this regression. ]
 
-greg k-h
+The theory is that short-run tasks benefit very little from NUMA
+placement: they come and go, and they better stick to the node
+they were started on. As tasks mature and rebalance to other CPUs
+and nodes, so does their NUMA placement have to change and so
+does it start to matter more and more.
+
+In practice this change fixes an observable kbuild regression:
+
+   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
+
+   !NUMA:
+   45.291088843 seconds time elapsed                                          ( +-  0.40% )
+   45.154231752 seconds time elapsed                                          ( +-  0.36% )
+
+   +NUMA, no slow start:
+   46.172308123 seconds time elapsed                                          ( +-  0.30% )
+   46.343168745 seconds time elapsed                                          ( +-  0.25% )
+
+   +NUMA, 1 sec slow start:
+   45.224189155 seconds time elapsed                                          ( +-  0.25% )
+   45.160866532 seconds time elapsed                                          ( +-  0.17% )
+
+and it also fixes an observable perf bench (hackbench) regression:
+
+   # perf stat --null --repeat 10 perf bench sched messaging
+
+   -NUMA:
+
+   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
+   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
+
+   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
+
+The implementation is simple and straightforward, most of the patch
+deals with adding the /proc/sys/kernel/sched_numa_scan_delay_ms tunable
+knob.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Link: http://lkml.kernel.org/n/tip-vn7p3ynbwqt3qqewhdlvjltc@git.kernel.org
+[ Wrote the changelog, ran measurements, tuned the default. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/core.c   |  2 +-
+ kernel/sched/fair.c   | 16 ++++++++++------
+ kernel/sysctl.c       |  7 +++++++
+ 4 files changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3372aac..8f65323 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2045,6 +2045,7 @@ enum sched_tunable_scaling {
+ };
+ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ 
++extern unsigned int sysctl_sched_numa_scan_delay;
+ extern unsigned int sysctl_sched_numa_scan_period_min;
+ extern unsigned int sysctl_sched_numa_scan_period_max;
+ extern unsigned int sysctl_sched_numa_scan_size;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7b58366..af0602f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1556,7 +1556,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_migrate_seq = 2;
+ 	p->numa_faults = NULL;
+-	p->numa_scan_period = sysctl_sched_numa_scan_period_min;
++	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+ 	p->numa_work.next = &p->numa_work;
+ #endif /* CONFIG_NUMA_BALANCING */
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index da28315..8f0e6ba 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -823,11 +823,12 @@ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+ }
+ 
+ /*
+- * numa task sample period in ms: 5s
++ * Scan @scan_size MB every @scan_period after an initial @scan_delay.
+  */
+-unsigned int sysctl_sched_numa_scan_period_min = 100;
+-unsigned int sysctl_sched_numa_scan_period_max = 100*16;
+-unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
++unsigned int sysctl_sched_numa_scan_delay = 1000;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_min = 100;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_max = 100*16;/* ms */
++unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
+ 
+ /*
+  * Wait for the 2-sample stuff to settle before migrating again
+@@ -938,10 +939,12 @@ void task_numa_work(struct callback_head *work)
+ 	if (time_before(now, migrate))
+ 		return;
+ 
+-	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
++	next_scan = now + msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
++	current->numa_scan_period += jiffies_to_msecs(2);
++
+ 	start = mm->numa_scan_offset;
+ 	pages = sysctl_sched_numa_scan_size;
+ 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
+@@ -998,7 +1001,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+ 
+ 	if (now - curr->node_stamp > period) {
+-		curr->node_stamp = now;
++		curr->node_stamp += period;
++		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
+ 
+ 		/*
+ 		 * We are comparing runtime to wall clock time here, which
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index a14b8a4..6d2fe5b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
+ #endif /* CONFIG_SMP */
+ #ifdef CONFIG_NUMA_BALANCING
+ 	{
++		.procname	= "sched_numa_scan_delay_ms",
++		.data		= &sysctl_sched_numa_scan_delay,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "sched_numa_scan_period_min_ms",
+ 		.data		= &sysctl_sched_numa_scan_period_min,
+ 		.maxlen		= sizeof(unsigned int),
+-- 
+1.7.11.7
+
