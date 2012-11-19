@@ -1,97 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab2KSS3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 13:29:04 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:42095 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753975Ab2KSS3D (ORCPT
+	id S1754038Ab2KSSaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 13:30:00 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:39997 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2KSS36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 13:29:03 -0500
-Message-ID: <1353349733.2630.9.camel@thor>
-Subject: Re: [PATCH v3] mfd: lpc_ich: Fix resource request for [mem
- 0x00000000]
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Aaron Sierra <asierra@xes-inc.com>
-Date: Mon, 19 Nov 2012 13:28:53 -0500
-In-Reply-To: <20121119174615.GG18738@sortiz-mobl>
-References: <efe3e3f7-eb7f-460b-86d7-293dba8651d8@zimbra>
-	 <1352462129.8352.2.camel@thor> <20121119174615.GG18738@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.4-0build1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Mon, 19 Nov 2012 13:29:58 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <87lidx8wbo.fsf@xmission.com>
+	<1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+	<1353337961-12962-12-git-send-email-ebiederm@xmission.com>
+	<20121119180322.GC1883@serge-ThinkPad-X130e>
+Date: Mon, 19 Nov 2012 10:29:45 -0800
+In-Reply-To: <20121119180322.GC1883@serge-ThinkPad-X130e> (Serge Hallyn's
+	message of "Mon, 19 Nov 2012 12:03:23 -0600")
+Message-ID: <87fw451m5i.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+T5C/VHNFy+YVZCs7OT28IVdSIChdoyq4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Serge Hallyn <serge.hallyn@canonical.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH review 12/16] userns: For /proc/self/{uid, gid}_map derive the lower userns from the struct file
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-19 at 18:46 +0100, Samuel Ortiz wrote:
-> Hi Peter,
-> 
-> On Fri, Nov 09, 2012 at 06:55:29AM -0500, Peter Hurley wrote:
-> > The older southbridges supported by the lpc_ich driver do not
-> > provide memory-mapped space of the root complex. The driver
-> > correctly avoids computing the iomem address in this case, yet
-> > submits a zeroed resource request anyway (via mfd_add_devices()).
-> > 
-> > Remove the iomem resource from the resource array submitted to the
-> > mfd core for the older southbridges.
-> > 
-> > Acked-by: Aaron Sierra <asierra@xes-inc.com>
-> > Cc: Peter Tyser <ptyser@xes-inc.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> > ---
-> > 
-> > v2: post-decrement to match existing style
-> >     retitle patch subject
-> > v3: respin as standalone patch
-> > 
-> >  drivers/mfd/lpc_ich.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> > index a22544f..f507c09 100644
-> > --- a/drivers/mfd/lpc_ich.c
-> > +++ b/drivers/mfd/lpc_ich.c
-> > @@ -842,6 +842,9 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev *dev,
-> >  		res = wdt_mem_res(ICH_RES_MEM_GCS);
-> >  		res->start = base_addr + ACPIBASE_GCS_OFF;
-> >  		res->end = base_addr + ACPIBASE_GCS_END;
-> > +	} else {
-> So I suppose there is no v3 for the iTCO ? If we're expecting all versions
-> after 1 to have a memory mapped region, we should have something like:
-> 
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -830,7 +830,10 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev
-> *dev,
->          * we have to read RCBA from PCI Config space 0xf0 and use
->          * it as base. GCS = RCBA + ICH6_GCS(0x3410).
->          */
-> -       if (lpc_chipset_info[id->driver_data].iTCO_version == 2) {
-> +       if (lpc_chipset_info[id->driver_data].iTCO_version == 1) {
-> +               /* Don't register iomem for TCO ver 1 */
-> +               lpc_ich_cells[LPC_WDT].num_resources--;
-> +       } else {
->                 pci_read_config_dword(dev, RCBABASE, &base_addr_cfg);
->                 base_addr = base_addr_cfg & 0xffffc000;
->                 if (!(base_addr_cfg & 1)) {
+Serge Hallyn <serge.hallyn@canonical.com> writes:
 
-Hi Samuel,
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>> 
+>> To keep things sane in the context of file descriptor passing derive the
+>> user namespace that uids are mapped into from the opener of the file
+>> instead of from current.
+>> 
+>> When writing to the maps file the lower user namespace must always
+>> be the parent user namespace, or setting the mapping simply does
+>> not make sense.  Enforce that the opener of the file was in
+>> the parent user namespace or the user namespace whose mapping
+>> is being set.
+>
+> Is there a reasonable use case for writing from the ns whose mapping
+> is being set?  Are you expecting cases where the child opens the file
+> and passes it back to the parent to set the mappings?
 
-I have no objection to your version.
+Passing the open mappings file no.  Although by using seq_user_ns I do
+make certain the semantics are correct if the file descriptor is passed,
+but I did that on general principles.
 
-FWIW, the iTCO_version field is exclusively a driver construct used to
-differentiate southbridges that support memory-mapped I/O to the TCO
-registers from those that only support port-based I/O. IOW, there's no
-intrinsic meaning to the values and could be represented with a bool
-type instead.
+I expect a process in the user namespace to be able to meaningfully set
+the mapping to some the current uid and the current gid.
 
-Regards,
-Peter Hurley
+I expect a process outside of the user namespace (the parent) to be able
+to meaningfully set the mapping for a range of uids and gids.
 
+The additional error cases are simply to deny cases that are not
+currently handled in the code.  Like what happens if the global root
+tries to set the mapping for a process that is a user namespace 3 layers
+deep and creating a 4th layer.  For reads that combination can be
+supported but for writes you have to write the uid in the new user
+namespace and the uid in the user namespace just below or else it can
+not be verified that there is a mapping in all parent user namespaces.
+
+Eric
+
+>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>> ---
+>>  kernel/user_namespace.c |   12 ++++++++++--
+>>  1 files changed, 10 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+>> index ce92f7e..89f6eae 100644
+>> --- a/kernel/user_namespace.c
+>> +++ b/kernel/user_namespace.c
+>> @@ -391,7 +391,7 @@ static int uid_m_show(struct seq_file *seq, void *v)
+>>  	struct user_namespace *lower_ns;
+>>  	uid_t lower;
+>>  
+>> -	lower_ns = current_user_ns();
+>> +	lower_ns = seq_user_ns(seq);
+>>  	if ((lower_ns == ns) && lower_ns->parent)
+>>  		lower_ns = lower_ns->parent;
+>>  
+>> @@ -412,7 +412,7 @@ static int gid_m_show(struct seq_file *seq, void *v)
+>>  	struct user_namespace *lower_ns;
+>>  	gid_t lower;
+>>  
+>> -	lower_ns = current_user_ns();
+>> +	lower_ns = seq_user_ns(seq);
+>>  	if ((lower_ns == ns) && lower_ns->parent)
+>>  		lower_ns = lower_ns->parent;
+>>  
+>> @@ -688,10 +688,14 @@ ssize_t proc_uid_map_write(struct file *file, const char __user *buf, size_t siz
+>>  {
+>>  	struct seq_file *seq = file->private_data;
+>>  	struct user_namespace *ns = seq->private;
+>> +	struct user_namespace *seq_ns = seq_user_ns(seq);
+>>  
+>>  	if (!ns->parent)
+>>  		return -EPERM;
+>>  
+>> +	if ((seq_ns != ns) && (seq_ns != ns->parent))
+>> +		return -EPERM;
+>> +
+>>  	return map_write(file, buf, size, ppos, CAP_SETUID,
+>>  			 &ns->uid_map, &ns->parent->uid_map);
+>>  }
+>> @@ -700,10 +704,14 @@ ssize_t proc_gid_map_write(struct file *file, const char __user *buf, size_t siz
+>>  {
+>>  	struct seq_file *seq = file->private_data;
+>>  	struct user_namespace *ns = seq->private;
+>> +	struct user_namespace *seq_ns = seq_user_ns(seq);
+>>  
+>>  	if (!ns->parent)
+>>  		return -EPERM;
+>>  
+>> +	if ((seq_ns != ns) && (seq_ns != ns->parent))
+>> +		return -EPERM;
+>> +
+>>  	return map_write(file, buf, size, ppos, CAP_SETGID,
+>>  			 &ns->gid_map, &ns->parent->gid_map);
+>>  }
+>> -- 
+>> 1.7.5.4
+>> 
+>> _______________________________________________
+>> Containers mailing list
+>> Containers@lists.linux-foundation.org
+>> https://lists.linuxfoundation.org/mailman/listinfo/containers
