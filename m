@@ -1,233 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab2KSVP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:15:58 -0500
-Received: from [93.179.225.50] ([93.179.225.50]:55306 "EHLO shrek.podlesie.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791Ab2KSVP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:15:57 -0500
-Date: Mon, 19 Nov 2012 22:15:53 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Alan Cox <alan@linux.intel.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: vt: regression caused by "Fix line garbage in virtual.."
-Message-ID: <20121119211553.GA29907@shrek.podlesie.net>
-References: <20121118110523.GA12094@shrek.podlesie.net>
- <20121119113828.5a66f112@bob.linux.org.uk>
- <20121119202149.46fc89c4@armhf>
+	id S1751955Ab2KSVSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:18:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44283 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab2KSVSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:18:11 -0500
+Date: Mon, 19 Nov 2012 21:18:04 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121119211804.GM8218@suse.de>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121119202149.46fc89c4@armhf>
+In-Reply-To: <20121119191339.GA11701@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 08:21:49PM +0100, Jean-Francois Moine wrote:
-> On Mon, 19 Nov 2012 11:38:28 +0000
-> Alan Cox <alan@linux.intel.com> wrote:
+On Mon, Nov 19, 2012 at 08:13:39PM +0100, Ingo Molnar wrote:
 > 
-> > > There are some garbage after mousedev.c not present on older kernels.
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Mon, Nov 19, 2012 at 03:14:17AM +0100, Ingo Molnar wrote:
+> > > I'm pleased to announce the latest version of the numa/core tree.
 > > > 
-> > > Reverting commit 81732c in v3.7-rc6 fixes the issue.
+> > > Here are some quick, preliminary performance numbers on a 4-node,
+> > > 32-way, 64 GB RAM system:
+> > > 
+> > >   CONFIG_NUMA_BALANCING=y
+> > >   -----------------------------------------------------------------------
+> > >   [ seconds         ]    v3.7  AutoNUMA   |  numa/core-v16    [ vs. v3.7]
+> > >   [ lower is better ]   -----  --------   |  -------------    -----------
+> > >                                           |
+> > >   numa01                340.3    192.3    |      139.4          +144.1%
+> > >   numa01_THREAD_ALLOC   425.1    135.1    |      121.1          +251.0%
+> > >   numa02                 56.1     25.3    |       17.5          +220.5%
+> > >                                           |
+> > >   [ SPECjbb transactions/sec ]            |
+> > >   [ higher is better         ]            |
+> > >                                           |
+> > >   SPECjbb single-1x32    524k     507k    |       638k           +21.7%
+> > >   -----------------------------------------------------------------------
+> > > 
 > > 
-> > Then we should drop this for 3.7 until a fixed one is provided IMHO.
-> > Its not relevant to most platforms.
+> > I was not able to run a full sets of tests today as I was 
+> > distracted so all I have is a multi JVM comparison. I'll keep 
+> > it shorter than average
+> > 
+> >                           3.7.0                 3.7.0
+> >                  rc5-stats-v4r2   rc5-schednuma-v16r1
 > 
-> Sorry, juggling with the byte offsets and the character indexes was not
-> so obvious.
-
-That's why I even did not try to fix it.
-
+> Thanks for the testing - I'll wait for your full results to see 
+> whether the other regressions you reported before are 
+> fixed/improved.
 > 
-> Here is a patch towards the kernel 3.7.
+
+Ok.
+
+In response to one of your later questions, I found that I had in fact
+disabled THP without properly reporting it. I had configured MMTests to
+run specjbb with "base" pages which is the default taken from the specjvm
+configuration file. I had noted in different reports that no THP was used
+and that THP was not a factor for those tests but had not properly checked
+why that was.
+
+However, this also means that *all* the tests disabled THP. Vanilla kernel,
+balancenuma and autonuma all ran with THP disabled. The comparisons are
+still valid but failing to report the lack of THP was a major mistake.
+
+> Exactly what tree/commit does "rc5-schednuma-v16r1" mean?
 > 
-> Krzysztof, may you check it?
->
 
-That patch fixed the original issue, but I noticed another artifact
-(I tested only v3.7-rc6 after your fix, I didn't check if the same
-problems exists in v3.7).
+Kernel 3.7-rc5
+tip/sched/core from when it was last pulled
+your patches as posted in this thread
 
-After:
+JVM is Oracle JVM
+java version "1.7.0_07"
+Java(TM) SE Runtime Environment (build 1.7.0_07-b10)
+Java HotSpot(TM) 64-Bit Server VM (build 23.3-b01, mixed mode)
 
-for ((i = 0; i < 40; i++)); do
-	echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-done
-echo -e -n "\x0d\x1b[2@"
+I had been thinking that differences in the JVMs might be a factor but it
+almost certainly because I had configured mmtests to disable THP for the
+specjbb test. Again, I'm sorry that this was not properly identified and
+reported by me but will reiterate that all tests were run identically.
 
-(also generated by bash during command line editing, this time by CTRL-r
-+ something)
+> I am starting to have doubts about your testing methods. There 
+> does seem to be some big disconnect between your testing and 
+> mine - and I think we should clear that up by specifying exactly 
+> *what* you have tested.
 
-the first character on screen (first column and first row) is cleared.
+And the difference was in test methods - specifically I disabled THP.
 
+FWIW, what I'm testing is implemented via mmtests 0.07 which I released a
+few days ago. I use the same configuration file each time and the kernel
+.config only differs in the name of the numa balancing option it needs
+to enable. The THP disabling was a screw-up but it was the same screw up
+every time.
 
-I think it's too late for fixing it in 3.7 and it's better, like Alan
-proposed, to just revert it for now.
+> Did you rebase my tree in any fashion?
+> 
 
-Thanks,
+No.
 
-Krzysiek
--- >8 --
-Subject: [PATCH] Revert "tty vt: Fix line garbage in virtual console on
- command line edition"
+However, what I will be running next will be rebased on top of rc6. I am
+not expecting that to make any difference.
 
-This reverts commit 81732c3b2fede049a692e58a7ceabb6d18ffb18c.
+> You can find what I tested in tip:master and I'd encourage you 
+> to test that too.
+> 
 
-This commit introduced frequent display artifacts during simple
-command line editing in bash, at least with framebuffer
-console on top inteldrmfb and radeondrmfb framebuffers.
+I will.
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
- drivers/tty/vt/vt.c | 78 +++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 61 insertions(+), 17 deletions(-)
+> Other people within Red Hat have tested these same workloads as 
+> well, on similarly sided (and even larger) systems as yours, and 
+> they have already reported to me (much) improved numbers, 
+> including improvements in the multi-JVM SPECjbb load that you 
+> are concentrating on ...
+> 
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index f87d7e8..3e89dba 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -537,27 +537,45 @@ void complement_pos(struct vc_data *vc, int offset)
- 
- static void insert_char(struct vc_data *vc, unsigned int nr)
- {
--	unsigned short *p = (unsigned short *) vc->vc_pos;
-+	unsigned short *p, *q = (unsigned short *)vc->vc_pos;
- 
--	scr_memmovew(p + nr, p, vc->vc_cols - vc->vc_x);
--	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
-+	p = q + vc->vc_cols - nr - vc->vc_x;
-+	while (--p >= q)
-+		scr_writew(scr_readw(p), p + nr);
-+	scr_memsetw(q, vc->vc_video_erase_char, nr * 2);
- 	vc->vc_need_wrap = 0;
--	if (DO_UPDATE(vc))
--		do_update_region(vc, (unsigned long) p,
--			(vc->vc_cols - vc->vc_x) / 2 + 1);
-+	if (DO_UPDATE(vc)) {
-+		unsigned short oldattr = vc->vc_attr;
-+		vc->vc_sw->con_bmove(vc, vc->vc_y, vc->vc_x, vc->vc_y, vc->vc_x + nr, 1,
-+				     vc->vc_cols - vc->vc_x - nr);
-+		vc->vc_attr = vc->vc_video_erase_char >> 8;
-+		while (nr--)
-+			vc->vc_sw->con_putc(vc, vc->vc_video_erase_char, vc->vc_y, vc->vc_x + nr);
-+		vc->vc_attr = oldattr;
-+	}
- }
- 
- static void delete_char(struct vc_data *vc, unsigned int nr)
- {
--	unsigned short *p = (unsigned short *) vc->vc_pos;
-+	unsigned int i = vc->vc_x;
-+	unsigned short *p = (unsigned short *)vc->vc_pos;
- 
--	scr_memcpyw(p, p + nr, vc->vc_cols - vc->vc_x - nr);
--	scr_memsetw(p + vc->vc_cols - vc->vc_x - nr, vc->vc_video_erase_char,
--			nr * 2);
-+	while (++i <= vc->vc_cols - nr) {
-+		scr_writew(scr_readw(p+nr), p);
-+		p++;
-+	}
-+	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
- 	vc->vc_need_wrap = 0;
--	if (DO_UPDATE(vc))
--		do_update_region(vc, (unsigned long) p,
--			(vc->vc_cols - vc->vc_x) / 2);
-+	if (DO_UPDATE(vc)) {
-+		unsigned short oldattr = vc->vc_attr;
-+		vc->vc_sw->con_bmove(vc, vc->vc_y, vc->vc_x + nr, vc->vc_y, vc->vc_x, 1,
-+				     vc->vc_cols - vc->vc_x - nr);
-+		vc->vc_attr = vc->vc_video_erase_char >> 8;
-+		while (nr--)
-+			vc->vc_sw->con_putc(vc, vc->vc_video_erase_char, vc->vc_y,
-+				     vc->vc_cols - 1 - nr);
-+		vc->vc_attr = oldattr;
-+	}
- }
- 
- static int softcursor_original;
-@@ -1154,26 +1172,45 @@ static void csi_J(struct vc_data *vc, int vpar)
- 		case 0:	/* erase from cursor to end of display */
- 			count = (vc->vc_scr_end - vc->vc_pos) >> 1;
- 			start = (unsigned short *)vc->vc_pos;
-+			if (DO_UPDATE(vc)) {
-+				/* do in two stages */
-+				vc->vc_sw->con_clear(vc, vc->vc_y, vc->vc_x, 1,
-+					      vc->vc_cols - vc->vc_x);
-+				vc->vc_sw->con_clear(vc, vc->vc_y + 1, 0,
-+					      vc->vc_rows - vc->vc_y - 1,
-+					      vc->vc_cols);
-+			}
- 			break;
- 		case 1:	/* erase from start to cursor */
- 			count = ((vc->vc_pos - vc->vc_origin) >> 1) + 1;
- 			start = (unsigned short *)vc->vc_origin;
-+			if (DO_UPDATE(vc)) {
-+				/* do in two stages */
-+				vc->vc_sw->con_clear(vc, 0, 0, vc->vc_y,
-+					      vc->vc_cols);
-+				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
-+					      vc->vc_x + 1);
-+			}
- 			break;
- 		case 3: /* erase scroll-back buffer (and whole display) */
- 			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
- 				    vc->vc_screenbuf_size >> 1);
- 			set_origin(vc);
-+			if (CON_IS_VISIBLE(vc))
-+				update_screen(vc);
- 			/* fall through */
- 		case 2: /* erase whole display */
- 			count = vc->vc_cols * vc->vc_rows;
- 			start = (unsigned short *)vc->vc_origin;
-+			if (DO_UPDATE(vc))
-+				vc->vc_sw->con_clear(vc, 0, 0,
-+					      vc->vc_rows,
-+					      vc->vc_cols);
- 			break;
- 		default:
- 			return;
- 	}
- 	scr_memsetw(start, vc->vc_video_erase_char, 2 * count);
--	if (DO_UPDATE(vc))
--		do_update_region(vc, (unsigned long) start, count);
- 	vc->vc_need_wrap = 0;
- }
- 
-@@ -1186,22 +1223,29 @@ static void csi_K(struct vc_data *vc, int vpar)
- 		case 0:	/* erase from cursor to end of line */
- 			count = vc->vc_cols - vc->vc_x;
- 			start = (unsigned short *)vc->vc_pos;
-+			if (DO_UPDATE(vc))
-+				vc->vc_sw->con_clear(vc, vc->vc_y, vc->vc_x, 1,
-+						     vc->vc_cols - vc->vc_x);
- 			break;
- 		case 1:	/* erase from start of line to cursor */
- 			start = (unsigned short *)(vc->vc_pos - (vc->vc_x << 1));
- 			count = vc->vc_x + 1;
-+			if (DO_UPDATE(vc))
-+				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
-+						     vc->vc_x + 1);
- 			break;
- 		case 2: /* erase whole line */
- 			start = (unsigned short *)(vc->vc_pos - (vc->vc_x << 1));
- 			count = vc->vc_cols;
-+			if (DO_UPDATE(vc))
-+				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
-+					      vc->vc_cols);
- 			break;
- 		default:
- 			return;
- 	}
- 	scr_memsetw(start, vc->vc_video_erase_char, 2 * count);
- 	vc->vc_need_wrap = 0;
--	if (DO_UPDATE(vc))
--		do_update_region(vc, (unsigned long) start, count);
- }
- 
- static void csi_X(struct vc_data *vc, int vpar) /* erase the following vpar positions */
+It almost certainly came down to THP and not the JVM. Can you or one
+other other testers try with THP disabled and see what they find?
+
+> > >  - I restructured the whole tree to make it cleaner, to 
+> > >    simplify its mm/ impact and in general to make it more 
+> > >    mergable. It now includes either agreed-upon patches, or 
+> > >    bare essentials that are needed to make the 
+> > >    CONFIG_NUMA_BALANCING=y feature work. It is fully bisect 
+> > >    tested - it builds and works at every point.
+> > 
+> > It is a misrepresentation to say that all these patches have 
+> > been agreed upon.
+> 
+> That has not been claimed, please read the sentence above.
+> 
+
+Ok yes, it is one or the other.
+
+> > You are still using MIGRATE_FAULT which has not been agreed 
+> > upon at all.
+> 
+> See my followup patch yesterday.
+> 
+
+I missed the follow-up patch. I was looking at the series as-posted.
+
+> > While you have renamed change_prot_none to change_prot_numa, 
+> > it still effectively hard-codes PROT_NONE. Even if an 
+> > architecture redefines pte_numa to use a bit other than 
+> > _PAGE_PROTNONE it'll still not work because 
+> > change_protection() will not recognise it.
+> 
+> This is not how it works.
+> 
+> The new generic PROT_NONE scheme is that an architecture that 
+> wants to reuse the generic PROT_NONE code can define:
+> 
+>   select ARCH_SUPPORTS_NUMA_BALANCING
+> 
+> and can set:
+> 
+>   select ARCH_WANTS_NUMA_GENERIC_PGPROT
+> 
+> and it will get the generic code very easily. This is what x86 
+> uses now. No architecture changes needed beyond these two lines 
+> of Kconfig enablement.
+> 
+> If an architecture wants to provide its own open-coded, optimizd 
+> variant, it can do so by not defining 
+> ARCH_SUPPORTS_NUMA_BALANCING, and by offering the following 
+> methods:
+> 
+>       bool pte_numa(struct vm_area_struct *vma, pte_t pte);
+>       pte_t pte_mknuma(struct vm_area_struct *vma, pte_t pte);
+>       bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd);
+>       pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+>       unsigned long change_prot_numa(struct vm_area_struct *vma, unsigned long start, unsigned long
+> 
+
+Ah ok. The arch would indeed need change_prot_numa().
+
+> I have not tested the arch-defined portion but barring trivial 
+> problems it should work. We can extend the list of methods if 
+> you think more is needed, and we can offer library functions for 
+> architectures that want to share some but not all generic code - 
+> I'm personally happy with x86 using change_protection().
+> 
+
+FWIW, I don't think the list needs to be extended. I'm still disappointed
+that the pte_numa and friend implementations are relatively heavy and
+require a function call to vm_get_page_prot(). I'm also disappointed
+that regularly PMDs cannot be easily handled in batch without further
+modification.
+
+On the batch PMD thing, I'm in the process of converting to using
+change_protection. Preserving all the logic from the old change_prot_numa()
+is a bit of a mess right now but so far I've found that at least two major
+factors are;
+
+1. If page_mapcount > 1 pages are marked pte_numa then the overhead
+   increases a lot. This is partially due to the placement policy being
+   really dumb and unable to handle shared pages.
+
+2. With a partial series (I don't have test results with a full series
+   yet) I find that if I do not set pmd_numa and batch handle the faults
+   that it takes 5 times longer to complete the numa01 test. This is even
+   slower than the vanilla kernel and is probably fault overhead.
+
+In both cases the overhead could be overcome by having a smart placement
+policy and then scanning backoff logic to reduce the number of faults
+incurred. If for some reason the scanning rate cannot be reduced because
+the placement policy bounces pages around nodes en the CPU usage will go
+through the roof setting all the PTEs and handling the faults.
+
+> I think this got bikeshed painted enough already.
+> 
+> > I still maintain that THP native migration was introduced too 
+> > early now it's worse because you've collapsed it with another 
+> > patch. The risk is that you might be depending on THP 
+> > migration to reduce overhead for the autonumabench test cases. 
+> > I've said already that I believe that the correct thing to do 
+> > here is to handle regular PMDs in batch where possible and add 
+> > THP native migration as an optimisation on top. This avoids us 
+> > accidentally depending on THP to reduce system CPU usage.
+> 
+> Have you disabled THP in your testing of numa/core???
+> 
+
+As it turned out, yes, I did disable THP. The vmstats I posted in other
+reports all showed that no THPs were used because of this.
+
+If your internal testers run with THP disabled, it would be interesting
+to know if they see similar regressions. If they do, it implies that the
+performance of schednuma depends on THP. If they do not, something else
+is also making a big difference.
+
+The temptation is to just ignore the THP problem but if workloads cannot
+use THP or the system gets into a state where it cannot allocate THP
+then performance will be badly hurt. It'll be hard to spot that the lack
+of THP is what is causing the regression.
+
+> I think we need to stop the discussion now and clear up exactly 
+> *what* you have tested. Commit ID and an exact description of 
+> testing methodology please ...
+> 
+
+Kernel and JVM used have already been mentioned. Testing methodology is
+as implemented in mmtests 0.07. The configuration file for multi JVMs is
+configs/config-global-dhp__jvm-specjbb and sets SPECJBB_PAGESIZES="base"
+which is what disabled THP.
+
 -- 
-1.8.0.283.gc57d856
-
+Mel Gorman
+SUSE Labs
