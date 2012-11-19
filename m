@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab2KSLCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 06:02:31 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54324 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab2KSLCa (ORCPT
+	id S1752091Ab2KSLCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 06:02:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:34323 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab2KSLCg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 06:02:30 -0500
-Message-ID: <50AA11BE.6070205@gmail.com>
-Date: Mon, 19 Nov 2012 19:02:22 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 06:02:36 -0500
+X-IronPort-AV: E=Sophos;i="4.83,279,1352044800"; 
+   d="scan'208";a="6231151"
+Message-ID: <50AA11BF.1090201@cn.fujitsu.com>
+Date: Mon, 19 Nov 2012 19:02:23 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v6 10/12] thp: implement refcounting for huge zero page
-References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com> <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com> <50A87EF0.3060706@gmail.com> <20121119095615.GA23869@otc-wbsnb-06> <50AA07D1.7030906@gmail.com> <20121119102318.GA24187@shutemov.name>
-In-Reply-To: <20121119102318.GA24187@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@tv-sign.ru>,
+        Serge Hallyn <serge@hallyn.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/11] pidns: Make the pidns proc mount/umount logic obvious.
+References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-5-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1353083750-3621-5-git-send-email-ebiederm@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/19 19:02:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/19 19:02:22
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 06:23 PM, Kirill A. Shutemov wrote:
-> On Mon, Nov 19, 2012 at 06:20:01PM +0800, Jaegeuk Hanse wrote:
->> On 11/19/2012 05:56 PM, Kirill A. Shutemov wrote:
->>> On Sun, Nov 18, 2012 at 02:23:44PM +0800, Jaegeuk Hanse wrote:
->>>> On 11/16/2012 03:27 AM, Kirill A. Shutemov wrote:
->>>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>>>
->>>>> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
->>>>> after the first allocation. Here's implementation of lockless refcounting
->>>>> for huge zero page.
->>>>>
->>>>> We have two basic primitives: {get,put}_huge_zero_page(). They
->>>>> manipulate reference counter.
->>>>>
->>>>> If counter is 0, get_huge_zero_page() allocates a new huge page and
->>>>> takes two references: one for caller and one for shrinker. We free the
->>>>> page only in shrinker callback if counter is 1 (only shrinker has the
->>>>> reference).
->>>>>
->>>>> put_huge_zero_page() only decrements counter. Counter is never zero
->>>>> in put_huge_zero_page() since shrinker holds on reference.
->>>>>
->>>>> Freeing huge zero page in shrinker callback helps to avoid frequent
->>>>> allocate-free.
->>>>>
->>>>> Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
->>>>> parallel (40 processes) read page faulting comparing to lazy huge page
->>>>> allocation.  I think it's pretty reasonable for synthetic benchmark.
->>>> Hi Kirill,
->>>>
->>>> I see your and Andew's hot discussion in v4 resend thread.
->>>>
->>>> "I also tried another scenario: usemem -n16 100M -r 1000. It creates
->>>> real memory pressure - no easy reclaimable memory. This time
->>>> callback called with nr_to_scan > 0 and we freed hzp. "
->>>>
->>>> What's "usemem"? Is it a tool and how to get it?
->>> http://www.spinics.net/lists/linux-mm/attachments/gtarazbJaHPaAT.gtar
->> Thanks for your response.  But how to use it, I even can't compile
->> the files.
->>
->> # ./case-lru-file-mmap-read
->> ./case-lru-file-mmap-read: line 3: hw_vars: No such file or directory
->> ./case-lru-file-mmap-read: line 7: 10 * mem / nr_cpu: division by 0
->> (error token is "nr_cpu")
->>
->> # gcc usemem.c -o usemem
-> -lpthread
->
->> /tmp/ccFkIDWk.o: In function `do_task':
->> usemem.c:(.text+0x9f2): undefined reference to `pthread_create'
->> usemem.c:(.text+0xa44): undefined reference to `pthread_join'
->> collect2: ld returned 1 exit status
->>
->>>> It's hard for me to
->>>> find nr_to_scan > 0 in every callset, how can nr_to_scan > 0 in your
->>>> scenario?
->>> shrink_slab() calls the callback with nr_to_scan > 0 if system is under
->>> pressure -- look for do_shrinker_shrink().
->> Why Andrew's example(dd if=/fast-disk/large-file) doesn't call this
->> path? I think it also can add memory pressure, where I miss?
-> dd if=large-file only fills pagecache -- easy reclaimable memory.
-> Pagecache will be dropped first, before shrinking slabs.
+于 2012年11月17日 00:35, Eric W. Biederman 写道:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Track the number of pids in the proc hash table.  When the number of
+> pids goes to 0 schedule work to unmount the kernel mount of proc.
+> 
+> Move the mount of proc into alloc_pid when we allocate the pid for
+> init.
+> 
+> Remove the surprising calls of pid_ns_release proc in fork and
+> proc_flush_task.  Those code paths really shouldn't know about proc
+> namespace implementation details and people have demonstrated several
+> times that finding and understanding those code paths is difficult and
+> non-obvious.
+> 
+> Because of the call path detach pid is alwasy called with the
+> rtnl_lock held free_pid is not allowed to sleep, so the work to
+> unmounting proc is moved to a work queue.  This has the side benefit
+> of not blocking the entire world waiting for the unnecessary
+> rcu_barrier in deactivate_locked_super.
+> 
+> In the process of making the code clear and obvious this fixes a bug
+> reported by Gao feng <gaofeng@cn.fujitsu.com> where we would leak a
+> mount of proc during clone(CLONE_NEWPID|CLONE_NEWNET) if copy_pid_ns
+> succeeded and copy_net_ns failed.
+> 
+> Acked-by: "Serge E. Hallyn" <serge@hallyn.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
 
-How could I confirm page reclaim working hard and slabs are reclaimed at 
-this time?
-
-
+Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
