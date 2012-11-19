@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2KSWbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:31:33 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49896 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab2KSWba (ORCPT
+	id S1752888Ab2KSWex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:34:53 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62232 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab2KSWev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:31:30 -0500
-Date: Mon, 19 Nov 2012 14:32:21 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/2] ACPI / platform: Initialize ACPI handles of platform
- devices in advance
-Message-ID: <20121119223221.GB2250@kroah.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
- <1855340.enMgVW1AIC@vostro.rjw.lan>
- <12675091.beenkZth4X@vostro.rjw.lan>
- <1610515.dOb8aMkzLk@vostro.rjw.lan>
+	Mon, 19 Nov 2012 17:34:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1610515.dOb8aMkzLk@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1353337961-12962-8-git-send-email-ebiederm@xmission.com>
+References: <87lidx8wbo.fsf@xmission.com>
+	<1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+	<1353337961-12962-8-git-send-email-ebiederm@xmission.com>
+Date: Mon, 19 Nov 2012 14:34:50 -0800
+X-Google-Sender-Auth: jaRLD_So5yggDcH8uMAF6VTaqeY
+Message-ID: <CAGXu5jK+qacMmvoMJ924DLY9GCFXM55wQtqUUDTo08db-LxQ8A@mail.gmail.com>
+Subject: Re: [PATCH review 08/16] userns: Kill task_user_ns
+From: Kees Cook <keescook@chromium.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        James Morris <james.l.morris@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 09:44:21PM +0100, Rafael J. Wysocki wrote:
-> On Monday, November 19, 2012 06:45:22 PM Rafael J. Wysocki wrote:
-> > On Monday, November 19, 2012 06:32:06 PM Rafael J. Wysocki wrote:
-> > > On Monday, November 19, 2012 08:23:34 AM Greg Kroah-Hartman wrote:
-> > > > On Sun, Nov 18, 2012 at 10:13:59PM +0100, Rafael J. Wysocki wrote:
-> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > 
-> > > > > The current platform device creation and registration code in
-> > > > > acpi_create_platform_device() is quite convoluted.  This function
-> > > > > takes an ACPI device node as an argument and eventually calls
-> > > > > platform_device_register_resndata() to create and register a
-> > > > > platform device object on the basis of the information contained
-> > > > > in that code.  However, it doesn't associate the new platform
-> > > > > device with the ACPI node directly, but instead it relies on
-> > > > > acpi_platform_notify(), called from within device_add(), to find
-> > > > > that ACPI node again with the help of acpi_platform_find_device()
-> > > > > and acpi_platform_match() and then attach the new platform device
-> > > > > to it.  This causes an additional ACPI namespace walk to happen and
-> > > > > is clearly suboptimal.
-> > > > > 
-> > > > > Use the observation that it is now possible to initialize the ACPI
-> > > > > handle of a device before calling device_add() for it to make this
-> > > > > code more straightforward.  Namely, add a new field to struct
-> > > > > platform_device_info allowing us to pass the ACPI handle of interest
-> > > > > to platform_device_register_full(), which will then use it to
-> > > > > initialize the new device's ACPI handle before registering it.
-> > > > > This will cause acpi_platform_notify() to use the ACPI handle from
-> > > > > the device structure directly instead of using the .find_device()
-> > > > > routine provided by the device's bus type.  In consequence,
-> > > > > acpi_platform_bus, acpi_platform_find_device(), and
-> > > > > acpi_platform_match() are not necessary any more, so remove them.
-> > > > 
-> > > > Why can't you use the platform_data * that is already in struct device
-> > > > for this, instead of adding an acpi-specific field to the
-> > > > platform_device structure?
-> > > 
-> > > Hmm, I kind of don't understand the question. :-)
-> > > 
-> > > Yes, we have acpi_handle in struct device (it actually is being added by a
-> > > patch you've acked) and we use it.  The whole point here is to streamline
-> > > of the initalization of that field.
-> > > 
-> > > > If not that, surely there is another field in struct device that you
-> > > > could use that is free for this type of device?
-> > > 
-> > > Yes, there is one and as I said above. :-)
-> > > 
-> > > I'd be happy to use the struct device's field directly, but
-> > > platform_device_register_full() allocates memory for the struct device in
-> > > question, so that field actually doesn't exist yet when it is called.
-> > > 
-> > > > >  struct platform_device_info {
-> > > > >  		struct device *parent;
-> > > > > +		void *acpi_handle;
-> > > > 
-> > > > Oh, and if I do accept this, I want a "real" structure pointer here
-> > > > please, not a void * "handle".  That way is a slippery slope to the
-> > > > Windows kernel programming style :)
-> > > 
-> > > This is (void *), because the field being initialized is (void *).  That field,
-> > > in turn, is (void *), because ACPICA defines it that way.  I thought about
-> > > wrapping that in some more meaningless data type, but I did't find a way
-> > 
-> > s/meaningless/meaningful/
-> 
-> Well, perhaps I'll describe the problem to you, maybe you can help. :-)
-> 
-> So, we want to have acpi_handle (or acpi_node) in addition to of_node in struct
-> device (to be used in the analogous way plus for the execution of AML methods),
-> but we don't want all users of device.h to have to include ACPI headers
-> where the acpi_handle data type is defined.  For this reason, we're using
-> (void *) as its data type now, which let's say I'm not really happy with.
-> 
-> I've been thinking about that for quite a while, though, and I'm not really
-> sure what to do about that.  Perhaps we could define something like
-> 
-> struct acpi_dev_node {
-> #ifdef CONFIG_ACPI
-> 	void *handle;
-> #endif
-> };
-> 
-> in device.h and use that as "struct acpi_dev_node acpi_node;" in struct device.
-> Then, we could add the following macro
-> 
-> #ifdef CONFIG_ACPI
-> #define ACPI_HANDLE(dev)	((dev)->acpi_node.handle)
-> #else
-> #define ACPI_HANDLE(dev)	(NULL)
-> #endif
-> 
-> and redefine DEVICE_ACPI_HANDLE(dev) as ((acpi_handle)ACPI_HANDLE(dev)).
-> 
-> Then, the $subject patch would add "struct acpi_dev_node acpi_node;" to
-> struct platform_device_info and use ACPI_HANDLE(dev) instead of accessing
-> the struct device's field directly.
-> 
-> I wonder what you think?
+On Mon, Nov 19, 2012 at 7:12 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>
+> The task_user_ns function hides the fact that it is getting the user
+> namespace from struct cred on the task.  struct cred may go away as
+> soon as the rcu lock is released.  This leads to a race where we
+> can dereference a stale user namespace pointer.
+>
+> To make it obvious a struct cred is involved kill task_user_ns.
+>
+> To kill the race modify the users of task_user_ns to only
+> reference the user namespace while the rcu lock is held.
+>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: James Morris <james.l.morris@oracle.com>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-I like the hack of using an empty structure here, that's fine with me,
-and makes me feel a little bit better about the whole "void *" stuff.
-If you respin the patch with this, I'll ack it.
+Nice catch! This is disappointingly messy looking, but I do not see
+any sensible way to clean it up better than you've already done.
 
-thanks,
+Acked-by: Kees Cook <keescook@chromium.org>
 
-greg k-h
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
