@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2KSA5o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 19:57:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49032 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab2KSA5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 19:57:43 -0500
-Date: Mon, 19 Nov 2012 11:57:28 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jim Kukunas <james.t.kukunas@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Paul Menzel <pm.debian@googlemail.com>,
-        Linux Raid <linux-raid@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
-Message-ID: <20121119115728.2d175646@notabene.brown>
-In-Reply-To: <20121109195610.GA2928@jtkukuna_gentoo_sb.jf.intel.com>
-References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com>
-	<1352460945.4387.7.camel@mattotaupa>
-	<ead47490-afc3-48f1-871f-ba421eac3dd5@email.android.com>
-	<20121109225025.13a846ca@notabene.brown>
-	<20121109195610.GA2928@jtkukuna_gentoo_sb.jf.intel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/0_dUvfKNSfqQzIhJuwJEBGx"; protocol="application/pgp-signature"
+	id S1752792Ab2KSBGO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 20:06:14 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:64863 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2KSBGM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 20:06:12 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-1b-50a986028089
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Joe Perches'" <joe@perches.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Andy Whitcroft'" <apw@canonical.com>, peter@hurleysoftware.com,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <20121030211530.09F1320004E@hpza10.eem.corp.google.com>
+ <1353046873.24310.30.camel@joe-AO722> <1353094271.2512.15.camel@joe-AO722>
+In-reply-to: <1353094271.2512.15.camel@joe-AO722>
+Subject: Re: [PATCH V2] checkpatch: extend line continuation test
+Date: Mon, 19 Nov 2012 10:06:10 +0900
+Message-id: <004901cdc5f2$1032e1e0$3098a5a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3EMPC85G2AEgxwSLCm4GPl94KE5QBwOraA
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zfV3mtpUBBlsXMlpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Maec2MRU0c1bc3r2UvYHxPVsXIyeHhICJxMPb+9khbDGJC/fW
+	g8WFBJYxSmz8KwxTc3/ye6YuRi6g+HRGiXuT5rBBOLOZJJ5ufQzWwSagJvHly2GwSSICARKt
+	3y+AFTEL9DNKrGr8C9UxgVFi09RZrCBVnAKGEhM+vwHrEBZwlJjzuo8RxGYRUJW42dHKDGLz
+	CthK7H6zlB3CFpT4MfkeC4jNLKAlsXlbEyuELS+xec1boHoOoFvVJR791YU4wkjiV+ccqHIR
+	iX0v3kGNF5D4NvkQC0S5rMSmA8wgp0kILGKXuDu/BxoUkhIHV9xgAbp2FpLNs5BsnoVk8ywk
+	KxYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECIkuqR2MKxssDjEKcDAq8fDuMFgRIMSa
+	WFZcmXuIUYKDWUmEV9NyZYAQb0piZVVqUX58UWlOavEhRh+gyycyS4km5wMjP68k3tDY2MTM
+	xNTE3NLU3BSHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGxoOTJ0r1ugozF+TzXXi+5OKy
+	C/n32lWtglra78Tl35lyL9Fe6a1bDxN37+s8loVpNs//T70V4lem/fX5inNX99zs/pbqHrjL
+	Xevp5YUnuuVud2p/NjD7dpMxMVGqIlXWWnX1+s/vmtz+tfr6vJ4psfurrXXld82Edxr3MtYa
+	qS7uSNQoTGfZq8RSnJFoqMVcVJwIAAlIRgjbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV2mtpUBBjMPWllc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGnnNjEVNHNW3N69lL2B
+	8T1bFyMnh4SAicT9ye+ZIGwxiQv31gPFuTiEBKYzStybNAfKmc0k8XTrY7AONgE1iS9fDrOD
+	2CICARKt3y+AFTEL9DNKrGr8C9UxgVFi09RZrCBVnAKGEhM+vwHrEBZwlJjzuo8RxGYRUJW4
+	2dHKDGLzCthK7H6zlB3CFpT4MfkeC4jNLKAlsXlbEyuELS+xec1boHoOoFvVJR791YU4wkji
+	V+ccqHIRiX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5
+	uZsYwdH7TGoH48oGi0OMAhyMSjy8OwxWBAixJpYVV+YeYpTgYFYS4dW0XBkgxJuSWFmVWpQf
+	X1Sak1p8iNEH6NGJzFKiyfnAxJJXEm9obGJmZGlkZmFkYm6OQ1hJnLfZIyVASCA9sSQ1OzW1
+	ILUIZhwTB6dUA6NPv4Vj9BHLwrZXEWX6/9bGeWiyPhK1S/h+7ag6y66UgCM7ZA5X5f2+OVv9
+	tM3cB/U+W1cKzPb4Pe3R+6cCZX4rXhqfWd1o7GMT16B12+a35rE/LCUC1gomH04pqm+V9srf
+	PMldTenODbNFm6zd1D477s6f+D7YLy1eUOTj218sDa+Tt+7kfKDEUpyRaKjFXFScCAD/q0HU
+	CwMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0_dUvfKNSfqQzIhJuwJEBGx
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 9 Nov 2012 11:56:10 -0800 Jim Kukunas
-<james.t.kukunas@linux.intel.com> wrote:
-
-> On Fri, Nov 09, 2012 at 10:50:25PM +1100, Neil Brown wrote:
-> > On Fri, 09 Nov 2012 12:39:05 +0100 "H. Peter Anvin" <hpa@zytor.com> wro=
-te:
-> >=20
-> > > Sorry, we cannot share those at this time since the hardwarenis not y=
-et released.
-> >=20
-> > Can I take that to imply "Acked-by: "H. Peter Anvin" <hpa@zytor.com>" ??
-> >=20
-> > It would be nice to have at least a statement like:
-> >  These patches have been tested both with the user-space testing tool a=
-nd in=20
-> >  a RAID6 md array and the pass all test.  While we cannot release perfo=
-rmance
-> >  numbers as the hardwere is not released, we can confirm that on that h=
-ardware
-> >  the performance with these patches is faster than without.
-> >=20
-> > I guess I should be able to assume that - surely the patches would not =
-be
-> > posted if it were not true...  But I like to avoid assuming when I can.
->=20
-> Hi Neil,
->=20
-> That assumption is correct. The patch was tested and benchmarked before s=
-ubmission.
-
-Thanks.  I've queued the patch up.
->=20
-> You'll notice that this code is very similar to the SSSE3-optimized
-> recovery routines I wrote earlier. This implementation extends that same
-> algorithm from 128-bit registers to 256-bit registers.
-
-I might notice that if I actually looked, but it all starts swimming before
-my eyes when I try :-)
-If both you and hpa like it, then that is good enough for me.
-
-Thanks,
-NeilBrown
+On Saturday, November 17, 2012 4:31 AM, Joe Perches wrote
+> 
+> Preprocessor directives and asm statements should be
+> allowed to have a line continuation.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
 
->=20
-> Thanks.
->=20
+Tested-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
 
 
---Sig_/0_dUvfKNSfqQzIhJuwJEBGx
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> ---
+> V2:
+> Make the check for preprocessor directives work properly
+> # is not optional.
+> 
+>  scripts/checkpatch.pl |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index d2d5ba1..bfb06ee 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3006,10 +3006,12 @@ sub process {
+>  				}
+>  			}
+> 
+> -# check for line continuations outside of #defines
+> +# check for line continuations outside of #defines, preprocessor #, and asm
+> 
+>  		} else {
+>  			if ($prevline !~ /^..*\\$/ &&
+> +			    $line !~ /^\+\s*\#.*\\$/ &&		# preprocessor
+> +			    $line !~ /^\+.*\b(__asm__|asm)\b.*\\$/ &&	# asm
+>  			    $line =~ /^\+.*\\$/) {
+>  				WARN("LINE_CONTINUATIONS",
+>  				     "Avoid unnecessary line continuations\n" . $herecurr);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIVAwUBUKmD+Dnsnt1WYoG5AQJ0JQ/+Mqt/mNZF95htpa6Gy1yIxeriasuxSIDT
-nNCCkIFk4sWyPWvEf4/aPHGmsvzpzY0/fSkxV3RYbi5tVDD53gGNV0p3qAmFIppN
-ioWFvXzRRIbsc3cmNUtKlyfXbeIa/NAyfNQ2duHIc5M0oZyxf/upsVaWfAbF5A8X
-X//TDMn3WD5XqzldtFSotusiQf1OzO0z0LR5sqKvgITZYLHlAtfnCa+Bob0aau7m
-rTsuLxEBtO4qA5Fx4GIKI9O7Zt6Iz9o/LJlOECugEkz3jUuYP7m2Q3x0dEGkN3gQ
-l1F1VhbJtMh4v2cV4247ZTYLRFYU8DRHzfVp/gpZ27AJ5rN4GIf2YuKD5W5pq9jO
-vEelCIw9vlQgx46RGbosRU1teDc5hSWQLBdVBdcsnEemf3CaODyJCNStG0xIhDS4
-lY43hrIxbyICc4bK//vYVqXm43kO1CShwCf8sQ/i+xucdqLKox3n24EQq6e8HuGR
-4Mh30TH00SGpTWoZDLkYry6y90kueVG0qF5htKKWubHRZ2SfZRs6BTXL+t89md2m
-vthGd2HhenmLPEN9Kv7fPB0mcLwi+3PM2TBbAXcanW2tqW2dGl03BCKwAgQWdC5s
-H/woM4P6FqiX/pvi3GPTQ4WVBe+7sKVBk7KDiP7GnNxiv473ul5VeeyReiXQPFvZ
-CLXGNujeV/o=
-=hSnv
------END PGP SIGNATURE-----
-
---Sig_/0_dUvfKNSfqQzIhJuwJEBGx--
