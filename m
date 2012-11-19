@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab2KSRk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:40:57 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:53344 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755Ab2KSRk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:40:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/2] ACPI / platform: Initialize ACPI handles of platform devices in advance
-Date: Mon, 19 Nov 2012 18:45:22 +0100
-Message-ID: <12675091.beenkZth4X@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1855340.enMgVW1AIC@vostro.rjw.lan>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <20121119162334.GA1653@kroah.com> <1855340.enMgVW1AIC@vostro.rjw.lan>
+	id S1753889Ab2KSRpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:45:53 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58443 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab2KSRpw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:45:52 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <50AA6B1A.6060206@us.ibm.com>
+References: <20121105220059.GA6379@www.outflux.net>
+	<509DA63E.7070500@us.ibm.com>
+	<CAGXu5jKq0=+XfH6yDSaJMcd-S3=o7xB67kspPkCRcXjRSGgciw@mail.gmail.com>
+	<20121117025355.GC29966@lizard>
+	<50A70199.9030109@us.ibm.com>
+	<CAGXu5j+--cmhOHMR+7ewWt_ct-0p_o8sbK4bJWkgj067aeFjsw@mail.gmail.com>
+	<50AA6B1A.6060206@us.ibm.com>
+Date: Mon, 19 Nov 2012 09:45:51 -0800
+X-Google-Sender-Auth: s7uFAbUCnPGVyX4yv9t6gGsEcck
+Message-ID: <CAGXu5j+wmEZdmN=e047+SEXGfhaN_Gyob=WyqR4kKgKheCgqfQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pstore/ram: no timekeeping calls when unavailable
+From: Kees Cook <keescook@chromium.org>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 19, 2012 06:32:06 PM Rafael J. Wysocki wrote:
-> On Monday, November 19, 2012 08:23:34 AM Greg Kroah-Hartman wrote:
-> > On Sun, Nov 18, 2012 at 10:13:59PM +0100, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > The current platform device creation and registration code in
-> > > acpi_create_platform_device() is quite convoluted.  This function
-> > > takes an ACPI device node as an argument and eventually calls
-> > > platform_device_register_resndata() to create and register a
-> > > platform device object on the basis of the information contained
-> > > in that code.  However, it doesn't associate the new platform
-> > > device with the ACPI node directly, but instead it relies on
-> > > acpi_platform_notify(), called from within device_add(), to find
-> > > that ACPI node again with the help of acpi_platform_find_device()
-> > > and acpi_platform_match() and then attach the new platform device
-> > > to it.  This causes an additional ACPI namespace walk to happen and
-> > > is clearly suboptimal.
-> > > 
-> > > Use the observation that it is now possible to initialize the ACPI
-> > > handle of a device before calling device_add() for it to make this
-> > > code more straightforward.  Namely, add a new field to struct
-> > > platform_device_info allowing us to pass the ACPI handle of interest
-> > > to platform_device_register_full(), which will then use it to
-> > > initialize the new device's ACPI handle before registering it.
-> > > This will cause acpi_platform_notify() to use the ACPI handle from
-> > > the device structure directly instead of using the .find_device()
-> > > routine provided by the device's bus type.  In consequence,
-> > > acpi_platform_bus, acpi_platform_find_device(), and
-> > > acpi_platform_match() are not necessary any more, so remove them.
-> > 
-> > Why can't you use the platform_data * that is already in struct device
-> > for this, instead of adding an acpi-specific field to the
-> > platform_device structure?
-> 
-> Hmm, I kind of don't understand the question. :-)
-> 
-> Yes, we have acpi_handle in struct device (it actually is being added by a
-> patch you've acked) and we use it.  The whole point here is to streamline
-> of the initalization of that field.
-> 
-> > If not that, surely there is another field in struct device that you
-> > could use that is free for this type of device?
-> 
-> Yes, there is one and as I said above. :-)
-> 
-> I'd be happy to use the struct device's field directly, but
-> platform_device_register_full() allocates memory for the struct device in
-> question, so that field actually doesn't exist yet when it is called.
-> 
-> > >  struct platform_device_info {
-> > >  		struct device *parent;
-> > > +		void *acpi_handle;
-> > 
-> > Oh, and if I do accept this, I want a "real" structure pointer here
-> > please, not a void * "handle".  That way is a slippery slope to the
-> > Windows kernel programming style :)
-> 
-> This is (void *), because the field being initialized is (void *).  That field,
-> in turn, is (void *), because ACPICA defines it that way.  I thought about
-> wrapping that in some more meaningless data type, but I did't find a way
+On Mon, Nov 19, 2012 at 9:23 AM, John Stultz <johnstul@us.ibm.com> wrote:
+> On 11/18/2012 12:09 PM, Kees Cook wrote:
+>>
+>> On Fri, Nov 16, 2012 at 7:16 PM, John Stultz <johnstul@us.ibm.com> wrote:
+>>>
+>>> Yea, I wanted to revisit this, because it is an odd case.
+>>>
+>>> We don't want to call getnstimeofday() while the timekeeping code is
+>>> suspended, since the clocksource cycle_last value may be invalid if the
+>>> hardware was reset during suspend.  Kees is correct,  the WARN_ONs were
+>>> there to make sure no one tries to use the timekeeping core before its
+>>> resumed, so removing them is problematic.
+>>>
+>>> Your sugggestion of having the __do_gettimeofday() internal accessor that
+>>> maybe returns an error if timekeeping has been suspended could work.
+>>>
+>>> The other possibility is depending on the needs for accuracy with the
+>>> timestamp, current_kernel_time() might be a better interface to use,
+>>> since
+>>> it will return the time at the last tick, and doesn't require accessing
+>>> the
+>>> clocksource hardware.  Might that be a simpler solution? Or is sub-tick
+>>> granularity necessary?
+>>
+>> I think it's only useful to have this to the same granularity as
+>> sched_clock(), so things can be correlated to dmesg output. If it's
+>> the same, I'd be fine to switch to using current_kernel_time().
+>
+> Oof.  That's another can of worms,   sched_clock() resolution isn't tied to
+> getnstimeofday(), since you may have cases where the TSC is invalid for
+> timekeeping (so we use something slow like the ACPI PM) but ok for
+> scheduling, etc.
+>
+> Even so, its current_kernel_time() is just tick granularity, so that
+> probably won't work for you.
+>
+> So I'm leaning towards Anton's suggestion of adding a new internal accessor
+> that returns an error if we're suspended.
+>
+> Thomas, what do you think of something like what's below?
+>
+> thanks
+> -john
+>
+>
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index 4d358e9..0015aea 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -158,6 +158,7 @@ extern int do_setitimer(int which, struct itimerval
+> *value,
+>                         struct itimerval *ovalue);
+>  extern unsigned int alarm_setitimer(unsigned int seconds);
+>  extern int do_getitimer(int which, struct itimerval *value);
+> +extern int __getnstimeofday(struct timespec *tv);
+>  extern void getnstimeofday(struct timespec *tv);
+>  extern void getrawmonotonic(struct timespec *ts);
+>  extern void getnstime_raw_and_real(struct timespec *ts_raw,
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index e424970..bb2638c 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -220,19 +220,20 @@ static void timekeeping_forward_now(struct timekeeper
+> *tk)
+>  }
+>   /**
+> - * getnstimeofday - Returns the time of day in a timespec
+> + * __getnstimeofday - Returns the time of day in a timespec
+>   * @ts:                pointer to the timespec to be set
+>   *
+> - * Returns the time of day in a timespec.
+> + * Returns -1 if timekeeping is suspended.
+> + * Returns 0 on success.
+>   */
+> -void getnstimeofday(struct timespec *ts)
+> +int __getnstimeofday(struct timespec *ts)
+>  {
+>         struct timekeeper *tk = &timekeeper;
+>         unsigned long seq;
+>         s64 nsecs = 0;
+>  -      WARN_ON(timekeeping_suspended);
+> -
+> +       if (unlikely(timekeeping_suspended));
+> +               return -1;
 
-s/meaningless/meaningful/
+Is it useful to make this -EAGAIN or something, just for clarity?
+Also, this technically changes the semantics of callers that were
+hitting WARN (there should be none) in that the timespec isn't updated
+at all. In the prior code, a WARN would be emitted, but it would still
+fill out the timespec and return.
 
-(/me hides)
+When I looked at implementing this error path, I actually moved the
+return -EAGAIN to the end of the function to keep the results the
+same. All that said, this is much cleaner and more correct if not
+touching the timespec on error is tolerable.
+
+>         do {
+>                 seq = read_seqbegin(&tk->lock);
+>  @@ -243,6 +244,19 @@ void getnstimeofday(struct timespec *ts)
+>         ts->tv_nsec = 0;
+>         timespec_add_ns(ts, nsecs);
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(__getnstimeofday);
+> +
+> +/**
+> + * getnstimeofday - Returns the time of day in a timespec
+> + * @ts:                pointer to the timespec to be set
+> + *
+> + * Returns the time of day in a timespec.
+> + */
+> +void getnstimeofday(struct timespec *ts)
+> +{
+> +       WARN_ON(__getnstimeofday(ts));
+>  }
+>  EXPORT_SYMBOL(getnstimeofday);
+>
+
+-Kees
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kees Cook
+Chrome OS Security
