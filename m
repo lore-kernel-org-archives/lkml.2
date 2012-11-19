@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2KSXAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 18:00:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47738 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab2KSXAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 18:00:40 -0500
-Date: Mon, 19 Nov 2012 23:00:35 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+	id S1753364Ab2KSXF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:05:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52639 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab2KSXFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 18:05:54 -0500
+Date: Mon, 19 Nov 2012 15:05:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Anton Arapov <anton@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121119230034.GO8218@suse.de>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121119223604.GA13470@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Michal Marek <mmarek@suse.cz>, Mikulas Patocka <mpatocka@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] percpu_rw_semaphore: add the lockdep annotations
+Message-Id: <20121119150553.8c890970.akpm@linux-foundation.org>
+In-Reply-To: <20121118190321.GA9684@redhat.com>
+References: <20121118190257.GA9660@redhat.com>
+	<20121118190321.GA9684@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 11:36:04PM +0100, Ingo Molnar wrote:
+On Sun, 18 Nov 2012 20:03:21 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+> Add the lockdep annotations. Not only this can help to find the
+> potential problems, we do not want the false warnings if, say,
+> the task takes two different percpu_rw_semaphore's for reading.
+> IOW, at least ->rw_sem should not use a single class.
 > 
-> * Mel Gorman <mgorman@suse.de> wrote:
+> This patch exposes this internal lock to lockdep so that it
+> represents the whole percpu_rw_semaphore. This way we do not
+> need to add another "fake" ->lockdep_map and lock_class_key.
+> More importantly, this also makes the output from lockdep much
+> more understandable if it finds the problem.
 > 
-> > Ok.
-> > 
-> > In response to one of your later questions, I found that I had 
-> > in fact disabled THP without properly reporting it. [...]
+> In short, with this patch from lockdep pov percpu_down_read()
+> and percpu_up_read() acquire/release ->rw_sem for reading, this
+> matches the actual semantics. This abuses __up_read() but I hope
+> this is fine and in fact I'd like to have down_read_no_lockdep()
+> as well, percpu_down_read_recursive_readers() will need it.
 > 
-> Hugepages is a must for most forms of NUMA/HPC.
+> ...
+>
+> -extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
+> +extern int __percpu_init_rwsem(struct percpu_rw_semaphore *,
+> +				const char *, struct lock_class_key *);
+>  extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
+>  
+> +#define percpu_init_rwsem(brw)	\
 
-Requiring huge pages to avoid a regression is a mistake.
+Should have been called percpu_rwsem_init().  The naming in this code does
+seem to be rather inconsistent.  s/percpu_rw_semaphore/percpu_rwsem/g
+would be a good start, then consistently use percpu_rwsem_foo where
+practical.  But percpu_rwsem_down_read() doesn't sound practical :(
 
-> This alone 
-> questions the relevance of most of your prior numa/core testing 
-> results. I now have to strongly dispute your other conclusions 
-> as well.
-> 
 
-I'll freely admit that disabling THP for specjbb was a mistake and I should
-have caught why at the start. However, the autonumabench figures reported for
-the last release had THP enabled as had the kernel build benchmark figures.
+Is there much point in doing all these changes as five separate patches
+(so far)?  Perhaps it should all blobbed into as little as one patch(es)?
 
-> Just a look at 'perf top' output should have told you the story.
-> 
 
-I knew THP were not in use and said so in earlier reports. Take this for
-example -- https://lkml.org/lkml/2012/11/16/207 . For specjbb, note that
-the THP fault alloc figures are close to 0 and due to that I said "THP is
-not really a factor for this workload". What I failed to do was identify
-why THP was not in use.
+You sent your uprobes changes to Ingo as a git pull, but I doubt if
+Ingo's trees contain the percpu_rwsem_rw_semaphore changes.  What's
+happening here?
 
-> Yet time and time again you readily reported bad 'schednuma' 
-> results for a slow 4K memory model that neither we nor other 
-> NUMA testers I talked to actually used, without stopping to look 
-> why that was so...
-> 
-
-Again, I apologise for the THP mistake. The fact remains that the other
-implementations did not suffer a performance slowdown due to the same
-mistake.
-
-> [ I suspect that if such terabytes-of-data workloads are forced 
->   through such a slow 4K pages model then there's a bug or 
->   mis-tuning in our code that explains the level of additional 
->   slowdown you saw - we'll fix that.
-> 
->   But you should know that behavior under the slow 4K model 
->   tells very little about the true scheduling and placement 
->   quality of the patches... ]
-> 
-> Please report proper THP-enabled numbers before continuing.
-> 
-
-Will do. Are THP-disabled benchmark results to be ignored?
-
--- 
-Mel Gorman
-SUSE Labs
