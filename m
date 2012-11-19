@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab2KSF3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:29:13 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53842 "EHLO
+	id S1753027Ab2KSF3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:29:24 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60506 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab2KSF3L (ORCPT
+	with ESMTP id S1752997Ab2KSF3V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:29:11 -0500
-X-Originating-IP: 217.70.178.131
+	Mon, 19 Nov 2012 00:29:21 -0500
+X-Originating-IP: 217.70.178.144
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 09/58] fs/locks.c: Mark generic_add_lease and generic_delete_lease static
-Date: Sun, 18 Nov 2012 21:27:48 -0800
-Message-Id: <1353302917-13995-10-git-send-email-josh@joshtriplett.org>
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/58] swiotlb: Prototype swiotlb_late_init_with_default_size in swiotlb.h
+Date: Sun, 18 Nov 2012 21:27:49 -0800
+Message-Id: <1353302917-13995-11-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing outside of fs/locks.c references these functions, so mark them
-static.
+Several source files reference swiotlb_late_init_with_default_size with
+an extern prototype; declare it in linux/swiotlb.h instead.
+
+This also ensures that lib/swiotlb.c has a matching prototype for
+swiotlb_late_init_with_default_size, keeping the types in sync, and
+eliminating warnings from GCC (-Wmissing-prototypes) and Sparse
+(-Wdecl).
+
+lib/swiotlb.c:207:1: warning: no previous prototype for ‘swiotlb_late_init_with_default_size’ [-Wmissing-prototypes]
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/locks.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/ia64/hp/common/sba_iommu.c |    3 +--
+ arch/x86/pci/sta2x11-fixup.c    |    2 +-
+ include/linux/swiotlb.h         |    1 +
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index a94e331..01051de 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1338,7 +1338,7 @@ int fcntl_getlease(struct file *filp)
- 	return type;
- }
+diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
+index bcda5b2..d37d4af 100644
+--- a/arch/ia64/hp/common/sba_iommu.c
++++ b/arch/ia64/hp/common/sba_iommu.c
+@@ -38,6 +38,7 @@
+ #include <linux/iommu-helper.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/prefetch.h>
++#include <linux/swiotlb.h>
  
--int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
-+static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
- {
- 	struct file_lock *fl, **before, **my_before = NULL, *lease;
- 	struct dentry *dentry = filp->f_path.dentry;
-@@ -1403,7 +1403,7 @@ out:
- 	return error;
- }
+ #include <asm/delay.h>		/* ia64_get_itc() */
+ #include <asm/io.h>
+@@ -46,8 +47,6 @@
  
--int generic_delete_lease(struct file *filp, struct file_lock **flp)
-+static int generic_delete_lease(struct file *filp, struct file_lock **flp)
- {
- 	struct file_lock *fl, **before;
- 	struct dentry *dentry = filp->f_path.dentry;
+ #include <asm/acpi-ext.h>
+ 
+-extern int swiotlb_late_init_with_default_size (size_t size);
+-
+ #define PFX "IOC: "
+ 
+ /*
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+index 9d8a509..27dde02 100644
+--- a/arch/x86/pci/sta2x11-fixup.c
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -26,9 +26,9 @@
+ #include <linux/pci_ids.h>
+ #include <linux/export.h>
+ #include <linux/list.h>
++#include <linux/swiotlb.h>
+ 
+ #define STA2X11_SWIOTLB_SIZE (4*1024*1024)
+-extern int swiotlb_late_init_with_default_size(size_t default_size);
+ 
+ /*
+  * We build a list of bus numbers that are under the ConneXt. The
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 8d08b3e..7e3b8c5 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -23,6 +23,7 @@ extern int swiotlb_force;
+ #define IO_TLB_SHIFT 11
+ 
+ extern void swiotlb_init(int verbose);
++extern int swiotlb_late_init_with_default_size(size_t default_size);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
+ extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
 -- 
 1.7.10.4
 
