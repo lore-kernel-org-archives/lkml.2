@@ -1,171 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2KSVab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:30:31 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:53689 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab2KSVaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:30:30 -0500
-Date: Mon, 19 Nov 2012 13:30:05 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>
-Subject: [PATCH] exec: use -ELOOP for max recursion depth
-Message-ID: <20121119213005.GA2917@www.outflux.net>
+	id S1752219Ab2KSVe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:34:59 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:60375 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751781Ab2KSVe6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:34:58 -0500
+Date: Mon, 19 Nov 2012 21:34:57 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] trace: use __this_cpu_inc/dec operation instead of
+ __get_cpu_var
+In-Reply-To: <50A9C1BD.1060308@gmail.com>
+Message-ID: <0000013b1a987395-2afa8715-e3f8-4bd1-8f56-6a8073da757b-000000@email.amazonses.com>
+References: <50A9C1BD.1060308@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid an explosion of request_module calls on a chain of abusive
-scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-as maximum recursion depth is hit, the error will fail all the way back
-up the chain, aborting immediately.
+On Mon, 19 Nov 2012, Shan Wei wrote:
 
-This also has the side-effect of stopping the user's shell from attempting
-to reexecute the top-level file as a shell script. As seen in the
-dash source:
+> __this_cpu_inc_return() or __this_cpu_dec generates a single instruction,
+> which is faster than __get_cpu_var operation.
 
-        if (cmd != path_bshell && errno == ENOEXEC) {
-                *argv-- = cmd;
-                *argv = cmd = path_bshell;
-                goto repeat;
-        }
-
-The above logic was designed for running scripts automatically that lacked
-the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-things continue to behave as the shell expects.
-
-Additionally, when tracking recursion, the binfmt handlers should not be
-involved. The recursion being tracked is the depth of calls through
-search_binary_handler(), so that function should be exclusively responsible
-for tracking the depth.
-
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/binfmt_em86.c        |    1 -
- fs/binfmt_misc.c        |    6 ------
- fs/binfmt_script.c      |    4 +---
- fs/exec.c               |   10 +++++-----
- include/linux/binfmts.h |    2 --
- 5 files changed, 6 insertions(+), 17 deletions(-)
-
-diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
-index 2790c7e..575796a 100644
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm *bprm,struct pt_regs *regs)
- 			return -ENOEXEC;
- 	}
- 
--	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 772428d..f0f1a06 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -117,10 +117,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	if (!enabled)
- 		goto _ret;
- 
--	retval = -ENOEXEC;
--	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
--		goto _ret;
--
- 	/* to keep locking time low, we copy the interpreter string */
- 	read_lock(&entries_lock);
- 	fmt = check_file(bprm);
-@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	if (retval < 0)
- 		goto _error;
- 
--	bprm->recursion_depth++;
--
- 	retval = search_binary_handler (bprm, regs);
- 	if (retval < 0)
- 		goto _error;
-diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
-index df49d48..8ae4be1 100644
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -22,15 +22,13 @@ static int load_script(struct linux_binprm *bprm,struct pt_regs *regs)
- 	char interp[BINPRM_BUF_SIZE];
- 	int retval;
- 
--	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
--	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
-+	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
- 		return -ENOEXEC;
- 	/*
- 	 * This section does the #! interpretation.
- 	 * Sorta complicated, but hopefully it will work.  -TYT
- 	 */
- 
--	bprm->recursion_depth++;
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
-diff --git a/fs/exec.c b/fs/exec.c
-index c6e6de4..85c1f9e 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1371,6 +1371,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	struct linux_binfmt *fmt;
- 	pid_t old_pid, old_vpid;
- 
-+	/* This allows 4 levels of binfmt rewrites before failing hard. */
-+	if (depth > 5)
-+		return -ELOOP;
-+
- 	retval = security_bprm_check(bprm);
- 	if (retval)
- 		return retval;
-@@ -1395,12 +1399,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
-+			bprm->recursion_depth = depth + 1;
- 			retval = fn(bprm, regs);
--			/*
--			 * Restore the depth counter to its starting value
--			 * in this call, so we don't have to rely on every
--			 * load_binary function to restore it on return.
--			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0) {
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index de0628e..54135f6 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -54,8 +54,6 @@ struct linux_binprm {
- #define BINPRM_FLAGS_EXECFD_BIT 1
- #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
- 
--#define BINPRM_MAX_RECURSION 4
--
- /* Function parameter for binfmt->coredump */
- struct coredump_params {
- 	siginfo_t *siginfo;
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Reviewed-by: Christoph Lameter <cl@linux.com>
