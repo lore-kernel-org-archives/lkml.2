@@ -1,77 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab2KSJ16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 04:27:58 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:50572 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab2KSJ14 convert rfc822-to-8bit (ORCPT
+	id S1753385Ab2KSJds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 04:33:48 -0500
+Received: from smtp-out-217.synserver.de ([212.40.185.217]:1166 "EHLO
+	smtp-out-217.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab2KSJdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 04:27:56 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@tv-sign.ru>,
-        Serge Hallyn <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <8739097bkk.fsf@xmission.com>
-	<1353083750-3621-1-git-send-email-ebiederm@xmission.com>
-	<1353083750-3621-9-git-send-email-ebiederm@xmission.com>
-	<50A9F7DE.60807@cn.fujitsu.com>
-Date: Mon, 19 Nov 2012 01:27:41 -0800
-In-Reply-To: <50A9F7DE.60807@cn.fujitsu.com> (Gao feng's message of "Mon, 19
-	Nov 2012 17:11:58 +0800")
-Message-ID: <87wqxij62a.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 19 Nov 2012 04:33:46 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3603
+Message-ID: <50A9FCFC.60002@metafoo.de>
+Date: Mon, 19 Nov 2012 10:33:48 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX18CLizbtVQ94fgHKD4z+q9Tjn08MFkcL6Y=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Gao feng <gaofeng@cn.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 09/11] pidns: Add setns support
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: Add Texas Instruments ADC081C021/027 support
+References: <1353313289-983-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1353313289-983-1-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gao feng <gaofeng@cn.fujitsu.com> writes:
+On 11/19/2012 09:21 AM, Thierry Reding wrote:
+> Add support for reading conversion results from the ADC and provide them
+> through a single IIO channel. A proper scaling factor is also exported
+> based on the reference voltage provided by a regulator.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+[...]
+> +static int adc081c_read_raw(struct iio_dev *iio,
+> +			    struct iio_chan_spec const *channel, int *value,
+> +			    int *micro, long mask)
+> +{
+> +	struct adc081c *adc = iio_priv(iio);
+> +	int err, scale;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		err = i2c_smbus_read_word_swapped(adc->i2c, REG_CONV_RES);
+> +		if (err < 0)
+> +			return err;
+> +
+> +		*value = (err >> 4) & 0xff;
+> +		return IIO_VAL_INT;
+> +
+> +	case IIO_CHAN_INFO_SCALE:
+> +		err = regulator_get_voltage(adc->ref);
+> +		if (err < 0)
+> +			return err;
+> +
+> +		scale = err / 255;
 
-> 于 2012年11月17日 00:35, Eric W. Biederman 写道:
->> From: "Eric W. Biederman" <ebiederm@xmission.com>
->> 
->> - Pid namespaces are designed to be inescapable so verify that the
->>   passed in pid namespace is a child of the currently active
->>   pid namespace or the currently active pid namespace itself.
->> 
->>   Allowing the currently active pid namespace is important so
->>   the effects of an earlier setns can be cancelled.
->> 
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
->
-> Hi Eric
->
-> I noticed that,after we call setns to change task's pidns to container A's pidns.
-> we can't see this task in container A's proc filesystem.
->
-> Is this what we expected?
+Shouldn't this be 256?
 
-Only children move to the new pid namespace so yes.
+> +
+> +		*value = scale / 1000000;
+> +		*micro = scale % 1000000;
 
-Any other semantic requires ugly races with changing the pid of an
-existing process.
+scale for voltages is in microvolt, so I think it this is off by a factor of
+1000.
 
-Eric
+For ADCs it often makes sense to use IIO_VAL_FRACTIONAL_LOG2 with the val
+being set to the reference voltage (in mV) and val2 being set to the number
+of bits.
+
+E.g in your case
+
+		*val = err / 1000;
+		*val2 = 8;
+
+> +
+> +		return IIO_VAL_INT_PLUS_MICRO;
+> +
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +static const struct iio_info adc081c_info = {
+> +	.read_raw = adc081c_read_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +static int adc081c_probe(struct i2c_client *client,
+> +			 const struct i2c_device_id *id)
+> +{
+> +	struct iio_dev *iio;
+> +	struct adc081c *adc;
+> +	int err;
+> +
+> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA))
+> +		return -ENODEV;
+> +
+> +	iio = iio_device_alloc(sizeof(*adc));
+> +	if (!iio)
+> +		return -ENOMEM;
+> +
+> +	adc = iio_priv(iio);
+> +	adc->i2c = client;
+> +
+> +	adc->ref = regulator_get(&client->dev, "vref");
+> +	if (IS_ERR(adc->ref)) {
+> +		err = PTR_ERR(adc->ref);
+> +		goto iio_free;
+> +	}
+> +
+> +	err = regulator_enable(adc->ref);
+> +	if (err < 0)
+> +		goto regulator_put;
+> +
+> +	iio->dev.parent = &client->dev;
+> +	iio->name = dev_name(&client->dev);
+> +	iio->modes = INDIO_DIRECT_MODE;
+> +	iio->info = &adc081c_info;
+> +
+> +	adc->channel.type = IIO_VOLTAGE;
+> +	adc->channel.info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT |
+> +				 IIO_CHAN_INFO_RAW_SEPARATE_BIT;
+
+nitpick: Since it is the same for each driver I'd make the channel static const.
+
+> +
+> +	iio->channels = &adc->channel;
+> +	iio->num_channels = 1;
+> +
+[...]
 
