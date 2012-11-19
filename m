@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab2KSV4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:56:20 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:53720 "EHLO ogre.sisk.pl"
+	id S1752773Ab2KSV46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:56:58 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:40189 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab2KSV4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:56:18 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>, Huang Ying <ying.huang@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [RFC] PCI/PM: Keep runtime PM enabled for unbound PCI devices
-Date: Mon, 19 Nov 2012 23:00:43 +0100
-Message-ID: <1521498.PJusLS7B2o@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1211191129060.1598-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211191129060.1598-100000@iolanthe.rowland.org>
+	id S1752181Ab2KSV45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:56:57 -0500
+Date: Mon, 19 Nov 2012 13:56:53 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@google.com>,
+        Steve Grubb <sgrubb@redhat.com>, linux-audit@redhat.com
+Subject: [PATCH] audit: create explicit AUDIT_SECCOMP event type
+Message-ID: <20121119215653.GA12715@www.outflux.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 19, 2012 11:31:01 AM Alan Stern wrote:
-> On Mon, 19 Nov 2012, Huang Ying wrote:
-> 
-> > For unbound PCI devices, what we need is:
-> > 
-> >  - Always in D0 state, because some devices does not work again after
-> >    being put into D3 by the PCI bus.
-> > 
-> >  - In SUSPENDED state if allowed, so that the parent devices can still
-> >    be put into low power state.
-> > 
-> > To satisfy these requirement, the runtime PM for the unbound PCI
-> > devices are disabled and set to SUSPENDED state.  One issue of this
-> > solution is that the PCI devices will be put into SUSPENDED state even
-> > if the SUSPENDED state is forbidden via the sysfs interface
-> > (.../power/control) of the device.  This is not an issue for most
-> > devices, because most PCI devices are not used at all if unbounded.
-> > But there are exceptions.  For example, unbound VGA card can be used
-> > for display, but suspend its parents make it stop working.
-> > 
-> > To fix the issue, we keep the runtime PM enabled when the PCI devices
-> > are unbound.  But the runtime PM callbacks will do nothing if the PCI
-> > devices are unbound.  This way, we can put the PCI devices into
-> > SUSPENDED state without put the PCI devices into D3 state.
-> > 
-> > Known issue: after some changing, pci_dev->driver is used to indicate
-> > whether the PCI devices are bound and whether the runtime PM callbacks
-> > should do nothing.  Maybe it is better to use a dedicated flag such as
-> > .skip_rtpm_callbacks.  That may improve code readability.
-> 
-> I think it's okay like this, especially if you add a comment in 
-> pci_runtime_suspend, pci_runtime_resume, and pci_runtime_idle 
-> explaining that when pci_dev->driver isn't set, the device should 
-> always remain in D0 regardless of the runtime status.
+The seccomp path was using AUDIT_ANOM_ABEND from when seccomp mode 1
+could only kill a process. While we still want to make sure an audit
+record is forced on a kill, this should use a separate record type since
+seccomp mode 2 introduces other behaviors. In the case of "handled"
+behaviors (process wasn't killed), only emit a record if the process is
+under inspection.
 
-Yes, I agree with Alan.  Please add comments as Alan's suggesting and it
-should be fine.
+Cc: Julien Tinnes <jln@google.com>
+Cc: Will Drewry <wad@google.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ include/linux/audit.h      |    3 ++-
+ include/uapi/linux/audit.h |    1 +
+ kernel/auditsc.c           |   14 +++++++++++---
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
-Thanks,
-Rafael
-
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index bce729a..9d5104d 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -157,7 +157,8 @@ void audit_core_dumps(long signr);
+ 
+ static inline void audit_seccomp(unsigned long syscall, long signr, int code)
+ {
+-	if (unlikely(!audit_dummy_context()))
++	/* Force a record to be reported if a signal was delivered. */
++	if (signr || unlikely(!audit_dummy_context()))
+ 		__audit_seccomp(syscall, signr, code);
+ }
+ 
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 76352ac..09a2d94 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -106,6 +106,7 @@
+ #define AUDIT_MMAP		1323	/* Record showing descriptor and flags in mmap */
+ #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains */
+ #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
++#define AUDIT_SECCOMP		1326	/* Secure Computing event */
+ 
+ #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+ #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 2f186ed..157e989 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -2735,7 +2735,7 @@ void __audit_mmap_fd(int fd, int flags)
+ 	context->type = AUDIT_MMAP;
+ }
+ 
+-static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
++static void audit_log_task(struct audit_buffer *ab)
+ {
+ 	kuid_t auid, uid;
+ 	kgid_t gid;
+@@ -2753,6 +2753,11 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
+ 	audit_log_task_context(ab);
+ 	audit_log_format(ab, " pid=%d comm=", current->pid);
+ 	audit_log_untrustedstring(ab, current->comm);
++}
++
++static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
++{
++	audit_log_task(ab);
+ 	audit_log_format(ab, " reason=");
+ 	audit_log_string(ab, reason);
+ 	audit_log_format(ab, " sig=%ld", signr);
+@@ -2783,8 +2788,11 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
+ {
+ 	struct audit_buffer *ab;
+ 
+-	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+-	audit_log_abend(ab, "seccomp", signr);
++	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
++	if (unlikely(!ab))
++		return;
++	audit_log_task(ab);
++	audit_log_format(ab, " sig=%ld", signr);
+ 	audit_log_format(ab, " syscall=%ld", syscall);
+ 	audit_log_format(ab, " compat=%d", is_compat_task());
+ 	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+-- 
+1.7.9.5
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kees Cook
+Chrome OS Security
