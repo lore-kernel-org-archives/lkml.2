@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2KSQg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:36:58 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45301 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2KSQg4 (ORCPT
+	id S1753841Ab2KSQis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:38:48 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61389 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab2KSQir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:36:56 -0500
-Date: Mon, 19 Nov 2012 08:36:51 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cgroup, cpuset: remove cgroup_subsys->post_clone()
-Message-ID: <20121119163651.GF15971@htj.dyndns.org>
-References: <20121113202714.GA21185@mtj.dyndns.org>
- <20121113202745.GB21185@mtj.dyndns.org>
- <50A9C649.9080602@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A9C649.9080602@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Nov 2012 11:38:47 -0500
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@redhat.com
+Cc: ccross@android.com, Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [RFC 0/3] sched: fix nr_busy_cpus
+Date: Mon, 19 Nov 2012 17:38:04 +0100
+Message-Id: <1353343087-18015-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Original-patch-by: Glauber Costa <glommer@parallels.com>
-> > Original-patch: <1351686554-22592-2-git-send-email-glommer@parallels.com>
-> > Cc: Glauber Costa <glommer@parallels.com>
-> 
-> Acked-by: Li Zefan <lizefan@huawei.com>
+The nr_busy_cpus field of the sched_group_power is sometime different from 0
+whereas the platform is fully idle. This serie fixes 3 use cases:
+ - when the SCHED softirq is raised on an idle core for idle load balance but
+   the platform doesn't go out of the cpuidle state
+ - when some CPUs enter idle state while booting all CPUs
+ - when a CPU is unplug and/or replug
 
-Both patches applied to cgroup/for-3.8.  Thanks.
+Vincent Guittot (3):
+  sched: fix nr_busy_cpus with coupled cpuidle
+  sched: fix init NOHZ_IDLE flag
+  sched: fix update NOHZ_IDLE flag
+
+ kernel/sched/core.c      |    1 +
+ kernel/sched/fair.c      |    2 +-
+ kernel/time/tick-sched.c |    2 ++
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
 -- 
-tejun
+1.7.10
+
