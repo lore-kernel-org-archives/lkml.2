@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2KSQjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:39:21 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61389 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab2KSQit (ORCPT
+	id S1753904Ab2KSQlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:41:35 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:52276 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753774Ab2KSQld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:38:49 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@redhat.com
-Cc: ccross@android.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC 2/3] sched: fix init NOHZ_IDLE flag
-Date: Mon, 19 Nov 2012 17:38:06 +0100
-Message-Id: <1353343087-18015-3-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1353343087-18015-1-git-send-email-vincent.guittot@linaro.org>
-References: <1353343087-18015-1-git-send-email-vincent.guittot@linaro.org>
+	Mon, 19 Nov 2012 11:41:33 -0500
+Date: Mon, 19 Nov 2012 11:41:33 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.4: disabling irq
+In-Reply-To: <50A7849C.6080502@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1211191139140.1598-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my smp platform which is made of 5 cores in 2 clusters,I have the
-nr_busy_cpu field of sched_group_power struct that is not null when the
-platform is fully idle. The root cause seems to be:
-During the boot sequence, some CPUs reach the idle loop and set their
-NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
-field is initialized later with the assumption that all CPUs are in the busy
-state whereas some CPUs have already set their NOHZ_IDLE flag.
-We clear the NOHZ_IDLE flag when nr_busy_cpus is initialized in order to 
-have a coherent configuration.
+On Sat, 17 Nov 2012, Udo van den Heuvel wrote:
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/core.c |    1 +
- 1 file changed, 1 insertion(+)
+> The problem still happens. irq 18 is dsiabled every now and then.
+> This time on different, new hardware.
+> The motherboard is now a Gigabyte F2A85X-UP4.
+> Camera is the same pwc cam.
+> 
+> Recently I removed the USB printer that was attached to the same USB
+> controller.
+> So probably it is not a hardware issue related to board or printer.
+> 
+> How to proceed next?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5dae0d2..05058e8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5817,6 +5817,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+Firstly, what does /proc/interrupts say?
+
+Secondly, try building a kernel with the patch below and 
+CONFIG_USB_DEBUG enabled.  Let's see what the dmesg log says when the 
+problem occurs.
+
+Alan Stern
+
+
+
+Index: usb-3.7/drivers/usb/host/ohci-hcd.c
+===================================================================
+--- usb-3.7.orig/drivers/usb/host/ohci-hcd.c
++++ usb-3.7/drivers/usb/host/ohci-hcd.c
+@@ -777,6 +777,7 @@ static irqreturn_t ohci_irq (struct usb_
+ 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+ 	struct ohci_regs __iomem *regs = ohci->regs;
+ 	int			ints;
++	int			i, j;
  
- 	update_group_power(sd, cpu);
- 	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
-+	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
- }
+ 	/* Read interrupt status (and flush pending writes).  We ignore the
+ 	 * optimization of checking the LSB of hcca->done_head; it doesn't
+@@ -795,11 +796,15 @@ static irqreturn_t ohci_irq (struct usb_
+ 	}
  
- int __weak arch_sd_sibling_asym_packing(void)
--- 
-1.7.10
+ 	/* We only care about interrupts that are enabled */
+-	ints &= ohci_readl(ohci, &regs->intrenable);
++	i = ints;
++	j = ohci_readl(ohci, &regs->intrenable);
++	ints &= j;
+ 
+ 	/* interrupt for some other device? */
+-	if (ints == 0 || unlikely(ohci->rh_state == OHCI_RH_HALTED))
++	if (ints == 0 || unlikely(ohci->rh_state == OHCI_RH_HALTED)) {
++		ohci_dbg(ohci, "IRQ: %x %x\n", i, j);
+ 		return IRQ_NOTMINE;
++	}
+ 
+ 	if (ints & OHCI_INTR_UE) {
+ 		// e.g. due to PCI Master/Target Abort
 
