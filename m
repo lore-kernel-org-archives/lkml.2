@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2KSRfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:35:19 -0500
-Received: from mga03.intel.com ([143.182.124.21]:36334 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab2KSRfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:35:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,280,1352102400"; 
-   d="scan'208";a="170207191"
-Date: Mon, 19 Nov 2012 18:34:56 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org
-Subject: Re: mfd: lpc_ich: NULL pointer dereference at (second) module removal
-Message-ID: <20121119173456.GF18738@sortiz-mobl>
-References: <1352467148.1895.20.camel@x61.thuisdomein>
- <1352741475.6008.16.camel@petert>
- <20121119002404.GD18738@sortiz-mobl>
- <1353330169.19434.7.camel@x61.thuisdomein>
+	id S1753370Ab2KSRh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:37:58 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62189 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab2KSRh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:37:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353330169.19434.7.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50AA5E41.3040705@wwwdotorg.org>
+References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
+	<50991C41.50705@gmail.com>
+	<CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com>
+	<509FB25F.3030307@gmail.com>
+	<CAKohpoksQ4ShO_QFAQORO2_oEgNtOeENFnX1C3gN_5POQSGexg@mail.gmail.com>
+	<509FFF8B.3010707@gmail.com>
+	<CAKohponUFABC397w=dq7j+1f5QeiOX4BCOXv=OZSNOaOTmt9oQ@mail.gmail.com>
+	<CAKohponUt4264UaxM2Wr41=fbPJkUCFhKhOapjPQC=OYDuyMbQ@mail.gmail.com>
+	<CAB4BAks+eym9+qNZjxwkg7XxJrMwkaYFWGM5_YQk_TzfxyoHaw@mail.gmail.com>
+	<CAKohpo=U2xss6cZMBKsbLJ4G-AWeEnHz8V-HFw2NKx0fucTK8Q@mail.gmail.com>
+	<CAB4BAktsPviZ11QjSGgdzaV0uvLq3TLk4au6=dOgv7NtA9nc4Q@mail.gmail.com>
+	<CAKohpo=XZ_uXJPUr2dJFBQBWnkRyV2YepikrWZ2GdrPXEmEmYw@mail.gmail.com>
+	<50AA5E41.3040705@wwwdotorg.org>
+Date: Mon, 19 Nov 2012 23:07:56 +0530
+Message-ID: <CAKohpo=grCNtQPUi2TzG+cCreETzEeBv5R9-0NLio1MRDAGDzA@mail.gmail.com>
+Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16
+ variables & arrays
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rajanikanth HV <rajanikanth.hv@linaro.org>,
+        "linaro-dev@lists.linaro.org Devel" <linaro-dev@lists.linaro.org>,
+        andriy.shevchenko@intel.com, Patch Tracking <patches@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On 19 November 2012 21:58, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> Support for byte- and word- properties is relatively recent I believe
+> (or at least, the /bits/ syntax is). Which dtc version are you using?
 
-On Mon, Nov 19, 2012 at 02:02:49PM +0100, Paul Bolle wrote:
-> On Mon, 2012-11-19 at 01:24 +0100, Samuel Ortiz wrote:
-> > I just merged commit
-> > 5dc4dda91c86ef82bd53d77e5de50ec095b33e46 into my for-next branch and that one
-> > could fix that issue. Could you guys please give it a go ?
-> 
-> 0) Applies cleanly to v3.6.7. Compiles cleanly too. No oops after the
-> (second or later) removal of lpc_ich. So this patch seems to do the
-> trick.
-Thanks for the feedback.
+Ok, i was on a older version. I just saw this patch now:
 
+commit cd296721a9645f9f28800a072490fa15458d1fb7
+Author: Stephen Warren <swarren@nvidia.com>
+Date:   Fri Sep 28 21:25:59 2012 +0000
 
-> 1) Could you please send this patch to stable too (when it finally hits
-> mainline, that is)? A quick glance suggests it can be backported to as
-> far v3.0 (but I only tested v3.6.y, see above).
-Yep, I'll cc stable on it.
+    dtc: import latest upstream dtc
 
-Cheers,
-Samuel.
+    This updates scripts/dtc to commit 317a5d9 "dtc: zero out new label
+    objects" from git://git.jdl.com/software/dtc.git.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+    This adds features such as:
+    * /bits/ syntax for cell data.
+    * Math expressions within cell data.
+    * The ability to delete properties or nodes.
+    * Support for #line directives in the input file, which allows the use of
+      cpp on *.dts.
+    * -i command-line option (/include/ path)
+    * -W/-E command-line options for error/warning control.
+    * Removal of spew to STDOUT containing the filename being compiled.
+    * Many additions to the libfdt API.
+
+    Signed-off-by: Stephen Warren <swarren@nvidia.com>
+    Acked-by: Jon Loeliger <jdl@jdl.com>
+    Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+
+Will try it tomorrow
+
+--
+viresh
