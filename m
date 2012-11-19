@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2KSBKU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 20:10:20 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51623 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2KSBKS (ORCPT
+	id S1752791Ab2KSBUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 20:20:09 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60575 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2KSBUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 20:10:18 -0500
-Date: Mon, 19 Nov 2012 01:10:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, monstr@monstr.eu,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: sigaltstack fun
-Message-ID: <20121119011013.GJ16916@ZenIV.linux.org.uk>
-References: <20121118.140332.1273544560009594278.davem@davemloft.net>
- <20121118195921.GH16916@ZenIV.linux.org.uk>
- <20121118210253.GI16916@ZenIV.linux.org.uk>
- <20121118.161833.985081954687473276.davem@davemloft.net>
+	Sun, 18 Nov 2012 20:20:07 -0500
+X-AuditID: 9c93016f-b7b42ae000004383-16-50a98943e425
+Date: Mon, 19 Nov 2012 10:27:29 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        gaowanlong@cn.fujitsu.com
+Subject: Re: [PATCH v4 0/3] zram/zsmalloc promotion
+Message-ID: <20121119012729.GA7747@bbox>
+References: <1351840367-4152-1-git-send-email-minchan@kernel.org>
+ <20121106153213.03e9cc9f.akpm@linux-foundation.org>
+ <CAEwNFnAA+PNh0OT7vdv5k5u3TXeBUDJZX75TQg_Si4yFnE6e-g@mail.gmail.com>
+ <CAEwNFnD9tVywtb6s3YGMs7vcndCVZNZ0wU=RnOeVnG9UEXnmWQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121118.161833.985081954687473276.davem@davemloft.net>
+In-Reply-To: <CAEwNFnD9tVywtb6s3YGMs7vcndCVZNZ0wU=RnOeVnG9UEXnmWQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 04:18:33PM -0500, David Miller wrote:
-> From: Al Viro <viro@ZenIV.linux.org.uk>
-> Date: Sun, 18 Nov 2012 21:02:53 +0000
-> 
-> > Are you OK with the patch below?  Should be the minimal fix, getting
-> > rid of those segfaults and converting to usual semantics here...
-> > 
-> > Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> Yep, looks fine:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+Andrew?
 
-Er...  So which tree should that go through?  sparc or signal?  There's
-a similar microblaze patch and a few more of the "do_sigaltstack() takes
-userland pointer" variety, so I can put together a pile in
-signal.git#for-linus, but if you prefer that to go through sparc tree,
-I'm fine with that...
+On Wed, Nov 07, 2012 at 07:38:04PM +0900, Minchan Kim wrote:
+> Hi Andrew,
+> 
+> On Wed, Nov 7, 2012 at 8:32 AM, Andrew Morton <akpm@linux-foundation.org>
+> wrote:
+> > On Fri, 2 Nov 2012 16:12:44 +0900
+> > Minchan Kim <minchan@kernel.org> wrote:
+> >
+> >> This patchset promotes zram/zsmalloc from staging.
+> >
+> > The changelogs are distressingly short of *reasons* for doing this!
+> >
+> >> Both are very clean and zram have been used by many embedded product
+> >> for a long time.
+> >
+> > Well that's interesting.
+> >
+> > Which embedded products? How are they using zram and what benefit are
+> > they observing from it, in what scenarios?
+> >
+> 
+> At least, major TV companys have used zram as swap since two years ago and
+> recently our production team released android smart phone with zram which
+> is used as swap, too.
+> And there is trial to use zram as swap in ChromeOS project, too. (Although
+> they report some problem recently, it was not a problem of zram).
+> When you google zram, you can find various usecase in xda-developers.
+> 
+> With my experience, the benefit in real practice was to remove jitter of
+> video application. It would be effect of efficient memory usage by
+> compression but more issue is whether swap is there or not in the system.
+> As you know, recent mobile platform have used JAVA so there are lots of
+> anonymous pages. But embedded system normally doesn't use eMMC or SDCard as
+> swap because there is wear-leveling issue and latency so we can't reclaim
+> anymous pages. It sometime ends up making system very slow when it requires
+> to get contiguous memory and even many file-backed pages are evicted. It's
+> never what embedded people want it. Zram is one of best solution for that.
+> 
+> It's very hard to type with mobile phone. :(
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+
+-- 
+Kind regards,
+Minchan Kim
