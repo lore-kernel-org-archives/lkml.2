@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2KSUx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 15:53:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51478 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2KSUx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 15:53:27 -0500
-Date: Mon, 19 Nov 2012 12:53:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        jiang.liu@huawei.com, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        yinghai@kernel.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add movablecore_map boot option.
-Message-Id: <20121119125325.ed1abba0.akpm@linux-foundation.org>
-In-Reply-To: <1353335246-9127-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1353335246-9127-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751969Ab2KSUxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 15:53:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43540 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751624Ab2KSUxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 15:53:49 -0500
+Date: Mon, 19 Nov 2012 21:53:47 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, reiserfs-devel@vger.kernel.org
+Subject: [PULL] Reiserfs fixes and ext3 fix for 3.7-rc6
+Message-ID: <20121119205347.GE20532@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012 22:27:21 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
+  Hello Linus,
 
-> This patchset provide a boot option for user to specify ZONE_MOVABLE memory
-> map for each node in the system.
-> 
-> movablecore_map=nn[KMG]@ss[KMG]
-> 
-> This option make sure memory range from ss to ss+nn is movable memory.
-> 1) If the range is involved in a single node, then from ss to the end of
->    the node will be ZONE_MOVABLE.
-> 2) If the range covers two or more nodes, then from ss to the end of
->    the node will be ZONE_MOVABLE, and all the other nodes will only
->    have ZONE_MOVABLE.
-> 3) If no range is in the node, then the node will have no ZONE_MOVABLE
->    unless kernelcore or movablecore is specified.
-> 4) This option could be specified at most MAX_NUMNODES times.
-> 5) If kernelcore or movablecore is also specified, movablecore_map will have
->    higher priority to be satisfied.
-> 6) This option has no conflict with memmap option.
+  could you please pull from
 
-This doesn't describe the problem which the patchset solves.  I can
-kinda see where it's coming from, but it would be nice to have it all
-spelled out, please.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-- What is wrong with the kernel as it stands?
-- What are the possible ways of solving this?
-- Describe the chosen way, explain why it is superior to alternatives
+You will get fixes of reiserfs deadlocks when quotas are enabled (locking
+there was completely busted by BKL conversion) and also one small ext3 fix
+in the trim interface.
 
-The amount of manual system configuration in this proposal looks quite
-high.  Adding kernel boot parameters really is a last resort.  Why was
-it unavoidable here?
+Top of the tree is ae49eee. The full shortlog is:
+
+Jan Kara (4):
+      reiserfs: Fix lock ordering during remount
+      reiserfs: Protect reiserfs_quota_on() with write lock
+      reiserfs: Protect reiserfs_quota_write() with write lock
+      reiserfs: Move quota calls out of write lock
+
+Lukas Czerner (1):
+      ext3: Avoid underflow of in ext3_trim_fs()
+
+The diffstat is
+
+ fs/ext3/balloc.c    |    5 ++-
+ fs/reiserfs/inode.c |   10 ++++++--
+ fs/reiserfs/stree.c |    4 +++
+ fs/reiserfs/super.c |   60
++++++++++++++++++++++++++++++++++++++++------------
+ 4 files changed, 60 insertions(+), 19 deletions(-)
+
+							Thanks
+								Honza
+
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
