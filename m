@@ -1,170 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2KSIGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 03:06:35 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:52596 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922Ab2KSIGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 03:06:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com, bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        vijaymohan.pandarathil@hp.com, imammedo@redhat.com, prarit@redhat.com
-Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
-Date: Mon, 19 Nov 2012 09:10:58 +0100
-Message-ID: <5543281.izkzCt1DyB@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
-References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com> <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
+	id S1753130Ab2KSIIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 03:08:15 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42364 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab2KSIIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 03:08:13 -0500
+Message-ID: <50A9E8E4.4050004@huawei.com>
+Date: Mon, 19 Nov 2012 16:08:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
+        <glommer@parallels.com>, <stable@vger.kernel.org>
+Subject: Re: [PATCH 01/17] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
+References: <1352775704-9023-1-git-send-email-tj@kernel.org> <1352775704-9023-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1352775704-9023-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 06, 2012 08:02:06 AM Toshi Kani wrote:
-> This patch introduces acpi_pr_<level>(), where <level> is a kernel
-> message level such as err/warn/info, to support improved logging
-> messages for ACPI, esp. for hotplug operations.  acpi_pr_<level>()
-> appends "ACPI" prefix and ACPI object path to the messages.  This
-> improves diagnosis of hotplug operations since an error message in
-> a log file identifies an object that caused an issue.
+On 2012/11/13 11:01, Tejun Heo wrote:
+> cgroup_create_dir() does weird dancing with dentry refcnt.  On
+> success, it gets and then puts it achieving nothing.  On failure, it
+> puts but there isn't no matching get anywhere leading to the following
+> oops if cgroup_create_file() fails for whatever reason.
 > 
-> acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-> to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
-> always available unlike other kernel objects, such as device.
+>   ------------[ cut here ]------------
+>   kernel BUG at /work/os/work/fs/dcache.c:552!
+>   invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>   Modules linked in:
+>   CPU 2
+>   Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
+>   RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+>   RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
+>   RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
+>   RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
+>   RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
+>   R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
+>   R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
+>   FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+>   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>   CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
+>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>   Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
+>   Stack:
+>    ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
+>    ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
+>    ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
+>   Call Trace:
+>    [<ffffffff811cc889>] done_path_create+0x19/0x50
+>    [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
+>    [<ffffffff811d2009>] sys_mkdir+0x19/0x20
+>    [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
+>   Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
+>   RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+>    RSP <ffff88001a3ebef8>
+>   ---[ end trace 1277bcfd9561ddb0 ]---
 > 
-> For example:
->   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-> logs an error message like this at KERN_ERR.
->   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
->
-> ACPI drivers can use acpi_pr_<level>() when they need to identify
-> a target ACPI object path in their messages, such as error cases.
-> The usage model is similar to dev_<level>().  acpi_pr_<level>() can
-> be used when device is not created/valid, which may be the case in
-> ACPI hotplug handlers.  ACPI object path is also consistent on the
-> platform, unlike device name that changes over hotplug operations.
+> Fix it by dropping the unnecessary dget/dput() pair.
 > 
-> ACPI drivers should use dev_<level>() when device is valid and
-> acpi_pr_<level>() is already used by the caller in its error path.
-> Device name provides more user friendly information.
-> 
-> ACPI drivers also continue to use pr_<level>() when messages do not
-> need to specify device information, such as boot-up messages.
-> 
-> Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
-> are not associated with the kernel message level.
-
-Well, the idea is generally good, but unfortunately acpi_get_name() is
-not a cheap operation.  Namely, it takes the global namespace mutex,
-so your acpi_printk() may be a source of serious contention on that
-lock if used excessively from concurrent threads.
-
-Do you think you can address this problem?
-
-Moreover, this also means that acpi_printk() cannot be used from interrupt
-context, so it is not a printk() replacement, which at least should be
-documented.
-
-Thanks,
-Rafael
-
- 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: stable@vger.kernel.org
 > ---
->  drivers/acpi/utils.c    | 34 ++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h | 31 +++++++++++++++++++++++++++++++
->  2 files changed, 65 insertions(+)
+>  kernel/cgroup.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
-> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> index 462f7e3..4eade7d 100644
-> --- a/drivers/acpi/utils.c
-> +++ b/drivers/acpi/utils.c
-> @@ -457,3 +457,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
->  #endif
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 0f8fa6a..d0803f0 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2684,9 +2684,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
+>  		dentry->d_fsdata = cgrp;
+>  		inc_nlink(parent->d_inode);
+>  		rcu_assign_pointer(cgrp->dentry, dentry);
+> -		dget(dentry);
+>  	}
+> -	dput(dentry);
+>  
+
+The code has been there since cgroup was merged into mainline!
+
+>  	return error;
 >  }
->  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-> +
-> +/**
-> + * acpi_printk: Print messages with ACPI prefix and object path
-> + *
-> + * This function is intended to be called through acpi_pr_<level> macros.
-> + */
-> +void
-> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +	struct acpi_buffer buffer = {
-> +		.length = ACPI_ALLOCATE_BUFFER,
-> +		.pointer = NULL
-> +	};
-> +	const char *path;
-> +	acpi_status ret;
-> +
-> +	va_start(args, fmt);
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +
-> +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> +	if (ret == AE_OK)
-> +		path = buffer.pointer;
-> +	else
-> +		path = "<n/a>";
-> +
-> +	printk("%sACPI: %s: %pV", level, path, &vaf);
-> +
-> +	va_end(args);
-> +	kfree(buffer.pointer);
-> +}
-> +EXPORT_SYMBOL(acpi_printk);
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 2242c10..93d5852 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -56,6 +56,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
->  
->  acpi_status
->  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
-> +
-> +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
-> +
-> +#define acpi_pr_emerg(handle, fmt, ...)				\
-> +	acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_alert(handle, fmt, ...)				\
-> +	acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_crit(handle, fmt, ...)				\
-> +	acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_err(handle, fmt, ...)				\
-> +	acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_warn(handle, fmt, ...)				\
-> +	acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_notice(handle, fmt, ...)			\
-> +	acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_info(handle, fmt, ...)				\
-> +	acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
-> +
-> +/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
-> +#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-> +#define acpi_pr_debug(handle, fmt, ...)					\
-> +	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
-> +#else
-> +#define acpi_pr_debug(handle, fmt, ...)					\
-> +({									\
-> +	if (0)								\
-> +		acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);	\
-> +	0;								\
-> +})
-> +#endif
-> +
->  #ifdef CONFIG_ACPI
->  
->  #include <linux/proc_fs.h>
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
