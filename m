@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2KSDyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 22:54:53 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35762 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab2KSDyv (ORCPT
+	id S1752868Ab2KSDzB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 22:55:01 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:52719 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab2KSDy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 22:54:51 -0500
-Message-ID: <50A9ADA8.60804@linaro.org>
-Date: Mon, 19 Nov 2012 09:25:20 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Sun, 18 Nov 2012 22:54:58 -0500
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: linux-kernel@vger.kernel.org, patches@linaro.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 05/14] [media] atmel-isi: Update error check for unsigned
- variables
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org> <1353048646-10935-6-git-send-email-tushar.behera@linaro.org> <Pine.LNX.4.64.1211180014330.30062@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1211180014330.30062@axis700.grange>
+In-Reply-To: <CAKohponUFABC397w=dq7j+1f5QeiOX4BCOXv=OZSNOaOTmt9oQ@mail.gmail.com>
+References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
+	<50991C41.50705@gmail.com>
+	<CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com>
+	<509FB25F.3030307@gmail.com>
+	<CAKohpoksQ4ShO_QFAQORO2_oEgNtOeENFnX1C3gN_5POQSGexg@mail.gmail.com>
+	<509FFF8B.3010707@gmail.com>
+	<CAKohponUFABC397w=dq7j+1f5QeiOX4BCOXv=OZSNOaOTmt9oQ@mail.gmail.com>
+Date: Mon, 19 Nov 2012 09:24:58 +0530
+Message-ID: <CAKohponUt4264UaxM2Wr41=fbPJkUCFhKhOapjPQC=OYDuyMbQ@mail.gmail.com>
+Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16
+ variables & arrays
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linaro-dev@lists.linaro.org, andriy.shevchenko@intel.com,
+        patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2012 04:46 AM, Guennadi Liakhovetski wrote:
-> On Fri, 16 Nov 2012, Tushar Behera wrote:
-> 
->> Checking '< 0' for unsigned variables always returns false. For error
->> codes, use IS_ERR_VALUE() instead.
-> 
-> Wouldn't just changing "irq" type to "int" also work? I think that would 
-> be a more straight-forward solution. If however there are strong arguments 
-> against that, I'm fine with this fix too.
-> 
+On 12 November 2012 09:03, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 12 November 2012 01:12, Rob Herring <robherring2@gmail.com> wrote:
+>> I don't think the size is stored in the dtb. It is only in the dts. You
+>> need to define the size in the binding definitions and use '/bits/'
+>> annotation. With this the data is packed. Then the array function used
+>> should match what the binding defines.
 
-By changing irq to signed variable, we would get compilation warning in
-subsequent line (request_irq).
+Hi Rob,
 
-> Thanks
-> Guennadi
-> 
->>
->> CC: Mauro Carvalho Chehab <mchehab@infradead.org>
->> CC: linux-media@vger.kernel.org
->> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
->> ---
->>  drivers/media/platform/soc_camera/atmel-isi.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/media/platform/soc_camera/atmel-isi.c b/drivers/media/platform/soc_camera/atmel-isi.c
->> index 6274a91..5bd65df 100644
->> --- a/drivers/media/platform/soc_camera/atmel-isi.c
->> +++ b/drivers/media/platform/soc_camera/atmel-isi.c
->> @@ -1020,7 +1020,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
->>  	isi_writel(isi, ISI_CTRL, ISI_CTRL_DIS);
->>  
->>  	irq = platform_get_irq(pdev, 0);
->> -	if (irq < 0) {
->> +	if (IS_ERR_VALUE(irq)) {
->>  		ret = irq;
->>  		goto err_req_irq;
->>  	}
->> -- 
->> 1.7.4.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-media" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> 
+Can you please help me in getting the correct format to do this from dts.
+I tried:
 
+data1 = /bits/ 8 <0x50 0x60 0x70>;
 
--- 
-Tushar Behera
+as written in your earlier mail... but it didn't worked. Tried to
+search too, but
+couldn't find it.
