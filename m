@@ -1,95 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab2KTAoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:44:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44773 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753268Ab2KTAoI (ORCPT
+	id S1753427Ab2KTApV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:45:21 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:45350 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2KTApU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:44:08 -0500
-Date: Tue, 20 Nov 2012 09:43:58 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: max8973: add regulator driver support
-Message-ID: <20121120004356.GC4483@opensource.wolfsonmicro.com>
-References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
- <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
+	Mon, 19 Nov 2012 19:45:20 -0500
+X-Greylist: delayed 2975 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Nov 2012 19:45:19 EST
+X-manitu-Original-Sender-IP: 127.0.0.1
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Tue, 20 Nov 2012 00:55:40 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, ellyjones@chromium.org
+Subject: Re: [PATCH] devtmpfs: mount with noexec and nosuid
+Message-ID: <20121119235540.GB18012@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+Mail-Followup-To: Kees Cook <keescook@chromium.org>,
+	Kay Sievers <kay@vrfy.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org, ellyjones@chromium.org
+References: <20121117002016.GA13493@www.outflux.net>
+ <20121117002753.GA22778@kroah.com>
+ <CAPXgP12e5LpN6XVxaXOHhH=u8XXN==2reTaJDCoCk4tP4QduDQ@mail.gmail.com>
+ <CAGXu5jJVCEcrkkvqyoT=T0spnZJVBbxdskf0xM3rMK7d1Tv+Ng@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S1BNGpv0yoYahz37"
+	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
-X-Cookie: You're at the end of the road again.
+In-Reply-To: <CAGXu5jJVCEcrkkvqyoT=T0spnZJVBbxdskf0xM3rMK7d1Tv+Ng@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---S1BNGpv0yoYahz37
-Content-Type: text/plain; charset=us-ascii
+--eJnRUKwClWJh1Khz
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 19, 2012 at 11:52:42AM +0100, Guennadi Liakhovetski wrote:
-
-> Thanks for submitting this driver! The notion of DVS regulators was new t=
-o=20
-> me, so, I checked http://www.ti.com/lit/an/sbva020/sbva020.pdf for a shor=
-t=20
-> description. After that I had a look at a couple of existing DVS regulato=
-r=20
-
-Do you just mean regulators that have a quick voltage change ability/
-
-> drivers in the tree. Well, I came to two conclusions so far: (1) The=20
-> current regulator API is not very well suitable for such regulators. I=20
-> would imagine, one would need two methods: for setting the "normal" and=
-=20
-> the DVS voltage. Instead of this drivers are trying to be smart at=20
-> guessing, which voltage the user is trying to set now... (2) Drivers do=
-=20
-> this in different ways and at least out of the 2 drivers I looked at both=
-=20
-> have bugs and different ones at that. I'll send a separate email,=20
-> describing what I found suspicious in them.
-
-The thing I'd like to see factored out here is the LRU mechanism,
-otherwise I think the situation is pretty good.  Some of the older
-devices should use a different scheme to modern ones as the hardware
-they have to interoperate is different.
-
-> Of course, all the above was just my DVS-newbie impression, which can ver=
-y=20
-> well be absolutely wrong.
+On 2012-11-19 Monday at 10:14 -0800 Kees Cook wrote:
+> On Fri, Nov 16, 2012 at 4:39 PM, Kay Sievers <kay@vrfy.org> wrote:
+> > On Sat, Nov 17, 2012 at 1:27 AM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> >> On Fri, Nov 16, 2012 at 04:20:16PM -0800, Kees Cook wrote:
+> >>> Since devtmpfs is writable, make the default noexec nosuid as well. T=
+his
+> >>> protects from the case of a privileged process having an arbitrary fi=
+le
+> >>> write flaw and an argumentless arbitrary execution (i.e. it would lack
+> >>> the ability to run "mount -o remount,exec,suid /dev"), with a system
+> >>> that already has nosuid,noexec on all other writable mounts.
+> >>>
+> >>> Cc: ellyjones@chromium.org
+> >>> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >>> ---
+> >>>  drivers/base/devtmpfs.c |    6 ++++--
+> >>>  1 file changed, 4 insertions(+), 2 deletions(-)
+> >>
+> >> Have you tested this to verify that it doesn't break anything?
+> >>
+> >> Kay, could this cause any problems that you could think of?
+> >
+> > It breaks all sorts of old, possibly outdated, stuff, that does things
+> > like mapping /dev/mem executable. It for sure used to break X drivers,
+> > that fiddle with the BIOS of cards.
 >=20
-> >=20
-> > Add regulator driver for this device.
+> Ah, yeah, you're totally right. Attempting an mmap with PROT_EXEC on
+> /dev/mem would be denied.
 
-*ALWAYS* delete irrelevant text when replying.
+Sidenote:  non-executable devtmpfs + nouveau + KMS + xorg works for me:
 
---S1BNGpv0yoYahz37
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+uname -mrs
+=2E.........
+Linux 3.2.33-grsecurity.roland.0 x86_64
+
+grep devtmpfs /etc/{fs,m}tab /proc/{$$/mountinfo,mounts}
+=2E.......................................................
+/etc/fstab:devtmpfs     /dev    devtmpfs        rw,noexec,nosuid,size=3D8m,=
+nr_inodes=3D16k,mode=3D0755        0       0
+/etc/mtab:devtmpfs /dev devtmpfs rw,noexec,nosuid,size=3D8m,nr_inodes=3D16k=
+,mode=3D0755 0 0
+/proc/10358/mountinfo:18 15 0:5 / /dev rw,nosuid,noexec - devtmpfs devtmpfs=
+ rw,size=3D8192k,nr_inodes=3D16384,mode=3D755
+/proc/mounts:devtmpfs /dev devtmpfs rw,nosuid,noexec,size=3D8192k,nr_inodes=
+=3D16384,mode=3D755 0 0
+
+lspci -d 10de:0a3c -k -nn
+=2E........................
+01:00.0 VGA compatible controller [0300]: nVidia Corporation GT216 [Quadro =
+FX 880M] [10de:0a3c] (rev a2)
+        Subsystem: Dell Device [1028:040c]
+        Kernel driver in use: nouveau
+
+ps -p $( pgrep -d, xinit ) -F
+=2E............................
+UID        PID  PPID  C    SZ   RSS PSR STIME TTY          TIME CMD
+roland    9514  9478  0 16583   844   2 Nov02 tty6     00:00:00 xinit /etc/=
+X11/xinit/xinitrc -- /usr/bin/X :0 -auth /home/roland/.serverauth.9478
+qemu     11486 11463  0 12723   848   0 Nov02 tty30    00:00:00 xinit /etc/=
+X11/xinit/xinitrc -- /usr/bin/X :1 -auth /home/qemu/.serverauth.11463
+opera    12273 12240  0  8973   848   3 Nov02 tty18    00:00:00 xinit /etc/=
+X11/xinit/xinitrc -- /usr/bin/X :2 -auth /home/opera/.serverauth.12240
+
+
+> Is this something we could put behind a CONFIG?
+
+IMHO would be great :)
+
+--=20
+Roland
+
+--eJnRUKwClWJh1Khz
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQqtI9AAoJELSic+t+oim9tAUQAIGPwBl4tnRyW1+vzyoYcxHf
-MrqNubkP2+HSdXoMGLmFQ0hDju5bcasgX5VqRlH3kuEodoeTzEjyTlcR3vY0Y9M1
-QtU732lnkZqtI8zJ46U4O7pZaIk7H1CMmQ2Gu5/ekWq6Ks4+WvCJ+8h9xkSCFAoE
-4xjkMhGMd8dZGzwIH6vXPQ1Z5uwpwiAUBR2a9pkR11J4y4ShUx72AmCeIylvePyp
-6yT9dBUziXn9wLYBBA86iwHA5H49/qENm0G2+EyxcxzcJNejudfZC6hUNbZJqCZc
-3G0b35nSqLB/1i86z8YchEmHjcQfPFftRe9Qc7EaofMXeJbKjzyngL6SLwq1XBVA
-t90hTfyJ8Cc23xQa9bVENHOJ3r9+VD7MYVw9W4aBJE1rrcyhVjZr+fRIfyXWPRDb
-SycPJ7o5fBeKSQu4rPUc0qJMhMEg8LDpNPiD6lOLEyFsDMqFbYND2csa9Udiaf+S
-Kcay/ulTOhwJvNHE8juF+Lfq32WAfAkNjNpH2zlstnxwQshV2fc489a3/wSWp7DI
-Z4cyTDanUBHZf2ly5JRcvhVJBDPE5W2fT0QMQlUkgYDalnJrLsc8MP4VvDCMnAhQ
-i+4mX+AwGx6+zRMOoEPI7kP2g52jCtsh1IiQ+TfA77BUnIactHA9At8KsNNk4ruk
-rUcip1jdyeLcRz3Ah06W
-=ZbAY
+iEYEARECAAYFAlCqxvwACgkQdN/hKfT7G/JvzgCgoSz6XFaanMAZvsWmaksPi5bY
+wR0AnA14eRdbxoEPv1WM+8EY1WD60YaW
+=FxI9
 -----END PGP SIGNATURE-----
 
---S1BNGpv0yoYahz37--
+--eJnRUKwClWJh1Khz--
