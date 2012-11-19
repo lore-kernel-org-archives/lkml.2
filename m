@@ -1,139 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab2KSS2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 13:28:35 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46869 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab2KSS2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 13:28:34 -0500
-Date: Mon, 19 Nov 2012 10:26:16 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH] time: create __getnstimeofday for WARNless calls
-Message-ID: <20121119182616.GA4557@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1754036Ab2KSS3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 13:29:04 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:42095 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753975Ab2KSS3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 13:29:03 -0500
+Message-ID: <1353349733.2630.9.camel@thor>
+Subject: Re: [PATCH v3] mfd: lpc_ich: Fix resource request for [mem
+ 0x00000000]
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        Aaron Sierra <asierra@xes-inc.com>
+Date: Mon, 19 Nov 2012 13:28:53 -0500
+In-Reply-To: <20121119174615.GG18738@sortiz-mobl>
+References: <efe3e3f7-eb7f-460b-86d7-293dba8651d8@zimbra>
+	 <1352462129.8352.2.camel@thor> <20121119174615.GG18738@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.4-0build1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pstore RAM backend can get called during resume, and must be defensive
-against a suspended time source. Expose getnstimeofday logic that returns
-an error instead of a WARN. This can be detected and the timestamp can
-be zeroed out.
+On Mon, 2012-11-19 at 18:46 +0100, Samuel Ortiz wrote:
+> Hi Peter,
+> 
+> On Fri, Nov 09, 2012 at 06:55:29AM -0500, Peter Hurley wrote:
+> > The older southbridges supported by the lpc_ich driver do not
+> > provide memory-mapped space of the root complex. The driver
+> > correctly avoids computing the iomem address in this case, yet
+> > submits a zeroed resource request anyway (via mfd_add_devices()).
+> > 
+> > Remove the iomem resource from the resource array submitted to the
+> > mfd core for the older southbridges.
+> > 
+> > Acked-by: Aaron Sierra <asierra@xes-inc.com>
+> > Cc: Peter Tyser <ptyser@xes-inc.com>
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > ---
+> > 
+> > v2: post-decrement to match existing style
+> >     retitle patch subject
+> > v3: respin as standalone patch
+> > 
+> >  drivers/mfd/lpc_ich.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+> > index a22544f..f507c09 100644
+> > --- a/drivers/mfd/lpc_ich.c
+> > +++ b/drivers/mfd/lpc_ich.c
+> > @@ -842,6 +842,9 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev *dev,
+> >  		res = wdt_mem_res(ICH_RES_MEM_GCS);
+> >  		res->start = base_addr + ACPIBASE_GCS_OFF;
+> >  		res->end = base_addr + ACPIBASE_GCS_END;
+> > +	} else {
+> So I suppose there is no v3 for the iTCO ? If we're expecting all versions
+> after 1 to have a memory mapped region, we should have something like:
+> 
+> --- a/drivers/mfd/lpc_ich.c
+> +++ b/drivers/mfd/lpc_ich.c
+> @@ -830,7 +830,10 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev
+> *dev,
+>          * we have to read RCBA from PCI Config space 0xf0 and use
+>          * it as base. GCS = RCBA + ICH6_GCS(0x3410).
+>          */
+> -       if (lpc_chipset_info[id->driver_data].iTCO_version == 2) {
+> +       if (lpc_chipset_info[id->driver_data].iTCO_version == 1) {
+> +               /* Don't register iomem for TCO ver 1 */
+> +               lpc_ich_cells[LPC_WDT].num_resources--;
+> +       } else {
+>                 pci_read_config_dword(dev, RCBABASE, &base_addr_cfg);
+>                 base_addr = base_addr_cfg & 0xffffc000;
+>                 if (!(base_addr_cfg & 1)) {
 
-Reported-by: Doug Anderson <dianders@chromium.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/pstore/ram.c           |   10 +++++++---
- include/linux/time.h      |    1 +
- kernel/time/timekeeping.c |   29 ++++++++++++++++++++++++-----
- 3 files changed, 32 insertions(+), 8 deletions(-)
+Hi Samuel,
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 1a4f6da..dacfe78 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -168,12 +168,16 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
- {
- 	char *hdr;
--	struct timeval timestamp;
-+	struct timespec timestamp;
- 	size_t len;
- 
--	do_gettimeofday(&timestamp);
-+	/* Report zeroed timestamp if called before timekeeping has resumed. */
-+	if (__getnstimeofday(&timestamp)) {
-+		timestamp.tv_sec = 0;
-+		timestamp.tv_nsec = 0;
-+	}
- 	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
--		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
-+		(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000));
- 	WARN_ON_ONCE(!hdr);
- 	len = hdr ? strlen(hdr) : 0;
- 	persistent_ram_write(prz, hdr, len);
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 4d358e9..0015aea 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -158,6 +158,7 @@ extern int do_setitimer(int which, struct itimerval *value,
- 			struct itimerval *ovalue);
- extern unsigned int alarm_setitimer(unsigned int seconds);
- extern int do_getitimer(int which, struct itimerval *value);
-+extern int __getnstimeofday(struct timespec *tv);
- extern void getnstimeofday(struct timespec *tv);
- extern void getrawmonotonic(struct timespec *ts);
- extern void getnstime_raw_and_real(struct timespec *ts_raw,
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e424970..84820dc 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -220,19 +220,18 @@ static void timekeeping_forward_now(struct timekeeper *tk)
- }
- 
- /**
-- * getnstimeofday - Returns the time of day in a timespec
-+ * __getnstimeofday - Returns the time of day in a timespec.
-  * @ts:		pointer to the timespec to be set
-  *
-- * Returns the time of day in a timespec.
-+ * Updates the time of day in the timespec.
-+ * Returns 0 on success, or -ve when suspended (timespec will be undefined).
-  */
--void getnstimeofday(struct timespec *ts)
-+int __getnstimeofday(struct timespec *ts)
- {
- 	struct timekeeper *tk = &timekeeper;
- 	unsigned long seq;
- 	s64 nsecs = 0;
- 
--	WARN_ON(timekeeping_suspended);
--
- 	do {
- 		seq = read_seqbegin(&tk->lock);
- 
-@@ -243,6 +242,26 @@ void getnstimeofday(struct timespec *ts)
- 
- 	ts->tv_nsec = 0;
- 	timespec_add_ns(ts, nsecs);
-+
-+	/*
-+	 * Do not bail out early, in case there were callers still using
-+	 * the value, even in the face of the WARN_ON.
-+	 */
-+	if (unlikely(timekeeping_suspended))
-+		return -EAGAIN;
-+	return 0;
-+}
-+EXPORT_SYMBOL(__getnstimeofday);
-+
-+/**
-+ * getnstimeofday - Returns the time of day in a timespec.
-+ * @ts:		pointer to the timespec to be set
-+ *
-+ * Returns the time of day in a timespec (WARN if suspended).
-+ */
-+void getnstimeofday(struct timespec *ts)
-+{
-+	WARN_ON(__getnstimeofday(ts));
- }
- EXPORT_SYMBOL(getnstimeofday);
- 
--- 
-1.7.9.5
+I have no objection to your version.
 
+FWIW, the iTCO_version field is exclusively a driver construct used to
+differentiate southbridges that support memory-mapped I/O to the TCO
+registers from those that only support port-based I/O. IOW, there's no
+intrinsic meaning to the values and could be represented with a bool
+type instead.
 
--- 
-Kees Cook
-Chrome OS Security
+Regards,
+Peter Hurley
+
