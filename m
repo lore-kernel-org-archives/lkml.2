@@ -1,162 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2KSXgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 18:36:14 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48179 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab2KSXfM (ORCPT
+	id S1753211Ab2KSXif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:38:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52781 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab2KSXie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 18:35:12 -0500
-X-AuditID: 9c93016f-b7b42ae000004383-d7-50aac22ee840
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Luigi Semenzato <semenzato@google.com>, gaowanlong@cn.fujitsu.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v5 0/3] zram/zsmalloc promotion
-Date: Tue, 20 Nov 2012 08:35:10 +0900
-Message-Id: <1353368113-1971-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 19 Nov 2012 18:38:34 -0500
+Date: Mon, 19 Nov 2012 15:38:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 1/5] mm: introduce new field "managed_pages" to
+ struct zone
+Message-Id: <20121119153832.437c7e59.akpm@linux-foundation.org>
+In-Reply-To: <1353254850-27336-2-git-send-email-jiang.liu@huawei.com>
+References: <20121115112454.e582a033.akpm@linux-foundation.org>
+	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
+	<1353254850-27336-2-git-send-email-jiang.liu@huawei.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset promotes zram/zsmalloc from staging.
-Both are very clean and zram have been used by many embedded product
-for a long time. For example,major TV companys have used zram as swap
-since two years ago and recently our production team released android
-smart phone with zram which is used as swap, too. And there is trial
-to use zram as swap in ChromeOS project, too. (Although they report
-some problem recently, it was not a problem of zram). When you google
-zram, you can find various usecase in xda-developers.
+On Mon, 19 Nov 2012 00:07:26 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
-The benefit of zram is very clear. With my experience, the benefit
-in real practice was to remove jitter of video application.
-It would be effect of efficient memory usage by compression but more
-issue is whether swap is there or not in the system. As you know,
-recent mobile platform have used JAVA so there are lots of anonymous pages.
-But embedded system normally doesn't use eMMC or SDCard as swap because
-there is wear-leveling issue and latency so we can't reclaim anymous pages.
-It sometime ends up making system very slow when it requires to get
-contiguous memory and even many file-backed pages are evicted. It's
-never what embedded people want it. Zram is one of best solution for that.
+> Currently a zone's present_pages is calcuated as below, which is
+> inaccurate and may cause trouble to memory hotplug.
+> 	spanned_pages - absent_pages - memmap_pages - dma_reserve.
+> 
+> During fixing bugs caused by inaccurate zone->present_pages, we found
+> zone->present_pages has been abused. The field zone->present_pages
+> may have different meanings in different contexts:
+> 1) pages existing in a zone.
+> 2) pages managed by the buddy system.
+> 
+> For more discussions about the issue, please refer to:
+> http://lkml.org/lkml/2012/11/5/866
+> https://patchwork.kernel.org/patch/1346751/
+> 
+> This patchset tries to introduce a new field named "managed_pages" to
+> struct zone, which counts "pages managed by the buddy system". And
+> revert zone->present_pages to count "physical pages existing in a zone",
+> which also keep in consistence with pgdat->node_present_pages.
+> 
+> We will set an initial value for zone->managed_pages in function
+> free_area_init_core() and will be adjusted later if the initial value is
+> inaccurate.
+> 
+> For DMA/normal zones, the initial value is set to:
+> 	(spanned_pages - absent_pages - memmap_pages - dma_reserve)
+> Later zone->managed_pages will be adjusted to the accurate value when
+> the bootmem allocator frees all free pages to the buddy system in
+> function free_all_bootmem_node() and free_all_bootmem().
+> 
+> The bootmem allocator doesn't touch highmem pages, so highmem zones'
+> managed_pages is set to the accurate value "spanned_pages - absent_pages"
+> in function free_area_init_core() and won't be updated anymore.
+> 
+> This patch also adds a new field "managed_pages" to /proc/zoneinfo
+> and sysrq showmem.
 
-Quote from Luigi
-"
-Since Chrome OS was mentioned: the main reason why we don't use swap
-to a disk (rotating or SSD) is because it doesn't degrade gracefully
-and leads to a bad interactive experience.  Generally we prefer to
-manage RAM at a higher level, by transparently killing and restarting
-processes.  But we noticed that zram is fast enough to be competitive
-with the latter, and it lets us make more efficient use of the
-available RAM.
-"
+hoo boy, what a mess we made.  I'd like to merge these patches and get
+them into -next for some testing, but -next has stopped for a couple of
+weeks.  Oh well, let's see what can be done.
 
-It's time to go out of staging.
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -480,6 +480,7 @@ struct zone {
+>  	 */
+>  	unsigned long		spanned_pages;	/* total size, including holes */
+>  	unsigned long		present_pages;	/* amount of memory (excluding holes) */
+> +	unsigned long		managed_pages;	/* pages managed by the Buddy */
 
-Greg, Jens is already OK that zram is located under driver/blocks/.
-The issue remained is where we put zsmalloc. The candidate is two
-under mm/ or under lib/. Konrad and Nitin wanted to put zsmalloc
-into lib/ instead of mm/.
+Can you please add a nice big comment over these three fields which
+fully describes what they do and the relationship between them? 
+Basically that stuff that's in the changelog.
 
-Quote from Nitin
-"
-I think mm/ directory should only contain the code which is intended
-for global use such as the slab allocator, page reclaim code etc.
-zsmalloc is used by only one (or possibly two) drivers, so lib/ seems
-to be the right place.
-"
+Also, the existing comment tells us that spanned_pages and
+present_pages are protected by span_seqlock but has not been updated to
+describe the locking (if any) for managed_pages.
 
-Quote from Konrand
-"
-I like the idea of keeping it in /lib or /mm. Actually 'lib' sounds more
-appropriate since it is dealing with storing a bunch of pages in a nice
-layout for great density purposes.
-"
+>  	/*
+>  	 * rarely used fields:
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index f468185..a813e5b 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -229,6 +229,15 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+>  	return count;
+>  }
+>  
+> +static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
+> +{
+> +	struct zone *z;
+> +
+> +	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+> +		if (!is_highmem(z))
 
-In fact, there is some history about that.
+Needs a comment explaining why we skip the highmem zone, please.
 
-Why I put zsmalloc into under mm firstly was that Andrew had a concern
-about using strut page's some fields freely in zsmalloc so he wanted
-to maintain it in mm/ if I remember correctly.
+> +			z->managed_pages = 0;
+> +}
+> +
+>
+> ...
+>
+> @@ -106,6 +106,7 @@ static void get_page_bootmem(unsigned long info,  struct page *page,
+>  void __ref put_page_bootmem(struct page *page)
+>  {
+>  	unsigned long type;
+> +	static DEFINE_MUTEX(ppb_lock);
+>  
+>  	type = (unsigned long) page->lru.next;
+>  	BUG_ON(type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+> @@ -115,7 +116,9 @@ void __ref put_page_bootmem(struct page *page)
+>  		ClearPagePrivate(page);
+>  		set_page_private(page, 0);
+>  		INIT_LIST_HEAD(&page->lru);
+> +		mutex_lock(&ppb_lock);
+>  		__free_pages_bootmem(page, 0);
+> +		mutex_unlock(&ppb_lock);
 
-So I and Nitin tried to ask the opinion to akpm several times
-(at least 6 and even I sent such patch a few month ago) but didn't get
-any reply from him or any mm guys so I guess mm guys doesn't have any
-concern about that any more.
+The mutex is odd.  Nothing in the changelog, no code comment. 
+__free_pages_bootmem() is called from a lot of places but only this one
+has locking.  I'm madly guessing that the lock is here to handle two or
+more concurrent memory hotpluggings, but I shouldn't need to guess!!
 
-In point of view that it's an another slab-like allocator,
-it might be proper under mm but it's not popular as current mm's
-allocators(/SLUB/SLOB and page allocator).
-
-Frankly speaking, I don't care whether we put it to mm/ or lib/.
-It seems contributors(ex, Nitin, Konrad, Pekka, Seth and Dan) like lib/
-and other mm guys are still silent. That's why I am biased into lib/ now.
-
-If someone yell we should keep it to mm/ by logical claim, I can change
-my mind easily. Please raise your hand.
-
-If Andrew doesn't have a concern about that any more, I would like to
-locate it into /lib.
-
-This patchset is based on next-20121115.
-
-Minchan Kim (3):
-  zsmalloc: promote to lib/
-  zram: promote zram from staging
-  zram: select ZSMALLOC when ZRAM is configured
-
- drivers/block/Kconfig                    |    1 +
- drivers/block/Makefile                   |    1 +
- drivers/block/zram/Kconfig               |   26 +
- drivers/block/zram/Makefile              |    3 +
- drivers/block/zram/zram.txt              |   76 +++
- drivers/block/zram/zram_drv.c            |  776 ++++++++++++++++++++++
- drivers/block/zram/zram_drv.h            |  119 ++++
- drivers/block/zram/zram_sysfs.c          |  225 +++++++
- drivers/staging/Kconfig                  |    4 -
- drivers/staging/Makefile                 |    2 -
- drivers/staging/zcache/zcache-main.c     |    4 +-
- drivers/staging/zram/Kconfig             |   25 -
- drivers/staging/zram/Makefile            |    3 -
- drivers/staging/zram/zram.txt            |   76 ---
- drivers/staging/zram/zram_drv.c          |  776 ----------------------
- drivers/staging/zram/zram_drv.h          |  120 ----
- drivers/staging/zram/zram_sysfs.c        |  225 -------
- drivers/staging/zsmalloc/Kconfig         |   10 -
- drivers/staging/zsmalloc/Makefile        |    3 -
- drivers/staging/zsmalloc/zsmalloc-main.c | 1064 ------------------------------
- drivers/staging/zsmalloc/zsmalloc.h      |   43 --
- include/linux/zsmalloc.h                 |   43 ++
- lib/Kconfig                              |   18 +
- lib/Makefile                             |    1 +
- lib/zsmalloc.c                           | 1064 ++++++++++++++++++++++++++++++
- 25 files changed, 2355 insertions(+), 2353 deletions(-)
- create mode 100644 drivers/block/zram/Kconfig
- create mode 100644 drivers/block/zram/Makefile
- create mode 100644 drivers/block/zram/zram.txt
- create mode 100644 drivers/block/zram/zram_drv.c
- create mode 100644 drivers/block/zram/zram_drv.h
- create mode 100644 drivers/block/zram/zram_sysfs.c
- delete mode 100644 drivers/staging/zram/Kconfig
- delete mode 100644 drivers/staging/zram/Makefile
- delete mode 100644 drivers/staging/zram/zram.txt
- delete mode 100644 drivers/staging/zram/zram_drv.c
- delete mode 100644 drivers/staging/zram/zram_drv.h
- delete mode 100644 drivers/staging/zram/zram_sysfs.c
- delete mode 100644 drivers/staging/zsmalloc/Kconfig
- delete mode 100644 drivers/staging/zsmalloc/Makefile
- delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
- delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
- create mode 100644 include/linux/zsmalloc.h
- create mode 100644 lib/zsmalloc.c
-
--- 
-1.7.9.5
+>  	}
+>  
+>  }
+>
+> ...
+>
 
