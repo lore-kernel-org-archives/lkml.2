@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2KSV46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:56:58 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:40189 "EHLO smtp.outflux.net"
+	id S1752665Ab2KSWBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:01:04 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:47887 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab2KSV45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:56:57 -0500
-Date: Mon, 19 Nov 2012 13:56:53 -0800
+	id S1751904Ab2KSWBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 17:01:02 -0500
+Date: Mon, 19 Nov 2012 14:00:51 -0800
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@google.com>,
-        Steve Grubb <sgrubb@redhat.com>, linux-audit@redhat.com
-Subject: [PATCH] audit: create explicit AUDIT_SECCOMP event type
-Message-ID: <20121119215653.GA12715@www.outflux.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH] audit: catch possible NULL audit buffers
+Message-ID: <20121119220051.GA16851@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,87 +21,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The seccomp path was using AUDIT_ANOM_ABEND from when seccomp mode 1
-could only kill a process. While we still want to make sure an audit
-record is forced on a kill, this should use a separate record type since
-seccomp mode 2 introduces other behaviors. In the case of "handled"
-behaviors (process wasn't killed), only emit a record if the process is
-under inspection.
+It's possible for audit_log_start() to return NULL. Handle it in the
+various callers.
 
-Cc: Julien Tinnes <jln@google.com>
-Cc: Will Drewry <wad@google.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
----
- include/linux/audit.h      |    3 ++-
- include/uapi/linux/audit.h |    1 +
- kernel/auditsc.c           |   14 +++++++++++---
- 3 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index bce729a..9d5104d 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -157,7 +157,8 @@ void audit_core_dumps(long signr);
+---
+This leaves out the change to the audit_seccomp, since I fixed that in
+a separate patch ("audit: create explicit AUDIT_SECCOMP event type").
+---
+ kernel/audit.c       |    4 ++++
+ kernel/audit_tree.c  |   26 +++++++++++++++++---------
+ kernel/audit_watch.c |    2 ++
+ kernel/auditsc.c     |    6 ++++--
+ 4 files changed, 27 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 40414e9..a219998 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -272,6 +272,8 @@ static int audit_log_config_change(char *function_name, int new, int old,
+ 	int rc = 0;
  
- static inline void audit_seccomp(unsigned long syscall, long signr, int code)
- {
--	if (unlikely(!audit_dummy_context()))
-+	/* Force a record to be reported if a signal was delivered. */
-+	if (signr || unlikely(!audit_dummy_context()))
- 		__audit_seccomp(syscall, signr, code);
+ 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
++	if (unlikely(!ab))
++		return rc;
+ 	audit_log_format(ab, "%s=%d old=%d auid=%u ses=%u", function_name, new,
+ 			 old, from_kuid(&init_user_ns, loginuid), sessionid);
+ 	if (sid) {
+@@ -619,6 +621,8 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
+ 	}
+ 
+ 	*ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
++	if (unlikely(!*ab))
++		return rc;
+ 	audit_log_format(*ab, "pid=%d uid=%u auid=%u ses=%u",
+ 			 task_tgid_vnr(current),
+ 			 from_kuid(&init_user_ns, current_uid()),
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index ed206fd..29dc061 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -449,11 +449,26 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 	return 0;
  }
  
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 76352ac..09a2d94 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -106,6 +106,7 @@
- #define AUDIT_MMAP		1323	/* Record showing descriptor and flags in mmap */
- #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains */
- #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
-+#define AUDIT_SECCOMP		1326	/* Secure Computing event */
- 
- #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
- #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 2f186ed..157e989 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2735,7 +2735,7 @@ void __audit_mmap_fd(int fd, int flags)
- 	context->type = AUDIT_MMAP;
- }
- 
--static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
-+static void audit_log_task(struct audit_buffer *ab)
- {
- 	kuid_t auid, uid;
- 	kgid_t gid;
-@@ -2753,6 +2753,11 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
- 	audit_log_task_context(ab);
- 	audit_log_format(ab, " pid=%d comm=", current->pid);
- 	audit_log_untrustedstring(ab, current->comm);
-+}
-+
-+static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
++static void audit_log_remove_rule(struct audit_krule *rule)
 +{
-+	audit_log_task(ab);
- 	audit_log_format(ab, " reason=");
- 	audit_log_string(ab, reason);
- 	audit_log_format(ab, " sig=%ld", signr);
-@@ -2783,8 +2788,11 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
- {
- 	struct audit_buffer *ab;
- 
--	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
--	audit_log_abend(ab, "seccomp", signr);
-+	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
++	struct audit_buffer *ab;
++
++	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
 +	if (unlikely(!ab))
 +		return;
-+	audit_log_task(ab);
-+	audit_log_format(ab, " sig=%ld", signr);
- 	audit_log_format(ab, " syscall=%ld", syscall);
- 	audit_log_format(ab, " compat=%d", is_compat_task());
- 	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
++	audit_log_format(ab, "op=");
++	audit_log_string(ab, "remove rule");
++	audit_log_format(ab, " dir=");
++	audit_log_untrustedstring(ab, rule->tree->pathname);
++	audit_log_key(ab, rule->filterkey);
++	audit_log_format(ab, " list=%d res=1", rule->listnr);
++	audit_log_end(ab);
++}
++
+ static void kill_rules(struct audit_tree *tree)
+ {
+ 	struct audit_krule *rule, *next;
+ 	struct audit_entry *entry;
+-	struct audit_buffer *ab;
+ 
+ 	list_for_each_entry_safe(rule, next, &tree->rules, rlist) {
+ 		entry = container_of(rule, struct audit_entry, rule);
+@@ -461,14 +476,7 @@ static void kill_rules(struct audit_tree *tree)
+ 		list_del_init(&rule->rlist);
+ 		if (rule->tree) {
+ 			/* not a half-baked one */
+-			ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
+-			audit_log_format(ab, "op=");
+-			audit_log_string(ab, "remove rule");
+-			audit_log_format(ab, " dir=");
+-			audit_log_untrustedstring(ab, rule->tree->pathname);
+-			audit_log_key(ab, rule->filterkey);
+-			audit_log_format(ab, " list=%d res=1", rule->listnr);
+-			audit_log_end(ab);
++			audit_log_remove_rule(rule);
+ 			rule->tree = NULL;
+ 			list_del_rcu(&entry->list);
+ 			list_del(&entry->rule.list);
+diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
+index 9a9ae6e..3e29b7a 100644
+--- a/kernel/audit_watch.c
++++ b/kernel/audit_watch.c
+@@ -240,6 +240,8 @@ static void audit_watch_log_rule_change(struct audit_krule *r, struct audit_watc
+ 	if (audit_enabled) {
+ 		struct audit_buffer *ab;
+ 		ab = audit_log_start(NULL, GFP_NOFS, AUDIT_CONFIG_CHANGE);
++		if (unlikely(!ab))
++			return;
+ 		audit_log_format(ab, "auid=%u ses=%u op=",
+ 				 from_kuid(&init_user_ns, audit_get_loginuid(current)),
+ 				 audit_get_sessionid(current));
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 2f186ed..f515ee9 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1481,14 +1481,14 @@ static void show_special(struct audit_context *context, int *call_panic)
+ 			audit_log_end(ab);
+ 			ab = audit_log_start(context, GFP_KERNEL,
+ 					     AUDIT_IPC_SET_PERM);
++			if (unlikely(!ab))
++				return;
+ 			audit_log_format(ab,
+ 				"qbytes=%lx ouid=%u ogid=%u mode=%#ho",
+ 				context->ipc.qbytes,
+ 				context->ipc.perm_uid,
+ 				context->ipc.perm_gid,
+ 				context->ipc.perm_mode);
+-			if (!ab)
+-				return;
+ 		}
+ 		break; }
+ 	case AUDIT_MQ_OPEN: {
+@@ -2775,6 +2775,8 @@ void audit_core_dumps(long signr)
+ 		return;
+ 
+ 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
++	if (unlikely(!ab))
++		return;
+ 	audit_log_abend(ab, "memory violation", signr);
+ 	audit_log_end(ab);
+ }
 -- 
 1.7.9.5
 
