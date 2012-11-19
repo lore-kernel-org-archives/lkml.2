@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2KSJFl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 04:05:41 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:17302 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2KSJFk (ORCPT
+	id S1753410Ab2KSJGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 04:06:41 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58456 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab2KSJGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 04:05:40 -0500
-Message-ID: <50A9F5F3.3050907@huawei.com>
-Date: Mon, 19 Nov 2012 17:03:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <daniel.wagner@bmw-carit.de>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <john.r.fastabend@intel.com>, <nhorman@tuxdriver.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] cgroup: add cgroup->id
-References: <1353093624-22608-1-git-send-email-tj@kernel.org> <1353093624-22608-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1353093624-22608-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Mon, 19 Nov 2012 04:06:39 -0500
+From: Daniel J Blueman <daniel@quora.org>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@quora.org>
+Subject: [PATCH] AHCI: fix build warning when PM && !PM_SLEEP
+Date: Mon, 19 Nov 2012 17:06:26 +0800
+Message-Id: <1353315986-27317-1-git-send-email-daniel@quora.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/17 3:20, Tejun Heo wrote:
-> With the introduction of generic cgroup hierarchy iterators, css_id is
-> being phased out.  It was unnecessarily complex, id'ing the wrong
-> thing (cgroups need IDs, not CSSes) and has other oddities like not
-> being available at ->css_alloc().
-> 
-> This patch adds cgroup->id, which is a simple per-hierarchy
-> ida-allocated ID which is assigned before ->css_alloc() and released
-> after ->css_free().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Change the conditional around ahci_suspend/resume to the same as the
+SIMPLE_DEV_PM_OPS macro that uses these functions, fixing an unused build
+warning.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+---
+ drivers/ata/ahci_platform.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index b1ae480..b7078af 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -238,7 +238,7 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int ahci_suspend(struct device *dev)
+ {
+ 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+-- 
+1.7.10.4
 
