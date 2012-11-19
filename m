@@ -1,67 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab2KSHRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 02:17:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21874 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab2KSHRx (ORCPT
+	id S1752278Ab2KSHYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 02:24:16 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:34335
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751248Ab2KSHYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 02:17:53 -0500
-Date: Mon, 19 Nov 2012 10:17:33 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johan Meiring <johanmeiring@gmail.com>
-Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] staging: wlags49_h2: wl_if.h: fixes several coding
- style issues
-Message-ID: <20121119071732.GD6135@mwanda>
-References: <1353084883-8860-1-git-send-email-johanmeiring@gmail.com>
+	Mon, 19 Nov 2012 02:24:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1de0h1202h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 1/2] mtd: remove the de-select chip code in nand_release_device()
+Date: Mon, 19 Nov 2012 14:43:29 +0800
+Message-ID: <1353307410-17529-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353084883-8860-1-git-send-email-johanmeiring@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 06:54:43PM +0200, Johan Meiring wrote:
-> This commit sorts out several coding style issues, including the use of C99 // comments, spaces at the start of lines, spaces before tabs, incorrect brace placement, and macros with complex values that have not been wrapped in parentheses.  The only remaining issue is the use of typedefs in two instances, but that's something that the original author might need to have a look at.
-> 
+The nand_get_device() does not select the chip, but nand_release_device()
+does de-select the chip. It is really strange.
 
-Could you line wrap your commit message at something like 72-73
-characters?  I think that's they rule on email, but I forget.
+With the current code, nand_sync() will de-select the chip, even if the chip
+has never been selected.
 
-Normally we ask that people break these kinds of changes into
-multiple patches.
-[patch 1/x] Staging: wlags49_h2: wl_if.h: use tab indents
-[patch 2/x] Staging: wlags49_h2: wl_if.h: fix comment style
-etc...
+To make the balance of select/de-select chip, it's better to remove the
+de-select chip code in nand_release_device() which makes the code more
+clear.
 
-> +/*
-> +#define HCF_MIN_COMM_QUALITY        0
-> +#define HCF_MAX_COMM_QUALITY        92
-> +#define HCF_MIN_SIGNAL_LEVEL        47
-> +#define HCF_MAX_SIGNAL_LEVEL        138
-> +#define HCF_MIN_NOISE_LEVEL         47
-> +#define HCF_MAX_NOISE_LEVEL         138
-> +#define HCF_0DBM_OFFSET             149
-> +*/
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/nand_base.c |   35 +++++++++++++++++++++++++----------
+ 1 files changed, 25 insertions(+), 10 deletions(-)
 
-Just delete this dead code.
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 6eef7fb..861a87d 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -130,15 +130,12 @@ static int check_offs_len(struct mtd_info *mtd,
+  * nand_release_device - [GENERIC] release chip
+  * @mtd: MTD device structure
+  *
+- * Deselect, release chip lock and wake up anyone waiting on the device.
++ * Release chip lock and wake up anyone waiting on the device.
+  */
+ static void nand_release_device(struct mtd_info *mtd)
+ {
+ 	struct nand_chip *chip = mtd->priv;
+ 
+-	/* De-select the NAND device */
+-	chip->select_chip(mtd, -1);
+-
+ 	/* Release the controller and the chip */
+ 	spin_lock(&chip->controller->lock);
+ 	chip->controller->active = NULL;
+@@ -333,8 +330,10 @@ static int nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
+ 		i++;
+ 	} while (!res && i < 2 && (chip->bbt_options & NAND_BBT_SCAN2NDPAGE));
+ 
+-	if (getchip)
++	if (getchip) {
++		chip->select_chip(mtd, -1);
+ 		nand_release_device(mtd);
++	}
+ 
+ 	return res;
+ }
+@@ -952,6 +951,7 @@ int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ 	ret = __nand_unlock(mtd, ofs, len, 0);
+ 
+ out:
++	chip->select_chip(mtd, -1);
+ 	nand_release_device(mtd);
+ 
+ 	return ret;
+@@ -1016,6 +1016,7 @@ int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ 	ret = __nand_unlock(mtd, ofs, len, 0x1);
+ 
+ out:
++	chip->select_chip(mtd, -1);
+ 	nand_release_device(mtd);
+ 
+ 	return ret;
+@@ -1552,6 +1553,7 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
+ 			chip->select_chip(mtd, chipnr);
+ 		}
+ 	}
++	chip->select_chip(mtd, -1);
+ 
+ 	ops->retlen = ops->len - (size_t) readlen;
+ 	if (oob)
+@@ -1806,6 +1808,7 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
+ 			chip->select_chip(mtd, chipnr);
+ 		}
+ 	}
++	chip->select_chip(mtd, -1);
+ 
+ 	ops->oobretlen = ops->ooblen - readlen;
+ 
+@@ -2188,8 +2191,10 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
+ 	chip->select_chip(mtd, chipnr);
+ 
+ 	/* Check, if it is write protected */
+-	if (nand_check_wp(mtd))
+-		return -EIO;
++	if (nand_check_wp(mtd)) {
++		ret = -EIO;
++		goto err_out;
++	}
+ 
+ 	realpage = (int)(to >> chip->page_shift);
+ 	page = realpage & chip->pagemask;
+@@ -2201,8 +2206,10 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
+ 		chip->pagebuf = -1;
+ 
+ 	/* Don't allow multipage oob writes with offset */
+-	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen))
+-		return -EINVAL;
++	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen)) {
++		ret = -EINVAL;
++		goto err_out;
++	}
+ 
+ 	while (1) {
+ 		int bytes = mtd->writesize;
+@@ -2253,6 +2260,9 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
+ 	ops->retlen = ops->len - writelen;
+ 	if (unlikely(oob))
+ 		ops->oobretlen = ops->ooblen;
++
++err_out:
++	chip->select_chip(mtd, -1);
+ 	return ret;
+ }
+ 
+@@ -2379,8 +2389,10 @@ static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
+ 	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
+ 
+ 	/* Check, if it is write protected */
+-	if (nand_check_wp(mtd))
++	if (nand_check_wp(mtd)) {
++		chip->select_chip(mtd, -1);
+ 		return -EROFS;
++	}
+ 
+ 	/* Invalidate the page cache, if we write to the cached page */
+ 	if (page == chip->pagebuf)
+@@ -2393,6 +2405,8 @@ static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
+ 	else
+ 		status = chip->ecc.write_oob(mtd, chip, page & chip->pagemask);
+ 
++	chip->select_chip(mtd, -1);
++
+ 	if (status)
+ 		return status;
+ 
+@@ -2625,6 +2639,7 @@ erase_exit:
+ 	ret = instr->state == MTD_ERASE_DONE ? 0 : -EIO;
+ 
+ 	/* Deselect and wake up anyone waiting on the device */
++	chip->select_chip(mtd, -1);
+ 	nand_release_device(mtd);
+ 
+ 	/* Do call back function */
+-- 
+1.7.0.4
 
-> +#define SIOCSIWNETNAME              (SIOCDEVPRIVATE+1)
-> +#define SIOCGIWNETNAME              (SIOCDEVPRIVATE+2)
-> +#define SIOCSIWSTANAME              (SIOCDEVPRIVATE+3)
-> +#define SIOCGIWSTANAME              (SIOCDEVPRIVATE+4)
-> +#define SIOCSIWPORTTYPE             (SIOCDEVPRIVATE+5)
-> +#define SIOCGIWPORTTYPE             (SIOCDEVPRIVATE+6)
-
-Could you put spaces around the '+' operator?
-#define SIOCSIWNETNAME		(SIOCDEVPRIVATE + 1)
-
-regards,
-dan carpenter
 
