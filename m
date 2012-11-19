@@ -1,73 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2KSAxc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 19:53:32 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55933 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2KSAxb (ORCPT
+	id S1752796Ab2KSAxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 19:53:49 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52433 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2KSAxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 19:53:31 -0500
-Date: Sun, 18 Nov 2012 16:50:21 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jenny TC <jenny.tc@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com
-Subject: Re: [PATCH 2/7] power_supply: Add charger control properties
-Message-ID: <20121119005021.GM29066@lizard.sbx05977.paloaca.wayport.net>
-References: <1350578646-3315-1-git-send-email-jenny.tc@intel.com>
- <1350578646-3315-3-git-send-email-jenny.tc@intel.com>
+	Sun, 18 Nov 2012 19:53:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1350578646-3315-3-git-send-email-jenny.tc@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121116151619.aa60acff.akpm@linux-foundation.org>
+References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+	<1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
+	<20121116151619.aa60acff.akpm@linux-foundation.org>
+Date: Mon, 19 Nov 2012 08:53:46 +0800
+Message-ID: <CAA_GA1crg1ngNx2MAv-fJbgKYqSKmkapZHq=8F4QcNgFja1A-w@mail.gmail.com>
+Subject: Re: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
+From: Bob Liu <lliubbo@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
+        mgorman@suse.de, fschmaus@gmail.com, andor.daam@googlemail.com,
+        ilendir@googlemail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 10:14:01PM +0530, Jenny TC wrote:
-> The battery charger needs to have control path along
-> with the reporting charger properties. In existing solutions
-> this is implemented using regulator framework. A regulator
-> framework doesn't fit a charger driver requirement because of the
-> following reason
-> Charger needs support two paths - charger path (charger to platform)
-> and charging (charger to battery).Disabling the charging path alone
-> (eg over battery temperature) will allow the platform to work with
-> power from charger without discharging the battery. And the charger
-> may need to be disabled completely based on the charger temperature
-> or the platform temperature.
-> Charger has more than one pair of voltage/current to control (CC,CV,INLMT)
-> These features will not directly fit in the regulator framework
-> 
-> Since the charger driver sits in the power supply subsystem it make sense
-> to add the properties to control the charger.
-> 
-> Also this patch adds/modify the power supply properties to meet the
-> requirements for charger control
-> 
-> Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> ---
->  drivers/power/power_supply_sysfs.c |   16 ++++++++++++----
->  include/linux/power_supply.h       |   24 ++++++++++++++++--------
->  2 files changed, 28 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-> index 40fa3b7..3166d00 100644
-> --- a/drivers/power/power_supply_sysfs.c
-> +++ b/drivers/power/power_supply_sysfs.c
-> @@ -160,12 +160,13 @@ static struct device_attribute power_supply_attrs[] = {
->  	POWER_SUPPLY_ATTR(charge_now),
->  	POWER_SUPPLY_ATTR(charge_avg),
->  	POWER_SUPPLY_ATTR(charge_counter),
-> -	POWER_SUPPLY_ATTR(constant_charge_current),
-> -	POWER_SUPPLY_ATTR(constant_charge_current_max),
-> -	POWER_SUPPLY_ATTR(constant_charge_voltage),
-> -	POWER_SUPPLY_ATTR(constant_charge_voltage_max),
+On Sat, Nov 17, 2012 at 7:16 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 14 Nov 2012 13:57:06 -0500
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>
+>> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+>>
+>> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
+>> built/loaded as modules rather than built-in and enabled by a boot parameter,
+>> this patch provides "lazy initialization", allowing backends to register to
+>> frontswap even after swapon was run. Before a backend registers all calls
+>> to init are recorded and the creation of tmem_pools delayed until a backend
+>> registers or until a frontswap put is attempted.
+>>
+>>
+>> ...
+>>
+>> --- a/mm/frontswap.c
+>> +++ b/mm/frontswap.c
+>> @@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
+>>  static inline void inc_frontswap_failed_stores(void) { }
+>>  static inline void inc_frontswap_invalidates(void) { }
+>>  #endif
+>> +
+>> +/*
+>> + * When no backend is registered all calls to init are registered and
+>
+> What is "init"?  Spell it out fully, please.
+>
 
-Sorry, but you can't just remove properites like this. They're already
-used by a lot of drivers.
+I think it's frontswap_init().
+swapon will call frontswap_init() and in it we need to call init
+function of backends with some parameters
+like swap_type.
 
+>> + * remembered but fail to create tmem_pools. When a backend registers with
+>> + * frontswap the previous calls to init are executed to create tmem_pools
+>> + * and set the respective poolids.
+>
+> Again, seems really hacky.  Why can't we just change callers so they
+> call things in the correct order?
+>
+
+I don't think so, because it asynchronous.
+
+The original idea was to make backends like zcache/tmem modularization.
+So that it's more convenient and flexible to use and testing.
+
+But currently callers like swapon only invoke frontswap_init() once,
+it fail if backend not registered.
+We have no way to notify swap to call frontswap_init() again when
+backend registered in some random time
+ in future.
+
+>> + * While no backend is registered all "puts", "gets" and "flushes" are
+>> + * ignored or fail.
+>> + */
+>> +static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
+>> +static bool backend_registered __read_mostly;
+>> +
+>>  /*
+>>   * Register operations for frontswap, returning previous thus allowing
+>>   * detection of multiple backends and possible nesting.
+>> @@ -87,9 +99,19 @@ static inline void inc_frontswap_invalidates(void) { }
+>>  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+>>  {
+>>       struct frontswap_ops old = frontswap_ops;
+>> +     int i;
+>>
+>>       frontswap_ops = *ops;
+>>       frontswap_enabled = true;
+>> +
+>> +     for (i = 0; i < MAX_SWAPFILES; i++) {
+>> +             if (test_and_clear_bit(i, need_init))
+>
+> ooh, that wasn't racy ;)
+>
+
+Hmm,  i agree.
+Seems some lock is needed, actually i think this code only support one
+backend at the same.
+So it's less risky.
+
+>> +                     (*frontswap_ops.init)(i);
+>> +     }
+>> +     /* We MUST have backend_registered called _after_ the frontswap_init's
+>> +      * have been called. Otherwise __frontswap_store might fail. */
+>
+> Comment makes no sense - backend_registered is not a function.
+>
+> Also, let's lay the comments out conventionally please:
+>
+>         /*
+>          * We MUST have backend_registered called _after_ the frontswap_init's
+>          * have been called. Otherwise __frontswap_store might fail.
+>          */
+>
+>
+>> +     barrier();
+>> +     backend_registered = true;
+>>       return old;
+>>  }
+>>  EXPORT_SYMBOL(frontswap_register_ops);
+>>
+>> ...
+>>
+>> @@ -226,12 +266,15 @@ void __frontswap_invalidate_area(unsigned type)
+>>  {
+>>       struct swap_info_struct *sis = swap_info[type];
+>>
+>> -     BUG_ON(sis == NULL);
+>> -     if (sis->frontswap_map == NULL)
+>> -             return;
+>> -     frontswap_ops.invalidate_area(type);
+>> -     atomic_set(&sis->frontswap_pages, 0);
+>> -     memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+>> +     if (backend_registered) {
+>> +             BUG_ON(sis == NULL);
+>> +             if (sis->frontswap_map == NULL)
+>> +                     return;
+>> +             (*frontswap_ops.invalidate_area)(type);
+>> +             atomic_set(&sis->frontswap_pages, 0);
+>> +             memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+>> +     }
+>> +     clear_bit(type, need_init);
+>>  }
+>>  EXPORT_SYMBOL(__frontswap_invalidate_area);
+>>
+>> @@ -364,6 +407,9 @@ static int __init init_frontswap(void)
+>>       debugfs_create_u64("invalidates", S_IRUGO,
+>>                               root, &frontswap_invalidates);
+>>  #endif
+>> +     bitmap_zero(need_init, MAX_SWAPFILES);
+>
+> unneeded?
+>
+>> +     frontswap_enabled = 1;
+>>       return 0;
+>>  }
+>>
+>> ...
+>>
+
+-- 
 Thanks,
-Anton.
+--Bob
