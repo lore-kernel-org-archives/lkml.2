@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab2KSKow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 05:44:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40645 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab2KSKov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 05:44:51 -0500
-X-IronPort-AV: E=Sophos;i="4.83,279,1352044800"; 
-   d="scan'208";a="6231070"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: ebiederm@xmission.com, serge@hallyn.com, akpm@linux-foundation.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH] pidns: remove the useless function is_container_init
-Date: Mon, 19 Nov 2012 18:44:42 +0800
-Message-Id: <1353321882-30491-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/19 18:44:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/19 18:44:37,
-	Serialize complete at 2012/11/19 18:44:37
+	id S1751811Ab2KSKsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 05:48:54 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:48970 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab2KSKsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 05:48:52 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: <linux-fsdevel@vger.kernel.org>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
+Date: Mon, 19 Nov 2012 02:48:40 -0800
+Message-ID: <87k3thc1h3.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+YAo5IBtNV/LWyoKeL4tj8ZiG/C+nUPeE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 0/6] mount namespace container enhancements
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-since commit 1cdcbec1a3372c0c49c59d292e708fd07b509f18,
-is_container_init has no used for a long time.
 
-just remove it.
+This patchset adds the ability for the root user in a user namespace to
+call choort, to create new mount namespaces, and to manipulate mount
+namespaces (mount/umount) that the userns root has created.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- include/linux/sched.h |    6 ------
- kernel/pid.c          |   15 ---------------
- 2 files changed, 0 insertions(+), 21 deletions(-)
+Additionally support is added namespace file descriptors and for setns
+on the namespace file descriptors.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..3fadd26 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1710,12 +1710,6 @@ static inline int is_global_init(struct task_struct *tsk)
- 	return tsk->pid == 1;
- }
- 
--/*
-- * is_container_init:
-- * check whether in the task is init in its own pid namespace.
-- */
--extern int is_container_init(struct task_struct *tsk);
--
- extern struct pid *cad_pid;
- 
- extern void free_task(struct task_struct *tsk);
-diff --git a/kernel/pid.c b/kernel/pid.c
-index aebd4f5..8ccdf0e 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -81,21 +81,6 @@ struct pid_namespace init_pid_ns = {
- };
- EXPORT_SYMBOL_GPL(init_pid_ns);
- 
--int is_container_init(struct task_struct *tsk)
--{
--	int ret = 0;
--	struct pid *pid;
--
--	rcu_read_lock();
--	pid = task_pid(tsk);
--	if (pid != NULL && pid->numbers[pid->level].nr == 1)
--		ret = 1;
--	rcu_read_unlock();
--
--	return ret;
--}
--EXPORT_SYMBOL(is_container_init);
--
- /*
-  * Note: disable interrupts while the pidmap_lock is held as an
-  * interrupt might come in and do read_lock(&tasklist_lock).
--- 
-1.7.7.6
+To keep total chaos from breaking out mount namespace file descriptors
+are not allowed to be mounted into a child mount namespace, and shared
+subtrees become slave subtrees when creating a new mount namespace in a
+different user namespace than it's parent.
 
+This series of changes is available in git from:
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git mntns-v53
+
+Baring problems I plan to merge these changes through my user namespace
+tree for 3.8
+
+Eric W. Biederman (5):
+      vfs: Allow chroot if you have CAP_SYS_CHROOT in your user namespace
+      vfs: Add setns support for the mount namespace
+      vfs: Add a user namespace reference from struct mnt_namespace
+      vfs: Only support slave subtrees across different user namespaces
+      vfs: Allow unprivileged manipulation of the mount namespace.
+
+Zhao Hongjiang (1):
+      userns: fix return value on mntns_install() failure
+
+ fs/mount.h                    |    2 +
+ fs/namespace.c                |  197 +++++++++++++++++++++++++++++++++--------
+ fs/open.c                     |    2 +-
+ fs/pnode.h                    |    1 +
+ fs/proc/namespaces.c          |    5 +
+ include/linux/fs.h            |    2 +
+ include/linux/mnt_namespace.h |    3 +-
+ include/linux/proc_fs.h       |    7 ++
+ kernel/nsproxy.c              |    2 +-
+ 9 files changed, 182 insertions(+), 39 deletions(-)
