@@ -1,138 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2KSATL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 19:19:11 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:10738 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752722Ab2KSATI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 19:19:08 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+8zyC7xLMXFMg6IXx+UbtLA+Nyv2i451g=
-Date: Sun, 18 Nov 2012 19:18:46 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Soren Moch <smoch@web.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20121119001846.GB22106@titan.lakedaemon.net>
-References: <1352356737-14413-1-git-send-email-m.szyprowski@samsung.com>
+	id S1752772Ab2KSAUc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 19:20:32 -0500
+Received: from mga14.intel.com ([143.182.124.37]:57477 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722Ab2KSAUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 19:20:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,275,1352102400"; 
+   d="scan'208";a="169930613"
+Date: Mon, 19 Nov 2012 01:20:27 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v2] mfd: Only unregister platform devices allocated by
+ the mfd core
+Message-ID: <20121119002027.GC18738@sortiz-mobl>
+References: <20121109161528.GA674@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352356737-14413-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121109161528.GA674@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek,
+Hi Charles,
 
-I've added the maintainers for mm/*.  Hopefully they can let us know if
-this is good for v3.8...
-
-thx,
-
-Jason.
-
-On Thu, Nov 08, 2012 at 07:38:57AM +0100, Marek Szyprowski wrote:
-> dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag, regardless
-> the flags provided by the caller. This causes excessive pruning of
-> emergency memory pools without any good reason. This patch changes the code
-> to correctly use gfp flags provided by the dmapool caller. This should
-> solve the dmapool usage on ARM architecture, where GFP_ATOMIC DMA
-> allocations can be served only from the special, very limited memory pool.
+On Fri, Nov 09, 2012 at 04:15:28PM +0000, Charles Keepax wrote:
+> mfd_remove_devices would iterate over all devices sharing a parent with
+> an mfd device regardless of whether they were allocated by the mfd core
+> or not. This especially caused problems when the device structure was
+> not contained within a platform_device, because to_platform_device is
+> used on each device pointer.
 > 
-> Reported-by: Soren Moch <smoch@web.de>
-> Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> This patch defines a device_type for mfd devices and checks this is
+> present from mfd_remove_devices_fn before processing the device.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 > ---
->  mm/dmapool.c |   27 +++++++--------------------
->  1 file changed, 7 insertions(+), 20 deletions(-)
-> 
-> diff --git a/mm/dmapool.c b/mm/dmapool.c
-> index c5ab33b..86de9b2 100644
-> --- a/mm/dmapool.c
-> +++ b/mm/dmapool.c
-> @@ -62,8 +62,6 @@ struct dma_page {		/* cacheable header for 'allocation' bytes */
->  	unsigned int offset;
->  };
->  
-> -#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
-> -
->  static DEFINE_MUTEX(pools_lock);
->  
->  static ssize_t
-> @@ -227,7 +225,6 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
->  		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
->  #endif
->  		pool_initialise_page(pool, page);
-> -		list_add(&page->page_list, &pool->page_list);
->  		page->in_use = 0;
->  		page->offset = 0;
->  	} else {
-> @@ -315,30 +312,21 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
->  	might_sleep_if(mem_flags & __GFP_WAIT);
->  
->  	spin_lock_irqsave(&pool->lock, flags);
-> - restart:
->  	list_for_each_entry(page, &pool->page_list, page_list) {
->  		if (page->offset < pool->allocation)
->  			goto ready;
->  	}
-> -	page = pool_alloc_page(pool, GFP_ATOMIC);
-> -	if (!page) {
-> -		if (mem_flags & __GFP_WAIT) {
-> -			DECLARE_WAITQUEUE(wait, current);
->  
-> -			__set_current_state(TASK_UNINTERRUPTIBLE);
-> -			__add_wait_queue(&pool->waitq, &wait);
-> -			spin_unlock_irqrestore(&pool->lock, flags);
-> +	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
-> +	spin_unlock_irqrestore(&pool->lock, flags);
->  
-> -			schedule_timeout(POOL_TIMEOUT_JIFFIES);
-> +	page = pool_alloc_page(pool, mem_flags);
-> +	if (!page)
-> +		return NULL;
->  
-> -			spin_lock_irqsave(&pool->lock, flags);
-> -			__remove_wait_queue(&pool->waitq, &wait);
-> -			goto restart;
-> -		}
-> -		retval = NULL;
-> -		goto done;
-> -	}
-> +	spin_lock_irqsave(&pool->lock, flags);
->  
-> +	list_add(&page->page_list, &pool->page_list);
->   ready:
->  	page->in_use++;
->  	offset = page->offset;
-> @@ -348,7 +336,6 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
->  #ifdef	DMAPOOL_DEBUG
->  	memset(retval, POOL_POISON_ALLOCATED, pool->size);
->  #endif
-> - done:
->  	spin_unlock_irqrestore(&pool->lock, flags);
->  	return retval;
->  }
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>  drivers/mfd/mfd-core.c |   15 +++++++++++++--
+>  1 files changed, 13 insertions(+), 2 deletions(-)
+Thanks a lot, patch applied to my for-next branch.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
