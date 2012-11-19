@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2KSOTp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 09:19:45 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:47689 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab2KSOTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 09:19:44 -0500
-Message-ID: <50AA3FEF.2070100@parallels.com>
-Date: Mon, 19 Nov 2012 18:19:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1752710Ab2KSOVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 09:21:52 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:35277 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab2KSOVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 09:21:50 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+References: <1353321882-30491-1-git-send-email-gaofeng@cn.fujitsu.com>
+	<20121119141224.GA4321@mail.hallyn.com>
+Date: Mon, 19 Nov 2012 06:21:32 -0800
+In-Reply-To: <20121119141224.GA4321@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Mon, 19 Nov 2012 14:12:24 +0000")
+Message-ID: <87obitad1v.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>,
-        <linux-man@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com> <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18K9oXmcVtV9IGCj4enYk2J71wOkbTNdfg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] pidns: remove the useless function is_container_init
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
->>> Umm, why do users of cpusets not want to be able to trigger memory 
->>> pressure notifications?
->>>
->> Because cpusets only deal with memory placement, not memory usage.
-> 
-> The set of nodes that a thread is allowed to allocate from may face memory 
-> pressure up to and including oom while the rest of the system may have a 
-> ton of free memory.  Your solution is to compile and mount memcg if you 
-> want notifications of memory pressure on those nodes.  Others in this 
-> thread have already said they don't want to rely on memcg for any of this 
-> and, as Anton showed, this can be tied directly into the VM without any 
-> help from memcg as it sits today.  So why implement a simple and clean 
-> mempressure cgroup that can be used alone or co-existing with either memcg 
-> or cpusets?
-> 
+> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>> since commit 1cdcbec1a3372c0c49c59d292e708fd07b509f18,
+>> is_container_init has no used for a long time.
+>> 
+>> just remove it.
+>
+> Only thing is it's being exported, so I think it needs to go through
+> deprecation.
 
-Forgot this one:
+Exports do not create an ABI.  No internal kernel users are enough.
 
-Because there is a huge ongoing work going on by Tejun aiming at
-reducing the effects of orthogonal hierarchy. There are many controllers
-today that are "close enough" to each other (cpu, cpuacct; net_prio,
-net_cls), and in practice, it brought more problems than it solved.
-
-So yes, *maybe* mempressure is the answer, but it need to be justified
-with care. Long term, I think a saner notification API for memcg will
-lead us to a better and brighter future.
-
-There is also yet another aspect: This scheme works well for global
-notifications. If we would always want this to be global, this would
-work neatly. But as already mentioned in this thread, at some point
-we'll want this to work for a group of processes as well. At that point,
-you'll have to count how much memory is being used, so you can determine
-whether or not pressure is going on. You will, then, have to redo all
-the work memcg already does.
-
+Eric
