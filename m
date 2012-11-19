@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab2KSLkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 06:40:12 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41062 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2KSLkL (ORCPT
+	id S1752149Ab2KSLo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 06:44:57 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:34205 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab2KSLoz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 06:40:11 -0500
-Message-ID: <50AA1A96.20900@openvz.org>
-Date: Mon, 19 Nov 2012 15:40:06 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121026 Firefox/10.0.10 Iceape/2.7.10
-MIME-Version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        patches@linaro.org
-Subject: Re: [PATCH] bug: Fix sparse warning related to BUILD_BUG_ON_INVALID
-References: <1353323702-13130-1-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1353323702-13130-1-git-send-email-tushar.behera@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 06:44:55 -0500
+Message-ID: <1353325492.3303.0.camel@hornet>
+Subject: Re: [PATCH 1/2] leds: Add generic support for memory mapped LEDs
+From: Pawel Moll <pawel.moll@arm.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 19 Nov 2012 11:44:52 +0000
+In-Reply-To: <1352388952.20549.12.camel@hornet>
+References: <1351792722-15250-1-git-send-email-pawel.moll@arm.com>
+	 <1352388952.20549.12.camel@hornet>
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 19 Nov 2012 11:44:53.0359 (UTC) FILETIME=[4A372FF0:01CDC64B]
+X-MC-Unique: 112111911445404701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar Behera wrote:
-> commit baf05aa9271b ("bug: introduce BUILD_BUG_ON_INVALID() macro")
-> introduces this macro when only _CHECKER_ is defined. Define
-> a silent macro in the else condition to fix following sparse
-> warning.
->
-> mm/filemap.c:395:9: error: undefined identifier 'BUILD_BUG_ON_INVALID'
-> mm/filemap.c:396:9: error: undefined identifier 'BUILD_BUG_ON_INVALID'
-> mm/filemap.c:397:9: error: undefined identifier 'BUILD_BUG_ON_INVALID'
-> include/linux/mm.h:419:9: error: undefined identifier 'BUILD_BUG_ON_INVALID'
-> include/linux/mm.h:419:9: error: not a function<noident>
->
-> Signed-off-by: Tushar Behera<tushar.behera@linaro.org>
+On Thu, 2012-11-08 at 15:35 +0000, Pawel Moll wrote:
+> Hi Bryan, Richard,
+> 
+> On Thu, 2012-11-01 at 17:58 +0000, Pawel Moll wrote:
+> > LEDs are often controlled by writing to memory mapped
+> > register. This patch adds:
+> > 
+> > 1. Generic functions for platform code and drivers to create
+> >    class device for LEDs controlled by arbitrary bit masks.
+> >    The control register value is read, modified by logic AND
+> >    and OR operations with respective mask and written back.
+> > 
+> > 2. A platform driver for simple use case when one or more LED
+> >    are controlled by consecutive bits in a register pointed
+> >    at by the platform device's memory resource. It can be
+> >    particularly useful for MFD cells being part of an other
+> >    device.
+> > 
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> 
+> It's just a friendly and polite nag - any thoughts or feelings about
+> this?
 
-Thanks.
+Ping again?
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Paweł
 
-> ---
->   include/linux/bug.h |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/bug.h b/include/linux/bug.h
-> index aaac4bb..b1cf40d 100644
-> --- a/include/linux/bug.h
-> +++ b/include/linux/bug.h
-> @@ -15,6 +15,7 @@ struct pt_regs;
->   #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
->   #define BUILD_BUG_ON_ZERO(e) (0)
->   #define BUILD_BUG_ON_NULL(e) ((void*)0)
-> +#define BUILD_BUG_ON_INVALID(e) (0)
->   #define BUILD_BUG_ON(condition)
->   #define BUILD_BUG() (0)
->   #else /* __CHECKER__ */
 
