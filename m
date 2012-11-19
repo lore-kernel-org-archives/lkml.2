@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab2KSKm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 05:42:57 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27944 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab2KSKm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 05:42:56 -0500
-X-Authority-Analysis: v=2.0 cv=EshQXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RerB04ERD-kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=va1J9FDBKhAA:10 a=MhDRbb3HAAAA:8 a=JWOaUvblDZpT5lMdVu0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353321774.6276.4.camel@gandalf.local.home>
-Subject: Re: [PATCH] uprobe: fix misleading log entry
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jovi Zhang <bookjovi@gmail.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Nov 2012 05:42:54 -0500
-In-Reply-To: <20121025141210.GA26929@redhat.com>
-References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
-	 <20121025141210.GA26929@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751781Ab2KSKow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 05:44:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40645 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab2KSKov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 05:44:51 -0500
+X-IronPort-AV: E=Sophos;i="4.83,279,1352044800"; 
+   d="scan'208";a="6231070"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, serge@hallyn.com, akpm@linux-foundation.org,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH] pidns: remove the useless function is_container_init
+Date: Mon, 19 Nov 2012 18:44:42 +0800
+Message-Id: <1353321882-30491-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/19 18:44:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/19 18:44:37,
+	Serialize complete at 2012/11/19 18:44:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-25 at 16:12 +0200, Oleg Nesterov wrote:
-> On 07/18, Jovi Zhang wrote:
-> >
-> > --- a/kernel/trace/trace_uprobe.c
-> > +++ b/kernel/trace/trace_uprobe.c
-> > @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
-> >  	if (argv[0][0] == '-')
-> >  		is_delete = true;
-> >  	else if (argv[0][0] != 'p') {
-> > -		pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
-> > +		pr_info("Probe definition must be started with 'p' or '-'.\n");
-> >  		return -EINVAL;
-> >  	}
-> 
-> Thanks, applied as 0d13ac96 (with Srikar's ack) in misc#uprobes/core
-> 
-> Oleg.
+since commit 1cdcbec1a3372c0c49c59d292e708fd07b509f18,
+is_container_init has no used for a long time.
 
-Hmm, this doesn't look like it ever got applied to mainline. Was it
-dropped?
+just remove it.
 
--- Steve
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ include/linux/sched.h |    6 ------
+ kernel/pid.c          |   15 ---------------
+ 2 files changed, 0 insertions(+), 21 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0dd42a0..3fadd26 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1710,12 +1710,6 @@ static inline int is_global_init(struct task_struct *tsk)
+ 	return tsk->pid == 1;
+ }
+ 
+-/*
+- * is_container_init:
+- * check whether in the task is init in its own pid namespace.
+- */
+-extern int is_container_init(struct task_struct *tsk);
+-
+ extern struct pid *cad_pid;
+ 
+ extern void free_task(struct task_struct *tsk);
+diff --git a/kernel/pid.c b/kernel/pid.c
+index aebd4f5..8ccdf0e 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -81,21 +81,6 @@ struct pid_namespace init_pid_ns = {
+ };
+ EXPORT_SYMBOL_GPL(init_pid_ns);
+ 
+-int is_container_init(struct task_struct *tsk)
+-{
+-	int ret = 0;
+-	struct pid *pid;
+-
+-	rcu_read_lock();
+-	pid = task_pid(tsk);
+-	if (pid != NULL && pid->numbers[pid->level].nr == 1)
+-		ret = 1;
+-	rcu_read_unlock();
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(is_container_init);
+-
+ /*
+  * Note: disable interrupts while the pidmap_lock is held as an
+  * interrupt might come in and do read_lock(&tasklist_lock).
+-- 
+1.7.7.6
 
