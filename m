@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab2KSWIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:08:25 -0500
-Received: from contumacia.investici.org ([178.255.144.35]:64369 "EHLO
-	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab2KSWIY (ORCPT
+	id S1753178Ab2KSWIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:08:47 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33413 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab2KSWIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:08:24 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org 69F0DE8BD7
-Date: Mon, 19 Nov 2012 23:07:34 +0100
-From: Antonio Quartulli <ordex@autistici.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, davem@davemloft.net,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net, batman: don't crash on zero length strings in
- routing_algo
-Message-ID: <20121119220734.GB3129@ritirata.org>
-References: <1353355695-23252-1-git-send-email-sasha.levin@oracle.com>
+	Mon, 19 Nov 2012 17:08:45 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aVD9QWMuhilNxW9f"
-Content-Disposition: inline
-In-Reply-To: <1353355695-23252-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <50AA818F.4020900@oracle.com>
+References: <507F7313.8010707@oracle.com>
+	<CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
+	<CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
+	<CAGXu5j+XuQxJcUWSNaziMivNjKsB9S9cFMKDbigCBN16NGBRgw@mail.gmail.com>
+	<50AA818F.4020900@oracle.com>
+Date: Mon, 19 Nov 2012 14:08:44 -0800
+X-Google-Sender-Auth: 7YcHsMqvzQBhXTZXJ5xfH0RVhOI
+Message-ID: <CAGXu5jKvEo3L6DqnbYqRHqJpUv7DefP8MnYDSZs9Zn6qGjzFFg@mail.gmail.com>
+Subject: Re: yama: lockdep warning on yama_ptracer_del
+From: Kees Cook <keescook@chromium.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, james.l.morris@oracle.com,
+        John Johansen <john.johansen@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-security-module@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 19, 2012 at 10:59 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 11/19/2012 11:23 AM, Kees Cook wrote:
+>> On Sun, Nov 18, 2012 at 8:05 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>>> Hi Kees,
+>>>
+>>> On Thu, Oct 18, 2012 at 6:39 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>> On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
+>>>>> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
+>>>>> ...
+>>>>> [  954.674123]  Possible interrupt unsafe locking scenario:
+>>>>> [  954.674123]
+>>>>> [  954.674123]        CPU0                    CPU1
+>>>>> [  954.674123]        ----                    ----
+>>>>> [  954.674123]   lock(ptracer_relations_lock);
+>>>>> [  954.674123]                                local_irq_disable();
+>>>>> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
+>>>>> [  954.674123]                                lock(ptracer_relations_lock);
+>>>>> [  954.674123]   <Interrupt>
+>>>>> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
+>>>>> [  954.674123]
+>>>>> [  954.674123]  *** DEADLOCK ***
+>>>>
+>>>> I've been wanting to get rid of the Yama ptracer_relations_lock
+>>>> anyway, so maybe I should do that now just to avoid this case at all?
+>>>
+>>> I still see this one in -rc6, is there anything to get rid of it
+>>> before the release?
+>>
+>> I'm not sure about changes to the timer locks, but I haven't been able
+>> to get rid of the locking on Yama's task_free path. I did send a patch
+>> to get rid of locking during a read, though:
+>>
+>> https://lkml.org/lkml/2012/11/13/808
+>
+> Aw, alrighty. It didn't make it to -next yet though.
+>
+> I'll add the patch to my tree and test with it.
 
---aVD9QWMuhilNxW9f
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Unfortunately, I don't think it'll help since your example showed the
+delete path on both sides, which is still locked. I've been trying to
+think of ways to avoid the lock here, but haven't hit on anything
+satisfying.
 
-On Mon, Nov 19, 2012 at 03:08:15PM -0500, Sasha Levin wrote:
-> The code that works with routing_algo assumes that the string passed is n=
-on
-> empty, this assumption is wrong:
->=20
-> sh-4.2# echo -ne '\0' > /sys/module/batman_adv/parameters/routing_algo
-> [   34.531340] BUG: unable to handle kernel paging request at ffff8800151=
-42fff
+-Kees
 
-[CUT]
-
-> [   34.550025] ---[ end trace 6c53b662c574774b ]---
->=20
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-
-
-Hello Sasha,
-
-thank you very much for fixing this bug!
-
-However, any patch sent against the B.A.T.M.A.N.-Advanced code should have a
-subject starting with "batman-adv:".
-
-Other than that I think this kind of patch
-doesn't really need to report the entire kernel message: a more exhaustive
-commit message is enough (e.g. use function names). I personally needed to =
-read
-the patch before understanding what you were trying to explain in the messa=
-ge.
-
-
-Then, we usually pick this patches up in our repo and then we send them as =
-batch
-to the networking tree via pull request, therefore you can also skip the ne=
-tdev
-ml when sending the fixes.
-
-Thank you very much!
-
-Regards,
-
---=20
-Antonio Quartulli
-
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
-
---aVD9QWMuhilNxW9f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlCqraYACgkQpGgxIkP9cwfHpwCeMXI1IGzmmd1AnCgOUrMerNuw
-tGQAn1SVuhxYNpsd9Q/dD26ivMcbFrUA
-=GiPT
------END PGP SIGNATURE-----
-
---aVD9QWMuhilNxW9f--
+-- 
+Kees Cook
+Chrome OS Security
