@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2KSFcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:32:15 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43694 "EHLO
+	id S1753631Ab2KSFcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:32:22 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45656 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab2KSFcM convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753613Ab2KSFcT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:32:12 -0500
-X-Originating-IP: 217.70.178.138
+	Mon, 19 Nov 2012 00:32:19 -0500
+X-Originating-IP: 217.70.178.146
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 44/58] mm: Only define is_pageblock_removable_nolock when needed
-Date: Sun, 18 Nov 2012 21:28:23 -0800
-Message-Id: <1353302917-13995-45-git-send-email-josh@joshtriplett.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 45/58] x86: Fix prototype for renamed function smp_threshold_interrupt
+Date: Sun, 18 Nov 2012 21:28:24 -0800
+Message-Id: <1353302917-13995-46-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
@@ -30,41 +28,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mm/page_alloc.c defines is_pageblock_removable_nolock unconditionally,
-but include/linux/memory_hotplug.h only prototypes it when
-CONFIG_MEMORY_HOTPLUG=y and CONFIG_MEMORY_HOTREMOVE=y.  Add the
-corresponding conditions around the definition, too.
+Commit 7856f6cce4a8cda8c1f94b99605c07d16b8d8dec renamed
+mce_threshold_interrupt to smp_threshold_interrupt, but did not update
+the prototype in arch/x86/include/asm/traps.h to match.  Update the
+prototype to the new name.
 
 This also eliminates warnings from GCC (-Wmissing-prototypes) and Sparse
 (-Wdecl).
 
-mm/page_alloc.c:5634:6: warning: no previous prototype for ‘is_pageblock_removable_nolock’ [-Wmissing-prototypes]
+arch/x86/kernel/traps.c:597:29: warning: no previous prototype for ‘smp_threshold_interrupt’ [-Wmissing-prototypes]
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- mm/page_alloc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/traps.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d857953..706bd5f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5631,6 +5631,7 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
- 	return false;
- }
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 88eae2a..914309a 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -86,7 +86,7 @@ void math_error(struct pt_regs *, int, int);
+ void math_emulate(struct math_emu_info *);
+ #ifndef CONFIG_X86_32
+ asmlinkage void smp_thermal_interrupt(void);
+-asmlinkage void mce_threshold_interrupt(void);
++asmlinkage void smp_threshold_interrupt(void);
+ #endif
  
-+#if defined(CONFIG_MEMORY_HOTPLUG) && defined(CONFIG_MEMORY_HOTREMOVE)
- bool is_pageblock_removable_nolock(struct page *page)
- {
- 	struct zone *zone;
-@@ -5654,6 +5655,7 @@ bool is_pageblock_removable_nolock(struct page *page)
- 
- 	return !has_unmovable_pages(zone, page, 0);
- }
-+#endif /* defined(CONFIG_MEMORY_HOTPLUG) && defined(CONFIG_MEMORY_HOTREMOVE) */
- 
- #ifdef CONFIG_CMA
- 
+ /* Interrupts/Exceptions */
 -- 
 1.7.10.4
 
