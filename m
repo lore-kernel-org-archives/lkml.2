@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2KSMUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 07:20:12 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:34898
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752344Ab2KSMUA (ORCPT
+	id S1752271Ab2KSMXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 07:23:11 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58534 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab2KSMXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 07:20:00 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kernel@pengutronix.de>, <zbr@ioremap.net>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v3 3/3] w1: mxc_w1: Convert to platform driver
-Date: Mon, 19 Nov 2012 10:19:48 -0200
-Message-ID: <1353327588-2797-3-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353327588-2797-1-git-send-email-fabio.estevam@freescale.com>
-References: <1353327588-2797-1-git-send-email-fabio.estevam@freescale.com>
+	Mon, 19 Nov 2012 07:23:10 -0500
+Message-ID: <50AA24A2.2040902@ti.com>
+Date: Mon, 19 Nov 2012 13:22:58 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] gpio: twl4030: Use only TWL4030_MODULE_LED for LED configuration
+References: <1352799313-21019-1-git-send-email-peter.ujfalusi@ti.com> <CACRpkdayZK2sPXJW=COFi7C=P5=fbi-q7UukWbQ8dheaJ=bjAA@mail.gmail.com> <50A9F335.80107@ti.com> <CACRpkdbvXFtHoOXThUrT4Z+8nO_HJCFq-May+4zaOsNv-886LA@mail.gmail.com> <20121119105759.GU10369@pengutronix.de>
+In-Reply-To: <20121119105759.GU10369@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using module_platform_driver() makes the code smaller and cleaner.
+Hi Sascha,
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-Changes since v2:
-- No changes
- drivers/w1/masters/mxc_w1.c |   16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+On 11/19/2012 11:57 AM, Sascha Hauer wrote:
+> Either I'm misinterpreting you or you didn't have a look in the tree.
+> Actually drivers/leds/leds-pwm.c already exists.
+>>
+>> Sounds correct, Sascha?
+> 
+> Yes, the twl4030 pwm should go to drivers/pwm/pwm-twl4030.c.
 
-diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
-index 25b234c..a06514b 100644
---- a/drivers/w1/masters/mxc_w1.c
-+++ b/drivers/w1/masters/mxc_w1.c
-@@ -191,21 +191,9 @@ static struct platform_driver mxc_w1_driver = {
- 		   .name = "mxc_w1",
- 	},
- 	.probe = mxc_w1_probe,
--	.remove = mxc_w1_remove,
-+	.remove = __devexit_p(mxc_w1_remove),
- };
--
--static int __init mxc_w1_init(void)
--{
--	return platform_driver_register(&mxc_w1_driver);
--}
--
--static void mxc_w1_exit(void)
--{
--	platform_driver_unregister(&mxc_w1_driver);
--}
--
--module_init(mxc_w1_init);
--module_exit(mxc_w1_exit);
-+module_platform_driver(mxc_w1_driver);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Freescale Semiconductors Inc");
+I have already done the generic PWM drivers for the two type of PWMs (named
+PWM, and the LED PWMs):
+https://lkml.org/lkml/2012/11/8/219
+
+They are happily using leds-pwm and backlight-pwm on my working tree.
+I also sent cleanup and DT support for leds-pwm:
+https://lkml.org/lkml/2012/11/12/222
+
 -- 
-1.7.9.5
-
-
+Péter
