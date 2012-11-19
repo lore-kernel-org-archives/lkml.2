@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab2KSDuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 22:50:16 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15319 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab2KSDuP (ORCPT
+	id S1752829Ab2KSDwK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 22:52:10 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41747 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab2KSDwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 22:50:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 18 Nov 2012 19:50:14 -0800
-Message-ID: <50A9AC73.1020309@nvidia.com>
-Date: Mon, 19 Nov 2012 09:20:11 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Sun, 18 Nov 2012 22:52:09 -0500
+Message-ID: <50A9AD05.5080201@linaro.org>
+Date: Mon, 19 Nov 2012 09:22:37 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 RESEND 0/4] mfd: tps65910: use regmap irq framework
- for interrupt
-References: <1352815439-26040-1-git-send-email-ldewangan@nvidia.com> <20121113195637.GQ27828@sortiz-mobl> <20121114012439.GF4415@opensource.wolfsonmicro.com> <20121118232342.GA18738@sortiz-mobl>
-In-Reply-To: <20121118232342.GA18738@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 09/14] xen: events: Remove redundant check on unsigned
+ variable
+References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org> <1353048646-10935-10-git-send-email-tushar.behera@linaro.org> <20121116160923.GP22320@phenom.dumpdata.com> <b0cd27cf-919f-46b0-afa1-4566f6ea0f61@email.android.com>
+In-Reply-To: <b0cd27cf-919f-46b0-afa1-4566f6ea0f61@email.android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 November 2012 04:53 AM, Samuel Ortiz wrote:
-> Hi Mark,
->
-> On Wed, Nov 14, 2012 at 10:24:41AM +0900, Mark Brown wrote:
->> On Tue, Nov 13, 2012 at 08:56:37PM +0100, Samuel Ortiz wrote:
+On 11/16/2012 10:23 PM, Jeremy Fitzhardinge wrote:
+> To be honest I'd nack this kind of patch. The test is only redundant in the most trivial sense that the compiler can easily optimise away. The point of the test is to make sure that the range is OK even if the type subsequently becomes signed (to hold a -ve error, for example).
+> 
+> J
+> 
+
+The check is on the function argument which is unsigned, so checking '<
+0' doesn't make sense. We should force signed check only if the argument
+is of signed type. In any case, even if irq has been assigned some error
+value, that would be caught by the check irq >= nr_irqs.
+
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+>> On Fri, Nov 16, 2012 at 12:20:41PM +0530, Tushar Behera wrote:
+>>> No need to check whether unsigned variable is less than 0.
+>>>
+>>> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 >>
->>> The patchset looks fine, but it should either go through Mark's tree or I
->>> should merge Mark's regmap_irq_get_domain patch to my for-next branch.
->>> Mark, any preference ?
->> I don't mind that much, there's a tag in my regmap tree you can pull in
->> to integrate or I can apply things just as easily.
-> I merged your topic/domain branch into my for-next one and I applied Laxman
-> patches on top of it, thanks.
+>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>
+>>> CC: Jeremy Fitzhardinge <jeremy@goop.org>
+>>> CC: xen-devel@lists.xensource.com
+>>> CC: virtualization@lists.linux-foundation.org
+>>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>>> ---
+>>>  drivers/xen/events.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+>>> index 4293c57..cadd7d1 100644
+>>> --- a/drivers/xen/events.c
+>>> +++ b/drivers/xen/events.c
+>>> @@ -216,7 +216,7 @@ static void xen_irq_info_pirq_init(unsigned irq,
+>>>   */
+>>>  static unsigned int evtchn_from_irq(unsigned irq)
+>>>  {
+>>> -	if (unlikely(WARN(irq < 0 || irq >= nr_irqs, "Invalid irq %d!\n",
+>> irq)))
+>>> +	if (unlikely(WARN(irq >= nr_irqs, "Invalid irq %d!\n", irq)))
+>>>  		return 0;
+>>>  
+>>>  	return info_for_irq(irq)->evtchn;
+>>> -- 
+>>> 1.7.4.1
+> 
 
-Thanks Samuel for taking care.
-Just want to share info that other patch [PATCH V4 1/2] mfd: add TI 
-TPS80031 mfd core driver also need ot go on same tree as this driver use 
-the new api from regmap.
 
-Thanks,
-Laxman
-
+-- 
+Tushar Behera
