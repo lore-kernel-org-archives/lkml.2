@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2KSPeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:34:08 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61241 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab2KSPeF (ORCPT
+	id S1753392Ab2KSPfe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:35:34 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58446 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab2KSPfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:34:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121119151050.GA4270@redhat.com>
-References: <1351159974-980-1-git-send-email-meltedpianoman@gmail.com>
-	<1353310211-3011-1-git-send-email-meltedpianoman@gmail.com>
-	<20121119151050.GA4270@redhat.com>
-Date: Mon, 19 Nov 2012 16:34:04 +0100
-Message-ID: <CAMSQXEF9BGBVRRtuz88XFqVmPBdbWisepq4qjah3vM05_7hztw@mail.gmail.com>
-Subject: Re: [REPOST-v2] sched: Prevent wakeup to enter critical section needlessly
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Nov 2012 10:35:33 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v1] driver core: fix possible missing of device probe
+Date: Mon, 19 Nov 2012 23:35:17 +0800
+Message-Id: <1353339317-31272-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Inside bus_add_driver(), one device might be added(device_add()) into
+the bus or probed which is triggered by deferred probe
+just after completing of driver_attach() and before
+'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
+so the device won't be probed by this driver.
 
-2012/11/19 Oleg Nesterov <oleg@redhat.com>:
->
-> I am wondering if it makes sense unconditionally. A lot of callers do
->
->         if (waitqueue_active(q))
->                 wake_up(...);
->
-> this patch makes the optimization above pointless and adds mb().
->
->
-> But I won't argue.
->
-> Oleg.
->
+This patch moves the below line
 
-This patch solved an issue for me that I had with the TTY line
-discipline idle handling:
-Testing on a PREEMPT_RT system with TTY serial communication. Each
-time the TTY line discipline is dereferenced the Idle handling wait
-queue is woken up (see function put_ldisc in /drivers/tty/tty_ldisc.c)
-However line discipline idle handling is not used very often so the
-wait queue is empty most of the time. But still the wake_up() function
-enters the critical section guarded by spin locks. This causes
-additional scheduling overhead when a lower priority thread has
-control of that same lock.
+	'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)'
 
-The /drivers/tty/tty_ldisc.c did not use the waitqueue_active() call
-to check if the waitqueue was filled.... maybe I should solve this
-problem the other way around: and make tty_ldisc.c first do the
-waitqueue_active() call?
+before driver_attach() inside bus_add_driver() to fix the
+problem.
 
-Regards,
-Ivo
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+v1:
+	- remove memory barrier part of previous commit log because
+	klist lock of 'bus->p->klist_drivers' is held during both
+	adding driver into the list and iterating the driver list,
+	so the new added driver can always be perceived immediately
+	on other CPUs.
+---
+ drivers/base/bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 181ed26..3b5bddb 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
+ 	if (error)
+ 		goto out_unregister;
+ 
++	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	if (drv->bus->p->drivers_autoprobe) {
+ 		error = driver_attach(drv);
+ 		if (error)
+ 			goto out_unregister;
+ 	}
+-	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	module_add_driver(drv->owner, drv);
+ 
+ 	error = driver_create_file(drv, &driver_attr_uevent);
+-- 
+1.7.9.5
+
