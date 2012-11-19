@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab2KSF3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:29:24 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60506 "EHLO
+	id S1753062Ab2KSF33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:29:29 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45834 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab2KSF3V convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753031Ab2KSF30 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:29:21 -0500
-X-Originating-IP: 217.70.178.144
+	Mon, 19 Nov 2012 00:29:26 -0500
+X-Originating-IP: 217.70.178.131
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        David Howells <dhowells@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/58] swiotlb: Prototype swiotlb_late_init_with_default_size in swiotlb.h
-Date: Sun, 18 Nov 2012 21:27:49 -0800
-Message-Id: <1353302917-13995-11-git-send-email-josh@joshtriplett.org>
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/58] linux/irq_work.h: Add prototype for arch_irq_work_raise
+Date: Sun, 18 Nov 2012 21:27:51 -0800
+Message-Id: <1353302917-13995-13-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
@@ -35,71 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several source files reference swiotlb_late_init_with_default_size with
-an extern prototype; declare it in linux/swiotlb.h instead.
+Several architectures define arch_irq_work_raise, and kernel/irq_work.c
+defines a __weak version for architectures that do not.  However,
+nothing ever prototypes this function, leading to warnings from GCC and
+Sparse like this:
 
-This also ensures that lib/swiotlb.c has a matching prototype for
-swiotlb_late_init_with_default_size, keeping the types in sync, and
-eliminating warnings from GCC (-Wmissing-prototypes) and Sparse
-(-Wdecl).
+kernel/irq_work.c:52:28: warning: no previous prototype for ‘arch_irq_work_raise’ [-Wmissing-prototypes]
 
-lib/swiotlb.c:207:1: warning: no previous prototype for ‘swiotlb_late_init_with_default_size’ [-Wmissing-prototypes]
+Add a prototype for this function in linux/irq_work.h.  In addition to
+eliminating the warnings, this also ensures that the types for all
+versions of the function will stay in sync.
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- arch/ia64/hp/common/sba_iommu.c |    3 +--
- arch/x86/pci/sta2x11-fixup.c    |    2 +-
- include/linux/swiotlb.h         |    1 +
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/irq_work.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-index bcda5b2..d37d4af 100644
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -38,6 +38,7 @@
- #include <linux/iommu-helper.h>
- #include <linux/dma-mapping.h>
- #include <linux/prefetch.h>
-+#include <linux/swiotlb.h>
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..c23821e 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -20,4 +20,6 @@ bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
  
- #include <asm/delay.h>		/* ia64_get_itc() */
- #include <asm/io.h>
-@@ -46,8 +47,6 @@
- 
- #include <asm/acpi-ext.h>
- 
--extern int swiotlb_late_init_with_default_size (size_t size);
--
- #define PFX "IOC: "
- 
- /*
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index 9d8a509..27dde02 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -26,9 +26,9 @@
- #include <linux/pci_ids.h>
- #include <linux/export.h>
- #include <linux/list.h>
-+#include <linux/swiotlb.h>
- 
- #define STA2X11_SWIOTLB_SIZE (4*1024*1024)
--extern int swiotlb_late_init_with_default_size(size_t default_size);
- 
- /*
-  * We build a list of bus numbers that are under the ConneXt. The
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 8d08b3e..7e3b8c5 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -23,6 +23,7 @@ extern int swiotlb_force;
- #define IO_TLB_SHIFT 11
- 
- extern void swiotlb_init(int verbose);
-+extern int swiotlb_late_init_with_default_size(size_t default_size);
- extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
- extern unsigned long swiotlb_nr_tbl(void);
- extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
++void arch_irq_work_raise(void);
++
+ #endif /* _LINUX_IRQ_WORK_H */
 -- 
 1.7.10.4
 
