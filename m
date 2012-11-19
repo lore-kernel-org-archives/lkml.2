@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2KSSno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 13:43:44 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:32985 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab2KSSnU (ORCPT
+	id S1754706Ab2KSSoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 13:44:30 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:32588 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab2KSSo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 13:43:20 -0500
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] bq27x00_battery: Do not report nominal available capaciy if battery is not calibrated
-Date: Mon, 19 Nov 2012 19:43:16 +0100
-Message-ID: <12085398.q92JCopB21@pali>
-User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121119000552.GE29066@lizard.sbx05977.paloaca.wayport.net>
-References: <1352558568-30607-1-git-send-email-pali.rohar@gmail.com> <20121119000552.GE29066@lizard.sbx05977.paloaca.wayport.net>
+	Mon, 19 Nov 2012 13:44:28 -0500
+Message-ID: <1353350661.4156.0.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Jason Wang <jasowang@redhat.com>,
+        <davem@davemloft.net>, <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <krkumar2@in.ibm.com>, <kvm@vger.kernel.org>, <edumazet@google.com>
+Date: Mon, 19 Nov 2012 18:44:21 +0000
+In-Reply-To: <20121118091354.GA31775@redhat.com>
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+	 <1351591403-23065-3-git-send-email-jasowang@redhat.com>
+	 <87y5igyhyg.fsf@rustcorp.com.au> <20121113064026.GA27416@redhat.com>
+	 <1353112529.2743.83.camel@bwh-desktop.uk.solarflarecom.com>
+	 <20121118091354.GA31775@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2703209.h1FJU5MVlh"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-11-18 at 11:13 +0200, Michael S. Tsirkin wrote:
+> On Sat, Nov 17, 2012 at 12:35:29AM +0000, Ben Hutchings wrote:
+> > On Tue, 2012-11-13 at 08:40 +0200, Michael S. Tsirkin wrote:
+> > > On Mon, Nov 05, 2012 at 11:38:39AM +1030, Rusty Russell wrote:
+> > > > > @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
+> > > > >  {
+> > > > >  	struct virtnet_info *vi = netdev_priv(dev);
+> > > > >  
+> > > > > -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
+> > > > > -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
+> > > > > +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
+> > > > > +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
+> > > > >  	ring->rx_pending = ring->rx_max_pending;
+> > > > >  	ring->tx_pending = ring->tx_max_pending;
+> > > > > -
+> > > > >  }
+> > > > 
+> > > > This assumes all vqs are the same size.  I think this should probably
+> > > > check: for mq mode, use the first vq, otherewise use the 0th.
+> > > 
+> > > For rx_pending/tx_pending I think what is required here is the
+> > > actual number of outstanding buffers.
+> > > Dave, Eric - right?
+> > > 
+> > > So this should be the total over all rings and to be useful,
+> > > rx_max_pending/tx_max_pending should be the total too.
+> > 
+> > So far as I know, all current implementations use the number of
+> > descriptors per ring here. virtio_net should be consistent with this.
+> > 
+> > Ben.
+> 
+> Problem is, it could in theory be different between rings. I guess we
+> could use the maximum.
+> 
+> What's the right thing to do for rx_pending - I am guessing
+> we want the current outstanding packets right?
 
---nextPart2703209.h1FJU5MVlh
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="utf-8"
+The 'max_pending' fields are for the maximum ring sizes supported; the
+'pending' fields are for the current ring sizes.  The current number of
+descriptors pending is not included (would be a bit pointless).
 
-On Sunday 18 November 2012 16:05:52 Anton Vorontsov wrote:
-> On Sat, Nov 10, 2012 at 03:42:48PM +0100, Pali Roh=C3=A1r wrote:
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > ---
-> >=20
-> >  drivers/power/bq27x00_battery.c |    8 ++++++++
-> >  1 file changed, 8 insertions(+)
->=20
-> OK, I'm assuming we don't want this because otherwise we're
-> getting bogus values in the sysfs, and so we confuse userland.
-> I added this explanation to the commit message, but still
-> would be great to hear some confirmation.
->=20
-> Anyways, this is applied now.
->=20
-> Thanks!
->=20
+Ben.
 
-Right.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
---=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
---nextPart2703209.h1FJU5MVlh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlCqfcQACgkQi/DJPQPkQ1I8kwCgjEHJQbeh6yvPXM4TkQNwJ8Pn
-8UEAnAqjQDTI4Uql0VWsEo/1IqU8/Y6E
-=nKvW
------END PGP SIGNATURE-----
-
---nextPart2703209.h1FJU5MVlh--
 
