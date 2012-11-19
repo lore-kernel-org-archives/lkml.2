@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab2KSSc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 13:32:56 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42422 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab2KSSbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 13:31:32 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 07/11] ARM: sa1100: convert timer suspend/resume to clock_event_device
-Date: Mon, 19 Nov 2012 11:31:03 -0700
-Message-Id: <1353349867-28494-8-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	id S1754173Ab2KSScz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 13:32:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21875 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173Ab2KSSct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 13:32:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,280,1352102400"; 
+   d="scan'208";a="244439720"
+Subject: [RESEND][PATCH] x86: Fix warning about cast from pointer to integer
+ of different size
+To: tglx@linutronix.de, mingo@redhat.com, andi@firstfloor.org, hpa@zytor.com
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Nov 2012 10:31:37 -0800
+Message-ID: <20121119182927.3655.7641.stgit@ahduyck-cp1.jf.intel.com>
+In-Reply-To: <20121119171043.2965.8482.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121119171043.2965.8482.stgit@ahduyck-cp1.jf.intel.com>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+This patch fixes a warning reported by the kbuild test robot where we were
+casting a pointer to a physical address which represents an integer of a
+different size.  Per the suggestion of Peter Anvin I am replacing it and one
+other spot where I made a similar cast with an unsigned long.
 
-Move sa1100's timer suspend/resume functions from struct sys_timer
-sa1100_timer into struct clock_event_device ckevt_sa1100_osmr0. This
-will allow the sys_timer suspend/resume fields to be removed, and
-eventually lead to a complete removal of struct sys_timer.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- arch/arm/mach-sa1100/time.c |   66 +++++++++++++++++++++----------------------
- 1 file changed, 33 insertions(+), 33 deletions(-)
 
-diff --git a/arch/arm/mach-sa1100/time.c b/arch/arm/mach-sa1100/time.c
-index 80702c9..164f827 100644
---- a/arch/arm/mach-sa1100/time.c
-+++ b/arch/arm/mach-sa1100/time.c
-@@ -69,12 +69,45 @@ sa1100_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *c)
- 	}
- }
+Resending patch as I realized I forgot to add --auto to stgit command line and
+as such the Cc was ignored.  Sorry for the extra noise on the list.
+
+ arch/x86/kernel/head32.c |    2 +-
+ arch/x86/kernel/head64.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index f15db0c..e175548 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -31,7 +31,7 @@ static void __init i386_default_early_setup(void)
+ void __init i386_start_kernel(void)
+ {
+ 	memblock_reserve(__pa_symbol(_text),
+-			 (phys_addr_t)__bss_stop - (phys_addr_t)_text);
++			 (unsigned long)__bss_stop - (unsigned long)_text);
  
-+#ifdef CONFIG_PM
-+unsigned long osmr[4], oier;
-+
-+static void sa1100_timer_suspend(struct clock_event_device *cedev)
-+{
-+	osmr[0] = readl_relaxed(OSMR0);
-+	osmr[1] = readl_relaxed(OSMR1);
-+	osmr[2] = readl_relaxed(OSMR2);
-+	osmr[3] = readl_relaxed(OSMR3);
-+	oier = readl_relaxed(OIER);
-+}
-+
-+static void sa1100_timer_resume(struct clock_event_device *cedev)
-+{
-+	writel_relaxed(0x0f, OSSR);
-+	writel_relaxed(osmr[0], OSMR0);
-+	writel_relaxed(osmr[1], OSMR1);
-+	writel_relaxed(osmr[2], OSMR2);
-+	writel_relaxed(osmr[3], OSMR3);
-+	writel_relaxed(oier, OIER);
-+
-+	/*
-+	 * OSMR0 is the system timer: make sure OSCR is sufficiently behind
-+	 */
-+	writel_relaxed(OSMR0 - LATCH, OSCR);
-+}
-+#else
-+#define sa1100_timer_suspend NULL
-+#define sa1100_timer_resume NULL
-+#endif
-+
- static struct clock_event_device ckevt_sa1100_osmr0 = {
- 	.name		= "osmr0",
- 	.features	= CLOCK_EVT_FEAT_ONESHOT,
- 	.rating		= 200,
- 	.set_next_event	= sa1100_osmr0_set_next_event,
- 	.set_mode	= sa1100_osmr0_set_mode,
-+	.suspend	= sa1100_timer_suspend,
-+	.resume		= sa1100_timer_resume,
- };
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 42f5df1..7b215a5 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -98,7 +98,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	copy_bootdata(__va(real_mode_data));
  
- static struct irqaction sa1100_timer_irq = {
-@@ -105,39 +138,6 @@ static void __init sa1100_timer_init(void)
- 	clockevents_register_device(&ckevt_sa1100_osmr0);
- }
+ 	memblock_reserve(__pa_symbol(_text),
+-			 (phys_addr_t)__bss_stop - (phys_addr_t)_text);
++			 (unsigned long)__bss_stop - (unsigned long)_text);
  
--#ifdef CONFIG_PM
--unsigned long osmr[4], oier;
--
--static void sa1100_timer_suspend(void)
--{
--	osmr[0] = readl_relaxed(OSMR0);
--	osmr[1] = readl_relaxed(OSMR1);
--	osmr[2] = readl_relaxed(OSMR2);
--	osmr[3] = readl_relaxed(OSMR3);
--	oier = readl_relaxed(OIER);
--}
--
--static void sa1100_timer_resume(void)
--{
--	writel_relaxed(0x0f, OSSR);
--	writel_relaxed(osmr[0], OSMR0);
--	writel_relaxed(osmr[1], OSMR1);
--	writel_relaxed(osmr[2], OSMR2);
--	writel_relaxed(osmr[3], OSMR3);
--	writel_relaxed(oier, OIER);
--
--	/*
--	 * OSMR0 is the system timer: make sure OSCR is sufficiently behind
--	 */
--	writel_relaxed(OSMR0 - LATCH, OSCR);
--}
--#else
--#define sa1100_timer_suspend NULL
--#define sa1100_timer_resume NULL
--#endif
--
- struct sys_timer sa1100_timer = {
- 	.init		= sa1100_timer_init,
--	.suspend	= sa1100_timer_suspend,
--	.resume		= sa1100_timer_resume,
- };
--- 
-1.7.10.4
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
 
