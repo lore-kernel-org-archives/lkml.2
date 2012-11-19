@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2KSFcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:32:07 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38062 "EHLO
+	id S1753544Ab2KSFbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:31:53 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45275 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab2KSFcE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753251Ab2KSFbv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:32:04 -0500
-X-Originating-IP: 217.70.178.148
+	Mon, 19 Nov 2012 00:31:51 -0500
+X-Originating-IP: 217.70.178.150
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Jack Steiner <steiner@sgi.com>, Josh Triplett <josh@joshtriplett.org>,
+        Ingo Molnar <mingo@elte.hu>, Diwakar Tundlam <dtundlam@nvidia.com>,
         linux-kernel@vger.kernel.org
-Cc: Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 43/58] mm: Mark fallback version of __early_pfn_to_nid static
-Date: Sun, 18 Nov 2012 21:28:22 -0800
-Message-Id: <1353302917-13995-44-git-send-email-josh@joshtriplett.org>
+Subject: [PATCH 41/58] init/calibrate.c: Add prototype for __weak stub of calibrate_delay_is_known
+Date: Sun, 18 Nov 2012 21:28:20 -0800
+Message-Id: <1353302917-13995-42-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
@@ -30,31 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mm/page_alloc.c defines a fallback version of __early_pfn_to_nid for
-architectures without CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID.  Nothing
-outside of mm/page_alloc.c calls that function, so mark it static.  This
-eliminates warnings from GCC (-Wmissing-prototypes) and Sparse (-Wdecl).
+init/calibrate.c defines an empty stub of calibrate_delay_is_known with
+__attribute__((weak)), for use on architectures without an alternate
+implementation.  Define a prototype of that function, to satisfy gcc
+(-Wmissing-prototypes) and Sparse (-Wdecl).
 
-mm/page_alloc.c:4075:118: warning: no previous prototype for ‘__early_pfn_to_nid’ [-Wmissing-prototypes]
+init/calibrate.c:257:150: warning: no previous prototype for ‘calibrate_delay_is_known’ [-Wmissing-prototypes]
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ init/calibrate.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5b74de6..d857953 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4072,7 +4072,7 @@ int __meminit init_currently_empty_zone(struct zone *zone,
-  * was used and there are no special requirements, this is a convenient
-  * alternative
+diff --git a/init/calibrate.c b/init/calibrate.c
+index fda0a7b..7177627 100644
+--- a/init/calibrate.c
++++ b/init/calibrate.c
+@@ -254,6 +254,7 @@ static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+  * Architectures should override this function if a faster calibration
+  * method is available.
   */
--int __meminit __early_pfn_to_nid(unsigned long pfn)
-+static int __meminit __early_pfn_to_nid(unsigned long pfn)
++unsigned long calibrate_delay_is_known(void);
+ unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
  {
- 	unsigned long start_pfn, end_pfn;
- 	int i, nid;
+ 	return 0;
 -- 
 1.7.10.4
 
