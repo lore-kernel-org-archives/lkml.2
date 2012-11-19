@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab2KSKUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 05:20:13 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49897 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2KSKUI (ORCPT
+	id S1751889Ab2KSKVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 05:21:23 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:40906 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab2KSKVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 05:20:08 -0500
-Message-ID: <50AA07D1.7030906@gmail.com>
-Date: Mon, 19 Nov 2012 18:20:01 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 05:21:21 -0500
+Message-ID: <50AA07FA.5020503@linux.vnet.ibm.com>
+Date: Mon, 19 Nov 2012 15:50:42 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v6 10/12] thp: implement refcounting for huge zero page
-References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com> <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com> <50A87EF0.3060706@gmail.com> <20121119095615.GA23869@otc-wbsnb-06>
-In-Reply-To: <20121119095615.GA23869@otc-wbsnb-06>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ivo Sieben <meltedpianoman@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [REPOST-v2] sched: Prevent wakeup to enter critical section needlessly
+References: <1351159974-980-1-git-send-email-meltedpianoman@gmail.com> <1353310211-3011-1-git-send-email-meltedpianoman@gmail.com>
+In-Reply-To: <1353310211-3011-1-git-send-email-meltedpianoman@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12111910-5490-0000-0000-000002821575
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 05:56 PM, Kirill A. Shutemov wrote:
-> On Sun, Nov 18, 2012 at 02:23:44PM +0800, Jaegeuk Hanse wrote:
->> On 11/16/2012 03:27 AM, Kirill A. Shutemov wrote:
->>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>
->>> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
->>> after the first allocation. Here's implementation of lockless refcounting
->>> for huge zero page.
->>>
->>> We have two basic primitives: {get,put}_huge_zero_page(). They
->>> manipulate reference counter.
->>>
->>> If counter is 0, get_huge_zero_page() allocates a new huge page and
->>> takes two references: one for caller and one for shrinker. We free the
->>> page only in shrinker callback if counter is 1 (only shrinker has the
->>> reference).
->>>
->>> put_huge_zero_page() only decrements counter. Counter is never zero
->>> in put_huge_zero_page() since shrinker holds on reference.
->>>
->>> Freeing huge zero page in shrinker callback helps to avoid frequent
->>> allocate-free.
->>>
->>> Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
->>> parallel (40 processes) read page faulting comparing to lazy huge page
->>> allocation.  I think it's pretty reasonable for synthetic benchmark.
->> Hi Kirill,
->>
->> I see your and Andew's hot discussion in v4 resend thread.
->>
->> "I also tried another scenario: usemem -n16 100M -r 1000. It creates
->> real memory pressure - no easy reclaimable memory. This time
->> callback called with nr_to_scan > 0 and we freed hzp. "
->>
->> What's "usemem"? Is it a tool and how to get it?
-> http://www.spinics.net/lists/linux-mm/attachments/gtarazbJaHPaAT.gtar
+Hi Ivo,
 
-Thanks for your response.  But how to use it, I even can't compile the 
-files.
+On 11/19/2012 01:00 PM, Ivo Sieben wrote:
+> Check the waitqueue task list to be non empty before entering the critical
+> section. This prevents locking the spin lock needlessly in case the queue
+> was empty, and therefor also prevent scheduling overhead on a PREEMPT_RT
+> system.
+> 
+> Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+> ---
+> 
+>  a second repost of this patch v2: Can anyone respond?
+>  Did I apply the memory barrier correct?
+> 
+>  v2:
+>  - We don't need the "careful" list empty, a normal list empty is sufficient:
+>    if you miss an update it was just as it happened a little later.
+>  - Because of memory ordering problems we can observe an unupdated list
+>    administration. This can cause an wait_event-like code to miss an event.
+>    Adding a memory barrier befor checking the list to be empty will guarantee we
+>    evaluate a 100% updated list adminsitration.
+> 
+>  kernel/sched/core.c |   19 ++++++++++++++++---
+>  1 file changed, 16 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2d8927f..168a9b2 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3090,9 +3090,22 @@ void __wake_up(wait_queue_head_t *q, unsigned int mode,
+>  {
+>  	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&q->lock, flags);
+> -	__wake_up_common(q, mode, nr_exclusive, 0, key);
+> -	spin_unlock_irqrestore(&q->lock, flags);
+> +	/*
+> +	 * We check for list emptiness outside the lock. This prevents the wake
+> +	 * up to enter the critical section needlessly when the task list is
+> +	 * empty.
+> +	 *
+> +	 * Placed a full memory barrier before checking list emptiness to make
+> +	 * 100% sure this function sees an up-to-date list administration.
+> +	 * Note that other code that manipulates the list uses a spin_lock and
+> +	 * therefore doesn't need additional memory barriers.
+> +	 */
+> +	smp_mb();
+> +	if (!list_empty(&q->task_list)) {
+> +		spin_lock_irqsave(&q->lock, flags);
+> +		__wake_up_common(q, mode, nr_exclusive, 0, key);
+> +		spin_unlock_irqrestore(&q->lock, flags);
+> +	}
+>  }
+>  EXPORT_SYMBOL(__wake_up);
+>  
+> 
+Looks good to me.
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-# ./case-lru-file-mmap-read
-./case-lru-file-mmap-read: line 3: hw_vars: No such file or directory
-./case-lru-file-mmap-read: line 7: 10 * mem / nr_cpu: division by 0 
-(error token is "nr_cpu")
-
-# gcc usemem.c -o usemem
-/tmp/ccFkIDWk.o: In function `do_task':
-usemem.c:(.text+0x9f2): undefined reference to `pthread_create'
-usemem.c:(.text+0xa44): undefined reference to `pthread_join'
-collect2: ld returned 1 exit status
-
->
->> It's hard for me to
->> find nr_to_scan > 0 in every callset, how can nr_to_scan > 0 in your
->> scenario?
-> shrink_slab() calls the callback with nr_to_scan > 0 if system is under
-> pressure -- look for do_shrinker_shrink().
-
-Why Andrew's example(dd if=/fast-disk/large-file) doesn't call this 
-path? I think it also can add memory pressure, where I miss?
-
+Regards
+Preeti U Murthy
 
