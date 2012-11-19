@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2KSU2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 15:28:06 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53644 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab2KSU2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 15:28:04 -0500
-Date: Mon, 19 Nov 2012 12:28:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
-Message-ID: <20121119202800.GA9083@kroah.com>
-References: <1353112043-11800-1-git-send-email-wfp5p@virginia.edu>
- <20121119195555.GA21922@core.coreip.homeip.net>
- <20121119200149.GA31589@kroah.com>
- <2170877.01mKLSMGf6@vostro.rjw.lan>
+	id S1754825Ab2KSUeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 15:34:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754452Ab2KSUeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 15:34:36 -0500
+Date: Mon, 19 Nov 2012 21:34:12 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] perf/POWER7: Make event translations available in
+ sysfs
+Message-ID: <20121119203411.GB8002@krava.brq.redhat.com>
+References: <20121107191818.GA16211@us.ibm.com>
+ <20121107191927.GC16211@us.ibm.com>
+ <20121114102534.GA2220@krava.brq.redhat.com>
+ <20121114182045.GA2240@us.ibm.com>
+ <20121116125154.GB1121@krava.brq.redhat.com>
+ <20121116193537.GA11800@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2170877.01mKLSMGf6@vostro.rjw.lan>
+In-Reply-To: <20121116193537.GA11800@us.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 09:27:09PM +0100, Rafael J. Wysocki wrote:
-> On Monday, November 19, 2012 12:01:49 PM Greg KH wrote:
-> > On Mon, Nov 19, 2012 at 11:55:56AM -0800, Dmitry Torokhov wrote:
-> > > On Fri, Nov 16, 2012 at 07:19:10PM -0500, Bill Pemberton wrote:
-> > > > CONFIG_HOTPLUG is no longer an optional setting.  In order to remove
-> > > > it as on option code paths that check CONFIG_HOTPLUG will removed
-> > > > along with the attributes __devexit_p, __devexit, __devinitconst, and
-> > > > __devinitdata.
-> > > > 
-> > > > I'll save the list from the mailbomb of this huge patchset.  The
-> > > > patches themselves are going to Greg KH for the driver core tree.
-> > > > 
-> > > 
-> > > _iff_ we are going to do this I'd prefer pushing input pieces through my
-> > > tree to limit clashes with other work.
-> > 
-> > That's fine with me.  I'll ignore any drivers/input/ patches then, is
-> > that ok?
+On Fri, Nov 16, 2012 at 11:35:37AM -0800, Sukadev Bhattiprolu wrote:
+> Jiri Olsa [jolsa@redhat.com] wrote:
+> | > 
+> | > Can we remove the assumption that the event id is a generic event that
+> | > has PERF_COUNT_HW_ prefix and also let the architectures pass in a "show"
+> | > function ? This would allow architectures to display any arch specific
+> | > events that don't yet have a generic counterpart.
+> | > 
+> | > IOW, can we do something like this (untested) and make PERF_EVENT_ATTR global:
+> | 
+> | hm, then you probably can use following:
+> | 
+> | http://www.spinics.net/lists/kernel/msg1434233.html
 > 
-> Please do the same for PM/ACPI.
+> For now, power events can simply be u64 - so am hoping to have something
+> like this and replace the raw codes:
+> 
+> #define PM_CYC			0x1e
+> #define PM_GCT_NOSLOT_CYC	0x100f8
+> 
+> EVENT_ATTR_STR() is interesting, but would require new/extra macros like
+> 
+> #define PM_CYC_STR		"0x1e"
+> #define PM_GCT_NOSLOT_CYC_STR	"0x100f8"
+> 
+> I went down the path we discussed earlier - to have x86 and Power share
+> the EVENT_ATTR() macros. This is making the x86 code less concise
+> 
+> 	EVENT_ATTR(cpu-cycles,	CPU_CYCLES)
+> 
+> becomes
+> 
+> 	EVENT_ATTR(cpu-cycles,	PERF_COUNT_HW_CPU_CYCLES, events_sysfs_show)
+> 
+> with each EVENT_ATTR() explcitly adding events_sysfs_show or needing another
+> wrapper around the wrappers.
+> 
+> Still tweaking it, but would it be flexible to make 'struct pmu_events_attr'
+> common and let architectures define the EVENT_ATTR() as needed ? Would
+> duplicate some code but hopefully not a lot.
 
-Ok, will do.
+sounds good, let's see ;)
 
-> Do I need to pull anything for those patches to compile without problems?
-
-Nope, it's just the removal of a symbol, that for 3.7, is defined away
-to be an empty string anyway :)
-
-thanks,
-
-greg k-h
+jirka
