@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2KSQ7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:59:09 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:45357 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab2KSQ7H (ORCPT
+	id S1753924Ab2KSQ7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:59:21 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50186 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab2KSQ7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:59:07 -0500
-Message-ID: <50AA6558.1060302@atmel.com>
-Date: Mon, 19 Nov 2012 17:59:04 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 11:59:08 -0500
+Date: Mon, 19 Nov 2012 08:59:03 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 06/17] cgroup: remove duplicate RCU free on struct cgroup
+Message-ID: <20121119165903.GG15971@htj.dyndns.org>
+References: <1352775704-9023-1-git-send-email-tj@kernel.org>
+ <1352775704-9023-7-git-send-email-tj@kernel.org>
+ <50A9F5B2.5080509@huawei.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>
-Subject: [GIT PULL] at91: header fix for 3.8
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A9F5B2.5080509@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Hello, Li.
 
-A little fix that goes on top of the modification of headers made
-by Jean-Christophe. Obviously, I have placed this one on top of your current
-at91/header branch.
+On Mon, Nov 19, 2012 at 05:02:42PM +0800, Li Zefan wrote:
+> On 2012/11/13 11:01, Tejun Heo wrote:
+> > struct cgroup is made RCU-safe by synchronize_rcu() in cgroup_diput().
+> 
+> but synchronize_rcu() is called before ss->destroy().
+> 
+> rcu_read_lock();
+> for_each_leaf_cfs_rq(cpu_rq(cpu), cfs_rq)
+> 	print_cfs_rq(m, cpu, cfs_rq);
+> 	-> call cgroup_path(task_group->css.cgroup);
+> rcu_read_unlock();
+> 
+> With this patch, if the above code race with cgroup_diput(), we might
+> end up accessing a cgroup which has been freed.
 
-The following changes since commit 75984df05d86956541795f01e62d7dc67bc522fd:
+Ah, okay.  So, the problem here is that sched is using ->css_free() as
+a de-registration point rather than freeing and may end up walking it
+after ->css_free() is complete inside RCU period.
 
-  arm: at91: move at91rm9200 rtc header in drivers/rtc (2012-11-06 20:30:52 +0800)
+I think the correct solution is using ->css_offline() for that.  It's
+ugly to require double RCU grace periods.
 
-are available in the git repository at:
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 278752e..a91e7ad 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -893,7 +893,7 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+> >  
+> >  		simple_xattrs_free(&cgrp->xattrs);
+> >  
+> > -		kfree_rcu(cgrp, rcu_head);
+> > +		kfree(cgrp);
+> 
+> This was also added to prevent a race in group scheduling code, and I think the race still
+> exists.
 
-  git://github.com/at91linux/linux-at91.git tags/at91-header
+Care to point out which one?  I don't think the double-RCU workaround
+is a good idea.  We really should sort it out by following object
+lifecycle rules consistently.
 
-for you to fetch changes up to 2abb74eaf6e73cb42e87bdc9e9c2535ce485e614:
+Thanks.
 
-  atmel: move ATMEL_MAX_UART to platform_data/atmel.h (2012-11-19 17:44:54 +0100)
-
-----------------------------------------------------------------
-One fix related to UART for the "headers move" branch
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      atmel: move ATMEL_MAX_UART to platform_data/atmel.h
-
- arch/arm/mach-at91/include/mach/hardware.h  | 3 ---
- arch/avr32/mach-at32ap/include/mach/board.h | 1 -
- include/linux/platform_data/atmel.h         | 6 ++++++
- 3 files changed, 6 insertions(+), 4 deletions(-)
-
-Thanks, best regards,
 -- 
-Nicolas Ferre
+tejun
