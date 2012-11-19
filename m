@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2KSSoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 13:44:30 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:32588 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2KSSo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 13:44:28 -0500
-Message-ID: <1353350661.4156.0.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jason Wang <jasowang@redhat.com>,
-        <davem@davemloft.net>, <virtualization@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <krkumar2@in.ibm.com>, <kvm@vger.kernel.org>, <edumazet@google.com>
-Date: Mon, 19 Nov 2012 18:44:21 +0000
-In-Reply-To: <20121118091354.GA31775@redhat.com>
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
-	 <1351591403-23065-3-git-send-email-jasowang@redhat.com>
-	 <87y5igyhyg.fsf@rustcorp.com.au> <20121113064026.GA27416@redhat.com>
-	 <1353112529.2743.83.camel@bwh-desktop.uk.solarflarecom.com>
-	 <20121118091354.GA31775@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1754717Ab2KSSoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 13:44:37 -0500
+Received: from mga03.intel.com ([143.182.124.21]:35907 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754074Ab2KSSof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 13:44:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,280,1352102400"; 
+   d="scan'208";a="170232130"
+Date: Mon, 19 Nov 2012 19:44:23 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: ciminaghi@gnudd.com
+Cc: rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/10] sta2x11-mfd patches
+Message-ID: <20121119184423.GA32464@sortiz-mobl>
+References: <1352470801-2418-1-git-send-email-ciminaghi@gnudd.com>
+ <20121119175858.GI18738@sortiz-mobl>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119175858.GI18738@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-11-18 at 11:13 +0200, Michael S. Tsirkin wrote:
-> On Sat, Nov 17, 2012 at 12:35:29AM +0000, Ben Hutchings wrote:
-> > On Tue, 2012-11-13 at 08:40 +0200, Michael S. Tsirkin wrote:
-> > > On Mon, Nov 05, 2012 at 11:38:39AM +1030, Rusty Russell wrote:
-> > > > > @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
-> > > > >  {
-> > > > >  	struct virtnet_info *vi = netdev_priv(dev);
-> > > > >  
-> > > > > -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
-> > > > > -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
-> > > > > +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
-> > > > > +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
-> > > > >  	ring->rx_pending = ring->rx_max_pending;
-> > > > >  	ring->tx_pending = ring->tx_max_pending;
-> > > > > -
-> > > > >  }
-> > > > 
-> > > > This assumes all vqs are the same size.  I think this should probably
-> > > > check: for mq mode, use the first vq, otherewise use the 0th.
-> > > 
-> > > For rx_pending/tx_pending I think what is required here is the
-> > > actual number of outstanding buffers.
-> > > Dave, Eric - right?
-> > > 
-> > > So this should be the total over all rings and to be useful,
-> > > rx_max_pending/tx_max_pending should be the total too.
-> > 
-> > So far as I know, all current implementations use the number of
-> > descriptors per ring here. virtio_net should be consistent with this.
-> > 
-> > Ben.
-> 
-> Problem is, it could in theory be different between rings. I guess we
-> could use the maximum.
-> 
-> What's the right thing to do for rx_pending - I am guessing
-> we want the current outstanding packets right?
+Davide, Mark,
 
-The 'max_pending' fields are for the maximum ring sizes supported; the
-'pending' fields are for the current ring sizes.  The current number of
-descriptors pending is not included (would be a bit pointless).
+On Mon, Nov 19, 2012 at 06:58:58PM +0100, Samuel Ortiz wrote:
+> Hi Davide,
+> 
+> On Fri, Nov 09, 2012 at 03:19:51PM +0100, ciminaghi@gnudd.com wrote:
+> > From: Davide Ciminaghi <ciminaghi@gnudd.com>
+> > 
+> > Hi,
+> > 
+> > this is v3 of a patchset submitted on
+> > 2012/10/22 (see https://lkml.org/lkml/2012/10/22/290)
+> > and 2012/09/12 (see https://lkml.org/lkml/2012/9/12/139).
+> > Here's a summary of changes in v3:
+> > 
+> > * Regmap support fix:
+> > sta2x11_apb_soc_regs_writeable_reg() fixed as
+> > suggested by Mark Brown
+> > (see https://lkml.org/lkml/2012/10/23/448)
+> > 
+> > * Regmap support fix: regmap field in struct
+> > sta2x11_mfd (a single struct regmap * in v2) becomes
+> > an array of struct regmap pointers, one per platform
+> > device.
+> > 
+> > Davide Ciminaghi (10):
+> >   drivers/mfd/sta2x11-mfd: add apb-soc regs driver and factor out
+> >     common code
+> >   drivers/mfd/sta2x11-mfd: add regmap support
+> >   drivers/mfd/sta2x11-mfd: add sta2x11_mfd_get_regs_data() function
+> >   drivers/mfd/sta2x11-mfd: use defines for platform devices' names
+> >   drivers/mfd/sta2x11-mfd: only add sta2x11_mfd if it hasn't already
+> >     been added
+> >   drivers/mfd/sta2x11-mfd: platform probe: don't mind about gpio
+> >     platform data
+> >   drivers/mfd/sta2x11-mfd: use one lock per device instead of one lock
+> >     per mfd
+> >   drivers/mfd/sta2x11-mfd: add scr (otp registers) platform driver
+> >   drivers/mfd/sta2x11-mfd: add defines for some sta2x11 sctl registers
+> >   drivers/mfd/sta2x11-mfd: add myself to copyright
+> > 
+> >  drivers/mfd/Kconfig             |    1 +
+> >  drivers/mfd/sta2x11-mfd.c       |  532 +++++++++++++++++++++++++++------------
+> >  include/linux/mfd/sta2x11-mfd.h |  198 ++++++++++++++-
+> >  3 files changed, 574 insertions(+), 157 deletions(-)
+> Thanks, all 10 patches applied now.
+I merged Mark's topic/lock branch into my for-next branch for that patchset to
+build. Mark, are you fine with that ?
 
-Ben.
+Cheers,
+Samuel.
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
