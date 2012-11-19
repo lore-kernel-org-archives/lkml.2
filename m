@@ -1,120 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2KSAYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 19:24:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:42099 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab2KSAYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 19:24:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,275,1352102400"; 
-   d="scan'208";a="219450580"
-Date: Mon, 19 Nov 2012 01:24:04 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org
-Subject: Re: mfd: lpc_ich: NULL pointer dereference at (second) module removal
-Message-ID: <20121119002404.GD18738@sortiz-mobl>
-References: <1352467148.1895.20.camel@x61.thuisdomein>
- <1352741475.6008.16.camel@petert>
+	id S1752782Ab2KSA2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 19:28:31 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45754 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2KSA2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 19:28:30 -0500
+Date: Sun, 18 Nov 2012 16:24:47 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Qing Xu <qingx@marvell.com>
+Cc: dwmw2@infradead.org, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 4/7] mfd: max8925: support dt for power supply
+Message-ID: <20121119002447.GH29066@lizard.sbx05977.paloaca.wayport.net>
+References: <1352187764-9901-1-git-send-email-qingx@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1352741475.6008.16.camel@petert>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352187764-9901-1-git-send-email-qingx@marvell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul, Peter,
-
-On Mon, Nov 12, 2012 at 11:31:15AM -0600, Peter Tyser wrote:
-> Thanks for reporting the issue!
+On Tue, Nov 06, 2012 at 03:42:44PM +0800, Qing Xu wrote:
+> From: Qing Xu <qingx@marvell.com>
 > 
-> On Fri, 2012-11-09 at 14:19 +0100, Paul Bolle wrote:
-> > 0) I can trigger a NULL pointer dereference if I remove the lpc_ich
-> > module. This seems to only happen if I remove it for the second time
-> > (ie, remove the module, insert it and remove it again). This happens
-> > both on i686 and x86_64 (different setups, as inserting the module
-> > triggers different messages about the initialization of the MFD cells on
-> > these machines). Both machines are running v3.6.6.
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+
+W/ this patch I'm getting this warning:
+
+  CC      drivers/power/max8925_power.o
+  drivers/power/max8925_power.c: In function ‘max8925_power_probe’:
+  drivers/power/max8925_power.c:479:3: warning: statement with no effect
+  [-Wunused-value]
+
+>  drivers/power/max8925_power.c |   57 ++++++++++++++++++++++++++++++++++++----
+>  1 files changed, 51 insertions(+), 6 deletions(-)
 > 
-> I believe this is caused by the fact that non-MFD devices get attached
-> to the same parent as the iTCO_wdt driver, which is an MFD.  When the
-> MFD code attempts unregister the MFD drivers, it oops when the non-MFD
-> devices are accessed since they don't have the mfd_cell node.
-That's probably correct. I just merged commit
-5dc4dda91c86ef82bd53d77e5de50ec095b33e46 into my for-next branch and that one
-could fix that issue. Could you guys please give it a go ? This is the actual
-patch:
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index daa333b..dd2ac2d 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -426,14 +426,58 @@ static __devexit int max8925_deinit_charger(struct max8925_power_info *info)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static int max8925_power_dt_init(struct platform_device *pdev,
+> +			      struct max8925_power_pdata *pdata)
+> +{
+> +	struct device_node *nproot = pdev->dev.parent->of_node, *np;
+> +	int batt_detect, topoff_threshold, fast_charge,
+> +		no_temp_support, no_insert_detect;
 
->From 5dc4dda91c86ef82bd53d77e5de50ec095b33e46 Mon Sep 17 00:00:00 2001
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Date: Fri, 9 Nov 2012 16:15:28 +0000
-Subject: [PATCH] mfd: Only unregister platform devices allocated by the mfd
- core
+One variable declaration per line please.
 
-mfd_remove_devices would iterate over all devices sharing a parent with
-an mfd device regardless of whether they were allocated by the mfd core
-or not. This especially caused problems when the device structure was
-not contained within a platform_device, because to_platform_device is
-used on each device pointer.
+> +
+> +	if (!nproot)
+> +		return -ENODEV;
 
-This patch defines a device_type for mfd devices and checks this is
-present from mfd_remove_devices_fn before processing the device.
+Please add an empty line here.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/mfd-core.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+> +	np = of_find_node_by_name(nproot, "charger");
+> +	if (!np) {
+> +		dev_err(&pdev->dev, "failed to find charger node\n");
+> +		return -ENODEV;
+> +	}
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index f8b7771..7604f4e 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -21,6 +21,10 @@
- #include <linux/irqdomain.h>
- #include <linux/of.h>
- 
-+static struct device_type mfd_dev_type = {
-+	.name	= "mfd_device",
-+};
-+
- int mfd_cell_enable(struct platform_device *pdev)
- {
- 	const struct mfd_cell *cell = mfd_get_cell(pdev);
-@@ -91,6 +95,7 @@ static int mfd_add_device(struct device *parent, int id,
- 		goto fail_device;
- 
- 	pdev->dev.parent = parent;
-+	pdev->dev.type = &mfd_dev_type;
- 
- 	if (parent->of_node && cell->of_compatible) {
- 		for_each_child_of_node(parent->of_node, np) {
-@@ -204,10 +209,16 @@ EXPORT_SYMBOL(mfd_add_devices);
- 
- static int mfd_remove_devices_fn(struct device *dev, void *c)
- {
--	struct platform_device *pdev = to_platform_device(dev);
--	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct platform_device *pdev;
-+	const struct mfd_cell *cell;
- 	atomic_t **usage_count = c;
- 
-+	if (dev->type != &mfd_dev_type)
-+		return 0;
-+
-+	pdev = to_platform_device(dev);
-+	cell = mfd_get_cell(pdev);
-+
- 	/* find the base address of usage_count pointers (for freeing) */
- 	if (!*usage_count || (cell->usage_count < *usage_count))
- 		*usage_count = cell->usage_count;
--- 
-1.7.10.4
+ditto.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> +	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
+> +	of_property_read_u32(np, "batt-detect", &batt_detect);
+> +	of_property_read_u32(np, "fast-charge", &fast_charge);
+> +	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
+> +	of_property_read_u32(np, "no-temp-support", &no_temp_support);
+> +
+> +	pdata->batt_detect = batt_detect;
+> +	pdata->fast_charge = fast_charge;
+> +	pdata->topoff_threshold = topoff_threshold;
+> +	pdata->no_insert_detect = no_insert_detect;
+> +	pdata->no_temp_support = no_temp_support;
+
+ditto
+
+> +	pr_err("batt_detect%d, topoff_threshold%d, fast_charge%d,no_temp_support%d, no_insert_detect%d\n",
+> +		batt_detect, topoff_threshold, fast_charge,
+> +		no_temp_support, no_insert_detect);
+
+pr_err, are you sure? :)
+
+> +	return 0;
+> +}
+> +#else
+> +#define max8925_power_dt_init(x, y)	(-1)
+
+You should make it static inline function to get rid of the warning above.
+
+> +#endif
+> +
+> +static char *power_supplicants[] = {
+> +	"max8925-battery",
+> +};
+> +
+>  static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  {
+>  	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+> -	struct max8925_power_pdata *pdata = NULL;
+> +	struct max8925_power_pdata *pdata = pdev->dev.platform_data;
+>  	struct max8925_power_info *info;
+>  	int ret;
+>  
+> -	pdata = pdev->dev.platform_data;
+> +	if (pdev->dev.parent->of_node && !pdata) {
+> +		pdata = devm_kzalloc(&pdev->dev,
+> +				     sizeof(struct max8925_power_pdata),
+> +				     GFP_KERNEL);
+>
+
+Please move this logic into max8925_power_dt_init().
+So it will look like
+
+	if (!pdata)
+		pdata = max8925_power_dt_init(pdev);
+	if (!pdata) {
+		dev_err(...);
+		return ...;
+	}
+
+> +		max8925_power_dt_init(pdev, pdata);
+> +	}
+>  	if (!pdata) {
+>  		dev_err(&pdev->dev, "platform data isn't assigned to "
+>  			"power supply\n");
+> @@ -453,8 +497,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	info->ac.properties = max8925_ac_props;
+>  	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
+>  	info->ac.get_property = max8925_ac_get_prop;
+> -	info->ac.supplied_to = pdata->supplied_to;
+> -	info->ac.num_supplicants = pdata->num_supplicants;
+> +	info->ac.supplied_to = power_supplicants;
+> +	info->ac.num_supplicants = ARRAY_SIZE(power_supplicants);
+>  	ret = power_supply_register(&pdev->dev, &info->ac);
+>  	if (ret)
+>  		goto out;
+> @@ -465,8 +509,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	info->usb.properties = max8925_usb_props;
+>  	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
+>  	info->usb.get_property = max8925_usb_get_prop;
+> -	info->usb.supplied_to = pdata->supplied_to;
+> -	info->usb.num_supplicants = pdata->num_supplicants;
+> +	info->usb.supplied_to = power_supplicants;
+> +	info->usb.num_supplicants = ARRAY_SIZE(power_supplicants);
+>  
+>  	ret = power_supply_register(&pdev->dev, &info->usb);
+>  	if (ret)
+> @@ -491,6 +535,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	info->no_insert_detect = pdata->no_insert_detect;
+>  
+>  	max8925_init_charger(chip, info);
+> +
+
+This change is unrelated.
+
+>  	return 0;
+>  out_battery:
+>  	power_supply_unregister(&info->battery);
+> -- 
+> 1.7.0.4
+
+Thanks,
+Anton.
