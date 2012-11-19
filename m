@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab2KSFbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:31:53 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45275 "EHLO
+	id S1753609Ab2KSFcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:32:15 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43694 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab2KSFbv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753364Ab2KSFcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:31:51 -0500
-X-Originating-IP: 217.70.178.150
+	Mon, 19 Nov 2012 00:32:12 -0500
+X-Originating-IP: 217.70.178.138
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>, Josh Triplett <josh@joshtriplett.org>,
-        Ingo Molnar <mingo@elte.hu>, Diwakar Tundlam <dtundlam@nvidia.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 41/58] init/calibrate.c: Add prototype for __weak stub of calibrate_delay_is_known
-Date: Sun, 18 Nov 2012 21:28:20 -0800
-Message-Id: <1353302917-13995-42-git-send-email-josh@joshtriplett.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 44/58] mm: Only define is_pageblock_removable_nolock when needed
+Date: Sun, 18 Nov 2012 21:28:23 -0800
+Message-Id: <1353302917-13995-45-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
@@ -28,30 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-init/calibrate.c defines an empty stub of calibrate_delay_is_known with
-__attribute__((weak)), for use on architectures without an alternate
-implementation.  Define a prototype of that function, to satisfy gcc
-(-Wmissing-prototypes) and Sparse (-Wdecl).
+mm/page_alloc.c defines is_pageblock_removable_nolock unconditionally,
+but include/linux/memory_hotplug.h only prototypes it when
+CONFIG_MEMORY_HOTPLUG=y and CONFIG_MEMORY_HOTREMOVE=y.  Add the
+corresponding conditions around the definition, too.
 
-init/calibrate.c:257:150: warning: no previous prototype for ‘calibrate_delay_is_known’ [-Wmissing-prototypes]
+This also eliminates warnings from GCC (-Wmissing-prototypes) and Sparse
+(-Wdecl).
+
+mm/page_alloc.c:5634:6: warning: no previous prototype for ‘is_pageblock_removable_nolock’ [-Wmissing-prototypes]
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- init/calibrate.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/page_alloc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/init/calibrate.c b/init/calibrate.c
-index fda0a7b..7177627 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -254,6 +254,7 @@ static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
-  * Architectures should override this function if a faster calibration
-  * method is available.
-  */
-+unsigned long calibrate_delay_is_known(void);
- unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d857953..706bd5f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5631,6 +5631,7 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
+ 	return false;
+ }
+ 
++#if defined(CONFIG_MEMORY_HOTPLUG) && defined(CONFIG_MEMORY_HOTREMOVE)
+ bool is_pageblock_removable_nolock(struct page *page)
  {
- 	return 0;
+ 	struct zone *zone;
+@@ -5654,6 +5655,7 @@ bool is_pageblock_removable_nolock(struct page *page)
+ 
+ 	return !has_unmovable_pages(zone, page, 0);
+ }
++#endif /* defined(CONFIG_MEMORY_HOTPLUG) && defined(CONFIG_MEMORY_HOTREMOVE) */
+ 
+ #ifdef CONFIG_CMA
+ 
 -- 
 1.7.10.4
 
