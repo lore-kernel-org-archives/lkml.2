@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab2KSOIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 09:08:24 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:53404 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab2KSOIY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 09:08:24 -0500
-Date: Mon, 19 Nov 2012 14:12:24 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, serge@hallyn.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] pidns: remove the useless function is_container_init
-Message-ID: <20121119141224.GA4321@mail.hallyn.com>
-References: <1353321882-30491-1-git-send-email-gaofeng@cn.fujitsu.com>
+	id S1752690Ab2KSOTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 09:19:45 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:47689 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334Ab2KSOTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 09:19:44 -0500
+Message-ID: <50AA3FEF.2070100@parallels.com>
+Date: Mon, 19 Nov 2012 18:19:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353321882-30491-1-git-send-email-gaofeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Rientjes <rientjes@google.com>
+CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>,
+        <linux-man@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com> <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> since commit 1cdcbec1a3372c0c49c59d292e708fd07b509f18,
-> is_container_init has no used for a long time.
-> 
-> just remove it.
 
-Only thing is it's being exported, so I think it needs to go through
-deprecation.
-
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> ---
->  include/linux/sched.h |    6 ------
->  kernel/pid.c          |   15 ---------------
->  2 files changed, 0 insertions(+), 21 deletions(-)
+>>> Umm, why do users of cpusets not want to be able to trigger memory 
+>>> pressure notifications?
+>>>
+>> Because cpusets only deal with memory placement, not memory usage.
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 0dd42a0..3fadd26 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1710,12 +1710,6 @@ static inline int is_global_init(struct task_struct *tsk)
->  	return tsk->pid == 1;
->  }
->  
-> -/*
-> - * is_container_init:
-> - * check whether in the task is init in its own pid namespace.
-> - */
-> -extern int is_container_init(struct task_struct *tsk);
-> -
->  extern struct pid *cad_pid;
->  
->  extern void free_task(struct task_struct *tsk);
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index aebd4f5..8ccdf0e 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -81,21 +81,6 @@ struct pid_namespace init_pid_ns = {
->  };
->  EXPORT_SYMBOL_GPL(init_pid_ns);
->  
-> -int is_container_init(struct task_struct *tsk)
-> -{
-> -	int ret = 0;
-> -	struct pid *pid;
-> -
-> -	rcu_read_lock();
-> -	pid = task_pid(tsk);
-> -	if (pid != NULL && pid->numbers[pid->level].nr == 1)
-> -		ret = 1;
-> -	rcu_read_unlock();
-> -
-> -	return ret;
-> -}
-> -EXPORT_SYMBOL(is_container_init);
-> -
->  /*
->   * Note: disable interrupts while the pidmap_lock is held as an
->   * interrupt might come in and do read_lock(&tasklist_lock).
-> -- 
-> 1.7.7.6
+> The set of nodes that a thread is allowed to allocate from may face memory 
+> pressure up to and including oom while the rest of the system may have a 
+> ton of free memory.  Your solution is to compile and mount memcg if you 
+> want notifications of memory pressure on those nodes.  Others in this 
+> thread have already said they don't want to rely on memcg for any of this 
+> and, as Anton showed, this can be tied directly into the VM without any 
+> help from memcg as it sits today.  So why implement a simple and clean 
+> mempressure cgroup that can be used alone or co-existing with either memcg 
+> or cpusets?
+> 
+
+Forgot this one:
+
+Because there is a huge ongoing work going on by Tejun aiming at
+reducing the effects of orthogonal hierarchy. There are many controllers
+today that are "close enough" to each other (cpu, cpuacct; net_prio,
+net_cls), and in practice, it brought more problems than it solved.
+
+So yes, *maybe* mempressure is the answer, but it need to be justified
+with care. Long term, I think a saner notification API for memcg will
+lead us to a better and brighter future.
+
+There is also yet another aspect: This scheme works well for global
+notifications. If we would always want this to be global, this would
+work neatly. But as already mentioned in this thread, at some point
+we'll want this to work for a group of processes as well. At that point,
+you'll have to count how much memory is being used, so you can determine
+whether or not pressure is going on. You will, then, have to redo all
+the work memcg already does.
+
