@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2KSX4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 18:56:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35509 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268Ab2KSX4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 18:56:24 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com>
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org> <1353222571-31544-4-git-send-email-yinghai@kernel.org> <50AAB5E8.5070807@zytor.com> <CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com> <50AABD15.1050809@zytor.com> <CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com>
+	id S1753568Ab2KSX57 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:57:59 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47771 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2KSX56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 18:57:58 -0500
+Message-ID: <50AAC77C.8040505@linux.vnet.ibm.com>
+Date: Tue, 20 Nov 2012 07:57:48 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 19 Nov 2012 15:55:45 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Message-ID: <41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 0/3] KVM: x86: improve reexecute_instruction
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12111923-1618-0000-0000-000002E2853A
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00192796; UDB=6.00043684; UTC=2012-11-19
+ 23:54:41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We probably should add a flag for those, but that is more of a boot_flag...
+The current reexecute_instruction can not well detect the failed instruction
+emulation. It allows guest to retry all the instructions except it accesses
+on error pfn.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+For example, these cases can not be detected:
+- for tdp used
+  currently, it refused to retry all instructions. If nested npt is used, the
+  emulation may be caused by shadow page, it can be fixed by unshadow the
+  shadow page.
 
->On Mon, Nov 19, 2012 at 3:13 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 11/19/2012 02:53 PM, Yinghai Lu wrote:
->>>
->>> any other field, in header struct field that we can use to tell
->>> bzImage could be used that
->>> 0x200 directly?
->>>
->>> hardware_subarch?
->>>
->>
->> There isn't one... this dates back all the way to the original x86-64
->> kernels.
->>
->> Are you asking if we can tell this is a 64-bit kernel (as opposed to
->a
->> 32-bit kernel, which obviously doesn't have a 64-bit entry point)?
->> Unfortunately there isn't an intentional one that I know of.  There
->> might be an accidental such indicator, but we'd have to go back to
->look
->> at 8+ years of kernels.  We can't even rely on a jmp instruction at
->the
->> address...
->
->So we could add one field to tell that bzImage could be used with
->64bit?
->
->current in this patchset, I added
->
->0268/4  2.12+   ext_ramdisk_image ramdisk_image 32 bits
->026C/4  2.12+   ext_ramdisk_size ramdisk_size high 32 bits
->0270/4  2.12+   code64_start_offset 64bit start offset for bzImage
->0274/4  2.12+   ext_cmd_line_ptr cmd_line_ptr high 32 bits
->
->so you don't like code64_start_offset.
->
->how about other three?
->
->can we use bits 31 of hardware_subarch to tell it is bzImage for
->x86_64?
->
->Thanks
->
->Yinghai
+- for shadow mmu
+  some cases are nested-write-protect, for example, if the page we want to
+  write is used as PDE but it chains to itself. Under this case, we should
+  stop the emulation and report the case to userspace.
 
+This test case based on kvm-unit-test can trigger a infinite loop on current
+code (ept = 0), after this patchset, it can report the error to Qemu.
+
+Marcelo, I am afraid this test case can not be putted on kvm-unit-test,
+autotest is confused about this case since it can abort Qemu.
+
+Subject: [PATCH] access test: test unhandleable instruction
+
+Test the instruction which can not be handled by kvm
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ x86/access.c |   27 ++++++++++++++++++++++++++-
+ 1 files changed, 26 insertions(+), 1 deletions(-)
+
+diff --git a/x86/access.c b/x86/access.c
+index 23a5995..e88db6b 100644
+--- a/x86/access.c
++++ b/x86/access.c
+@@ -2,6 +2,7 @@
+ #include "libcflat.h"
+ #include "desc.h"
+ #include "processor.h"
++#include "vm.h"
+
+ #define smp_id() 0
+
+@@ -739,6 +740,28 @@ err:
+ 	return 0;
+ }
+
++static int check_retry_unhandleable_ins(ac_pool_t *pool)
++{
++	unsigned long mem = 30 * 1024 * 1024;
++	unsigned long esp;
++	ac_test_t at;
++
++	ac_test_init(&at, (void *)(0x123406003000));
++	at.flags[AC_PDE_PRESENT] = at.flags[AC_PDE_WRITABLE] = 1;
++	at.flags[AC_PTE_PRESENT] = at.flags[AC_PTE_WRITABLE] = 1;
++	at.flags[AC_CPU_CR0_WP] = 1;
++
++	at.phys = mem;
++	ac_setup_specific_pages(&at, pool, mem, 0);
++
++	asm volatile("mov %%rsp, %%rax  \n\t" : "=a"(esp));
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(0x123406003000 + 0xf0));
++	asm volatile ("int $0x3 \n\t");
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(esp));
++
++	return 1;
++}
++
+ int ac_test_exec(ac_test_t *at, ac_pool_t *pool)
+ {
+     int r;
+@@ -756,7 +779,8 @@ const ac_test_fn ac_test_cases[] =
+ {
+ 	corrupt_hugepage_triger,
+ 	check_pfec_on_prefetch_pte,
+-	check_smep_andnot_wp
++	check_smep_andnot_wp,
++	check_retry_unhandleable_ins
+ };
+
+ int ac_test_run(void)
+@@ -770,6 +794,7 @@ int ac_test_run(void)
+     tests = successes = 0;
+     ac_env_int(&pool);
+     ac_test_init(&at, (void *)(0x123400000000 + 16 * smp_id()));
++
+     do {
+ 	if (at.flags[AC_CPU_CR4_SMEP] && (ptl2[2] & 0x4))
+ 		ptl2[2] -= 0x4;
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.7.6
+
