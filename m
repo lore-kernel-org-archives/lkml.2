@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2KSRqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:46:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59008 "EHLO mga11.intel.com"
+	id S1753918Ab2KSRrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:47:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35565 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab2KSRq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:46:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,280,1352102400"; 
-   d="scan'208";a="251434066"
-Date: Mon, 19 Nov 2012 18:46:15 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Aaron Sierra <asierra@xes-inc.com>
-Subject: Re: [PATCH v3] mfd: lpc_ich: Fix resource request for [mem
- 0x00000000]
-Message-ID: <20121119174615.GG18738@sortiz-mobl>
-References: <efe3e3f7-eb7f-460b-86d7-293dba8651d8@zimbra>
- <1352462129.8352.2.camel@thor>
+	id S1752811Ab2KSRrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:47:08 -0500
+Date: Mon, 19 Nov 2012 18:47:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+Message-ID: <20121119174728.GA11365@redhat.com>
+References: <20121109182943.GA2789@redhat.com> <20121109183026.GA2719@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352462129.8352.2.camel@thor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121109183026.GA2719@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 11/09, Oleg Nesterov wrote:
+>
+> On 11/09, Oleg Nesterov wrote:
+> >
+> > Note: TASK_SIZE doesn't look right at least on x86, I think it should
+> > be replaced by TASK_SIZE_MAX.
+> > ...
+> > --- x/arch/x86/kernel/hw_breakpoint.c
+> > +++ x/arch/x86/kernel/hw_breakpoint.c
+> > @@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct
+> >  	va = info->address;
+> >  	len = get_hbp_len(info->len);
+> >
+> > -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
+> > +	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+>
+> But actully I'd like to ask another question.
+>
+> Can't we add the additional !in_gate_area_no_mm() check to allow
+> the hw breakpoints in vsyscall?
+>
+> Quoting Amnon:
+>
+> 	My service needs to catch the system-calls of its traced son.
+> 	Almost all system-calls are caught with PTRACE_SYSCALL, but not those
+> 	using the vsyscall page - especially "gettimeofday()" and "time()".
+>
+> 	...
+>
+> 	However, the code in "arch/x86/kernel/ptrace.c" forbids catching kernel
+> 	addresses.
+>
+> I tend to agree with Amnon...
+>
+> What do you think?
 
-On Fri, Nov 09, 2012 at 06:55:29AM -0500, Peter Hurley wrote:
-> The older southbridges supported by the lpc_ich driver do not
-> provide memory-mapped space of the root complex. The driver
-> correctly avoids computing the iomem address in this case, yet
-> submits a zeroed resource request anyway (via mfd_add_devices()).
-> 
-> Remove the iomem resource from the resource array submitted to the
-> mfd core for the older southbridges.
-> 
-> Acked-by: Aaron Sierra <asierra@xes-inc.com>
-> Cc: Peter Tyser <ptyser@xes-inc.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
-> 
-> v2: post-decrement to match existing style
->     retitle patch subject
-> v3: respin as standalone patch
-> 
->  drivers/mfd/lpc_ich.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index a22544f..f507c09 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -842,6 +842,9 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev *dev,
->  		res = wdt_mem_res(ICH_RES_MEM_GCS);
->  		res->start = base_addr + ACPIBASE_GCS_OFF;
->  		res->end = base_addr + ACPIBASE_GCS_END;
-> +	} else {
-So I suppose there is no v3 for the iTCO ? If we're expecting all versions
-after 1 to have a memory mapped region, we should have something like:
+ping ;)
 
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -830,7 +830,10 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev
-*dev,
-         * we have to read RCBA from PCI Config space 0xf0 and use
-         * it as base. GCS = RCBA + ICH6_GCS(0x3410).
-         */
--       if (lpc_chipset_info[id->driver_data].iTCO_version == 2) {
-+       if (lpc_chipset_info[id->driver_data].iTCO_version == 1) {
-+               /* Don't register iomem for TCO ver 1 */
-+               lpc_ich_cells[LPC_WDT].num_resources--;
-+       } else {
-                pci_read_config_dword(dev, RCBABASE, &base_addr_cfg);
-                base_addr = base_addr_cfg & 0xffffc000;
-                if (!(base_addr_cfg & 1)) {
+I agree the patch I sent is very minor (although it looks like the trivial
+bugfix to me).
 
-Cheers,
-Samuel.
+Just I think Amnon has a point, shouldn't we change this change like below?
+(on top of this fixlet).
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Oleg.
+
+--- x/arch/x86/kernel/hw_breakpoint.c
++++ x/arch/x86/kernel/hw_breakpoint.c
+@@ -188,6 +188,11 @@ static int get_hbp_len(u8 hbp_len)
+ 	return len_in_bytes;
+ }
+ 
++static inline bool bp_in_gate(unsigned long start, unsigned long end)
++{
++	return in_gate_area_no_mm(start) && in_gate_area_no_mm(end);
++}
++
+ /*
+  * Check for virtual address in kernel space.
+  */
+@@ -200,7 +205,8 @@ int arch_check_bp_in_kernelspace(struct 
+ 	va = info->address;
+ 	len = get_hbp_len(info->len);
+ 
+-	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
++	return ((va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE)) &&
++		!bp_in_gate(va, va + len - 1);
+ }
+ 
+ int arch_bp_generic_fields(int x86_len, int x86_type,
+
