@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab2KSOFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 09:05:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49951 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab2KSOFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 09:05:07 -0500
-Date: Mon, 19 Nov 2012 15:05:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
-Message-ID: <20121119140502.GA16803@dhcp22.suse.cz>
-References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
- <1352820639-13521-3-git-send-email-mhocko@suse.cz>
- <50A2E3B3.6080007@jp.fujitsu.com>
- <20121114101052.GD17111@dhcp22.suse.cz>
+	id S1752662Ab2KSOGR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 09:06:17 -0500
+Received: from mail.bmw-carit.de ([62.245.222.98]:37882 "EHLO
+	mail.bmw-carit.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab2KSOGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 09:06:16 -0500
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Nov 2012 09:06:16 EST
+X-CTCH-RefID: str=0001.0A0C0201.50AA3B5F.01A8,ss=1,re=0.000,fgs=0
+Message-ID: <50AA3B5E.3080701@bmw-carit.de>
+Date: Mon, 19 Nov 2012 14:59:58 +0100
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121114101052.GD17111@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <serge.hallyn@canonical.com>, <ebiederm@xmission.com>,
+        <nhorman@tuxdriver.com>, <tgraf@suug.ch>, <davem@davemloft.net>,
+        <lizefan@huawei.com>, <cgroups@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy
+ support
+References: <1353123062-23193-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1353123062-23193-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-11-12 11:10:52, Michal Hocko wrote:
-> On Wed 14-11-12 09:20:03, KAMEZAWA Hiroyuki wrote:
-> > (2012/11/14 0:30), Michal Hocko wrote:
-> [...]
-> > > @@ -1096,30 +1096,64 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> > >   			mz = mem_cgroup_zoneinfo(root, nid, zid);
-> > >   			iter = &mz->reclaim_iter[reclaim->priority];
-> > >   			spin_lock(&iter->iter_lock);
-> > > +			last_visited = iter->last_visited;
-> > >   			if (prev && reclaim->generation != iter->generation) {
-> > > +				if (last_visited) {
-> > > +					mem_cgroup_put(last_visited);
-> > > +					iter->last_visited = NULL;
-> > > +				}
-> > >   				spin_unlock(&iter->iter_lock);
-> > >   				return NULL;
-> > >   			}
-> > > -			id = iter->position;
-> > >   		}
-> > >   
-> > >   		rcu_read_lock();
-> > > -		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
-> > > -		if (css) {
-> > > -			if (css == &root->css || css_tryget(css))
-> > > -				memcg = mem_cgroup_from_css(css);
-> > > -		} else
-> > > -			id = 0;
-> > > -		rcu_read_unlock();
-> > > +		/*
-> > > +		 * Root is not visited by cgroup iterators so it needs a special
-> > > +		 * treatment.
-> > > +		 */
-> > > +		if (!last_visited) {
-> > > +			css = &root->css;
-> > > +		} else {
-> > > +			struct cgroup *next_cgroup;
-> > > +
-> > > +			next_cgroup = cgroup_next_descendant_pre(
-> > > +					last_visited->css.cgroup,
-> > > +					root->css.cgroup);
-> > 
-> > Maybe I miss something but.... last_visited is holded by memcg's refcnt.
-> > The cgroup pointed by css.cgroup is by cgroup's refcnt which can be freed
-> > before memcg is freed and last_visited->css.cgroup is out of RCU cycle.
-> > Is this safe ?
-> 
-> Good spotted. You are right. What I need to do is to check that the
-> last_visited is alive and restart from the root if not. Something like
-> the bellow (incremental patch on top of this one) should help, right?
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 30efd7e..c0a91a3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1105,6 +1105,16 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  				spin_unlock(&iter->iter_lock);
->  				return NULL;
->  			}
-> +			/*
-> +			 * memcg is still valid because we hold a reference but
-> +			 * its cgroup might have vanished in the meantime so
-> +			 * we have to double check it is alive and restart the
-> +			 * tree walk otherwise.
-> +			 */
-> +			if (last_visited && !css_tryget(&last_visited->css)) {
-> +				mem_cgroup_put(last_visited);
-> +				last_visited = NULL;
-> +			}
->  		}
->  
->  		rcu_read_lock();
-> @@ -1136,8 +1146,10 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  		if (reclaim) {
->  			struct mem_cgroup *curr = memcg;
->  
-> -			if (last_visited)
-> +			if (last_visited) {
-> +				css_put(&last_visited->css);
->  				mem_cgroup_put(last_visited);
-> +			}
->  
->  			if (css && !memcg)
->  				curr = mem_cgroup_from_css(css);
+Hi Tejun,
 
-Now that I think about it again it seems that this is more complicated
-than necessary. It should be sufficient to hold css' reference for the
-iter->last_visited because this makes sure that the cgroup won't go
-away same as mem_cgroup.
-Memcg reference counting + css_tryget just makes the situation more
-complicated because it forces us to retry the iteration on css_tryget
-failure as the cgroup is gone already and we have no point to continue
-other than start all over again. Which is, ehmm, _really_ ugly.
+On 17.11.2012 04:30, Tejun Heo wrote:
+> Hello, guys.
+> 
+> This patchset implements proper hierarchy support for netcls_cgroup.
+> Pretty simliar to the netprio one[3].  Simpler as each cgroup has
+> single config value instead of array of them.
+> 
+> This patchset contains the following three patches.
+> 
+>   0001-netcls_cgroup-introduce-netcls_mutex.patch
+>   0002-netcls_cgroup-introduce-cgroup_cls_state-is_local.patch
+>   0003-netcls_cgroup-implement-proper-hierarchy-support.patch
+> 
+> This patchset is on top of
+> 
+> cgroup/for-3.8 ef9fe980c6 ("cgroup_freezer: implement proper hierarchy support")
+> + [1] "[PATCHSET cgroup/for-3.8] cgroup: allow ->post_create() to fail"
+> + [2] "[PATCH 1/2] cgroup: s/CGRP_CLONE_CHILDREN/CGRP_CPUSET_CLONE_CHILDREN/"
+>        "[PATCH 2/2] cgroup, cpuset: remove cgroup_subsys->post_clone()"
+> + [3] "[PATCHSET cgroup/for-3.8] netprio_cgroup: implement hierarchy support"
+> 
+> and available in the following git branch.
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-netcls_cgroup-hierarchy
+> 
+> diffstat follows.
+> 
+>   include/net/cls_cgroup.h |    1
+>   net/sched/cls_cgroup.c   |  102 ++++++++++++++++++++++++++++++++++++++++-------
+>   2 files changed, 88 insertions(+), 15 deletions(-)
+> 
+> Thanks.
 
-I will repost the updated version sometime this week after it passes
-some testing.
--- 
-Michal Hocko
-SUSE Labs
+I played a bit around with this series, e.g. creating a hierarchy and and changing 
+the root classid and seeing the change propagating through the hierarchy. Everything
+worked as described in the documentation.
+
+Sorry to bring this up again: how should to root cgroup behave? If the ultimate
+goal to have only one single hierarchy then I would assume it is important that
+the semantic for all controllers are the same. As you pointed out the networking
+controllers are kind of a strange beast in the zoo of the cgroup controllers. 
+But still I would assume that all root controllers behave the same. memcg or cpu*
+are not expected to do any work in the root cgroup.
+
+cheers,
+daniel
+
+
+
