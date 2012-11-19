@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab2KSPRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:17:09 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:35508 "EHLO
+	id S1753046Ab2KSPRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:17:07 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:35485 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab2KSPRF (ORCPT
+	with ESMTP id S1752876Ab2KSPRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:17:05 -0500
+	Mon, 19 Nov 2012 10:17:04 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: Linux Containers <containers@lists.linux-foundation.org>
 Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 19 Nov 2012 07:12:37 -0800
-Message-Id: <1353337961-12962-12-git-send-email-ebiederm@xmission.com>
+Date: Mon, 19 Nov 2012 07:12:39 -0800
+Message-Id: <1353337961-12962-14-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
 References: <87lidx8wbo.fsf@xmission.com>
  <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX1/sAryCx1jfLmZos0T6Ba8M2CmcWI95rBY=
+X-XM-AID: U2FsdGVkX195QGX/SfPK3TrKkYXvVmJCqg+KzKCkW54=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1631]
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0459]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
 X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 12/16] userns: For /proc/self/{uid,gid}_map derive the lower userns from the struct file
+Subject: [PATCH review 14/16] proc: Generalize proc inode allocation
 X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,73 +39,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-To keep things sane in the context of file descriptor passing derive the
-user namespace that uids are mapped into from the opener of the file
-instead of from current.
+Generalize the proc inode allocation so that it can be
+used without having to having to create a proc_dir_entry.
 
-When writing to the maps file the lower user namespace must always
-be the parent user namespace, or setting the mapping simply does
-not make sense.  Enforce that the opener of the file was in
-the parent user namespace or the user namespace whose mapping
-is being set.
+This will allow namespace file descriptors to remain light
+weight entitities but still have the same inode number
+when the backing namespace is the same.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- kernel/user_namespace.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ fs/proc/generic.c       |   26 +++++++++++++-------------
+ include/linux/proc_fs.h |   10 ++++++++++
+ 2 files changed, 23 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index ce92f7e..89f6eae 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -391,7 +391,7 @@ static int uid_m_show(struct seq_file *seq, void *v)
- 	struct user_namespace *lower_ns;
- 	uid_t lower;
- 
--	lower_ns = current_user_ns();
-+	lower_ns = seq_user_ns(seq);
- 	if ((lower_ns == ns) && lower_ns->parent)
- 		lower_ns = lower_ns->parent;
- 
-@@ -412,7 +412,7 @@ static int gid_m_show(struct seq_file *seq, void *v)
- 	struct user_namespace *lower_ns;
- 	gid_t lower;
- 
--	lower_ns = current_user_ns();
-+	lower_ns = seq_user_ns(seq);
- 	if ((lower_ns == ns) && lower_ns->parent)
- 		lower_ns = lower_ns->parent;
- 
-@@ -688,10 +688,14 @@ ssize_t proc_uid_map_write(struct file *file, const char __user *buf, size_t siz
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index 0d80cef..7b3ae3c 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -350,14 +350,14 @@ static DEFINE_SPINLOCK(proc_inum_lock); /* protects the above */
+  * Return an inode number between PROC_DYNAMIC_FIRST and
+  * 0xffffffff, or zero on failure.
+  */
+-static unsigned int get_inode_number(void)
++int proc_alloc_inum(unsigned int *inum)
  {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-+	struct user_namespace *seq_ns = seq_user_ns(seq);
+ 	unsigned int i;
+ 	int error;
  
- 	if (!ns->parent)
- 		return -EPERM;
+ retry:
+-	if (ida_pre_get(&proc_inum_ida, GFP_KERNEL) == 0)
+-		return 0;
++	if (!ida_pre_get(&proc_inum_ida, GFP_KERNEL))
++		return -ENOMEM;
  
-+	if ((seq_ns != ns) && (seq_ns != ns->parent))
-+		return -EPERM;
-+
- 	return map_write(file, buf, size, ppos, CAP_SETUID,
- 			 &ns->uid_map, &ns->parent->uid_map);
+ 	spin_lock(&proc_inum_lock);
+ 	error = ida_get_new(&proc_inum_ida, &i);
+@@ -365,18 +365,19 @@ retry:
+ 	if (error == -EAGAIN)
+ 		goto retry;
+ 	else if (error)
+-		return 0;
++		return error;
+ 
+ 	if (i > UINT_MAX - PROC_DYNAMIC_FIRST) {
+ 		spin_lock(&proc_inum_lock);
+ 		ida_remove(&proc_inum_ida, i);
+ 		spin_unlock(&proc_inum_lock);
+-		return 0;
++		return -ENOSPC;
+ 	}
+-	return PROC_DYNAMIC_FIRST + i;
++	*inum = PROC_DYNAMIC_FIRST + i;
++	return 0;
  }
-@@ -700,10 +704,14 @@ ssize_t proc_gid_map_write(struct file *file, const char __user *buf, size_t siz
+ 
+-static void release_inode_number(unsigned int inum)
++void proc_free_inum(unsigned int inum)
  {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-+	struct user_namespace *seq_ns = seq_user_ns(seq);
+ 	spin_lock(&proc_inum_lock);
+ 	ida_remove(&proc_inum_ida, inum - PROC_DYNAMIC_FIRST);
+@@ -554,13 +555,12 @@ static const struct inode_operations proc_dir_inode_operations = {
  
- 	if (!ns->parent)
- 		return -EPERM;
+ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp)
+ {
+-	unsigned int i;
+ 	struct proc_dir_entry *tmp;
++	int ret;
+ 	
+-	i = get_inode_number();
+-	if (i == 0)
+-		return -EAGAIN;
+-	dp->low_ino = i;
++	ret = proc_alloc_inum(&dp->low_ino);
++	if (ret)
++		return ret;
  
-+	if ((seq_ns != ns) && (seq_ns != ns->parent))
-+		return -EPERM;
-+
- 	return map_write(file, buf, size, ppos, CAP_SETGID,
- 			 &ns->gid_map, &ns->parent->gid_map);
+ 	if (S_ISDIR(dp->mode)) {
+ 		if (dp->proc_iops == NULL) {
+@@ -764,7 +764,7 @@ EXPORT_SYMBOL(proc_create_data);
+ 
+ static void free_proc_entry(struct proc_dir_entry *de)
+ {
+-	release_inode_number(de->low_ino);
++	proc_free_inum(de->low_ino);
+ 
+ 	if (S_ISLNK(de->mode))
+ 		kfree(de->data);
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 3144781..bf1d000 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -176,6 +176,8 @@ extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+ extern struct file *proc_ns_fget(int fd);
+ extern bool proc_ns_inode(struct inode *inode);
+ 
++extern int proc_alloc_inum(unsigned int *pino);
++extern void proc_free_inum(unsigned int inum);
+ #else
+ 
+ #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
+@@ -235,6 +237,14 @@ static inline bool proc_ns_inode(struct inode *inode)
+ 	return false;
  }
+ 
++static inline int proc_alloc_inum(unsigned int *inum)
++{
++	*inum = 1;
++	return 0;
++}
++static inline void proc_free_inum(unsigned int inum)
++{
++}
+ #endif /* CONFIG_PROC_FS */
+ 
+ #if !defined(CONFIG_PROC_KCORE)
 -- 
 1.7.5.4
 
