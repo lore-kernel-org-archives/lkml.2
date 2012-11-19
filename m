@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab2KSQlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:41:35 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:52276 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753774Ab2KSQld (ORCPT
+	id S1753931Ab2KSQny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:43:54 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:40719 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790Ab2KSQnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:41:33 -0500
-Date: Mon, 19 Nov 2012 11:41:33 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: 3.4.4: disabling irq
-In-Reply-To: <50A7849C.6080502@xs4all.nl>
-Message-ID: <Pine.LNX.4.44L0.1211191139140.1598-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Nov 2012 11:43:53 -0500
+Date: Mon, 19 Nov 2012 17:43:39 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control
+ provider for DT
+Message-ID: <20121119174339.0ea43e5e@skate>
+In-Reply-To: <20121119155856.GL10259@lunn.ch>
+References: <1353014906-31566-6-git-send-email-andrew@lunn.ch>
+	<1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com>
+	<1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com>
+	<20121117082602.GF24569@lunn.ch>
+	<50A75BB4.4070003@free-electrons.com>
+	<20121117135435.GA13479@lunn.ch>
+	<20121119164611.2e754b64@skate>
+	<20121119155856.GL10259@lunn.ch>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Nov 2012, Udo van den Heuvel wrote:
+Dear Andrew Lunn,
 
-> The problem still happens. irq 18 is dsiabled every now and then.
-> This time on different, new hardware.
-> The motherboard is now a Gigabyte F2A85X-UP4.
-> Camera is the same pwc cam.
+On Mon, 19 Nov 2012 16:58:56 +0100, Andrew Lunn wrote:
+
+> I don't think we are taking about the same clock. I mean the gate
+> clock:
 > 
-> Recently I removed the USB printer that was attached to the same USB
-> controller.
-> So probably it is not a hardware issue related to board or printer.
+> 28   ddr     DDR Cntrl
 > 
-> How to proceed next?
+> not the core clock.
 
-Firstly, what does /proc/interrupts say?
+Right, after discussion with Gregory, I found out my misunderstanding.
+I'm looking now as to how this clock affects the system behavior. I
+indeed see this clock ->disable() hook being called, but it doesn't
+seem to cause any sort of problem on the system. It still works nicely.
+So not sure this clock is actually doing something, or at least maybe
+not what we think it does.
 
-Secondly, try building a kernel with the patch below and 
-CONFIG_USB_DEBUG enabled.  Let's see what the dmesg log says when the 
-problem occurs.
+Best regards,
 
-Alan Stern
-
-
-
-Index: usb-3.7/drivers/usb/host/ohci-hcd.c
-===================================================================
---- usb-3.7.orig/drivers/usb/host/ohci-hcd.c
-+++ usb-3.7/drivers/usb/host/ohci-hcd.c
-@@ -777,6 +777,7 @@ static irqreturn_t ohci_irq (struct usb_
- 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
- 	struct ohci_regs __iomem *regs = ohci->regs;
- 	int			ints;
-+	int			i, j;
- 
- 	/* Read interrupt status (and flush pending writes).  We ignore the
- 	 * optimization of checking the LSB of hcca->done_head; it doesn't
-@@ -795,11 +796,15 @@ static irqreturn_t ohci_irq (struct usb_
- 	}
- 
- 	/* We only care about interrupts that are enabled */
--	ints &= ohci_readl(ohci, &regs->intrenable);
-+	i = ints;
-+	j = ohci_readl(ohci, &regs->intrenable);
-+	ints &= j;
- 
- 	/* interrupt for some other device? */
--	if (ints == 0 || unlikely(ohci->rh_state == OHCI_RH_HALTED))
-+	if (ints == 0 || unlikely(ohci->rh_state == OHCI_RH_HALTED)) {
-+		ohci_dbg(ohci, "IRQ: %x %x\n", i, j);
- 		return IRQ_NOTMINE;
-+	}
- 
- 	if (ints & OHCI_INTR_UE) {
- 		// e.g. due to PCI Master/Target Abort
-
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
