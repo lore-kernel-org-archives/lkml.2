@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2KSFj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:39:56 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58858 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab2KSF3c (ORCPT
+	id S1753109Ab2KSFkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:40:15 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:60400 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab2KSFkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:29:32 -0500
-X-Originating-IP: 217.70.178.138
-X-Originating-IP: 50.43.39.152
-From: Josh Triplett <josh@joshtriplett.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Cc: Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 15/58] kernel/time/timekeeping.c: Include tick-internal.h for do_timer prototype
-Date: Sun, 18 Nov 2012 21:27:54 -0800
-Message-Id: <1353302917-13995-16-git-send-email-josh@joshtriplett.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
-References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
+	Mon, 19 Nov 2012 00:40:11 -0500
+Message-ID: <50A9C625.6020307@huawei.com>
+Date: Mon, 19 Nov 2012 13:39:49 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cgroup: s/CGRP_CLONE_CHILDREN/CGRP_CPUSET_CLONE_CHILDREN/
+References: <20121113202714.GA21185@mtj.dyndns.org>
+In-Reply-To: <20121113202714.GA21185@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-C files should include the header files that prototype their functions.
-This keeps the types in sync, and eliminates warnings from GCC
-(-Wmissing-prototypes) and Sparse (-Wdecl).
+On 2012/11/14 4:27, Tejun Heo wrote:
+>>From 6e405c1ae4018d813e8ed9e0bd463d6976aebfa8 Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Tue, 13 Nov 2012 12:21:50 -0800
+> 
+> clone_children is only meaningful for cpuset and will stay that way.
+> Rename the flag to reflect that and update documentation.  Also, drop
+> clone_children() wrapper in cgroup.c.  The thin wrapper is used only a
+> few times and one of them will go away soon.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Glauber Costa <glommer@parallels.com>
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/time/timekeeping.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e424970..4d0a195 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -22,6 +22,7 @@
- #include <linux/tick.h>
- #include <linux/stop_machine.h>
- 
-+#include "tick-internal.h"
- 
- static struct timekeeper timekeeper;
- 
--- 
-1.7.10.4
+Acked-by: Li Zefan <lizefan@huawei.com>
 
