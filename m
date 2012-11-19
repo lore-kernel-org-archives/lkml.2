@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2KSPID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:08:03 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46753 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab2KSPIB (ORCPT
+	id S1752960Ab2KSPIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:08:15 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:32864 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab2KSPID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:08:01 -0500
-Date: Mon, 19 Nov 2012 12:07:33 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Josh Boyer <jwboyer@gmail.com>, David Howells <dhowells@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 31/32] perf powerpc: Use uapi/unistd.h to fix build error
-Message-ID: <20121119150733.GD13607@infradead.org>
-References: <1353248997-30763-1-git-send-email-acme@infradead.org>
- <1353248997-30763-32-git-send-email-acme@infradead.org>
- <CA+5PVA6uj3f5f9Gp=7Zp8CE+0mP7zgCknqmkUX_ootzDxUXRcA@mail.gmail.com>
+	Mon, 19 Nov 2012 10:08:03 -0500
+Date: Mon, 19 Nov 2012 10:07:19 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, tgraf@suug.ch, davem@davemloft.net,
+        lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy
+ support
+Message-ID: <20121119150719.GB16685@hmsreliant.think-freely.org>
+References: <1353123062-23193-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+5PVA6uj3f5f9Gp=7Zp8CE+0mP7zgCknqmkUX_ootzDxUXRcA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1353123062-23193-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 19, 2012 at 08:29:09AM -0500, Josh Boyer escreveu:
-> On Sun, Nov 18, 2012 at 9:29 AM, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-
-> > Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
+On Fri, Nov 16, 2012 at 07:30:59PM -0800, Tejun Heo wrote:
+> Hello, guys.
 > 
-> This would work for powerpc, but at least s390x and ARM have the same
-> build issue.  Why would we fix this piecemeal per-arch?
+> This patchset implements proper hierarchy support for netcls_cgroup.
+> Pretty simliar to the netprio one[3].  Simpler as each cgroup has
+> single config value instead of array of them.
 > 
-> David Howells has a patch that _should_ fix it for all of them at once.
-> Is there a reason that isn't going in?
+> This patchset contains the following three patches.
+> 
+>  0001-netcls_cgroup-introduce-netcls_mutex.patch
+>  0002-netcls_cgroup-introduce-cgroup_cls_state-is_local.patch
+>  0003-netcls_cgroup-implement-proper-hierarchy-support.patch
+> 
+> This patchset is on top of
+> 
+> cgroup/for-3.8 ef9fe980c6 ("cgroup_freezer: implement proper hierarchy support")
+> + [1] "[PATCHSET cgroup/for-3.8] cgroup: allow ->post_create() to fail"
+> + [2] "[PATCH 1/2] cgroup: s/CGRP_CLONE_CHILDREN/CGRP_CPUSET_CLONE_CHILDREN/"
+>       "[PATCH 2/2] cgroup, cpuset: remove cgroup_subsys->post_clone()"
+> + [3] "[PATCHSET cgroup/for-3.8] netprio_cgroup: implement hierarchy support"
+> 
+> and available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-netcls_cgroup-hierarchy
+> 
+> diffstat follows.
+> 
+>  include/net/cls_cgroup.h |    1
+>  net/sched/cls_cgroup.c   |  102 ++++++++++++++++++++++++++++++++++++++++-------
+>  2 files changed, 88 insertions(+), 15 deletions(-)
+> 
+> Thanks.
+> 
+> --
+> tejun
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel.cgroups/5047
+> [2] http://thread.gmane.org/gmane.linux.kernel/1393151
+> [3] https://lkml.org/lkml/2012/11/16/514
+> 
 
-David rebased his patch on top of my perf/core branch, I just tested it
-and all works as expected, so I'd say he should push that branch
-upstream as I can't just cherry pick some csets, it needs a merge that
-involves more than just tools/perf AFAIK.
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-- Arnaldo
