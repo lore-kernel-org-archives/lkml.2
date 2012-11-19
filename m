@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2KSTBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 14:01:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49950 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab2KSTBK (ORCPT
+	id S1754186Ab2KSTMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 14:12:05 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:59943 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab2KSTME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 14:01:10 -0500
-Date: Mon, 19 Nov 2012 11:01:05 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
-        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy
- support
-Message-ID: <20121119190105.GL15971@htj.dyndns.org>
-References: <1353123062-23193-1-git-send-email-tj@kernel.org>
- <50AA3B5E.3080701@bmw-carit.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AA3B5E.3080701@bmw-carit.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Nov 2012 14:12:04 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] TTY: let me eat my own cooking
+Date: Mon, 19 Nov 2012 20:11:43 +0100
+Message-Id: <1353352303-24299-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353352303-24299-1-git-send-email-jslaby@suse.cz>
+References: <1353352303-24299-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Daniel.
+I am the one introducing the most potential bugs. And people should
+know the urchin to whip.
 
-On Mon, Nov 19, 2012 at 02:59:58PM +0100, Daniel Wagner wrote:
-> Sorry to bring this up again: how should to root cgroup behave? If
-> the ultimate goal to have only one single hierarchy then I would
-> assume it is important that the semantic for all controllers are the
-> same. As you pointed out the networking controllers are kind of a
-> strange beast in the zoo of the cgroup controllers.  But still I
-> would assume that all root controllers behave the same. memcg or
-> cpu* are not expected to do any work in the root cgroup.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-I think the implemented behavior is fine.  memcg or cpu* don't do
-anything on root cgroup as it doesn't make much (or any) sense.  For
-net_prio and cls, I don't see any reason to treat root cgroup
-differently and how that would cause conflict when mounted together
-with other controllers.  So, yeah, things seem okay to me.
-
-Thanks.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 617eca6..18440d0 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7426,6 +7426,7 @@ K:	^Subject:.*(?i)trivial
+ 
+ TTY LAYER
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
++M:	Jiri Slaby <jslaby@suse.cz>
+ S:	Supported
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
+ F:	drivers/tty/
 -- 
-tejun
+1.8.0
+
+
