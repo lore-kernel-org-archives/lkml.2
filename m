@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2KSEF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 23:05:26 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39370 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab2KSEFZ (ORCPT
+	id S1752823Ab2KSEbS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 23:31:18 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44945 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716Ab2KSEbR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 23:05:25 -0500
+	Sun, 18 Nov 2012 23:31:17 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
-References: <507F7313.8010707@oracle.com> <CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 18 Nov 2012 23:05:04 -0500
-Message-ID: <CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
-Subject: Re: yama: lockdep warning on yama_ptracer_del
-To: Kees Cook <keescook@chromium.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, james.l.morris@oracle.com,
-        John Johansen <john.johansen@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <20121117135435.GA13479@lunn.ch>
+CC: Andrew Lunn <andrew@lunn.ch>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+References: <1353014906-31566-6-git-send-email-andrew@lunn.ch>
+ <1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com>
+ <1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com>
+ <20121117082602.GF24569@lunn.ch> <50A75BB4.4070003@free-electrons.com>
+ <20121117135435.GA13479@lunn.ch>
+Message-ID: <20121119043034.21126.92888@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control provider
+ for DT
+Date: Sun, 18 Nov 2012 20:30:34 -0800
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+Quoting Andrew Lunn (2012-11-17 05:54:35)
+> > > What is the ddr clock for? Does bad things happen if you turn it off?
+> > > Kirkwood has a similar clock, dunit, which i decided not to export,
+> > > since when you turn it off, the whole SoC locks up.
+> > 
+> > Well of course if you code run in DDR then it could be a problem. But
+> > I think it could be useful to turn it off when going to suspend, it
+> > the DDR can do self-refresh. In this case it should be possible to run
+> > the code from SRAM or L2 Cache.
+> 
+> O.K. Just watch out for the lateinit call in the clock framework.
+> 
 
-On Thu, Oct 18, 2012 at 6:39 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> Hi all,
->>
->> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
->> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
->> ...
->> [  954.674123]  Possible interrupt unsafe locking scenario:
->> [  954.674123]
->> [  954.674123]        CPU0                    CPU1
->> [  954.674123]        ----                    ----
->> [  954.674123]   lock(ptracer_relations_lock);
->> [  954.674123]                                local_irq_disable();
->> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
->> [  954.674123]                                lock(ptracer_relations_lock);
->> [  954.674123]   <Interrupt>
->> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
->> [  954.674123]
->> [  954.674123]  *** DEADLOCK ***
->
-> I've been wanting to get rid of the Yama ptracer_relations_lock
-> anyway, so maybe I should do that now just to avoid this case at all?
+CLK_IGNORE_UNUSED is the flag you want for this situation.
 
-I still see this one in -rc6, is there anything to get rid of it
-before the release?
+Regards,
+Mike
 
-
-Thanks,
-Sasha
+>      Andrew
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
