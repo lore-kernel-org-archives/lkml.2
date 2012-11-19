@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab2KSTl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 14:41:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33112 "EHLO
+	id S1754342Ab2KSTqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 14:46:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33195 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab2KSTlx (ORCPT
+	with ESMTP id S1753233Ab2KSTql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 14:41:53 -0500
-Date: Mon, 19 Nov 2012 11:41:12 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-49e0b1784791875787a198a00776ee118cd2233c@git.kernel.org>
+	Mon, 19 Nov 2012 14:46:41 -0500
+Date: Mon, 19 Nov 2012 11:44:22 -0800
+From: tip-bot for Mel Gorman <mgorman@suse.de>
+Message-ID: <tip-292c8cf52d4c65e1f8744e5c7ce774516d868ee8@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        hughd@google.com, riel@redhat.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        hannes@cmpxchg.org, hughd@google.com, riel@redhat.com,
+        Lee.Schermerhorn@hp.com, aarcange@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de, linux-mm@kvack.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
-        hughd@google.com, riel@redhat.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        hannes@cmpxchg.org, hughd@google.com, riel@redhat.com,
+        aarcange@redhat.com, Lee.Schermerhorn@hp.com, mgorman@suse.de,
+        tglx@linutronix.de, linux-mm@kvack.org
+In-Reply-To: <1353064973-26082-14-git-send-email-mgorman@suse.de>
+References: <1353064973-26082-14-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm:
-  Describe the NUMA scheduling problem formally
-Git-Commit-ID: 49e0b1784791875787a198a00776ee118cd2233c
+Subject: [tip:numa/core] mm/migration: Improve migrate_misplaced_page()
+Git-Commit-ID: 292c8cf52d4c65e1f8744e5c7ce774516d868ee8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,270 +33,314 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 19 Nov 2012 11:41:37 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 19 Nov 2012 11:44:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  49e0b1784791875787a198a00776ee118cd2233c
-Gitweb:     http://git.kernel.org/tip/49e0b1784791875787a198a00776ee118cd2233c
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 12 Oct 2012 12:13:10 +0200
+Commit-ID:  292c8cf52d4c65e1f8744e5c7ce774516d868ee8
+Gitweb:     http://git.kernel.org/tip/292c8cf52d4c65e1f8744e5c7ce774516d868ee8
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Fri, 16 Nov 2012 11:22:23 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 19 Nov 2012 02:15:39 +0100
+CommitDate: Mon, 19 Nov 2012 03:31:22 +0100
 
-sched, numa, mm: Describe the NUMA scheduling problem formally
+mm/migration: Improve migrate_misplaced_page()
 
-This is probably a first: formal description of a complex high-level
-computing problem, within the kernel source.
+Fix, improve and clean up migrate_misplaced_page() to
+reuse migrate_pages() and to check for zone watermarks
+to make sure we don't overload the node.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Rik van Riel <riel@redhat.com>
+This was originally based on Peter's patch "mm/migrate: Introduce
+migrate_misplaced_page()" but borrows extremely heavily from Andrea's
+"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
+collection".
+
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
-Link: http://lkml.kernel.org/n/tip-mmnlpupoetcatimvjEld16Pb@git.kernel.org
-[ Next step: generate the kernel source from such formal descriptions and retire to a tropical island! ]
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Link: http://lkml.kernel.org/r/1353064973-26082-14-git-send-email-mgorman@suse.de
+[ Adapted to the numa/core tree. Kept Mel's patch separate to retain
+  original authorship for the authors. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/scheduler/numa-problem.txt | 230 +++++++++++++++++++++++++++++++
- 1 file changed, 230 insertions(+)
+ include/linux/migrate_mode.h |   3 -
+ mm/memory.c                  |  13 ++--
+ mm/migrate.c                 | 143 +++++++++++++++++++++++++++----------------
+ 3 files changed, 95 insertions(+), 64 deletions(-)
 
-diff --git a/Documentation/scheduler/numa-problem.txt b/Documentation/scheduler/numa-problem.txt
-new file mode 100644
-index 0000000..a5d2fee
---- /dev/null
-+++ b/Documentation/scheduler/numa-problem.txt
-@@ -0,0 +1,230 @@
-+
-+
-+Effective NUMA scheduling problem statement, described formally:
-+
-+ * minimize interconnect traffic
-+
-+For each task 't_i' we have memory, this memory can be spread over multiple
-+physical nodes, let us denote this as: 'p_i,k', the memory task 't_i' has on
-+node 'k' in [pages].  
-+
-+If a task shares memory with another task let us denote this as:
-+'s_i,k', the memory shared between tasks including 't_i' residing on node
-+'k'.
-+
-+Let 'M' be the distribution that governs all 'p' and 's', ie. the page placement.
-+
-+Similarly, lets define 'fp_i,k' and 'fs_i,k' resp. as the (average) usage
-+frequency over those memory regions [1/s] such that the product gives an
-+(average) bandwidth 'bp' and 'bs' in [pages/s].
-+
-+(note: multiple tasks sharing memory naturally avoid duplicat accounting
-+       because each task will have its own access frequency 'fs')
-+
-+(pjt: I think this frequency is more numerically consistent if you explicitly 
-+      restrict p/s above to be the working-set. (It also makes explicit the 
-+      requirement for <C0,M0> to change about a change in the working set.)
-+
-+      Doing this does have the nice property that it lets you use your frequency
-+      measurement as a weak-ordering for the benefit a task would receive when
-+      we can't fit everything.
-+
-+      e.g. task1 has working set 10mb, f=90%
-+           task2 has working set 90mb, f=10%
-+
-+      Both are using 9mb/s of bandwidth, but we'd expect a much larger benefit
-+      from task1 being on the right node than task2. )
-+
-+Let 'C' map every task 't_i' to a cpu 'c_i' and its corresponding node 'n_i':
-+
-+  C: t_i -> {c_i, n_i}
-+
-+This gives us the total interconnect traffic between nodes 'k' and 'l',
-+'T_k,l', as:
-+
-+  T_k,l = \Sum_i bp_i,l + bs_i,l + \Sum bp_j,k + bs_j,k where n_i == k, n_j == l
-+
-+And our goal is to obtain C0 and M0 such that:
-+
-+  T_k,l(C0, M0) =< T_k,l(C, M) for all C, M where k != l
-+
-+(note: we could introduce 'nc(k,l)' as the cost function of accessing memory
-+       on node 'l' from node 'k', this would be useful for bigger NUMA systems
-+
-+ pjt: I agree nice to have, but intuition suggests diminishing returns on more
-+      usual systems given factors like things like Haswell's enormous 35mb l3
-+      cache and QPI being able to do a direct fetch.)
-+
-+(note: do we need a limit on the total memory per node?)
-+
-+
-+ * fairness
-+
-+For each task 't_i' we have a weight 'w_i' (related to nice), and each cpu
-+'c_n' has a compute capacity 'P_n', again, using our map 'C' we can formulate a
-+load 'L_n':
-+
-+  L_n = 1/P_n * \Sum_i w_i for all c_i = n
-+
-+using that we can formulate a load difference between CPUs
-+
-+  L_n,m = | L_n - L_m |
-+
-+Which allows us to state the fairness goal like:
-+
-+  L_n,m(C0) =< L_n,m(C) for all C, n != m
-+
-+(pjt: It can also be usefully stated that, having converged at C0:
-+
-+   | L_n(C0) - L_m(C0) | <= 4/3 * | G_n( U(t_i, t_j) ) - G_m( U(t_i, t_j) ) |
-+
-+      Where G_n,m is the greedy partition of tasks between L_n and L_m. This is
-+      the "worst" partition we should accept; but having it gives us a useful 
-+      bound on how much we can reasonably adjust L_n/L_m at a Pareto point to 
-+      favor T_n,m. )
-+
-+Together they give us the complete multi-objective optimization problem:
-+
-+  min_C,M [ L_n,m(C), T_k,l(C,M) ]
-+
-+
-+
-+Notes:
-+
-+ - the memory bandwidth problem is very much an inter-process problem, in
-+   particular there is no such concept as a process in the above problem.
-+
-+ - the naive solution would completely prefer fairness over interconnect
-+   traffic, the more complicated solution could pick another Pareto point using
-+   an aggregate objective function such that we balance the loss of work
-+   efficiency against the gain of running, we'd want to more or less suggest
-+   there to be a fixed bound on the error from the Pareto line for any
-+   such solution.
-+
-+References:
-+
-+  http://en.wikipedia.org/wiki/Mathematical_optimization
-+  http://en.wikipedia.org/wiki/Multi-objective_optimization
-+
-+
-+* warning, significant hand-waving ahead, improvements welcome *
-+
-+
-+Partial solutions / approximations:
-+
-+ 1) have task node placement be a pure preference from the 'fairness' pov.
-+
-+This means we always prefer fairness over interconnect bandwidth. This reduces
-+the problem to:
-+
-+  min_C,M [ T_k,l(C,M) ]
-+
-+ 2a) migrate memory towards 'n_i' (the task's node).
-+
-+This creates memory movement such that 'p_i,k for k != n_i' becomes 0 -- 
-+provided 'n_i' stays stable enough and there's sufficient memory (looks like
-+we might need memory limits for this).
-+
-+This does however not provide us with any 's_i' (shared) information. It does
-+however remove 'M' since it defines memory placement in terms of task
-+placement.
-+
-+XXX properties of this M vs a potential optimal
-+
-+ 2b) migrate memory towards 'n_i' using 2 samples.
-+
-+This separates pages into those that will migrate and those that will not due
-+to the two samples not matching. We could consider the first to be of 'p_i'
-+(private) and the second to be of 's_i' (shared).
-+
-+This interpretation can be motivated by the previously observed property that
-+'p_i,k for k != n_i' should become 0 under sufficient memory, leaving only
-+'s_i' (shared). (here we loose the need for memory limits again, since it
-+becomes indistinguishable from shared).
-+
-+XXX include the statistical babble on double sampling somewhere near
-+
-+This reduces the problem further; we loose 'M' as per 2a, it further reduces
-+the 'T_k,l' (interconnect traffic) term to only include shared (since per the
-+above all private will be local):
-+
-+  T_k,l = \Sum_i bs_i,l for every n_i = k, l != k
-+
-+[ more or less matches the state of sched/numa and describes its remaining
-+  problems and assumptions. It should work well for tasks without significant
-+  shared memory usage between tasks. ]
-+
-+Possible future directions:
-+
-+Motivated by the form of 'T_k,l', try and obtain each term of the sum, so we
-+can evaluate it;
-+
-+ 3a) add per-task per node counters
-+
-+At fault time, count the number of pages the task faults on for each node.
-+This should give an approximation of 'p_i' for the local node and 's_i,k' for
-+all remote nodes.
-+
-+While these numbers provide pages per scan, and so have the unit [pages/s] they
-+don't count repeat access and thus aren't actually representable for our
-+bandwidth numberes.
-+
-+ 3b) additional frequency term
-+
-+Additionally (or instead if it turns out we don't need the raw 'p' and 's' 
-+numbers) we can approximate the repeat accesses by using the time since marking
-+the pages as indication of the access frequency.
-+
-+Let 'I' be the interval of marking pages and 'e' the elapsed time since the
-+last marking, then we could estimate the number of accesses 'a' as 'a = I / e'.
-+If we then increment the node counters using 'a' instead of 1 we might get
-+a better estimate of bandwidth terms.
-+
-+ 3c) additional averaging; can be applied on top of either a/b.
-+
-+[ Rik argues that decaying averages on 3a might be sufficient for bandwidth since
-+  the decaying avg includes the old accesses and therefore has a measure of repeat
-+  accesses.
-+
-+  Rik also argued that the sample frequency is too low to get accurate access
-+  frequency measurements, I'm not entirely convinced, event at low sample 
-+  frequencies the avg elapsed time 'e' over multiple samples should still
-+  give us a fair approximation of the avg access frequency 'a'.
-+
-+  So doing both b&c has a fair chance of working and allowing us to distinguish
-+  between important and less important memory accesses.
-+
-+  Experimentation has shown no benefit from the added frequency term so far. ]
-+
-+This will give us 'bp_i' and 'bs_i,k' so that we can approximately compute
-+'T_k,l' Our optimization problem now reads:
-+
-+  min_C [ \Sum_i bs_i,l for every n_i = k, l != k ]
-+
-+And includes only shared terms, this makes sense since all task private memory
-+will become local as per 2.
-+
-+This suggests that if there is significant shared memory, we should try and
-+move towards it.
-+
-+ 4) move towards where 'most' memory is
-+
-+The simplest significance test is comparing the biggest shared 's_i,k' against
-+the private 'p_i'. If we have more shared than private, move towards it.
-+
-+This effectively makes us move towards where most our memory is and forms a
-+feed-back loop with 2. We migrate memory towards us and we migrate towards
-+where 'most' memory is.
-+
-+(Note: even if there were two tasks fully trashing the same shared memory, it
-+       is very rare for there to be an 50/50 split in memory, lacking a perfect
-+       split, the small will move towards the larger. In case of the perfect
-+       split, we'll tie-break towards the lower node number.)
-+
-+ 5) 'throttle' 4's node placement
-+
-+Since per 2b our 's_i,k' and 'p_i' require at least two scans to 'stabilize'
-+and show representative numbers, we should limit node-migration to not be
-+faster than this.
-+
-+ n) poke holes in previous that require more stuff and describe it.
+diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
+index 40b37dc..ebf3d89 100644
+--- a/include/linux/migrate_mode.h
++++ b/include/linux/migrate_mode.h
+@@ -6,14 +6,11 @@
+  *	on most operations but not ->writepage as the potential stall time
+  *	is too significant
+  * MIGRATE_SYNC will block when migrating pages
+- * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
+- *	this path has an extra reference count
+  */
+ enum migrate_mode {
+ 	MIGRATE_ASYNC,
+ 	MIGRATE_SYNC_LIGHT,
+ 	MIGRATE_SYNC,
+-	MIGRATE_FAULT,
+ };
+ 
+ #endif		/* MIGRATE_MODE_H_INCLUDED */
+diff --git a/mm/memory.c b/mm/memory.c
+index 23ad2eb..52ad29d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3492,28 +3492,25 @@ out_pte_upgrade_unlock:
+ 
+ out_unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+-out:
++
+ 	if (page) {
+ 		task_numa_fault(page_nid, last_cpu, 1);
+ 		put_page(page);
+ 	}
+-
++out:
+ 	return 0;
+ 
+ migrate:
+ 	pte_unmap_unlock(ptep, ptl);
+ 
+-	if (!migrate_misplaced_page(page, node)) {
+-		page_nid = node;
++	if (migrate_misplaced_page(page, node)) {
+ 		goto out;
+ 	}
++	page = NULL;
+ 
+ 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
+-	if (!pte_same(*ptep, entry)) {
+-		put_page(page);
+-		page = NULL;
++	if (!pte_same(*ptep, entry))
+ 		goto out_unlock;
+-	}
+ 
+ 	goto out_pte_upgrade_unlock;
+ }
+diff --git a/mm/migrate.c b/mm/migrate.c
+index b89062d..16a4709 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
+ 	struct buffer_head *bh = head;
+ 
+ 	/* Simple case, sync compaction */
+-	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
++	if (mode != MIGRATE_ASYNC) {
+ 		do {
+ 			get_bh(bh);
+ 			lock_buffer(bh);
+@@ -282,19 +282,9 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 	int expected_count = 0;
+ 	void **pslot;
+ 
+-	if (mode == MIGRATE_FAULT) {
+-		/*
+-		 * MIGRATE_FAULT has an extra reference on the page and
+-		 * otherwise acts like ASYNC, no point in delaying the
+-		 * fault, we'll try again next time.
+-		 */
+-		expected_count++;
+-	}
+-
+ 	if (!mapping) {
+ 		/* Anonymous page without mapping */
+-		expected_count += 1;
+-		if (page_count(page) != expected_count)
++		if (page_count(page) != 1)
+ 			return -EAGAIN;
+ 		return 0;
+ 	}
+@@ -304,7 +294,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+  					page_index(page));
+ 
+-	expected_count += 2 + page_has_private(page);
++	expected_count = 2 + page_has_private(page);
+ 	if (page_count(page) != expected_count ||
+ 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -323,7 +313,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 	 * the mapping back due to an elevated page count, we would have to
+ 	 * block waiting on other references to be dropped.
+ 	 */
+-	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
++	if (mode == MIGRATE_ASYNC && head &&
+ 			!buffer_migrate_lock_buffers(head, mode)) {
+ 		page_unfreeze_refs(page, expected_count);
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -531,7 +521,7 @@ int buffer_migrate_page(struct address_space *mapping,
+ 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+ 	 * need to be locked now
+ 	 */
+-	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
++	if (mode != MIGRATE_ASYNC)
+ 		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
+ 
+ 	ClearPagePrivate(page);
+@@ -697,7 +687,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!trylock_page(page)) {
+-		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
++		if (!force || mode == MIGRATE_ASYNC)
+ 			goto out;
+ 
+ 		/*
+@@ -1415,55 +1405,102 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+ }
+ 
+ /*
++ * Returns true if this is a safe migration target node for misplaced NUMA
++ * pages. Currently it only checks the watermarks which is a bit crude.
++ */
++static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
++				   int nr_migrate_pages)
++{
++	int z;
++
++	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
++		struct zone *zone = pgdat->node_zones + z;
++
++		if (!populated_zone(zone))
++			continue;
++
++		if (zone->all_unreclaimable)
++			continue;
++
++		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
++		if (!zone_watermark_ok(zone, 0,
++				       high_wmark_pages(zone) +
++				       nr_migrate_pages,
++				       0, 0))
++			continue;
++		return true;
++	}
++	return false;
++}
++
++static struct page *alloc_misplaced_dst_page(struct page *page,
++					   unsigned long data,
++					   int **result)
++{
++	int nid = (int) data;
++	struct page *newpage;
++
++	newpage = alloc_pages_exact_node(nid,
++					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
++					  __GFP_NOMEMALLOC | __GFP_NORETRY |
++					  __GFP_NOWARN) &
++					 ~GFP_IOFS, 0);
++	return newpage;
++}
++
++/*
+  * Attempt to migrate a misplaced page to the specified destination
+- * node.
++ * node. Caller is expected to have an elevated reference count on
++ * the page that will be dropped by this function before returning.
+  */
+ int migrate_misplaced_page(struct page *page, int node)
+ {
+-	struct address_space *mapping = page_mapping(page);
+-	int page_lru = page_is_file_cache(page);
+-	struct page *newpage;
+-	int ret = -EAGAIN;
+-	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
++	int isolated = 0;
++	LIST_HEAD(migratepages);
+ 
+ 	/*
+-	 * Never wait for allocations just to migrate on fault, but don't dip
+-	 * into reserves. And, only accept pages from the specified node. No
+-	 * sense migrating to a different "misplaced" page!
++	 * Don't migrate pages that are mapped in multiple processes.
++	 * TODO: Handle false sharing detection instead of this hammer
+ 	 */
+-	if (mapping)
+-		gfp = mapping_gfp_mask(mapping);
+-	gfp &= ~__GFP_WAIT;
+-	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
+-
+-	newpage = alloc_pages_node(node, gfp, 0);
+-	if (!newpage) {
+-		ret = -ENOMEM;
++	if (page_mapcount(page) != 1)
+ 		goto out;
+-	}
+ 
+-	if (isolate_lru_page(page)) {
+-		ret = -EBUSY;
+-		goto put_new;
++	/* Avoid migrating to a node that is nearly full */
++	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++		int page_lru;
++
++		if (isolate_lru_page(page)) {
++			put_page(page);
++			goto out;
++		}
++		isolated = 1;
++
++		/*
++		 * Page is isolated which takes a reference count so now the
++		 * callers reference can be safely dropped without the page
++		 * disappearing underneath us during migration
++		 */
++		put_page(page);
++
++		page_lru = page_is_file_cache(page);
++		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++		list_add(&page->lru, &migratepages);
+ 	}
+ 
+-	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
+-	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
+-	/*
+-	 * A page that has been migrated has all references removed and will be
+-	 * freed. A page that has not been migrated will have kepts its
+-	 * references and be restored.
+-	 */
+-	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
+-	putback_lru_page(page);
+-put_new:
+-	/*
+-	 * Move the new page to the LRU. If migration was not successful
+-	 * then this will free the page.
+-	 */
+-	putback_lru_page(newpage);
++	if (isolated) {
++		int nr_remaining;
++
++		nr_remaining = migrate_pages(&migratepages,
++				alloc_misplaced_dst_page,
++				node, false, MIGRATE_ASYNC);
++		if (nr_remaining) {
++			putback_lru_pages(&migratepages);
++			isolated = 0;
++		}
++	}
++	BUG_ON(!list_empty(&migratepages));
+ out:
+-	return ret;
++	return isolated;
+ }
+ 
+ #endif /* CONFIG_NUMA */
