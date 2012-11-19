@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab2KSMTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 07:19:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46182 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab2KSMTw (ORCPT
+	id S1752421Ab2KSMUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 07:20:00 -0500
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:34332 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752272Ab2KSMT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 07:19:52 -0500
-Date: Mon, 19 Nov 2012 12:19:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: Standardise capability type
-Message-ID: <20121119121946.GB553@gmail.com>
-References: <1352896551-17948-1-git-send-email-lee.jones@linaro.org>
- <87haon99py.fsf@octavius.laptop.org>
- <20121119092725.GA553@gmail.com>
- <87mwydhkj8.fsf@octavius.laptop.org>
+	Mon, 19 Nov 2012 07:19:57 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kernel@pengutronix.de>, <zbr@ioremap.net>, <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v3 2/3] w1: mxc_w1: Fix comment
+Date: Mon, 19 Nov 2012 10:19:47 -0200
+Message-ID: <1353327588-2797-2-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353327588-2797-1-git-send-email-fabio.estevam@freescale.com>
+References: <1353327588-2797-1-git-send-email-fabio.estevam@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87mwydhkj8.fsf@octavius.laptop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012, Chris Ball wrote:
+We are dealing with mxc_w1 registers.
 
-> Hi,
-> 
-> On Mon, Nov 19 2012, Lee Jones wrote:
-> >> > There are discrepancies with regards to how MMC capabilities
-> >> > are carried throughout the subsystem. Let's standardise them
-> >> > to elevate any confusion.
-> >> 
-> >> I think you meant "eliminate" here.  :)  Thanks,
-> >
-> > No, I meant alleviate. :)
-> >
-> > Do you want me to re-submit, or have you fixed up?
-> 
-> I already pushed with a change to "eliminate" -- I'll leave it like
-> that if that's okay.
+While at it use dev_err() instead.
 
-No problem.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v2:
+- No changes
+ drivers/w1/masters/mxc_w1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks Chris.
-
+diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
+index 14f0f66..25b234c 100644
+--- a/drivers/w1/masters/mxc_w1.c
++++ b/drivers/w1/masters/mxc_w1.c
+@@ -134,7 +134,7 @@ static int __devinit mxc_w1_probe(struct platform_device *pdev)
+ 
+ 	mdev->regs = ioremap(res->start, resource_size(res));
+ 	if (!mdev->regs) {
+-		printk(KERN_ERR "Cannot map frame buffer registers\n");
++		dev_err(&pdev->dev, "Cannot map mxc_w1 registers\n");
+ 		goto failed_ioremap;
+ 	}
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
+
