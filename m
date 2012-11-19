@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2KSKuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 05:50:51 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:34056 "EHLO
+	id S1752098Ab2KSKu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 05:50:58 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:34084 "EHLO
 	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2KSKus (ORCPT
+	with ESMTP id S1751871Ab2KSKuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 05:50:48 -0500
+	Mon, 19 Nov 2012 05:50:55 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 19 Nov 2012 02:50:19 -0800
-Message-Id: <1353322222-27060-3-git-send-email-ebiederm@xmission.com>
+Date: Mon, 19 Nov 2012 02:50:21 -0800
+Message-Id: <1353322222-27060-5-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353322222-27060-1-git-send-email-ebiederm@xmission.com>
 References: <87k3thc1h3.fsf@xmission.com>
  <1353322222-27060-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX18cA5/kWErMV8z2VXkoI58PFWrb9B9Of7s=
+X-XM-AID: U2FsdGVkX18m0k0C7F4wV6Nmh5JdIZykR/2JIvalpP0=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0126]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 3/6] vfs: Add a user namespace reference from struct mnt_namespace
+Subject: [PATCH review 5/6] vfs: Allow unprivileged manipulation of the mount namespace.
 X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,163 +42,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-This will allow for support for unprivileged mounts in a new user namespace.
+- Add a filesystem flag to mark filesystems that are safe to mount as
+  an unprivileged user.
+
+- Add a filesystem flag to mark filesystems that don't need MNT_NODEV
+  when mounted by an unprivileged user.
+
+- Relax the permission checks to allow unprivileged users that have
+  CAP_SYS_ADMIN permissions in the user namespace referred to by the
+  current mount namespace to be allowed to mount, unmount, and move
+  filesystems.
 
 Acked-by: "Serge E. Hallyn" <serge@hallyn.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/mount.h                    |    1 +
- fs/namespace.c                |   24 ++++++++++++++++--------
- include/linux/mnt_namespace.h |    3 ++-
- kernel/nsproxy.c              |    2 +-
- 4 files changed, 20 insertions(+), 10 deletions(-)
+ fs/namespace.c     |   69 ++++++++++++++++++++++++++++++++-------------------
+ include/linux/fs.h |    2 +
+ 2 files changed, 45 insertions(+), 26 deletions(-)
 
-diff --git a/fs/mount.h b/fs/mount.h
-index e9c37dd..630fafc 100644
---- a/fs/mount.h
-+++ b/fs/mount.h
-@@ -6,6 +6,7 @@ struct mnt_namespace {
- 	atomic_t		count;
- 	struct mount *	root;
- 	struct list_head	list;
-+	struct user_namespace	*user_ns;
- 	u64			seq;	/* Sequence number to prevent loops */
- 	wait_queue_head_t poll;
- 	int event;
 diff --git a/fs/namespace.c b/fs/namespace.c
-index d287e7e..207c7ba 100644
+index 4dfcaf0..9ddc86f 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -12,6 +12,7 @@
- #include <linux/export.h>
- #include <linux/capability.h>
- #include <linux/mnt_namespace.h>
-+#include <linux/user_namespace.h>
- #include <linux/namei.h>
- #include <linux/security.h>
- #include <linux/idr.h>
-@@ -2286,6 +2287,12 @@ dput_out:
- 	return retval;
+@@ -1269,7 +1269,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
+ 		goto dput_and_out;
+ 
+ 	retval = -EPERM;
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!ns_capable(mnt->mnt_ns->user_ns, CAP_SYS_ADMIN))
+ 		goto dput_and_out;
+ 
+ 	retval = do_umount(mnt, flags);
+@@ -1295,7 +1295,7 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
+ 
+ static int mount_is_safe(struct path *path)
+ {
+-	if (capable(CAP_SYS_ADMIN))
++	if (ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
+ 		return 0;
+ 	return -EPERM;
+ #ifdef notyet
+@@ -1633,7 +1633,7 @@ static int do_change_type(struct path *path, int flag)
+ 	int type;
+ 	int err = 0;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!ns_capable(mnt->mnt_ns->user_ns, CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (path->dentry != path->mnt->mnt_root)
+@@ -1797,7 +1797,7 @@ static int do_move_mount(struct path *path, const char *old_name)
+ 	struct mount *p;
+ 	struct mount *old;
+ 	int err = 0;
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 	if (!old_name || !*old_name)
+ 		return -EINVAL;
+@@ -1884,21 +1884,6 @@ static struct vfsmount *fs_set_subtype(struct vfsmount *mnt, const char *fstype)
+ 	return ERR_PTR(err);
  }
  
-+static void free_mnt_ns(struct mnt_namespace *ns)
-+{
-+	put_user_ns(ns->user_ns);
-+	kfree(ns);
-+}
-+
+-static struct vfsmount *
+-do_kern_mount(const char *fstype, int flags, const char *name, void *data)
+-{
+-	struct file_system_type *type = get_fs_type(fstype);
+-	struct vfsmount *mnt;
+-	if (!type)
+-		return ERR_PTR(-ENODEV);
+-	mnt = vfs_kern_mount(type, flags, name, data);
+-	if (!IS_ERR(mnt) && (type->fs_flags & FS_HAS_SUBTYPE) &&
+-	    !mnt->mnt_sb->s_subtype)
+-		mnt = fs_set_subtype(mnt, fstype);
+-	put_filesystem(type);
+-	return mnt;
+-}
+-
  /*
-  * Assign a sequence number so we can detect when we attempt to bind
-  * mount a reference to an older mount namespace into the current
-@@ -2295,7 +2302,7 @@ dput_out:
+  * add a mount into a namespace's mount tree
   */
- static atomic64_t mnt_ns_seq = ATOMIC64_INIT(1);
- 
--static struct mnt_namespace *alloc_mnt_ns(void)
-+static struct mnt_namespace *alloc_mnt_ns(struct user_namespace *user_ns)
- {
- 	struct mnt_namespace *new_ns;
- 
-@@ -2308,6 +2315,7 @@ static struct mnt_namespace *alloc_mnt_ns(void)
- 	INIT_LIST_HEAD(&new_ns->list);
- 	init_waitqueue_head(&new_ns->poll);
- 	new_ns->event = 0;
-+	new_ns->user_ns = get_user_ns(user_ns);
- 	return new_ns;
- }
- 
-@@ -2316,7 +2324,7 @@ static struct mnt_namespace *alloc_mnt_ns(void)
-  * copied from the namespace of the passed in task structure.
+@@ -1944,20 +1929,46 @@ unlock:
+  * create a new mount for userspace and request it to be added into the
+  * namespace's tree
   */
- static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
--		struct fs_struct *fs)
-+		struct user_namespace *user_ns, struct fs_struct *fs)
+-static int do_new_mount(struct path *path, const char *type, int flags,
++static int do_new_mount(struct path *path, const char *fstype, int flags,
+ 			int mnt_flags, const char *name, void *data)
  {
- 	struct mnt_namespace *new_ns;
- 	struct vfsmount *rootmnt = NULL, *pwdmnt = NULL;
-@@ -2324,7 +2332,7 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
- 	struct mount *old = mnt_ns->root;
- 	struct mount *new;
++	struct file_system_type *type;
++	struct user_namespace *user_ns;
+ 	struct vfsmount *mnt;
+ 	int err;
  
--	new_ns = alloc_mnt_ns();
-+	new_ns = alloc_mnt_ns(user_ns);
- 	if (IS_ERR(new_ns))
- 		return new_ns;
+-	if (!type)
++	if (!fstype)
+ 		return -EINVAL;
  
-@@ -2333,7 +2341,7 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
- 	new = copy_tree(old, old->mnt.mnt_root, CL_COPY_ALL | CL_EXPIRE);
- 	if (IS_ERR(new)) {
- 		up_write(&namespace_sem);
--		kfree(new_ns);
-+		free_mnt_ns(new_ns);
- 		return ERR_CAST(new);
- 	}
- 	new_ns->root = new;
-@@ -2374,7 +2382,7 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
- }
+ 	/* we need capabilities... */
+-	if (!capable(CAP_SYS_ADMIN))
++	user_ns = real_mount(path->mnt)->mnt_ns->user_ns;
++	if (!ns_capable(user_ns, CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
--		struct fs_struct *new_fs)
-+		struct user_namespace *user_ns, struct fs_struct *new_fs)
- {
- 	struct mnt_namespace *new_ns;
+-	mnt = do_kern_mount(type, flags, name, data);
++	type = get_fs_type(fstype);
++	if (!type)
++		return -ENODEV;
++
++	if (user_ns != &init_user_ns) {
++		if (!(type->fs_flags & FS_USERNS_MOUNT)) {
++			put_filesystem(type);
++			return -EPERM;
++		}
++		/* Only in special cases allow devices from mounts
++		 * created outside the initial user namespace.
++		 */
++		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
++			flags |= MS_NODEV;
++			mnt_flags |= MNT_NODEV;
++		}
++	}
++
++	mnt = vfs_kern_mount(type, flags, name, data);
++	if (!IS_ERR(mnt) && (type->fs_flags & FS_HAS_SUBTYPE) &&
++	    !mnt->mnt_sb->s_subtype)
++		mnt = fs_set_subtype(mnt, fstype);
++
++	put_filesystem(type);
+ 	if (IS_ERR(mnt))
+ 		return PTR_ERR(mnt);
  
-@@ -2384,7 +2392,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
- 	if (!(flags & CLONE_NEWNS))
- 		return ns;
+@@ -2549,7 +2560,7 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
+ 	struct mount *new_mnt, *root_mnt;
+ 	int error;
  
--	new_ns = dup_mnt_ns(ns, new_fs);
-+	new_ns = dup_mnt_ns(ns, user_ns, new_fs);
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 	put_mnt_ns(ns);
- 	return new_ns;
-@@ -2396,7 +2404,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
-  */
- static struct mnt_namespace *create_mnt_ns(struct vfsmount *m)
- {
--	struct mnt_namespace *new_ns = alloc_mnt_ns();
-+	struct mnt_namespace *new_ns = alloc_mnt_ns(&init_user_ns);
- 	if (!IS_ERR(new_ns)) {
- 		struct mount *mnt = real_mount(m);
- 		mnt->mnt_ns = new_ns;
-@@ -2682,7 +2690,7 @@ void put_mnt_ns(struct mnt_namespace *ns)
- 	br_write_unlock(&vfsmount_lock);
- 	up_write(&namespace_sem);
- 	release_mounts(&umount_list);
--	kfree(ns);
-+	free_mnt_ns(ns);
- }
+ 	error = user_path_dir(new_root, &new);
+@@ -2631,8 +2642,13 @@ static void __init init_mount_tree(void)
+ 	struct vfsmount *mnt;
+ 	struct mnt_namespace *ns;
+ 	struct path root;
++	struct file_system_type *type;
  
- struct vfsmount *kern_mount_data(struct file_system_type *type, void *data)
-diff --git a/include/linux/mnt_namespace.h b/include/linux/mnt_namespace.h
-index 5a8e390..12b2ab5 100644
---- a/include/linux/mnt_namespace.h
-+++ b/include/linux/mnt_namespace.h
-@@ -4,9 +4,10 @@
+-	mnt = do_kern_mount("rootfs", 0, "rootfs", NULL);
++	type = get_fs_type("rootfs");
++	if (!type)
++		panic("Can't find rootfs type");
++	mnt = vfs_kern_mount(type, 0, "rootfs", NULL);
++	put_filesystem(type);
+ 	if (IS_ERR(mnt))
+ 		panic("Can't create rootfs");
  
- struct mnt_namespace;
- struct fs_struct;
-+struct user_namespace;
+@@ -2757,7 +2773,8 @@ static int mntns_install(struct nsproxy *nsproxy, void *ns)
+ 	struct mnt_namespace *mnt_ns = ns;
+ 	struct path root;
  
- extern struct mnt_namespace *copy_mnt_ns(unsigned long, struct mnt_namespace *,
--		struct fs_struct *);
-+		struct user_namespace *, struct fs_struct *);
- extern void put_mnt_ns(struct mnt_namespace *ns);
+-	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_CHROOT))
++	if (!ns_capable(mnt_ns->user_ns, CAP_SYS_ADMIN) ||
++	    !nsown_capable(CAP_SYS_CHROOT))
+ 		return -EINVAL;
  
- extern const struct file_operations proc_mounts_operations;
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index b576f7f..5b6ce19 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -66,7 +66,7 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	if (!new_nsp)
- 		return ERR_PTR(-ENOMEM);
- 
--	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, new_fs);
-+	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, task_cred_xxx(tsk, user_ns), new_fs);
- 	if (IS_ERR(new_nsp->mnt_ns)) {
- 		err = PTR_ERR(new_nsp->mnt_ns);
- 		goto out_ns;
+ 	if (fs->users != 1)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b33cfc9..5037aa6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1812,6 +1812,8 @@ struct file_system_type {
+ #define FS_REQUIRES_DEV		1 
+ #define FS_BINARY_MOUNTDATA	2
+ #define FS_HAS_SUBTYPE		4
++#define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
++#define FS_USERNS_DEV_MOUNT	16 /* A userns mount does not imply MNT_NODEV */
+ #define FS_REVAL_DOT		16384	/* Check the paths ".", ".." for staleness */
+ #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
+ 	struct dentry *(*mount) (struct file_system_type *, int,
 -- 
 1.7.5.4
 
