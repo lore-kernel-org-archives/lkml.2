@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab2KSCQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 21:16:10 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47823 "EHLO
+	id S1753116Ab2KSCQd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 21:16:33 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:44992 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2KSCQH (ORCPT
+	with ESMTP id S1752953Ab2KSCQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 21:16:07 -0500
+	Sun, 18 Nov 2012 21:16:17 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 22/27] sched, numa, mm: Interleave shared tasks
-Date: Mon, 19 Nov 2012 03:14:39 +0100
-Message-Id: <1353291284-2998-23-git-send-email-mingo@kernel.org>
+Subject: [PATCH 27/27] sched: Use the best-buddy 'ideal cpu' in balancing decisions
+Date: Mon, 19 Nov 2012 03:14:44 +0100
+Message-Id: <1353291284-2998-28-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353291284-2998-1-git-send-email-mingo@kernel.org>
 References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
@@ -28,11 +28,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interleave tasks that are 'shared' - i.e. whose memory access patterns
-indicate that they are intensively sharing memory with other tasks.
+Now that we have a notion of (one of the) best CPUs we interrelate
+with in terms of memory usage, use that information to improve
+can_migrate_task() balancing decisions: allow the migration to
+occur even if we locally cache-hot, if we are on another node
+and want to migrate towards our best buddy's node.
 
-If such a task ends up converging then it switches back into the lazy
-node-local policy.
+( Note that this is not hard affinity - if imbalance persists long
+  enough then the scheduler will eventually balance tasks anyway,
+  to maximize CPU utilization. )
 
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
@@ -43,143 +47,111 @@ Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/mempolicy.c | 54 ++++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ kernel/sched/fair.c     | 35 ++++++++++++++++++++++++++++++++---
+ kernel/sched/features.h |  2 ++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 318043a..21bbb13 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -111,12 +111,30 @@ enum zone_type policy_zone = 0;
- /*
-  * run-time system-wide default policy => local allocation
-  */
--static struct mempolicy default_policy = {
--	.refcnt = ATOMIC_INIT(1), /* never free it */
--	.mode = MPOL_PREFERRED,
--	.flags = MPOL_F_LOCAL,
-+
-+static struct mempolicy default_policy_local = {
-+	.refcnt		= ATOMIC_INIT(1), /* never free it */
-+	.mode		= MPOL_PREFERRED,
-+	.flags		= MPOL_F_LOCAL,
-+};
-+
-+/*
-+ * .v.nodes is set by numa_policy_init():
-+ */
-+static struct mempolicy default_policy_shared = {
-+	.refcnt			= ATOMIC_INIT(1), /* never free it */
-+	.mode			= MPOL_INTERLEAVE,
-+	.flags			= 0,
- };
- 
-+static struct mempolicy *default_policy(void)
-+{
-+	if (task_numa_shared(current) == 1)
-+		return &default_policy_shared;
-+
-+	return &default_policy_local;
-+}
-+
- static const struct mempolicy_operations {
- 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
- 	/*
-@@ -789,7 +807,7 @@ out:
- static void get_policy_nodemask(struct mempolicy *p, nodemask_t *nodes)
- {
- 	nodes_clear(*nodes);
--	if (p == &default_policy)
-+	if (p == default_policy())
- 		return;
- 
- 	switch (p->mode) {
-@@ -864,7 +882,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 		return -EINVAL;
- 
- 	if (!pol)
--		pol = &default_policy;	/* indicates default behavior */
-+		pol = default_policy();	/* indicates default behavior */
- 
- 	if (flags & MPOL_F_NODE) {
- 		if (flags & MPOL_F_ADDR) {
-@@ -880,7 +898,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 			goto out;
- 		}
- 	} else {
--		*policy = pol == &default_policy ? MPOL_DEFAULT :
-+		*policy = pol == default_policy() ? MPOL_DEFAULT :
- 						pol->mode;
- 		/*
- 		 * Internal mempolicy flags must be masked off before exposing
-@@ -1568,7 +1586,7 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 		}
- 	}
- 	if (!pol)
--		pol = &default_policy;
-+		pol = default_policy();
- 	return pol;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 67f7fd2..24a5588 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -840,6 +840,14 @@ static void task_numa_migrate(struct task_struct *p, int next_cpu)
+ 	p->numa_migrate_seq = 0;
  }
  
-@@ -1974,7 +1992,7 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- 	unsigned int cpuset_mems_cookie;
- 
- 	if (!pol || in_interrupt() || (gfp & __GFP_THISNODE))
--		pol = &default_policy;
-+		pol = default_policy();
- 
- retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
-@@ -2255,7 +2273,6 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	int best_nid = -1, page_nid;
- 	int cpu_last_access, this_cpu;
- 	struct mempolicy *pol;
--	unsigned long pgoff;
- 	struct zone *zone;
- 
- 	BUG_ON(!vma);
-@@ -2271,13 +2288,20 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 
- 	switch (pol->mode) {
- 	case MPOL_INTERLEAVE:
-+	{
-+		int shift;
++static int task_ideal_cpu(struct task_struct *p)
++{
++	if (!sched_feat(IDEAL_CPU))
++		return -1;
 +
- 		BUG_ON(addr >= vma->vm_end);
- 		BUG_ON(addr < vma->vm_start);
- 
--		pgoff = vma->vm_pgoff;
--		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
--		best_nid = offset_il_node(pol, vma, pgoff);
-+		if (transparent_hugepage_enabled(vma) || vma->vm_flags & VM_HUGETLB)
-+			shift = HPAGE_SHIFT;
-+		else
-+			shift = PAGE_SHIFT;
++	return p->ideal_cpu;
++}
 +
-+		best_nid = interleave_nid(pol, vma, addr, shift);
- 		break;
-+	}
- 
- 	case MPOL_PREFERRED:
- 		if (pol->flags & MPOL_F_LOCAL)
-@@ -2492,6 +2516,8 @@ void __init numa_policy_init(void)
- 				     sizeof(struct sp_node),
- 				     0, SLAB_PANIC, NULL);
- 
-+	default_policy_shared.v.nodes = node_online_map;
-+
- 	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
-@@ -2712,7 +2738,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
+ /*
+  * Called for every full scan - here we consider switching to a new
+  * shared buddy, if the one we found during this scan is good enough:
+@@ -1028,7 +1036,7 @@ out_hit:
+ 	 * but don't stop the discovery of process level sharing
+ 	 * either:
  	 */
- 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
+-	if (this_task->mm == last_task->mm)
++	if (sched_feat(IDEAL_CPU_THREAD_BIAS) && this_task->mm == last_task->mm)
+ 		pages *= 2;
  
--	if (!pol || pol == &default_policy)
-+	if (!pol || pol == default_policy())
- 		mode = MPOL_DEFAULT;
- 	else
- 		mode = pol->mode;
+ 	this_task->shared_buddy_faults_curr += pages;
+@@ -1189,6 +1197,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ }
+ #else /* !CONFIG_NUMA_BALANCING: */
+ #ifdef CONFIG_SMP
++static inline int task_ideal_cpu(struct task_struct *p)				{ return -1; }
+ static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)	{ }
+ #endif
+ static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)	{ }
+@@ -4064,6 +4073,7 @@ struct lb_env {
+ static void move_task(struct task_struct *p, struct lb_env *env)
+ {
+ 	deactivate_task(env->src_rq, p, 0);
++
+ 	set_task_cpu(p, env->dst_cpu);
+ 	activate_task(env->dst_rq, p, 0);
+ 	check_preempt_curr(env->dst_rq, p, 0);
+@@ -4242,15 +4252,17 @@ static bool can_migrate_numa_task(struct task_struct *p, struct lb_env *env)
+ 	 *
+ 	 * LBF_NUMA_RUN    -- numa only, only allow improvement
+ 	 * LBF_NUMA_SHARED -- shared only
++	 * LBF_NUMA_IDEAL  -- ideal only
+ 	 *
+ 	 * LBF_KEEP_SHARED -- do not touch shared tasks
+ 	 */
+ 
+ 	/* a numa run can only move numa tasks about to improve things */
+ 	if (env->flags & LBF_NUMA_RUN) {
+-		if (task_numa_shared(p) < 0)
++		if (task_numa_shared(p) < 0 && task_ideal_cpu(p) < 0)
+ 			return false;
+-		/* can only pull shared tasks */
++
++		/* If we are only allowed to pull shared tasks: */
+ 		if ((env->flags & LBF_NUMA_SHARED) && !task_numa_shared(p))
+ 			return false;
+ 	} else {
+@@ -4307,6 +4319,23 @@ static int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	if (!can_migrate_running_task(p, env))
+ 		return false;
+ 
++#ifdef CONFIG_NUMA_BALANCING
++	/* If we are only allowed to pull ideal tasks: */
++	if ((task_ideal_cpu(p) >= 0) && (p->shared_buddy_faults > 1000)) {
++		int ideal_node;
++		int dst_node;
++
++		BUG_ON(env->dst_cpu < 0);
++
++		ideal_node = cpu_to_node(p->ideal_cpu);
++		dst_node = cpu_to_node(env->dst_cpu);
++
++		if (ideal_node == dst_node)
++			return true;
++		return false;
++	}
++#endif
++
+ 	if (env->sd->flags & SD_NUMA)
+ 		return can_migrate_numa_task(p, env);
+ 
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index b75a10d..737d2c8 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -66,6 +66,8 @@ SCHED_FEAT(TTWU_QUEUE, true)
+ SCHED_FEAT(FORCE_SD_OVERLAP, false)
+ SCHED_FEAT(RT_RUNTIME_SHARE, true)
+ SCHED_FEAT(LB_MIN, false)
++SCHED_FEAT(IDEAL_CPU,			true)
++SCHED_FEAT(IDEAL_CPU_THREAD_BIAS,	false)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ /* Do the working set probing faults: */
 -- 
 1.7.11.7
 
