@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2KSRrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:47:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab2KSRrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:47:08 -0500
-Date: Mon, 19 Nov 2012 18:47:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
-Message-ID: <20121119174728.GA11365@redhat.com>
-References: <20121109182943.GA2789@redhat.com> <20121109183026.GA2719@redhat.com>
+	id S1753966Ab2KSRrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:47:24 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16125 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab2KSRrX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:47:23 -0500
+Message-ID: <50AA70A8.7020204@atmel.com>
+Date: Mon, 19 Nov 2012 18:47:20 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109183026.GA2719@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: [GIT PULL] at91: DT material for 3.8
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09, Oleg Nesterov wrote:
->
-> On 11/09, Oleg Nesterov wrote:
-> >
-> > Note: TASK_SIZE doesn't look right at least on x86, I think it should
-> > be replaced by TASK_SIZE_MAX.
-> > ...
-> > --- x/arch/x86/kernel/hw_breakpoint.c
-> > +++ x/arch/x86/kernel/hw_breakpoint.c
-> > @@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct
-> >  	va = info->address;
-> >  	len = get_hbp_len(info->len);
-> >
-> > -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
-> > +	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
->
-> But actully I'd like to ask another question.
->
-> Can't we add the additional !in_gate_area_no_mm() check to allow
-> the hw breakpoints in vsyscall?
->
-> Quoting Amnon:
->
-> 	My service needs to catch the system-calls of its traced son.
-> 	Almost all system-calls are caught with PTRACE_SYSCALL, but not those
-> 	using the vsyscall page - especially "gettimeofday()" and "time()".
->
-> 	...
->
-> 	However, the code in "arch/x86/kernel/ptrace.c" forbids catching kernel
-> 	addresses.
->
-> I tend to agree with Amnon...
->
-> What do you think?
+Arnd, Olof,
 
-ping ;)
+Here is a little update on the DT front for AT91. The biggest part
+will come from the pinctrl which is located in Linus Walleij's git tree.
 
-I agree the patch I sent is very minor (although it looks like the trivial
-bugfix to me).
+The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
 
-Just I think Amnon has a point, shouldn't we change this change like below?
-(on top of this fixlet).
+  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
 
-Oleg.
+are available in the git repository at:
 
---- x/arch/x86/kernel/hw_breakpoint.c
-+++ x/arch/x86/kernel/hw_breakpoint.c
-@@ -188,6 +188,11 @@ static int get_hbp_len(u8 hbp_len)
- 	return len_in_bytes;
- }
- 
-+static inline bool bp_in_gate(unsigned long start, unsigned long end)
-+{
-+	return in_gate_area_no_mm(start) && in_gate_area_no_mm(end);
-+}
-+
- /*
-  * Check for virtual address in kernel space.
-  */
-@@ -200,7 +205,8 @@ int arch_check_bp_in_kernelspace(struct 
- 	va = info->address;
- 	len = get_hbp_len(info->len);
- 
--	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
-+	return ((va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE)) &&
-+		!bp_in_gate(va, va + len - 1);
- }
- 
- int arch_bp_generic_fields(int x86_len, int x86_type,
+  git://github.com/at91linux/linux-at91.git tags/at91-for-next-dt
 
+for you to fetch changes up to 824b43968fed4b5a200cfef06129c0470eef306a:
+
+  ARM: at91/dts: evk-pro3: enable watchdog (2012-11-16 15:48:48 +0100)
+
+----------------------------------------------------------------
+More DT material for AT91:
+
+- conversion of watchdog to DT
+- usart definition for evk-pro3 board
+
+----------------------------------------------------------------
+Fabio Porcedda (4):
+      ARM: at91: dt: evk-pro3: enable uart0 and uart2
+      watchdog: at91sam9_wdt: add device tree support
+      ARM: at91/dts: add at91sam9_wdt driver to at91sam926x, at91sam9g45
+      ARM: at91/dts: evk-pro3: enable watchdog
+
+ Documentation/devicetree/bindings/watchdog/atmel-wdt.txt | 15 +++++++++++++++
+ arch/arm/boot/dts/at91sam9260.dtsi                       |  6 ++++++
+ arch/arm/boot/dts/at91sam9263.dtsi                       |  6 ++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi                       |  6 ++++++
+ arch/arm/boot/dts/evk-pro3.dts                           | 12 ++++++++++++
+ drivers/watchdog/at91sam9_wdt.c                          | 11 +++++++++++
+ 6 files changed, 56 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+
+Thanks, bye,
+-- 
+Nicolas Ferre
