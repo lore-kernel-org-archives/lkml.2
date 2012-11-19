@@ -1,87 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2KSOsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 09:48:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45404 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab2KSOsW (ORCPT
+	id S1752855Ab2KSOu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 09:50:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52661 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab2KSOuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 09:48:22 -0500
-Date: Mon, 19 Nov 2012 14:48:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob.clark@linaro.org>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jamie Lokier <jamie@shareable.org>
-Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
-Message-ID: <20121119144806.GO3332@n2100.arm.linux.org.uk>
-References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <201211151339.08016.arnd@arndb.de> <CAF6AEGuJReNtwUZX6HVZCE8GHuyEAyC8bM0GqZuVMV1=DrGJVw@mail.gmail.com> <201211151439.41393.arnd@arndb.de> <20121119143236.GA3296@intel.com>
+	Mon, 19 Nov 2012 09:50:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121119143236.GA3296@intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20121116200926.GA652@polaris.bitmath.org>
+References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1352908766-4492-15-git-send-email-benjamin.tissoires@gmail.com>
+	<20121114195852.GA14840@polaris.bitmath.org>
+	<50A40CB3.8070105@gmail.com>
+	<20121116200926.GA652@polaris.bitmath.org>
+Date: Mon, 19 Nov 2012 15:50:53 +0100
+Message-ID: <CAN+gG=F=bHdJF0=0LHGuVQ+ObHvWKJnL0GYcAEWBeD+Z-yyGSA@mail.gmail.com>
+Subject: Re: [PATCH v4 14/14] HID: hid-multitouch: forwards MSC_TIMESTAMP
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 04:32:36PM +0200, Ville Syrjälä wrote:
-> On Thu, Nov 15, 2012 at 02:39:41PM +0000, Arnd Bergmann wrote:
-> > On Thursday 15 November 2012, Rob Clark wrote:
-> > > > I still haven't heard a conclusive argument why we need to use get_user()
-> > > > rather than copy_from_user() in the DRM code. Is this about a fast path
-> > > > where you want to shave off a few cycles for each call, or does this
-> > > > simplify the code structure, or something else?
-> > > 
-> > > well, it is mostly because it seemed like a good idea to first try to
-> > > solve the root issue, rather than having to fix things up in each
-> > > driver when someone from x86-world introduces a 64b get_user()..
-> > 
-> > As pointed out by hpa earlier, x86-32 doesn't have a 64b get_user
-> > either. I don't think we have a lot of drivers that are used only
-> > on 64-bit x86 and on 32-bit ARM but not on 32-bit x86.
-> 
-> Ouch. I didn't realize that x86-32 doesn't have it. All the systems
-> where I've run the new code are 64bit so I never noticed the problem.
-> 
-> I see there was a patch [1] posted a long time ago to implement 64bit
-> get_user() on x86-32. I wonder what happened to it?
-> 
-> [1] https://lkml.org/lkml/2004/4/20/96
+Hi Henrik,
 
-Wonderful lkml.org after four "Negotiating SSL connection..." messages
-gives me under elinks...
+On Fri, Nov 16, 2012 at 9:09 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> > This was not what I envisioned from the discussion yesterday, I was
+>> > probably too vague. Firstly, the absolute time interval checked seems
+>> > to be 500 ms, which is arbitrary. Second, the wrap should probably use
+>>
+>> Not exactly. The time interval was 5s, near enough the minimum requirement for this field (6.5535 s).
+>
+> Sorry about that, but the argument remains; it should depend on logical_maximum.
 
-	Unable to retrieve https://lkml.org/lkml/2004/4/20/96:
-			Error reading from socket
+I must be tired when I read your mail, I only understand now what you
+meant by logical_maximum in your first mail... sorry.
 
-and with wget:
+So, totally agree, we could make this kind of thing depending on logical_max.
 
-$ wget https://lkml.org/lkml/2004/4/20/96
---2012-11-19 14:47:16--  https://lkml.org/lkml/2004/4/20/96
-Resolving lkml.org... 87.253.128.182
-Connecting to lkml.org|87.253.128.182|:443... connected.
-HTTP request sent, awaiting response... No data received.
-Retrying.
+>
+>> > (logical_maximum + 1). Third, we are still not sure whether we should
+>> > take the 'time = 0 means reset' logic literally, I think it needs to
+>> > be tested.
+>>
+>> Again, the device I have never does any reset at the first touch, it just wraps the counter.
+>> The problem is that when there is no event, we now that no events occurred since the previous timestamp, modulus 6.5535 seconds.
+>
+> So the very first win8 device we test already diverges from the win8
+> specification, how nice.
 
---2012-11-19 14:47:19--  (try: 2)  https://lkml.org/lkml/2004/4/20/96
-Connecting to lkml.org|87.253.128.182|:443... connected.
-HTTP request sent, awaiting response... No data received.
-Retrying.
+hehe... well, the scan time is not as critical as can be the other
+fields. Anyway, it's fun :)
 
---2012-11-19 14:47:22--  (try: 3)  https://lkml.org/lkml/2004/4/20/96
-Connecting to lkml.org|87.253.128.182|:443... connected.
-HTTP request sent, awaiting response... No data received.
-Retrying.
+>
+> Ok, you have conviced me that comparing to a proper time makes
+> sense. However, I am not happy about using a separate time for this,
+> given that we will fill in the event time later in the
+> chain.
 
---2012-11-19 14:47:26--  (try: 4)  https://lkml.org/lkml/2004/4/20/96
-Connecting to lkml.org|87.253.128.182|:443... connected.
-HTTP request sent, awaiting response... No data received.
-Retrying.
-...
+that may explains the delta I observed from the kernel time and the device time.
 
-what a wonderful site... please choose another LKML archive, preferably
-one which works.  Thanks.
+>
+> In addition, it would make perfect sense to extend the validity of the
+> hardware time with the event time for longer intervals. The relative
+> error only makes a difference on milisecond intervals.
+>
+> A patch that seamlessly extends the validity of the hardware time,
+> ideally using the event time, seems like a viable solution.
+
+Just to be sure:
+When I receive scan_time, I increment timestamp with the device value.
+When not, I find out the number of counter wrap I missed with the
+kernel timer (jiffies) to get the actual device time.
+
+Is that ok for you?
+
+>
+>> > +static void mt_compute_timestamp(struct mt_device *td, struct hid_field *field,
+>> > +                            unsigned value)
+>> > +{
+>> > +   unsigned dt;
+>> > +
+>> > +   if (value) {
+>> > +           dt = (value - td->dev_time) % (field->logical_maximum + 1);
+>>
+>> The curious thing is that this is not working on my kernel:
+>
+> Oups, I suspect (value - td->dev_time) needs to be explicitly converted to unsigned.
+
+I can't remember if I tried this one, but I'll try to make it one line
+in the next version.
+
+>
+>> I don't understand the meaning of adding !td->timestamp. :/
+>
+> With the definition that timestamp == 0 means an unknown interval, we
+> do not want to send that value by accident.
+
+ok, makes sense.
+
+Cheers,
+Benjamin
+
+>
+> Thanks,
+> Henrik
