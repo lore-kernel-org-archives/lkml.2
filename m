@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2KRXvK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 18:51:10 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:8335 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752700Ab2KRXvI (ORCPT
+	id S1752740Ab2KSADZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 19:03:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59253 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab2KSADX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 18:51:08 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlkJACVzqVB5LbWp/2dsb2JhbABFhTe3JYZTgQmCHgEBBScTHCMQCAMOCi4UJQMhE4d7Aw61SA2JVBSLN2mFDQOVe5BEgwM
-Date: Mon, 19 Nov 2012 10:51:05 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
-Message-ID: <20121118235105.GT14281@dastard>
-References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
- <20121029222613.GU29378@dastard>
- <CAPVoSvQATjAVu-D477mrr6K9d0FeY7sH27cH-zNBYMJcRoUY0Q@mail.gmail.com>
- <CAPVoSvRks32ZM7n6U8but-vEj622TEFqAFdxXqS_6mRxyv=0Ew@mail.gmail.com>
- <CAPVoSvSKn2FuBhMF+3U1ueuEzBqL4CFTYFGXqGczTa42PgMjRw@mail.gmail.com>
+	Sun, 18 Nov 2012 19:03:23 -0500
+Date: Sun, 18 Nov 2012 16:00:06 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Sebastian Reichel <sre@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Joerg Reisenweber <joerg@openmoko.org>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Aliaksei Katovich <aliaksei.katovich@gmail.com>
+Subject: Re: [PATCH] bq2415x charger driver
+Message-ID: <20121119000006.GD29066@lizard.sbx05977.paloaca.wayport.net>
+References: <1391088.VOCN5mxOBg@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAPVoSvSKn2FuBhMF+3U1ueuEzBqL4CFTYFGXqGczTa42PgMjRw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391088.VOCN5mxOBg@pali>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 04:29:22PM +0100, Torsten Kaiser wrote:
-> On Sun, Nov 18, 2012 at 11:24 AM, Torsten Kaiser
-> <just.for.lkml@googlemail.com> wrote:
-> > On Tue, Oct 30, 2012 at 9:37 PM, Torsten Kaiser
-> > <just.for.lkml@googlemail.com> wrote:
-> >> I will keep LOCKDEP enabled on that system, and if there really is
-> >> another splat, I will report back here. But I rather doubt that this
-> >> will be needed.
-> >
-> > After the patch, I did not see this problem again, but today I found
-> > another LOCKDEP report that also looks XFS related.
-> > I found it twice in the logs, and as both were slightly different, I
-> > will attach both versions.
+On Fri, Nov 02, 2012 at 08:18:11PM +0100, Pali Rohár wrote:
+> Hello,
 > 
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104353] 3.7.0-rc4 #1 Not tainted
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104355] inconsistent
-> > {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104430]        CPU0
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104431]        ----
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104432]   lock(&(&ip->i_lock)->mr_lock);
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104433]   <Interrupt>
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104434]
-> > lock(&(&ip->i_lock)->mr_lock);
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104435]
-> > Nov  6 21:57:09 thoregon kernel: [ 9941.104435]  *** DEADLOCK ***
+> I'm sending new version of bq2415x charger driver which is needed
+> for example on Nokia N900 for charging battery. Driver is part of
+> open source project to replace proprietary battery management.
+> Driver is based on old RFC version which I sent months ago.
 > 
-> Sorry! Copied the wrong report. Your fix only landed in -rc5, so my
-> vanilla -rc4 did (also) report the old problem again.
-> And I copy&pasted that report instead of the second appearance of the
-> new problem.
+> power_supply: Add bq2415x charger driver
+> 
+> This patch implements driver for bq2415x charging chips.
+> 
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 
-Can you repost it with line wrapping turned off? The output simply
-becomes unreadable when it wraps....
+Applied, thanks!
 
-Yeah, I know I can put it back together, but I've got better things
-to do with my time than stitch a couple of hundred lines of debug
-back into a readable format....
+Note that I had to add the Makefile/Kconfig entries and fix some style
+issues...
 
-Cheers,
+commit 7ad85830736f3e0d854becf7621eba3a0c926d13
+Author: Anton Vorontsov <cbouatmailru@gmail.com>
+Date:   Sun Nov 18 15:48:52 2012 -0800
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+    bq2415x_charger: Add Kconfig/Makefile entries
+    
+    This commit adds Kconfig and Makefile entries so that we could actually
+    build the driver.
+    
+    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 5c3237f..523a580 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -322,6 +322,16 @@ config CHARGER_MAX8998
+ 	  Say Y to enable support for the battery charger control sysfs and
+ 	  platform data of MAX8998/LP3974 PMICs.
+ 
++config CHARGER_BQ2415X
++	tristate "TI BQ2415x battery charger driver"
++	depends on I2C
++	help
++	  Say Y to enable support for the TI BQ2415x battery charger
++	  PMICs.
++
++	  You'll need this driver to charge batteries on e.g. Nokia
++	  RX-51/N900.
++
+ config CHARGER_SMB347
+ 	tristate "Summit Microelectronics SMB347 Battery Charger"
+ 	depends on I2C
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index bc81fe2..74dfd95 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -48,5 +48,6 @@ obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+ obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
+ obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
+ obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
++obj-$(CONFIG_CHARGER_BQ2415X)	+= bq2415x_charger.o
+ obj-$(CONFIG_POWER_AVS)		+= avs/
+ obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
