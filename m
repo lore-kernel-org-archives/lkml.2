@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab2KSVhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:37:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44963 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab2KSVhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:37:14 -0500
-Date: Mon, 19 Nov 2012 21:37:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+	id S1752284Ab2KSVji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:39:38 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35445 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab2KSVjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:39:37 -0500
+Date: Mon, 19 Nov 2012 13:39:34 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121119213708.GN8218@suse.de>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119200707.GA12381@gmail.com>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/58] mm: include/linux/huge_mm.h: Declare handle_pte_fault
+ unconditionally
+In-Reply-To: <1353302917-13995-26-git-send-email-josh@joshtriplett.org>
+Message-ID: <alpine.DEB.2.00.1211191337420.12532@chino.kir.corp.google.com>
+References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org> <1353302917-13995-26-git-send-email-josh@joshtriplett.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121119200707.GA12381@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 09:07:07PM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > >   [ SPECjbb transactions/sec ]            |
-> > >   [ higher is better         ]            |
-> > >                                           |
-> > >   SPECjbb single-1x32    524k     507k    |       638k           +21.7%
-> > >   -----------------------------------------------------------------------
-> > > 
-> > 
-> > I was not able to run a full sets of tests today as I was 
-> > distracted so all I have is a multi JVM comparison. I'll keep 
-> > it shorter than average
-> > 
-> >                           3.7.0                 3.7.0
-> >                  rc5-stats-v4r2   rc5-schednuma-v16r1
-> > TPut   1     101903.00 (  0.00%)     77651.00 (-23.80%)
-> > TPut   2     213825.00 (  0.00%)    160285.00 (-25.04%)
-> > TPut   3     307905.00 (  0.00%)    237472.00 (-22.87%)
-> > TPut   4     397046.00 (  0.00%)    302814.00 (-23.73%)
-> > TPut   5     477557.00 (  0.00%)    364281.00 (-23.72%)
-> > TPut   6     542973.00 (  0.00%)    420810.00 (-22.50%)
-> > TPut   7     540466.00 (  0.00%)    448976.00 (-16.93%)
-> > TPut   8     543226.00 (  0.00%)    463568.00 (-14.66%)
-> > TPut   9     513351.00 (  0.00%)    468238.00 ( -8.79%)
-> > TPut   10    484126.00 (  0.00%)    457018.00 ( -5.60%)
-> 
-> These figures are IMO way too low for a 64-way system. I have a 
-> 32-way system with midrange server CPUs and get 650k+/sec 
-> easily.
-> 
+On Sun, 18 Nov 2012, Josh Triplett wrote:
 
-48-way as I said here https://lkml.org/lkml/2012/11/3/109. If I said
-64-way somewhere else, it was a mistake. The lack of THP would account
-for some of the difference. As I was looking for potential
-locking-related issues, I also had CONFIG_DEBUG_VMA nd
-CONFIG_DEBUG_MUTEXES set which would account for more overhead. Any
-options set are set for all tests that make up a group.
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 3f39803..8ed2187 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -55,6 +55,10 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+>  
+>  extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+>  
+> +extern int handle_pte_fault(struct mm_struct *mm,
+> +			    struct vm_area_struct *vma, unsigned long address,
+> +			    pte_t *pte, pmd_t *pmd, unsigned int flags);
+> +
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  #define HPAGE_PMD_SHIFT HPAGE_SHIFT
+>  #define HPAGE_PMD_MASK HPAGE_MASK
+> @@ -87,9 +91,6 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+>  			  pmd_t *dst_pmd, pmd_t *src_pmd,
+>  			  struct vm_area_struct *vma,
+>  			  unsigned long addr, unsigned long end);
+> -extern int handle_pte_fault(struct mm_struct *mm,
+> -			    struct vm_area_struct *vma, unsigned long address,
+> -			    pte_t *pte, pmd_t *pmd, unsigned int flags);
+>  extern int split_huge_page(struct page *page);
+>  extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+>  #define split_huge_page_pmd(__mm, __pmd)				\
 
-> Have you tried to analyze the root cause, what does 'perf top' 
-> show during the run and how much idle time is there?
-> 
-
-No, I haven't and the machine is currently occupied. However, a second
-profile run was run as part of the test above. The figures I reported are
-based on a run without profiling. With profiling, oprofile reported
-
-Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a unit mask of 0x00 (No unit mask) count 6000
-samples  %        image name               app name                 symbol name
-176552   42.9662  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 intel_idle
-22790     5.5462  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 find_busiest_group
-10533     2.5633  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 update_blocked_averages
-10489     2.5526  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 rb_get_reader_page
-9514      2.3154  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 native_write_msr_safe
-8511      2.0713  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 ring_buffer_consume
-7406      1.8023  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 idle_cpu
-6549      1.5938  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 update_cfs_rq_blocked_load
-6482      1.5775  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 rebalance_domains
-5212      1.2684  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 run_rebalance_domains
-5037      1.2258  perl                     perl                     /usr/bin/perl
-4167      1.0141  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 page_fault
-3885      0.9455  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 cpumask_next_and
-3704      0.9014  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 find_next_bit
-3498      0.8513  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 getnstimeofday
-3345      0.8140  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 __update_cpu_load
-3175      0.7727  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 load_balance
-3018      0.7345  vmlinux-3.7.0-rc5-schednuma-v16r1 vmlinux-3.7.0-rc5-schednuma-v16r1 menu_select
-
-> Trying to reproduce your findings I have done 4x JVM tests 
-> myself, using 4x 8-warehouse setups, with a sizing of -Xms8192m 
-> -Xmx8192m -Xss256k, and here are the results:
-> 
->                          v3.7       v3.7                                  
->   SPECjbb single-1x32    524k       638k         +21.7%
->   SPECjbb  multi-4x8     633k       655k          +3.4%
-> 
-
-I'll re-run with THP enabled the next time and see what I find.
-
-> So while here we are only marginally better than the 
-> single-instance numbers (I will try to improve that in numa/core 
-> v17), they are still better than mainline - and they are 
-> definitely not slower as your numbers suggest ...
-> 
-> So we need to go back to the basics to figure this out: please 
-> outline exactly which commit ID of the numa/core tree you have 
-> booted. Also, how does 'perf top' look like on your box?
-> 
-
-I'll find out what perf top looks like ASAP.
-
--- 
-Mel Gorman
-SUSE Labs
+huge_mm.h is the last place someone would expect to see the prototype for 
+this function and it only exists because the thp code needs to use it and 
+it was the easy place to put it.  Perhaps declare this in mm.h instead 
+where the declaration of handle_mm_fault() is?
