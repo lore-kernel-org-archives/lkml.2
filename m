@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab2KSNkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 08:40:12 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:34547 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab2KSNkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 08:40:09 -0500
-Date: Mon, 19 Nov 2012 08:40:01 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
-        stable@vger.kernel.org, Puneet Kumar <puneetster@chromium.org>
-Subject: Re: [PATCHv4] mm: Fix calculation of dirtyable memory
-Message-ID: <20121119134001.GA2799@cmpxchg.org>
-References: <20121112203221.GB4511@redhat.com>
- <1352756146-11837-1-git-send-email-sonnyrao@chromium.org>
+	id S1752577Ab2KSNrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 08:47:10 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:50286 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2KSNrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 08:47:08 -0500
+Message-ID: <50AA385A.90503@monom.org>
+Date: Mon, 19 Nov 2012 14:47:06 +0100
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352756146-11837-1-git-send-email-sonnyrao@chromium.org>
+To: Tejun Heo <tj@kernel.org>
+CC: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
+        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] netcls_cgroup: implement proper hierarchy support
+References: <1353123062-23193-1-git-send-email-tj@kernel.org> <1353123062-23193-4-git-send-email-tj@kernel.org>
+In-Reply-To: <1353123062-23193-4-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 01:35:46PM -0800, Sonny Rao wrote:
-> The system uses global_dirtyable_memory() to calculate
-> number of dirtyable pages/pages that can be allocated
-> to the page cache.  A bug causes an underflow thus making
-> the page count look like a big unsigned number.  This in turn
-> confuses the dirty writeback throttling to aggressively write
-> back pages as they become dirty (usually 1 page at a time).
-> This generally only affects systems with highmem because the
-> underflowed count gets subtracted from the global count of
-> dirtyable memory.
-> 
-> The problem was introduced with v3.2-4896-gab8fabd
-> 
-> Fix is to ensure we don't get an underflowed total of either highmem
-> or global dirtyable memory.
-> 
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> CC: stable@vger.kernel.org
-> ---
->  v2: added apkm's suggestion to make the highmem calculation better
->  v3: added Fengguang Wu's suggestions fix zone_dirtyable_memory() and
->      (offlist mail) to use max() in global_dirtyable_memory()
->  v4: Added suggestions to description clarifying the role of highmem
->       and the commit which originally caused the problem
->  mm/page-writeback.c |   25 ++++++++++++++++++++-----
->  1 files changed, 20 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 830893b..f9efbe8 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
->  		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
->  	}
->  	/*
-> +	 * Unreclaimable memory (kernel memory or anonymous memory
-> +	 * without swap) can bring down the dirtyable pages below
-> +	 * the zone's dirty balance reserve and the above calculation
-> +	 * will underflow.  However we still want to add in nodes
-> +	 * which are below threshold (negative values) to get a more
-> +	 * accurate calculation but make sure that the total never
-> +	 * underflows.
-> +	 */
-> +	if ((long)x < 0)
-> +		x = 0;
-> +
-> +	/*
->  	 * Make sure that the number of highmem pages is never larger
->  	 * than the number of the total dirtyable memory. This can only
->  	 * occur in very strange VM situations but we want to make sure
-> @@ -222,8 +234,8 @@ static unsigned long global_dirtyable_memory(void)
->  {
->  	unsigned long x;
->  
-> -	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
-> -	    dirty_balance_reserve;
-> +	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-> +	x -= max(x, dirty_balance_reserve);
+Hi Tejun,
 
-This unconditionally zeroes out x, except when it underflows it...
+On 17.11.2012 04:31, Tejun Heo wrote:
+> @@ -112,15 +161,6 @@ struct cgroup_subsys net_cls_subsys = {
+>   	.subsys_id	= net_cls_subsys_id,
+>   	.base_cftypes	= ss_files,
+>   	.module		= THIS_MODULE,
+> -
+> -	/*
+> -	 * While net_cls cgroup has the rudimentary hierarchy support of
+> -	 * inheriting the parent's classid on cgroup creation, it doesn't
+> -	 * properly propagates config changes in ancestors to their
+> -	 * descendents.  A child should follow the parent's configuration
+> -	 * but be allowed to override it.  Fix it and remove the following.
+> -	 */
+> -	.broken_hierarchy = true,
+>   };
 
-min().
+Are you sure you want to set the default to false at this point?
 
->  	if (!vm_highmem_is_dirtyable)
->  		x -= highmem_dirtyable_memory(x);
-> @@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
->  	 * highmem zone can hold its share of dirty pages, so we don't
->  	 * care about vm_highmem_is_dirtyable here.
->  	 */
-> -	return zone_page_state(zone, NR_FREE_PAGES) +
-> -	       zone_reclaimable_pages(zone) -
-> -	       zone->dirty_balance_reserve;
-> +	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-> +		zone_reclaimable_pages(zone);
-> +
-> +	/* don't allow this to underflow */
-> +	nr_pages -= max(nr_pages, zone->dirty_balance_reserve);
-> +	return nr_pages;
-
-min().
+cheers,
+daniel
