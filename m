@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2KSGYX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 01:24:23 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:60107 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab2KSGYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 01:24:21 -0500
+	id S1752958Ab2KSGZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 01:25:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56081 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab2KSGZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 01:25:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,276,1352102400"; 
+   d="scan'208";a="249253409"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Tc, Jenny" <jenny.tc@intel.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: RE: [PATCH 2/2] power_supply: Register power supply for thermal
+ cooling device
+Thread-Topic: [PATCH 2/2] power_supply: Register power supply for thermal
+ cooling device
+Thread-Index: AQHNxUaY2ZyhOboc606oAryrHIRa/JfwspvA
+Date: Mon, 19 Nov 2012 06:25:50 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD24557425@BGSMSX102.gar.corp.intel.com>
+References: <1349801759-19647-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20121118043533.GB18226@lizard.sbx05977.paloaca.wayport.net>
+In-Reply-To: <20121118043533.GB18226@lizard.sbx05977.paloaca.wayport.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAKohponUt4264UaxM2Wr41=fbPJkUCFhKhOapjPQC=OYDuyMbQ@mail.gmail.com>
-References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
-	<50991C41.50705@gmail.com>
-	<CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com>
-	<509FB25F.3030307@gmail.com>
-	<CAKohpoksQ4ShO_QFAQORO2_oEgNtOeENFnX1C3gN_5POQSGexg@mail.gmail.com>
-	<509FFF8B.3010707@gmail.com>
-	<CAKohponUFABC397w=dq7j+1f5QeiOX4BCOXv=OZSNOaOTmt9oQ@mail.gmail.com>
-	<CAKohponUt4264UaxM2Wr41=fbPJkUCFhKhOapjPQC=OYDuyMbQ@mail.gmail.com>
-Date: Mon, 19 Nov 2012 11:54:21 +0530
-Message-ID: <CAB4BAks+eym9+qNZjxwkg7XxJrMwkaYFWGM5_YQk_TzfxyoHaw@mail.gmail.com>
-Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16
- variables & arrays
-From: Rajanikanth HV <rajanikanth.hv@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linaro-dev@lists.linaro.org Devel" <linaro-dev@lists.linaro.org>,
-        andriy.shevchenko@intel.com, Patch Tracking <patches@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAJ6Q1Cd013596
 
-On 19 November 2012 09:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 12 November 2012 09:03, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 12 November 2012 01:12, Rob Herring <robherring2@gmail.com> wrote:
->>> I don't think the size is stored in the dtb. It is only in the dts. You
->>> need to define the size in the binding definitions and use '/bits/'
->>> annotation. With this the data is packed. Then the array function used
->>> should match what the binding defines.
->
-> Hi Rob,
->
-> Can you please help me in getting the correct format to do this from dts.
-> I tried:
->
-> data1 = /bits/ 8 <0x50 0x60 0x70>;
-as per spec, format for data byte defines will be:
-data1 = [ 0x50 0x60 0x70 ];
-however, i see a parse error from device tree compiler when i tried.
->
-> as written in your earlier mail... but it didn't worked. Tried to
-> search too, but
-> couldn't find it.
->
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
+> > +static int ps_get_cur_chrage_cntl_limit(struct thermal_cooling_device
+> > +*tcd,
+> 
+> Typo, "charge".
+> 
+> > +						unsigned long *state)
+> > +{
+> > +	struct power_supply *psy;
+> > +	union power_supply_propval val;
+> > +	int ret;
+> > +
+> > +	WARN_ON(tcd == NULL);
+> 
+> This is unneeded, we'll get oops anyway.
+> 
+> I fixed it up and applied, thank you!
+
+Gr8 Thanks!
+
+/Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
