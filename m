@@ -1,36 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab2KSCzt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 21:55:49 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:60998 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab2KSCzs (ORCPT
+	id S1752847Ab2KSDCB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 22:02:01 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59833 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2KSDB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 21:55:48 -0500
-Date: Mon, 19 Nov 2012 00:55:40 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: chris.mason@fusionio.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: btrfs crash - Null dereference - 3.7.0-rc5-00068-gc5e35d6
-Message-ID: <20121119025540.GA3858@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Sun, 18 Nov 2012 22:01:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 19 Nov 2012 11:01:59 +0800
+Message-ID: <CAFCUKTS=SHoD4jpJe0_H6tsKcw-C9bAQP=VhXx+Lp8WZ4Xj6cA@mail.gmail.com>
+Subject: [RFC] usb: add 'usb_get_intf()' call into the probe methods of
+ drivers for usb interfaces.
+From: harvey yang <harvey.huawei.yang@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-my system suddenly crashed and gave me this dump:
-
-http://imgur.com/oO6S0
-
-I checked and there is not btrfs commit in linus' tree since I compiled this
-kernel.
-
-	Gustavo
+Hi, all
+I checked many usb drivers in the mainline kernel which do not record
+this reference in their probe methods. But according to the documents
+about this function, we shoud record this reference in our probe
+methods, just as the call to 'usb_get_dev()' to reference a usb
+device. Are these usb drivers right or we need to fix them?
