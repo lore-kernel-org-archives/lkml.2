@@ -1,70 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab2KSWgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:36:13 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49868 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab2KSWgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:36:12 -0500
-Date: Mon, 19 Nov 2012 23:36:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121119223604.GA13470@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
+	id S1753165Ab2KSWkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:40:06 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:53789 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab2KSWkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 17:40:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/2] ACPI / platform: Initialize ACPI handles of platform devices in advance
+Date: Mon, 19 Nov 2012 23:44:29 +0100
+Message-ID: <2269124.JGAumZBndA@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121119223221.GB2250@kroah.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <1610515.dOb8aMkzLk@vostro.rjw.lan> <20121119223221.GB2250@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121119211804.GM8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mel Gorman <mgorman@suse.de> wrote:
-
-> Ok.
+On Monday, November 19, 2012 02:32:21 PM Greg Kroah-Hartman wrote:
+> On Mon, Nov 19, 2012 at 09:44:21PM +0100, Rafael J. Wysocki wrote:
+> > On Monday, November 19, 2012 06:45:22 PM Rafael J. Wysocki wrote:
+> > > On Monday, November 19, 2012 06:32:06 PM Rafael J. Wysocki wrote:
+> > > > On Monday, November 19, 2012 08:23:34 AM Greg Kroah-Hartman wrote:
+> > > > > On Sun, Nov 18, 2012 at 10:13:59PM +0100, Rafael J. Wysocki wrote:
+> > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > 
+> > > > > > The current platform device creation and registration code in
+> > > > > > acpi_create_platform_device() is quite convoluted.  This function
+> > > > > > takes an ACPI device node as an argument and eventually calls
+> > > > > > platform_device_register_resndata() to create and register a
+> > > > > > platform device object on the basis of the information contained
+> > > > > > in that code.  However, it doesn't associate the new platform
+> > > > > > device with the ACPI node directly, but instead it relies on
+> > > > > > acpi_platform_notify(), called from within device_add(), to find
+> > > > > > that ACPI node again with the help of acpi_platform_find_device()
+> > > > > > and acpi_platform_match() and then attach the new platform device
+> > > > > > to it.  This causes an additional ACPI namespace walk to happen and
+> > > > > > is clearly suboptimal.
+> > > > > > 
+> > > > > > Use the observation that it is now possible to initialize the ACPI
+> > > > > > handle of a device before calling device_add() for it to make this
+> > > > > > code more straightforward.  Namely, add a new field to struct
+> > > > > > platform_device_info allowing us to pass the ACPI handle of interest
+> > > > > > to platform_device_register_full(), which will then use it to
+> > > > > > initialize the new device's ACPI handle before registering it.
+> > > > > > This will cause acpi_platform_notify() to use the ACPI handle from
+> > > > > > the device structure directly instead of using the .find_device()
+> > > > > > routine provided by the device's bus type.  In consequence,
+> > > > > > acpi_platform_bus, acpi_platform_find_device(), and
+> > > > > > acpi_platform_match() are not necessary any more, so remove them.
+> > > > > 
+> > > > > Why can't you use the platform_data * that is already in struct device
+> > > > > for this, instead of adding an acpi-specific field to the
+> > > > > platform_device structure?
+> > > > 
+> > > > Hmm, I kind of don't understand the question. :-)
+> > > > 
+> > > > Yes, we have acpi_handle in struct device (it actually is being added by a
+> > > > patch you've acked) and we use it.  The whole point here is to streamline
+> > > > of the initalization of that field.
+> > > > 
+> > > > > If not that, surely there is another field in struct device that you
+> > > > > could use that is free for this type of device?
+> > > > 
+> > > > Yes, there is one and as I said above. :-)
+> > > > 
+> > > > I'd be happy to use the struct device's field directly, but
+> > > > platform_device_register_full() allocates memory for the struct device in
+> > > > question, so that field actually doesn't exist yet when it is called.
+> > > > 
+> > > > > >  struct platform_device_info {
+> > > > > >  		struct device *parent;
+> > > > > > +		void *acpi_handle;
+> > > > > 
+> > > > > Oh, and if I do accept this, I want a "real" structure pointer here
+> > > > > please, not a void * "handle".  That way is a slippery slope to the
+> > > > > Windows kernel programming style :)
+> > > > 
+> > > > This is (void *), because the field being initialized is (void *).  That field,
+> > > > in turn, is (void *), because ACPICA defines it that way.  I thought about
+> > > > wrapping that in some more meaningless data type, but I did't find a way
+> > > 
+> > > s/meaningless/meaningful/
+> > 
+> > Well, perhaps I'll describe the problem to you, maybe you can help. :-)
+> > 
+> > So, we want to have acpi_handle (or acpi_node) in addition to of_node in struct
+> > device (to be used in the analogous way plus for the execution of AML methods),
+> > but we don't want all users of device.h to have to include ACPI headers
+> > where the acpi_handle data type is defined.  For this reason, we're using
+> > (void *) as its data type now, which let's say I'm not really happy with.
+> > 
+> > I've been thinking about that for quite a while, though, and I'm not really
+> > sure what to do about that.  Perhaps we could define something like
+> > 
+> > struct acpi_dev_node {
+> > #ifdef CONFIG_ACPI
+> > 	void *handle;
+> > #endif
+> > };
+> > 
+> > in device.h and use that as "struct acpi_dev_node acpi_node;" in struct device.
+> > Then, we could add the following macro
+> > 
+> > #ifdef CONFIG_ACPI
+> > #define ACPI_HANDLE(dev)	((dev)->acpi_node.handle)
+> > #else
+> > #define ACPI_HANDLE(dev)	(NULL)
+> > #endif
+> > 
+> > and redefine DEVICE_ACPI_HANDLE(dev) as ((acpi_handle)ACPI_HANDLE(dev)).
+> > 
+> > Then, the $subject patch would add "struct acpi_dev_node acpi_node;" to
+> > struct platform_device_info and use ACPI_HANDLE(dev) instead of accessing
+> > the struct device's field directly.
+> > 
+> > I wonder what you think?
 > 
-> In response to one of your later questions, I found that I had 
-> in fact disabled THP without properly reporting it. [...]
+> I like the hack of using an empty structure here, that's fine with me,
+> and makes me feel a little bit better about the whole "void *" stuff.
+> If you respin the patch with this, I'll ack it.
 
-Hugepages is a must for most forms of NUMA/HPC. This alone 
-questions the relevance of most of your prior numa/core testing 
-results. I now have to strongly dispute your other conclusions 
-as well.
-
-Just a look at 'perf top' output should have told you the story.
-
-Yet time and time again you readily reported bad 'schednuma' 
-results for a slow 4K memory model that neither we nor other 
-NUMA testers I talked to actually used, without stopping to look 
-why that was so...
-
-[ I suspect that if such terabytes-of-data workloads are forced 
-  through such a slow 4K pages model then there's a bug or 
-  mis-tuning in our code that explains the level of additional 
-  slowdown you saw - we'll fix that.
-
-  But you should know that behavior under the slow 4K model 
-  tells very little about the true scheduling and placement 
-  quality of the patches... ]
-
-Please report proper THP-enabled numbers before continuing.
+I will, but I think I'll cut two patches instead, one introducing that
+stuff above and the other as a replacement for the $subject one on top
+of that.
 
 Thanks,
+Rafael
 
-	Ingo
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
