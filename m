@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2KSR1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:27:42 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:53290 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab2KSR1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:27:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/2] ACPI / platform: Initialize ACPI handles of platform devices in advance
-Date: Mon, 19 Nov 2012 18:32:06 +0100
-Message-ID: <1855340.enMgVW1AIC@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121119162334.GA1653@kroah.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <676649340.5Y2WB7IFNB@vostro.rjw.lan> <20121119162334.GA1653@kroah.com>
+	id S1753095Ab2KSR3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:29:30 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48422 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab2KSR33 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:29:29 -0500
+Message-ID: <50AA6C76.3000606@atmel.com>
+Date: Mon, 19 Nov 2012 18:29:26 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Olof Johansson <olof@lixom.net>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
+Subject: Re: [GIT PULL] at91: fixes for 3.7-rc7
+References: <50AA5ED5.8090901@atmel.com> <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
+In-Reply-To: <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 19, 2012 08:23:34 AM Greg Kroah-Hartman wrote:
-> On Sun, Nov 18, 2012 at 10:13:59PM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > The current platform device creation and registration code in
-> > acpi_create_platform_device() is quite convoluted.  This function
-> > takes an ACPI device node as an argument and eventually calls
-> > platform_device_register_resndata() to create and register a
-> > platform device object on the basis of the information contained
-> > in that code.  However, it doesn't associate the new platform
-> > device with the ACPI node directly, but instead it relies on
-> > acpi_platform_notify(), called from within device_add(), to find
-> > that ACPI node again with the help of acpi_platform_find_device()
-> > and acpi_platform_match() and then attach the new platform device
-> > to it.  This causes an additional ACPI namespace walk to happen and
-> > is clearly suboptimal.
-> > 
-> > Use the observation that it is now possible to initialize the ACPI
-> > handle of a device before calling device_add() for it to make this
-> > code more straightforward.  Namely, add a new field to struct
-> > platform_device_info allowing us to pass the ACPI handle of interest
-> > to platform_device_register_full(), which will then use it to
-> > initialize the new device's ACPI handle before registering it.
-> > This will cause acpi_platform_notify() to use the ACPI handle from
-> > the device structure directly instead of using the .find_device()
-> > routine provided by the device's bus type.  In consequence,
-> > acpi_platform_bus, acpi_platform_find_device(), and
-> > acpi_platform_match() are not necessary any more, so remove them.
+On 11/19/2012 05:52 PM, Olof Johansson :
+> Hi Nicolas,
 > 
-> Why can't you use the platform_data * that is already in struct device
-> for this, instead of adding an acpi-specific field to the
-> platform_device structure?
-
-Hmm, I kind of don't understand the question. :-)
-
-Yes, we have acpi_handle in struct device (it actually is being added by a
-patch you've acked) and we use it.  The whole point here is to streamline
-of the initalization of that field.
-
-> If not that, surely there is another field in struct device that you
-> could use that is free for this type of device?
-
-Yes, there is one and as I said above. :-)
-
-I'd be happy to use the struct device's field directly, but
-platform_device_register_full() allocates memory for the struct device in
-question, so that field actually doesn't exist yet when it is called.
-
-> >  struct platform_device_info {
-> >  		struct device *parent;
-> > +		void *acpi_handle;
+> On Mon, Nov 19, 2012 at 8:31 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>> Arnd, Olof,
+>>
+>> Here is another "fixes" pull request for AT91. It enables the sd/mmc driver
+>> for Device Tree enabled platforms. Those patches where part of a series that
+>> was split in two for reaching upstream: the MMC part is already in Linus' tree
+>> and this is the arm-soc part.
+>> I have placed these patches on top of the fixes that you already have for AT91.
 > 
-> Oh, and if I do accept this, I want a "real" structure pointer here
-> please, not a void * "handle".  That way is a slippery slope to the
-> Windows kernel programming style :)
+> What regressions do these fixes resolve?
+> 
+> It looks more like they are DT-enablement patches to me, and thus 3.8
+> material, not 3.7. I'll be happy to queue them up in next/dt though.
 
-This is (void *), because the field being initialized is (void *).  That field,
-in turn, is (void *), because ACPICA defines it that way.  I thought about
-wrapping that in some more meaningless data type, but I did't find a way
-that would work both when CONFIG_ACPI is set and when it is not.  If you
-have an idea how to do that in a clean way, I'd be happy to implement it. :-)
+Hi Olof,
 
-Thanks,
-Rafael
+You are right, it does not strictly fixes a regression and we were late
+for including these patches which are around since end of July...
+I still sent this pull-request to enable more people to use device tree
+on AT91 for the upcoming release.
 
+If you do not take it for 3.7, maybe we will have to queue these patches
+on top of our AT91 pinctrl work (on Linus Walleij side), so, you do need
+to queue this one for the moment...
 
+Best regards,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Nicolas Ferre
