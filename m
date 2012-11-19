@@ -1,207 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2KSHYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 02:24:21 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:15806
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751248Ab2KSHYR (ORCPT
+	id S1752889Ab2KSHZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 02:25:31 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57992 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2KSHZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 02:24:17 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1de0h1202h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH 2/2] mtd: remove the "chip" parameter in nand_get_device()
-Date: Mon, 19 Nov 2012 14:43:30 +0800
-Message-ID: <1353307410-17529-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1353307410-17529-1-git-send-email-b32955@freescale.com>
-References: <1353307410-17529-1-git-send-email-b32955@freescale.com>
+	Mon, 19 Nov 2012 02:25:30 -0500
+Date: Sun, 18 Nov 2012 23:25:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, arve@android.com, kernel-team@android.com,
+        john.stultz@linaro.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+Message-ID: <20121119072525.GA16730@core.coreip.homeip.net>
+References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two reasons to remove the "chip" parameter in nand_get_device():
+Hi Mathieu,
 
-[1] The nand_release_device() does not have the "chip" parameter.
-[2] We can get the nand_chip by the mtd->priv field.
+On Sun, Nov 11, 2012 at 01:24:48PM -0700, mathieu.poirier@linaro.org wrote:
+> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+> 
+> This patch adds keyreset functionality to the sysrq driver. It
+> allows certain button/key combinations to be used in order to
+> trigger device resets.
+> 
+> The first time the key-combo is detected a work function that syncs
+> the filesystems is scheduled and the kernel rebooted. If all the keys
+> are released and then pressed again, it calls panic. Reboot on panic
+> should be set for this to work.
+> 
+> Redefining the '__weak sysrq_keyreset_get_params' function is required
+> to trigger the feature.  Alternatively keys can be passed to the
+> driver via the "/sys/module/sysrq" interface.
+> 
+> This functionality comes from the keyreset driver submitted by
+> Arve Hjønnevåg in the Android kernel.
 
-This patch removes the "chip" parameter in nand_get_device().
+Thank you for making the changes. This still looks pretty complicated,
+how about if we trim it a bit, like in the patch below.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+Thanks.
+
+-- 
+Dmitry
+
+Input: sysrq - allow specifying alternate reset sequence
+
+From: Mathieu J. Poirier <mathieu.poirier@linaro.org>
+
+This patch adds keyreset functionality to the sysrq driver. It allows
+certain button/key combinations to be used in order to trigger emergency
+reboots.
+
+Redefining the '__weak platform_sysrq_reset_seq' variable is required
+to trigger the feature.  Alternatively keys can be passed to the driver
+via a module parameter.
+
+This functionality comes from the keyreset driver submitted by
+Arve Hjønnevåg in the Android kernel.
+
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/mtd/nand/nand_base.c |   37 ++++++++++++++-----------------------
- 1 files changed, 14 insertions(+), 23 deletions(-)
+ drivers/tty/sysrq.c |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 861a87d..55c2883 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -93,8 +93,7 @@ static struct nand_ecclayout nand_oob_128 = {
- 		 .length = 78} }
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 16ee6ce..9dddaf7 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -41,6 +41,7 @@
+ #include <linux/slab.h>
+ #include <linux/input.h>
+ #include <linux/uaccess.h>
++#include <linux/moduleparam.h>
+ 
+ #include <asm/ptrace.h>
+ #include <asm/irq_regs.h>
+@@ -576,8 +577,73 @@ struct sysrq_state {
+ 	bool active;
+ 	bool need_reinject;
+ 	bool reinjecting;
++
++	/* reset sequence handling */
++	bool reset_canceled;
++	unsigned long reset_keybit[BITS_TO_LONGS(KEY_CNT)];
++	int reset_seq_len;
++	int reset_seq_cnt;
++	int reset_seq_version;
  };
  
--static int nand_get_device(struct nand_chip *chip, struct mtd_info *mtd,
--			   int new_state);
-+static int nand_get_device(struct mtd_info *mtd, int new_state);
- 
- static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
- 			     struct mtd_oob_ops *ops);
-@@ -300,7 +299,7 @@ static int nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
- 	if (getchip) {
- 		chipnr = (int)(ofs >> chip->chip_shift);
- 
--		nand_get_device(chip, mtd, FL_READING);
-+		nand_get_device(mtd, FL_READING);
- 
- 		/* Select the NAND device */
- 		chip->select_chip(mtd, chipnr);
-@@ -382,7 +381,7 @@ static int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs)
- 		struct mtd_oob_ops ops;
- 		loff_t wr_ofs = ofs;
- 
--		nand_get_device(chip, mtd, FL_WRITING);
-+		nand_get_device(mtd, FL_WRITING);
- 
- 		ops.datbuf = NULL;
- 		ops.oobbuf = buf;
-@@ -749,15 +748,15 @@ static void panic_nand_get_device(struct nand_chip *chip,
- 
- /**
-  * nand_get_device - [GENERIC] Get chip for selected access
-- * @chip: the nand chip descriptor
-  * @mtd: MTD device structure
-  * @new_state: the state which is requested
-  *
-  * Get the device and lock it for exclusive access
-  */
- static int
--nand_get_device(struct nand_chip *chip, struct mtd_info *mtd, int new_state)
-+nand_get_device(struct mtd_info *mtd, int new_state)
++#define SYSRQ_KEY_RESET_MAX	20 /* Should be plenty */
++static unsigned short sysrq_reset_seq[SYSRQ_KEY_RESET_MAX];
++static unsigned int sysrq_reset_seq_len;
++static unsigned int sysrq_reset_seq_version = 1;
++
++static void sysrq_parse_reset_sequence(struct sysrq_state *state)
++{
++	int i;
++	unsigned short key;
++
++	state->reset_seq_cnt = 0;
++
++	for (i = 0; i < sysrq_reset_seq_len; i++) {
++		key = sysrq_reset_seq[i];
++
++		if (key == KEY_RESERVED || key > KEY_MAX)
++			break;
++
++		__set_bit(key, state->reset_keybit);
++		state->reset_seq_len++;
++
++		if (test_bit(key, state->key_down))
++			state->reset_seq_cnt++;
++	}
++}
++
++static bool sysrq_detect_reset_sequence(struct sysrq_state *state,
++					unsigned int code, int value)
++{
++	if (state->reset_seq_version != sysrq_reset_seq_version) {
++		sysrq_parse_reset_sequence(state);
++		/* Disable reset until old keys are not released */
++		state->reset_canceled = state->reset_seq_cnt != 0;
++		state->reset_seq_version = sysrq_reset_seq_version;
++	}
++
++	if (!test_bit(code, state->reset_keybit)) {
++		/*
++		 * Pressing any key _not_ in reset sequence cancels
++		 * the reset sequence.
++		 */
++		if (value && state->reset_seq_cnt)
++			state->reset_canceled = true;
++	} else if (value == 0) {
++		/* key release */
++		if (--state->reset_seq_cnt == 0)
++			state->reset_canceled = false;
++	} else if (value == 1) {
++		/* key press, not autorepeat */
++		if (++state->reset_seq_cnt == state->reset_seq_len &&
++		    !state->reset_canceled) {
++			return true;
++		}
++	}
++
++	return false;
++}
++
+ static void sysrq_reinject_alt_sysrq(struct work_struct *work)
  {
-+	struct nand_chip *chip = mtd->priv;
- 	spinlock_t *lock = &chip->controller->lock;
- 	wait_queue_head_t *wq = &chip->controller->wq;
- 	DECLARE_WAITQUEUE(wait, current);
-@@ -933,7 +932,7 @@ int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
- 	if (ofs + len == mtd->size)
- 		len -= mtd->erasesize;
+ 	struct sysrq_state *sysrq =
+@@ -690,6 +756,11 @@ static bool sysrq_filter(struct input_handle *handle,
+ 			if (was_active)
+ 				schedule_work(&sysrq->reinject_work);
  
--	nand_get_device(chip, mtd, FL_UNLOCKING);
-+	nand_get_device(mtd, FL_UNLOCKING);
++			if (sysrq_detect_reset_sequence(sysrq, code, value)) {
++				/* Force emergency reboot */
++				__handle_sysrq(sysrq_xlate[KEY_B], false);
++			}
++
+ 		} else if (value == 0 &&
+ 			   test_and_clear_bit(code, sysrq->key_down)) {
+ 			/*
+@@ -785,7 +856,20 @@ static bool sysrq_handler_registered;
  
- 	/* Shift to get chip number */
- 	chipnr = ofs >> chip->chip_shift;
-@@ -983,7 +982,7 @@ int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
- 	if (check_offs_len(mtd, ofs, len))
- 		ret = -EINVAL;
- 
--	nand_get_device(chip, mtd, FL_LOCKING);
-+	nand_get_device(mtd, FL_LOCKING);
- 
- 	/* Shift to get chip number */
- 	chipnr = ofs >> chip->chip_shift;
-@@ -1581,11 +1580,10 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
- static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
- 		     size_t *retlen, uint8_t *buf)
+ static inline void sysrq_register_handler(void)
  {
--	struct nand_chip *chip = mtd->priv;
- 	struct mtd_oob_ops ops;
- 	int ret;
++	extern unsigned short platform_sysrq_reset_seq[] __weak;
++	unsigned short key;
+ 	int error;
++	int i;
++
++	if (platform_sysrq_reset_seq) {
++		for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
++			key = platform_sysrq_reset_seq[i];
++			if (key == KEY_RESERVED || key > KEY_MAX)
++				break;
++
++			sysrq_reset_seq[sysrq_reset_seq_len++] = key;
++		}
++	}
  
--	nand_get_device(chip, mtd, FL_READING);
-+	nand_get_device(mtd, FL_READING);
- 	ops.len = len;
- 	ops.datbuf = buf;
- 	ops.oobbuf = NULL;
-@@ -1832,7 +1830,6 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
- static int nand_read_oob(struct mtd_info *mtd, loff_t from,
- 			 struct mtd_oob_ops *ops)
- {
--	struct nand_chip *chip = mtd->priv;
- 	int ret = -ENOTSUPP;
- 
- 	ops->retlen = 0;
-@@ -1844,7 +1841,7 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
- 		return -EINVAL;
+ 	error = input_register_handler(&sysrq_handler);
+ 	if (error)
+@@ -802,6 +886,36 @@ static inline void sysrq_unregister_handler(void)
  	}
- 
--	nand_get_device(chip, mtd, FL_READING);
-+	nand_get_device(mtd, FL_READING);
- 
- 	switch (ops->mode) {
- 	case MTD_OPS_PLACE_OOB:
-@@ -2314,11 +2311,10 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
- static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
- 			  size_t *retlen, const uint8_t *buf)
- {
--	struct nand_chip *chip = mtd->priv;
- 	struct mtd_oob_ops ops;
- 	int ret;
- 
--	nand_get_device(chip, mtd, FL_WRITING);
-+	nand_get_device(mtd, FL_WRITING);
- 	ops.len = len;
- 	ops.datbuf = (uint8_t *)buf;
- 	ops.oobbuf = NULL;
-@@ -2424,7 +2420,6 @@ static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
- static int nand_write_oob(struct mtd_info *mtd, loff_t to,
- 			  struct mtd_oob_ops *ops)
- {
--	struct nand_chip *chip = mtd->priv;
- 	int ret = -ENOTSUPP;
- 
- 	ops->retlen = 0;
-@@ -2436,7 +2431,7 @@ static int nand_write_oob(struct mtd_info *mtd, loff_t to,
- 		return -EINVAL;
- 	}
- 
--	nand_get_device(chip, mtd, FL_WRITING);
-+	nand_get_device(mtd, FL_WRITING);
- 
- 	switch (ops->mode) {
- 	case MTD_OPS_PLACE_OOB:
-@@ -2529,7 +2524,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
- 		return -EINVAL;
- 
- 	/* Grab the lock and see if the device is available */
--	nand_get_device(chip, mtd, FL_ERASING);
-+	nand_get_device(mtd, FL_ERASING);
- 
- 	/* Shift to get first page */
- 	page = (int)(instr->addr >> chip->page_shift);
-@@ -2675,12 +2670,10 @@ erase_exit:
-  */
- static void nand_sync(struct mtd_info *mtd)
- {
--	struct nand_chip *chip = mtd->priv;
--
- 	pr_debug("%s: called\n", __func__);
- 
- 	/* Grab the lock and see if the device is available */
--	nand_get_device(chip, mtd, FL_SYNCING);
-+	nand_get_device(mtd, FL_SYNCING);
- 	/* Release it and go back */
- 	nand_release_device(mtd);
- }
-@@ -2766,9 +2759,7 @@ static int nand_onfi_get_features(struct mtd_info *mtd, struct nand_chip *chip,
-  */
- static int nand_suspend(struct mtd_info *mtd)
- {
--	struct nand_chip *chip = mtd->priv;
--
--	return nand_get_device(chip, mtd, FL_PM_SUSPENDED);
-+	return nand_get_device(mtd, FL_PM_SUSPENDED);
  }
  
- /**
--- 
-1.7.0.4
-
-
++static int sysrq_reset_seq_param_set(const char *buffer,
++				     const struct kernel_param *kp)
++{
++	unsigned long val;
++	int error;
++
++	error = strict_strtoul(buffer, 0, &val);
++	if (error < 0)
++		return error;
++
++	if (val > KEY_MAX)
++		return -EINVAL;
++
++	*((unsigned short *)kp->arg) = val;
++	sysrq_reset_seq_version++;
++
++	return 0;
++}
++
++static struct kernel_param_ops param_ops_sysrq_reset_seq = {
++	.get	= param_get_ushort,
++	.set	= sysrq_reset_seq_param_set,
++};
++
++#define param_check_sysrq_reset_seq(name, p)	\
++	__param_check(name, p, unsigned short)
++
++module_param_array_named(reset_seq, sysrq_reset_seq, sysrq_reset_seq,
++			 &sysrq_reset_seq_len, 0644);
++
+ #else
+ 
+ static inline void sysrq_register_handler(void)
