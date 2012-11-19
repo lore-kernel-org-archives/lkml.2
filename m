@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2KSXNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 18:13:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35238 "EHLO mail.zytor.com"
+	id S1753393Ab2KSXR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:17:28 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:43558 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502Ab2KSXNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 18:13:47 -0500
-Message-ID: <50AABD15.1050809@zytor.com>
-Date: Mon, 19 Nov 2012 15:13:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1753158Ab2KSXR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 18:17:26 -0500
+Date: Mon, 19 Nov 2012 16:17:24 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
+        linux-rdma@vger.kernel.org
+Subject: Re: [PATCH 407/493] infiniband: remove use of __devexit
+Message-ID: <20121119231724.GA27526@obsidianresearch.com>
+References: <1353349642-3677-1-git-send-email-wfp5p@virginia.edu>
+ <1353349642-3677-407-git-send-email-wfp5p@virginia.edu>
+ <20121119200921.GD1556@obsidianresearch.com>
+ <20121119201938.GA5614@kroah.com>
+ <20121119214922.GA5636@obsidianresearch.com>
+ <20121119220632.GA1946@kroah.com>
+ <20121119224845.GB5636@obsidianresearch.com>
+ <20121119230006.GA2523@kroah.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org> <1353222571-31544-4-git-send-email-yinghai@kernel.org> <50AAB5E8.5070807@zytor.com> <CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119230006.GA2523@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 02:53 PM, Yinghai Lu wrote:
->>
->> We can't change the 0x200 value, ever, because there are already things
->> that use the 64-bit entry point.  As such, these macros and the bzImage
->> fields are pointless; let's not bother and instead document the 0x200 as
->> the permanently fixed address of the 64-bit entry point.
-> 
-> ok,
-> 
-> any other field, in header struct field that we can use to tell
-> bzImage could be used that
-> 0x200 directly?
-> 
-> hardware_subarch?
-> 
+On Mon, Nov 19, 2012 at 03:00:06PM -0800, Greg KH wrote:
 
-There isn't one... this dates back all the way to the original x86-64
-kernels.
+> I could just leave things alone, with CONFIG_HOTPLUG always enabled, but
+> then people will continue to blindly use the __dev* markings, getting it
+> wrong at times, but never realizing that they don't do anything anymore.
 
-Are you asking if we can tell this is a 64-bit kernel (as opposed to a
-32-bit kernel, which obviously doesn't have a 64-bit entry point)?
-Unfortunately there isn't an intentional one that I know of.  There
-might be an accidental such indicator, but we'd have to go back to look
-at 8+ years of kernels.  We can't even rely on a jmp instruction at the
-address...
+Well, I was thinking more along the lines of leaving the capability to
+remove the __dev* marked functions from the link, as is today,
+independent of the other stuff CONFIG_HOTPLUG controls. But reviewing
+your comments from the archive makes me think a motivation is misuse
+of the __dev* markings..
 
-	-hpa
-
+Thanks for the insight,
+Jason
