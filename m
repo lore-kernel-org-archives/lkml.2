@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab2KSTZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 14:25:52 -0500
-Received: from hotel311.server4you.de ([85.25.146.15]:50602 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab2KSTZv (ORCPT
+	id S1754702Ab2KSTaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 14:30:10 -0500
+Received: from mailhost-z4-m4.nerim-networks.com ([78.40.49.247]:15980 "EHLO
+	smtp-delay2.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754438Ab2KSTaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 14:25:51 -0500
-Message-ID: <50AA87BD.1040106@monom.org>
-Date: Mon, 19 Nov 2012 20:25:49 +0100
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: srivatsa.bhat@linux.vnet.ibm.com, john.r.fastabend@intel.com,
-        nhorman@tuxdriver.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+	Mon, 19 Nov 2012 14:30:08 -0500
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Nov 2012 14:30:08 EST
+Date: Mon, 19 Nov 2012 20:22:09 +0100
+From: Damien Wyart <damien.wyart@free.fr>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
+        stable@vger.kernel.org, Puneet Kumar <puneetster@chromium.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] netprio_cgroup: implement hierarchy
- support
-References: <1353093624-22608-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1353093624-22608-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCHv5] mm: Fix calculation of dirtyable memory
+Message-ID: <20121119192209.GA3718@brouette>
+References: <20121119134001.GA2799@cmpxchg.org>
+ <1353350518-32623-1-git-send-email-sonnyrao@chromium.org>
+ <CAPz6YkXazpiJgKHnQx=dpr4XOCo8J_PBeffDG7mfPk7rPy2a-g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPz6YkXazpiJgKHnQx=dpr4XOCo8J_PBeffDG7mfPk7rPy2a-g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+* Sonny Rao <sonnyrao@chromium.org> [2012-11-19 10:44]:
+> Damien, thanks for testing and finding that bug.  If you could, please
+> give this version a try, thanks.
 
-I have tested this series and it works nicely. I didn't mentioned yet to 
-review it completely. I will do it tomorrow.
+Tried it for a few hours (as soon as the min/max problem was suggested
+on the list) and the previous problems disappeared.
 
-cheers,
-daniel
+-- 
+Damien
