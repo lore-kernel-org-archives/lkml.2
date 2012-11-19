@@ -1,272 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab2KSNcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 08:32:13 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:57213 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab2KSNcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 08:32:12 -0500
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH] regmap: introduce tables for readable/writeable/volatile/precious checks
-Date: Mon, 19 Nov 2012 14:31:53 +0100
-Message-Id: <1353331913-24941-1-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1752478Ab2KSNi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 08:38:26 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:41454 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab2KSNiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 08:38:24 -0500
+Date: Mon, 19 Nov 2012 14:38:04 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+To: "till@harbaum.org" <till@harbaum.org>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
+ for bus-drivers.
+Message-ID: <20121119133802.GA5030@krabat.ahsoftware>
+References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de>
+ <20121113195533.6db71716@endymion.delvare>
+ <50A2AC28.7050304@ahsoftware.de>
+ <20121113220835.111a178a@endymion.delvare>
+ <50A2BAA2.6090009@ahsoftware.de>
+ <20121113224246.768bf734@endymion.delvare>
+ <50A2DA0C.3090507@ahsoftware.de>
+ <20121114104050.79df8cd9@endymion.delvare>
+ <50A390CC.9000208@ahsoftware.de>
+ <1352920954.19432.2.camel@Nokia-N900>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1352920954.19432.2.camel@Nokia-N900>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of the regmap enabled drivers implementing one or more of the
-readable, writeable, volatile and precious methods use the same code
-pattern:
+Hello,
 
-	return ((reg >= X && reg <= Y) || (reg >= W && reg <= Z) || ...)
+after the needed break in the discussion (to calm down), I've decided to make a last try. I don't want to make a thesis about USB RTCs, nor do I want to write a whole new driver (and afterwards trying to get such into the kernel, not to speak about the then necessary explicit device/vendor ID).
 
-Switch to a data driven approach, using tables to describe
-readable/writeable/volatile and precious registers ranges instead.
-The table based check can still be overridden by passing the usual function
-pointers via struct regmap_config.
+On Wed, Nov 14, 2012 at 08:22:34PM +0100, till@harbaum.org wrote:
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+> i have seen i2c chips going nuts because some probing actually affected the chips state. So i fully agree with Jean here.
+
+I've now changed the device registration from using i2c_new_probed_device() to i2c_new_device(),
+even if that would register non-existent RTCs.
+
+> I2C just isn't meant to be used for hot plugging. And so isn't the i2c-tiny-usb. It's more a hacking and testing device and is e.g. very convenient to test i2c client drivers or to test some new i2c hardware. But i have never had a need for this before user land was available. And once it is you can really do any magic you want using e.g. udev and sysfs.
+
+As you've written yourself, i2c-tiny-usb is more a hacking and testing device, so there's hopefully no real argument left against including the few lines to enable devices through module options or the kernel command line. Someone could like to test such too with the "hacking and testing device".
+
+Regards,
+
+Alexander
+
+
+>From 1aa6bbd0a87ce39f9889f835d12127226ffa9403 Mon Sep 17 00:00:00 2001
+From: Alexander Holler <holler@ahsoftware.de>
+Date: Tue, 13 Nov 2012 16:28:07 +0100
+Subject: [PATCH] i2c: i2c-tiny-usb: Add parameter for optional i2c-devices.
+
+Make it possible to define i2c-devices at the kernel command line
+or as a module parameter.
+
+Format is devname1@addr1,devname2@addr2,...
+
+Example for the kernel command line:
+
+   i2c-tiny-usb.devices=ds1307@0x68,pcf8563@0x51
+
+The definition of up to 8 devices is allowed.
+
+Cc: Till Harbaum <till@harbaum.org>
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
+ drivers/i2c/busses/i2c-tiny-usb.c |   44 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-Mark, following your comments I just did a couple of changes: 
-
-_reg_in_ranges made external and renamed (regmap_reg_in_rages).
-_reg_in_range moved to regmap.h and renamed (regmap_reg_in_range), maybe
-it could be useful.
-
- drivers/base/regmap/internal.h |    4 ++
- drivers/base/regmap/regmap.c   |   45 ++++++++++++++++++++++
- include/linux/regmap.h         |   82 ++++++++++++++++++++++++++++++++++------
- 3 files changed, 120 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 2cd01b5..c6e64e0 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -55,6 +55,10 @@ struct regmap {
- 	bool (*readable_reg)(struct device *dev, unsigned int reg);
- 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
- 	bool (*precious_reg)(struct device *dev, unsigned int reg);
-+	const struct regmap_range_table *wr_table;
-+	const struct regmap_range_table *rd_table;
-+	const struct regmap_range_table *volatile_table;
-+	const struct regmap_range_table *precious_table;
+diff --git a/drivers/i2c/busses/i2c-tiny-usb.c b/drivers/i2c/busses/i2c-tiny-usb.c
+index 0510636..a3fc711 100644
+--- a/drivers/i2c/busses/i2c-tiny-usb.c
++++ b/drivers/i2c/busses/i2c-tiny-usb.c
+@@ -40,6 +40,11 @@ module_param(delay, ushort, 0);
+ MODULE_PARM_DESC(delay, "bit delay in microseconds "
+ 		 "(default is 10us for 100kHz max)");
  
- 	u8 read_flag_mask;
- 	u8 write_flag_mask;
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 273bf30..056aa78 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -34,6 +34,35 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
- 			       unsigned int mask, unsigned int val,
- 			       bool *change);
++#define MAX_OPTIONAL_I2C_DEVICES 8
++static char *opt_devices[MAX_OPTIONAL_I2C_DEVICES];
++module_param_array_named(devices, opt_devices, charp, NULL, 0);
++MODULE_PARM_DESC(devices, "devname1@adr1,devname2@adr2,... (e.g. ds1307@0x68)");
++
+ static int usb_read(struct i2c_adapter *adapter, int cmd,
+ 		    int value, int index, void *data, int len);
  
-+bool regmap_reg_in_ranges(unsigned int reg, const struct regmap_range *ranges,
-+			  unsigned int nranges)
+@@ -184,6 +189,42 @@ static void i2c_tiny_usb_free(struct i2c_tiny_usb *dev)
+ 	kfree(dev);
+ }
+ 
++static void i2c_add_optional_devices(struct i2c_adapter *adapter)
 +{
-+	const struct regmap_range *r;
 +	int i;
++	struct i2c_board_info i2c_info;
++	uint addr;
++	const char *at;
 +
-+	for (i = 0, r = ranges; i < nranges; i++, r++)
-+		if (regmap_reg_in_range(reg, r))
-+			return true;
-+	return false;
++	for (i = 0; opt_devices[i]; ++i) {
++		at = strchr(opt_devices[i], '@');
++		if (at++ == NULL) {
++			dev_warn(&adapter->dev,
++				"address needed in device definition '%s'\n",
++				opt_devices[i]);
++			continue;
++		}
++		if (kstrtouint(at, 0, &addr) || addr >= I2C_CLIENT_END) {
++			dev_warn(&adapter->dev,
++				"wrong address in device definition '%s'\n",
++				opt_devices[i]);
++			continue;
++		}
++		memset(&i2c_info, 0, sizeof(struct i2c_board_info));
++		strlcpy(i2c_info.type, opt_devices[i],
++			min(I2C_NAME_SIZE, (int)(at-opt_devices[i])));
++		i2c_info.addr = addr;
++		if (i2c_new_device(adapter, &i2c_info) != NULL)
++			dev_info(&adapter->dev,
++				"device %s at address 0x%02x registered\n",
++				i2c_info.type, addr);
++		else
++			dev_warn(&adapter->dev,
++				"device %s at address 0x%02x not found\n",
++				i2c_info.type, addr);
++	}
 +}
-+EXPORT_SYMBOL_GPL(regmap_reg_in_ranges);
 +
-+static bool _regmap_check_range_table(struct regmap *map,
-+				      unsigned int reg,
-+				      const struct regmap_range_table *table)
-+{
-+	/* Check "no ranges" first */
-+	if (regmap_reg_in_ranges(reg, table->no_ranges, table->n_no_ranges))
-+		return false;
-+
-+	/* In case zero "yes ranges" are supplied, any reg is OK */
-+	if (!table->n_yes_ranges)
-+		return true;
-+
-+	return regmap_reg_in_ranges(reg, table->yes_ranges,
-+				    table->n_yes_ranges);
-+}
-+
- bool regmap_writeable(struct regmap *map, unsigned int reg)
+ static int i2c_tiny_usb_probe(struct usb_interface *interface,
+ 			      const struct usb_device_id *id)
  {
- 	if (map->max_register && reg > map->max_register)
-@@ -42,6 +71,9 @@ bool regmap_writeable(struct regmap *map, unsigned int reg)
- 	if (map->writeable_reg)
- 		return map->writeable_reg(map->dev, reg);
+@@ -236,6 +277,9 @@ static int i2c_tiny_usb_probe(struct usb_interface *interface,
+ 	/* inform user about successful attachment to i2c layer */
+ 	dev_info(&dev->adapter.dev, "connected i2c-tiny-usb device\n");
  
-+	if (map->wr_table)
-+		return _regmap_check_range_table(map, reg, map->wr_table);
++	/* add optional devices */
++	i2c_add_optional_devices(&dev->adapter);
 +
- 	return true;
- }
+ 	return 0;
  
-@@ -56,6 +88,9 @@ bool regmap_readable(struct regmap *map, unsigned int reg)
- 	if (map->readable_reg)
- 		return map->readable_reg(map->dev, reg);
- 
-+	if (map->rd_table)
-+		return _regmap_check_range_table(map, reg, map->rd_table);
-+
- 	return true;
- }
- 
-@@ -67,6 +102,9 @@ bool regmap_volatile(struct regmap *map, unsigned int reg)
- 	if (map->volatile_reg)
- 		return map->volatile_reg(map->dev, reg);
- 
-+	if (map->volatile_table)
-+		return _regmap_check_range_table(map, reg, map->volatile_table);
-+
- 	return true;
- }
- 
-@@ -78,6 +116,9 @@ bool regmap_precious(struct regmap *map, unsigned int reg)
- 	if (map->precious_reg)
- 		return map->precious_reg(map->dev, reg);
- 
-+	if (map->precious_table)
-+		return _regmap_check_range_table(map, reg, map->precious_table);
-+
- 	return false;
- }
- 
-@@ -370,6 +411,10 @@ struct regmap *regmap_init(struct device *dev,
- 	map->bus = bus;
- 	map->bus_context = bus_context;
- 	map->max_register = config->max_register;
-+	map->wr_table = config->wr_table;
-+	map->rd_table = config->rd_table;
-+	map->volatile_table = config->volatile_table;
-+	map->precious_table = config->precious_table;
- 	map->writeable_reg = config->writeable_reg;
- 	map->readable_reg = config->readable_reg;
- 	map->volatile_reg = config->volatile_reg;
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index fedf7ba..f467cba 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -54,6 +54,36 @@ enum regmap_endian {
- 	REGMAP_ENDIAN_NATIVE,
- };
- 
-+/**
-+ * A register range, used for access related checks
-+ * (readable/writeable/volatile/precious checks)
-+ *
-+ * @range_min: address of first register
-+ * @range_max: address of last register
-+ */
-+struct regmap_range {
-+	unsigned int range_min;
-+	unsigned int range_max;
-+};
-+
-+/*
-+ * A table of ranges including some yes ranges and some no ranges.
-+ * If a register belongs to a no_range, the corresponding check function
-+ * will return false. If a register belongs to a yes range, the corresponding
-+ * check function will return true. "no_ranges" are searched first.
-+ *
-+ * @yes_ranges : pointer to an array of regmap ranges used as "yes ranges"
-+ * @n_yes_ranges: size of the above array
-+ * @no_ranges: pointer to an array of regmap ranges used as "no ranges"
-+ * @n_no_ranges: size of the above array
-+ */
-+struct regmap_range_table {
-+	const struct regmap_range *yes_ranges;
-+	unsigned int n_yes_ranges;
-+	const struct regmap_range *no_ranges;
-+	unsigned int n_no_ranges;
-+};
-+
- typedef void (*regmap_lock)(void *);
- typedef void (*regmap_unlock)(void *);
- 
-@@ -71,22 +101,39 @@ typedef void (*regmap_unlock)(void *);
-  * @val_bits: Number of bits in a register value, mandatory.
-  *
-  * @writeable_reg: Optional callback returning true if the register
-- *                 can be written to.
-+ *		   can be written to. If this field is NULL but wr_table
-+ *		   (see below) is not, the check is performed on such table
-+ *                 (a register is writeable if it belongs to one of the ranges
-+ *                  specified by wr_table).
-  * @readable_reg: Optional callback returning true if the register
-- *                can be read from.
-+ *		  can be read from. If this field is NULL but rd_table
-+ *		   (see below) is not, the check is performed on such table
-+ *                 (a register is readable if it belongs to one of the ranges
-+ *                  specified by rd_table).
-  * @volatile_reg: Optional callback returning true if the register
-- *                value can't be cached.
-+ *		  value can't be cached. If this field is NULL but
-+ *		  volatile_table (see below) is not, the check is performed on
-+ *                such table (a register is volatile if it belongs to one of
-+ *                the ranges specified by volatile_table).
-  * @precious_reg: Optional callback returning true if the rgister
-- *                should not be read outside of a call from the driver
-- *                (eg, a clear on read interrupt status register).
-- * @lock:         Optional lock callback (overrides regmap's default lock
-- *                function, based on spinlock or mutex).
-- * @unlock:       As above for unlocking.
-- * @lock_arg:     this field is passed as the only argument of lock/unlock
-- *                functions (ignored in case regular lock/unlock functions
-- *                are not overridden).
-+ *		  should not be read outside of a call from the driver
-+ *		  (eg, a clear on read interrupt status register). If this
-+ *                field is NULL but precious_table (see below) is not, the
-+ *                check is performed on such table (a register is precious if
-+ *                it belongs to one of the ranges specified by precious_table).
-+ * @lock:	  Optional lock callback (overrides regmap's default lock
-+ *		  function, based on spinlock or mutex).
-+ * @unlock:	  As above for unlocking.
-+ * @lock_arg:	  this field is passed as the only argument of lock/unlock
-+ *		  functions (ignored in case regular lock/unlock functions
-+ *		  are not overridden).
-  *
-  * @max_register: Optional, specifies the maximum valid register index.
-+ * @wr_table:     Optional, points to a struct regmap_range_table specifying
-+ *                valid ranges for write access.
-+ * @rd_table:     As above, for read access.
-+ * @volatile_table: As above, for volatile registers.
-+ * @precious_table: As above, for precious registers.
-  * @reg_defaults: Power on reset values for registers (for use with
-  *                register cache support).
-  * @num_reg_defaults: Number of elements in reg_defaults.
-@@ -131,6 +178,10 @@ struct regmap_config {
- 	void *lock_arg;
- 
- 	unsigned int max_register;
-+	const struct regmap_range_table *wr_table;
-+	const struct regmap_range_table *rd_table;
-+	const struct regmap_range_table *volatile_table;
-+	const struct regmap_range_table *precious_table;
- 	const struct reg_default *reg_defaults;
- 	unsigned int num_reg_defaults;
- 	enum regcache_type cache_type;
-@@ -281,6 +332,15 @@ void regcache_mark_dirty(struct regmap *map);
- int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- 			  int num_regs);
- 
-+static inline bool regmap_reg_in_range(unsigned int reg,
-+				       const struct regmap_range *range)
-+{
-+	return reg >= range->range_min && reg <= range->range_max;
-+}
-+
-+bool regmap_reg_in_ranges(unsigned int reg, const struct regmap_range *ranges,
-+			  unsigned int nranges);
-+
- /**
-  * Description of an IRQ for the generic regmap irq_chip.
-  *
+  error:
 -- 
-1.7.10.4
+1.7.8.6
 
