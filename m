@@ -1,119 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab2KSVKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:10:11 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:60239 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab2KSVKJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:10:09 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <87lidx8wbo.fsf@xmission.com>
-	<1353337961-12962-1-git-send-email-ebiederm@xmission.com>
-	<1353337961-12962-12-git-send-email-ebiederm@xmission.com>
-	<20121119180322.GC1883@serge-ThinkPad-X130e>
-	<87fw451m5i.fsf@xmission.com> <20121119210153.GA11904@sergelap>
-Date: Mon, 19 Nov 2012 13:09:54 -0800
-In-Reply-To: <20121119210153.GA11904@sergelap> (Serge Hallyn's message of
-	"Mon, 19 Nov 2012 15:01:53 -0600")
-Message-ID: <877gphz4d9.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752006Ab2KSVP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:15:58 -0500
+Received: from [93.179.225.50] ([93.179.225.50]:55306 "EHLO shrek.podlesie.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab2KSVP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:15:57 -0500
+Date: Mon, 19 Nov 2012 22:15:53 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Alan Cox <alan@linux.intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: vt: regression caused by "Fix line garbage in virtual.."
+Message-ID: <20121119211553.GA29907@shrek.podlesie.net>
+References: <20121118110523.GA12094@shrek.podlesie.net>
+ <20121119113828.5a66f112@bob.linux.org.uk>
+ <20121119202149.46fc89c4@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Il0BImdXfbBsa8lL4QKbezZ9QiFHqeEo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Serge Hallyn <serge.hallyn@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 12/16] userns: For /proc/self/{uid, gid}_map derive the lower userns from the struct file
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119202149.46fc89c4@armhf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@canonical.com> writes:
+On Mon, Nov 19, 2012 at 08:21:49PM +0100, Jean-Francois Moine wrote:
+> On Mon, 19 Nov 2012 11:38:28 +0000
+> Alan Cox <alan@linux.intel.com> wrote:
+> 
+> > > There are some garbage after mousedev.c not present on older kernels.
+> > > 
+> > > Reverting commit 81732c in v3.7-rc6 fixes the issue.
+> > 
+> > Then we should drop this for 3.7 until a fixed one is provided IMHO.
+> > Its not relevant to most platforms.
+> 
+> Sorry, juggling with the byte offsets and the character indexes was not
+> so obvious.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> Serge Hallyn <serge.hallyn@canonical.com> writes:
->> 
->> > Quoting Eric W. Biederman (ebiederm@xmission.com):
->> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
->> >> 
->> >> To keep things sane in the context of file descriptor passing derive the
->> >> user namespace that uids are mapped into from the opener of the file
->> >> instead of from current.
->> >> 
->> >> When writing to the maps file the lower user namespace must always
->> >> be the parent user namespace, or setting the mapping simply does
->> >> not make sense.  Enforce that the opener of the file was in
->> >> the parent user namespace or the user namespace whose mapping
->> >> is being set.
->> >
->> > Is there a reasonable use case for writing from the ns whose mapping
->> > is being set?  Are you expecting cases where the child opens the file
->> > and passes it back to the parent to set the mappings?
->> 
->> Passing the open mappings file no.  Although by using seq_user_ns I do
->> make certain the semantics are correct if the file descriptor is passed,
->> but I did that on general principles.
->> 
->> I expect a process in the user namespace to be able to meaningfully set
->> the mapping to some the current uid and the current gid.
->
-> Sorry, I think a word is missing there.  To be precise (bc I haven't
-> thought about this much before as it's not my target goal :) you're
-> saying if I'm uid 1000 gid 1000, I can create a new user namespace
-> and, from inside that new userns (where I'm first uid/gid -1) I can
-> map any uid+gid in the container to 1000 in the parent ns?  Or is there
-> something more?
+That's why I even did not try to fix it.
 
-Only that for now.  I had once imagined magic would happen in the
-background to verify the parent.
-
-> It still seems to me no less flexible to require being in the parent
-> ns, so
->
->> >> +	if ((seq_ns != ns) && (seq_ns != ns->parent))
->> >> +		return -EPERM;
->
-> would become
->
->> >> +	if (seq_ns != ns->parent)
->> >> +		return -EPERM;
+> 
+> Here is a patch towards the kernel 3.7.
+> 
+> Krzysztof, may you check it?
 >
 
-In practice when playing around it is the difference between.
-unshare -U /bin/bash
-echo 0 1000 1 > /proc/self/uid_map
+That patch fixed the original issue, but I noticed another artifact
+(I tested only v3.7-rc6 after your fix, I didn't check if the same
+problems exists in v3.7).
 
-And the need to pre-plan something.  You can set the uid_map from the
-parent in a shell script but it is a real pain.  So for just messing
-around allowing seq_ns == ns is a real advantage.
+After:
 
-> I also wonder if -EINVAL would be a more appropriate choice here.
-> We're trying to keep things sane, rather than saying "not allowed"
-> for its own sake.
+for ((i = 0; i < 40; i++)); do
+	echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+done
+echo -e -n "\x0d\x1b[2@"
 
-A different error code might be better.
+(also generated by bash during command line editing, this time by CTRL-r
++ something)
 
-Eric
+the first character on screen (first column and first row) is cleared.
+
+
+I think it's too late for fixing it in 3.7 and it's better, like Alan
+proposed, to just revert it for now.
+
+Thanks,
+
+Krzysiek
+-- >8 --
+Subject: [PATCH] Revert "tty vt: Fix line garbage in virtual console on
+ command line edition"
+
+This reverts commit 81732c3b2fede049a692e58a7ceabb6d18ffb18c.
+
+This commit introduced frequent display artifacts during simple
+command line editing in bash, at least with framebuffer
+console on top inteldrmfb and radeondrmfb framebuffers.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ drivers/tty/vt/vt.c | 78 +++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 61 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index f87d7e8..3e89dba 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -537,27 +537,45 @@ void complement_pos(struct vc_data *vc, int offset)
+ 
+ static void insert_char(struct vc_data *vc, unsigned int nr)
+ {
+-	unsigned short *p = (unsigned short *) vc->vc_pos;
++	unsigned short *p, *q = (unsigned short *)vc->vc_pos;
+ 
+-	scr_memmovew(p + nr, p, vc->vc_cols - vc->vc_x);
+-	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
++	p = q + vc->vc_cols - nr - vc->vc_x;
++	while (--p >= q)
++		scr_writew(scr_readw(p), p + nr);
++	scr_memsetw(q, vc->vc_video_erase_char, nr * 2);
+ 	vc->vc_need_wrap = 0;
+-	if (DO_UPDATE(vc))
+-		do_update_region(vc, (unsigned long) p,
+-			(vc->vc_cols - vc->vc_x) / 2 + 1);
++	if (DO_UPDATE(vc)) {
++		unsigned short oldattr = vc->vc_attr;
++		vc->vc_sw->con_bmove(vc, vc->vc_y, vc->vc_x, vc->vc_y, vc->vc_x + nr, 1,
++				     vc->vc_cols - vc->vc_x - nr);
++		vc->vc_attr = vc->vc_video_erase_char >> 8;
++		while (nr--)
++			vc->vc_sw->con_putc(vc, vc->vc_video_erase_char, vc->vc_y, vc->vc_x + nr);
++		vc->vc_attr = oldattr;
++	}
+ }
+ 
+ static void delete_char(struct vc_data *vc, unsigned int nr)
+ {
+-	unsigned short *p = (unsigned short *) vc->vc_pos;
++	unsigned int i = vc->vc_x;
++	unsigned short *p = (unsigned short *)vc->vc_pos;
+ 
+-	scr_memcpyw(p, p + nr, vc->vc_cols - vc->vc_x - nr);
+-	scr_memsetw(p + vc->vc_cols - vc->vc_x - nr, vc->vc_video_erase_char,
+-			nr * 2);
++	while (++i <= vc->vc_cols - nr) {
++		scr_writew(scr_readw(p+nr), p);
++		p++;
++	}
++	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
+ 	vc->vc_need_wrap = 0;
+-	if (DO_UPDATE(vc))
+-		do_update_region(vc, (unsigned long) p,
+-			(vc->vc_cols - vc->vc_x) / 2);
++	if (DO_UPDATE(vc)) {
++		unsigned short oldattr = vc->vc_attr;
++		vc->vc_sw->con_bmove(vc, vc->vc_y, vc->vc_x + nr, vc->vc_y, vc->vc_x, 1,
++				     vc->vc_cols - vc->vc_x - nr);
++		vc->vc_attr = vc->vc_video_erase_char >> 8;
++		while (nr--)
++			vc->vc_sw->con_putc(vc, vc->vc_video_erase_char, vc->vc_y,
++				     vc->vc_cols - 1 - nr);
++		vc->vc_attr = oldattr;
++	}
+ }
+ 
+ static int softcursor_original;
+@@ -1154,26 +1172,45 @@ static void csi_J(struct vc_data *vc, int vpar)
+ 		case 0:	/* erase from cursor to end of display */
+ 			count = (vc->vc_scr_end - vc->vc_pos) >> 1;
+ 			start = (unsigned short *)vc->vc_pos;
++			if (DO_UPDATE(vc)) {
++				/* do in two stages */
++				vc->vc_sw->con_clear(vc, vc->vc_y, vc->vc_x, 1,
++					      vc->vc_cols - vc->vc_x);
++				vc->vc_sw->con_clear(vc, vc->vc_y + 1, 0,
++					      vc->vc_rows - vc->vc_y - 1,
++					      vc->vc_cols);
++			}
+ 			break;
+ 		case 1:	/* erase from start to cursor */
+ 			count = ((vc->vc_pos - vc->vc_origin) >> 1) + 1;
+ 			start = (unsigned short *)vc->vc_origin;
++			if (DO_UPDATE(vc)) {
++				/* do in two stages */
++				vc->vc_sw->con_clear(vc, 0, 0, vc->vc_y,
++					      vc->vc_cols);
++				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
++					      vc->vc_x + 1);
++			}
+ 			break;
+ 		case 3: /* erase scroll-back buffer (and whole display) */
+ 			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
+ 				    vc->vc_screenbuf_size >> 1);
+ 			set_origin(vc);
++			if (CON_IS_VISIBLE(vc))
++				update_screen(vc);
+ 			/* fall through */
+ 		case 2: /* erase whole display */
+ 			count = vc->vc_cols * vc->vc_rows;
+ 			start = (unsigned short *)vc->vc_origin;
++			if (DO_UPDATE(vc))
++				vc->vc_sw->con_clear(vc, 0, 0,
++					      vc->vc_rows,
++					      vc->vc_cols);
+ 			break;
+ 		default:
+ 			return;
+ 	}
+ 	scr_memsetw(start, vc->vc_video_erase_char, 2 * count);
+-	if (DO_UPDATE(vc))
+-		do_update_region(vc, (unsigned long) start, count);
+ 	vc->vc_need_wrap = 0;
+ }
+ 
+@@ -1186,22 +1223,29 @@ static void csi_K(struct vc_data *vc, int vpar)
+ 		case 0:	/* erase from cursor to end of line */
+ 			count = vc->vc_cols - vc->vc_x;
+ 			start = (unsigned short *)vc->vc_pos;
++			if (DO_UPDATE(vc))
++				vc->vc_sw->con_clear(vc, vc->vc_y, vc->vc_x, 1,
++						     vc->vc_cols - vc->vc_x);
+ 			break;
+ 		case 1:	/* erase from start of line to cursor */
+ 			start = (unsigned short *)(vc->vc_pos - (vc->vc_x << 1));
+ 			count = vc->vc_x + 1;
++			if (DO_UPDATE(vc))
++				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
++						     vc->vc_x + 1);
+ 			break;
+ 		case 2: /* erase whole line */
+ 			start = (unsigned short *)(vc->vc_pos - (vc->vc_x << 1));
+ 			count = vc->vc_cols;
++			if (DO_UPDATE(vc))
++				vc->vc_sw->con_clear(vc, vc->vc_y, 0, 1,
++					      vc->vc_cols);
+ 			break;
+ 		default:
+ 			return;
+ 	}
+ 	scr_memsetw(start, vc->vc_video_erase_char, 2 * count);
+ 	vc->vc_need_wrap = 0;
+-	if (DO_UPDATE(vc))
+-		do_update_region(vc, (unsigned long) start, count);
+ }
+ 
+ static void csi_X(struct vc_data *vc, int vpar) /* erase the following vpar positions */
+-- 
+1.8.0.283.gc57d856
 
