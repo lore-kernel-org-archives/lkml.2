@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2KSVji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:39:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35445 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2KSVjh (ORCPT
+	id S1752473Ab2KSVkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:40:03 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33218 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab2KSVkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:39:37 -0500
-Date: Mon, 19 Nov 2012 13:39:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Josh Triplett <josh@joshtriplett.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/58] mm: include/linux/huge_mm.h: Declare handle_pte_fault
- unconditionally
-In-Reply-To: <1353302917-13995-26-git-send-email-josh@joshtriplett.org>
-Message-ID: <alpine.DEB.2.00.1211191337420.12532@chino.kir.corp.google.com>
-References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org> <1353302917-13995-26-git-send-email-josh@joshtriplett.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Nov 2012 16:40:00 -0500
+From: Cyril Roelandt <tipecaml@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
+        laurent.pinchart@ideasonboard.com, kernel-janitors@vger.kernel.org,
+        Cyril Roelandt <tipecaml@gmail.com>
+Subject: [PATCH] UVC: use GFP_ATOMIC under spin lock.
+Date: Mon, 19 Nov 2012 22:34:02 +0100
+Message-Id: <1353360842-18384-1-git-send-email-tipecaml@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Nov 2012, Josh Triplett wrote:
+Found using the following semantic patch:
+<spml>
+@@
+@@
+spin_lock_irqsave(...);
+... when != spin_unlock_irqrestore(...);
+* GFP_KERNEL
+</spml>
 
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index 3f39803..8ed2187 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -55,6 +55,10 @@ extern pmd_t *page_check_address_pmd(struct page *page,
->  
->  extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
->  
-> +extern int handle_pte_fault(struct mm_struct *mm,
-> +			    struct vm_area_struct *vma, unsigned long address,
-> +			    pte_t *pte, pmd_t *pmd, unsigned int flags);
-> +
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  #define HPAGE_PMD_SHIFT HPAGE_SHIFT
->  #define HPAGE_PMD_MASK HPAGE_MASK
-> @@ -87,9 +91,6 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->  			  pmd_t *dst_pmd, pmd_t *src_pmd,
->  			  struct vm_area_struct *vma,
->  			  unsigned long addr, unsigned long end);
-> -extern int handle_pte_fault(struct mm_struct *mm,
-> -			    struct vm_area_struct *vma, unsigned long address,
-> -			    pte_t *pte, pmd_t *pmd, unsigned int flags);
->  extern int split_huge_page(struct page *page);
->  extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
->  #define split_huge_page_pmd(__mm, __pmd)				\
+Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+---
+ drivers/usb/gadget/uvc_video.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-huge_mm.h is the last place someone would expect to see the prototype for 
-this function and it only exists because the thp code needs to use it and 
-it was the easy place to put it.  Perhaps declare this in mm.h instead 
-where the declaration of handle_mm_fault() is?
+diff --git a/drivers/usb/gadget/uvc_video.c b/drivers/usb/gadget/uvc_video.c
+index b0e53a8..79b4132 100644
+--- a/drivers/usb/gadget/uvc_video.c
++++ b/drivers/usb/gadget/uvc_video.c
+@@ -309,7 +309,7 @@ uvc_video_pump(struct uvc_video *video)
+ 		video->encode(req, video, buf);
+ 
+ 		/* Queue the USB request */
+-		if ((ret = usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
++		if ((ret = usb_ep_queue(video->ep, req, GFP_ATOMIC)) < 0) {
+ 			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
+ 			usb_ep_set_halt(video->ep);
+ 			spin_unlock_irqrestore(&video->queue.irqlock, flags);
+-- 
+1.7.10.4
+
