@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab2KSUeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 15:34:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452Ab2KSUeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 15:34:36 -0500
-Date: Mon, 19 Nov 2012 21:34:12 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] perf/POWER7: Make event translations available in
- sysfs
-Message-ID: <20121119203411.GB8002@krava.brq.redhat.com>
-References: <20121107191818.GA16211@us.ibm.com>
- <20121107191927.GC16211@us.ibm.com>
- <20121114102534.GA2220@krava.brq.redhat.com>
- <20121114182045.GA2240@us.ibm.com>
- <20121116125154.GB1121@krava.brq.redhat.com>
- <20121116193537.GA11800@us.ibm.com>
+	id S1753243Ab2KSUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 15:37:25 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55116 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab2KSUhY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 15:37:24 -0500
+X-Originating-IP: 217.70.178.150
+X-Originating-IP: 173.246.103.110
+Date: Mon, 19 Nov 2012 12:37:16 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 52/58] x86: vdso: Add prototypes for __vdso_* functions
+Message-ID: <20121119203716.GA5041@jtriplet-mobl1>
+References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
+ <1353302917-13995-53-git-send-email-josh@joshtriplett.org>
+ <CALCETrV31ShbsGsPX6mHdtQhhn0LV9m=43NOTCcVvYd4PQyfWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121116193537.GA11800@us.ibm.com>
+In-Reply-To: <CALCETrV31ShbsGsPX6mHdtQhhn0LV9m=43NOTCcVvYd4PQyfWw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 11:35:37AM -0800, Sukadev Bhattiprolu wrote:
-> Jiri Olsa [jolsa@redhat.com] wrote:
-> | > 
-> | > Can we remove the assumption that the event id is a generic event that
-> | > has PERF_COUNT_HW_ prefix and also let the architectures pass in a "show"
-> | > function ? This would allow architectures to display any arch specific
-> | > events that don't yet have a generic counterpart.
-> | > 
-> | > IOW, can we do something like this (untested) and make PERF_EVENT_ATTR global:
-> | 
-> | hm, then you probably can use following:
-> | 
-> | http://www.spinics.net/lists/kernel/msg1434233.html
+On Mon, Nov 19, 2012 at 12:04:23PM -0800, Andy Lutomirski wrote:
+> On Sun, Nov 18, 2012 at 9:28 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > arch/x86/vdso/vclock_gettime.c and arch/x86/vdso/vgetcpu.c define
+> > several functions prefixed by __vdso_*, used in the alias definitions
+> > for the actual vdso symbols calls.  Add prototypes of these functions
+> > right before their definitions, to satisfy gcc (-Wmissing-prototypes)
+> > and Sparse (-Wdecl).
+> >
+> > arch/x86/vdso/vclock_gettime.c:161:45: warning: no previous prototype for ‘__vdso_clock_gettime’ [-Wmissing-prototypes]
+> > arch/x86/vdso/vclock_gettime.c:185:45: warning: no previous prototype for ‘__vdso_gettimeofday’ [-Wmissing-prototypes]
+> > arch/x86/vdso/vclock_gettime.c:213:48: warning: no previous prototype for ‘__vdso_time’ [-Wmissing-prototypes]
+> > arch/x86/vdso/vgetcpu.c:16:1: warning: no previous prototype for ‘__vdso_getcpu’ [-Wmissing-prototypes]
+> >
+> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > ---
+> >  arch/x86/vdso/vclock_gettime.c |    3 +++
+> >  arch/x86/vdso/vgetcpu.c        |    2 ++
+> >  2 files changed, 5 insertions(+)
+> >
+> > diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> > index 4df6c37..bc8b276 100644
+> > --- a/arch/x86/vdso/vclock_gettime.c
+> > +++ b/arch/x86/vdso/vclock_gettime.c
+> > @@ -158,6 +158,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+> >         return 0;
+> >  }
+> >
+> > +int __vdso_clock_gettime(clockid_t clock, struct timespec *ts);
+> >  notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+> >  {
+> >         int ret = VCLOCK_NONE;
+> > @@ -182,6 +183,7 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+> >  int clock_gettime(clockid_t, struct timespec *)
+> >         __attribute__((weak, alias("__vdso_clock_gettime")));
+> >
+> > +int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz);
+> >  notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+> >  {
+> >         long ret = VCLOCK_NONE;
+> > @@ -210,6 +212,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+> >   * This will break when the xtime seconds get inaccurate, but that is
+> >   * unlikely
+> >   */
+> > +time_t __vdso_time(time_t *t);
+> >  notrace time_t __vdso_time(time_t *t)
+> >  {
+> >         /* This is atomic on x86_64 so we don't need any locks. */
+> > diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
+> > index 5463ad5..b55350f 100644
+> > --- a/arch/x86/vdso/vgetcpu.c
+> > +++ b/arch/x86/vdso/vgetcpu.c
+> > @@ -12,6 +12,8 @@
+> >  #include <asm/vsyscall.h>
+> >  #include <asm/vgtod.h>
+> >
+> > +long __vdso_getcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *unused);
+> > +
+> >  notrace long
+> >  __vdso_getcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *unused)
+> >  {
+> > --
+> > 1.7.10.4
+> >
 > 
-> For now, power events can simply be u64 - so am hoping to have something
-> like this and replace the raw codes:
+> Acked-by: Andy Lutomirski <luto@amacapital.net>
 > 
-> #define PM_CYC			0x1e
-> #define PM_GCT_NOSLOT_CYC	0x100f8
-> 
-> EVENT_ATTR_STR() is interesting, but would require new/extra macros like
-> 
-> #define PM_CYC_STR		"0x1e"
-> #define PM_GCT_NOSLOT_CYC_STR	"0x100f8"
-> 
-> I went down the path we discussed earlier - to have x86 and Power share
-> the EVENT_ATTR() macros. This is making the x86 code less concise
-> 
-> 	EVENT_ATTR(cpu-cycles,	CPU_CYCLES)
-> 
-> becomes
-> 
-> 	EVENT_ATTR(cpu-cycles,	PERF_COUNT_HW_CPU_CYCLES, events_sysfs_show)
-> 
-> with each EVENT_ATTR() explcitly adding events_sysfs_show or needing another
-> wrapper around the wrappers.
-> 
-> Still tweaking it, but would it be flexible to make 'struct pmu_events_attr'
-> common and let architectures define the EVENT_ATTR() as needed ? Would
-> duplicate some code but hopefully not a lot.
+> In theory, this could go in arch/x86/include/uapi/asm/vdso.h.  No one
+> cares, I suspect, since there exactly two non-test-case users that I
+> know of.
 
-sounds good, let's see ;)
+If you think it makes sense to put the VDSO prototypes in that UAPI
+header, I could prepare an alternate patch that does so.
 
-jirka
+- Josh Triplett
