@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab2KSD7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 22:59:01 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:50235 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab2KSD7A (ORCPT
+	id S1752848Ab2KSEF0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 23:05:26 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39370 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab2KSEFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 22:59:00 -0500
+	Sun, 18 Nov 2012 23:05:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121119034600.GP29066@lizard.sbx05977.paloaca.wayport.net>
-References: <1351698033-8980-1-git-send-email-rajanikanth.hv@linaro.org>
-	<20121119034600.GP29066@lizard.sbx05977.paloaca.wayport.net>
-Date: Mon, 19 Nov 2012 09:28:59 +0530
-Message-ID: <CAB4BAkvXZacDVZh2gzooH-Eq8Vnc8JLd=v8=9p-4mLfY0qWavw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Implement device tree support for ab8500 BM Devices
-From: Rajanikanth HV <rajanikanth.hv@linaro.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: rob.herring@calxeda.com, Lee Jones <lee.jones@linaro.org>,
-        Francesco Lavra <francescolavra.fl@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "linaro-dev@lists.linaro.org Devel" <linaro-dev@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        STEricsson_nomadik_linux@list.st.com,
-        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
+In-Reply-To: <CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
+References: <507F7313.8010707@oracle.com> <CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sun, 18 Nov 2012 23:05:04 -0500
+Message-ID: <CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
+Subject: Re: yama: lockdep warning on yama_ptracer_del
+To: Kees Cook <keescook@chromium.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, james.l.morris@oracle.com,
+        John Johansen <john.johansen@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-security-module@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 19 November 2012 09:16, Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
-> (But I'm bouncing the patches to Samuel and Mark anyway, jfyi.)
->
-> p.s.
->
-> FWIW, I fixed these warnings.
->
->   CHECK   drivers/power/ab8500_bmdata.c
-> drivers/power/ab8500_bmdata.c:146:23: warning: symbol 'temp_to_batres_tbl_thermistor' was not declared. Should it be static?
-> drivers/power/ab8500_bmdata.c:160:23: warning: symbol 'temp_to_batres_tbl_ext_thermistor' was not declared. Should it be static?
-> drivers/power/ab8500_bmdata.c:171:23: warning: symbol 'temp_to_batres_tbl_9100' was not declared. Should it be static?
-> drivers/power/ab8500_bmdata.c:181:28: warning: symbol 'bat_type_thermistor' was not declared. Should it be static?
-> drivers/power/ab8500_bmdata.c:267:28: warning: symbol 'bat_type_ext_thermistor' was not declared. Should it be static?
->
-> Plus fixed a few stylistic issues.
+Hi Kees,
 
-thanks anton for validating my patch, you seems to have older version
-of patch set,
-i am rebasing  new version of patch set to 3.7-rc5, will communicate asap.
+On Thu, Oct 18, 2012 at 6:39 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> Hi all,
+>>
+>> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
+>> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
+>> ...
+>> [  954.674123]  Possible interrupt unsafe locking scenario:
+>> [  954.674123]
+>> [  954.674123]        CPU0                    CPU1
+>> [  954.674123]        ----                    ----
+>> [  954.674123]   lock(ptracer_relations_lock);
+>> [  954.674123]                                local_irq_disable();
+>> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
+>> [  954.674123]                                lock(ptracer_relations_lock);
+>> [  954.674123]   <Interrupt>
+>> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
+>> [  954.674123]
+>> [  954.674123]  *** DEADLOCK ***
+>
+> I've been wanting to get rid of the Yama ptracer_relations_lock
+> anyway, so maybe I should do that now just to avoid this case at all?
+
+I still see this one in -rc6, is there anything to get rid of it
+before the release?
+
+
+Thanks,
+Sasha
