@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab2KSRad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:30:33 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50621 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab2KSRab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:30:31 -0500
-Date: Mon, 19 Nov 2012 09:30:26 -0800
-From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
-Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] netcls_cgroup: introduce cgroup_cls_state->is_local
-Message-ID: <20121119173026.GJ15971@htj.dyndns.org>
-References: <1353123062-23193-1-git-send-email-tj@kernel.org>
- <1353123062-23193-3-git-send-email-tj@kernel.org>
+	id S1753576Ab2KSRal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:30:41 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:53309 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370Ab2KSRaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 12:30:39 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Joe Perches <joe@perches.com>, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        imammedo@redhat.com, prarit@redhat.com
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+Date: Mon, 19 Nov 2012 18:35:06 +0100
+Message-ID: <1458606.kpqnW2s3Q0@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1353341812.10939.52.camel@misato.fc.hp.com>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com> <1353341192.5287.9.camel@joe-AO722> <1353341812.10939.52.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353123062-23193-3-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cs->is_local will be used to indicate whether the cgroup has its own
-configuration or inherited from the parent.  It's set when classid is
-configured by writing a positive value to cgroup file
-"net_cls.classid" and cleared when a negative value is written.
+On Monday, November 19, 2012 09:16:52 AM Toshi Kani wrote:
+> On Mon, 2012-11-19 at 08:06 -0800, Joe Perches wrote:
+> > On Mon, 2012-11-19 at 08:51 -0700, Toshi Kani wrote:
+> > > On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
+> > > > is acpi_bus.h really the right file for these prototypes?
+> > > This interface is limited for ACPI, so it should be declared in a header
+> > > file under include/acpi.  Among the files in this directory, acpi_bus.h
+> > > seems to be a good fit as it declares the interfaces provided by ACPI
+> > > core.
+> > 
+> > I'd've put them in acpi.h or maybe created acpi_utils.h 
+> 
+> Hi Joe,
+> 
+> We cannot use acpi.h since it is an ACPICA header.
 
-is_local is visible to userland via cgroup file "net_cls.is_local" so
-that userland can know whether a cgroup has its config or not.
+Which acpi.h are you referring to?
 
-This patch doesn't yet change hierarchy behavior.  The next patch will
-use is_local to implement proper hierarchy.
+Rafael
 
-v2: Daniel pointed out that cftype->write_u64() accepts base prefix
-    (e.g. 0x10 for 16).  Updated "%lld" to "%lli".
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Daniel Wagner <wagi@monom.org>
----
- include/net/cls_cgroup.h |    1 +
- net/sched/cls_cgroup.c   |   23 ++++++++++++++++++++---
- 2 files changed, 21 insertions(+), 3 deletions(-)
-
---- a/include/net/cls_cgroup.h
-+++ b/include/net/cls_cgroup.h
-@@ -22,6 +22,7 @@ struct cgroup_cls_state
- {
- 	struct cgroup_subsys_state css;
- 	u32 classid;
-+	bool is_local;	/* class id is explicitly configured for this cgroup */
- };
- 
- extern void sock_update_classid(struct sock *sk);
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -70,19 +70,36 @@ static u64 read_classid(struct cgroup *c
- 	return cgrp_cls_state(cgrp)->classid;
- }
- 
--static int write_classid(struct cgroup *cgrp, struct cftype *cft, u64 value)
-+static int write_classid(struct cgroup *cgrp, struct cftype *cft,
-+			 const char *buf)
- {
-+	struct cgroup_cls_state *cs = cgrp_cls_state(cgrp);
-+	s64 v;
-+
-+	if (sscanf(buf, "%lli", &v) != 1)
-+		return -EINVAL;
-+
- 	mutex_lock(&netcls_mutex);
--	cgrp_cls_state(cgrp)->classid = (u32) value;
-+	cs->classid = clamp_val(v, 0, UINT_MAX);
-+	cs->is_local = v >= 0;
- 	mutex_unlock(&netcls_mutex);
- 	return 0;
- }
- 
-+static u64 read_is_local(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	return cgrp_cls_state(cgrp)->is_local;
-+}
-+
- static struct cftype ss_files[] = {
- 	{
- 		.name = "classid",
- 		.read_u64 = read_classid,
--		.write_u64 = write_classid,
-+		.write_string = write_classid,
-+	},
-+	{
-+		.name = "is_local",
-+		.read_u64 = read_is_local,
- 	},
- 	{ }	/* terminate */
- };
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
