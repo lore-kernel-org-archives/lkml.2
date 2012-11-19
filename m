@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2KSPR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:17:29 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:46835 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab2KSPR0 (ORCPT
+	id S1753338Ab2KSPRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:17:55 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:35535 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab2KSPRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:17:26 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] net/macb: move to circ_buf macros and fix initial condition
-Date: Mon, 19 Nov 2012 16:17:24 +0100
-Message-ID: <1353338244-11506-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 19 Nov 2012 10:17:06 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 19 Nov 2012 07:12:36 -0800
+Message-Id: <1353337961-12962-11-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+References: <87lidx8wbo.fsf@xmission.com>
+ <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+X-XM-AID: U2FsdGVkX19pRUa1pgzyfpuLVf1/qIlGCOGnACjyk98=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.0 XMDrug1234561 Drug references
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 11/16] procfs: Print task uids and gids in the userns that opened the proc file
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move to circular buffers management macro and correct an error
-with circular buffer initial condition.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Without this patch, the macb_tx_ring_avail() function was
-not reporting the proper ring availability at startup:
-macb macb: eth0: BUG! Tx Ring full when queue awake!
-macb macb: eth0: tx_head = 0, tx_tail = 0
-And hanginig forever...
+Instead of using current_userns() use the userns of the opener
+of the file so that if the file is passed between processes
+the contents of the file do not change.
 
-I remove the macb_tx_ring_avail() function and use the
-proven macros from circ_buf.h. CIRC_CNT() is used in the
-"consumer" part of the driver: macb_tx_interrupt() to match
-advice from Documentation/circular-buffers.txt.
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ fs/proc/array.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index edb2aba..27991dd 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -14,6 +14,7 @@
- #include <linux/moduleparam.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
-+#include <linux/circ_buf.h>
- #include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/gpio.h>
-@@ -38,8 +39,8 @@
- #define TX_RING_SIZE		128 /* must be power of 2 */
- #define TX_RING_BYTES		(sizeof(struct macb_dma_desc) * TX_RING_SIZE)
- 
--/* minimum number of free TX descriptors before waking up TX process */
--#define MACB_TX_WAKEUP_THRESH	(TX_RING_SIZE / 4)
-+/* level of occupied TX descriptors under which we wake up TX process */
-+#define MACB_TX_WAKEUP_THRESH	(3 * TX_RING_SIZE / 4)
- 
- #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
- 				 | MACB_BIT(ISR_ROVR))
-@@ -60,11 +61,6 @@ static unsigned int macb_tx_ring_wrap(unsigned int index)
- 	return index & (TX_RING_SIZE - 1);
- }
- 
--static unsigned int macb_tx_ring_avail(struct macb *bp)
--{
--	return (bp->tx_tail - bp->tx_head) & (TX_RING_SIZE - 1);
--}
--
- static struct macb_dma_desc *macb_tx_desc(struct macb *bp, unsigned int index)
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index c1c207c..5544342 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -162,7 +162,7 @@ static inline const char *get_task_state(struct task_struct *tsk)
+ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *p)
  {
- 	return &bp->tx_ring[macb_tx_ring_wrap(index)];
-@@ -524,7 +520,8 @@ static void macb_tx_interrupt(struct macb *bp)
- 
- 	bp->tx_tail = tail;
- 	if (netif_queue_stopped(bp->dev)
--			&& macb_tx_ring_avail(bp) > MACB_TX_WAKEUP_THRESH)
-+			&& CIRC_CNT(bp->tx_head, bp->tx_tail,
-+				    TX_RING_SIZE) <= MACB_TX_WAKEUP_THRESH)
- 		netif_wake_queue(bp->dev);
- }
- 
-@@ -818,7 +815,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	spin_lock_irqsave(&bp->lock, flags);
- 
- 	/* This is a hard error, log it. */
--	if (macb_tx_ring_avail(bp) < 1) {
-+	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1) {
- 		netif_stop_queue(dev);
- 		spin_unlock_irqrestore(&bp->lock, flags);
- 		netdev_err(bp->dev, "BUG! Tx Ring full when queue awake!\n");
-@@ -855,7 +852,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(TSTART));
- 
--	if (macb_tx_ring_avail(bp) < 1)
-+	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1)
- 		netif_stop_queue(dev);
- 
- 	spin_unlock_irqrestore(&bp->lock, flags);
+-	struct user_namespace *user_ns = current_user_ns();
++	struct user_namespace *user_ns = seq_user_ns(m);
+ 	struct group_info *group_info;
+ 	int g;
+ 	struct fdtable *fdt = NULL;
 -- 
-1.8.0
+1.7.5.4
 
