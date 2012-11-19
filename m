@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab2KSP7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:59:02 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:42078 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753494Ab2KSP7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:59:01 -0500
-Date: Mon, 19 Nov 2012 16:58:56 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control
- provider for DT
-Message-ID: <20121119155856.GL10259@lunn.ch>
-References: <1353014906-31566-6-git-send-email-andrew@lunn.ch>
- <1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com>
- <1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com>
- <20121117082602.GF24569@lunn.ch>
- <50A75BB4.4070003@free-electrons.com>
- <20121117135435.GA13479@lunn.ch>
- <20121119164611.2e754b64@skate>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121119164611.2e754b64@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753685Ab2KSP7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:59:39 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:14025 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab2KSP7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 10:59:38 -0500
+Message-ID: <1353340280.10939.42.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        imammedo@redhat.com, prarit@redhat.com
+Date: Mon, 19 Nov 2012 08:51:20 -0700
+In-Reply-To: <1353315374.3129.3.camel@joe-AO722>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com>
+	 <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
+	 <1353315374.3129.3.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 04:46:11PM +0100, Thomas Petazzoni wrote:
-> Dear Andrew Lunn,
+On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
+> On Tue, 2012-11-06 at 08:02 -0700, Toshi Kani wrote:
+> > This patch introduces acpi_pr_<level>(), where <level> is a kernel
+> > message level such as err/warn/info, to support improved logging
+> > messages for ACPI, esp. for hotplug operations.
+> []
+> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> []
+> > @@ -56,6 +56,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> >  
+> >  acpi_status
+> >  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> > +
+> > +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
 > 
-> On Sat, 17 Nov 2012 14:54:35 +0100, Andrew Lunn wrote:
-> > > > What is the ddr clock for? Does bad things happen if you turn it off?
-> > > > Kirkwood has a similar clock, dunit, which i decided not to export,
-> > > > since when you turn it off, the whole SoC locks up.
-> > > 
-> > > Well of course if you code run in DDR then it could be a problem. But
-> > > I think it could be useful to turn it off when going to suspend, it
-> > > the DDR can do self-refresh. In this case it should be possible to run
-> > > the code from SRAM or L2 Cache.
-> > 
-> > O.K. Just watch out for the lateinit call in the clock framework.
-> 
-> I don't think there is a problem with the dramclk and the lateinit call
-> of the clock framework. The dramclk is a fixed factor clock, and the
-> fixed factor clock driver does not implement the ->disable() operation.
-> And therefore, the clk_disable_unused() code executed as the lateinit
-> call will not be able to disable it:
-> 
-> 	if (__clk_is_enabled(clk) && clk->ops->disable)
-> 		clk->ops->disable(clk->hw);
-> 
-> So I think we're quite safe with fixed rate clocks and fixed factor
-> clocks in that no-one can disable them :-)
+> This should be declared with __printf(3, 4)
 
-Hi Thomas
+Hi Joe,
 
-I don't think we are taking about the same clock. I mean the gate
-clock:
+Yes, I will add __printf(3,4).  Thanks for pointing this out.
 
-28   ddr     DDR Cntrl
+> is acpi_bus.h really the right file for these prototypes?
 
-not the core clock.
+This interface is limited for ACPI, so it should be declared in a header
+file under include/acpi.  Among the files in this directory, acpi_bus.h
+seems to be a good fit as it declares the interfaces provided by ACPI
+core.
 
-    Andrew
+Thanks,
+-Toshi  
+
+
