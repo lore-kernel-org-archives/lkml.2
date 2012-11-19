@@ -1,92 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab2KSV17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 16:27:59 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:43676 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2KSV15 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 16:27:57 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <87lidx8wbo.fsf@xmission.com>
-	<1353337961-12962-1-git-send-email-ebiederm@xmission.com>
-	<1353337961-12962-12-git-send-email-ebiederm@xmission.com>
-	<20121119180322.GC1883@serge-ThinkPad-X130e>
-	<87fw451m5i.fsf@xmission.com> <20121119210153.GA11904@sergelap>
-	<877gphz4d9.fsf@xmission.com> <20121119211912.GA12388@sergelap>
-Date: Mon, 19 Nov 2012 13:27:45 -0800
-In-Reply-To: <20121119211912.GA12388@sergelap> (Serge Hallyn's message of
-	"Mon, 19 Nov 2012 15:19:12 -0600")
-Message-ID: <87y5hxxoz2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752181Ab2KSVab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 16:30:31 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:53689 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816Ab2KSVaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 16:30:30 -0500
+Date: Mon, 19 Nov 2012 13:30:05 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>
+Subject: [PATCH] exec: use -ELOOP for max recursion depth
+Message-ID: <20121119213005.GA2917@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/OPC51/anvsNdWt9IqDC72jS1SLW5Ffdk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Serge Hallyn <serge.hallyn@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 12/16] userns: For /proc/self/{uid, gid}_map derive the lower userns from the struct file
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@canonical.com> writes:
+To avoid an explosion of request_module calls on a chain of abusive
+scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
+as maximum recursion depth is hit, the error will fail all the way back
+up the chain, aborting immediately.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> 
->> In practice when playing around it is the difference between.
->> unshare -U /bin/bash
->> echo 0 1000 1 > /proc/self/uid_map
->> 
->> And the need to pre-plan something.  You can set the uid_map from the
->> parent in a shell script but it is a real pain.  So for just messing
->> around allowing seq_ns == ns is a real advantage.
->
-> Heh, ok - I almost always want >1 uid mapped, but I can see the
-> advantage.
+This also has the side-effect of stopping the user's shell from attempting
+to reexecute the top-level file as a shell script. As seen in the
+dash source:
 
-The original plan called for an upcall and >1 uid mapped.  But yeah
-that is something else again.
+        if (cmd != path_bshell && errno == ENOEXEC) {
+                *argv-- = cmd;
+                *argv = cmd = path_bshell;
+                goto repeat;
+        }
 
-> Thanks.
->
-> I don't recall whether I put this in originally, but
->
-> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
->
->> > I also wonder if -EINVAL would be a more appropriate choice here.
->> > We're trying to keep things sane, rather than saying "not allowed"
->> > for its own sake.
->> 
->> A different error code might be better.
->
-> I suppose strictly speaking (looking at errno-base.h) it would be
-> EBADF?
+The above logic was designed for running scripts automatically that lacked
+the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
+things continue to behave as the shell expects.
 
-Definitely not EBADF.  EBADF is the error code for operating on a closed
-file descriptor.
+Additionally, when tracking recursion, the binfmt handlers should not be
+involved. The recursion being tracked is the depth of calls through
+search_binary_handler(), so that function should be exclusively responsible
+for tracking the depth.
 
-I want a ENOTALLOWED. Anyway.
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/binfmt_em86.c        |    1 -
+ fs/binfmt_misc.c        |    6 ------
+ fs/binfmt_script.c      |    4 +---
+ fs/exec.c               |   10 +++++-----
+ include/linux/binfmts.h |    2 --
+ 5 files changed, 6 insertions(+), 17 deletions(-)
 
-Eric
+diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
+index 2790c7e..575796a 100644
+--- a/fs/binfmt_em86.c
++++ b/fs/binfmt_em86.c
+@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			return -ENOEXEC;
+ 	}
+ 
+-	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 772428d..f0f1a06 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -117,10 +117,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	if (!enabled)
+ 		goto _ret;
+ 
+-	retval = -ENOEXEC;
+-	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
+-		goto _ret;
+-
+ 	/* to keep locking time low, we copy the interpreter string */
+ 	read_lock(&entries_lock);
+ 	fmt = check_file(bprm);
+@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	if (retval < 0)
+ 		goto _error;
+ 
+-	bprm->recursion_depth++;
+-
+ 	retval = search_binary_handler (bprm, regs);
+ 	if (retval < 0)
+ 		goto _error;
+diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
+index df49d48..8ae4be1 100644
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -22,15 +22,13 @@ static int load_script(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	char interp[BINPRM_BUF_SIZE];
+ 	int retval;
+ 
+-	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
+-	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
++	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
+ 		return -ENOEXEC;
+ 	/*
+ 	 * This section does the #! interpretation.
+ 	 * Sorta complicated, but hopefully it will work.  -TYT
+ 	 */
+ 
+-	bprm->recursion_depth++;
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+diff --git a/fs/exec.c b/fs/exec.c
+index c6e6de4..85c1f9e 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1371,6 +1371,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	struct linux_binfmt *fmt;
+ 	pid_t old_pid, old_vpid;
+ 
++	/* This allows 4 levels of binfmt rewrites before failing hard. */
++	if (depth > 5)
++		return -ELOOP;
++
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+ 		return retval;
+@@ -1395,12 +1399,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			if (!try_module_get(fmt->module))
+ 				continue;
+ 			read_unlock(&binfmt_lock);
++			bprm->recursion_depth = depth + 1;
+ 			retval = fn(bprm, regs);
+-			/*
+-			 * Restore the depth counter to its starting value
+-			 * in this call, so we don't have to rely on every
+-			 * load_binary function to restore it on return.
+-			 */
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index de0628e..54135f6 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -54,8 +54,6 @@ struct linux_binprm {
+ #define BINPRM_FLAGS_EXECFD_BIT 1
+ #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
+ 
+-#define BINPRM_MAX_RECURSION 4
+-
+ /* Function parameter for binfmt->coredump */
+ struct coredump_params {
+ 	siginfo_t *siginfo;
+-- 
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
