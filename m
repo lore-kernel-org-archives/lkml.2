@@ -1,191 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2KSOqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 09:46:37 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60787 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab2KSOqg (ORCPT
+	id S1752842Ab2KSOsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 09:48:23 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45404 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab2KSOsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 09:46:36 -0500
+	Mon, 19 Nov 2012 09:48:22 -0500
+Date: Mon, 19 Nov 2012 14:48:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob.clark@linaro.org>,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jamie Lokier <jamie@shareable.org>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Message-ID: <20121119144806.GO3332@n2100.arm.linux.org.uk>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <201211151339.08016.arnd@arndb.de> <CAF6AEGuJReNtwUZX6HVZCE8GHuyEAyC8bM0GqZuVMV1=DrGJVw@mail.gmail.com> <201211151439.41393.arnd@arndb.de> <20121119143236.GA3296@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4FDD7AA8.6080601@gmail.com>
-References: <4FDD7AA8.6080601@gmail.com>
-Date: Mon, 19 Nov 2012 15:46:35 +0100
-Message-ID: <CAFTL4hy4SedXQ1Bc6o_1BHZ-7a8tbbvpUcFwp50hDbgNnv79zQ@mail.gmail.com>
-Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
- presence of nohz cpusets
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hakan Akkan <hakanakkan@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121119143236.GA3296@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hakan,
+On Mon, Nov 19, 2012 at 04:32:36PM +0200, Ville Syrjälä wrote:
+> On Thu, Nov 15, 2012 at 02:39:41PM +0000, Arnd Bergmann wrote:
+> > On Thursday 15 November 2012, Rob Clark wrote:
+> > > > I still haven't heard a conclusive argument why we need to use get_user()
+> > > > rather than copy_from_user() in the DRM code. Is this about a fast path
+> > > > where you want to shave off a few cycles for each call, or does this
+> > > > simplify the code structure, or something else?
+> > > 
+> > > well, it is mostly because it seemed like a good idea to first try to
+> > > solve the root issue, rather than having to fix things up in each
+> > > driver when someone from x86-world introduces a 64b get_user()..
+> > 
+> > As pointed out by hpa earlier, x86-32 doesn't have a 64b get_user
+> > either. I don't think we have a lot of drivers that are used only
+> > on 64-bit x86 and on 32-bit ARM but not on 32-bit x86.
+> 
+> Ouch. I didn't realize that x86-32 doesn't have it. All the systems
+> where I've run the new code are 64bit so I never noticed the problem.
+> 
+> I see there was a patch [1] posted a long time ago to implement 64bit
+> get_user() on x86-32. I wonder what happened to it?
+> 
+> [1] https://lkml.org/lkml/2004/4/20/96
 
-As I start to focus on timekeeing for full dynticks, I'm looking at
-your patch. Sorry I haven't yet replied with a serious review until
-now. But here is it, finally:
+Wonderful lkml.org after four "Negotiating SSL connection..." messages
+gives me under elinks...
 
-2012/6/17 Hakan Akkan <hakanakkan@gmail.com>:
-> An adaptive nohz (AHZ) CPU may not do do_timer() for a while
-> despite being non-idle. When all other CPUs are idle, AHZ
-> CPUs might be using stale jiffies values. To prevent this
-> always keep a CPU with ticks if there is one or more AHZ
-> CPUs.
->
-> The patch changes can_stop_{idle,adaptive}_tick functions
-> and prevents either the last CPU who did the do_timer() duty
-> or the AHZ CPU itself from stopping its sched timer if there
-> is one or more AHZ CPUs in the system. This means AHZ CPUs
-> might keep the ticks running for short periods until a
-> non-AHZ CPU takes the charge away in
-> tick_do_timer_check_handler() function. When a non-AHZ CPU
-> takes the charge, it never gives it away so that AHZ CPUs
-> can run tickless.
->
-> Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/cpuset.h   |    3 ++-
->  kernel/cpuset.c          |    5 +++++
->  kernel/time/tick-sched.c |   31 ++++++++++++++++++++++++++++++-
->  3 files changed, 37 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> index ccbc2fd..19aa448 100644
-> --- a/include/linux/cpuset.h
-> +++ b/include/linux/cpuset.h
-> @@ -266,11 +266,12 @@ static inline bool cpuset_adaptive_nohz(void)
->
->  extern void cpuset_exit_nohz_interrupt(void *unused);
->  extern void cpuset_nohz_flush_cputimes(void);
-> +extern bool nohz_cpu_exist(void);
->  #else
->  static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
->  static inline bool cpuset_adaptive_nohz(void) { return false; }
->  static inline void cpuset_nohz_flush_cputimes(void) { }
-> -
-> +static inline bool nohz_cpu_exist(void) { return false; }
->  #endif /* CONFIG_CPUSETS_NO_HZ */
->
->  #endif /* _LINUX_CPUSET_H */
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 858217b..ccbaac9 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1231,6 +1231,11 @@ DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
->
->  static cpumask_t nohz_cpuset_mask;
->
-> +inline bool nohz_cpu_exist(void)
-> +{
-> +       return !cpumask_empty(&nohz_cpuset_mask);
-> +}
-> +
->  static void flush_cputime_interrupt(void *unused)
->  {
->         trace_printk("IPI: flush cputime\n");
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index bdc8aeb..e60d541 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -409,6 +409,25 @@ out:
->         return ret;
->  }
->
-> +static inline bool must_take_timer_duty(int cpu)
-> +{
-> +       int handler = tick_do_timer_cpu;
-> +       bool ret = false;
-> +       bool tick_needed = nohz_cpu_exist();
+	Unable to retrieve https://lkml.org/lkml/2004/4/20/96:
+			Error reading from socket
 
-Note this is racy because this fetches the value of the
-nohz_cpuset_mask without locking.
-We may "see" there is no nohz cpusets whereas we just set some of them
-as nohz and they
-could even have shut down their tick already.
+and with wget:
 
-> +
-> +       /*
-> +        * A CPU will have to take the timer duty if there is an adaptive
-> +        * nohz CPU in the system. The last handler == cpu check ensures
-> +        * that the last cpu that did the do_timer() sticks with the duty.
-> +        * A normal (non nohz) cpu will take the charge from a nohz cpu in
-> +        * tick_do_timer_check_handler anyway.
-> +        */
-> +       if (tick_needed && (handler == TICK_DO_TIMER_NONE || handler == cpu))
-> +               ret = true;
+$ wget https://lkml.org/lkml/2004/4/20/96
+--2012-11-19 14:47:16--  https://lkml.org/lkml/2004/4/20/96
+Resolving lkml.org... 87.253.128.182
+Connecting to lkml.org|87.253.128.182|:443... connected.
+HTTP request sent, awaiting response... No data received.
+Retrying.
 
-This check is also racy due to the lack of locking. The previous
-handler may have set TICK_DO_TIMER_NONE and gone to sleep. We have no
-guarantee that the CPU can see that new value. It could believe there
-is still a handler. This needs at least cmpxchg() to make the test and
-set atomic.
+--2012-11-19 14:47:19--  (try: 2)  https://lkml.org/lkml/2004/4/20/96
+Connecting to lkml.org|87.253.128.182|:443... connected.
+HTTP request sent, awaiting response... No data received.
+Retrying.
 
-> +
-> +       return ret;
-> +}
-> +
->  static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  {
->         /*
-> @@ -421,6 +440,9 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->         if (unlikely(!cpu_online(cpu))) {
->                 if (cpu == tick_do_timer_cpu)
->                         tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> +       } else if (must_take_timer_duty(cpu)) {
-> +               tick_do_timer_cpu = cpu;
-> +               return false;
->         }
->
->         if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-> @@ -512,6 +534,13 @@ void tick_nohz_idle_enter(void)
->  #ifdef CONFIG_CPUSETS_NO_HZ
->  static bool can_stop_adaptive_tick(void)
->  {
-> +       int cpu = smp_processor_id();
-> +
-> +       if (must_take_timer_duty(cpu)) {
-> +               tick_do_timer_cpu = cpu;
-> +               return false;
+--2012-11-19 14:47:22--  (try: 3)  https://lkml.org/lkml/2004/4/20/96
+Connecting to lkml.org|87.253.128.182|:443... connected.
+HTTP request sent, awaiting response... No data received.
+Retrying.
 
-One problem I see here is that you randomize the handler. It could be
-an adaptive nohz CPU or an idle CPU. It's a problem if the user wants
-CPU isolation.
+--2012-11-19 14:47:26--  (try: 4)  https://lkml.org/lkml/2004/4/20/96
+Connecting to lkml.org|87.253.128.182|:443... connected.
+HTTP request sent, awaiting response... No data received.
+Retrying.
+...
 
-I suggest to rather define a tunable timekeeping duty CPU affinity in
-a cpumask file at /sys/devices/system/cpu/timekeeping and a toggle at
-/sys/devices/system/cpu/cpuX/timekeeping (like the online file). This
-way the user can decide whether adaptive nohz CPU can handle
-timekeeping or this must be forced to other CPUs in order to enforce
-isolation.
-
-Concerning implementation details, a way to avoid locking while
-ensuring there is always a CPU handling timekeeping is to define some
-state machine through tick_do_timer_cpu values like the below
-scenario:
-
-* tick_do_timer_cpu = some CPU. In this case the timekeeping has a
-running handler, everything is fine
-
-* tick_do_timer_cpu = TICK_DO_TIMER_IDLE. The timekeeping handler
-wants to go idle and stop its tick. He's going to keep its tick and
-the timekeeping duty until some other CPU sees this value and sets
-itself as the new handler. Then the previous handler can finally stop
-its tick.
-
-* tick_do_timer_cpu = TICK_DO_TIMER_NONE. There is no handler
-currently. The next handler is the next CPU that will restart its
-tick. This value is only possible if cpu_online_mask =
-cpu_timekeeping_mask and there is no adaptive nohz running.
-
-Does that look ok?
-
-If so, tell me if you want to rework this patch with these
-suggestions. Or I can do it, either way.
-
-Thanks.
+what a wonderful site... please choose another LKML archive, preferably
+one which works.  Thanks.
