@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2KSIyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 03:54:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:6444 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2KSIyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 03:54:52 -0500
-Message-ID: <50A9F3B3.2010607@huawei.com>
-Date: Mon, 19 Nov 2012 16:54:11 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
-        <glommer@parallels.com>
-Subject: Re: [PATCHSET cgroup/for-3.8] cgroup: allow ->post_create() to fail
-References: <1352775704-9023-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1352775704-9023-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
+	id S1753356Ab2KSI4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 03:56:15 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:50835 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753021Ab2KSI4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 03:56:14 -0500
+Message-ID: <1353315374.3129.3.camel@joe-AO722>
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+From: Joe Perches <joe@perches.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        imammedo@redhat.com, prarit@redhat.com
+Date: Mon, 19 Nov 2012 00:56:14 -0800
+In-Reply-To: <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com>
+	 <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/13 11:01, Tejun Heo wrote:
-> Hello,
-> 
-> This became a rather large patchset mostly because there are a lot of
-> weirdities and subtle breakages in create/destroy/load/unload paths.
-> The goal of the patchset is allowing ->post_create() to fail and
-> renaming ->create/post_create/pre_destroy/destroy() to
-> ->css_alloc/css_online/css_offline/css_free().
-> 
-> This patchset contains the following seventeen patches.
-> 
->  0001-cgroup-remove-incorrect-dget-dput-pair-in-cgroup_cre.patch
->  0002-cgroup-initialize-cgrp-allcg_node-in-init_cgroup_hou.patch
->  0003-cgroup-open-code-cgroup_create_dir.patch
->  0004-cgroup-create-directory-before-linking-while-creatin.patch
->  0005-cgroup-cgroup-dentry-isn-t-a-RCU-pointer.patch
->  0006-cgroup-remove-duplicate-RCU-free-on-struct-cgroup.patch
->  0007-cgroup-make-CSS_-flags-bit-masks-instead-of-bit-posi.patch
->  0008-cgroup-trivial-cleanup-for-cgroup_init-load_subsys.patch
->  0009-cgroup-lock-cgroup_mutex-in-cgroup_init_subsys.patch
->  0010-cgroup-fix-harmless-bugs-in-cgroup_load_subsys-fail-.patch
->  0011-cgroup-separate-out-cgroup_destroy_locked.patch
->  0012-cgroup-introduce-CSS_ONLINE-flag-and-on-offline_css-.patch
->  0013-cgroup-simplify-cgroup_load_subsys-failure-path.patch
->  0014-cgroup-use-mutex_trylock-when-grabbing-i_mutex-of-a-.patch
->  0015-cgroup-update-cgroup_create-failure-path.patch
->  0016-cgroup-allow-post_create-to-fail.patch
->  0017-cgroup-rename-create-post_create-pre_destroy-destroy.patch
-> 
+On Tue, 2012-11-06 at 08:02 -0700, Toshi Kani wrote:
+> This patch introduces acpi_pr_<level>(), where <level> is a kernel
+> message level such as err/warn/info, to support improved logging
+> messages for ACPI, esp. for hotplug operations.
+[]
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+[]
+> @@ -56,6 +56,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+>  
+>  acpi_status
+>  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> +
+> +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+This should be declared with __printf(3, 4)
 
-except 0006-cgroup-remove-duplicate-RCU-free-on-struct-cgroup.patch
-
-> 0001 is a bugfix.  Tagged for -stable.  I don't I'll push it through
-> for-3.7-fixes tho.  This has been broken forever and nobody reported
-> anything yet.
-> 
-> 0002-0011 are various fixes and cleanups to prepare for the following
-> changes.  Each should be self-explanatory.
-> 
-> 0012-0015 are preparation patches more directly related to allowing
-> failure of ->post_create().
-> 
-> 0016 allows ->post_create() to fail.
-> 
-> 0017 renames ops and updates documentation.
-> 
-> This patchst is on top of cgroup/for-3.8 and available on the
-> following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-online-may-fail
+is acpi_bus.h really the right file for these prototypes?
 
