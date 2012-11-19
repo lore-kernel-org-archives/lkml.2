@@ -1,177 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab2KSAxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 19:53:49 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52433 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2KSAxr (ORCPT
+	id S1752776Ab2KSA4G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 19:56:06 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55149 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2KSA4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 19:53:47 -0500
+	Sun, 18 Nov 2012 19:56:04 -0500
+Date: Sun, 18 Nov 2012 16:52:49 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jenny TC <jenny.tc@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com
+Subject: Re: [PATCH 3/7] power_supply : add supported charger cable  feature
+Message-ID: <20121119005249.GN29066@lizard.sbx05977.paloaca.wayport.net>
+References: <1350578646-3315-1-git-send-email-jenny.tc@intel.com>
+ <1350578646-3315-4-git-send-email-jenny.tc@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121116151619.aa60acff.akpm@linux-foundation.org>
-References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
-	<1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
-	<20121116151619.aa60acff.akpm@linux-foundation.org>
-Date: Mon, 19 Nov 2012 08:53:46 +0800
-Message-ID: <CAA_GA1crg1ngNx2MAv-fJbgKYqSKmkapZHq=8F4QcNgFja1A-w@mail.gmail.com>
-Subject: Re: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-From: Bob Liu <lliubbo@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        mgorman@suse.de, fschmaus@gmail.com, andor.daam@googlemail.com,
-        ilendir@googlemail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1350578646-3315-4-git-send-email-jenny.tc@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 7:16 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 14 Nov 2012 13:57:06 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->
->> From: Dan Magenheimer <dan.magenheimer@oracle.com>
->>
->> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
->> built/loaded as modules rather than built-in and enabled by a boot parameter,
->> this patch provides "lazy initialization", allowing backends to register to
->> frontswap even after swapon was run. Before a backend registers all calls
->> to init are recorded and the creation of tmem_pools delayed until a backend
->> registers or until a frontswap put is attempted.
->>
->>
->> ...
->>
->> --- a/mm/frontswap.c
->> +++ b/mm/frontswap.c
->> @@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
->>  static inline void inc_frontswap_failed_stores(void) { }
->>  static inline void inc_frontswap_invalidates(void) { }
->>  #endif
->> +
->> +/*
->> + * When no backend is registered all calls to init are registered and
->
-> What is "init"?  Spell it out fully, please.
->
+On Thu, Oct 18, 2012 at 10:14:02PM +0530, Jenny TC wrote:
+> A charger can support different types of charger sources (cables).
+> It make sense to define a field to inform the power supply subsystem
+> what kind of cable  a charger driver supports. Since a bitmask would
+> be the easy way to do define, it's good to have a enum which has
+> the bitmask definition for each cable types
+> 
+> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> ---
+>  include/linux/power_supply.h |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> index 7c06956..eea1709 100644
+> --- a/include/linux/power_supply.h
+> +++ b/include/linux/power_supply.h
+> @@ -163,6 +163,21 @@ enum power_supply_type {
+>  	POWER_SUPPLY_TYPE_USB_ACA,	/* Accessory Charger Adapters */
+>  };
+>  
+> +enum power_supply_charger_cable_type {
+> +	POWER_SUPPLY_CHARGER_TYPE_NONE = 0,
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_SDP = 1 << 0,
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_DCP = 1 << 1,
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_CDP = 1 << 2,
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_ACA = 1 << 3,
+> +	POWER_SUPPLY_CHARGER_TYPE_AC = 1 << 4,
+> +};
+> +
+> +#define POWER_SUPPLY_CHARGER_TYPE_USB \
+> +	(POWER_SUPPLY_CHARGER_TYPE_USB_SDP | \
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_DCP | \
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_CDP | \
+> +	POWER_SUPPLY_CHARGER_TYPE_USB_ACA)
+> +
+>  union power_supply_propval {
+>  	int intval;
+>  	const char *strval;
+> @@ -175,6 +190,7 @@ struct power_supply {
+>  	size_t num_properties;
+>  
+>  	char **supplied_to;
+> +	unsigned long supported_cables;
 
-I think it's frontswap_init().
-swapon will call frontswap_init() and in it we need to call init
-function of backends with some parameters
-like swap_type.
+Enums have an integer resolution. Why do we need long type here?..
 
->> + * remembered but fail to create tmem_pools. When a backend registers with
->> + * frontswap the previous calls to init are executed to create tmem_pools
->> + * and set the respective poolids.
->
-> Again, seems really hacky.  Why can't we just change callers so they
-> call things in the correct order?
->
+Thanks.
 
-I don't think so, because it asynchronous.
-
-The original idea was to make backends like zcache/tmem modularization.
-So that it's more convenient and flexible to use and testing.
-
-But currently callers like swapon only invoke frontswap_init() once,
-it fail if backend not registered.
-We have no way to notify swap to call frontswap_init() again when
-backend registered in some random time
- in future.
-
->> + * While no backend is registered all "puts", "gets" and "flushes" are
->> + * ignored or fail.
->> + */
->> +static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
->> +static bool backend_registered __read_mostly;
->> +
->>  /*
->>   * Register operations for frontswap, returning previous thus allowing
->>   * detection of multiple backends and possible nesting.
->> @@ -87,9 +99,19 @@ static inline void inc_frontswap_invalidates(void) { }
->>  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
->>  {
->>       struct frontswap_ops old = frontswap_ops;
->> +     int i;
->>
->>       frontswap_ops = *ops;
->>       frontswap_enabled = true;
->> +
->> +     for (i = 0; i < MAX_SWAPFILES; i++) {
->> +             if (test_and_clear_bit(i, need_init))
->
-> ooh, that wasn't racy ;)
->
-
-Hmm,  i agree.
-Seems some lock is needed, actually i think this code only support one
-backend at the same.
-So it's less risky.
-
->> +                     (*frontswap_ops.init)(i);
->> +     }
->> +     /* We MUST have backend_registered called _after_ the frontswap_init's
->> +      * have been called. Otherwise __frontswap_store might fail. */
->
-> Comment makes no sense - backend_registered is not a function.
->
-> Also, let's lay the comments out conventionally please:
->
->         /*
->          * We MUST have backend_registered called _after_ the frontswap_init's
->          * have been called. Otherwise __frontswap_store might fail.
->          */
->
->
->> +     barrier();
->> +     backend_registered = true;
->>       return old;
->>  }
->>  EXPORT_SYMBOL(frontswap_register_ops);
->>
->> ...
->>
->> @@ -226,12 +266,15 @@ void __frontswap_invalidate_area(unsigned type)
->>  {
->>       struct swap_info_struct *sis = swap_info[type];
->>
->> -     BUG_ON(sis == NULL);
->> -     if (sis->frontswap_map == NULL)
->> -             return;
->> -     frontswap_ops.invalidate_area(type);
->> -     atomic_set(&sis->frontswap_pages, 0);
->> -     memset(sis->frontswap_map, 0, sis->max / sizeof(long));
->> +     if (backend_registered) {
->> +             BUG_ON(sis == NULL);
->> +             if (sis->frontswap_map == NULL)
->> +                     return;
->> +             (*frontswap_ops.invalidate_area)(type);
->> +             atomic_set(&sis->frontswap_pages, 0);
->> +             memset(sis->frontswap_map, 0, sis->max / sizeof(long));
->> +     }
->> +     clear_bit(type, need_init);
->>  }
->>  EXPORT_SYMBOL(__frontswap_invalidate_area);
->>
->> @@ -364,6 +407,9 @@ static int __init init_frontswap(void)
->>       debugfs_create_u64("invalidates", S_IRUGO,
->>                               root, &frontswap_invalidates);
->>  #endif
->> +     bitmap_zero(need_init, MAX_SWAPFILES);
->
-> unneeded?
->
->> +     frontswap_enabled = 1;
->>       return 0;
->>  }
->>
->> ...
->>
-
--- 
-Thanks,
---Bob
+>  	size_t num_supplicants;
+>  
+>  	int (*get_property)(struct power_supply *psy,
+> -- 
+> 1.7.9.5
