@@ -1,197 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2KSCd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 21:33:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33119 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab2KSCd5 (ORCPT
+	id S1752837Ab2KSCfL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 21:35:11 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52225 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab2KSCfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 21:33:57 -0500
-Date: Mon, 19 Nov 2012 10:33:47 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
-Message-ID: <20121119023347.GA18578@kernel.org>
-References: <506DB816.9090107@openvz.org>
- <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
- <20121016005049.GA1467@kernel.org>
- <20121022073654.GA7821@kernel.org>
- <alpine.LNX.2.00.1210222141170.1136@eggly.anvils>
- <20121023055127.GA24239@kernel.org>
- <50869E6C.1080907@redhat.com>
- <20121024011356.GA6400@kernel.org>
- <20121106053628.GA1539@kernel.org>
- <alpine.LNX.2.00.1211140109020.19427@eggly.anvils>
+	Sun, 18 Nov 2012 21:35:10 -0500
+Date: Mon, 19 Nov 2012 02:35:07 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, monstr@monstr.eu,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: sigaltstack fun
+Message-ID: <20121119023507.GK16916@ZenIV.linux.org.uk>
+References: <20121118210253.GI16916@ZenIV.linux.org.uk>
+ <20121118.161833.985081954687473276.davem@davemloft.net>
+ <20121119011013.GJ16916@ZenIV.linux.org.uk>
+ <20121118.203005.151867624663051294.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211140109020.19427@eggly.anvils>
+In-Reply-To: <20121118.203005.151867624663051294.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 01:48:18AM -0800, Hugh Dickins wrote:
-> On Tue, 6 Nov 2012, Shaohua Li wrote:
-> > On Wed, Oct 24, 2012 at 09:13:56AM +0800, Shaohua Li wrote:
-> > > On Tue, Oct 23, 2012 at 09:41:00AM -0400, Rik van Riel wrote:
-> > > > On 10/23/2012 01:51 AM, Shaohua Li wrote:
-> > > > 
-> > > > >I have no strong point against the global state method. But I'd agree making the
-> > > > >heuristic simple is preferred currently. I'm happy about the patch if the '+1'
-> > > > >is removed.
-> > > > 
-> > > > Without the +1, how will you figure out when to re-enable readahead?
-> > > 
-> > > Below code in swapin_nr_pages can recover it.
-> > > +               if (offset == prev_offset + 1 || offset == prev_offset - 1)
-> > > +                       pages <<= 1;
-> > > 
-> > > Not perfect, but should work in some sort. This reminds me to think if
-> > > pagereadahead flag is really required, hit in swap cache is a more reliable way
-> > > to count readahead hit, and as Hugh mentioned, swap isn't vma bound.
-> > 
-> > Hugh,
-> > ping! Any chance you can check this again?
+On Sun, Nov 18, 2012 at 08:30:05PM -0500, David Miller wrote:
+> > Er...  So which tree should that go through?  sparc or signal?  There's
+> > a similar microblaze patch and a few more of the "do_sigaltstack() takes
+> > userland pointer" variety, so I can put together a pile in
+> > signal.git#for-linus, but if you prefer that to go through sparc tree,
+> > I'm fine with that...
 > 
-> I apologize, Shaohua, my slowness must be very frustrating for you,
-> as it is for me too.
+> I'm happy to take it via my sparc tree, and I'll queue it up for
+> -stable as well. Can you resend it to me with a proper commit message?
 
-Not at all, thanks for looking at it.
- 
-> Thank you for pointing out how my first patch was reading two pages
-> instead of one in the random case, explaining its disappointing
-> performance there: odd how blind I was to that, despite taking stats.
-> 
-> I did experiment with removing the "+ 1" as you did, it worked well
-> in the random SSD case, but degraded performance in (all? I forget)
-> the other cases.
-> 
-> I failed to rescue the "algorithm" in that patch, and changed it a
-> week ago for an even simpler one, that has worked well for me so far.
-> When I sent you a quick private ack to your ping, I was puzzled by its
-> "too good to be true" initial test results: once I looked into those,
-> found my rearrangement of the test script had left out a swapoff,
-> so the supposed harddisk tests were actually swapping to SSD.
-> 
-> I've finally got around to assembling the results and writing up
-> some description, starting off from yours.  I think I've gone as
-> far as I can with this, and don't want to hold you up with further
-> delays: would it be okay if I simply hand this patch over to you now,
-> to test and expand upon and add your Sign-off and send in to akpm to
-> replace your original in mmotm - IF you are satisfied with it?
+sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
 
-I played the patch more. It works as expected in random access case, but in
-sequential case, it has regression against vanilla, maybe because I'm using a
-two sockets machine. I explained the reason in below patch and changelog.
+If a signal handler is executed on altstack and another signal comes,
+we will end up with rt_sigreturn() on return from the second handler
+getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
+are not asking to change the settings; in fact, they couldn't have been
+changed during the second handler execution exactly because we'd been
+on altstack all along.  64bit sigreturn on sparc treats any error from
+do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
+we are using on other architectures.
 
-Below is an addon patch above Hugh's patch. We can apply Hugh's patch first and
-then this one if it's ok, or just merge them to one patch. AKPM, what's your
-suggestion?
-
-Thanks,
-Shaohua
-
-Subject: mm/swap: improve swapin readahead heuristic
-
-swapout always tries to find a cluster to do swap. The cluster is shared by all
-processes (kswapds, direct page reclaim) who do swap. The result is swapout
-adjacent memory could cause interleave access pattern to disk. We do aggressive
-swapin in non-random access case to avoid skip swapin in interleave access
-pattern.
-
-This really isn't the fault of swapin, but before we improve swapout algorithm
-(for example, give each CPU a swap cluster), aggressive swapin gives better
-performance for sequential access.
-
-With below patch, the heurisic becomes:
-1. swapin max_pages pages for any hit
-2. otherwise swapin last_readahead_pages*3/4 pages
-
-Test is done at a two sockets machine (7G memory), so at least 3 tasks are
-doing swapout (2 kswapd, and one direct page reclaim). sequential test is 1
-thread accessing 14G memory, random test is 24 threads random accessing 14G
-memory. Data is time.
-
-		Rand		Seq
-vanilla		5678		434
-Hugh		2829		625
-Hugh+belowpatch	2785		401
-
-For both rand and seq access, below patch gets good performance. And even
-slightly better than vanilla in seq. Not quite sure about the reason, but I'd
-suspect this is because there are some daemons doing small random swap.
-
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Minchan Kim <minchan@kernel.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/swap_state.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
-
-Index: linux/mm/swap_state.c
-===================================================================
---- linux.orig/mm/swap_state.c	2012-11-19 09:08:58.171621096 +0800
-+++ linux/mm/swap_state.c	2012-11-19 10:01:28.016023822 +0800
-@@ -359,6 +359,7 @@ struct page *read_swap_cache_async(swp_e
- unsigned long swapin_nr_pages(unsigned long offset)
- {
- 	static unsigned long prev_offset;
-+	static atomic_t last_readahead_pages;
- 	unsigned int pages, max_pages;
+diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
+index 867de2f..689e1ba 100644
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -295,9 +295,7 @@ void do_rt_sigreturn(struct pt_regs *regs)
+ 		err |= restore_fpu_state(regs, fpu_save);
  
- 	max_pages = 1 << ACCESS_ONCE(page_cluster);
-@@ -366,29 +367,29 @@ unsigned long swapin_nr_pages(unsigned l
- 		return 1;
- 
- 	/*
--	 * This heuristic has been found to work well on both sequential and
--	 * random loads, swapping to hard disk or to SSD: please don't ask
--	 * what the "+ 2" means, it just happens to work well, that's all.
-+	 * swapout always tries to find a cluster to do swap. The cluster is
-+	 * shared by all processes (kswapds, direct page reclaim) who do swap.
-+	 * The result is swapout adjacent memory could cause interleave access
-+	 * pattern to disk. We do aggressive swapin in non-random access case
-+	 * to avoid skip swapin in interleave access pattern.
- 	 */
--	pages = atomic_xchg(&swapin_readahead_hits, 0) + 2;
--	if (pages == 2) {
-+	pages = atomic_xchg(&swapin_readahead_hits, 0);
-+	if (!pages) {
- 		/*
- 		 * We can have no readahead hits to judge by: but must not get
- 		 * stuck here forever, so check for an adjacent offset instead
- 		 * (and don't even bother to check whether swap type is same).
- 		 */
--		if (offset != prev_offset + 1 && offset != prev_offset - 1)
--			pages = 1;
-+		if (offset != prev_offset + 1 && offset != prev_offset - 1) {
-+			pages = atomic_read(&last_readahead_pages) * 3 / 4;
-+			pages = max_t(unsigned int, pages, 1);
-+		} else
-+			pages = max_pages;
- 		prev_offset = offset;
--	} else {
--		unsigned int roundup = 4;
--		while (roundup < pages)
--			roundup <<= 1;
--		pages = roundup;
--	}
+ 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
+-	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
 -
--	if (pages > max_pages)
-+	} else
- 		pages = max_pages;
-+
-+	atomic_set(&last_readahead_pages, pages);
- 	return pages;
- }
+-	if (err)
++	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
+ 		goto segv;
  
+ 	err |= __get_user(rwin_save, &sf->rwin_save);
