@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2KSWPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:15:42 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41347 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab2KSWPk (ORCPT
+	id S1752980Ab2KSWPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:15:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51304 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165Ab2KSWPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:15:40 -0500
+	Mon, 19 Nov 2012 17:15:43 -0500
 From: Mathias Leblanc <mathias.leblanc@st.com>
 To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
         Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
@@ -14,10 +14,12 @@ To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
         Debora Velarde <debora@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, Jean-Luc Blanc <jean-luc.blanc@st.com>,
         Mathias Leblanc <mathias.leblanc@st.com>
-Subject: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
-Date: Mon, 19 Nov 2012 23:15:21 +0100
-Message-Id: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
+Subject: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 2.6
+Date: Mon, 19 Nov 2012 23:15:22 +0100
+Message-Id: <1353363322-2923-2-git-send-email-mathias.leblanc@st.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
+References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,24 +38,24 @@ the kernel.
 The driver will be accessible from within Linux.
 
 Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
-on kernel 3.x.x
+on kernel 2.6
 
 Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
 ---
- drivers/char/tpm/tpm_stm_st33_i2c.c  |  903 ++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_stm_st33_i2c.c  |  904 ++++++++++++++++++++++++++++++++++
  drivers/char/tpm/tpm_stm_st33_i2c.h  |   81 +++
  include/linux/i2c/tpm_stm_st33_i2c.h |   47 ++
- 3 files changed, 1031 insertions(+)
+ 3 files changed, 1032 insertions(+)
  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.c
  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.h
  create mode 100644 include/linux/i2c/tpm_stm_st33_i2c.h
 
 diff --git a/drivers/char/tpm/tpm_stm_st33_i2c.c b/drivers/char/tpm/tpm_stm_st33_i2c.c
 new file mode 100644
-index 0000000..3ec6ae9
+index 0000000..bf18885
 --- /dev/null
 +++ b/drivers/char/tpm/tpm_stm_st33_i2c.c
-@@ -0,0 +1,903 @@
+@@ -0,0 +1,904 @@
 +/*
 + * STMicroelectronics TPM I2C Linux driver for TPM ST33ZP24
 + * Copyright (C) 2009, 2010  STMicroelectronics
@@ -909,7 +911,7 @@ index 0000000..3ec6ae9
 +		chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
 +	ret = tpm_pm_resume(&client->dev);
 +	if (!ret)
-+		tpm_continue_selftest_nocheck(chip);
++		tpm_continue_selftest(chip);
 +	}
 +	return ret;
 +}				/* tpm_st33_i2c_pm_resume() */
