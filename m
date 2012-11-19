@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2KSQXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:23:33 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59280 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab2KSQXb (ORCPT
+	id S1753699Ab2KSQXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:23:42 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35641 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2KSQXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:23:31 -0500
+	Mon, 19 Nov 2012 11:23:39 -0500
+Date: Mon, 19 Nov 2012 08:23:34 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/2] ACPI / platform: Initialize ACPI handles of platform
+ devices in advance
+Message-ID: <20121119162334.GA1653@kroah.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20121118155539.GE17774@intel.com>
+ <1758879.PKgPhTGcB7@vostro.rjw.lan>
+ <676649340.5Y2WB7IFNB@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
-References: <507F7313.8010707@oracle.com>
-	<CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
-	<CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
-Date: Mon, 19 Nov 2012 08:23:30 -0800
-X-Google-Sender-Auth: e5ltP0y485RZKNyjf7hiw3LzjK4
-Message-ID: <CAGXu5j+XuQxJcUWSNaziMivNjKsB9S9cFMKDbigCBN16NGBRgw@mail.gmail.com>
-Subject: Re: yama: lockdep warning on yama_ptracer_del
-From: Kees Cook <keescook@chromium.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, james.l.morris@oracle.com,
-        John Johansen <john.johansen@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <676649340.5Y2WB7IFNB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 8:05 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> Hi Kees,
->
-> On Thu, Oct 18, 2012 at 6:39 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>> Hi all,
->>>
->>> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
->>> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
->>> ...
->>> [  954.674123]  Possible interrupt unsafe locking scenario:
->>> [  954.674123]
->>> [  954.674123]        CPU0                    CPU1
->>> [  954.674123]        ----                    ----
->>> [  954.674123]   lock(ptracer_relations_lock);
->>> [  954.674123]                                local_irq_disable();
->>> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
->>> [  954.674123]                                lock(ptracer_relations_lock);
->>> [  954.674123]   <Interrupt>
->>> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
->>> [  954.674123]
->>> [  954.674123]  *** DEADLOCK ***
->>
->> I've been wanting to get rid of the Yama ptracer_relations_lock
->> anyway, so maybe I should do that now just to avoid this case at all?
->
-> I still see this one in -rc6, is there anything to get rid of it
-> before the release?
+On Sun, Nov 18, 2012 at 10:13:59PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The current platform device creation and registration code in
+> acpi_create_platform_device() is quite convoluted.  This function
+> takes an ACPI device node as an argument and eventually calls
+> platform_device_register_resndata() to create and register a
+> platform device object on the basis of the information contained
+> in that code.  However, it doesn't associate the new platform
+> device with the ACPI node directly, but instead it relies on
+> acpi_platform_notify(), called from within device_add(), to find
+> that ACPI node again with the help of acpi_platform_find_device()
+> and acpi_platform_match() and then attach the new platform device
+> to it.  This causes an additional ACPI namespace walk to happen and
+> is clearly suboptimal.
+> 
+> Use the observation that it is now possible to initialize the ACPI
+> handle of a device before calling device_add() for it to make this
+> code more straightforward.  Namely, add a new field to struct
+> platform_device_info allowing us to pass the ACPI handle of interest
+> to platform_device_register_full(), which will then use it to
+> initialize the new device's ACPI handle before registering it.
+> This will cause acpi_platform_notify() to use the ACPI handle from
+> the device structure directly instead of using the .find_device()
+> routine provided by the device's bus type.  In consequence,
+> acpi_platform_bus, acpi_platform_find_device(), and
+> acpi_platform_match() are not necessary any more, so remove them.
 
-I'm not sure about changes to the timer locks, but I haven't been able
-to get rid of the locking on Yama's task_free path. I did send a patch
-to get rid of locking during a read, though:
+Why can't you use the platform_data * that is already in struct device
+for this, instead of adding an acpi-specific field to the
+platform_device structure?
 
-https://lkml.org/lkml/2012/11/13/808
+If not that, surely there is another field in struct device that you
+could use that is free for this type of device?
 
--Kees
+>  struct platform_device_info {
+>  		struct device *parent;
+> +		void *acpi_handle;
 
--- 
-Kees Cook
-Chrome OS Security
+Oh, and if I do accept this, I want a "real" structure pointer here
+please, not a void * "handle".  That way is a slippery slope to the
+Windows kernel programming style :)
+
+thanks,
+
+greg k-h
