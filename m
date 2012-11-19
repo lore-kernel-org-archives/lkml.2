@@ -1,61 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab2KSHIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 02:08:15 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38723 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab2KSHIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 02:08:14 -0500
-Date: Mon, 19 Nov 2012 15:08:04 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>, T Makphaibulchoke <tmac@hp.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 33/58] kernel/resource.c: Make internal function
- reallocate_resource static
-Message-ID: <20121119070804.GA2427@ram-ThinkPad-T61>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
- <1353302917-13995-34-git-send-email-josh@joshtriplett.org>
+	id S1751613Ab2KSHJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 02:09:16 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44236 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2KSHJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 02:09:15 -0500
+Date: Sun, 18 Nov 2012 23:06:05 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: dwmw2@infradead.org, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2 4/7] mfd: max8925: support dt for power supply
+Message-ID: <20121119070605.GA7294@lizard>
+References: <1353307944-9805-1-git-send-email-qingx@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353302917-13995-34-git-send-email-josh@joshtriplett.org>
+In-Reply-To: <1353307944-9805-1-git-send-email-qingx@marvell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111907-5112-0000-0000-00000EB75589
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 09:28:12PM -0800, Josh Triplett wrote:
-> Nothing outside of kernel/resource.c references reallocate_resource, so
-> mark it static.  This eliminates warnings from GCC
-> (-Wmissing-prototypes) and Sparse (-Wdecl).
+On Mon, Nov 19, 2012 at 02:52:24PM +0800, Qing Xu wrote:
+> From: Qing Xu <qingx@marvell.com>
 > 
-> kernel/resource.c:476:5: warning: no previous prototype for ‘reallocate_resource’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
 > ---
->  kernel/resource.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/power/max8925_power.c |   61 +++++++++++++++++++++++++++++++++++++---
+>  1 files changed, 56 insertions(+), 5 deletions(-)
 > 
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index f593f18..0cc07d4 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -473,7 +473,7 @@ static int find_resource(struct resource *root, struct resource *new,
->   * @newsize: new size of the resource descriptor
->   * @constraint: the size and alignment constraints to be met.
->   */
-> -int reallocate_resource(struct resource *root, struct resource *old,
-> +static int reallocate_resource(struct resource *root, struct resource *old,
->  			resource_size_t newsize,
->  			struct resource_constraint  *constraint)
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index daa333b..aca3f68 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -426,6 +426,57 @@ static __devexit int max8925_deinit_charger(struct max8925_power_info *info)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static struct max8925_power_pdata*
+
+Need a whitespace before *.
+
+> +max8925_power_dt_init(	struct platform_device *pdev)
+
+Unneeded tab.
+
+> +{
+> +	struct device_node *nproot = pdev->dev.parent->of_node, *np;
+
+Hmmm. No, this is cryptic. One variable declaration per line please.
+
+> +	int batt_detect;
+> +	int topoff_threshold;
+> +	int fast_charge;
+> +	int no_temp_support;
+> +	int no_insert_detect;
+> +	struct max8925_power_pdata *pdata;
+> +
+> +	if (!nproot)
+> +		return pdev->dev.platform_data;
+> +
+> +	np = of_find_node_by_name(nproot, "charger");
+> +	if (!np) {
+> +		dev_err(&pdev->dev, "failed to find charger node\n");
+> +		return NULL;
+> +	}
+> +
+> +	pdata = devm_kzalloc(&pdev->dev,
+> +			sizeof(struct max8925_power_pdata),
+> +			GFP_KERNEL);
+> +
+> +	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
+> +	of_property_read_u32(np, "batt-detect", &batt_detect);
+> +	of_property_read_u32(np, "fast-charge", &fast_charge);
+> +	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
+> +	of_property_read_u32(np, "no-temp-support", &no_temp_support);
+> +
+> +	pdata->batt_detect = batt_detect;
+> +	pdata->fast_charge = fast_charge;
+> +	pdata->topoff_threshold = topoff_threshold;
+> +	pdata->no_insert_detect = no_insert_detect;
+> +	pdata->no_temp_support = no_temp_support;
+> +
+> +	return pdata;
+> +}
+> +#else
+> +static struct max8925_power_pdata*
+> +max8925_power_dt_init(	struct platform_device *pdev)
+
+Unneeded tab.
+
+> +{
+> +	return pdev->dev.platform_data;
+> +}
+> +#endif
+> +
+> +static char *power_supplicants[] = {
+
+The rest of the driver uses max8925_ prefix. Also, should it be const char
+*?
+
+> +	"max8925-battery",
+> +};
+> +
+>  static __devinit int max8925_power_probe(struct platform_device *pdev)
 >  {
+>  	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+> @@ -433,7 +484,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	struct max8925_power_info *info;
+>  	int ret;
+>  
+> -	pdata = pdev->dev.platform_data;
+> +	pdata = max8925_power_dt_init(pdev);
+>  	if (!pdata) {
+>  		dev_err(&pdev->dev, "platform data isn't assigned to "
+>  			"power supply\n");
+> @@ -453,8 +504,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	info->ac.properties = max8925_ac_props;
+>  	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
+>  	info->ac.get_property = max8925_ac_get_prop;
+> -	info->ac.supplied_to = pdata->supplied_to;
+> -	info->ac.num_supplicants = pdata->num_supplicants;
+> +	info->ac.supplied_to = power_supplicants;
 
-Acked-by: Ram Pai <linuxram@us.ibm.com>
+So you no longer able to change supplied_to via platform data. This is a
+backwards-incompatible change.
 
+Commit message should at least explain why this is safe to do (no users in
+the kernel?).
+
+> +	info->ac.num_supplicants = ARRAY_SIZE(power_supplicants);
+>  	ret = power_supply_register(&pdev->dev, &info->ac);
+>  	if (ret)
+>  		goto out;
+> @@ -465,8 +516,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+>  	info->usb.properties = max8925_usb_props;
+>  	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
+>  	info->usb.get_property = max8925_usb_get_prop;
+> -	info->usb.supplied_to = pdata->supplied_to;
+> -	info->usb.num_supplicants = pdata->num_supplicants;
+> +	info->usb.supplied_to = power_supplicants;
+
+Ditto.
+
+> +	info->usb.num_supplicants = ARRAY_SIZE(power_supplicants);
+>  
+>  	ret = power_supply_register(&pdev->dev, &info->usb);
+>  	if (ret)
+> -- 
+> 1.7.0.4
+
+Thanks,
+Anton.
