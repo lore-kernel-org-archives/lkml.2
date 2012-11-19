@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2KSQ24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:28:56 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44907 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab2KSQ2z (ORCPT
+	id S1753832Ab2KSQ3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:29:04 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57845 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab2KSQ3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:28:55 -0500
-Message-ID: <50AA5E41.3040705@wwwdotorg.org>
-Date: Mon, 19 Nov 2012 09:28:49 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 11:29:01 -0500
+Date: Mon, 19 Nov 2012 08:28:55 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, glommer@parallels.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 01/17] cgroup: remove incorrect dget/dput() pair in
+ cgroup_create_dir()
+Message-ID: <20121119162855.GD15971@htj.dyndns.org>
+References: <1352775704-9023-1-git-send-email-tj@kernel.org>
+ <1352775704-9023-2-git-send-email-tj@kernel.org>
+ <50A9E8E4.4050004@huawei.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Rajanikanth HV <rajanikanth.hv@linaro.org>,
-        "linaro-dev@lists.linaro.org Devel" <linaro-dev@lists.linaro.org>,
-        andriy.shevchenko@intel.com, Patch Tracking <patches@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16 variables
- & arrays
-References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org> <50991C41.50705@gmail.com> <CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com> <509FB25F.3030307@gmail.com> <CAKohpoksQ4ShO_QFAQORO2_oEgNtOeENFnX1C3gN_5POQSGexg@mail.gmail.com> <509FFF8B.3010707@gmail.com> <CAKohponUFABC397w=dq7j+1f5QeiOX4BCOXv=OZSNOaOTmt9oQ@mail.gmail.com> <CAKohponUt4264UaxM2Wr41=fbPJkUCFhKhOapjPQC=OYDuyMbQ@mail.gmail.com> <CAB4BAks+eym9+qNZjxwkg7XxJrMwkaYFWGM5_YQk_TzfxyoHaw@mail.gmail.com> <CAKohpo=U2xss6cZMBKsbLJ4G-AWeEnHz8V-HFw2NKx0fucTK8Q@mail.gmail.com> <CAB4BAktsPviZ11QjSGgdzaV0uvLq3TLk4au6=dOgv7NtA9nc4Q@mail.gmail.com> <CAKohpo=XZ_uXJPUr2dJFBQBWnkRyV2YepikrWZ2GdrPXEmEmYw@mail.gmail.com>
-In-Reply-To: <CAKohpo=XZ_uXJPUr2dJFBQBWnkRyV2YepikrWZ2GdrPXEmEmYw@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A9E8E4.4050004@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2012 11:41 PM, Viresh Kumar wrote:
-> On 19 November 2012 12:05, Rajanikanth HV <rajanikanth.hv@linaro.org> wrote:
->> On 19 November 2012 12:00, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> Firstly you tried square braces [ ], I am not sure if that is allowed.
->>> Can you point me to the specification?
->> http://www.devicetree.org/Device_Tree_Usage
->> "
->> a-byte-data-property = [0x01 0x23 0x34 0x56];
->> "
+On Mon, Nov 19, 2012 at 04:08:04PM +0800, Li Zefan wrote:
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 0f8fa6a..d0803f0 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -2684,9 +2684,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
+> >  		dentry->d_fsdata = cgrp;
+> >  		inc_nlink(parent->d_inode);
+> >  		rcu_assign_pointer(cgrp->dentry, dentry);
+> > -		dget(dentry);
+> >  	}
+> > -	dput(dentry);
+> >  
 > 
-> Ok, but what about 16 bit then {} :)
+> The code has been there since cgroup was merged into mainline!
 
-Support for byte- and word- properties is relatively recent I believe
-(or at least, the /bits/ syntax is). Which dtc version are you using?
+I know.  Sometimes it's scary how many latent bugs we have in the
+kernel and how long many of them have been around.  At other times,
+it's comforting.  I mean, there's a pretty good chance that other
+people don't notice my screw ups, right?  :P
+
+-- 
+tejun
