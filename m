@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2KSQGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:06:33 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40485 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752355Ab2KSQGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:06:32 -0500
-Message-ID: <1353341192.5287.9.camel@joe-AO722>
-Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
-From: Joe Perches <joe@perches.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
-        imammedo@redhat.com, prarit@redhat.com
-Date: Mon, 19 Nov 2012 08:06:32 -0800
-In-Reply-To: <1353340280.10939.42.camel@misato.fc.hp.com>
-References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com>
-	 <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
-	 <1353315374.3129.3.camel@joe-AO722>
-	 <1353340280.10939.42.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753419Ab2KSQXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:23:33 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59280 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2KSQXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 11:23:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
+References: <507F7313.8010707@oracle.com>
+	<CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
+	<CA+1xoqdJ=mF6MUPRYm7CmE_fa8GshtjxUpwwYPCKY4ob+gDAeQ@mail.gmail.com>
+Date: Mon, 19 Nov 2012 08:23:30 -0800
+X-Google-Sender-Auth: e5ltP0y485RZKNyjf7hiw3LzjK4
+Message-ID: <CAGXu5j+XuQxJcUWSNaziMivNjKsB9S9cFMKDbigCBN16NGBRgw@mail.gmail.com>
+Subject: Re: yama: lockdep warning on yama_ptracer_del
+From: Kees Cook <keescook@chromium.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, james.l.morris@oracle.com,
+        John Johansen <john.johansen@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-security-module@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-19 at 08:51 -0700, Toshi Kani wrote:
-> On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
-> > is acpi_bus.h really the right file for these prototypes?
-> This interface is limited for ACPI, so it should be declared in a header
-> file under include/acpi.  Among the files in this directory, acpi_bus.h
-> seems to be a good fit as it declares the interfaces provided by ACPI
-> core.
+On Sun, Nov 18, 2012 at 8:05 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> Hi Kees,
+>
+> On Thu, Oct 18, 2012 at 6:39 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>> Hi all,
+>>>
+>>> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
+>>> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
+>>> ...
+>>> [  954.674123]  Possible interrupt unsafe locking scenario:
+>>> [  954.674123]
+>>> [  954.674123]        CPU0                    CPU1
+>>> [  954.674123]        ----                    ----
+>>> [  954.674123]   lock(ptracer_relations_lock);
+>>> [  954.674123]                                local_irq_disable();
+>>> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
+>>> [  954.674123]                                lock(ptracer_relations_lock);
+>>> [  954.674123]   <Interrupt>
+>>> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
+>>> [  954.674123]
+>>> [  954.674123]  *** DEADLOCK ***
+>>
+>> I've been wanting to get rid of the Yama ptracer_relations_lock
+>> anyway, so maybe I should do that now just to avoid this case at all?
+>
+> I still see this one in -rc6, is there anything to get rid of it
+> before the release?
 
-I'd've put them in acpi.h or maybe created acpi_utils.h 
+I'm not sure about changes to the timer locks, but I haven't been able
+to get rid of the locking on Yama's task_free path. I did send a patch
+to get rid of locking during a read, though:
 
-cheers, Joe
+https://lkml.org/lkml/2012/11/13/808
 
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
