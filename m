@@ -1,236 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab2KSXTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 18:19:03 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:65324 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab2KSXTB (ORCPT
+	id S1753397Ab2KSXVN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:21:13 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:27612 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab2KSXVL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 18:19:01 -0500
+	Mon, 19 Nov 2012 18:21:11 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Christoph Hellwig <hch@lst.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: RE: [PATCH 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation
+ support
+Thread-Topic: [PATCH 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation
+ support
+Thread-Index: AQHNxkpkgp90VISBxUum6dXaVhfzv5fxyQQw
+Date: Mon, 19 Nov 2012 23:19:28 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B40294CCFA059@G9W0745.americas.hpqcorp.net>
+References: <1352405238-23267-1-git-send-email-nab@linux-iscsi.org>
+ <1352405238-23267-4-git-send-email-nab@linux-iscsi.org>
+ <20121115110432.GD28956@infradead.org>
+ <1353007786.4447.29.camel@haakon2.linux-iscsi.org>
+ <20121115193235.GA5714@lst.de>
+ <94D0CD8314A33A4D9D801C0FE68B40294CCF8D45@G9W0745.americas.hpqcorp.net>
+ <50AA1A2A.2070504@redhat.com>
+In-Reply-To: <50AA1A2A.2070504@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.44]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121022012555.GB2739@dastard>
-References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
-	<20120920084422.GA5697@localhost>
-	<20120925013658.GC23520@dastard>
-	<CAKYAXd975U_n2SSFXz0VfEs6GrVCoc2S=3kQbfw_2uOtGXbGxA@mail.gmail.com>
-	<CAKYAXd-BXOrXJDMo5_ANACn2qo3J5oM3vMJD-LXnEacegxHgTA@mail.gmail.com>
-	<20121022012555.GB2739@dastard>
-Date: Tue, 20 Nov 2012 08:18:59 +0900
-Message-ID: <CAKYAXd-BzgVvhbGE=OcSeXSMFe+5NdTt3L1A6Synds4vZ9vc2A@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/22, Dave Chinner <david@fromorbit.com>:
-> On Fri, Oct 19, 2012 at 04:51:05PM +0900, Namjae Jeon wrote:
->> Hi Dave.
->>
->> Test Procedure:
->>
->> 1) Local USB disk WRITE speed on NFS server is ~25 MB/s
->>
->> 2) Run WRITE test(create 1 GB file) on NFS Client with default
->> writeback settings on NFS Server. By default
->> bdi->dirty_background_bytes = 0, that means no change in default
->> writeback behaviour
->>
->> 3) Next we change bdi->dirty_background_bytes = 25 MB (almost equal to
->> local USB disk write speed on NFS Server)
->> *** only on NFS Server - not on NFS Client ***
->
-> Ok, so the results look good, but it's not really addressing what I
-> was asking, though.  A typical desktop PC has a disk that can do
-> 100MB/s and GbE, so I was expecting a test that showed throughput
-> close to GbE maximums at least (ie. around that 100MB/s). I have 3
-> year old, low end, low power hardware (atom) that hanles twice the
-> throughput you are testing here, and most current consumer NAS
-> devices are more powerful than this. IOWs, I think the rates you are
-> testing at are probably too low even for the consumer NAS market to
-> consider relevant...
->
->> ----------------------------------------------------------------------------------
->> Multiple NFS Client test:
->> -----------------------------------------------------------------------------------
->> Sorry - We could not arrange multiple PCs to verify this.
->> So, we tried 1 NFS Server + 2 NFS Clients using 3 target boards:
->> ARM Target + 512 MB RAM + ethernet - 100 Mbits/s, create 1 GB File
->
-> But this really doesn't tells us anything - it's still only 100Mb/s,
-> which we'd expect is already getting very close to line rate even
-> with low powered client hardware.
->
-> What I'm concerned about the NFS server "sweet spot" - a $10k server
-> that exports 20TB of storage and can sustain close to a GB/s of NFS
-> traffic over a single 10GbE link with tens to hundreds of clients.
-> 100MB/s and 10 clients is about the minimum needed to be able to
-> extrapolate a litle and make an informed guess of how it will scale
-> up....
->
->> > 1. what's the comparison in performance to typical NFS
->> > server writeback parameter tuning? i.e. dirty_background_ratio=5,
->> > dirty_ratio=10, dirty_expire_centiseconds=1000,
->> > dirty_writeback_centisecs=1? i.e. does this give change give any
->> > benefit over the current common practice for configuring NFS
->> > servers?
->>
->> Agreed, that above improvement in write speed can be achieved by
->> tuning above write-back parameters.
->> But if we change these settings, it will change write-back behavior
->> system wide.
->> On the other hand, if we change proposed per bdi setting,
->> bdi->dirty_background_bytes it will change write-back behavior for the
->> block device exported on NFS server.
->
-> I already know what the difference between global vs per-bdi tuning
-> means.  What I want to know is how your results compare
-> *numerically* to just having a tweaked global setting on a vanilla
-> kernel.  i.e. is there really any performance benefit to per-bdi
-> configuration that cannot be gained by existing methods?
->
->> > 2. what happens when you have 10 clients all writing to the server
->> > at once? Or a 100? NFS servers rarely have a single writer to a
->> > single file at a time, so what impact does this change have on
->> > multiple concurrent file write performance from multiple clients
->>
->> Sorry, we could not arrange more than 2 PCs for verifying this.
->
-> Really? Well, perhaps there's some tools that might be useful for
-> you here:
->
-> http://oss.sgi.com/projects/nfs/testtools/
->
-> "Weber
->
-> Test load generator for NFS. Uses multiple threads, multiple
-> sockets and multiple IP addresses to simulate loads from many
-> machines, thus enabling testing of NFS server setups with larger
-> client counts than can be tested with physical infrastructure (or
-> Virtual Machine clients). Has been useful in automated NFS testing
-> and as a pinpoint NFS load generator tool for performance
-> development."
+
+
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
+> Bonzini
+> Sent: Monday, 19 November, 2012 5:38 AM
+> To: Elliott, Robert (Server Storage)
+> Cc: Christoph Hellwig; Nicholas A. Bellinger; Christoph Hellwig; target-devel;
+> linux-scsi; linux-kernel; Martin K. Petersen
+> Subject: Re: [PATCH 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0
+> emulation support
+> 
+> Il 15/11/2012 21:01, Elliott, Robert (Server Storage) ha scritto:
+> > WRITE SAME always has a payload, regardless of the UNMAP bit value.
+> >
+> > For WRITE SAME with UNMAP=0, it's extremely important; that's how
+> > what to write is specified.
+> >
+> > For WRITE SAME with UNMAP=1, the device server is required to check
+> > that the payload matches the data that is returned for unmapped LBAs.
+> > lf LBPRZ=1 (read zeros for unmapped LBAs), that means checking that
+> > the payload has all zeros.  In sbc3r33, this rule is tucked away in
+> > model section 4.7.3.4.3, not the command section 5.41.
+> 
+> Does that mean that LBPRZ=0, LPBWS=1 is practically an invalid
+> combination?  Because there's no real way for the device server to
+> perform the check successfully.
 >
 
-Hi Dave,
-We ran "weber" test on below setup:
-1) SATA HDD - Local WRITE speed ~120 MB/s, NFS WRITE speed ~90 MB/s
-2) Used 10GbE - network interface to mount NFS
+Yes; that would only be practical if the device server knows the pattern
+(e.g., all ones) that it will return for reads of unmapped LBAs. It's not
+very useful if the pattern is simply the last content and could differ
+for every LBA.
 
-We ran "weber" test with  NFS clients ranging from 1 to 100,
-below is the % GAIN in NFS WRITE speed with
-bdi->dirty_background_bytes = 100 MB at NFS server
+For consumer SSDs, the data returned for unmapped (i.e. trimmed)
+LBAs didn't really matter.
 
--------------------------------------------------
-| Number of NFS Clients |% GAIN in WRITE Speed  |
-|-----------------------------------------------|
-|         1             |     19.83 %           |
-|-----------------------------------------------|
-|         2             |      2.97 %           |
-|-----------------------------------------------|
-|         3             |      2.01 %           |
-|-----------------------------------------------|
-|        10             |      0.25 %           |
-|-----------------------------------------------|
-|        20             |      0.23 %           |
-|-----------------------------------------------|
-|        30             |      0.13 %           |
-|-----------------------------------------------|
-|       100             |    - 0.60 %           |
--------------------------------------------------
+For SSDs to be used in RAID arrays, however:
+a) non-deterministic data is unworkable (RAID parity would never be right);
+b) deterministic data can be accommodated, but the RAID stack needs to read the
+LBA after unmapping to see what pattern resulted and recalculate parity, hurting
+performance; and
+c) deterministic zeros are ideal (0 XOR n = n).
 
-with bdi->dirty_background_bytes setting at NFS server, we observed
-that NFS WRITE speed improvement is maximum with single NFS client.
-But WRITE speed improvement drops when Number of NFS clients increase
-from 1 to 100.
 
-So, bdi->dirty_background_bytes setting might be useful where we have
-only one NFS client(scenario like ours).
-But this is not useful for big NFS Servers which host hundreads of NFS clients.
 
-Let me know your opinion.
-
-Thanks.
-
->> > 3. Following on from the multiple client test, what difference does it
->> > make to file fragmentation rates? Writing more frequently means
->> > smaller allocations and writes, and that tends to lead to higher
->> > fragmentation rates, especially when multiple files are being
->> > written concurrently. Higher fragmentation also means lower
->> > performance over time as fragmentation accelerates filesystem aging
->> > effects on performance.  IOWs, it may be faster when new, but it
->> > will be slower 3 months down the track and that's a bad tradeoff to
->> > make.
->>
->> We agree that there could be bit more framentation. But as you know,
->> we are not changing writeback settings at NFS clients.
->> So, write-back behavior on NFS client will not change - IO requests
->> will be buffered at NFS client as per existing write-back behavior.
->
-> I think you misunderstand - writeback settings on the server greatly
-> impact the way the server writes data and therefore the way files
-> are fragmented. It has nothing to do with client side tuning.
->
-> Effectively, what you are presenting is best case numbers - empty
-> filesystem, single client, streaming write, no fragmentation, no
-> allocation contention, no competing IO load that causes write
-> latency occurring.  Testing with lots of clients introduces all of
-> these things, and that will greatly impact server behaviour.
-> Aggregation in memory isolates a lot of this variation from
-> writeback and hence smooths out a lot of the variability that leads
-> to fragmentation, seeks, latency spikes and preamture filesystem
-> aging.
->
-> That is, if you set a 100MB dirty_bytes limit on a bdi it will give
-> really good buffering for a single client doing a streaming write.
-> If you've got 10 clients, then assuming fair distribution of server
-> resources, then that is 10MB per client per writeback trigger.
-> That's line ball as to whether it will cause fragmentation severe
-> enough to impact server throughput. If you've got 100 clients,then
-> that's only 1MB per client per writeback trigger, and that's
-> definitely too low to maintain decent writeback behaviour.  i.e.
-> you're now writing 100 files 1MB at a time, and that tends towards
-> random IO patterns rather than sequential IO patterns. Seek time
-> dertermines throughput, not IO bandwidth limits.
->
-> IOWs, as the client count goes up, the writeback patterns will tends
-> more towards random IO than sequential IO unless the amount of
-> buffering allowed before writeback triggers also grows. That's
-> important, because random IO is much slower than sequential IO.
-> What I'd like to have is some insight into whether this patch
-> changes that inflection point, for better or for worse. The only way
-> to find that is to run multi-client testing....
->
->> > 5. Are the improvements consistent across different filesystem
->> > types?  We've had writeback changes in the past cause improvements
->> > on one filesystem but significant regressions on others.  I'd
->> > suggest that you need to present results for ext4, XFS and btrfs so
->> > that we have a decent idea of what we can expect from the change to
->> > the generic code.
->>
->> As mentioned in the above Table 1 & 2, performance gain in WRITE speed
->> is different on different file systems i.e. different on NFS client
->> over XFS & EXT4.
->> We also tried BTRFS over NFS, but we could not see any WRITE speed
->> performance gain/degrade on BTRFS over NFS, so we are not posting
->> BTRFS results here.
->
-> You should post btrfs numbers even if they show no change. It wasn't
-> until I got this far that I even realised that you'd even tested
-> BTRFS. I don't know what to make of this, because I don't know what
-> the throughput rates compared to XFS and EXT4 are....
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
+> Paolo
+> 
+> > I would like to change that rule (it's a nuisance and a performance
+> > burden), but that's the current rule going into SBC-3 letter ballot.
+> >
+> > Changing WRITE SAME with UNMAP=1 to ignore the payload would
+> provide
+> > essentially the same functionality as changing the UNMAP command to
+> > be mandatory, not just a hint; both approaches have been discussed.
