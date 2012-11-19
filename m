@@ -1,119 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab2KSPOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:14:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36904 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab2KSPOc (ORCPT
+	id S1753263Ab2KSPOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:14:54 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:60951 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab2KSPNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:14:32 -0500
-Date: Mon, 19 Nov 2012 20:44:24 +0530
-From: Arpith Easow Alexander <arpith99@gmail.com>
-To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
-        dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] Staging: comedi: drivers: replaced printk with dev_dbg
-Message-ID: <20121119151419.GA4807@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Nov 2012 10:13:11 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 19 Nov 2012 07:12:30 -0800
+Message-Id: <1353337961-12962-5-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+References: <87lidx8wbo.fsf@xmission.com>
+ <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+X-XM-AID: U2FsdGVkX18PoOb7mO/Gg/dqqq9fcna05kejK7nDFKs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.0 XMDrug1234561 Drug references
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0439]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 05/16] userns: Allow unprivileged users to create new namespaces
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the vmk80xx.c file that replaces the printk with dev_dbg.
-This fixes the warnings found by the checkpatch.pl tool.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Signed-off-by: Arpith Easow Alexander <arpith99@gmail.com>
+If an unprivileged user has the appropriate capabilities in their
+current user namespace allow the creation of new namespaces.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- drivers/staging/comedi/drivers/vmk80xx.c |   30 ++++++++++++++++++------------
- 1 file changed, 18 insertions(+), 12 deletions(-)
+ kernel/nsproxy.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
-index df277aa..6eb5361 100644
---- a/drivers/staging/comedi/drivers/vmk80xx.c
-+++ b/drivers/staging/comedi/drivers/vmk80xx.c
-@@ -131,10 +131,10 @@ static int dbgcm = 1;
- static int dbgcm;
- #endif
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 7f8b051..a214e0e 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -122,6 +122,7 @@ out_ns:
+ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ {
+ 	struct nsproxy *old_ns = tsk->nsproxy;
++	struct user_namespace *user_ns = task_cred_xxx(tsk, user_ns);
+ 	struct nsproxy *new_ns;
+ 	int err = 0;
  
--#define dbgcm(fmt, arg...)                     \
-+#define dbgcm(dev, fmt, arg...)                     \
- do {                                           \
- 	if (dbgcm)                             \
--		printk(KERN_DEBUG fmt, ##arg); \
-+		dev_dbg(dev, fmt, ##arg); \
- } while (0)
+@@ -134,7 +135,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ 				CLONE_NEWPID | CLONE_NEWNET)))
+ 		return 0;
  
- enum vmk80xx_model {
-@@ -213,8 +213,9 @@ static void vmk80xx_tx_callback(struct urb *urb)
- 
- 	if (stat && !(stat == -ENOENT
- 		      || stat == -ECONNRESET || stat == -ESHUTDOWN))
--		dbgcm("comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
--		      __func__, stat);
-+		dbgcm(&(dev->udev->dev),
-+			"comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
-+			__func__, stat);
- 
- 	if (!test_bit(TRANS_OUT_BUSY, &dev->flags))
- 		return;
-@@ -237,7 +238,8 @@ static void vmk80xx_rx_callback(struct urb *urb)
- 	case -ESHUTDOWN:
- 		break;
- 	default:
--		dbgcm("comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
-+		dbgcm(&(dev->udev->dev),
-+		      "comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
- 		      __func__, stat);
- 		goto resubmit;
+-	if (!capable(CAP_SYS_ADMIN)) {
++	if (!ns_capable(user_ns, CAP_SYS_ADMIN)) {
+ 		err = -EPERM;
+ 		goto out;
  	}
-@@ -1371,14 +1373,16 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
+@@ -191,7 +192,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+ 			       CLONE_NEWNET | CLONE_NEWPID)))
+ 		return 0;
  
- 	if (dev->board.model == VMK8061_MODEL) {
- 		vmk80xx_read_eeprom(dev, IC3_VERSION);
--		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
-+		dev_dbg(&(dev->udev->dev),
-+			"comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 		if (vmk80xx_check_data_link(dev)) {
- 			vmk80xx_read_eeprom(dev, IC6_VERSION);
--			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
-+			dev_dbg(&(dev->udev->dev), "comedi#: vmk80xx: %s\n",
- 			       dev->fw.ic6_vers);
- 		} else {
--			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
-+			dbgcm(&(dev->udev->dev),
-+				"comedi#: vmk80xx: no conn. to CPU\n");
- 		}
- 	}
- 
-@@ -1387,8 +1391,9 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
- 
- 	dev->probed = 1;
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
--	       dev->count, dev->board.name);
-+	dev_dbg(&(dev->udev->dev),
-+		"comedi#: vmk80xx: board #%d [%s] now attached\n",
-+		dev->count, dev->board.name);
- 
- 	mutex_unlock(&glb_mutex);
- 
-@@ -1422,8 +1427,9 @@ static void vmk80xx_usb_disconnect(struct usb_interface *intf)
- 	kfree(dev->usb_rx_buf);
- 	kfree(dev->usb_tx_buf);
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
--	       dev->count, dev->board.name);
-+	dev_dbg(&(dev->udev->dev),
-+		"comedi#: vmk80xx: board #%d [%s] now detached\n",
-+		dev->count, dev->board.name);
- 
- 	up(&dev->limit_sem);
- 	mutex_unlock(&glb_mutex);
+ 	*new_nsp = create_new_namespaces(unshare_flags, current,
 -- 
-1.7.9.5
+1.7.5.4
 
