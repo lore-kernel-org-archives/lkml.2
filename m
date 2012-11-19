@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2KSJlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 04:41:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64113 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab2KSJkQ (ORCPT
+	id S1753527Ab2KSJlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 04:41:18 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:38634 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab2KSJkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 04:40:16 -0500
+	Mon, 19 Nov 2012 04:40:07 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -16,9 +16,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Gregory CLEMENT <gregory.clement@free-electrons.com>,
         Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
-Date: Mon, 19 Nov 2012 10:39:55 +0100
-Message-Id: <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 1/4] pinctrl: mvebu: fix iomem pointer for dove pinctrl
+Date: Mon, 19 Nov 2012 10:39:53 +0100
+Message-Id: <1353317996-20841-2-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -26,9 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the ongoing conversion of Orion SoCs to DT, make use of
-gpio and pinctrl drivers through DT. The main dtsi for Dove is prepared
-to allow board specific descriptors to make use of pinctrl muxing.
+There has been a change in readl/writel to require registers
+addresses marked as IOMEM(). This patch takes care of this and
+also replaces ORing address offsets with adding them.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -43,75 +43,43 @@ Cc: Axel Lin <axel.lin@ingics.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/Kconfig            |    2 ++
- arch/arm/boot/dts/dove.dtsi |   20 +++++++++++++++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/pinctrl/mvebu/pinctrl-dove.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index d5a28da..bb9a85d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -539,6 +539,8 @@ config ARCH_DOVE
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select MIGHT_HAVE_PCI
-+	select PINCTRL
-+	select PINCTRL_DOVE
- 	select PLAT_ORION_LEGACY
- 	select USB_ARCH_HAS_EHCI
- 	help
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index 8c8ab62..c457480 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -4,6 +4,12 @@
- 	compatible = "marvell,dove";
- 	model = "Marvell Armada 88AP510 SoC";
+diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
+index ffe74b2..34693f6 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -22,22 +22,22 @@
  
-+	aliases {
-+		gpio0 = &gpio0;
-+		gpio1 = &gpio1;
-+		gpio2 = &gpio2;
-+	};
-+
- 	soc@f1000000 {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
-@@ -85,7 +91,8 @@
- 			#gpio-cells = <2>;
- 			gpio-controller;
- 			reg = <0xd0400 0x20>;
--			ngpio = <32>;
-+			ngpios = <32>;
-+			interrupt-controller;
- 			interrupts = <12>, <13>, <14>, <60>;
- 		};
+ #include "pinctrl-mvebu.h"
  
-@@ -94,7 +101,8 @@
- 			#gpio-cells = <2>;
- 			gpio-controller;
- 			reg = <0xd0420 0x20>;
--			ngpio = <32>;
-+			ngpios = <32>;
-+			interrupt-controller;
- 			interrupts = <61>;
- 		};
- 
-@@ -103,7 +111,13 @@
- 			#gpio-cells = <2>;
- 			gpio-controller;
- 			reg = <0xe8400 0x0c>;
--			ngpio = <8>;
-+			ngpios = <8>;
-+		};
-+
-+		pinctrl: pinctrl@d0200 {
-+			compatible = "marvell,dove-pinctrl";
-+			reg = <0xd0200 0x10>;
-+			clocks = <&gate_clk 22>;
- 		};
- 
- 		spi0: spi@10600 {
+-#define DOVE_SB_REGS_VIRT_BASE		0xfde00000
+-#define DOVE_MPP_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE | 0xd0200)
++#define DOVE_SB_REGS_VIRT_BASE		IOMEM(0xfde00000)
++#define DOVE_MPP_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0200)
+ #define DOVE_PMU_MPP_GENERAL_CTRL	(DOVE_MPP_VIRT_BASE + 0x10)
+ #define  DOVE_AU0_AC97_SEL		BIT(16)
+-#define DOVE_GLOBAL_CONFIG_1		(DOVE_SB_REGS_VIRT_BASE | 0xe802C)
++#define DOVE_GLOBAL_CONFIG_1		(DOVE_SB_REGS_VIRT_BASE + 0xe802C)
+ #define  DOVE_TWSI_ENABLE_OPTION1	BIT(7)
+-#define DOVE_GLOBAL_CONFIG_2		(DOVE_SB_REGS_VIRT_BASE | 0xe8030)
++#define DOVE_GLOBAL_CONFIG_2		(DOVE_SB_REGS_VIRT_BASE + 0xe8030)
+ #define  DOVE_TWSI_ENABLE_OPTION2	BIT(20)
+ #define  DOVE_TWSI_ENABLE_OPTION3	BIT(21)
+ #define  DOVE_TWSI_OPTION3_GPIO		BIT(22)
+-#define DOVE_SSP_CTRL_STATUS_1		(DOVE_SB_REGS_VIRT_BASE | 0xe8034)
++#define DOVE_SSP_CTRL_STATUS_1		(DOVE_SB_REGS_VIRT_BASE + 0xe8034)
+ #define  DOVE_SSP_ON_AU1		BIT(0)
+-#define DOVE_MPP_GENERAL_VIRT_BASE	(DOVE_SB_REGS_VIRT_BASE | 0xe803c)
++#define DOVE_MPP_GENERAL_VIRT_BASE	(DOVE_SB_REGS_VIRT_BASE + 0xe803c)
+ #define  DOVE_AU1_SPDIFO_GPIO_EN	BIT(1)
+ #define  DOVE_NAND_GPIO_EN		BIT(0)
+-#define DOVE_GPIO_LO_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE | 0xd0400)
++#define DOVE_GPIO_LO_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0400)
+ #define DOVE_MPP_CTRL4_VIRT_BASE	(DOVE_GPIO_LO_VIRT_BASE + 0x40)
+ #define  DOVE_SPI_GPIO_SEL		BIT(5)
+ #define  DOVE_UART1_GPIO_SEL		BIT(4)
 -- 
 1.7.10.4
 
