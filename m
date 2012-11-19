@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2KSW7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:59:52 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49959 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2KSW7v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:59:51 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST] mtd: m25p80: add support for the Winbond w25q80bl chip
-Date: Mon, 19 Nov 2012 15:59:44 -0700
-Message-Id: <1353365984-6000-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	id S1753335Ab2KSXAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 18:00:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47738 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473Ab2KSXAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 18:00:40 -0500
+Date: Mon, 19 Nov 2012 23:00:35 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121119230034.GO8218@suse.de>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121119223604.GA13470@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Mon, Nov 19, 2012 at 11:36:04PM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Ok.
+> > 
+> > In response to one of your later questions, I found that I had 
+> > in fact disabled THP without properly reporting it. [...]
+> 
+> Hugepages is a must for most forms of NUMA/HPC.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/mtd/devices/m25p80.c |    1 +
- 1 file changed, 1 insertion(+)
+Requiring huge pages to avoid a regression is a mistake.
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 7e2d8f9..1518324 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -742,6 +742,7 @@ static const struct spi_device_id m25p_ids[] = {
- 	{ "w25x64", INFO(0xef3017, 0, 64 * 1024, 128, SECT_4K) },
- 	{ "w25q64", INFO(0xef4017, 0, 64 * 1024, 128, SECT_4K) },
- 	{ "w25q80", INFO(0xef5014, 0, 64 * 1024,  16, SECT_4K) },
-+	{ "w25q80bl", INFO(0xef4014, 0, 64 * 1024,  16, SECT_4K) },
- 	{ "w25q256", INFO(0xef4019, 0, 64 * 1024, 512, SECT_4K) },
- 
- 	/* Catalyst / On Semiconductor -- non-JEDEC */
+> This alone 
+> questions the relevance of most of your prior numa/core testing 
+> results. I now have to strongly dispute your other conclusions 
+> as well.
+> 
+
+I'll freely admit that disabling THP for specjbb was a mistake and I should
+have caught why at the start. However, the autonumabench figures reported for
+the last release had THP enabled as had the kernel build benchmark figures.
+
+> Just a look at 'perf top' output should have told you the story.
+> 
+
+I knew THP were not in use and said so in earlier reports. Take this for
+example -- https://lkml.org/lkml/2012/11/16/207 . For specjbb, note that
+the THP fault alloc figures are close to 0 and due to that I said "THP is
+not really a factor for this workload". What I failed to do was identify
+why THP was not in use.
+
+> Yet time and time again you readily reported bad 'schednuma' 
+> results for a slow 4K memory model that neither we nor other 
+> NUMA testers I talked to actually used, without stopping to look 
+> why that was so...
+> 
+
+Again, I apologise for the THP mistake. The fact remains that the other
+implementations did not suffer a performance slowdown due to the same
+mistake.
+
+> [ I suspect that if such terabytes-of-data workloads are forced 
+>   through such a slow 4K pages model then there's a bug or 
+>   mis-tuning in our code that explains the level of additional 
+>   slowdown you saw - we'll fix that.
+> 
+>   But you should know that behavior under the slow 4K model 
+>   tells very little about the true scheduling and placement 
+>   quality of the patches... ]
+> 
+> Please report proper THP-enabled numbers before continuing.
+> 
+
+Will do. Are THP-disabled benchmark results to be ignored?
+
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
