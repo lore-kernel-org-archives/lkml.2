@@ -1,64 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab2KSIDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 03:03:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51209 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752323Ab2KSIDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 03:03:55 -0500
-Date: Mon, 19 Nov 2012 17:03:41 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de
-Subject: Re: [PATCH] regulator: max8973: add regulator driver support
-Message-ID: <20121119080338.GC4406@opensource.wolfsonmicro.com>
-References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
+	id S1753137Ab2KSIGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 03:06:35 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:52596 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922Ab2KSIGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 03:06:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        vijaymohan.pandarathil@hp.com, imammedo@redhat.com, prarit@redhat.com
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+Date: Mon, 19 Nov 2012 09:10:58 +0100
+Message-ID: <5543281.izkzCt1DyB@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com> <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PuGuTyElPB9bOcsM"
-Content-Disposition: inline
-In-Reply-To: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, November 06, 2012 08:02:06 AM Toshi Kani wrote:
+> This patch introduces acpi_pr_<level>(), where <level> is a kernel
+> message level such as err/warn/info, to support improved logging
+> messages for ACPI, esp. for hotplug operations.  acpi_pr_<level>()
+> appends "ACPI" prefix and ACPI object path to the messages.  This
+> improves diagnosis of hotplug operations since an error message in
+> a log file identifies an object that caused an issue.
+> 
+> acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
+> always available unlike other kernel objects, such as device.
+> 
+> For example:
+>   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> logs an error message like this at KERN_ERR.
+>   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+>
+> ACPI drivers can use acpi_pr_<level>() when they need to identify
+> a target ACPI object path in their messages, such as error cases.
+> The usage model is similar to dev_<level>().  acpi_pr_<level>() can
+> be used when device is not created/valid, which may be the case in
+> ACPI hotplug handlers.  ACPI object path is also consistent on the
+> platform, unlike device name that changes over hotplug operations.
+> 
+> ACPI drivers should use dev_<level>() when device is valid and
+> acpi_pr_<level>() is already used by the caller in its error path.
+> Device name provides more user friendly information.
+> 
+> ACPI drivers also continue to use pr_<level>() when messages do not
+> need to specify device information, such as boot-up messages.
+> 
+> Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
+> are not associated with the kernel message level.
 
---PuGuTyElPB9bOcsM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, the idea is generally good, but unfortunately acpi_get_name() is
+not a cheap operation.  Namely, it takes the global namespace mutex,
+so your acpi_printk() may be a source of serious contention on that
+lock if used excessively from concurrent threads.
 
-On Mon, Nov 19, 2012 at 06:58:29AM +0530, Laxman Dewangan wrote:
-> The MAXIM MAX8973 high-efficiency, three phase, DC-DC step-down
-> switching regulator delievers up to 9A of output current. Each
-> phase operates at a 2MHz fixed frequency with a 120 deg shift
-> from the adjacent phase, allowing the use of small magnetic
-> component.
+Do you think you can address this problem?
 
-Applied, thanks.
+Moreover, this also means that acpi_printk() cannot be used from interrupt
+context, so it is not a printk() replacement, which at least should be
+documented.
 
---PuGuTyElPB9bOcsM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Rafael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQqefHAAoJELSic+t+oim9vDcP/0FBtVjTtrE2/fDtJR1eLiHp
-isH5sDK1iHl/f8ls1fXV+HiJWQ4nJK24E6yn8PgPww3PddG9V3ACixOMf+LO6KOI
-Cn/CUMBXpBcR9iDqChCNp3HAIXzHp7CNO+D4IDcEe+bQ6I7vYS1HcKt8oAkXaI7d
-K6EVPXYoFH86kKcJx/6rsP6Huj7Dqnkf4lClq3LDD9rW/jjsO5m4fHXf2lk9LWrH
-vumFhOEkJiqsYZG/T690f7Rl0Ws59lv7NQheB7wwasUv1qUU17qqD98Ed2n1jfZW
-dYNFzdHnMMY8lxZbROkM9/bTRmdTKkcOltyRgkHqx9Ndzy8duDPvEK0hxwW0ur1G
-nojVSQ58Q+hzglGw4tCbT9Xhpy2po9bcNZcP6hHt1cnMAp98DscaNYdgtASjvvOT
-eMFOMgIZhzIbql8YWrMYqm1VdHcwlnbs4TQu4L2EKNpW9i0VyNcd9GPWNNM3VVK/
-EgtfAlrsyXOqAyszFGFdobiEXULJRJNjr/TomTNDpQn+2n8tfxsBirj30kmUTWSk
-6YII+GSfSqc0hCiF9VYO+5og7Td+7IbxMdcTnQRtXD8gkGfbFTDIsiptmFvTbp82
-LKYMpvvusHNsW2J+5S8FqYz2WSwnFAR5wYV0kkwcAjfRrEhveob/NkgcdiszVi+a
-za3IvMEFbkWZq7HO6Jh/
-=reRo
------END PGP SIGNATURE-----
-
---PuGuTyElPB9bOcsM--
+ 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> ---
+>  drivers/acpi/utils.c    | 34 ++++++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h | 31 +++++++++++++++++++++++++++++++
+>  2 files changed, 65 insertions(+)
+> 
+> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> index 462f7e3..4eade7d 100644
+> --- a/drivers/acpi/utils.c
+> +++ b/drivers/acpi/utils.c
+> @@ -457,3 +457,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+>  #endif
+>  }
+>  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> +
+> +/**
+> + * acpi_printk: Print messages with ACPI prefix and object path
+> + *
+> + * This function is intended to be called through acpi_pr_<level> macros.
+> + */
+> +void
+> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +	struct acpi_buffer buffer = {
+> +		.length = ACPI_ALLOCATE_BUFFER,
+> +		.pointer = NULL
+> +	};
+> +	const char *path;
+> +	acpi_status ret;
+> +
+> +	va_start(args, fmt);
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> +
+> +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> +	if (ret == AE_OK)
+> +		path = buffer.pointer;
+> +	else
+> +		path = "<n/a>";
+> +
+> +	printk("%sACPI: %s: %pV", level, path, &vaf);
+> +
+> +	va_end(args);
+> +	kfree(buffer.pointer);
+> +}
+> +EXPORT_SYMBOL(acpi_printk);
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 2242c10..93d5852 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -56,6 +56,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+>  
+>  acpi_status
+>  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> +
+> +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
+> +
+> +#define acpi_pr_emerg(handle, fmt, ...)				\
+> +	acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_alert(handle, fmt, ...)				\
+> +	acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_crit(handle, fmt, ...)				\
+> +	acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_err(handle, fmt, ...)				\
+> +	acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_warn(handle, fmt, ...)				\
+> +	acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_notice(handle, fmt, ...)			\
+> +	acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
+> +#define acpi_pr_info(handle, fmt, ...)				\
+> +	acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
+> +
+> +/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
+> +#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
+> +#define acpi_pr_debug(handle, fmt, ...)					\
+> +	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
+> +#else
+> +#define acpi_pr_debug(handle, fmt, ...)					\
+> +({									\
+> +	if (0)								\
+> +		acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);	\
+> +	0;								\
+> +})
+> +#endif
+> +
+>  #ifdef CONFIG_ACPI
+>  
+>  #include <linux/proc_fs.h>
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
