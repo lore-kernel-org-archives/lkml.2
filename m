@@ -1,286 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab2KSPOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:14:20 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:50398 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab2KSPNS (ORCPT
+	id S1753233Ab2KSPOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 10:14:34 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36904 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860Ab2KSPOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:13:18 -0500
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 19 Nov 2012 07:12:32 -0800
-Message-Id: <1353337961-12962-7-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
-References: <87lidx8wbo.fsf@xmission.com>
- <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX189K6BQu0HuYFLazBkARJTkKG1xxf7mZw0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0112]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH review 07/16] userns: Make create_new_namespaces take a user_ns parameter
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 19 Nov 2012 10:14:32 -0500
+Date: Mon, 19 Nov 2012 20:44:24 +0530
+From: Arpith Easow Alexander <arpith99@gmail.com>
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
+        dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] Staging: comedi: drivers: replaced printk with dev_dbg
+Message-ID: <20121119151419.GA4807@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+This is a patch to the vmk80xx.c file that replaces the printk with dev_dbg.
+This fixes the warnings found by the checkpatch.pl tool.
 
-Modify create_new_namespaces to explicitly take a user namespace
-parameter, instead of implicitly through the task_struct.
-
-This allows an implementation of unshare(CLONE_NEWUSER) where
-the new user namespace is not stored onto the current task_struct
-until after all of the namespaces are created.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Arpith Easow Alexander <arpith99@gmail.com>
 ---
- include/linux/ipc_namespace.h |    7 ++++---
- include/linux/utsname.h       |    6 +++---
- ipc/namespace.c               |   10 ++++------
- kernel/nsproxy.c              |   22 +++++++++++++---------
- kernel/utsname.c              |    9 ++++-----
- 5 files changed, 28 insertions(+), 26 deletions(-)
+ drivers/staging/comedi/drivers/vmk80xx.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 5499c92..f03af70 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -133,7 +133,8 @@ static inline int mq_init_ns(struct ipc_namespace *ns) { return 0; }
- 
- #if defined(CONFIG_IPC_NS)
- extern struct ipc_namespace *copy_ipcs(unsigned long flags,
--				       struct task_struct *tsk);
-+	struct user_namespace *user_ns, struct ipc_namespace *ns);
-+
- static inline struct ipc_namespace *get_ipc_ns(struct ipc_namespace *ns)
- {
- 	if (ns)
-@@ -144,12 +145,12 @@ static inline struct ipc_namespace *get_ipc_ns(struct ipc_namespace *ns)
- extern void put_ipc_ns(struct ipc_namespace *ns);
- #else
- static inline struct ipc_namespace *copy_ipcs(unsigned long flags,
--					      struct task_struct *tsk)
-+	struct user_namespace *user_ns, struct ipc_namespace *ns)
- {
- 	if (flags & CLONE_NEWIPC)
- 		return ERR_PTR(-EINVAL);
- 
--	return tsk->nsproxy->ipc_ns;
-+	return ns;
- }
- 
- static inline struct ipc_namespace *get_ipc_ns(struct ipc_namespace *ns)
-diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-index 2b34520..221f4a0 100644
---- a/include/linux/utsname.h
-+++ b/include/linux/utsname.h
-@@ -33,7 +33,7 @@ static inline void get_uts_ns(struct uts_namespace *ns)
- }
- 
- extern struct uts_namespace *copy_utsname(unsigned long flags,
--					  struct task_struct *tsk);
-+	struct user_namespace *user_ns, struct uts_namespace *old_ns);
- extern void free_uts_ns(struct kref *kref);
- 
- static inline void put_uts_ns(struct uts_namespace *ns)
-@@ -50,12 +50,12 @@ static inline void put_uts_ns(struct uts_namespace *ns)
- }
- 
- static inline struct uts_namespace *copy_utsname(unsigned long flags,
--						 struct task_struct *tsk)
-+	struct user_namespace *user_ns, struct uts_namespace *old_ns)
- {
- 	if (flags & CLONE_NEWUTS)
- 		return ERR_PTR(-EINVAL);
- 
--	return tsk->nsproxy->uts_ns;
-+	return old_ns;
- }
+diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+index df277aa..6eb5361 100644
+--- a/drivers/staging/comedi/drivers/vmk80xx.c
++++ b/drivers/staging/comedi/drivers/vmk80xx.c
+@@ -131,10 +131,10 @@ static int dbgcm = 1;
+ static int dbgcm;
  #endif
  
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 6ed33c0..72c8682 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -16,7 +16,7 @@
+-#define dbgcm(fmt, arg...)                     \
++#define dbgcm(dev, fmt, arg...)                     \
+ do {                                           \
+ 	if (dbgcm)                             \
+-		printk(KERN_DEBUG fmt, ##arg); \
++		dev_dbg(dev, fmt, ##arg); \
+ } while (0)
  
- #include "util.h"
+ enum vmk80xx_model {
+@@ -213,8 +213,9 @@ static void vmk80xx_tx_callback(struct urb *urb)
  
--static struct ipc_namespace *create_ipc_ns(struct task_struct *tsk,
-+static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
- 					   struct ipc_namespace *old_ns)
- {
- 	struct ipc_namespace *ns;
-@@ -46,19 +46,17 @@ static struct ipc_namespace *create_ipc_ns(struct task_struct *tsk,
- 	ipcns_notify(IPCNS_CREATED);
- 	register_ipcns_notifier(ns);
+ 	if (stat && !(stat == -ENOENT
+ 		      || stat == -ECONNRESET || stat == -ESHUTDOWN))
+-		dbgcm("comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
+-		      __func__, stat);
++		dbgcm(&(dev->udev->dev),
++			"comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
++			__func__, stat);
  
--	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user_ns));
-+	ns->user_ns = get_user_ns(user_ns);
+ 	if (!test_bit(TRANS_OUT_BUSY, &dev->flags))
+ 		return;
+@@ -237,7 +238,8 @@ static void vmk80xx_rx_callback(struct urb *urb)
+ 	case -ESHUTDOWN:
+ 		break;
+ 	default:
+-		dbgcm("comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
++		dbgcm(&(dev->udev->dev),
++		      "comedi#: vmk80xx: %s - nonzero urb status (%d)\n",
+ 		      __func__, stat);
+ 		goto resubmit;
+ 	}
+@@ -1371,14 +1373,16 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
  
- 	return ns;
- }
+ 	if (dev->board.model == VMK8061_MODEL) {
+ 		vmk80xx_read_eeprom(dev, IC3_VERSION);
+-		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
++		dev_dbg(&(dev->udev->dev),
++			"comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
  
- struct ipc_namespace *copy_ipcs(unsigned long flags,
--				struct task_struct *tsk)
-+	struct user_namespace *user_ns, struct ipc_namespace *ns)
- {
--	struct ipc_namespace *ns = tsk->nsproxy->ipc_ns;
--
- 	if (!(flags & CLONE_NEWIPC))
- 		return get_ipc_ns(ns);
--	return create_ipc_ns(tsk, ns);
-+	return create_ipc_ns(user_ns, ns);
- }
- 
- /*
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 4357a0a..2ddd816 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -57,7 +57,8 @@ static inline struct nsproxy *create_nsproxy(void)
-  * leave it to the caller to do proper locking and attach it to task.
-  */
- static struct nsproxy *create_new_namespaces(unsigned long flags,
--			struct task_struct *tsk, struct fs_struct *new_fs)
-+	struct task_struct *tsk, struct user_namespace *user_ns,
-+	struct fs_struct *new_fs)
- {
- 	struct nsproxy *new_nsp;
- 	int err;
-@@ -66,31 +67,31 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	if (!new_nsp)
- 		return ERR_PTR(-ENOMEM);
- 
--	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, task_cred_xxx(tsk, user_ns), new_fs);
-+	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns, new_fs);
- 	if (IS_ERR(new_nsp->mnt_ns)) {
- 		err = PTR_ERR(new_nsp->mnt_ns);
- 		goto out_ns;
+ 		if (vmk80xx_check_data_link(dev)) {
+ 			vmk80xx_read_eeprom(dev, IC6_VERSION);
+-			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
++			dev_dbg(&(dev->udev->dev), "comedi#: vmk80xx: %s\n",
+ 			       dev->fw.ic6_vers);
+ 		} else {
+-			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
++			dbgcm(&(dev->udev->dev),
++				"comedi#: vmk80xx: no conn. to CPU\n");
+ 		}
  	}
  
--	new_nsp->uts_ns = copy_utsname(flags, tsk);
-+	new_nsp->uts_ns = copy_utsname(flags, user_ns, tsk->nsproxy->uts_ns);
- 	if (IS_ERR(new_nsp->uts_ns)) {
- 		err = PTR_ERR(new_nsp->uts_ns);
- 		goto out_uts;
- 	}
+@@ -1387,8 +1391,9 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
  
--	new_nsp->ipc_ns = copy_ipcs(flags, tsk);
-+	new_nsp->ipc_ns = copy_ipcs(flags, user_ns, tsk->nsproxy->ipc_ns);
- 	if (IS_ERR(new_nsp->ipc_ns)) {
- 		err = PTR_ERR(new_nsp->ipc_ns);
- 		goto out_ipc;
- 	}
+ 	dev->probed = 1;
  
--	new_nsp->pid_ns = copy_pid_ns(flags, task_cred_xxx(tsk, user_ns), tsk->nsproxy->pid_ns);
-+	new_nsp->pid_ns = copy_pid_ns(flags, user_ns, tsk->nsproxy->pid_ns);
- 	if (IS_ERR(new_nsp->pid_ns)) {
- 		err = PTR_ERR(new_nsp->pid_ns);
- 		goto out_pid;
- 	}
+-	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
+-	       dev->count, dev->board.name);
++	dev_dbg(&(dev->udev->dev),
++		"comedi#: vmk80xx: board #%d [%s] now attached\n",
++		dev->count, dev->board.name);
  
--	new_nsp->net_ns = copy_net_ns(flags, task_cred_xxx(tsk, user_ns), tsk->nsproxy->net_ns);
-+	new_nsp->net_ns = copy_net_ns(flags, user_ns, tsk->nsproxy->net_ns);
- 	if (IS_ERR(new_nsp->net_ns)) {
- 		err = PTR_ERR(new_nsp->net_ns);
- 		goto out_net;
-@@ -152,7 +153,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 		goto out;
- 	}
+ 	mutex_unlock(&glb_mutex);
  
--	new_ns = create_new_namespaces(flags, tsk, tsk->fs);
-+	new_ns = create_new_namespaces(flags, tsk,
-+				       task_cred_xxx(tsk, user_ns), tsk->fs);
- 	if (IS_ERR(new_ns)) {
- 		err = PTR_ERR(new_ns);
- 		goto out;
-@@ -186,6 +188,7 @@ void free_nsproxy(struct nsproxy *ns)
- int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 		struct nsproxy **new_nsp, struct fs_struct *new_fs)
- {
-+	struct user_namespace *user_ns;
- 	int err = 0;
+@@ -1422,8 +1427,9 @@ static void vmk80xx_usb_disconnect(struct usb_interface *intf)
+ 	kfree(dev->usb_rx_buf);
+ 	kfree(dev->usb_tx_buf);
  
- 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
-@@ -195,7 +198,8 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 	if (!nsown_capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+-	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
+-	       dev->count, dev->board.name);
++	dev_dbg(&(dev->udev->dev),
++		"comedi#: vmk80xx: board #%d [%s] now detached\n",
++		dev->count, dev->board.name);
  
--	*new_nsp = create_new_namespaces(unshare_flags, current,
-+	user_ns = current_user_ns();
-+	*new_nsp = create_new_namespaces(unshare_flags, current, user_ns,
- 				new_fs ? new_fs : current->fs);
- 	if (IS_ERR(*new_nsp)) {
- 		err = PTR_ERR(*new_nsp);
-@@ -252,7 +256,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
- 	if (nstype && (ops->type != nstype))
- 		goto out;
- 
--	new_nsproxy = create_new_namespaces(0, tsk, tsk->fs);
-+	new_nsproxy = create_new_namespaces(0, tsk, current_user_ns(), tsk->fs);
- 	if (IS_ERR(new_nsproxy)) {
- 		err = PTR_ERR(new_nsproxy);
- 		goto out;
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index 4a9362f..fdc619e 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -32,7 +32,7 @@ static struct uts_namespace *create_uts_ns(void)
-  * @old_ns: namespace to clone
-  * Return NULL on error (failure to kmalloc), new ns otherwise
-  */
--static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
-+static struct uts_namespace *clone_uts_ns(struct user_namespace *user_ns,
- 					  struct uts_namespace *old_ns)
- {
- 	struct uts_namespace *ns;
-@@ -43,7 +43,7 @@ static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
- 
- 	down_read(&uts_sem);
- 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
--	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user_ns));
-+	ns->user_ns = get_user_ns(user_ns);
- 	up_read(&uts_sem);
- 	return ns;
- }
-@@ -55,9 +55,8 @@ static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
-  * versa.
-  */
- struct uts_namespace *copy_utsname(unsigned long flags,
--				   struct task_struct *tsk)
-+	struct user_namespace *user_ns, struct uts_namespace *old_ns)
- {
--	struct uts_namespace *old_ns = tsk->nsproxy->uts_ns;
- 	struct uts_namespace *new_ns;
- 
- 	BUG_ON(!old_ns);
-@@ -66,7 +65,7 @@ struct uts_namespace *copy_utsname(unsigned long flags,
- 	if (!(flags & CLONE_NEWUTS))
- 		return old_ns;
- 
--	new_ns = clone_uts_ns(tsk, old_ns);
-+	new_ns = clone_uts_ns(user_ns, old_ns);
- 
- 	put_uts_ns(old_ns);
- 	return new_ns;
+ 	up(&dev->limit_sem);
+ 	mutex_unlock(&glb_mutex);
 -- 
-1.7.5.4
+1.7.9.5
 
