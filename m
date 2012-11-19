@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2KSCPs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 21:15:48 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46669 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab2KSCPp (ORCPT
+	id S1752970Ab2KSCP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 21:15:56 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47823 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab2KSCPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 21:15:45 -0500
+	Sun, 18 Nov 2012 21:15:52 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 10/27] sched: Make find_busiest_queue() a method
-Date: Mon, 19 Nov 2012 03:14:27 +0100
-Message-Id: <1353291284-2998-11-git-send-email-mingo@kernel.org>
+Subject: [PATCH 14/27] sched, numa, mm, arch: Add variable locality exception
+Date: Mon, 19 Nov 2012 03:14:31 +0100
+Message-Id: <1353291284-2998-15-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353291284-2998-1-git-send-email-mingo@kernel.org>
 References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
@@ -30,69 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Its a bit awkward but it was the least painful means of modifying the
-queue selection. Used in a later patch to conditionally use a random
-queue.
+Some architectures (ab)use NUMA to represent different memory
+regions all cpu-local but of different latencies, such as SuperH.
 
+The naming comes from Mel Gorman.
+
+Named-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Hugh Dickins <hughd@google.com>
-Link: http://lkml.kernel.org/n/tip-lfpez319yryvdhwqfqrh99f2@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ arch/sh/mm/Kconfig | 1 +
+ init/Kconfig       | 7 +++++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 59e072b..511fbb8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3600,6 +3600,9 @@ struct lb_env {
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index cb8f992..5d2a4df 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -111,6 +111,7 @@ config VSYSCALL
+ config NUMA
+ 	bool "Non Uniform Memory Access (NUMA) Support"
+ 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
++	select ARCH_WANTS_NUMA_VARIABLE_LOCALITY
+ 	default n
+ 	help
+ 	  Some SH systems have many various memories scattered around
+diff --git a/init/Kconfig b/init/Kconfig
+index f36c83d..b8a4a58 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -718,6 +718,13 @@ config ARCH_USES_NUMA_GENERIC_PGPROT_HUGEPAGE
+ 	depends on ARCH_USES_NUMA_GENERIC_PGPROT
+ 	depends on TRANSPARENT_HUGEPAGE
+ 
++#
++# For architectures that (ab)use NUMA to represent different memory regions
++# all cpu-local but of different latencies, such as SuperH.
++#
++config ARCH_WANTS_NUMA_VARIABLE_LOCALITY
++	bool
 +
-+	struct rq *		(*find_busiest_queue)(struct lb_env *,
-+						      struct sched_group *);
- };
- 
- /*
-@@ -4779,13 +4782,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
- 
- 	struct lb_env env = {
--		.sd		= sd,
--		.dst_cpu	= this_cpu,
--		.dst_rq		= this_rq,
--		.dst_grpmask    = sched_group_cpus(sd->groups),
--		.idle		= idle,
--		.loop_break	= sched_nr_migrate_break,
--		.cpus		= cpus,
-+		.sd		    = sd,
-+		.dst_cpu	    = this_cpu,
-+		.dst_rq		    = this_rq,
-+		.dst_grpmask        = sched_group_cpus(sd->groups),
-+		.idle		    = idle,
-+		.loop_break	    = sched_nr_migrate_break,
-+		.cpus		    = cpus,
-+		.find_busiest_queue = find_busiest_queue,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4804,7 +4808,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	busiest = find_busiest_queue(&env, group);
-+	busiest = env.find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	depends on EVENTFD
 -- 
 1.7.11.7
 
