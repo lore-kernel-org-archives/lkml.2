@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab2KSINT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 03:13:19 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:32969 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab2KSINR (ORCPT
+	id S1753187Ab2KSITw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 03:19:52 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43049 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab2KSITv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 03:13:17 -0500
-Message-ID: <50A9EA11.7050409@free-electrons.com>
-Date: Mon, 19 Nov 2012 09:13:05 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 03:19:51 -0500
+Message-ID: <50A9EB89.70901@linux.vnet.ibm.com>
+Date: Mon, 19 Nov 2012 16:19:21 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-CC: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>
-Subject: Re: [PATCH V3 4/5] arm: mm: Added support for PJ4B cpu and init routines
-References: <1352931637-3405-1-git-send-email-gregory.clement@free-electrons.com> <1352931637-3405-5-git-send-email-gregory.clement@free-electrons.com> <50A41BD3.9040509@free-electrons.com> <50A6B427.9080807@free-electrons.com> <20121119031210.GD22106@titan.lakedaemon.net>
-In-Reply-To: <20121119031210.GD22106@titan.lakedaemon.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Howells <dhowells@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Josh Boyer <jwboyer@gmail.com>, mingo@kernel.org,
+        haodong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de, bp@alien8.de,
+        namhyung@gmail.com, torvalds@linux-foundation.org, paulus@samba.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 2/2] perf kvm: fix building perf kvm on PowerPC
+References: <50A48912.20606@linux.vnet.ibm.com> <1378.1352379110@warthog.procyon.org.uk> <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com> <18065.1352820271@warthog.procyon.org.uk> <CA+5PVA6qaxCzr8RBV616D3kEXyj9XjS3okeZXhJJL1R4+-Yv_A@mail.gmail.com> <20121113163458.GA1023@ghostprotocols.net> <50A488DD.6090106@linux.vnet.ibm.com> <6764.1352976414@warthog.procyon.org.uk>
+In-Reply-To: <6764.1352976414@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12111908-2000-0000-0000-000009EF71BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 04:12 AM, Jason Cooper wrote:
-> On Fri, Nov 16, 2012 at 10:46:15PM +0100, Gregory CLEMENT wrote:
->> On 11/14/2012 11:31 PM, Gregory CLEMENT wrote:
->>> Hello Russell,
->>>
->>> With the 2 changes I have done on according your comments
->>> do you think you can give your acked-by for this patch?
->>>
->>
->> Hello Russell,
->>
->> I didn't have any feedback from you for this version.
->> If you are fine with this, could you give your Acked-by?
->>
->>
+On 11/15/2012 06:46 PM, David Howells wrote:
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 > 
-> Gregory,
+>> Now, 'perf kvm stat' is only supported on x86, let its code depend
+>> on ARCH_X86 to fix building it on other architectures
 > 
-> From the looks of things, Russell has his head wrapped around buggy
-> sound driver code for the CuBox.  Perhaps Will Deacon or Catalin Marinas
-> would care to weigh in?  I'm reluctant to take the series without an
-> Acked-By from at least one of them.
+> Other parts of perf do this sort of thing:
+> 
+> 	#if defined(__x86_64__) || defined(__i386__)
+> 
 
+Yes, thanks for you point it out, David! How about this one?
 
-I am fine with this as Will already have done the review.
+Subject: [PATCH 2/2] perf kvm: fix building perf kvm on PowerPC
 
-Arnd, Olof,
-Do you agree to get the pull from Jason with an acked-by from
-Will and/or Catalin instead of Russell?
+Now, 'perf kvm stat' is only supported on x86, let its code depend
+on ARCH_X86 to fix building it on other architectures
 
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ tools/perf/builtin-kvm.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Catalin, Will,
-If Arnd and Olof agree, would you mind give your acked-by on this
-pacth?
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 7fb426b..df30ca0 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -22,6 +22,7 @@
+ #include <pthread.h>
+ #include <math.h>
 
-Russell,
-if you had a couple of minutes, the best would be to have your acked-by
-of course.
++#if defined(__i386__) || defined(__x86_64__)
+ #include "../../arch/x86/include/asm/svm.h"
+ #include "../../arch/x86/include/asm/vmx.h"
+ #include "../../arch/x86/include/asm/kvm.h"
+@@ -913,6 +914,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ perf_stat:
+ 	return cmd_stat(argc, argv, NULL);
+ }
++#endif
 
-Thanks all,
+ static int __cmd_record(const char *file_name, int argc, const char **argv)
+ {
+@@ -1035,8 +1037,10 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return cmd_top(argc, argv, NULL);
+ 	else if (!strncmp(argv[0], "buildid-list", 12))
+ 		return __cmd_buildid_list(file_name, argc, argv);
++#if defined(__i386__) || defined(__x86_64__)
+ 	else if (!strncmp(argv[0], "stat", 4))
+ 		return kvm_cmd_stat(file_name, argc, argv);
++#endif
+ 	else
+ 		usage_with_options(kvm_usage, kvm_options);
 
-Gregory
+-- 
+1.7.7.6
+
