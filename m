@@ -1,81 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2KSQbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:31:20 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2792 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab2KSQbT (ORCPT
+	id S1753803Ab2KSQev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:34:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63967 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab2KSQeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:31:19 -0500
-Message-ID: <50AA5ED5.8090901@atmel.com>
-Date: Mon, 19 Nov 2012 17:31:17 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 11:34:50 -0500
+Date: Mon, 19 Nov 2012 08:34:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, glommer@parallels.com
+Subject: Re: [PATCHSET cgroup/for-3.8] cgroup: allow ->post_create() to fail
+Message-ID: <20121119163445.GE15971@htj.dyndns.org>
+References: <1352775704-9023-1-git-send-email-tj@kernel.org>
+ <50A9F3B3.2010607@huawei.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
-Subject: [GIT PULL] at91: fixes for 3.7-rc7
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A9F3B3.2010607@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+On Mon, Nov 19, 2012 at 04:54:11PM +0800, Li Zefan wrote:
+> Acked-by: Li Zefan <lizefan@huawei.com>
+> 
+> except 0006-cgroup-remove-duplicate-RCU-free-on-struct-cgroup.patch
 
-Here is another "fixes" pull request for AT91. It enables the sd/mmc driver
-for Device Tree enabled platforms. Those patches where part of a series that
-was split in two for reaching upstream: the MMC part is already in Linus' tree
-and this is the arm-soc part.
-I have placed these patches on top of the fixes that you already have for AT91.
+Patchset applied to cgroup/for-3.8 sans 0006.
 
-The following changes since commit 641f3ce64b050961d454a0716bb6dbf528315aac:
-
-  ARM: at91/usbh: fix overcurrent gpio setup (2012-11-16 10:46:29 +0100)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 83ce1c55cfb639438c2516cb05f3b8ee472023e5:
-
-  ARM: at91/dts: add nodes for atmel hsmci controllers for atmel boards (2012-11-19 17:02:40 +0100)
-
-----------------------------------------------------------------
-Add entries for enabling the use of sd/mmc driver on AT91.
-Those entries where missing for device tree use on these
-platforms.
-
-----------------------------------------------------------------
-Ludovic Desroches (3):
-      ARM: at91: add clocks for DT entries
-      ARM: at91/dts: add nodes for atmel hsmci controllers for atmel SOCs
-      ARM: at91/dts: add nodes for atmel hsmci controllers for atmel boards
-
- arch/arm/boot/dts/at91sam9260.dtsi          |  9 +++++++++
- arch/arm/boot/dts/at91sam9263.dtsi          | 18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9263ek.dts         | 10 ++++++++++
- arch/arm/boot/dts/at91sam9g20ek_2mmc.dts    | 12 ++++++++++++
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi |  9 +++++++++
- arch/arm/boot/dts/at91sam9g25ek.dts         | 18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi          | 18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts      | 19 +++++++++++++++++++
- arch/arm/boot/dts/at91sam9n12.dtsi          |  9 +++++++++
- arch/arm/boot/dts/at91sam9n12ek.dts         |  9 +++++++++
- arch/arm/boot/dts/at91sam9x5.dtsi           | 18 ++++++++++++++++++
- arch/arm/mach-at91/at91sam9260.c            |  1 +
- arch/arm/mach-at91/at91sam9263.c            |  2 ++
- arch/arm/mach-at91/at91sam9g45.c            |  2 ++
- arch/arm/mach-at91/at91sam9n12.c            |  1 +
- arch/arm/mach-at91/at91sam9x5.c             |  2 ++
- 16 files changed, 157 insertions(+)
+Thanks.
 
 -- 
-Nicolas Ferre
+tejun
