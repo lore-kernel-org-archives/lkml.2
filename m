@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2KSFig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:38:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47827 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab2KSFie (ORCPT
+	id S1753186Ab2KSF3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:29:49 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55570 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab2KSF3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:38:34 -0500
-Message-ID: <50A9C5CC.1030300@oracle.com>
-Date: Mon, 19 Nov 2012 13:38:20 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 00:29:47 -0500
+X-Originating-IP: 217.70.178.150
+X-Originating-IP: 50.43.39.152
+From: Josh Triplett <josh@joshtriplett.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Cc: Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 20/58] kernel/events/hw_breakpoint.c: Make hw_breakpoint_weight static
+Date: Sun, 18 Nov 2012 21:27:59 -0800
+Message-Id: <1353302917-13995-21-git-send-email-josh@joshtriplett.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
+References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 MIME-Version: 1.0
-To: "Dave, Tushar N" <tushar.n.dave@intel.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com> <50A30656.6090508@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com> <50A43828.6000702@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/12 04:26, Dave, Tushar N wrote:
->> Would you please help to fine the offset of max payload size in eeprom?
->> I'd like to have a try to modify it by ethtool.
-> 
-> It is defined using bit 8 of word 0x1A.
-> Bit value 0 = 128B , bit value 1 = 256B
+Commit f93a20541134fa767e8dc4eb32e956d30b9f6b92, in April 2010, added
+the ability for hardware breakpoints to have variable "weight" in
+allocations, and added a __weak function hw_breakpoint_weight that
+architectures could override to set the weight of a breakpoint.  No
+architecture has ever done so.
 
-Hi Tushar,
+For now, change the function from __weak to static.  If this
+functionality continues to go unused, the abstraction should probably go
+away entirely.
 
-I checked one of my server which Max Payload Size is 128:
+This also eliminates a warning:
 
-# lspci -vvv -s 52:00.1
-52:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (rev 06)
-        Subsystem: Intel Corporation PRO/1000 PT Quad Port Server Adapter
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin B routed to IRQ 266
-        Region 0: Memory at dfea0000 (32-bit, non-prefetchable) [size=128K]
-        Region 1: Memory at dfe80000 (32-bit, non-prefetchable) [size=128K]
-        Region 2: I/O ports at 6020 [size=32]
-        [virtual] Expansion ROM at d8120000 [disabled] [size=128K]
-        Capabilities: [c8] Power Management version 2
-                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000fee00000  Data: 409a
-        Capabilities: [e0] Express (v1) Endpoint, MSI 00
-                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-                        MaxPayload 128 bytes, MaxReadReq 4096 bytes
-                DevSta: CorrErr- UncorrErr- FatalErr+ UnsuppReq+ AuxPwr- TransPend-
-                LnkCap: Port #0, Speed 2.5GT/s, Width x4, ASPM L0s, Latency L0 <4us, L1 <64us
-                        ClockPM- Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-        Capabilities: [100 v1] Advanced Error Reporting
-                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
-                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
-                UESvrt: DLP+ SDES- TLP+ FCP+ CmpltTO+ CmpltAbrt+ UnxCmplt+ RxOF+ MalfTLP+ ECRC- UnsupReq+ ACSViol-
-                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-                CEMsk:  RxErr+ BadTLP+ BadDLLP+ Rollover+ Timeout+ NonFatalErr-
-                AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
-        Capabilities: [140 v1] Device Serial Number 00-15-17-ff-ff-16-ed-86
-        Kernel driver in use: e1000e
-        Kernel modules: e1000e
+kernel/events/hw_breakpoint.c:80:27: warning: no previous prototype for ‘hw_breakpoint_weight’ [-Wmissing-prototypes]
 
-And eeprom dump as below:
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/events/hw_breakpoint.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Offset          Values
-------          ------
-0x0000          00 15 17 16 ed 86 24 05 ff ff a2 50 ff ff ff ff 
-0x0010          57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020          08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030          f6 6c b0 37 a6 07 03 84 83 07 00 00 03 c3 02 06 
-0x0040          08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050          00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-0x0060          00 01 00 40 1e 12 07 40 00 01 00 40 ff ff ff ff 
-
-
-If I did not misunderstand, the value of offset 0x1a is 0x07a6, then the bit 8 is 1, but 
-my NIC's MPS is 128b, anything I'm wrong? 
-
-Thanks,
-Joe
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index 9a7b487..4a3867a 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -77,7 +77,7 @@ struct bp_busy_slots {
+ /* Serialize accesses to the above constraints */
+ static DEFINE_MUTEX(nr_bp_mutex);
+ 
+-__weak int hw_breakpoint_weight(struct perf_event *bp)
++static int hw_breakpoint_weight(struct perf_event *bp)
+ {
+ 	return 1;
+ }
+-- 
+1.7.10.4
 
