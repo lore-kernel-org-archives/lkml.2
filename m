@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750932Ab2KSFBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:01:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab2KSFBE (ORCPT
+	id S1751707Ab2KSFCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:02:10 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33885 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab2KSFCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:01:04 -0500
-Date: Sun, 18 Nov 2012 20:57:53 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Rajanikanth HV <rajanikanth.hv@linaro.org>
-Cc: rob.herring@calxeda.com, Lee Jones <lee.jones@linaro.org>,
-        Francesco Lavra <francescolavra.fl@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "linaro-dev@lists.linaro.org Devel" <linaro-dev@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        STEricsson_nomadik_linux@list.st.com,
-        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 0/4] Implement device tree support for ab8500 BM Devices
-Message-ID: <20121119045753.GA28159@lizard>
-References: <1351698033-8980-1-git-send-email-rajanikanth.hv@linaro.org>
- <20121119034600.GP29066@lizard.sbx05977.paloaca.wayport.net>
- <CAB4BAkvXZacDVZh2gzooH-Eq8Vnc8JLd=v8=9p-4mLfY0qWavw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAB4BAkvXZacDVZh2gzooH-Eq8Vnc8JLd=v8=9p-4mLfY0qWavw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Nov 2012 00:02:08 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, kgene.kim@samsung.com, sachin.kamat@linaro.org,
+        patches@linaro.org
+Subject: [PATCH 1/1] pinctrl: Samsung: Do not initialise statics to 0
+Date: Mon, 19 Nov 2012 10:26:01 +0530
+Message-Id: <1353300961-22632-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 09:28:59AM +0530, Rajanikanth HV wrote:
-> > FWIW, I fixed these warnings.
-> >
-> >   CHECK   drivers/power/ab8500_bmdata.c
-> > drivers/power/ab8500_bmdata.c:146:23: warning: symbol 'temp_to_batres_tbl_thermistor' was not declared. Should it be static?
-> > drivers/power/ab8500_bmdata.c:160:23: warning: symbol 'temp_to_batres_tbl_ext_thermistor' was not declared. Should it be static?
-> > drivers/power/ab8500_bmdata.c:171:23: warning: symbol 'temp_to_batres_tbl_9100' was not declared. Should it be static?
-> > drivers/power/ab8500_bmdata.c:181:28: warning: symbol 'bat_type_thermistor' was not declared. Should it be static?
-> > drivers/power/ab8500_bmdata.c:267:28: warning: symbol 'bat_type_ext_thermistor' was not declared. Should it be static?
-> >
-> > Plus fixed a few stylistic issues.
-> 
-> thanks anton for validating my patch, you seems to have older version
-> of patch set,
-> i am rebasing  new version of patch set to 3.7-rc5, will communicate asap.
+Static variables are initialised to 0 by GCC.
+Fixes the following checkpatch error:
+ERROR: do not initialise statics to 0 or NULL
+FILE: pinctrl/pinctrl-samsung.c:50:
+static unsigned int pin_base = 0;
 
-Can you please rebase the new work on top of current battery tree (i.e. on
-top of the patches that you've sent)? Or that would be too much burden?
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/pinctrl/pinctrl-samsung.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+index 81c9896..36f8875 100644
+--- a/drivers/pinctrl/pinctrl-samsung.c
++++ b/drivers/pinctrl/pinctrl-samsung.c
+@@ -47,7 +47,7 @@ struct pin_config {
+ 	{ "samsung,pin-pud-pdn", PINCFG_TYPE_PUD_PDN },
+ };
+ 
+-static unsigned int pin_base = 0;
++static unsigned int pin_base;
+ 
+ static inline struct samsung_pin_bank *gc_to_pin_bank(struct gpio_chip *gc)
+ {
+-- 
+1.7.4.1
+
