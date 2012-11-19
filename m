@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2KSWZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:25:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52292 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab2KSWZS (ORCPT
+	id S1752922Ab2KSW1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:27:01 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35482 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab2KSW1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:25:18 -0500
-Date: Mon, 19 Nov 2012 14:25:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        mgorman@suse.de, fschmaus@gmail.com, andor.daam@googlemail.com,
-        ilendir@googlemail.com
-Subject: Re: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-Message-Id: <20121119142516.b2936a7c.akpm@linux-foundation.org>
-In-Reply-To: <CAA_GA1crg1ngNx2MAv-fJbgKYqSKmkapZHq=8F4QcNgFja1A-w@mail.gmail.com>
-References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
-	<1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
-	<20121116151619.aa60acff.akpm@linux-foundation.org>
-	<CAA_GA1crg1ngNx2MAv-fJbgKYqSKmkapZHq=8F4QcNgFja1A-w@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 17:27:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121119141458.883e6535.akpm@linux-foundation.org>
+References: <20121119220051.GA16851@www.outflux.net>
+	<20121119141458.883e6535.akpm@linux-foundation.org>
+Date: Mon, 19 Nov 2012 14:26:59 -0800
+X-Google-Sender-Auth: -rj98kY30ZAgWTisf78bx8wuDBE
+Message-ID: <CAGXu5jK5Y2dEoYJwq5+KdQT5a9+VdkrDbwbYBHsSHLgeBf1gUg@mail.gmail.com>
+Subject: Re: [PATCH] audit: catch possible NULL audit buffers
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012 08:53:46 +0800
-Bob Liu <lliubbo@gmail.com> wrote:
+On Mon, Nov 19, 2012 at 2:14 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 19 Nov 2012 14:00:51 -0800
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> It's possible for audit_log_start() to return NULL. Handle it in the
+>> various callers.
+>>
+>> ...
+>>
+>> --- a/kernel/audit.c
+>> +++ b/kernel/audit.c
+>> @@ -272,6 +272,8 @@ static int audit_log_config_change(char *function_name, int new, int old,
+>>       int rc = 0;
+>>
+>>       ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
+>> +     if (unlikely(!ab))
+>> +             return rc;
+>
+> Returning success here looks suspicious.  audit_do_config_change() will
+> fail to take its wtf-just-happened action (which
+> audit_log_config_change() duplicates, btw).
 
-> On Sat, Nov 17, 2012 at 7:16 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Wed, 14 Nov 2012 13:57:06 -0500
-> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> >
-> >> From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> >>
-> >> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-> >> built/loaded as modules rather than built-in and enabled by a boot parameter,
-> >> this patch provides "lazy initialization", allowing backends to register to
-> >> frontswap even after swapon was run. Before a backend registers all calls
-> >> to init are recorded and the creation of tmem_pools delayed until a backend
-> >> registers or until a frontswap put is attempted.
-> >>
-> >>
-> >> ...
-> >>
-> >> --- a/mm/frontswap.c
-> >> +++ b/mm/frontswap.c
-> >> @@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
-> >>  static inline void inc_frontswap_failed_stores(void) { }
-> >>  static inline void inc_frontswap_invalidates(void) { }
-> >>  #endif
-> >> +
-> >> +/*
-> >> + * When no backend is registered all calls to init are registered and
-> >
-> > What is "init"?  Spell it out fully, please.
-> >
-> 
-> I think it's frontswap_init().
-> swapon will call frontswap_init() and in it we need to call init
-> function of backends with some parameters
-> like swap_type.
+It seemed like the only meaningful rc was from when
+security_secid_to_secctx failed, which changes the audit report and
+has external side-effects that seem specific to that condition. It
+seemed that audit_log_start() failing was less of a problem than
+security_secid_to_secctx failing, which seems supposed be all the
+other code in the kernel that gives up if audit_log_start() fails.
 
-Well, let's improve that comment please.
+> Meanwhile audit_receive_msg() is off living in a happy land where
+> nothing ever goes wrong.
 
-> >> + * remembered but fail to create tmem_pools. When a backend registers with
-> >> + * frontswap the previous calls to init are executed to create tmem_pools
-> >> + * and set the respective poolids.
-> >
-> > Again, seems really hacky.  Why can't we just change callers so they
-> > call things in the correct order?
-> >
-> 
-> I don't think so, because it asynchronous.
-> 
-> The original idea was to make backends like zcache/tmem modularization.
-> So that it's more convenient and flexible to use and testing.
-> 
-> But currently callers like swapon only invoke frontswap_init() once,
-> it fail if backend not registered.
-> We have no way to notify swap to call frontswap_init() again when
-> backend registered in some random time
->  in future.
+Right, this reinforced my perceptions that a audit_log_start() failure
+wasn't meaningful to propagate to callers of
+audit_log_config_change().
 
-We could add such a way?
+>
+>>       audit_log_format(ab, "%s=%d old=%d auid=%u ses=%u", function_name, new,
+>>                        old, from_kuid(&init_user_ns, loginuid), sessionid);
+>>       if (sid) {
+>> @@ -619,6 +621,8 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
+>>       }
+>>
+>>       *ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
+>> +     if (unlikely(!*ab))
+>> +             return rc;
+>
+> Also looks fishy.
 
+Without any callers checking the return value, it seemed useless to
+propagate here too.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
