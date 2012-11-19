@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab2KSQCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 11:02:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46033 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab2KSQCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 11:02:01 -0500
-Message-ID: <50AA57F3.6090707@gmail.com>
-Date: Mon, 19 Nov 2012 17:01:55 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	id S1753743Ab2KSQDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:03:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752845Ab2KSQDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 11:03:19 -0500
+Message-ID: <50AA582E.30602@redhat.com>
+Date: Mon, 19 Nov 2012 11:02:54 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control
- provider for DT
-References: <1353014906-31566-6-git-send-email-andrew@lunn.ch> <1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com> <1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com> <20121117082602.GF24569@lunn.ch> <50A75BB4.4070003@free-electrons.com> <20121117135435.GA13479@lunn.ch> <20121119164611.2e754b64@skate>
-In-Reply-To: <20121119164611.2e754b64@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 17/19, v2] mm/migrate: Introduce migrate_misplaced_page()
+References: <1353083121-4560-1-git-send-email-mingo@kernel.org> <1353083121-4560-18-git-send-email-mingo@kernel.org> <20121119022558.GA3186@gmail.com>
+In-Reply-To: <20121119022558.GA3186@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 04:46 PM, Thomas Petazzoni wrote:
-> Dear Andrew Lunn,
+On 11/18/2012 09:25 PM, Ingo Molnar wrote:
 >
-> On Sat, 17 Nov 2012 14:54:35 +0100, Andrew Lunn wrote:
->>>> What is the ddr clock for? Does bad things happen if you turn it off?
->>>> Kirkwood has a similar clock, dunit, which i decided not to export,
->>>> since when you turn it off, the whole SoC locks up.
->>>
->>> Well of course if you code run in DDR then it could be a problem. But
->>> I think it could be useful to turn it off when going to suspend, it
->>> the DDR can do self-refresh. In this case it should be possible to run
->>> the code from SRAM or L2 Cache.
+> * Ingo Molnar <mingo@kernel.org> wrote:
+>
+>> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 >>
->> O.K. Just watch out for the lateinit call in the clock framework.
+>> Add migrate_misplaced_page() which deals with migrating pages from
+>> faults.
+>>
+>> This includes adding a new MIGRATE_FAULT migration mode to
+>> deal with the extra page reference required due to having to look up
+>> the page.
+> [...]
 >
-> I don't think there is a problem with the dramclk and the lateinit call
-> of the clock framework. The dramclk is a fixed factor clock, and the
-> fixed factor clock driver does not implement the ->disable() operation.
-> And therefore, the clk_disable_unused() code executed as the lateinit
-> call will not be able to disable it:
+>> --- a/include/linux/migrate_mode.h
+>> +++ b/include/linux/migrate_mode.h
+>> @@ -6,11 +6,14 @@
+>>    *	on most operations but not ->writepage as the potential stall time
+>>    *	is too significant
+>>    * MIGRATE_SYNC will block when migrating pages
+>> + * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
+>> + *	this path has an extra reference count
+>>    */
 >
-> 	if (__clk_is_enabled(clk)&&  clk->ops->disable)
-> 		clk->ops->disable(clk->hw);
+> Note, this is still the older, open-coded version.
 >
-> So I think we're quite safe with fixed rate clocks and fixed factor
-> clocks in that no-one can disable them :-)
+> The newer replacement version created from Mel's patch which
+> reuses migrate_pages() and is nicer on out-of-node-memory
+> conditions and is cleaner all around can be found below.
+>
+> I tested it today and it appears to work fine. I noticed no
+> performance improvement or performance drop from it - if it
+> holds up in testing it will be part of the -v17 release of
+> numa/core.
 
-Thomas,
+Excellent. That gets rid of the last issue with numa/base :)
 
-I guess Andrew was referring to the clock gating control bit for ddr on
-Armada 370 not the fixed factor clock. If there is a clk_gate
-installed, it will be disabled if not taken by any driver or init code.
-You disable either the ddr controller clock or the external ddr clock
-or both, but all will lead to a system lock up.
 
-If unsure, you should remove bit 28 from clk-gating-ctrl.c and it's
-devicetree documentation for Armada 370. Well get all the gates
-straight as soon as we have more support for e.g. PMU, GEPHY, aso.
-
-Sebastian
+-- 
+All rights reversed
