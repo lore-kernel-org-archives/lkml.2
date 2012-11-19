@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab2KSP7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 10:59:39 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:14025 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab2KSP7i (ORCPT
+	id S1753681Ab2KSQAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 11:00:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:55848 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab2KSQAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 10:59:38 -0500
-Message-ID: <1353340280.10939.42.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
-        imammedo@redhat.com, prarit@redhat.com
-Date: Mon, 19 Nov 2012 08:51:20 -0700
-In-Reply-To: <1353315374.3129.3.camel@joe-AO722>
-References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com>
-	 <1352214130-12055-2-git-send-email-toshi.kani@hp.com>
-	 <1353315374.3129.3.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 11:00:24 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] net/macb: move to circ_buf macros and fix initial condition
+Date: Mon, 19 Nov 2012 17:00:21 +0100
+Message-ID: <1353340821-12658-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353338244-11506-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1353338244-11506-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
-> On Tue, 2012-11-06 at 08:02 -0700, Toshi Kani wrote:
-> > This patch introduces acpi_pr_<level>(), where <level> is a kernel
-> > message level such as err/warn/info, to support improved logging
-> > messages for ACPI, esp. for hotplug operations.
-> []
-> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> []
-> > @@ -56,6 +56,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-> >  
-> >  acpi_status
-> >  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
-> > +
-> > +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
-> 
-> This should be declared with __printf(3, 4)
+Move to circular buffers management macro and correct an error
+with circular buffer initial condition.
 
-Hi Joe,
+Without this patch, the macb_tx_ring_avail() function was
+not reporting the proper ring availability at startup:
+macb macb: eth0: BUG! Tx Ring full when queue awake!
+macb macb: eth0: tx_head = 0, tx_tail = 0
+And hanginig forever...
 
-Yes, I will add __printf(3,4).  Thanks for pointing this out.
+I remove the macb_tx_ring_avail() function and use the
+proven macros from circ_buf.h. CIRC_CNT() is used in the
+"consumer" part of the driver: macb_tx_interrupt() to match
+advice from Documentation/circular-buffers.txt.
 
-> is acpi_bus.h really the right file for these prototypes?
+Reported-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+v2: - added tags from Jean-Christophe PLAGNIOL-VILLARD
 
-This interface is limited for ACPI, so it should be declared in a header
-file under include/acpi.  Among the files in this directory, acpi_bus.h
-seems to be a good fit as it declares the interfaces provided by ACPI
-core.
+ drivers/net/ethernet/cadence/macb.c | 17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
-Thanks,
--Toshi  
-
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index edb2aba..27991dd 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -14,6 +14,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/kernel.h>
+ #include <linux/types.h>
++#include <linux/circ_buf.h>
+ #include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/gpio.h>
+@@ -38,8 +39,8 @@
+ #define TX_RING_SIZE		128 /* must be power of 2 */
+ #define TX_RING_BYTES		(sizeof(struct macb_dma_desc) * TX_RING_SIZE)
+ 
+-/* minimum number of free TX descriptors before waking up TX process */
+-#define MACB_TX_WAKEUP_THRESH	(TX_RING_SIZE / 4)
++/* level of occupied TX descriptors under which we wake up TX process */
++#define MACB_TX_WAKEUP_THRESH	(3 * TX_RING_SIZE / 4)
+ 
+ #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
+ 				 | MACB_BIT(ISR_ROVR))
+@@ -60,11 +61,6 @@ static unsigned int macb_tx_ring_wrap(unsigned int index)
+ 	return index & (TX_RING_SIZE - 1);
+ }
+ 
+-static unsigned int macb_tx_ring_avail(struct macb *bp)
+-{
+-	return (bp->tx_tail - bp->tx_head) & (TX_RING_SIZE - 1);
+-}
+-
+ static struct macb_dma_desc *macb_tx_desc(struct macb *bp, unsigned int index)
+ {
+ 	return &bp->tx_ring[macb_tx_ring_wrap(index)];
+@@ -524,7 +520,8 @@ static void macb_tx_interrupt(struct macb *bp)
+ 
+ 	bp->tx_tail = tail;
+ 	if (netif_queue_stopped(bp->dev)
+-			&& macb_tx_ring_avail(bp) > MACB_TX_WAKEUP_THRESH)
++			&& CIRC_CNT(bp->tx_head, bp->tx_tail,
++				    TX_RING_SIZE) <= MACB_TX_WAKEUP_THRESH)
+ 		netif_wake_queue(bp->dev);
+ }
+ 
+@@ -818,7 +815,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	spin_lock_irqsave(&bp->lock, flags);
+ 
+ 	/* This is a hard error, log it. */
+-	if (macb_tx_ring_avail(bp) < 1) {
++	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1) {
+ 		netif_stop_queue(dev);
+ 		spin_unlock_irqrestore(&bp->lock, flags);
+ 		netdev_err(bp->dev, "BUG! Tx Ring full when queue awake!\n");
+@@ -855,7 +852,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(TSTART));
+ 
+-	if (macb_tx_ring_avail(bp) < 1)
++	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1)
+ 		netif_stop_queue(dev);
+ 
+ 	spin_unlock_irqrestore(&bp->lock, flags);
+-- 
+1.8.0
 
