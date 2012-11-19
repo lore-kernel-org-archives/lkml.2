@@ -1,181 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab2KSGzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 01:55:17 -0500
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:56922 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751462Ab2KSGzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 01:55:16 -0500
-Message-ID: <50A9D816.7010208@marvell.com>
-Date: Mon, 19 Nov 2012 14:56:22 +0800
-From: Qing Xu <qingx@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752418Ab2KSG6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 01:58:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252Ab2KSG6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 01:58:11 -0500
+Date: Mon, 19 Nov 2012 12:27:53 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Kees Cook <keescook@chromium.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+In-Reply-To: <CAGXu5jJ4ZuviFMQcFocLWfcMreZSt4kCHFNm-PNW+yuy+v+FiQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1211191158550.5042@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk> <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
+ <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz> <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com> <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
+ <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com> <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz> <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com> <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz>
+ <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com> <alpine.LFD.2.02.1211182211350.5012@wniryva.cad.erqung.pbz> <CAGXu5jJ4ZuviFMQcFocLWfcMreZSt4kCHFNm-PNW+yuy+v+FiQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        Chao Xie <cxie4@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 4/7] mfd: max8925: support dt for power supply
-References: <1352187764-9901-1-git-send-email-qingx@marvell.com> <20121119002447.GH29066@lizard.sbx05977.paloaca.wayport.net>
-In-Reply-To: <20121119002447.GH29066@lizard.sbx05977.paloaca.wayport.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 19 Nov 2012 06:55:07.0768 (UTC) FILETIME=[CF988780:01CDC622]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 08:24 AM, Anton Vorontsov wrote:
-> On Tue, Nov 06, 2012 at 03:42:44PM +0800, Qing Xu wrote:
->> From: Qing Xu <qingx@marvell.com>
->>
->> Signed-off-by: Qing Xu <qingx@marvell.com>
->> ---
-> W/ this patch I'm getting this warning:
->
->    CC      drivers/power/max8925_power.o
->    drivers/power/max8925_power.c: In function ‘max8925_power_probe’:
->    drivers/power/max8925_power.c:479:3: warning: statement with no effect
->    [-Wunused-value]
->
->>   drivers/power/max8925_power.c |   57 ++++++++++++++++++++++++++++++++++++----
->>   1 files changed, 51 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
->> index daa333b..dd2ac2d 100644
->> --- a/drivers/power/max8925_power.c
->> +++ b/drivers/power/max8925_power.c
->> @@ -426,14 +426,58 @@ static __devexit int max8925_deinit_charger(struct max8925_power_info *info)
->>   	return 0;
->>   }
->>   
->> +#ifdef CONFIG_OF
->> +static int max8925_power_dt_init(struct platform_device *pdev,
->> +			      struct max8925_power_pdata *pdata)
->> +{
->> +	struct device_node *nproot = pdev->dev.parent->of_node, *np;
->> +	int batt_detect, topoff_threshold, fast_charge,
->> +		no_temp_support, no_insert_detect;
-> One variable declaration per line please.
->
->> +
->> +	if (!nproot)
->> +		return -ENODEV;
-> Please add an empty line here.
->
->> +	np = of_find_node_by_name(nproot, "charger");
->> +	if (!np) {
->> +		dev_err(&pdev->dev, "failed to find charger node\n");
->> +		return -ENODEV;
->> +	}
-> ditto.
->
->> +	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
->> +	of_property_read_u32(np, "batt-detect", &batt_detect);
->> +	of_property_read_u32(np, "fast-charge", &fast_charge);
->> +	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
->> +	of_property_read_u32(np, "no-temp-support", &no_temp_support);
->> +
->> +	pdata->batt_detect = batt_detect;
->> +	pdata->fast_charge = fast_charge;
->> +	pdata->topoff_threshold = topoff_threshold;
->> +	pdata->no_insert_detect = no_insert_detect;
->> +	pdata->no_temp_support = no_temp_support;
-> ditto
->
->> +	pr_err("batt_detect%d, topoff_threshold%d, fast_charge%d,no_temp_support%d, no_insert_detect%d\n",
->> +		batt_detect, topoff_threshold, fast_charge,
->> +		no_temp_support, no_insert_detect);
-> pr_err, are you sure? :)
->
->> +	return 0;
->> +}
->> +#else
->> +#define max8925_power_dt_init(x, y)	(-1)
-> You should make it static inline function to get rid of the warning above.
->
->> +#endif
->> +
->> +static char *power_supplicants[] = {
->> +	"max8925-battery",
->> +};
->> +
->>   static __devinit int max8925_power_probe(struct platform_device *pdev)
->>   {
->>   	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
->> -	struct max8925_power_pdata *pdata = NULL;
->> +	struct max8925_power_pdata *pdata = pdev->dev.platform_data;
->>   	struct max8925_power_info *info;
->>   	int ret;
->>   
->> -	pdata = pdev->dev.platform_data;
->> +	if (pdev->dev.parent->of_node && !pdata) {
->> +		pdata = devm_kzalloc(&pdev->dev,
->> +				     sizeof(struct max8925_power_pdata),
->> +				     GFP_KERNEL);
->>
-> Please move this logic into max8925_power_dt_init().
-> So it will look like
->
-> 	if (!pdata)
-> 		pdata = max8925_power_dt_init(pdev);
-> 	if (!pdata) {
-> 		dev_err(...);
-> 		return ...;
-> 	}
->
->> +		max8925_power_dt_init(pdev, pdata);
->> +	}
->>   	if (!pdata) {
->>   		dev_err(&pdev->dev, "platform data isn't assigned to "
->>   			"power supply\n");
->> @@ -453,8 +497,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
->>   	info->ac.properties = max8925_ac_props;
->>   	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
->>   	info->ac.get_property = max8925_ac_get_prop;
->> -	info->ac.supplied_to = pdata->supplied_to;
->> -	info->ac.num_supplicants = pdata->num_supplicants;
->> +	info->ac.supplied_to = power_supplicants;
->> +	info->ac.num_supplicants = ARRAY_SIZE(power_supplicants);
->>   	ret = power_supply_register(&pdev->dev, &info->ac);
->>   	if (ret)
->>   		goto out;
->> @@ -465,8 +509,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
->>   	info->usb.properties = max8925_usb_props;
->>   	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
->>   	info->usb.get_property = max8925_usb_get_prop;
->> -	info->usb.supplied_to = pdata->supplied_to;
->> -	info->usb.num_supplicants = pdata->num_supplicants;
->> +	info->usb.supplied_to = power_supplicants;
->> +	info->usb.num_supplicants = ARRAY_SIZE(power_supplicants);
->>   
->>   	ret = power_supply_register(&pdev->dev, &info->usb);
->>   	if (ret)
->> @@ -491,6 +535,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
->>   	info->no_insert_detect = pdata->no_insert_detect;
->>   
->>   	max8925_init_charger(chip, info);
->> +
-> This change is unrelated.
->
->>   	return 0;
->>   out_battery:
->>   	power_supply_unregister(&info->battery);
->> -- 
->> 1.7.0.4
-> Thanks,
-> Anton.
-Anton, thanks for your very careful review!
-I updated in patch v2, please help to review it again.
++-- On Sun, 18 Nov 2012, Kees Cook wrote --+
+| This is the second problem. I view this as less critical because it's only 
+| 64 instead of 4, but it certainly should be solved as well.
 
+  I don't mean to be rude, but the patch I had sent solves both of these 
+problems with much less performance hit.
 
-Thanks,
-Qing
+Please see -> https://lkml.org/lkml/2012/10/26/442
 
+Worst case: instead of 2^6(64) recursions, it would make only 4 calls to 
+request_module() function. find_module() does not resolve module aliases, it 
+could be removed from the above patch.
+
+Please pardon me if I came across rude or offensive, I'm only trying to make a 
+case.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
