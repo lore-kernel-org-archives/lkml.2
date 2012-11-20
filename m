@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2KTHyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:54:43 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:18401 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab2KTHyk (ORCPT
+	id S1751895Ab2KTHzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:55:51 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:60946 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2KTHzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:54:40 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-d4-50ab373e6894
-Message-id: <50AB3732.5050507@samsung.com>
-Date: Tue, 20 Nov 2012 16:54:26 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, patches@linaro.org
-Subject: Re: [PATCH 3/7] extcon: Fix return value in extcon-class.c
-References: <1353388963-23761-1-git-send-email-sachin.kamat@linaro.org>
- <1353388963-23761-4-git-send-email-sachin.kamat@linaro.org>
-In-reply-to: <1353388963-23761-4-git-send-email-sachin.kamat@linaro.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t8zXV0789UBBl96pS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGygvH2QsesFSsPjGRtYHxL3MXIyeHhICJRHdjAyOELSZx4d56
-	ti5GLg4hgWWMEiuv/4cren3mNytEYhGjxNcvZ5khnC4mia33P4G18wpoSVw6vYkdxGYRUJU4
-	fe4tE4jNBhTf/+IG0FgODlGBCIlf/RwQ5YISPybfYwGxRYBKXnYvZwIpYRbwk5i4NwgkLCzg
-	LNHx+gXU3lZGie+75rKBJDgFPCTuLpsLdhyzgI7E/tZpbBC2vMTmNW+ZIU4QkPg2+RALyEwJ
-	AVmJTQfATpYQaGeXmD75EdTHkhIHV9xgmcAoNgvJSbOQjJ2FZOwCRuZVjKKpBckFxUnpuUZ6
-	xYm5xaV56XrJ+bmbGCExIb2DcVWDxSFGAQ5GJR7ehwmrAoRYE8uKK3MPMUpwMCuJ8DaVA4V4
-	UxIrq1KL8uOLSnNSiw8x+gBdO5FZSjQ5HxiveSXxhsYGxoaGloZmppamBjiElcR5mz1SAoQE
-	0hNLUrNTUwtSi2DGMXFwSjUwBu2fMa2lz5HFSjDq7ydz0RVfDPaWV052yyy8/f+BBnPlOXn1
-	BflLJuk65JmeZFi7Q+NHu0LMipU7a38yT2v75fJGYHLBCW/GpSYbpBnStrhv9z8+7XGoQwXT
-	EgsDBkU5iSgmBYct763XJkxXL9sdJVvue22j/3qe2klFonxXtq8x2GG/++MKJZbijERDLeai
-	4kQAuzDxM7YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jAV0789UBBleniFpc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjJUXjrMXPGCpWH1iImsD
-	41/mLkZODgkBE4nXZ36zQthiEhfurWfrYuTiEBJYxCjx9ctZZgini0li6/1PjCBVvAJaEpdO
-	b2IHsVkEVCVOn3vLBGKzAcX3v7gB1M3BISoQIfGrnwOiXFDix+R7LCC2CFDJy+7lTCAlzAJ+
-	EhP3BoGEhQWcJTpev2CFWNXKKPF911w2kASngIfE3WVzwQ5lFtCR2N86jQ3ClpfYvOYt8wRG
-	gVlIVsxCUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMER90x6B+OqBotDjAIc
-	jEo8vA8TVgUIsSaWFVfmHmKU4GBWEuFtKgcK8aYkVlalFuXHF5XmpBYfYvQBBsBEZinR5Hxg
-	MsgriTc0NjEzsjQyMzYxNzbGIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgbHtrVDFgf/2
-	lQ/6fT1VruxSz7b240h9emqN9U9Bg8lGb1J7NLNtj3M2SARNn//i1B3+xZNLIyQX/JCVKvg2
-	15/Z+q76jfOaB9n+fBRQC3XUk+raNC32S0YU66rOEt9LnguTZ//58z34AoMmm31I/pKAZexP
-	3uw4e1y374XigSnT7m/c+rpdSEGJpTgj0VCLuag4EQCkiKYO5QIAAA==
-X-CFilter-Loop: Reflected
+	Tue, 20 Nov 2012 02:55:50 -0500
+Date: Tue, 20 Nov 2012 08:55:47 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8973: add regulator driver support
+In-Reply-To: <20121120004356.GC4483@opensource.wolfsonmicro.com>
+Message-ID: <Pine.LNX.4.64.1211200840590.21420@axis700.grange>
+References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
+ <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
+ <20121120004356.GC4483@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:0D69ejh9X+bc2dH2y4WNDiPDWOysaMrgIt1YAKjvd4O
+ GeP0ZJnkxddolO8qN/Z+JJ5PGJj8Df1enA1Y27cs7+scCDvk5e
+ 0ivkNS5w50DafKfRBqGUFhpiqLNxAwutuwziJmt1RpbQ+xExli
+ 0TSxLao5Tu1W3YD+60lM5QbtdILsGFeJd5aVkHO9WCf7Wdzq1p
+ fLhhMvLAUtu2jgTMI2aFoyZVCg5jn04AHP9R9OYhYyClvlbQ8F
+ ES48Go1ieqJ6u2dgb7xxDUg5uvgPeYjwREfkg0TjfDDes8RAu4
+ 7I5rrUfqhYtesZgaGBCylTOBO9O7W93PKAitXOyUCjho72MsNx
+ qd3KAvSCMHlOjmefkKf5c5BSLLLYjCHfRH+lTxTIhh9Fu0ZLUe
+ qeCVvAiu1qlQA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 02:22 PM, Sachin Kamat wrote:
-> Return the value obtained from the function extcon_register_interest
-> instead of -EINVAL.
+On Tue, 20 Nov 2012, Mark Brown wrote:
+
+> On Mon, Nov 19, 2012 at 11:52:42AM +0100, Guennadi Liakhovetski wrote:
 > 
-> Silences the following warning:
-> drivers/extcon/extcon-class.c:475 extcon_register_interest() info:
-> why not propagate 'obj->cable_index' from extcon_find_cable_index()
-> instead of -22?
+> > Thanks for submitting this driver! The notion of DVS regulators was new to 
+> > me, so, I checked http://www.ti.com/lit/an/sbva020/sbva020.pdf for a short 
+> > description. After that I had a look at a couple of existing DVS regulator 
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
+> Do you just mean regulators that have a quick voltage change ability/
 
-I consolidate following two patches because of similar patch.
+Yes, regulators with an input pin, that can be used to switch output 
+voltage on one of outputs.
 
-extcon: Fix return value in extcon-class.c
-extcon: Redo: Fix return value in extcon_register_interest()
+> > drivers in the tree. Well, I came to two conclusions so far: (1) The 
+> > current regulator API is not very well suitable for such regulators. I 
+> > would imagine, one would need two methods: for setting the "normal" and 
+> > the DVS voltage. Instead of this drivers are trying to be smart at 
+> > guessing, which voltage the user is trying to set now... (2) Drivers do 
+> > this in different ways and at least out of the 2 drivers I looked at both 
+> > have bugs and different ones at that. I'll send a separate email, 
+> > describing what I found suspicious in them.
+> 
+> The thing I'd like to see factored out here is the LRU mechanism,
+> otherwise I think the situation is pretty good.  Some of the older
+> devices should use a different scheme to modern ones as the hardware
+> they have to interoperate is different.
 
-Thank you,
-Chanwoo Choi
+So, do you consider the LRU algorithm to be the preferred way to configure 
+such regulators? I realise that in practice it will work well in most 
+cases, usually users do only want to preconfigure such a regulator to 2 
+fixed voltages and switch between them at runtime, right? OTOH, do you 
+think it is too unlikely, that someone will want to switch, say, between 3 
+voltages: X-Y-Z-X-Y-Z-X...? In this case the LRU will just lead to 
+constantly reprogramming the regulator. Whereas if the user had a way to 
+say "configure context A to X," "B to Y," and then only reprogram B 
+between voltages Y and Z, we'd save 1/3 of re-configuration accesses? 
+Maybe even in some such case, quickly switching to voltage X is more 
+important than to voltage Y or Z.
+
+> > Of course, all the above was just my DVS-newbie impression, which can very 
+> > well be absolutely wrong.
+> > 
+> > > 
+> > > Add regulator driver for this device.
+> 
+> *ALWAYS* delete irrelevant text when replying.
+
+Not sure what you mean, sorry. If you mean all the text, that followed the 
+above line, then it wasn't all irrelevant, there were more comments down 
+there. OTOH, if you just meant, that I could have deleted even more text, 
+than what I've done, then right, sorry, there's always a balance between 
+deleting too little and too much, and the decision is subjective. I 
+usually tend to keep somewhat more, tnan most would consider required, I 
+think, it is easier to hit "Page Down" a couple more times, than to have 
+to guess what the missing context was. But I'll try to reduce unneeded 
+context next time.
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
