@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2KTABg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:01:36 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57102 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab2KTABf (ORCPT
+	id S1753747Ab2KTAMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:12:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52960 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab2KTAMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:01:35 -0500
-X-AuditID: 9c930179-b7c9dae000000e53-86-50aac85d4ca0
-Date: Tue, 20 Nov 2012 09:01:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
- approaches low water mark
-Message-ID: <20121120000137.GC447@bbox>
-References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 19 Nov 2012 19:12:51 -0500
+Date: Mon, 19 Nov 2012 16:12:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: kerolasa@gmail.com
+Cc: Sami Kerola <kerolasa@iki.fi>, Al Viro <viro@zeniv.linux.org.uk>,
+        Doug Ledford <dledford@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Karel Zak <kzak@redhat.com>
+Subject: Re: ipc: object information data in proc and sysfs
+Message-Id: <20121119161250.ae0b25ff.akpm@linux-foundation.org>
+In-Reply-To: <CAG27Bk1q5t590bvGg7Ka+2M-yWEMk_58sZsOxDKx-1XNn8mHww@mail.gmail.com>
+References: <CAG27Bk1q5t590bvGg7Ka+2M-yWEMk_58sZsOxDKx-1XNn8mHww@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+On Sun, 18 Nov 2012 12:31:08 +0000
+Sami Kerola <kerolasa@iki.fi> wrote:
 
-On Mon, Nov 12, 2012 at 09:59:42AM +0100, Marek Szyprowski wrote:
-> It has been observed that system tends to keep a lot of CMA free pages
-> even in very high memory pressure use cases. The CMA fallback for movable
-
-CMA free pages are just fallback for movable pages so if user requires many
-user pages, it ends up consuming cma free pages after out of movable pages.
-What do you mean that system tend to keep free pages even in very
-high memory pressure?
-
-> pages is used very rarely, only when system is completely pruned from
-> MOVABLE pages, what usually means that the out-of-memory even will be
-> triggered very soon. To avoid such situation and make better use of CMA
-
-Why does OOM is triggered very soon if movable pages are burned out while
-there are many cma pages?
-
-It seems I can't understand your point quitely.
-Please make your problem clear for silly me to understand clearly.
-
-Thanks.
-
-> pages, a heuristics is introduced which turns on CMA fallback for movable
-> pages when the real number of free pages (excluding CMA free pages)
-> approaches low water mark.
+> Hello,
 > 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  mm/page_alloc.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
+> While back I started to look how to get util-linux ipcs(1) tool to
+> read values from /proc instead of using IPC multiplex functions.  Most
+> of the data ipcs(1) is interested is available in /proc, but there are
+> few exceptions, such as
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index fcb9719..90b51f3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1076,6 +1076,15 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
->  {
->  	struct page *page;
->  
-> +#ifdef CONFIG_CMA
-> +	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
-> +	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
-> +
-> +	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
-> +	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
-> +		migratetype = MIGRATE_CMA;
-> +#endif /* CONFIG_CMA */
-> +
->  retry_reserve:
->  	page = __rmqueue_smallest(zone, order, migratetype);
->  
-> -- 
-> 1.7.9.5
+> msgctl q_qbytes
+> semctl getval
+> semctl sempid
+> semctl semncnt
+> semctl semzcnt
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> The simplest thing to do would be to add values in /proc/sysvipc/msg
+> and /proc/sysvipc/sem as additional fields, but that does not seem
+> right, as it would result to ABI change.
+> 
+> More effort requiring change would be to add information in new sysfs
+> paths.  The IPC facilities are using id's which could be used as
+> placeholder directories for the data needed.  Something like
+> 
+> /proc/sys/kernel/ipc/{m,s,q}/id/info
+>                  ^^^^^^^^^^^^^^^^^^^
+> 
+> That sort of structure would allow future extensions IPC data without
+> much pain.  I also assume that subdirectories could allow a little
+> more precise controls, and perhaps some selected values might be made
+> writable in future.  If nothing else at least expressing in sensible
+> format semaphore lock wait queues could make debugging tools, such as
+> lslocks(8), more useful.
+> 
+> I could give a try this change, but not without hearing the concept
+> makes sense and could be considered part of upstream kernel (assuming
+> my coding meets the usual quality criteria).
+> 
+> Any thoughts, comments, recommendations?
 
--- 
-Kind regards,
-Minchan Kim
+Where's the benefit in switching ipcs over to using /proc?
+
+procfs reads are probably slower than the syscalls?
