@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2KTW2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:28:12 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:39590 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab2KTW2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:28:10 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] i2c: s3c2410: Get the i2c bus number from alias id
-Date: Tue, 20 Nov 2012 14:27:04 -0800
-Message-Id: <1353450428-2615-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1353450428-2615-1-git-send-email-dianders@chromium.org>
-References: <1353450428-2615-1-git-send-email-dianders@chromium.org>
+	id S1753244Ab2KTW2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:28:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab2KTW2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 17:28:52 -0500
+Date: Tue, 20 Nov 2012 20:18:53 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
+Message-ID: <20121120221853.GA31427@amt.cnet>
+References: <5097AC70.1080904@linux.vnet.ibm.com>
+ <5097ACA0.7080408@linux.vnet.ibm.com>
+ <20121112231223.GC5798@amt.cnet>
+ <50A20750.8050808@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A20750.8050808@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Padmavathi Venna <padma.v@samsung.com>
+On Tue, Nov 13, 2012 at 04:39:44PM +0800, Xiao Guangrong wrote:
+> On 11/13/2012 07:12 AM, Marcelo Tosatti wrote:
+> > On Mon, Nov 05, 2012 at 08:10:08PM +0800, Xiao Guangrong wrote:
+> >> In order to detecting spte remapping, we can simply check whether the
+> >> spte has already been pointing to the pfn even if the spte is not the
+> >> last spte for middle spte is pointing to the kernel pfn which can not
+> >> be mapped to userspace
+> >>
+> >> Also, update slot and stat.lpages iff the spte is not remapped
+> >>
+> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >> ---
+> >>  arch/x86/kvm/mmu.c |   40 +++++++++++++---------------------------
+> >>  1 files changed, 13 insertions(+), 27 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >> index 692ebb1..4ea731e 100644
+> >> --- a/arch/x86/kvm/mmu.c
+> >> +++ b/arch/x86/kvm/mmu.c
+> >> @@ -2420,8 +2420,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+> >>  			 pfn_t pfn, bool speculative,
+> >>  			 bool host_writable)
+> >>  {
+> >> -	int was_rmapped = 0;
+> >> -	int rmap_count;
+> >> +	bool was_rmapped = false;
+> >>
+> >>  	pgprintk("%s: spte %llx access %x write_fault %d"
+> >>  		 " user_fault %d gfn %llx\n",
+> >> @@ -2429,25 +2428,13 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+> >>  		 write_fault, user_fault, gfn);
+> >>
+> >>  	if (is_rmap_spte(*sptep)) {
+> >> -		/*
+> >> -		 * If we overwrite a PTE page pointer with a 2MB PMD, unlink
+> >> -		 * the parent of the now unreachable PTE.
+> >> -		 */
+> >> -		if (level > PT_PAGE_TABLE_LEVEL &&
+> >> -		    !is_large_pte(*sptep)) {
+> >> -			struct kvm_mmu_page *child;
+> >> -			u64 pte = *sptep;
+> >> +		if (pfn != spte_to_pfn(*sptep)) {
+> >> +			struct kvm_mmu_page *sp = page_header(__pa(sptep));
+> >>
+> >> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
+> >> -			drop_parent_pte(child, sptep);
+> >> -			kvm_flush_remote_tlbs(vcpu->kvm);
+> > 
+> > How come its safe to drop this case?
+> 
+> We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
+> There are two cases:
+> 1) the sptep is not the last mapping.
+>    under this case, sptep must point to a shadow page table, that means
+>    spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
+>    so, 'if' condition must be satisfied, the sptep will be dropped.
+> 
+>    Actually, This is the origin case:
+>   | if (level > PT_PAGE_TABLE_LEVEL &&
+>   |	    !is_large_pte(*sptep))"
+> 
+> 2) the sptep is the last mapping.
+>    under this case, the level of spte (sp.level) must equal the 'level' which
+>    we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
+>    we drop it.
+> 
+> I think this is safe. :)
 
-Get the i2c bus number that the device is connected to using the alias
-id.  This makes debugging / grokking of kernel messages much easier.
+mmu_page_zap_pte takes care of it, OK.
 
-[dianders: slight patch cleanup from Padmavathi's original.]
-
-Signed-off-by: Padmavathi Venna <padma.v@samsung.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/i2c/busses/i2c-s3c2410.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index 3e0335f..ca43590 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -899,11 +899,19 @@ static void
- s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
- {
- 	struct s3c2410_platform_i2c *pdata = i2c->pdata;
-+	int id;
- 
- 	if (!np)
- 		return;
- 
--	pdata->bus_num = -1; /* i2c bus number is dynamically assigned */
-+	id = of_alias_get_id(np, "i2c");
-+	if (id < 0) {
-+		dev_warn(i2c->dev, "failed to get alias id:%d\n", id);
-+		pdata->bus_num = -1;
-+	} else {
-+		/* i2c bus number is statically assigned from alias */
-+		pdata->bus_num = id;
-+	}
- 	of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
- 	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
- 	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
--- 
-1.7.7.3
+What if was_rmapped=true but gfn is different? Say if the spte comes
+from an unsync shadow page, the guest modifies that shadow page (but
+does not invalidate it with invlpg), then faults. gfn can still point
+to the same gfn (but in that case, with your patch,
+page_header_update_slot is not called.
 
