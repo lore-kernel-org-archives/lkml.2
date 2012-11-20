@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab2KTSMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:12:09 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:35143 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab2KTSMH (ORCPT
+	id S1753672Ab2KTSMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:12:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46889 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab2KTSMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:12:07 -0500
-X-Authority-Analysis: v=2.0 cv=GZOVbHrL c=1 sm=0 a=QKCpt3RAcCy1PgeoOVilzg==:17 a=2oGSFm5vdZwA:10 a=wom5GMh1gUkA:10 a=pTRqrO9sSn4A:10 a=649elMfuWG0A:10 a=svWV0_fRAAAA:8 a=erfvF8y-hRwA:10 a=Ydt4blHB-P6nXVy4_0cA:9 a=CjuIK1q_8ugA:10 a=HwHvl2IHzvvasiQn5MYA:9 a=QKCpt3RAcCy1PgeoOVilzg==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 24.73.230.86
-Date: Tue, 20 Nov 2012 13:12:03 -0500
-From: Solomon Peachy <pizza@shaftnet.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
-Message-ID: <20121120181203.GA7922@shaftnet.org>
-References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
- <CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
- <20121120161011.GD18015@shaftnet.org>
- <20121120163309.GB4990@kroah.com>
+	Tue, 20 Nov 2012 13:12:31 -0500
+Date: Tue, 20 Nov 2012 10:12:28 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC 3/3] man-pages: Add man page for vmpressure_fd(2)
+In-Reply-To: <20121120062400.GA9468@lizard>
+Message-ID: <alpine.DEB.2.00.1211201004390.4200@chino.kir.corp.google.com>
+References: <20121107105348.GA25549@lizard> <20121107110152.GC30462@lizard> <20121119215211.6370ac3b.akpm@linux-foundation.org> <20121120062400.GA9468@lizard>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <20121120163309.GB4990@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 19 Nov 2012, Anton Vorontsov wrote:
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> We try to make userland freeing resources when the system becomes low on
+> memory. Once we're short on memory, sometimes it's better to discard
+> (free) data, rather than let the kernel to drain file caches or even start
+> swapping.
+> 
 
-On Tue, Nov 20, 2012 at 08:33:09AM -0800, Greg KH wrote:
-> > The corresponding .config is attached.  Note that it is for a uClinux=
-=20
-> > 3.3.0-uc0 kernel.
->=20
-> Lots of things have changed in the firmware code since 3.3.0, can you
-> retest this on the 3.7-rc6 tree?
+To add another usecase: its possible to modify our version of malloc (or 
+any malloc) so that memory that is free()'d can be released back to the 
+kernel only when necessary, i.e. when keeping the extra memory around 
+starts to have a detremental effect on the system, memcg, or cpuset.  When 
+there is an abundance of memory available such that allocations need not 
+defragment or reclaim memory to be allocated, it can improve performance 
+to keep a memory arena from which to allocate from immediately without 
+calling the kernel.
 
-Not easily; My employer is contracted to do some driver porting and=20
-we're stuck with the kernel the client provided.  However, the patch is=20
-still relevant for upstream, because the underlying problem still=20
-exists:
-=20
- * The #ifdef wraps code that pertains solely to built-in firmware, (ie=20
-   CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disabled.
- * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c=20
-   when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
+Our version of malloc frees memory back to the kernel with 
+madvise(MADV_DONTNEED) which ends up zaping the mapped ptes.  With 
+pressure events, we only need to do this when faced with memory pressure; 
+to keep our rss low, we require that thp's max_ptes_none tunable be set to 
+0; we don't want our applications to use any additional memory.  This 
+requires splitting a hugepage anytime memory is free()'d back to the 
+kernel.
 
-Perhaps the compile problem is solved in newer kernels (by always=20
-generating an empty builtin firmware list?) but the #ifdef is still=20
-incorrect.
-
-> Also, when sending patches, please cc: the proper maintainers (the
-> scripts/get_maintainers.pl tool can help you with that.)
-
-Ooops, sorry.  I'll double-check that next time.
-
- - Solomon
---=20
-Solomon Peachy        		       pizza at shaftnet dot org	=20
-Melbourne, FL                          ^^ (mail/jabber/gtalk) ^^
-Quidquid latine dictum sit, altum viditur.
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iD8DBQFQq8fzPuLgii2759ARAs1nAJ9/Ovxir0f89ANXEETM3vmhNoZ/eACdF2ue
-tnW6yUqUNONSuYfYOn5sfwc=
-=UDfB
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
+I'd like to use this as a hook into malloc() for applications that do not 
+have strict memory footprint requirements to be able to increase 
+performance by keeping around a memory arena from which to allocate.
