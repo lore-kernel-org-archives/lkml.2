@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2KTXsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:48:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33368 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab2KTXsl (ORCPT
+	id S1753819Ab2KTXvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:51:19 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:23594 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab2KTXvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:48:41 -0500
-Date: Tue, 20 Nov 2012 23:53:53 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ellyjones@chromium.org, Kay Sievers <kay@vrfy.org>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v2] devtmpfs: mount with noexec and nosuid
-Message-ID: <20121120235353.3092c8d2@pyramind.ukuu.org.uk>
-In-Reply-To: <CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
-References: <20121120204238.GA19554@www.outflux.net>
-	<20121120211312.57f1b63d@pyramind.ukuu.org.uk>
-	<CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 18:51:16 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v7 0/5] ACPI: hotplug messages improvement
+Date: Tue, 20 Nov 2012 16:42:25 -0700
+Message-Id: <1353454950-17010-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 1. Why not just have your userspace mount -o remount the file system this
-> > way already in early boot. (and if you trojanned boot that early then any
-> > supposed security gain is already lost)
-> 
-> That's certainly possible, but I am hoping to avoid adding any extra
-> boot time. The kernel is responsible for this mount, so its flags
-> should be configurable, resulting in no time penalty anywhere.
+This patchset improves logging messages for ACPI CPU, Memory, 
+Container and Dock hotplug notify handlers.  The patchset 
+introduces a set of new macro interfaces, acpi_handle_<level>(),
+and uses them to update the notify handlers.
 
-You just broke my bullshitometer
+acpi_handle_<level>() appends "ACPI" prefix and ACPI object path
+to the messages, which has similar usage model as dev_<level>().
+This improves diagnosis of hotplug operations since an error
+message in a log file identifies an object that caused an issue.
 
-It's a single syscall from your init binary, its microseconds.
+The patchset is based on the linux-next branch of linux-pm.git
+tree.
 
-> > 2. If you want to do this right then you need to work out what you are
-> > trying to prevent. Your devtmpfs can force file permissions on the
-> > underlying device nodes by having its own operation handling for chmod.
-> >
-> > At that point you can force permissions on anything that you want to
-> > avoid floating around that filesystem with other rights, while not
-> > touching it on device or directory nodes where the meaning is different.
-> >
-> > In its current form however it appears to be a kernel implementation of
-> > "mount is too hard".
-> 
-> This change also stops mmap() with PROT_EXEC which a chmod handler
-> wouldn't be able to do.
+v7:
+ - Changed acpi_handle_printk() not to call acpi_get_name() in
+   interrupt context.
 
-You don't want to stop mmap with PROT_EXEC on /dev/mem as that breaks a
-load of stuff, you want to stop people adding stuff to that file system
-and executing it.
+v6:
+ - Changed the interface name to acpi_handle_<level>(), and
+   declared them in include/linux/acpi.h.
+ - Added __printf(3,4) to acpi_handle_printk() prototype.
+ - Documented the interfaces acquire the global namespace mutex
+   and may not be called from interrupt context.
 
-Think about it more carefully - if I've got access to /dev/mem you
-already lost.
+v5:
+ - Added update for ACPI Dock hotplug error messages.
+ - Added error status / ID info to the messages where needed.
 
-The patch is as is nonsense. It's doable in all kernels (including
-existing legacy ones) as a single syscall in your init code. That's
-portable back compatible and works all over the place. Your patch
-introduces a pointless config option to make things less compatible than
-before. It's bogus.
+v4:
+ - Changed to use dev_<level>() where it is appropriate.
 
-Alan
+v3:
+ - Changed acpi_pr_debug() to NOP when !DEBUG and !DYNAMIC_DEBUG.
+   DYNAMIC_DEBUG will be supported later when necessary.
+ - Added const to a path variable in acpi_printk().
+ - Added more descriptions to the change log of patch 1/4.
 
+v2:
+ - Set buffer.pointer to NULL in acpi_printk().
+ - Added acpi_pr_debug().
 
+---
+Toshi Kani (5):
+ ACPI: Add acpi_handle_<level>() interfaces
+ ACPI: Update CPU hotplug error messages
+ ACPI: Update Memory hotplug error messages
+ ACPI: Update Container hotplug error messages
+ ACPI: Update Dock hotplug error messages
+
+---
+ drivers/acpi/acpi_memhotplug.c  | 24 ++++++++++++-----------
+ drivers/acpi/container.c        | 10 ++--------
+ drivers/acpi/dock.c             | 30 ++++++++++++++--------------
+ drivers/acpi/processor_driver.c | 39 +++++++++++++++++++++++--------------
+ drivers/acpi/utils.c            | 37 +++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h            | 43 +++++++++++++++++++++++++++++++++++++++++
