@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2KTGfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:35:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59124 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab2KTGfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:35:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
-   d="scan'208";a="251708144"
-Subject: [PATCH] DMA interrupt mask value should not be hard coded
-From: chao bi <chao.bi@intel.com>
-To: djbw@fb.com, vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, jun.d.chen@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Nov 2012 14:45:59 +0800
-Message-ID: <1353393959.4445.82.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751889Ab2KTGgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:36:06 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37347 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2KTGgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 01:36:04 -0500
+Date: Tue, 20 Nov 2012 10:35:59 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
+        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
+Message-ID: <20121120063559.GA31306@moon>
+References: <20121114151937.344922058@openvz.org>
+ <20121114152239.936025193@openvz.org>
+ <20121116155603.2118394c.akpm@linux-foundation.org>
+ <20121117071039.GA22855@moon>
+ <20121117083437.GC22855@moon>
+ <20121119164938.7f19f3d9.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119164938.7f19f3d9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 19, 2012 at 04:49:38PM -0800, Andrew Morton wrote:
+> 
+> Where *is* this pseudo-file, anyway?  The changelog doesn't tell us
+> where it lies in the filesystem.
+> 
+> I know!  I'll search the documentation!  /proc/sys/fs/epoll/..., yes?
+> 
+> btw, Documentation/sysctl/fs.txt is missing documentation for
+> max_user_instances and max_queued_events.  Perhaps you can fix that
+> when providing the documentation changes for your patch :)
 
-In intel_mid_dma.c, when setup DMA controller, its interrupt
-mask value is hard coded, it's not needed because this value
-has already been initiated and set value according to DMA
-channels which are used.
+Sure, I'll provide the docs patch on top. Thanks!
 
-cc: Chen Jun <jun.d.chen@intel.com>
-Signed-off-by: channing <chao.bi@intel.com>
----
- drivers/dma/intel_mid_dma.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 02b21d7..11a1a48 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1161,7 +1161,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
- 		if (0 != err)
- 			goto err_irq;
- 	} else {
--		dma->intr_mask = 0x03;
- 		pr_debug("MDMA:Requesting irq for DMAC2\n");
- 		err = request_irq(pdev->irq, intel_mid_dma_interrupt2,
- 			IRQF_SHARED, "INTEL_MID_DMAC2", dma);
--- 
-1.7.1
-
-
-
+	Cyrill
