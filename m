@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab2KTVKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:10:44 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38128 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab2KTVKl convert rfc822-to-8bit (ORCPT
+	id S1753776Ab2KTVLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:11:18 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33204 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab2KTVLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:10:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121113142641.16744.72039.stgit@warthog.procyon.org.uk>
-References: <20121113142641.16744.72039.stgit@warthog.procyon.org.uk>
-Date: Tue, 20 Nov 2012 16:10:40 -0500
-Message-ID: <CA+5PVA6_qmbXpN5gsTFuo=nYMA+UoSi76+apW4EyXY1Wg83Myg@mail.gmail.com>
-Subject: Re: [PATCH] UAPI: Strip the _UAPI prefix from header guards during
- header installation
-From: Josh Boyer <jwboyer@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
+	Tue, 20 Nov 2012 16:11:17 -0500
+Date: Tue, 20 Nov 2012 21:16:34 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by
+ tag
+Message-ID: <20121120211634.11513416@pyramind.ukuu.org.uk>
+In-Reply-To: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
+References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 9:26 AM, David Howells <dhowells@redhat.com> wrote:
-> Strip the _UAPI prefix from header guards during header installation so that
-> any userspace dependencies aren't affected.  glibc, for example, checks for
-> linux/types.h, linux/kernel.h, linux/compiler.h and linux/list.h by their
-> guards - though the last two aren't actually exported.
->
->         libtool: compile:  gcc -std=gnu99 -DHAVE_CONFIG_H -I. -Wall -Werror -Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fno-delete-null-pointer-checks -fstack-protector -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -c child.c  -fPIC -DPIC -o .libs/child.o
->         In file included from cli.c:20:0:
->         common.h:152:8: error: redefinition of 'struct sysinfo'
->         In file included from /usr/include/linux/kernel.h:4:0,
->                          from /usr/include/linux/sysctl.h:25,
->                          from /usr/include/sys/sysctl.h:43,
->                          from common.h:50,
->                          from cli.c:20:
->         /usr/include/linux/sysinfo.h:7:8: note: originally defined here
->
-> Reported-by: Tomasz Torcz <tomek@pipebreaker.pl>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Acked-by: Josh Boyer <jwboyer@redhat.com>
+On Tue, 20 Nov 2012 12:59:40 -0800
+"Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
 
-It would be good to get this patch into 3.7 so that the installed
-headers aren't broken in subtle ways.
+> So it turns out everyone and their mother's attorneys love the
+> Signed-off-by tag and its definition as explained on the Linux kernel
+> under the Developer's Certificate of Origin. Its to the extent other
+> projects have picked it up and started documenting their own
+> documentation for submitting patches to embrace the same definition,
+> some without knowing what they were doing, some knowingly and
+> rightfully doing so. I think it'd be good to see more embracement of
+> the tag but to help do this it occurs to me perhaps it'd be good to
+> treat  the 'Developer's Certificate of Origin' as a standalone
+> document that we can reference independently, and then have the kernel
+> itself refer to it. That is, provide a unified easy way to refer to
+> the practice for requiring the SOB tag and what it means.
+> 
+> Thoughts?
 
-I've changed Linus' email address in the CC field because I'm fairly
-sure he doesn't look at the osdl.org one any longer.
+Nobody is stopping you putting a copy on a web site.
 
-josh
-
-> ---
->
->  0 files changed
->
-> diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
-> index 239d22d..6c353ae 100644
-> --- a/scripts/headers_install.pl
-> +++ b/scripts/headers_install.pl
-> @@ -42,6 +42,9 @@ foreach my $filename (@files) {
->                 $line =~ s/(^|\s)(inline)\b/$1__$2__/g;
->                 $line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
->                 $line =~ s/(^|\s|[(])(volatile)\b(\s|[(]|$)/$1__$2__$3/g;
-> +               $line =~ s/#ifndef _UAPI/#ifndef /;
-> +               $line =~ s/#define _UAPI/#define /;
-> +               $line =~ s!#endif /[*] _UAPI!#endif /* !;
->                 printf {$out} "%s", $line;
->         }
->         close $out;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
