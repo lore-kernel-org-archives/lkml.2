@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab2KTMoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:44:16 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:58504 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab2KTMoI (ORCPT
+	id S1753458Ab2KTMo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:44:28 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:50465 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234Ab2KTMoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:44:08 -0500
+	Tue, 20 Nov 2012 07:44:22 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sage Weil <sage@inktank.com>
-Date: Tue, 20 Nov 2012 04:43:31 -0800
-Message-Id: <1353415420-5457-3-git-send-email-ebiederm@xmission.com>
+        Jan Harkes <jaharkes@cs.cmu.edu>
+Date: Tue, 20 Nov 2012 04:43:33 -0800
+Message-Id: <1353415420-5457-5-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353415420-5457-1-git-send-email-ebiederm@xmission.com>
 References: <87pq38wimv.fsf@xmission.com>
  <1353415420-5457-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX19GOUigYjQmac+Oe53uiUGCVKK4hXhchnU=
+X-XM-AID: U2FsdGVkX1+WCEpPAnaR5uXch23u14LbOZi4D4nRvgA=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -27,15 +27,16 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
 	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0401]
+	*      [score: 0.0318]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1]
+	*      [sa06 1397; Body=1 Fuz1=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 
 X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH RFC 03/12] userns: Convert ceph to use kuid/kgid where appropriate
+Subject: [PATCH RFC 05/12] userns: Convert coda's to use kuid/kgid where appropriate
 X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -44,159 +45,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Cc: Sage Weil <sage@inktank.com>
+Cc: Jan Harkes <jaharkes@cs.cmu.edu>
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/ceph/caps.c       |   16 ++++++++--------
- fs/ceph/inode.c      |   18 +++++++++---------
- fs/ceph/mds_client.c |    4 ++--
- fs/ceph/super.h      |    4 ++--
- init/Kconfig         |    1 -
- 5 files changed, 21 insertions(+), 22 deletions(-)
+ fs/coda/cache.c            |    4 ++--
+ fs/coda/coda_fs_i.h        |    2 +-
+ fs/coda/coda_linux.c       |    8 ++++----
+ fs/coda/inode.c            |    2 +-
+ fs/coda/upcall.c           |    6 +++---
+ include/linux/coda_psdev.h |    2 +-
+ init/Kconfig               |    1 -
+ 7 files changed, 12 insertions(+), 13 deletions(-)
 
-diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
-index 3251e9c..ee29cc6 100644
---- a/fs/ceph/caps.c
-+++ b/fs/ceph/caps.c
-@@ -928,7 +928,7 @@ static int send_cap_msg(struct ceph_mds_session *session,
- 			u64 size, u64 max_size,
- 			struct timespec *mtime, struct timespec *atime,
- 			u64 time_warp_seq,
--			uid_t uid, gid_t gid, umode_t mode,
-+			kuid_t uid, kgid_t gid, umode_t mode,
- 			u64 xattr_version,
- 			struct ceph_buffer *xattrs_buf,
- 			u64 follows)
-@@ -972,8 +972,8 @@ static int send_cap_msg(struct ceph_mds_session *session,
- 		ceph_encode_timespec(&fc->atime, atime);
- 	fc->time_warp_seq = cpu_to_le32(time_warp_seq);
+diff --git a/fs/coda/cache.c b/fs/coda/cache.c
+index 958ae0e..1da168c 100644
+--- a/fs/coda/cache.c
++++ b/fs/coda/cache.c
+@@ -33,7 +33,7 @@ void coda_cache_enter(struct inode *inode, int mask)
  
--	fc->uid = cpu_to_le32(uid);
--	fc->gid = cpu_to_le32(gid);
-+	fc->uid = cpu_to_le32(from_kuid(&init_user_ns, uid));
-+	fc->gid = cpu_to_le32(from_kgid(&init_user_ns, gid));
- 	fc->mode = cpu_to_le32(mode);
+ 	spin_lock(&cii->c_lock);
+ 	cii->c_cached_epoch = atomic_read(&permission_epoch);
+-	if (cii->c_uid != current_fsuid()) {
++	if (!uid_eq(cii->c_uid, current_fsuid())) {
+ 		cii->c_uid = current_fsuid();
+                 cii->c_cached_perm = mask;
+         } else
+@@ -65,7 +65,7 @@ int coda_cache_check(struct inode *inode, int mask)
+ 	
+ 	spin_lock(&cii->c_lock);
+ 	hit = (mask & cii->c_cached_perm) == mask &&
+-	    cii->c_uid == current_fsuid() &&
++	    uid_eq(cii->c_uid, current_fsuid()) &&
+ 	    cii->c_cached_epoch == atomic_read(&permission_epoch);
+ 	spin_unlock(&cii->c_lock);
  
- 	fc->xattr_version = cpu_to_le64(xattr_version);
-@@ -1079,8 +1079,8 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
- 	struct timespec mtime, atime;
- 	int wake = 0;
- 	umode_t mode;
--	uid_t uid;
--	gid_t gid;
-+	kuid_t uid;
-+	kgid_t gid;
- 	struct ceph_mds_session *session;
- 	u64 xattr_version = 0;
- 	struct ceph_buffer *xattr_blob = NULL;
-@@ -2353,10 +2353,10 @@ static void handle_cap_grant(struct inode *inode, struct ceph_mds_caps *grant,
- 
- 	if ((issued & CEPH_CAP_AUTH_EXCL) == 0) {
- 		inode->i_mode = le32_to_cpu(grant->mode);
--		inode->i_uid = le32_to_cpu(grant->uid);
--		inode->i_gid = le32_to_cpu(grant->gid);
-+		i_uid_write(inode, le32_to_cpu(grant->uid));
-+		i_gid_write(inode, le32_to_cpu(grant->gid));
- 		dout("%p mode 0%o uid.gid %d.%d\n", inode, inode->i_mode,
--		     inode->i_uid, inode->i_gid);
-+		     i_uid_read(inode), i_gid_read(inode));
+diff --git a/fs/coda/coda_fs_i.h b/fs/coda/coda_fs_i.h
+index b24fdfd..c640752 100644
+--- a/fs/coda/coda_fs_i.h
++++ b/fs/coda/coda_fs_i.h
+@@ -25,7 +25,7 @@ struct coda_inode_info {
+ 	u_short	           c_flags;     /* flags (see below) */
+ 	unsigned int	   c_mapcount;  /* nr of times this inode is mapped */
+ 	unsigned int	   c_cached_epoch; /* epoch for cached permissions */
+-	vuid_t		   c_uid;	/* fsuid for cached permissions */
++	kuid_t		   c_uid;	/* fsuid for cached permissions */
+ 	unsigned int       c_cached_perm; /* cached access permissions */
+ 	spinlock_t	   c_lock;
+ 	struct inode	   vfs_inode;
+diff --git a/fs/coda/coda_linux.c b/fs/coda/coda_linux.c
+index 854ace7..38a0a6e 100644
+--- a/fs/coda/coda_linux.c
++++ b/fs/coda/coda_linux.c
+@@ -100,9 +100,9 @@ void coda_vattr_to_iattr(struct inode *inode, struct coda_vattr *attr)
+ 	if (attr->va_mode != (u_short) -1)
+ 	        inode->i_mode = attr->va_mode | inode_type;
+         if (attr->va_uid != -1) 
+-	        inode->i_uid = (uid_t) attr->va_uid;
++		i_uid_write(inode, (uid_t) attr->va_uid);
+         if (attr->va_gid != -1)
+-	        inode->i_gid = (gid_t) attr->va_gid;
++		i_gid_write(inode, (gid_t) attr->va_gid);
+ 	if (attr->va_nlink != -1)
+ 		set_nlink(inode, attr->va_nlink);
+ 	if (attr->va_size != -1)
+@@ -171,10 +171,10 @@ void coda_iattr_to_vattr(struct iattr *iattr, struct coda_vattr *vattr)
+                 vattr->va_mode = iattr->ia_mode;
  	}
- 
- 	if ((issued & CEPH_CAP_LINK_EXCL) == 0)
-diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-index ba95eea..195b7fd 100644
---- a/fs/ceph/inode.c
-+++ b/fs/ceph/inode.c
-@@ -612,10 +612,10 @@ static int fill_inode(struct inode *inode,
- 
- 	if ((issued & CEPH_CAP_AUTH_EXCL) == 0) {
- 		inode->i_mode = le32_to_cpu(info->mode);
--		inode->i_uid = le32_to_cpu(info->uid);
--		inode->i_gid = le32_to_cpu(info->gid);
-+		i_uid_write(inode, le32_to_cpu(info->uid));
-+		i_gid_write(inode, le32_to_cpu(info->gid));
- 		dout("%p mode 0%o uid.gid %d.%d\n", inode, inode->i_mode,
--		     inode->i_uid, inode->i_gid);
-+		     i_uid_read(inode), i_gid_read(inode));
+         if ( valid & ATTR_UID ) {
+-                vattr->va_uid = (vuid_t) iattr->ia_uid;
++                vattr->va_uid = (vuid_t) from_kuid(&init_user_ns, iattr->ia_uid);
  	}
- 
- 	if ((issued & CEPH_CAP_LINK_EXCL) == 0)
-@@ -1562,26 +1562,26 @@ int ceph_setattr(struct dentry *dentry, struct iattr *attr)
- 
- 	if (ia_valid & ATTR_UID) {
- 		dout("setattr %p uid %d -> %d\n", inode,
--		     inode->i_uid, attr->ia_uid);
-+		     i_uid_read(inode), from_kuid(&init_user_ns, attr->ia_uid));
- 		if (issued & CEPH_CAP_AUTH_EXCL) {
- 			inode->i_uid = attr->ia_uid;
- 			dirtied |= CEPH_CAP_AUTH_EXCL;
- 		} else if ((issued & CEPH_CAP_AUTH_SHARED) == 0 ||
--			   attr->ia_uid != inode->i_uid) {
--			req->r_args.setattr.uid = cpu_to_le32(attr->ia_uid);
-+			   !uid_eq(attr->ia_uid, inode->i_uid)) {
-+			req->r_args.setattr.uid = cpu_to_le32(from_kuid(&init_user_ns, attr->ia_uid));
- 			mask |= CEPH_SETATTR_UID;
- 			release |= CEPH_CAP_AUTH_SHARED;
- 		}
+         if ( valid & ATTR_GID ) {
+-                vattr->va_gid = (vgid_t) iattr->ia_gid;
++                vattr->va_gid = (vgid_t) from_kgid(&init_user_ns, iattr->ia_gid);
  	}
- 	if (ia_valid & ATTR_GID) {
- 		dout("setattr %p gid %d -> %d\n", inode,
--		     inode->i_gid, attr->ia_gid);
-+		     i_gid_read(inode), from_kgid(&init_user_ns, attr->ia_gid));
- 		if (issued & CEPH_CAP_AUTH_EXCL) {
- 			inode->i_gid = attr->ia_gid;
- 			dirtied |= CEPH_CAP_AUTH_EXCL;
- 		} else if ((issued & CEPH_CAP_AUTH_SHARED) == 0 ||
--			   attr->ia_gid != inode->i_gid) {
--			req->r_args.setattr.gid = cpu_to_le32(attr->ia_gid);
-+			   !gid_eq(attr->ia_gid, inode->i_gid)) {
-+			req->r_args.setattr.gid = cpu_to_le32(from_kgid(&init_user_ns, attr->ia_gid));
- 			mask |= CEPH_SETATTR_GID;
- 			release |= CEPH_CAP_AUTH_SHARED;
- 		}
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 1bcf712..59e45fe 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -578,8 +578,8 @@ static void __register_request(struct ceph_mds_client *mdsc,
- 	ceph_mdsc_get_request(req);
- 	__insert_request(mdsc, req);
+         if ( valid & ATTR_SIZE ) {
+                 vattr->va_size = iattr->ia_size;
+diff --git a/fs/coda/inode.c b/fs/coda/inode.c
+index be2aa49..19a8018 100644
+--- a/fs/coda/inode.c
++++ b/fs/coda/inode.c
+@@ -48,7 +48,7 @@ static struct inode *coda_alloc_inode(struct super_block *sb)
+ 		return NULL;
+ 	memset(&ei->c_fid, 0, sizeof(struct CodaFid));
+ 	ei->c_flags = 0;
+-	ei->c_uid = 0;
++	ei->c_uid = GLOBAL_ROOT_UID;
+ 	ei->c_cached_perm = 0;
+ 	spin_lock_init(&ei->c_lock);
+ 	return &ei->vfs_inode;
+diff --git a/fs/coda/upcall.c b/fs/coda/upcall.c
+index 0c68fd3..efbc665 100644
+--- a/fs/coda/upcall.c
++++ b/fs/coda/upcall.c
+@@ -52,7 +52,7 @@ static void *alloc_upcall(int opcode, int size)
+         inp->ih.opcode = opcode;
+ 	inp->ih.pid = current->pid;
+ 	inp->ih.pgid = task_pgrp_nr(current);
+-	inp->ih.uid = current_fsuid();
++	inp->ih.uid = from_kuid(&init_user_ns, current_fsuid());
  
--	req->r_uid = current_fsuid();
--	req->r_gid = current_fsgid();
-+	req->r_uid = from_kuid(&init_user_ns, current_fsuid());
-+	req->r_gid = from_kgid(&init_user_ns, current_fsgid());
+ 	return (void*)inp;
+ }
+@@ -157,7 +157,7 @@ int venus_lookup(struct super_block *sb, struct CodaFid *fid,
+ }
  
- 	if (dir) {
- 		struct ceph_inode_info *ci = ceph_inode(dir);
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index 66ebe72..f053bbd 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -138,8 +138,8 @@ struct ceph_cap_snap {
- 	struct ceph_snap_context *context;
+ int venus_close(struct super_block *sb, struct CodaFid *fid, int flags,
+-		vuid_t uid)
++		kuid_t uid)
+ {
+ 	union inputArgs *inp;
+ 	union outputArgs *outp;
+@@ -166,7 +166,7 @@ int venus_close(struct super_block *sb, struct CodaFid *fid, int flags,
+ 	insize = SIZE(release);
+ 	UPARG(CODA_CLOSE);
+ 	
+-	inp->ih.uid = uid;
++	inp->ih.uid = from_kuid(&init_user_ns, uid);
+         inp->coda_close.VFid = *fid;
+         inp->coda_close.flags = flags;
  
- 	umode_t mode;
--	uid_t uid;
--	gid_t gid;
-+	kuid_t uid;
-+	kgid_t gid;
- 
- 	struct ceph_buffer *xattr_blob;
- 	u64 xattr_version;
+diff --git a/include/linux/coda_psdev.h b/include/linux/coda_psdev.h
+index 8031d6e..5b8721e 100644
+--- a/include/linux/coda_psdev.h
++++ b/include/linux/coda_psdev.h
+@@ -34,7 +34,7 @@ int venus_lookup(struct super_block *sb, struct CodaFid *fid,
+ 		 const char *name, int length, int *type, 
+ 		 struct CodaFid *resfid);
+ int venus_close(struct super_block *sb, struct CodaFid *fid, int flags,
+-		vuid_t uid);
++		kuid_t uid);
+ int venus_open(struct super_block *sb, struct CodaFid *fid, int flags,
+ 	       struct file **f);
+ int venus_mkdir(struct super_block *sb, struct CodaFid *dirfid, 
 diff --git a/init/Kconfig b/init/Kconfig
-index dfa391d..cb2c46a 100644
+index 58959ea..2573664 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -999,7 +999,6 @@ config UIDGID_CONVERTED
  	default y
  
  	# Filesystems
--	depends on CEPH_FS = n
- 	depends on CIFS = n
- 	depends on CODA_FS = n
+-	depends on CODA_FS = n
  	depends on GFS2_FS = n
+ 	depends on NCP_FS = n
+ 	depends on NFSD = n
 -- 
 1.7.5.4
 
