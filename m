@@ -1,112 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2KTUSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:18:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38880 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab2KTUST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:18:19 -0500
-Date: Tue, 20 Nov 2012 12:18:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>, <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jirislaby@gmail.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
-Message-Id: <20121120121817.cf80b8ad.akpm@linux-foundation.org>
-In-Reply-To: <50AB4ADB.6090506@parallels.com>
-References: <20121012135726.GY29125@suse.de>
-	<507BDD45.1070705@suse.cz>
-	<20121015110937.GE29125@suse.de>
-	<5093A3F4.8090108@redhat.com>
-	<5093A631.5020209@suse.cz>
-	<509422C3.1000803@suse.cz>
-	<509C84ED.8090605@linux.vnet.ibm.com>
-	<509CB9D1.6060704@redhat.com>
-	<20121109090635.GG8218@suse.de>
-	<509F6C2A.9060502@redhat.com>
-	<20121112113731.GS8218@suse.de>
-	<50AB4ADB.6090506@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1752870Ab2KTUTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:19:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752219Ab2KTUTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 15:19:34 -0500
+Message-ID: <1353442764.2234.90.camel@bling.home>
+Subject: Re: [PATCH v4] intel-iommu: Prevent devices with RMRRs from being
+ placed into SI Domain
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tom Mingarelli <thomas.mingarelli@hp.com>
+Cc: Don Dutile <ddutile@redhat.com>, Linda Knippers <linda.knippers@hp.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Shuah Khan <shuah.khan@hp.com>, David Woodhouse <dwmw2@infradead.org>,
+        Joerg Roedel <joro@8bytes.org>
+Date: Tue, 20 Nov 2012 13:19:24 -0700
+In-Reply-To: <20120917082234.22091.84161.sendpatchset@RHEL63BL460c>
+References: <20120917082234.22091.84161.sendpatchset@RHEL63BL460c>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012 13:18:19 +0400
-Glauber Costa <glommer@parallels.com> wrote:
-
-> On 11/12/2012 03:37 PM, Mel Gorman wrote:
-> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> > index 02c1c971..d0a7967 100644
-> > --- a/include/linux/gfp.h
-> > +++ b/include/linux/gfp.h
-> > @@ -31,6 +31,7 @@ struct vm_area_struct;
-> >  #define ___GFP_THISNODE		0x40000u
-> >  #define ___GFP_RECLAIMABLE	0x80000u
-> >  #define ___GFP_NOTRACK		0x200000u
-> > +#define ___GFP_NO_KSWAPD	0x400000u
-> >  #define ___GFP_OTHER_NODE	0x800000u
-> >  #define ___GFP_WRITE		0x1000000u
+On Tue, 2012-11-20 at 19:43 +0000, Tom Mingarelli wrote:
+> This patch is to prevent non-USB devices that have RMRRs associated with them from
+> being placed into the SI Domain during init. This fixes the issue where the RMRR info
+> for devices being placed in and out of the SI Domain gets lost.
 > 
-> Keep in mind that this bit has been reused in -mm.
-> If this patch needs to be reverted, we'll need to first change
-> the definition of __GFP_KMEMCG (and __GFP_BITS_SHIFT as a result), or it
-> would break things.
+> Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+> Tested-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+> PATCH v1: https://lkml.org/lkml/2012/6/15/204
+> PATCH v2: https://lkml.org/lkml/2012/9/18/354
+> PATCH v3: https://lkml.org/lkml/2012/10/16/375
+> 
+>  drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
+>  1 files changed, 31 insertions(+), 0 deletions(-)
 
-I presently have
+Looks ok to me.
 
-/* Plain integer GFP bitmasks. Do not use this directly. */
-#define ___GFP_DMA		0x01u
-#define ___GFP_HIGHMEM		0x02u
-#define ___GFP_DMA32		0x04u
-#define ___GFP_MOVABLE		0x08u
-#define ___GFP_WAIT		0x10u
-#define ___GFP_HIGH		0x20u
-#define ___GFP_IO		0x40u
-#define ___GFP_FS		0x80u
-#define ___GFP_COLD		0x100u
-#define ___GFP_NOWARN		0x200u
-#define ___GFP_REPEAT		0x400u
-#define ___GFP_NOFAIL		0x800u
-#define ___GFP_NORETRY		0x1000u
-#define ___GFP_MEMALLOC		0x2000u
-#define ___GFP_COMP		0x4000u
-#define ___GFP_ZERO		0x8000u
-#define ___GFP_NOMEMALLOC	0x10000u
-#define ___GFP_HARDWALL		0x20000u
-#define ___GFP_THISNODE		0x40000u
-#define ___GFP_RECLAIMABLE	0x80000u
-#define ___GFP_KMEMCG		0x100000u
-#define ___GFP_NOTRACK		0x200000u
-#define ___GFP_NO_KSWAPD	0x400000u
-#define ___GFP_OTHER_NODE	0x800000u
-#define ___GFP_WRITE		0x1000000u
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
 
-and
+> 
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index d4a4cd4..8c064df 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -2320,8 +2320,39 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+>  	return 0;
+>  }
+>  
+> +static bool device_has_rmrr(struct pci_dev *dev)
+> +{
+> +	struct dmar_rmrr_unit *rmrr;
+> +	int i;
+> +
+> +	for_each_rmrr_units(rmrr) {
+> +		for (i = 0; i < rmrr->devices_cnt; i++) {
+> +			/*
+> +			 * Return TRUE if this RMRR contains the device that
+> +			 * is passed in.
+> +			 */
+> +			if (rmrr->devices[i] == dev)
+> +				return true;
+> +		}
+> +	}
+> +	return false;
+> +}
+> +
+>  static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+>  {
+> +
+> +	/*
+> +	 * We want to prevent any device associated with an RMRR from
+> +	 * getting placed into the SI Domain. This is done because
+> +	 * problems exist when devices are moved in and out of domains
+> +	 * and their respective RMRR info is lost. We exempt USB devices
+> +	 * from this process due to their usage of RMRRs that are known
+> +	 * to not be needed after BIOS hand-off to OS.
+> +	 */
+> +	if (device_has_rmrr(pdev) &&
+> +	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
+> +		return 0;
+> +
+>  	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+>  		return 1;
+>  
 
-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
-#define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
-Which I think is OK?
-
-I'd forgotten about __GFP_BITS_SHIFT.  Should we do this?
-
---- a/include/linux/gfp.h~a
-+++ a/include/linux/gfp.h
-@@ -35,6 +35,7 @@ struct vm_area_struct;
- #define ___GFP_NO_KSWAPD	0x400000u
- #define ___GFP_OTHER_NODE	0x800000u
- #define ___GFP_WRITE		0x1000000u
-+/* If the above are modified, __GFP_BITS_SHIFT may need updating */
- 
- /*
-  * GFP bitmasks..
-_
 
