@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab2KTXXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:23:34 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47718 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2KTXXc (ORCPT
+	id S1753593Ab2KTX0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:26:09 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49155 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2KTX0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:23:32 -0500
-Message-ID: <50AC10EE.8000008@linux.vnet.ibm.com>
-Date: Wed, 21 Nov 2012 07:23:26 +0800
+	Tue, 20 Nov 2012 18:26:07 -0500
+Message-ID: <50AC1188.5060703@linux.vnet.ibm.com>
+Date: Wed, 21 Nov 2012 07:26:00 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
 To: Marcelo Tosatti <mtosatti@redhat.com>
 CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
-References: <5097AC70.1080904@linux.vnet.ibm.com> <5097ACA0.7080408@linux.vnet.ibm.com> <20121112231223.GC5798@amt.cnet> <50A20750.8050808@linux.vnet.ibm.com> <20121120221853.GA31427@amt.cnet>
-In-Reply-To: <20121120221853.GA31427@amt.cnet>
+Subject: Re: [PATCH 3/5] KVM: MMU: simplify set_spte
+References: <5097AC70.1080904@linux.vnet.ibm.com> <5097ACD7.5030201@linux.vnet.ibm.com> <20121120222456.GB31427@amt.cnet>
+In-Reply-To: <20121120222456.GB31427@amt.cnet>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112023-9574-0000-0000-0000056B23B6
+x-cbid: 12112023-3864-0000-0000-000005A63B46
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00193077; UDB=6.00043754; UTC=2012-11-20
+ 23:26:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 06:18 AM, Marcelo Tosatti wrote:
-
->>>> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
->>>> -			drop_parent_pte(child, sptep);
->>>> -			kvm_flush_remote_tlbs(vcpu->kvm);
->>>
->>> How come its safe to drop this case?
+On 11/21/2012 06:24 AM, Marcelo Tosatti wrote:
+> On Mon, Nov 05, 2012 at 08:11:03PM +0800, Xiao Guangrong wrote:
+>> It is more cleaner if we can update pte_access fist then set spte according
+>> to pte_access, also introduce gfn_need_write_protect to check whether the
+>> gfn need to be write-protected
 >>
->> We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
->> There are two cases:
->> 1) the sptep is not the last mapping.
->>    under this case, sptep must point to a shadow page table, that means
->>    spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
->>    so, 'if' condition must be satisfied, the sptep will be dropped.
->>
->>    Actually, This is the origin case:
->>   | if (level > PT_PAGE_TABLE_LEVEL &&
->>   |	    !is_large_pte(*sptep))"
->>
->> 2) the sptep is the last mapping.
->>    under this case, the level of spte (sp.level) must equal the 'level' which
->>    we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
->>    we drop it.
->>
->> I think this is safe. :)
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > 
-> mmu_page_zap_pte takes care of it, OK.
-> 
-> What if was_rmapped=true but gfn is different? Say if the spte comes
-> from an unsync shadow page, the guest modifies that shadow page (but
-> does not invalidate it with invlpg), then faults. gfn can still point
-> to the same gfn (but in that case, with your patch,
-> page_header_update_slot is not called.
+> Please separate patch in:
+> - code movement with no logical modification.
+> - logical modification (such as condition for mark_page_dirty).
+> - move code to helper functions.
 
-Marcelo,
-
-Page fault path and other sync/prefetch paths will reread guest page table,
-then it get a different target pfn.
-
-The scenario is like this:
-
-gfn1 = pfn1, gfn2 = pfn2
-gpte = pfn1, spte is shadowed by gpte and it is a unsync spte
-
-Guest                               Host
-                                     spte = (gfn1, pfn1)
-
-modify gpte to let it point to gfn2
-                                    spte = (gfn1, pfn1)
-page-fault on gpte
-                                    intercept the page-fault, then
-                                    want to update spte to (gfn2, pfn2)
-
-                                    in mmu_set_spte, we can detect
-                                    pfn2 != pfn1, then drop it.
-
-Hmm, the interesting thing is what if different gfns map to the same pfn.
-For example, spte1 is shadowed by gfn1 and spte2 is shadowed by pfn2, both
-gfn1 and gfn2 map to pfn, the code (including the current code) will set
-spte1 to the gfn2's rmap and spte2 to the gfn1's rmap. But i think it is ok.
-
-
-
+Okay, will split it.
 
