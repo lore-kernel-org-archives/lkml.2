@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab2KTI7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:59:06 -0500
-Received: from mga14.intel.com ([143.182.124.37]:39265 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab2KTI7E convert rfc822-to-8bit (ORCPT
+	id S1752894Ab2KTI7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:59:33 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:17897 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab2KTI7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:59:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
-   d="scan'208";a="170466759"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjMYQD//4mJQIAB4wgAgADGiTCABdgxAIABQf3Q
-Date: Tue, 20 Nov 2012 08:59:00 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
-References: <509B5038.8090304@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
- <50A30656.6090508@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
- <50A43828.6000702@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
- <50A9C5CC.1030300@oracle.com>
-In-Reply-To: <50A9C5CC.1030300@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Nov 2012 03:59:30 -0500
+Message-ID: <50AB466F.5010500@atmel.com>
+Date: Tue, 20 Nov 2012 09:59:27 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, <linux-mmc@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL v2] at91: fixes for 3.7-rc7
+References: <50AA5ED5.8090901@atmel.com> <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com> <50AA6C76.3000606@atmel.com>
+In-Reply-To: <50AA6C76.3000606@atmel.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Sunday, November 18, 2012 9:38 PM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org; Mary Mcgrath
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
->On 11/16/12 04:26, Dave, Tushar N wrote:
->>> Would you please help to fine the offset of max payload size in eeprom?
->>> I'd like to have a try to modify it by ethtool.
->>
->> It is defined using bit 8 of word 0x1A.
->> Bit value 0 = 128B , bit value 1 = 256B
->
->Hi Tushar,
->
->I checked one of my server which Max Payload Size is 128:
->
-># lspci -vvv -s 52:00.1
->52:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet
->Controller (rev 06)
->        Subsystem: Intel Corporation PRO/1000 PT Quad Port Server Adapter
->        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
->ParErr+ Stepping- SERR- FastB2B- DisINTx+
->        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-><TAbort- <MAbort- >SERR- <PERR- INTx-
->        Latency: 0, Cache Line Size: 64 bytes
->        Interrupt: pin B routed to IRQ 266
->        Region 0: Memory at dfea0000 (32-bit, non-prefetchable)
->[size=128K]
->        Region 1: Memory at dfe80000 (32-bit, non-prefetchable)
->[size=128K]
->        Region 2: I/O ports at 6020 [size=32]
->        [virtual] Expansion ROM at d8120000 [disabled] [size=128K]
->        Capabilities: [c8] Power Management version 2
->                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-
->,D3hot+,D3cold-)
->                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->                Address: 00000000fee00000  Data: 409a
->        Capabilities: [e0] Express (v1) Endpoint, MSI 00
->                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
-><512ns, L1 <64us
->                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
->                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
->Unsupported+
->                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
->                        MaxPayload 128 bytes, MaxReadReq 4096 bytes
->                DevSta: CorrErr- UncorrErr- FatalErr+ UnsuppReq+ AuxPwr-
->TransPend-
->                LnkCap: Port #0, Speed 2.5GT/s, Width x4, ASPM L0s,
->Latency L0 <4us, L1 <64us
->                        ClockPM- Surprise- LLActRep- BwNot-
->                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
->CommClk+
->                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->                LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+
->DLActive- BWMgmt- ABWMgmt-
->        Capabilities: [100 v1] Advanced Error Reporting
->                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
->RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
->RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->                UESvrt: DLP+ SDES- TLP+ FCP+ CmpltTO+ CmpltAbrt+ UnxCmplt+
->RxOF+ MalfTLP+ ECRC- UnsupReq+ ACSViol-
->                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout-
->NonFatalErr-
->                CEMsk:  RxErr+ BadTLP+ BadDLLP+ Rollover+ Timeout+
->NonFatalErr-
->                AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap-
->ChkEn-
->        Capabilities: [140 v1] Device Serial Number 00-15-17-ff-ff-16-ed-
->86
->        Kernel driver in use: e1000e
->        Kernel modules: e1000e
->
->And eeprom dump as below:
->
->Offset          Values
->------          ------
->0x0000          00 15 17 16 ed 86 24 05 ff ff a2 50 ff ff ff ff
->0x0010          57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1
->0x0020          08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01
->0x0030          f6 6c b0 37 a6 07 03 84 83 07 00 00 03 c3 02 06
->0x0040          08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00
->0x0050          00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->0x0060          00 01 00 40 1e 12 07 40 00 01 00 40 ff ff ff ff
->
->
->If I did not misunderstand, the value of offset 0x1a is 0x07a6, then the
->bit 8 is 1, but my NIC's MPS is 128b, anything I'm wrong?
+Arnd, Olof,
 
-Have you power off the system completely after modifying eeprom? If not please do so.
--Tushar 
+Just for the record, I do not want to put pressure at a such late time in
+the 3.7-rc process. So, I just reworked that pull-request because the previous
+one was wrong:
+- wrong patch content (DT nodes with wrong size)
+- not all tags in patches (Jean-Christophe and Arnd tags were missing...)
+
+Just to start from a sane base if I have to rebase this work for 3.8, I let you know
+that I have updated this tag...
+
+The following changes since commit 641f3ce64b050961d454a0716bb6dbf528315aac:
+
+  ARM: at91/usbh: fix overcurrent gpio setup (2012-11-16 10:46:29 +0100)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 6a342d1ee6ff7d5b3e5a0665457f1772e7fe640a:
+
+  ARM: at91/dts: add nodes for atmel hsmci controllers for atmel boards (2012-11-20 09:51:07 +0100)
+
+----------------------------------------------------------------
+Add entries for enabling the use of sd/mmc driver on AT91.
+Those entries where missing for device tree use on these
+platforms.
+
+----------------------------------------------------------------
+Ludovic Desroches (3):
+      ARM: at91: add clocks for DT entries
+      ARM: at91/dts: add nodes for atmel hsmci controllers for atmel SOCs
+      ARM: at91/dts: add nodes for atmel hsmci controllers for atmel boards
+
+ arch/arm/boot/dts/at91sam9260.dtsi          |  9 +++++++++
+ arch/arm/boot/dts/at91sam9263.dtsi          | 18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263ek.dts         | 10 ++++++++++
+ arch/arm/boot/dts/at91sam9g20ek_2mmc.dts    | 12 ++++++++++++
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi |  9 +++++++++
+ arch/arm/boot/dts/at91sam9g25ek.dts         | 18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi          | 18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts      | 19 +++++++++++++++++++
+ arch/arm/boot/dts/at91sam9n12.dtsi          |  9 +++++++++
+ arch/arm/boot/dts/at91sam9n12ek.dts         |  9 +++++++++
+ arch/arm/boot/dts/at91sam9x5.dtsi           | 18 ++++++++++++++++++
+ arch/arm/mach-at91/at91sam9260.c            |  1 +
+ arch/arm/mach-at91/at91sam9263.c            |  2 ++
+ arch/arm/mach-at91/at91sam9g45.c            |  2 ++
+ arch/arm/mach-at91/at91sam9n12.c            |  1 +
+ arch/arm/mach-at91/at91sam9x5.c             |  2 ++
+ 16 files changed, 157 insertions(+)
+
+Bye,
+-- 
+Nicolas Ferre
