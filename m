@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab2KTNh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:37:58 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:52883 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab2KTNh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:37:57 -0500
-Date: Tue, 20 Nov 2012 07:37:57 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: zynq: Remove all unused mach headers
-Message-ID: <20121120133757.GY1718@beefymiracle.amer.corp.natinst.com>
-References: <1353417817-15513-1-git-send-email-michal.simek@xilinx.com>
-MIME-Version: 1.0
-In-Reply-To: <1353417817-15513-1-git-send-email-michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 11/20/2012 07:37:48 AM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 11/20/2012 07:37:48 AM,
-	Serialize complete at 11/20/2012 07:37:48 AM
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4OpS+d6oOtUQaRm1"
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
- definitions=2012-11-20_01:2012-11-20,2012-11-20,1970-01-01 signatures=0
+	id S1752586Ab2KTNi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:38:59 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53578 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937Ab2KTNi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:38:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,285,1352102400"; 
+   d="scan'208";a="220152466"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 1/2] dw_dmac: store direction in the custom channel structure
+Date: Tue, 20 Nov 2012 15:38:45 +0200
+Message-Id: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently the direction value is come from the generic slave configuration
+structure and explicitly as a preparation function parameter. The first one is
+kinda obsoleted. Thus, we have to store the value passed to the preparation
+function somewhere in our structures to be able to use it later. The best
+candidate to provide the storage is a custom channel structure. Until now we
+still keep and check the direction field of the slave config structure as well.
 
---4OpS+d6oOtUQaRm1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c      |   10 ++++++++--
+ drivers/dma/dw_dmac_regs.h |    2 ++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-On Tue, Nov 20, 2012 at 02:23:37PM +0100, Michal Simek wrote:
-> Remove empty unused mach/hardware.h.
-> mach/irqs.h is unused because SPARSE_IRQ are ON by default.
-> mach/timex.h is unused because of CONFIG_ARCH_MULTIPLATFORM.
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 5e2c4dc..58c6d3c 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -178,9 +178,9 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+ 		cfghi = dws->cfg_hi;
+ 		cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+ 	} else {
+-		if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
++		if (dwc->direction == DMA_MEM_TO_DEV)
+ 			cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
+-		else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
++		else if (dwc->direction == DMA_DEV_TO_MEM)
+ 			cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+ 	}
+ 
+@@ -807,6 +807,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	if (unlikely(!dws || !sg_len))
+ 		return NULL;
+ 
++	dwc->direction = direction;
++
+ 	prev = first = NULL;
+ 
+ 	switch (direction) {
+@@ -983,6 +985,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 		return -EINVAL;
+ 
+ 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
++	dwc->direction = sconfig->direction;
+ 
+ 	convert_burst(&dwc->dma_sconfig.src_maxburst);
+ 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
+@@ -1339,6 +1342,8 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+ 	if (unlikely(!is_slave_xfer(direction)))
+ 		goto out_err;
+ 
++	dwc->direction = direction;
++
+ 	if (direction == DMA_MEM_TO_DEV)
+ 		reg_width = __ffs(sconfig->dst_addr_width);
+ 	else
+@@ -1713,6 +1718,7 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 
+ 		dwc->dw = dw;
++		dwc->direction = DMA_TRANS_NONE;
+ 
+ 		/* hardware configuration */
+ 		if (autocfg) {
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 8881e9b..362aba1 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/dmaengine.h>
+ #include <linux/dw_dmac.h>
+ 
+ #define DW_DMA_MAX_NR_CHANNELS	8
+@@ -188,6 +189,7 @@ struct dw_dma_chan {
+ 	void __iomem		*ch_regs;
+ 	u8			mask;
+ 	u8			priority;
++	enum dma_transfer_direction direction;
+ 	bool			paused;
+ 	bool			initialized;
+ 
+-- 
+1.7.10.4
 
-Tested-by: Josh Cartwright <josh.cartwright@ni.com>
-
-  Josh
-
---4OpS+d6oOtUQaRm1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQq4e1AAoJEEef0niEbw+lxgAQAJcqj2SLTcy+Zt1lJWpBKzBK
-IQ8SFTBbxo/EFOOWdQckkSNnASq+g+6tD7dg2AYp00LFY9z3nzVRu2hga9cT1FDg
-FCOqadS49soFmVBAOsR3HhSxWPP9VyPWQ+jmXumAlssRmcFETqShyEuHkpXq/NIr
-dUcpkWBOGYAGqpne3VXanoxTstVzUtkM6FGisY9Ap8cb2SPL79rFKYNU59hASzSo
-Mj/qJC3Eh+UDsea0PRJB5eNCfSxlhdJihrlqxgcsvWp8OX03ImKVVQ68cgI3d7rx
-huq8Cren+bIK/w+TkXL+3VxeQ/DtkVA9FE1H6kvpTVCbe227ZnR+p0Uddh1lDEFd
-Ba8ZgRn0hU87XgKdkthoc+5CX4iScvA0TR1RmKjHpyygzENX6wzXeNWKG2Cz5PtV
-9UHLgBUi1sK4Q2e71en0phzu8uOQ2xyRGCNcMqCEhewtoG0o+fw2z2cszfckGGBW
-nrZr317y+wfPKnfJMDb9tzkGl/f6htL+3WSyUbNQe/1HzVoq9VH9iaCQm0JNAaI1
-OksRhvrbfMswpPQ0CAOQuioxbD9fxZsTSZijDMpX7g5HMylviRAKmfWds69/P99D
-XuIwCM6tKGc9MTHcYtTBPqC21l2+SPzMiudm/s3eOyg6uAMY8VLG4fQnN1vSwzEZ
-QpCqfFpIy40v9IQ6rMJs
-=+53E
------END PGP SIGNATURE-----
-
---4OpS+d6oOtUQaRm1--
