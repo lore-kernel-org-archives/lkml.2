@@ -1,165 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab2KTKdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:33:46 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:20215 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab2KTKdp (ORCPT
+	id S1752275Ab2KTKgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:36:38 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:45768 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2KTKgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:33:45 -0500
-Message-ID: <ffbad99ce24a54ce51dbcd9557f3a993.squirrel@mail.sublimeip.com>
-In-Reply-To: <1353349500.6276.9.camel@gandalf.local.home>
-References: <20121109182943.GA2789@redhat.com>
-    <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com>
-    <1353349500.6276.9.camel@gandalf.local.home>
-Date: Tue, 20 Nov 2012 21:33:42 +1100
-Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
-From: u3557@miso.sublimeip.com
-To: "Steven Rostedt" <rostedt@goodmis.org>
-Cc: "Oleg Nesterov" <oleg@redhat.com>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Amnon Shiloh" <u3557@miso.sublimeip.com>,
-        linux-kernel@vger.kernel.org
-Reply-To: mosix@mosix.com.au
-User-Agent: SquirrelMail/1.4.22
+	Tue, 20 Nov 2012 05:36:36 -0500
+X-AuditID: b753bd60-98653ba000002f78-88-50ab5d31345b
+X-AuditID: b753bd60-98653ba000002f78-88-50ab5d31345b
+Message-ID: <50AB5D31.7060305@hitachi.com>
+Date: Tue, 20 Nov 2012 19:36:33 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
+References: <20121114013611.5338.15086.stgit@yunodevel> <1352858437.18025.47.camel@gandalf.local.home> <CAJL_ekvb89saY9F0F3ip-8xipuuRyJ1_M8hOyThu_0Q2=5sXgA@mail.gmail.com> <1352860305.18025.48.camel@gandalf.local.home> <50A355A2.5040101@hitachi.com> <20121116191537.GB28622@amt.cnet>
+In-Reply-To: <20121116191537.GB28622@amt.cnet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Steve,
+Hi Marcelo,
 
-> But here, there's no prejudice between tasks. All tasks will now hit the
-> breakpoint regardless of if it is being traced or not.
+Sorry for the late reply.
 
-Just to clarify, there is no intention to allow conventional breakpoints
-in the vsyscall page - that would indeed be a disaster affecting all other
-processes.
+(2012/11/17 4:15), Marcelo Tosatti wrote:
+> On Wed, Nov 14, 2012 at 05:26:10PM +0900, Yoshihiro YUNOMAE wrote:
+>> Thank you for commenting on my patch set.
+>>
+>> (2012/11/14 11:31), Steven Rostedt wrote:
+>>> On Tue, 2012-11-13 at 18:03 -0800, David Sharp wrote:
+>>>> On Tue, Nov 13, 2012 at 6:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>>>> On Wed, 2012-11-14 at 10:36 +0900, Yoshihiro YUNOMAE wrote:
+>>>>>
+>>>>>> To merge the data like previous pattern, we apply this patch set. Then, we can
+>>>>>> get TSC offset of the guest as follows:
+>>>>>>
+>>>>>> $ dmesg | grep kvm
+>>>>>> [   57.717180] kvm: (2687) write TSC offset 18446743360465545001, now clock ##
+>>>>>>                       ^^^^                   ^^^^^^^^^^^^^^^^^^^^            |
+>>>>>>                       PID                         TSC offset                 |
+>>>>>>                                                             HOST TSC value --+
+>>>>>>
+>>>>>
+>>>>> Using printk to export something like this is IMO a nasty hack.
+>>>>>
+>>>>> Can't we create a /sys or /proc file to export the same thing?
+>>>>
+>>>> Since the value changes over the course of the trace, and seems to be
+>>>> part of the context of the trace, I think I'd include it as a
+>>>> tracepoint.
+>>>>
+>>>
+>>> I'm fine with that too.
+>>
+>> Using some tracepoint is a nice idea, but there is one problem. Here,
+>> our discussion point is "the event which TSC offset is changed does not
+>> frequently occur, but the buffer must keep the event data."
+>>
+>> There are two ideas for using tracepoint. First, we define new
+>> tracepoint for changed TSC offset. This is simple and the overhead will
+>> be low. However, this trace event stored in the buffer will be
+>> overwritten by other trace events because this TSC offset event does
+>> not frequently occur. Second, we add TSC offset information to the
+>> tracepoint frequently occured. For example, we assume that TSC offset
+>> information is added to arguments of trace_kvm_exit().
+>
+> The TSC offset is in the host trace. So given a host trace with two TSC
+> offset updates, how do you know which events in the guest trace
+> (containing a number of events) refer to which tsc offset update?
+>
+> Unless i am missing something, you can't solve this easily (well, except
+> exporting information to the guest that allows it to transform RDTSC ->
+> host TSC value, which can be done via pvclock).
 
-The aim of this patch is to allow ptracers to set the x86 debug-registers
-of their traced process, so that it stops when it reaches the entry points
-of those (few) system-calls that are in the vsyscall page.  Note that those
-debug registers are anyway swapped at context-switch, so no other processes
-are affected.
+As you say, TSC offset events are in the host trace, but we don't need
+to notify guests of updating TSC offset. The offset event will output
+the next TSC offset value and the current TSC value, so we can
+calculate the guest TSC (T1) for the event. Guest TSCs since T1 can be
+converted to host TSC using the TSC offset, so we can integrate those
+trace data.
 
-> Is this really what we want? I mean, isn't syscall tracing in the kernel
-> done by a flag set to the task's structure. If the task has a flag set,
-> then it does the slow (ptrace) path which handles the breakpoint for the
-> user.
+> Another issue as mentioned is lack of TSC synchronization in the host.
+> Should you provide such a feature without the possibility of proper
+> chronological order on systems with unsynchronized TSC?
 
-Most system-calls can be trapped by the PTRACE_SYSCALL option (and the
-later PTRACE_SYSEMU), but those few system-calls on the vsyscall page
-defy the intention to trap ALL system-calls.  They also cannot be
-checkpointed by inserting a trap-instruction (as that, if allowed, would
-break all other processes), hence the only alternative left is to have
-this patch that fixes the oversight in the design of
-PTRACE_SYSCALL/PTRACE_SYSEMU in the presence of a vsyscall page.
+I think, we cannot support this sorting feature using TSC on systems
+with unsynchronized TSC. On systems with unsynchronized TSC, it is
+difficult to sort not only trace data of guests and the host but trace
+data of a guest or a host using TSC in chronological order. Actually,
+if we want to output tracing data of ftrace in chronological order with
+unsynchronized TSC, we will use the "global" mode as the timestamp. The
+global mode uses wallclock added TSC correction, so the mode guarantees
+to sort in chronological order for trace data of the guest or of
+the host. If we use this mode to sort the trace data of guests and the
+host in chronological order, we need to consider about the difference
+between the guest and the host and timekeeping of guests and the host,
+so it is difficult to solve these issues. At least, I haven't came up
+with the good solution.
 
-Best Regards,
-Amnon.
+We cannot sort the trace data of guests and the host in chronological
+order with unsynchronized TSC, but if we can set following
+synchronization events for both guests and the host, we will know where
+we should sort.
 
-> On Mon, 2012-11-19 at 18:47 +0100, Oleg Nesterov wrote:
->> On 11/09, Oleg Nesterov wrote:
->> >
->> > On 11/09, Oleg Nesterov wrote:
->> > >
->> > > Note: TASK_SIZE doesn't look right at least on x86, I think it
->> should
->> > > be replaced by TASK_SIZE_MAX.
->> > > ...
->> > > --- x/arch/x86/kernel/hw_breakpoint.c
->> > > +++ x/arch/x86/kernel/hw_breakpoint.c
->> > > @@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct
->> > >  	va = info->address;
->> > >  	len = get_hbp_len(info->len);
->> > >
->> > > -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
->> > > +	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
->> >
->> > But actully I'd like to ask another question.
->> >
->> > Can't we add the additional !in_gate_area_no_mm() check to allow
->> > the hw breakpoints in vsyscall?
->> >
->> > Quoting Amnon:
->> >
->> > 	My service needs to catch the system-calls of its traced son.
->> > 	Almost all system-calls are caught with PTRACE_SYSCALL, but not those
->> > 	using the vsyscall page - especially "gettimeofday()" and "time()".
->> >
->> > 	...> Is this really what we want? I mean, isn't syscall tracing in
-the kernel
-> done by a flag set to the task's structure. If the task has a flag set,
-> then it does the slow (ptrace) path which handles the breakpoint for the
-> user.
->> >
->> > 	However, the code in "arch/x86/kernel/ptrace.c" forbids catching
->> kernel
->> > 	addresses.
->> >
->> > I tend to agree with Amnon...
->> >
->> > What do you think?
->>
->> ping ;)
->>
->> I agree the patch I sent is very minor (although it looks like the
->> trivial
->> bugfix to me).
->>
->> Just I think Amnon has a point, shouldn't we change this change like
->> below?
->> (on top of this fixlet).
->>
->> Oleg.
->>
->> --- x/arch/x86/kernel/hw_breakpoint.c
->> +++ x/arch/x86/kernel/hw_breakpoint.c
->> @@ -188,6 +188,11 @@ static int get_hbp_len(u8 hbp_len)
->>  	return len_in_bytes;
->>  }
->>
->> +static inline bool bp_in_gate(unsigned long start, unsigned long end)
->> +{
->> +	return in_gate_area_no_mm(start) && in_gate_area_no_mm(end);
->> +}
->> +
->>  /*
->>   * Check for virtual address in kernel space.
->>   */
->> @@ -200,7 +205,8 @@ int arch_check_bp_in_kernelspace(struct
->>  	va = info->address;
->>  	len = get_hbp_len(info->len);
->>
->> -	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
->> +	return ((va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE)) &&
->> +		!bp_in_gate(va, va + len - 1);
->
-> So we want to allow non privileged to add a breakpoint in a vsyscall
-> area even if it happens to lay in kernel space?
->
-> Is this really what we want? I mean, isn't syscall tracing in the kernel
-> done by a flag set to the task's structure. If the task has a flag set,
-> then it does the slow (ptrace) path which handles the breakpoint for the
-> user.
->
-> But here, there's no prejudice between tasks. All tasks will now hit the
-> breakpoint regardless of if it is being traced or not.
->
-> -- Steve
->
->
->>  }
->>
->>  int arch_bp_generic_fields(int x86_len, int x86_type,
->
->
->
+First, a guest and the host uses the global mode as the timestamp of
+ftrace. Next, a user on the guest writes "1" to the synchronization I/F
+as the ID, then the synchronization event "1" is recorded in a
+ring-buffer of the guest. The synchronization operation induces
+hypercall, so the host can handle the event. After the operation moves
+to the host, the host records the event "1" in a ring-buffer of the
+host. In the end, the operation returns to the host, and the
+synchronization is finished.
+
+When we integrate tracing data of the guest and the host, we
+calculate difference of the timestamp between the synchronizing events
+with the same ID. This value is a temporary "offset". We will convert
+the timestamp of the guests to the timestamp of the host before the
+next synchronizing event. If the synchronizing event cycle is very
+short, we will not need to consider the timekeeping. Then, we can sort
+the trace data in chronological order.
+
+Would you comment for this or do you have another idea?
+
+Thanks,
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
 
