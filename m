@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab2KTWVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:21:37 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:42874 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2KTWVg (ORCPT
+	id S1753029Ab2KTWXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:23:16 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32959 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2KTWXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:21:36 -0500
+	Tue, 20 Nov 2012 17:23:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <50ABFF4E.2050101@broadcom.com>
-References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
- <20121120211634.11513416@pyramind.ukuu.org.uk> <50ABFF4E.2050101@broadcom.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 20 Nov 2012 14:21:14 -0800
-X-Google-Sender-Auth: 4io5UBUxXsu1p80Oxz45D0gUwNc
-Message-ID: <CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com>
-Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by tag
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 20 Nov 2012 14:23:14 -0800
+X-Google-Sender-Auth: JdjDaNP1Krj3FxeuO2c99nUqRN4
+Message-ID: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com>
+Subject: Device tree node to major/minor?
+From: Simon Glass <sjg@chromium.org>
+To: lk <linux-kernel@vger.kernel.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Che-liang Chiou <clchiou@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 2:08 PM, Arend van Spriel <arend@broadcom.com> wrote:
-> On 11/20/2012 10:16 PM, Alan Cox wrote:
->>
->> On Tue, 20 Nov 2012 12:59:40 -0800
->> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->>>
->>>
->>> Thoughts?
->>
->>
->> Nobody is stopping you putting a copy on a web site.
->
->
-> Correct me if I am wrong, but I think what Luis is referring to, is the fact
-> that the 'Developer's Certificate of Origin' is currently included in the
-> SubmittingPatches file. Probably the proposal is to take it out and have it
-> in a separate document in the tree.
+Hi,
 
-Not just a separate document but project / github / whatever given
-that other projects are referring to it now, and we stand to gain more
-in the community by streamlining it more and making it ubiquitous.
+I hope this is a stupid question with an easy answer, but I cannot find it.
 
-  Luis
+I have a device tree node for an mmc block device and I want to use
+that block device from another driver. I have a phandle which lets me
+get the node of the mmc device, but I am not sure how to convert that
+into a block_device. In order to do so, I think I need a major/minor
+number. Of course the phandle might in fact point to a SCSI driver and
+I want that to work correctly also.
+
+I imagine I might be able to search through the wonders of sysfs in
+user space, but is there a better way?
+
+Thanks,
+Simon
