@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab2KTRIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 12:08:44 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37389 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752894Ab2KTRIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 12:08:43 -0500
-Date: Tue, 20 Nov 2012 17:08:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Maynard Johnson <maynardj@us.ibm.com>,
-        "jgq516@gmail.com" <jgq516@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: oprofile: add A5/A7/A15 entries in op_perf_name
-Message-ID: <20121120170817.GG27765@mudshark.cambridge.arm.com>
-References: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
- <20121105113102.GF3351@mudshark.cambridge.arm.com>
- <20121120121747.GJ2504@rric.localhost>
- <20121120155717.GD26475@mudshark.cambridge.arm.com>
- <20121120163158.GO2504@rric.localhost>
- <20121120165517.GC27765@mudshark.cambridge.arm.com>
- <20121120170601.GR2504@rric.localhost>
+	id S1753208Ab2KTRJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 12:09:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42354 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803Ab2KTRJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 12:09:27 -0500
+Message-ID: <50ABB92D.5090401@zytor.com>
+Date: Tue, 20 Nov 2012 09:09:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120170601.GR2504@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russ Anderson <rja@sgi.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] x86, UV: integer wrap bug in uv_hub_ipi_value()
+References: <20121117151611.GB16900@elgon.mountain> <20121120004834.GE5060@sgi.com> <20121120042855.GE6186@mwanda> <20121120111055.64845785@pyramind.ukuu.org.uk> <20121120162706.GB11150@sgi.com>
+In-Reply-To: <20121120162706.GB11150@sgi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 05:06:01PM +0000, Robert Richter wrote:
-> On 20.11.12 16:55:17, Will Deacon wrote:
-> > On Tue, Nov 20, 2012 at 04:31:58PM +0000, Robert Richter wrote:
-> > > I am thinking of the following:
-> > > 
-> > >  # cat /root/cpu_type
-> > >  arm/armv7-ca5
-> > >  # cat /dev/oprofile/cpu_type
-> > >  unknown
-> > >  # mount --bind /root/cpu_type /dev/oprofile/cpu_type
-> > >  # cat /dev/oprofile/cpu_type
-> > >  arm/armv7-ca5
-> > > 
-> > > From here legacy oprofile tools work as expected using oprofilefs. (I
-> > > think. Did not test it.) We need to change the kernel for this a bit
-> > > to return 'unknown'. The mount could be done by the oprofile tools
-> > > using existing cpu detection code. This is only one way to setup
-> > > cpu_type from userland, there could be other ways too.
-> > 
-> > Ok, this is functionally equivalent to the patch that was submitted at the
-> > start of this thread: it solves the problem of mapping a single ARM core to
-> > a oprofile's CPU ID string. Technically, I don't mind doing that in the
-> > kernel (at least, it means you don't need to do your trick above)
-> 
-> The advantage of a solution where userland updates cpu_type is that we
-> never need to update the kernel anymore. This means, cpu detection can
-> be part of the tools.
+On 11/20/2012 08:27 AM, Russ Anderson wrote:
+>
+> I very much agree.  I prefer u32, u64 (etc) because they are
+> unambiguous.  It removes all doubt as to the actual meaning.
+>
+> Conversly, the fact that "long" has different meanings makes
+> it at best problematic.  Was the code written assuming "long"
+> was 32 or 64 bits?  Having data types that can have different
+> sizes is just asking for trouble.
+>
 
-True, but the kernel-side perf code still needs updating to support the new
-CPU so I don't think you win much.
+In the Linux kernel context, "long" effectively means the native size 
+(size_t/intptr_t/ptrdiff_t).
 
-Will
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
