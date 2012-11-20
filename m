@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab2KTJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:58:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47050 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583Ab2KTJ6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:58:01 -0500
-Date: Tue, 20 Nov 2012 01:57:57 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
-Message-ID: <20121120095757.GB11732@core.coreip.homeip.net>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
- <20121120093242.GK3290@n2100.arm.linux.org.uk>
+	id S1752760Ab2KTJ7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:59:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39740 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786Ab2KTJ7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:59:04 -0500
+Message-ID: <50AB5462.9030401@suse.cz>
+Date: Tue, 20 Nov 2012 10:58:58 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120093242.GK3290@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Palix <nicolas.palix@imag.fr>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, linux-kernel@vger.kernel.org,
+        cocci@systeme.lip6.fr
+Subject: Re: [PATCH] Coccicheck: Improvement for online checking with 'make
+ C=[12]'
+References: <1350031730-20822-1-git-send-email-nicolas.palix@imag.fr>
+In-Reply-To: <1350031730-20822-1-git-send-email-nicolas.palix@imag.fr>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 09:32:42AM +0000, Russell King - ARM Linux wrote:
-> On Tue, Nov 20, 2012 at 01:22:17AM -0800, Dmitry Torokhov wrote:
-> > We'll need to invoke clk_unprepare() via a pointer in our devm_*
-> > conversion so let's uninline the pair.
-> 
-> NAK.  This breaks non-common clock using implementations.
+Hi Nicolas,
 
-As Viresh mentioned I provided stubs for case when we do not have
-CONFIG_HAVE_CLK, so I am not sure how I'll break these platforms, but I
-am certainly open for suggestions.
- 
-> 
-> Why do you need to call this function via a pointer?  That sounds absurd.
+sorry for the delay.
 
-devres framework takes and stores a pointer to a "destructor" which will
-be used later.
+On 12.10.2012 10:48, Nicolas Palix wrote:
+> +    # The ignore_unknown_options flag requires Coccinelle >= 0.2.3
+> +    FLAGS="-ignore_unknown_options -very_quiet"
+> +    if [ "$KBUILD_EXTMOD" = "" ] ; then
+> +        OPTIONS="-dir $srctree $*"
 
-Thanks.
+Why is -Iinclude not needed in this case?
 
--- 
-Dmitry
+
+> +    else
+> +        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include $*"
+> +    fi
+
+The main Makefile exports the $LINUXINCLUDE variable, which contains all
+the needed -I options. It would be cleaner to use that instead.
+
+Michal
