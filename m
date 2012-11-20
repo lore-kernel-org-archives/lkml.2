@@ -1,34 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2KTLA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:00:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42676 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab2KTLAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:00:55 -0500
-Date: Tue, 20 Nov 2012 12:00:54 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] malloc: Fix malloc handling in conf tools
-Message-ID: <20121120110054.GD31243@sepie.suse.cz>
-References: <20121106143206.21941.22214.stgit@localhost.localdomain>
+	id S1752680Ab2KTLDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:03:00 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:49731 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751122Ab2KTLC7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 06:02:59 -0500
+Message-Id: <201211201102.qAKB0JBI095033@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121106143206.21941.22214.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Warning! Your mailbox is almost full.
+To: Recipients <fxzhang@dicp.ac.cn>
+From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
+Date: Tue, 20 Nov 2012 05:02:10 -0600
+Reply-To: fxzhang@dicp.ac.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 02:32:08PM +0000, Alan Cox wrote:
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> (and get them out of the noise in the audit work)
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
 
-Applied to kbuild.git#kconfig, thanks.
+click link below:
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
 
-Michal
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
