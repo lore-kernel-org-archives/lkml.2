@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab2KTNr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:47:26 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57383 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2KTNrY (ORCPT
+	id S1753093Ab2KTNuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:50:14 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:37785 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab2KTNuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:47:24 -0500
-Date: Tue, 20 Nov 2012 14:47:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, arnd@arndb.de
-Subject: Re: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-Message-ID: <20121120134737.GB8111@elf.ucw.cz>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	Tue, 20 Nov 2012 08:50:12 -0500
+Message-ID: <50AB8A83.3010308@synopsys.com>
+Date: Tue, 20 Nov 2012 19:19:55 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavel Machek <pavel@ucw.cz>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>, <arnd@arndb.de>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: Re: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <20121120134737.GB8111@elf.ucw.cz>
+In-Reply-To: <20121120134737.GB8111@elf.ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tuesday 20 November 2012 07:17 PM, Pavel Machek wrote:
+> Hi!
+>
+>>     https://raw.github.com/vineetgarc/publish/master/ELCE-2012-ARC-Linux.pdf
+>>
+>> All comments/criticisms are welcome !
+> Huh. arch/arc is very similar to arch/arm. So similar that it took me
+> 10 minutes to figure out. I guess theres no alternate name arc could
+> use?
 
->     https://raw.github.com/vineetgarc/publish/master/ELCE-2012-ARC-Linux.pdf
-> 
-> All comments/criticisms are welcome !
+Thanks for the review comment - I'll pass this message to our marketing
+folks !
 
-Huh. arch/arc is very similar to arch/arm. So similar that it took me
-10 minutes to figure out. I guess theres no alternate name arc could
-use?
+>
+> 									Pavel
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
