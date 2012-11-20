@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab2KTQJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:09:40 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41054 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753405Ab2KTQJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:09:38 -0500
-Date: Tue, 20 Nov 2012 11:09:38 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: harvey yang <harvey.huawei.yang@gmail.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] usb: add 'usb_get_intf()' call into the probe methods of
- drivers for usb interfaces.
-In-Reply-To: <CAFCUKTS=SHoD4jpJe0_H6tsKcw-C9bAQP=VhXx+Lp8WZ4Xj6cA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1211201104550.1692-100000@iolanthe.rowland.org>
+	id S1753489Ab2KTQJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:09:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002Ab2KTQJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 11:09:45 -0500
+Date: Tue, 20 Nov 2012 17:09:40 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: i2c-hid: fix memory leak during probe
+Message-ID: <alpine.LNX.2.00.1211201706300.4609@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012, harvey yang wrote:
+In case we are returning from i2c_hid_probe() through the 'err' or 
+err_mem_free labels, there is noone freeing the buffers allocated by 
+i2c_hid_alloc_buffers().
 
-> Hi, all
-> I checked many usb drivers in the mainline kernel which do not record
-> this reference in their probe methods. But according to the documents
-> about this function, we shoud record this reference in our probe
-> methods, just as the call to 'usb_get_dev()' to reference a usb
-> device. Are these usb drivers right or we need to fix them?
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/i2c-hid/i2c-hid.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-The drivers are right; they do not need to be fixed.  The reason is
-because the drivers will be unbound automatically when the device or
-interface is unregistered.
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 11140bd..67ab5b7 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -892,6 +892,7 @@ err:
+ 	if (ihid->irq)
+ 		free_irq(ihid->irq, ihid);
+ 
++	i2c_hid_free_buffers(ihid);
+ 	kfree(ihid);
+ 	return ret;
+ }
 
-The only reason for a driver to take a reference would be if it wanted 
-to continue using the device after it was unbound.  But drivers aren't 
-supposed to do that.
-
-Alan Stern
-
+-- 
+Jiri Kosina
+SUSE Labs
