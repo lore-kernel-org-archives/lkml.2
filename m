@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2KTAtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:49:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53094 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab2KTAtj (ORCPT
+	id S1753463Ab2KTAuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:50:07 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab2KTAuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:49:39 -0500
-Date: Mon, 19 Nov 2012 16:49:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
-Message-Id: <20121119164938.7f19f3d9.akpm@linux-foundation.org>
-In-Reply-To: <20121117083437.GC22855@moon>
-References: <20121114151937.344922058@openvz.org>
-	<20121114152239.936025193@openvz.org>
-	<20121116155603.2118394c.akpm@linux-foundation.org>
-	<20121117071039.GA22855@moon>
-	<20121117083437.GC22855@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 19:50:05 -0500
+Date: Mon, 19 Nov 2012 16:50:02 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mel Gorman <mgorman@suse.de>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+In-Reply-To: <20121119162909.GL8218@suse.de>
+Message-ID: <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Nov 2012 12:34:37 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Mon, 19 Nov 2012, Mel Gorman wrote:
 
-> On Sat, Nov 17, 2012 at 11:10:39AM +0400, Cyrill Gorcunov wrote:
-> > > 
-> > > What happens if we do something like the below (which will require a
-> > > changelog update)?
-> > 
-> > Looks good for me, Andrew. The only reason for such whitespace rich format
-> > was to make output column aligned. But it's fine to have name:val as well.
-> > I'll update. Thanks!
+> I was not able to run a full sets of tests today as I was distracted so
+> all I have is a multi JVM comparison. I'll keep it shorter than average
 > 
-> Andrew, here is a patch which contains and your change, and changelog update
-> and one fix (you've lost %lx for ino number thus compiler warns me about
-> missing specificator). Also the inotify/fanotify at first position on the
-> line (without dash, as you propose, ie inotify-wd) applies to the whole line,
-> that's why I didn't use dashes in first place.
+>                           3.7.0                 3.7.0
+>                  rc5-stats-v4r2   rc5-schednuma-v16r1
+> TPut   1     101903.00 (  0.00%)     77651.00 (-23.80%)
+> TPut   2     213825.00 (  0.00%)    160285.00 (-25.04%)
+> TPut   3     307905.00 (  0.00%)    237472.00 (-22.87%)
+> TPut   4     397046.00 (  0.00%)    302814.00 (-23.73%)
+> TPut   5     477557.00 (  0.00%)    364281.00 (-23.72%)
+> TPut   6     542973.00 (  0.00%)    420810.00 (-22.50%)
+> TPut   7     540466.00 (  0.00%)    448976.00 (-16.93%)
+> TPut   8     543226.00 (  0.00%)    463568.00 (-14.66%)
+> TPut   9     513351.00 (  0.00%)    468238.00 ( -8.79%)
+> TPut   10    484126.00 (  0.00%)    457018.00 ( -5.60%)
+> TPut   11    467440.00 (  0.00%)    457999.00 ( -2.02%)
+> TPut   12    430423.00 (  0.00%)    447928.00 (  4.07%)
+> TPut   13    445803.00 (  0.00%)    434823.00 ( -2.46%)
+> TPut   14    427388.00 (  0.00%)    430667.00 (  0.77%)
+> TPut   15    437183.00 (  0.00%)    423746.00 ( -3.07%)
+> TPut   16    423245.00 (  0.00%)    416259.00 ( -1.65%)
+> TPut   17    417666.00 (  0.00%)    407186.00 ( -2.51%)
+> TPut   18    413046.00 (  0.00%)    398197.00 ( -3.59%)
+> 
+> This version of the patches manages to cripple performance entirely. I
+> do not have a single JVM comparison available as the machine has been in
+> use during the day. I accept that it is very possible that the single
+> JVM figures are better.
+> 
 
-Oh, I see.
+I confirm that SPECjbb2005 1.07 -Xmx4g regresses in terms of throughput on 
+my 16-way, 4 node system with 32GB of memory using 16 warehouses and 240 
+measurement seconds.  I averaged the throughput for five runs on each 
+kernel.
 
->  | pos:	0
->  | flags:	02000000
->  | inotify wd:3 ino:9e7e sdev:800013 mask:800afce ignored_mask:0 fhandle-bytes:8 fhandle-type:1 f_handle:7e9e0000640d1b6d
+Java(TM) SE Runtime Environment (build 1.6.0_06-b02)
+Java HotSpot(TM) 64-Bit Server VM (build 10.0-b22, mixed mode)
 
-It's still a bit strange, isn't it?  The "inotify" identifier doesn't
-have the colon.  I guess it's unavoidable, as this multiple-name-value
-line is being mixed into the same pseudo-file as single name-value lines.
+Both kernels have
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
 
-Where *is* this pseudo-file, anyway?  The changelog doesn't tell us
-where it lies in the filesystem.
+numa/core at 01aa90068b12 ("sched: Use the best-buddy 'ideal cpu' in 
+balancing decisions") with
 
-I know!  I'll search the documentation!  /proc/sys/fs/epoll/..., yes?
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_ARCH_WANTS_NUMA_GENERIC_PGPROT=y
+CONFIG_NUMA_BALANCING=y
+CONFIG_NUMA_BALANCING_HUGEPAGE=y
+CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT=y
+CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT_HUGEPAGE=y
 
-btw, Documentation/sysctl/fs.txt is missing documentation for
-max_user_instances and max_queued_events.  Perhaps you can fix that
-when providing the documentation changes for your patch :)
+had a throughput of 128315.19 SPECjbb2005 bops.
 
+numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into sched/core") 
+had an average throughput of 136918.34 SPECjbb2005 bops, which is a 6.3% 
+regression.
