@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2KTOii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:38:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47418 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2KTOih (ORCPT
+	id S1752903Ab2KTOjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:39:12 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:40642 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KTOjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:38:37 -0500
-Date: Tue, 20 Nov 2012 06:38:32 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Daniel Wagner <wagi@monom.org>
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
-        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
-Message-ID: <20121120143832.GO15971@htj.dyndns.org>
-References: <1353400211-5182-1-git-send-email-tj@kernel.org>
- <1353400211-5182-5-git-send-email-tj@kernel.org>
- <50AB435E.8060901@monom.org>
+	Tue, 20 Nov 2012 09:39:10 -0500
+From: <Vineet.Gupta1@synopsys.com>
+To: <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 0/2] RFC only - allow arches to over-ride unit sized user copies
+Date: Tue, 20 Nov 2012 20:08:15 +0530
+Message-ID: <1353422297-29079-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AB435E.8060901@monom.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Daniel.
+From: Vineet Gupta <vgupta@synopsys.com>
 
-On Tue, Nov 20, 2012 at 09:46:22AM +0100, Daniel Wagner wrote:
-> struct netprio_map {
-> 	struct rcu_head rcu;
-> 	struct netprio_aux *aux;	/* auxiliary config array */
-> 	u32 priomap_len;
-> 	u32 priomap[];
-> };
-> 
-> Is there a specific reason why aux and priomap is handled
-> differently? Couldn't you just use same approach for both variables,
-> e.g. re/allocating only them here and leave the allocation struct
-> netprio_map in cgrp_css_alloc()?
+Hi Arnd,
 
-->aux is no longer added, so the consistency issue doesn't exist
-anymore.  The reason why they were handled differently before (or
-rather why I didn't change priomap[] to be allocated separately) was
-that pointer chasing tends to be more expensive than offsetting.  I
-don't know how much effect it would have in this case but things
-sitting in packet in/out paths can be very hot so didn't wanna disturb
-it.
+The current asm-generic/uaccess unit copy interface __{get,put}_user( )
+defaults to using __copy_{to,from}_user( ). For archs which don't support
+unaligned access, latter typically involves generated code for alignment
+checks.
 
-> Also the algorithm to figure out the size of the array might be a
-> bit too aggressive in my opinion. So you always start at
-> PRIOMAP_MIN_SIZE and then try to double the size until target_idx
-> fits. Wouldn't it make sense to start to look for the new size
-> beginning at old->priomap_len and then do the power-of-two increase?
+It is expected that arch will provide a fast path in __copy_{to,from}_user( )
+for such unit sized copies - probably using __builtin_const_p( ) etc -
+however the alignment checks still can't be eliminated altogether using that.
+Even if they could, it woudl make the implementation messier IMHO.
 
-The only downside of always starting from PRIOMAP_MIN_SIZE is
-iterating several more times in the sizing loop which isn't really
-anything to worry about.  The loop is structured that way because I
-wanted to keep the size of the whole thing power-of-two.  Due to the
-fields before priomap[], if we size priomap_len power-of-two, we'll
-always end up with something slightly over power-of-two, which is
-usually the worst size to allocate.
+However given that 2 separate interfaces already exist form beginning
+(i.e. __get_user vs. __copy_from_user) will it make sense to allow arch to
+provide alternate implementation of former w/o having to mess with latter.
 
-Thanks.
+I did a quick hack to that end and I can see that savings are more than
+just "noise".
+
+bloat-o-meter vmlinux_pre_uaccess vmlinux_uaccess_part1 | head
+add/remove: 0/1 grow/shrink: 10/62 up/down: 1502/-7256 (-5754)
+
+The patch which converts just __get_user follows. I've not
+done the full/clean version yet as this is just to gather feedback.
+
+Thx,
+-Vineet
+
+Vineet Gupta (2):
+  asm-generic: uaccess: allow arch to over-ride __get_user_fn()
+  ARC: provide optimal __get_user_fn()
+
+ arch/arc/include/asm/uaccess.h |   51 ++++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/uaccess.h  |    5 ++++
+ 2 files changed, 56 insertions(+), 0 deletions(-)
 
 -- 
-tejun
+1.7.4.1
+
