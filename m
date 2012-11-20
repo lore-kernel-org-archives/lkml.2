@@ -1,297 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2KTPY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:24:56 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58536 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2KTPYw (ORCPT
+	id S1752429Ab2KTP3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:29:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57847 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab2KTP3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:24:52 -0500
+	Tue, 20 Nov 2012 10:29:40 -0500
+Date: Tue, 20 Nov 2012 16:29:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH] mm, numa: Turn 4K pte NUMA faults into effective hugepage
+ ones
+Message-ID: <20121120152933.GA17996@gmail.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+ <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
+ <20121120071704.GA14199@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50AB9B90.1030404@samsung.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-	<50AB34E2.1010206@samsung.com>
-	<CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
-	<50AB587F.3040405@samsung.com>
-	<CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
-	<50AB81C8.4090300@samsung.com>
-	<CADz5_gL3uHbvhb2ccp03=9P88u1Catxe9+Xffs3KmJsZGWmWvA@mail.gmail.com>
-	<50AB9B90.1030404@samsung.com>
-Date: Tue, 20 Nov 2012 23:24:50 +0800
-Message-ID: <CADz5_gLfy69YksiFuxEKeAv387go_8cOcK_uxbKuhrTBrXdjdQ@mail.gmail.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120071704.GA14199@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Hello,
->
->
-> On 11/20/2012 3:14 PM, Kevin Liu wrote:
->>
->> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
->> > Hello,
->> >
->> >
->> > On 11/20/2012 12:36 PM, Kevin Liu wrote:
->> >>
->> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
->> >> > On 11/20/2012 9:59 AM, Kevin Liu wrote:
->> >> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
->> >> >> > On 11/14/2012 8:11 AM, Kevin Liu wrote:
->> >> >> >>
->> >> >> >> > From: linux-mmc-owner@vger.kernel.org
->> >> >> >> > [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris
->> >> >> >> > Ball
->> >> >> >> > Sent: Tuesday, November 13, 2012 10:14 PM
->> >> >> >> > To: Marek Szyprowski
->> >> >> >> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org;
->> >> >> >> > Kyungmin
->> >> >> >> > Park; Mark Brown; Liam Girdwood; Philip Rakity
->> >> >> >> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check
->> >> >> >> > only
->> >> >> >> > for non-fixed regulators
->> >> >> >> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >> >> >> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >> >> >> >>> > Fixed regulators cannot change their voltage, so disable
->> >> >> >> >>> > all
->> >> >> >> >>> > voltage
->> >> >> >> >>> > range checking for them, otherwise the driver fails to
->> >> >> >> >>> > operate
->> >> >> >> >>> > with
->> >> >> >> >>> > fixed regulators. Up to now it worked only by luck, because
->> >> >> >> >>> > regulator_is_supported_voltage() function returned
->> >> >> >> >>> > incorrect
->> >> >> >> >>> > values.
->> >> >> >> >>> > Commit "regulator: fix voltage check in
->> >> >> >> >>> > regulator_is_supported_voltage()"
->> >> >> >> >>> > fixed that function and now additional check is needed for
->> >> >> >> >>> > fixed
->> >> >> >> >>> > regulators.
->> >> >> >> >>> >
->> >> >> >> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> >> >> >> >>> > ---
->> >> >> >> >>> >  drivers/mmc/host/sdhci.c |    2 +-
->> >> >> >> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >> >> >> >>> >
->> >> >> >> >>> > diff --git a/drivers/mmc/host/sdhci.c
->> >> >> >> >>> > b/drivers/mmc/host/sdhci.c
->> >> >> >> >>> > index c7851c0..6f6534e 100644
->> >> >> >> >>> > --- a/drivers/mmc/host/sdhci.c
->> >> >> >> >>> > +++ b/drivers/mmc/host/sdhci.c
->> >> >> >> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host
->> >> >> >> >>> > *host)
->> >> >> >> >>> >            regulator_enable(host->vmmc);
->> >> >> >> >>> >
->> >> >> >> >>> >  #ifdef CONFIG_REGULATOR
->> >> >> >> >>> > -  if (host->vmmc) {
->> >> >> >> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) >
->> >> >> >> >>> > 1)
->> >> >> >> >>> > {
->> >> >> >> >>> >            ret = regulator_is_supported_voltage(host->vmmc,
->> >> >> >> >>> > 3300000,
->> >> >> >> >>> >                    3300000);
->> >> >> >> >>> >            if ((ret <= 0) || (!(caps[0] &
->> >> >> >> >>> > SDHCI_CAN_VDD_330)))
->> >> >> >> >>>
->> >> >> >> >>> Thanks for the longer explanation.  I'm still missing
->> >> >> >> >>> something,
->> >> >> >> >>> though;
->> >> >> >> >>> what's wrong with running the check as it was with the new
->> >> >> >> >>> regulator
->> >> >> >> >>> code?
->> >> >> >> >>> (I haven't tried it yet.)
->> >> >> >> >>>
->> >> >> >> >>> #ifdef CONFIG_REGULATOR
->> >> >> >> >>>          if (host->vmmc) {
->> >> >> >> >>>                  ret =
->> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >> >>> 3300000,
->> >> >> >> >>>                          3300000);
->> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >> >>> SDHCI_CAN_VDD_330)))
->> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
->> >> >> >> >>>                  ret =
->> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >> >>> 3000000,
->> >> >> >> >>>                          3000000);
->> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >> >>> SDHCI_CAN_VDD_300)))
->> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
->> >> >> >> >>>                  ret =
->> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >> >>> 1800000,
->> >> >> >> >>>                          1800000);
->> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >> >>> SDHCI_CAN_VDD_180)))
->> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
->> >> >> >> >>>          }
->> >> >> >> >>> #endif /* CONFIG_REGULATOR */
->> >> >> >> >>>
->> >> >> >> >>> The point is to remove unsupported voltages, so if someone
->> >> >> >> >>> sets
->> >> >> >> >>> up
->> >> >> >> >>> a
->> >> >> >> >>> fixed regulator at 3300000, all of the other caps are
->> >> >> >> >>> disabled.
->> >> >> >> >>> Why
->> >> >> >> >>> wouldn't that work without this change, and how are we
->> >> >> >> >>> supposed
->> >> >> >> >>> to
->> >> >> >> >>> remove those caps on a fixed regulator after your patchset?
->> >> >> >> >>>
->> >> >> >> >>> Thanks, sorry if I'm missing something obvious,
->> >> >> >> >>
->> >> >> >> >> On our boards eMMC is connected to fixed 2.8V regulator, what
->> >> >> >> >> results
->> >> >> >> >> in
->> >> >> >> >> clearing all available voltages and fail. The same situation
->> >> >> >> >> is
->> >> >> >> >> when
->> >> >> >> >> one
->> >> >> >> >> enable dummy regulator and try to use sdhci with it. My patch
->> >> >> >> >> fixes
->> >> >> >> >> this
->> >> >> >> >> and restores sdhci to working state as it was before (before
->> >> >> >> >> fixing
->> >> >> >> >> regulator regulator_is_supported_voltage() function and
->> >> >> >> >> earlier
->> >> >> >> >> when
->> >> >> >> >> MMC_BROKEN_VOLATGE capability was used).
->> >> >> >> >
->> >> >> >> > I see.  Sounds like a separate bug -- Philip (or anyone else),
->> >> >> >> > any
->> >> >> >> > idea how we should be treating eMMCs with a fixed voltage here?
->> >> >> >> >
->> >> >> >>
->> >> >> >> I think we should check the voltage range rather than the voltage
->> >> >> >> point accoring to the spec.
->> >> >> >> Otherwise some valid voltage like 2.8v will be discarded by
->> >> >> >> mistake.
->> >> >> >> My below old patch aim to fix this issue.
->> >> >> >> How do you think?
->> >> >> >>
->> >> >> >> -----Original Message-----
->> >> >> >> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
->> >> >> >> Sent: Friday, September 28, 2012 3:56 PM
->> >> >> >> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
->> >> >> >> ulf.hansson@linaro.org; Zhangfei Gao
->> >> >> >> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing
->> >> >> >> Fu
->> >> >> >> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max
->> >> >> >> voltage
->> >> >> >> range according to spec
->> >> >> >>
->> >> >> >> From: Kevin Liu <kliu5@marvell.com>
->> >> >> >>
->> >> >> >> For regulator vmmc/vmmcq, use voltage range as below
->> >> >> >> 3.3v/3.0v: (2.7v, 3.6v)
->> >> >> >> 1.8v: (1.7v, 1.95v)
->> >> >> >> Original code use the specific value which may fail in regulator
->> >> >> >> driver if it does NOT support the specific voltage.
->> >> >> >>
->> >> >> >> Signed-off-by: Jialing Fu <jlfu@marvell.com>
->> >> >> >> Signed-off-by: Kevin Liu <kliu5@marvell.com>
->> >> >> >
->> >> >> >
->> >> >> > Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> >> >> >
->> >> >> > This patch restores sdhci devices to working state on Samsung
->> >> >> > boards
->> >> >> > (tested on GONI and UniversalC210) after merging "regulator: fix
->> >> >> > voltage
->> >> >> > check in regulator_is_supported_voltage()" patch to v3.7-rc6
->> >> >> > (commit
->> >> >> > f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have
->> >> >> > it
->> >> >> > merged before the final v3.7 is out.
->> >> >> >
->> >> >> Marek,
->> >> >>
->> >> >> thanks a lot for the verification!
->> >> >> And your patch "mmc: sdhci: apply voltage range check only for
->> >> >> non-fixed regulators" (commit
->> >> >> d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
->> >> >> mmc-next) can be reverted if this patch merged?
->> >> >
->> >> >
->> >> > Yes, it can be replaced with it, although there is still an issue
->> >> > that
->> >> > need
->> >> > to be resolved somehow. Right now SDHCI driver fails to initialize if
->> >> > support
->> >> > for dummy regulator is enabled.
->> >> >
->> >> Then I think the dummy issue can be resolved with your patch merged
->> >> and if you can just update your patch from
->> >>       "regulator_count_voltages(host->vmmc) > 1"
->> >> to
->> >>       "regulator_count_voltages(host->vmmc) > 0"
->> >> to let fix regulator work.
->> >
->> >
->> > regulator_count_voltages() returns 1 for both fixed regulators and for
->> > virtual dummy regulator, so the above change makes no sense.
->>
->> I think regulator_count_voltage should return -EINVAL for dummy
->> regulator since n_voltages is not defined for dummy regulator:
->> int regulator_count_voltages(struct regulator *regulator)
->> {
->>          struct regulator_dev    *rdev = regulator->rdev;
->>
->>          return rdev->desc->n_voltages ? : -EINVAL;
->> }
->> can you double check this?
->
->
-> Err, right. I looked at the wrong SDHCI device :/ I have 3 of them on my
-> board - one with fixed regulator, one with 'real' and one without (with
-> virtual dummy regulator). I've applied my earlier patch and noticed that
-> it cured sdhci driver with dummy regulator, so I concluded that it did
-> the right job. Sorry for the confusion.
->
-No problem, thanks for the check.
 
->> > However I was so focused on fixing the 2.8V supply case that I missed
->> > the
->> > fact that my "mmc: sdhci: apply voltage range check only for non-fixed
->> > regulators" patch also fixed the dummy regulator case.
->> >
->> > The conclusion is that applying both patches should finally fix the
->> > regulator issues with for the Samsung boards (2.8V supply for eMMC) and
->> > 'dummy-regulators' cases.
->> >
->>
->> After thinking again, I think we don't need the check for
->> regulator_count_voltages.
->> In fact, dummy regulator should NOT be used for the sd/mmc power
->> supply. We should use controllable or fixed regulator. If dummy
->> regulator is used, then it means we won't control it and we don't know
->> its voltage. It's not reasonable for sd/mmc power supply. If dummy
->> regulator is used, I think it's ok to return error and disable all
->> voltage support caps.
->
->
-> The problem with dummy regulator is the fact that it can be enabled only
-> globally for all devices in the system. I think that the best solution
-> would be to introduce regulator_can_change_voltage() as Mark suggested.
-> I will post patches soon.
->
-I think both controllable and fixed regulator should check the voltage
-range (fixed regulator also need to check its voltage whether resides
-in the valid range). But regulator_can_change_voltage will return
-false for both fixed and dummy regulator while return true for
-controllable regulator.
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-Thanks
-Kevin
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Mon, Nov 19, 2012 at 12:36 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> > >
+> > > Hugepages is a must for most forms of NUMA/HPC. This alone
+> > > questions the relevance of most of your prior numa/core testing
+> > > results. I now have to strongly dispute your other conclusions
+> > > as well.
+> > 
+> > Ingo, stop doing this kind of crap.
+> > 
+> > Let's make it clear: if the NUMA patches continue to regress 
+> > performance for reasonable loads (and that very much includes 
+> > "no THP") then they won't be merged.
+> [...]
+> 
+> No doubt numa/core should not regress with THP off or on and 
+> I'll fix that.
+
+Once it was clear how Mel's workload was configured I could 
+reproduce it immediately myself as well and the fix was easy and 
+straightforward: the attached patch should do the trick.
+
+(Lightly tested.)
+
+Updated 32-warehouse SPECjbb test benchmarks on a 4x4 64 GB 
+system:
+
+         mainline:                 395 k/sec
+         numa/core +patch:         512 k/sec     [ +29.6% ]
+
+         mainline +THP:            524 k/sec
+         numa/core +patch +THP:    654 k/sec     [ +24.8% ]
+
+So here on my box the reported 32-warehouse SPECjbb regressions 
+are fixed to the best of my knowledge, and numa/core is now a 
+nice unconditional speedup over mainline.
+
+CONFIG_NUMA_BALANCING=y brings roughly as much of a speedup to 
+mainline as CONFIG_TRANSPARENT_HUGEPAGE=y itself - and the 
+combination of the two features brings roughly a combination of 
+speedups: +65%, which looks pretty impressive.
+
+This fix had no impact on the good "+THP +NUMA" results that 
+were reproducible with -v16 already.
+
+Mel, David, could you give this patch too a whirl? It should 
+improve !THP workloads.
+
+( The 4x JVM regression is still an open bug I think - I'll
+  re-check and fix that one next, no need to re-report it,
+  I'm on it. )
+
+Thanks,
+
+	Ingo
+
+
+----------------------------->
+Subject: mm, numa: Turn 4K pte NUMA faults into effective hugepage ones
+From: Ingo Molnar <mingo@kernel.org>
+Date: Tue Nov 20 15:48:26 CET 2012
+
+Reduce the 4K page fault count by looking around and processing
+nearby pages if possible.
+
+To keep the logic simple and straightforward we do a couple of 
+simplifications:
+
+ - we only scan in the HPAGE_SIZE range of the faulting address
+ - we only go as far as the vma allows us
+
+Also simplify the do_numa_page() flow while at it and fix the 
+previous double faulting we incurred due to not properly fixing 
+up freshly migrated ptes.
+
+Suggested-by: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/memory.c |  101 +++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 66 insertions(+), 35 deletions(-)
+
+Index: linux/mm/memory.c
+===================================================================
+--- linux.orig/mm/memory.c
++++ linux/mm/memory.c
+@@ -3455,64 +3455,94 @@ static int do_nonlinear_fault(struct mm_
+ 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
+ }
+ 
+-static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++static int __do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pte_t *ptep, pmd_t *pmd,
+-			unsigned int flags, pte_t entry)
++			unsigned int flags, pte_t entry, spinlock_t *ptl)
+ {
+-	struct page *page = NULL;
+-	int node, page_nid = -1;
+-	int last_cpu = -1;
+-	spinlock_t *ptl;
+-
+-	ptl = pte_lockptr(mm, pmd);
+-	spin_lock(ptl);
+-	if (unlikely(!pte_same(*ptep, entry)))
+-		goto out_unlock;
++	struct page *page;
++	int new_node;
+ 
+ 	page = vm_normal_page(vma, address, entry);
+ 	if (page) {
+-		get_page(page);
+-		page_nid = page_to_nid(page);
+-		last_cpu = page_last_cpu(page);
+-		node = mpol_misplaced(page, vma, address);
+-		if (node != -1 && node != page_nid)
++		int page_nid = page_to_nid(page);
++		int last_cpu = page_last_cpu(page);
++
++		new_node = mpol_misplaced(page, vma, address);
++		if (new_node != -1 && new_node != page_nid)
+ 			goto migrate;
++		task_numa_fault(page_nid, last_cpu, 1);
+ 	}
+ 
+-out_pte_upgrade_unlock:
++out_pte_upgrade:
+ 	flush_cache_page(vma, address, pte_pfn(entry));
+-
+ 	ptep_modify_prot_start(mm, address, ptep);
+ 	entry = pte_modify(entry, vma->vm_page_prot);
++	if (pte_dirty(entry))
++		entry = pte_mkwrite(entry);
+ 	ptep_modify_prot_commit(mm, address, ptep, entry);
+-
+ 	/* No TLB flush needed because we upgraded the PTE */
+-
+ 	update_mmu_cache(vma, address, ptep);
+-
+-out_unlock:
+-	pte_unmap_unlock(ptep, ptl);
+-
+-	if (page) {
+-		task_numa_fault(page_nid, last_cpu, 1);
+-		put_page(page);
+-	}
+ out:
+ 	return 0;
+ 
+ migrate:
++	get_page(page);
+ 	pte_unmap_unlock(ptep, ptl);
+ 
+-	if (migrate_misplaced_page(page, node)) {
++	migrate_misplaced_page(page, new_node);
++
++	/* Re-check after migration: */
++
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
++	entry = ACCESS_ONCE(*ptep);
++
++	if (!pte_numa(vma, entry))
+ 		goto out;
+-	}
+-	page = NULL;
+ 
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
+-	if (!pte_same(*ptep, entry))
+-		goto out_unlock;
++	page = vm_normal_page(vma, address, entry);
++	goto out_pte_upgrade;
++}
+ 
+-	goto out_pte_upgrade_unlock;
++/*
++ * Add a simple loop to also fetch ptes within the same pmd:
++ */
++static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++			unsigned long addr0, pte_t *ptep0, pmd_t *pmd,
++			unsigned int flags, pte_t entry0)
++{
++	unsigned long addr0_pmd = addr0 & PMD_MASK;
++	unsigned long addr_start;
++	unsigned long addr;
++	spinlock_t *ptl;
++	int entries = 0;
++	pte_t *ptep;
++
++	addr_start = max(addr0_pmd, vma->vm_start);
++	ptep = pte_offset_map(pmd, addr_start);
++
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
++
++	for (addr = addr_start; addr < vma->vm_end; addr += PAGE_SIZE, ptep++) {
++ 		pte_t entry;
++
++		entry = ACCESS_ONCE(*ptep);
++
++		if ((addr & PMD_MASK) != addr0_pmd)
++			break;
++		if (!pte_present(entry))
++			continue;
++		if (!pte_numa(vma, entry))
++			continue;
++
++		__do_numa_page(mm, vma, addr, ptep, pmd, flags, entry, ptl);
++		entries++;
++	}
++
++	pte_unmap_unlock(ptep, ptl);
++	
++	return 0;
+ }
+ 
+ /*
+@@ -3536,6 +3566,7 @@ int handle_pte_fault(struct mm_struct *m
+ 	spinlock_t *ptl;
+ 
+ 	entry = ACCESS_ONCE(*pte);
++
+ 	if (!pte_present(entry)) {
+ 		if (pte_none(entry)) {
+ 			if (vma->vm_ops) {
+
