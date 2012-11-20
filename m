@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab2KTV4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:56:45 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:58786 "EHLO
+	id S1753092Ab2KTV4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:56:50 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:58811 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab2KTV4n (ORCPT
+	with ESMTP id S1752977Ab2KTV4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:56:43 -0500
+	Tue, 20 Nov 2012 16:56:48 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
@@ -28,9 +28,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V3 1/3] arm: dma mapping: Export dma ops functions
-Date: Tue, 20 Nov 2012 22:56:25 +0100
-Message-Id: <1353448587-2937-2-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH V3 2/3] arm: plat-orion: Add coherency attribute when setup mbus target
+Date: Tue, 20 Nov 2012 22:56:26 +0100
+Message-Id: <1353448587-2937-3-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353448587-2937-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1353448587-2937-1-git-send-email-gregory.clement@free-electrons.com>
@@ -38,160 +38,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the DMA operations functions. Until now only the dma_ops
-structs in a whole or some dma operation were exposed. This patch
-exposes all the dma coherents operations. They can be reused when an
-architecture or a driver need to create its own set of dma_operation.
+Recent SoC such as Armada 370/XP came with the possibility to deal
+with the I/O coherency by hardware. In this case the transaction
+attribute of the window must be flagged as "Shared transaction". Once
+this flag is set, then the transactions will be forced to be sent
+through the coherency block, in other case transaction is driven
+directly to DRAM.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
- arch/arm/include/asm/dma-mapping.h |   48 ++++++++++++++++++++++++++++++++++++
- arch/arm/mm/dma-mapping.c          |   25 ++++---------------
- 2 files changed, 53 insertions(+), 20 deletions(-)
+ arch/arm/plat-orion/addr-map.c              |    4 ++++
+ arch/arm/plat-orion/include/plat/addr-map.h |    1 +
+ 2 files changed, 5 insertions(+)
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 2300484..b12d7c0 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -112,6 +112,54 @@ static inline void dma_free_noncoherent(struct device *dev, size_t size,
- extern int dma_supported(struct device *dev, u64 mask);
+diff --git a/arch/arm/plat-orion/addr-map.c b/arch/arm/plat-orion/addr-map.c
+index a7b8060..febe386 100644
+--- a/arch/arm/plat-orion/addr-map.c
++++ b/arch/arm/plat-orion/addr-map.c
+@@ -42,6 +42,8 @@ EXPORT_SYMBOL_GPL(mv_mbus_dram_info);
+ #define WIN_REMAP_LO_OFF	0x0008
+ #define WIN_REMAP_HI_OFF	0x000c
  
- /**
-+ * arm_dma_map_page - map a portion of a page for streaming DMA
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @page: page that buffer resides in
-+ * @offset: offset into page for start of buffer
-+ * @size: size of buffer to map
-+ * @dir: DMA transfer direction
-+ *
-+ * Ensure that any data held in the cache is appropriately discarded
-+ * or written back.
-+ *
-+ * The device owns this memory once this call has completed.  The CPU
-+ * can regain ownership by calling dma_unmap_page().
-+ */
-+extern dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
-+				    unsigned long offset, size_t size,
-+				    enum dma_data_direction dir,
-+				    struct dma_attrs *attrs);
++#define ATTR_HW_COHERENCY	(0x1 << 4)
 +
-+/**
-+ * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @handle: DMA address of buffer
-+ * @size: size of buffer (same as passed to dma_map_page)
-+ * @dir: DMA transfer direction (same as passed to dma_map_page)
-+ *
-+ * Unmap a page streaming mode DMA translation.  The handle and size
-+ * must match what was provided in the previous dma_map_page() call.
-+ * All other usages are undefined.
-+ *
-+ * After this call, reads by the CPU to the buffer are guaranteed to see
-+ * whatever the device wrote there.
-+ */
-+extern void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
-+				size_t size, enum dma_data_direction dir,
-+				struct dma_attrs *attrs);
-+
-+extern void arm_dma_sync_single_for_cpu(struct device *dev,
-+					dma_addr_t handle, size_t size,
-+					enum dma_data_direction dir);
-+
-+extern void arm_dma_sync_single_for_device(struct device *dev,
-+					dma_addr_t handle, size_t size,
-+					enum dma_data_direction dir);
-+
-+extern int arm_dma_set_mask(struct device *dev, u64 dma_mask);
-+
-+
-+/**
-  * arm_dma_alloc - allocate consistent memory for DMA
-  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-  * @size: required memory size
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 58bc3e4..dbb67ce 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -56,20 +56,13 @@ static void __dma_page_dev_to_cpu(struct page *, unsigned long,
- 		size_t, enum dma_data_direction);
- 
- /**
-- * arm_dma_map_page - map a portion of a page for streaming DMA
-- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-- * @page: page that buffer resides in
-- * @offset: offset into page for start of buffer
-- * @size: size of buffer to map
-- * @dir: DMA transfer direction
-- *
-  * Ensure that any data held in the cache is appropriately discarded
-  * or written back.
-  *
-  * The device owns this memory once this call has completed.  The CPU
-  * can regain ownership by calling dma_unmap_page().
+ /*
+  * Default implementation
   */
--static dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
-+dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
- 	     unsigned long offset, size_t size, enum dma_data_direction dir,
- 	     struct dma_attrs *attrs)
- {
-@@ -86,12 +79,6 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
- }
+@@ -163,6 +165,8 @@ void __init orion_setup_cpu_mbus_target(const struct orion_addr_map_cfg *cfg,
+ 			w = &orion_mbus_dram_info.cs[cs++];
+ 			w->cs_index = i;
+ 			w->mbus_attr = 0xf & ~(1 << i);
++			if (cfg->hw_io_coherency)
++				w->mbus_attr |= ATTR_HW_COHERENCY;
+ 			w->base = base & 0xffff0000;
+ 			w->size = (size | 0x0000ffff) + 1;
+ 		}
+diff --git a/arch/arm/plat-orion/include/plat/addr-map.h b/arch/arm/plat-orion/include/plat/addr-map.h
+index ec63e4a..b76c065 100644
+--- a/arch/arm/plat-orion/include/plat/addr-map.h
++++ b/arch/arm/plat-orion/include/plat/addr-map.h
+@@ -17,6 +17,7 @@ struct orion_addr_map_cfg {
+ 	const int num_wins;	/* Total number of windows */
+ 	const int remappable_wins;
+ 	void __iomem *bridge_virt_base;
++	int hw_io_coherency;
  
- /**
-- * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
-- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-- * @handle: DMA address of buffer
-- * @size: size of buffer (same as passed to dma_map_page)
-- * @dir: DMA transfer direction (same as passed to dma_map_page)
-- *
-  * Unmap a page streaming mode DMA translation.  The handle and size
-  * must match what was provided in the previous dma_map_page() call.
-  * All other usages are undefined.
-@@ -99,7 +86,7 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
-  * After this call, reads by the CPU to the buffer are guaranteed to see
-  * whatever the device wrote there.
-  */
--static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
-+void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
- 		size_t size, enum dma_data_direction dir,
- 		struct dma_attrs *attrs)
- {
-@@ -108,7 +95,7 @@ static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
- 				      handle & ~PAGE_MASK, size, dir);
- }
- 
--static void arm_dma_sync_single_for_cpu(struct device *dev,
-+void arm_dma_sync_single_for_cpu(struct device *dev,
- 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
- {
- 	unsigned int offset = handle & (PAGE_SIZE - 1);
-@@ -116,7 +103,7 @@ static void arm_dma_sync_single_for_cpu(struct device *dev,
- 	__dma_page_dev_to_cpu(page, offset, size, dir);
- }
- 
--static void arm_dma_sync_single_for_device(struct device *dev,
-+void arm_dma_sync_single_for_device(struct device *dev,
- 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
- {
- 	unsigned int offset = handle & (PAGE_SIZE - 1);
-@@ -124,8 +111,6 @@ static void arm_dma_sync_single_for_device(struct device *dev,
- 	__dma_page_cpu_to_dev(page, offset, size, dir);
- }
- 
--static int arm_dma_set_mask(struct device *dev, u64 dma_mask);
--
- struct dma_map_ops arm_dma_ops = {
- 	.alloc			= arm_dma_alloc,
- 	.free			= arm_dma_free,
-@@ -971,7 +956,7 @@ int dma_supported(struct device *dev, u64 mask)
- }
- EXPORT_SYMBOL(dma_supported);
- 
--static int arm_dma_set_mask(struct device *dev, u64 dma_mask)
-+int arm_dma_set_mask(struct device *dev, u64 dma_mask)
- {
- 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
- 		return -EIO;
+ 	/* If NULL, the default cpu_win_can_remap will be used, using
+ 	   the value in remappable_wins */
 -- 
 1.7.9.5
 
