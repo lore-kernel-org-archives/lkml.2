@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2KTIbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:31:04 -0500
+	id S1752942Ab2KTIbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:31:39 -0500
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:46901 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab2KTIai (ORCPT
+	with ESMTP id S1752778Ab2KTIae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:30:38 -0500
+	Tue, 20 Nov 2012 03:30:34 -0500
 From: Tejun Heo <tj@kernel.org>
 To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
         ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
 Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] netprio_cgroup: implement netprio[_set]_prio() helpers
-Date: Tue, 20 Nov 2012 00:30:10 -0800
-Message-Id: <1353400211-5182-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
+Date: Tue, 20 Nov 2012 00:30:08 -0800
+Message-Id: <1353400211-5182-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353400211-5182-1-git-send-email-tj@kernel.org>
 References: <1353400211-5182-1-git-send-email-tj@kernel.org>
@@ -23,132 +23,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce two helpers - netprio_prio() and netprio_set_prio() - which
-hide the details of priomap access and expansion.  This will help
-implementing hierarchy support.
+netprio kept track of the highest prioidx allocated and resized
+priomaps accordingly when necessary.  This makes it necessary to keep
+track of prioidx allocation and may end up resizing on every new
+prioidx.
+
+Update extend_netdev_table() such that it takes @target_idx which the
+priomap should be able to accomodate.  If the priomap is large enough,
+nothing happens; otherwise, the size is doubled until @target_idx can
+be accomodated.
+
+This makes max_prioidx and write_update_netdev_table() unnecessary.
+write_priomap() now calls extend_netdev_table() directly.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Neil Horman <nhorman@tuxdriver.com>
 ---
- net/core/netprio_cgroup.c | 72 ++++++++++++++++++++++++++++++++---------------
- 1 file changed, 50 insertions(+), 22 deletions(-)
+ net/core/netprio_cgroup.c | 56 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 23 deletions(-)
 
 diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 9409cdf..b2af0d0 100644
+index 92cc54c..569d83d 100644
 --- a/net/core/netprio_cgroup.c
 +++ b/net/core/netprio_cgroup.c
-@@ -87,6 +87,51 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+@@ -27,11 +27,11 @@
+ 
+ #include <linux/fdtable.h>
+ 
++#define PRIOMAP_MIN_SZ		128
+ #define PRIOIDX_SZ 128
+ 
+ static unsigned long prioidx_map[PRIOIDX_SZ];
+ static DEFINE_SPINLOCK(prioidx_map_lock);
+-static atomic_t max_prioidx = ATOMIC_INIT(0);
+ 
+ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
+ {
+@@ -51,8 +51,6 @@ static int get_prioidx(u32 *prio)
+ 		return -ENOSPC;
+ 	}
+ 	set_bit(prioidx, prioidx_map);
+-	if (atomic_read(&max_prioidx) < prioidx)
+-		atomic_set(&max_prioidx, prioidx);
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+ 	*prio = prioidx;
+ 	return 0;
+@@ -67,15 +65,40 @@ static void put_prioidx(u32 idx)
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+ }
+ 
+-static int extend_netdev_table(struct net_device *dev, u32 new_len)
++/*
++ * Extend @dev->priomap so that it's large enough to accomodate
++ * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
++ * return.  Must be called under rtnl lock.
++ */
++static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+ {
+-	size_t new_size = sizeof(struct netprio_map) +
+-			   ((sizeof(u32) * new_len));
+-	struct netprio_map *new = kzalloc(new_size, GFP_KERNEL);
+-	struct netprio_map *old;
++	struct netprio_map *old, *new;
++	size_t new_sz, new_len;
+ 
++	/* is the existing priomap large enough? */
+ 	old = rtnl_dereference(dev->priomap);
++	if (old && old->priomap_len > target_idx)
++		return 0;
++
++	/*
++	 * Determine the new size.  Let's keep it power-of-two.  We start
++	 * from PRIOMAP_MIN_SZ and double it until it's large enough to
++	 * accommodate @target_idx.
++	 */
++	new_sz = PRIOMAP_MIN_SZ;
++	while (true) {
++		new_len = (new_sz - offsetof(struct netprio_map, priomap)) /
++			sizeof(new->priomap[0]);
++		if (new_len > target_idx)
++			break;
++		new_sz *= 2;
++		/* overflowed? */
++		if (WARN_ON(new_sz < PRIOMAP_MIN_SZ))
++			return -ENOSPC;
++	}
+ 
++	/* allocate & copy */
++	new = kzalloc(new_sz, GFP_KERNEL);
+ 	if (!new) {
+ 		pr_warn("Unable to alloc new priomap!\n");
+ 		return -ENOMEM;
+@@ -87,26 +110,13 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ 
+ 	new->priomap_len = new_len;
+ 
++	/* install the new priomap */
+ 	rcu_assign_pointer(dev->priomap, new);
+ 	if (old)
+ 		kfree_rcu(old, rcu);
  	return 0;
  }
  
-+/**
-+ * netprio_prio - return the effective netprio of a cgroup-net_device pair
-+ * @cgrp: cgroup part of the target pair
-+ * @dev: net_device part of the target pair
-+ *
-+ * Should be called under RCU read or rtnl lock.
-+ */
-+static u32 netprio_prio(struct cgroup *cgrp, struct net_device *dev)
-+{
-+	struct netprio_map *map = rcu_dereference_rtnl(dev->priomap);
-+
-+	if (map && cgrp->id < map->priomap_len)
-+		return map->priomap[cgrp->id];
-+	return 0;
-+}
-+
-+/**
-+ * netprio_set_prio - set netprio on a cgroup-net_device pair
-+ * @cgrp: cgroup part of the target pair
-+ * @dev: net_device part of the target pair
-+ * @prio: prio to set
-+ *
-+ * Set netprio to @prio on @cgrp-@dev pair.  Should be called under rtnl
-+ * lock and may fail under memory pressure for non-zero @prio.
-+ */
-+static int netprio_set_prio(struct cgroup *cgrp, struct net_device *dev,
-+			    u32 prio)
-+{
-+	struct netprio_map *map;
-+	int ret;
-+
-+	/* avoid extending priomap for zero writes */
-+	map = rtnl_dereference(dev->priomap);
-+	if (!prio && (!map || map->priomap_len <= cgrp->id))
-+		return 0;
-+
-+	ret = extend_netdev_table(dev, cgrp->id);
-+	if (ret)
-+		return ret;
-+
-+	map = rtnl_dereference(dev->priomap);
-+	map->priomap[cgrp->id] = prio;
-+	return 0;
-+}
-+
+-static int write_update_netdev_table(struct net_device *dev)
+-{
+-	int ret = 0;
+-	u32 max_len;
+-	struct netprio_map *map;
+-
+-	max_len = atomic_read(&max_prioidx) + 1;
+-	map = rtnl_dereference(dev->priomap);
+-	if (!map || map->priomap_len < max_len)
+-		ret = extend_netdev_table(dev, max_len);
+-
+-	return ret;
+-}
+-
  static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
  {
  	struct cgroup_netprio_state *cs;
-@@ -105,14 +150,10 @@ static void cgrp_css_free(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs = cgrp_netprio_state(cgrp);
- 	struct net_device *dev;
--	struct netprio_map *map;
- 
- 	rtnl_lock();
--	for_each_netdev(&init_net, dev) {
--		map = rtnl_dereference(dev->priomap);
--		if (map && cgrp->id < map->priomap_len)
--			map->priomap[cgrp->id] = 0;
--	}
-+	for_each_netdev(&init_net, dev)
-+		WARN_ON_ONCE(netprio_set_prio(cgrp, dev, 0));
- 	rtnl_unlock();
- 	kfree(cs);
- }
-@@ -126,16 +167,10 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
- 			struct cgroup_map_cb *cb)
- {
- 	struct net_device *dev;
--	u32 id = cont->id;
--	u32 priority;
--	struct netprio_map *map;
- 
- 	rcu_read_lock();
--	for_each_netdev_rcu(&init_net, dev) {
--		map = rcu_dereference(dev->priomap);
--		priority = (map && id < map->priomap_len) ? map->priomap[id] : 0;
--		cb->fill(cb, dev->name, priority);
--	}
-+	for_each_netdev_rcu(&init_net, dev)
-+		cb->fill(cb, dev->name, netprio_prio(cont, dev));
- 	rcu_read_unlock();
- 	return 0;
- }
-@@ -145,7 +180,6 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- {
- 	char devname[IFNAMSIZ + 1];
- 	struct net_device *dev;
--	struct netprio_map *map;
- 	u32 prio;
- 	int ret;
- 
-@@ -158,14 +192,8 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+@@ -191,7 +201,7 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
  
  	rtnl_lock();
  
--	ret = extend_netdev_table(dev, cgrp->id);
--	if (ret)
--		goto out_unlock;
-+	ret = netprio_set_prio(cgrp, dev, prio);
+-	ret = write_update_netdev_table(dev);
++	ret = extend_netdev_table(dev, prioidx);
+ 	if (ret)
+ 		goto out_unlock;
  
--	map = rtnl_dereference(dev->priomap);
--	if (map)
--		map->priomap[cgrp->id] = prio;
--out_unlock:
- 	rtnl_unlock();
- 	dev_put(dev);
- 	return ret;
 -- 
 1.7.11.7
 
