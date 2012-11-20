@@ -1,230 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2KTPQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:16:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab2KTPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:16:56 -0500
-Date: Tue, 20 Nov 2012 12:16:44 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] perf hists browser: Add option for runtime switching
- perf data file
-Message-ID: <20121120151644.GB14928@infradead.org>
-References: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
- <1353403877-10730-2-git-send-email-feng.tang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353403877-10730-2-git-send-email-feng.tang@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753590Ab2KTPRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:17:19 -0500
+Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab2KTPRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:17:13 -0500
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
+        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
+        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Cc: Daniel Kiper <daniel.kiper@oracle.com>
+Subject: [PATCH v2 02/11] x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
+Date: Tue, 20 Nov 2012 16:04:44 +0100
+Message-Id: <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+X-Bogosity: No, spamicity=0.395697
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 20, 2012 at 05:31:16PM +0800, Feng Tang escreveu:
-> Based on perf report/top/scripts browser integration idea from acme.
-> 
-> This will enable user to runtime switch the data file, when this option
-> is selected, it will popup all the legal data files in current working
-> directory, and the filename selected by user is saved in the global
-> variable "input_name", and a new key 'K_SWITCH_INPUT_DATA' will be
-> passed back to the built-in command which will perform the switch.
-> 
-> This initial version only enables it for 'perf report'.
-> 
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  tools/perf/ui/browsers/hists.c |  113 +++++++++++++++++++++++++++++++++++++++-
->  tools/perf/ui/keysyms.h        |    1 +
->  2 files changed, 113 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index ccc4bd1..c64254b 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -1135,6 +1135,97 @@ static inline bool is_report_browser(void *timer)
->  	return timer == NULL;
->  }
->  
-> +/*
-> + * Only runtime switching of perf data file will make "input_name" point
-> + * to a malloced buffer. So add "is_input_name_malloced" flag to decide
-> + * whether we need to call free() for current "input_name" during the switch.
-> + */
-> +static bool is_input_name_malloced = false;
-> +
-> +static int switch_data_file(void)
-> +{
-> +	char *pwd, *options[32], *abs_path[32], *tmp;
-> +	DIR *pwd_dir;
-> +	int nr_options = 0, choice = -1, ret = -1;
-> +
+Some implementations (e.g. Xen PVOPS) could not use part of identity page table
+to construct transition page table. It means that they require separate PUDs,
+PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
+requirement add extra pointer to PGD, PUD, PMD and PTE and align existing code.
 
-no need for this empty line
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ arch/x86/include/asm/kexec.h       |   10 +++++++---
+ arch/x86/kernel/machine_kexec_64.c |   12 ++++++------
+ 2 files changed, 13 insertions(+), 9 deletions(-)
 
-> +	struct dirent *dent;
-> +
-> +	pwd = getenv("PWD");
-> +	if (!pwd)
-> +		return ret;
-> +
-> +	pwd_dir = opendir(pwd);
-> +	if (!pwd_dir)
-> +		return ret;
-> +
-> +	memset(options, 0, sizeof(options));
-> +	memset(options, 0, sizeof(abs_path));
-> +
-> +	while ((dent = readdir(pwd_dir))) {
-> +		char path[PATH_MAX];
-> +		u64 magic;
-> +		char *name = dent->d_name;
-> +		FILE *file;
-> +
-> +		if (!(dent->d_type == DT_REG))
-> +			continue;
-> +
-> +		snprintf(path, PATH_MAX, "%s/%s", pwd, name);
+diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+index 317ff17..3cf5600 100644
+--- a/arch/x86/include/asm/kexec.h
++++ b/arch/x86/include/asm/kexec.h
+@@ -157,9 +157,13 @@ struct kimage_arch {
+ };
+ #else
+ struct kimage_arch {
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *pte;
++	pgd_t *pgd;
++	pud_t *pud0;
++	pud_t *pud1;
++	pmd_t *pmd0;
++	pmd_t *pmd1;
++	pte_t *pte0;
++	pte_t *pte1;
+ };
+ #endif
+ 
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index b3ea9db..976e54b 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -137,9 +137,9 @@ out:
+ 
+ static void free_transition_pgtable(struct kimage *image)
+ {
+-	free_page((unsigned long)image->arch.pud);
+-	free_page((unsigned long)image->arch.pmd);
+-	free_page((unsigned long)image->arch.pte);
++	free_page((unsigned long)image->arch.pud0);
++	free_page((unsigned long)image->arch.pmd0);
++	free_page((unsigned long)image->arch.pte0);
+ }
+ 
+ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
+@@ -157,7 +157,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
+ 		pud = (pud_t *)get_zeroed_page(GFP_KERNEL);
+ 		if (!pud)
+ 			goto err;
+-		image->arch.pud = pud;
++		image->arch.pud0 = pud;
+ 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
+ 	}
+ 	pud = pud_offset(pgd, vaddr);
+@@ -165,7 +165,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
+ 		pmd = (pmd_t *)get_zeroed_page(GFP_KERNEL);
+ 		if (!pmd)
+ 			goto err;
+-		image->arch.pmd = pmd;
++		image->arch.pmd0 = pmd;
+ 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+ 	}
+ 	pmd = pmd_offset(pud, vaddr);
+@@ -173,7 +173,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
+ 		pte = (pte_t *)get_zeroed_page(GFP_KERNEL);
+ 		if (!pte)
+ 			goto err;
+-		image->arch.pte = pte;
++		image->arch.pte0 = pte;
+ 		set_pmd(pmd, __pmd(__pa(pte) | _KERNPG_TABLE));
+ 	}
+ 	pte = pte_offset_kernel(pmd, vaddr);
+-- 
+1.5.6.5
 
-                       sizeof(path)
-> +
-> +		file = fopen(path, "r");
-> +		if (!file)
-> +			continue;
-> +
-> +		if (fread(&magic, 1, 8, file) < 8)
-> +			goto close_file_and_continue;
-> +
-> +		if (is_perf_magic(magic)) {
-> +			options[nr_options] = strdup(name);
-> +			if (!options[nr_options])
-> +				goto close_file_and_continue;
-> +
-> +			abs_path[nr_options] = strdup(path);
-> +			if (!abs_path[nr_options]) {
-> +				free(options[nr_options]);
-> +				ui__warning("Can't search all data files due to memory shortage.\n");
-> +				fclose(file);
-> +				break;
-> +			}
-> +
-> +			nr_options++;
-> +		}
-> +
-> +close_file_and_continue:
-> +		fclose(file);
-> +		if (nr_options >= 32) {
-> +			ui__warning("Too many perf data files in PWD!\n"
-> +				    "Only the first 32 files will be listed.\n");
-> +			break;
-> +		}
-> +	}
-> +	closedir(pwd_dir);
-> +
-> +	if (nr_options) {
-> +		choice = ui__popup_menu(nr_options, options);
-> +		if (choice < nr_options && choice >= 0) {
-> +			tmp = strdup(abs_path[choice]);
-> +			if (tmp) {
-> +				if (is_input_name_malloced)
-> +					free((void *)input_name);
-> +				input_name = tmp;
-> +				is_input_name_malloced = true;
-> +				ret = 0;
-> +			} else
-> +				ui__warning("Data switch failed due to memory shortage!\n");
-> +		}
-> +	}
-> +
-> +	free_popup_options(options, nr_options);
-> +	free_popup_options(abs_path, nr_options);
-> +	return ret;
-> +}
-> +
-> +
->  static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  				    const char *helpline, const char *ev_name,
->  				    bool left_exits,
-> @@ -1169,7 +1260,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  		int choice = 0,
->  		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
->  		    annotate_f = -2, annotate_t = -2, browse_map = -2;
-> -		int scripts_comm = -2, scripts_symbol = -2, scripts_all = -2;
-> +		int scripts_comm = -2, scripts_symbol = -2,
-> +		    scripts_all = -2, switch_data = -2;
->  
->  		nr_options = 0;
->  
-> @@ -1226,6 +1318,10 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  			if (is_report_browser(hbt))
->  				goto do_scripts;
->  			continue;
-> +		case 's':
-> +			if (is_report_browser(hbt))
-> +				goto do_data_switch;
-> +			continue;
->  		case K_F1:
->  		case 'h':
->  		case '?':
-> @@ -1245,6 +1341,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  					"d             Zoom into current DSO\n"
->  					"t             Zoom into current Thread\n"
->  					"r             Run available scripts('perf report' only)\n"
-> +					"s             Switch to another data file in PWD ('perf report' only)\n"
->  					"P             Print histograms to perf.hist.N\n"
->  					"V             Verbose (DSO names in callchains, etc)\n"
->  					"/             Filter symbol by name");
-> @@ -1352,6 +1449,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  		if (asprintf(&options[nr_options], "Run scripts for all samples") > 0)
->  			scripts_all = nr_options++;
->  
-> +		if (is_report_browser(hbt) && asprintf(&options[nr_options],
-> +				"Switch to another data file in PWD") > 0)
-> +			switch_data = nr_options++;
->  add_exit_option:
->  		options[nr_options++] = (char *)"Exit";
->  retry_popup_menu:
-> @@ -1462,6 +1562,16 @@ do_scripts:
->  
->  			script_browse(script_opt);
->  		}
-> +		/* Switch to another data file */
-> +		else if (choice == switch_data) {
-> +do_data_switch:
-> +			if (!switch_data_file()) {
-> +				key = K_SWITCH_INPUT_DATA;
-> +				break;
-> +			} else
-> +				ui__warning("Won't switch the data files due to\n"
-> +					"no valid data file get selected!\n");
-> +		}
->  	}
->  out_free_stack:
->  	pstack__delete(fstack);
-> @@ -1578,6 +1688,7 @@ browse_hists:
->  						"Do you really want to exit?"))
->  					continue;
->  				/* Fall thru */
-> +			case K_SWITCH_INPUT_DATA:
->  			case 'q':
->  			case CTRL('c'):
->  				goto out;
-> diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
-> index 809eca5..65092d5 100644
-> --- a/tools/perf/ui/keysyms.h
-> +++ b/tools/perf/ui/keysyms.h
-> @@ -23,5 +23,6 @@
->  #define K_TIMER	 -1
->  #define K_ERROR	 -2
->  #define K_RESIZE -3
-> +#define K_SWITCH_INPUT_DATA -4
->  
->  #endif /* _PERF_KEYSYMS_H_ */
-> -- 
-> 1.7.9.5
