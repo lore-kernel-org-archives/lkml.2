@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2KTIPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:15:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50736 "EHLO
+	id S1752421Ab2KTIQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:16:17 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51051 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab2KTIPh (ORCPT
+	with ESMTP id S1751440Ab2KTIQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:15:37 -0500
-Date: Tue, 20 Nov 2012 02:15:21 -0600
-From: darrick.wong@oracle.com
-Message-Id: <201211200815.qAK8FLZ3021995@acsmt357.oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-To: unlisted-recipients:; (no To-header on input)
-Sender: linux-kernel-owner@vger.kernel.org
-List-ID: <linux-kernel.vger.kernel.org>
-X-Mailing-List: linux-kernel@vger.kernel.org
-
->From nobody Mon Nov 19 23:51:14 2012
+	Tue, 20 Nov 2012 03:16:16 -0500
 Subject: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct I/O
  requests
 To: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
- bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
+        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
 From: "Darrick J. Wong" <darrick.wong@oracle.com>
 Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org,
- linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
- djwong+kernel@djwong.org
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, djwong+kernel@djwong.org
 Date: Mon, 19 Nov 2012 23:51:14 -0800
 Message-ID: <20121120075114.25270.40680.stgit@blackbox.djwong.org>
 In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
@@ -33,6 +23,10 @@ User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Sender: linux-kernel-owner@vger.kernel.org
+List-ID: <linux-kernel.vger.kernel.org>
+X-Mailing-List: linux-kernel@vger.kernel.org
 
 If a file is opened with O_SYNC|O_DIRECT, the drive cache does not get
 flushed after the write completion for AIOs.  This patch attempts to fix
