@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2KTHtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:49:19 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40795 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2KTHtR (ORCPT
+	id S1751849Ab2KTHx7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:53:59 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46413 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751513Ab2KTHx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:49:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121120074445.GA14539@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com> <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 19 Nov 2012 23:48:47 -0800
-Message-ID: <CAPM31RKCQ_+ArU2ZV4VcQHKV30riTZKMvF06F4KatHA1tQ4xqQ@mail.gmail.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Nov 2012 02:53:58 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm5102: Make FLL NCO test registers readable
+Date: Tue, 20 Nov 2012 16:53:47 +0900
+Message-Id: <1353398027-15811-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 11:44 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * David Rientjes <rientjes@google.com> wrote:
->
->> On Tue, 20 Nov 2012, Ingo Molnar wrote:
->>
->> > > > numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into
->> > > > sched/core") had an average throughput of 136918.34
->> > > > SPECjbb2005 bops, which is a 6.3% regression.
->> > >
->> > > perftop during the run on numa/core at 01aa90068b12 ("sched:
->> > > Use the best-buddy 'ideal cpu' in balancing decisions"):
->> > >
->> > >     15.99%  [kernel]  [k] page_fault
->> > >      4.05%  [kernel]  [k] getnstimeofday
->> > >      3.96%  [kernel]  [k] _raw_spin_lock
->> > >      3.20%  [kernel]  [k] rcu_check_callbacks
->> > >      2.93%  [kernel]  [k] generic_smp_call_function_interrupt
->> > >      2.90%  [kernel]  [k] __do_page_fault
->> > >      2.82%  [kernel]  [k] ktime_get
->> >
->> > Thanks for testing, that's very interesting - could you tell me
->> > more about exactly what kind of hardware this is? I'll try to
->> > find a similar system and reproduce the performance regression.
->> >
->>
->> This happened to be an Opteron (but not 83xx series), 2.4Ghz.
->
-> Ok - roughly which family/model from /proc/cpuinfo?
->
->> Your benchmarks were different in the number of cores but also
->> in the amount of memory, do you think numa/core would regress
->> because this is 32GB and not 64GB?
->
-> I'd not expect much sensitivity to RAM size.
->
->> > (A wild guess would be an older 4x Opteron system, 83xx
->> > series or so?)
->>
->> Just curious, how you would guess that? [...]
->
-> I'm testing numa/core on many systems and the performance
-> figures seemed to roughly map to that range.
->
->> [...]  Is there something about Opteron 83xx that make
->> numa/core regress?
->
-> Not that I knew of - but apparently there is! I'll try to find a
-> system that matches yours as closely as possible and have a
-> look.
+They contain documented status readback fields.
 
-Here I'd note the node-distances that David included above.  This
-system is not fully connected, having an (asymmetric) kite topology.
-Only nodes nodes 1 and 2 are fully connected.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5102-tables.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-This is sufficiently whacky that it seems a likely candidate :-).
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index 645c0d6..6a0e943 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -1054,6 +1054,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_FLL1_CONTROL_5:
+ 	case ARIZONA_FLL1_CONTROL_6:
+ 	case ARIZONA_FLL1_LOOP_FILTER_TEST_1:
++	case ARIZONA_FLL1_NCO_TEST_0:
+ 	case ARIZONA_FLL1_SYNCHRONISER_1:
+ 	case ARIZONA_FLL1_SYNCHRONISER_2:
+ 	case ARIZONA_FLL1_SYNCHRONISER_3:
+@@ -1069,6 +1070,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_FLL2_CONTROL_5:
+ 	case ARIZONA_FLL2_CONTROL_6:
+ 	case ARIZONA_FLL2_LOOP_FILTER_TEST_1:
++	case ARIZONA_FLL2_NCO_TEST_0:
+ 	case ARIZONA_FLL2_SYNCHRONISER_1:
+ 	case ARIZONA_FLL2_SYNCHRONISER_2:
+ 	case ARIZONA_FLL2_SYNCHRONISER_3:
+@@ -1822,6 +1824,8 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_SAMPLE_RATE_3_STATUS:
+ 	case ARIZONA_HAPTICS_STATUS:
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
++	case ARIZONA_FLL1_NCO_TEST_0:
++	case ARIZONA_FLL2_NCO_TEST_0:
+ 	case ARIZONA_FX_CTRL2:
+ 	case ARIZONA_INTERRUPT_STATUS_1:
+ 	case ARIZONA_INTERRUPT_STATUS_2:
+-- 
+1.7.10.4
 
-- Paul
-
->
->> > Also, the profile looks weird to me. Here is how perf top looks
->> > like on my system during a similarly configured, "healthy"
->> > SPECjbb run:
->> >
->> >  91.29%  perf-6687.map            [.] 0x00007fffed1e8f21
->> >   4.81%  libjvm.so                [.] 0x00000000007004a0
->> >   0.93%  [vdso]                   [.] 0x00007ffff7ffe60c
->> >   0.72%  [kernel]                 [k] do_raw_spin_lock
->> >   0.36%  [kernel]                 [k] generic_smp_call_function_interrupt
->> >   0.10%  [kernel]                 [k] format_decode
->> >   0.07%  [kernel]                 [k] rcu_check_callbacks
->> >   0.07%  [kernel]                 [k] apic_timer_interrupt
->> >   0.07%  [kernel]                 [k] call_function_interrupt
->> >   0.06%  libc-2.15.so             [.] __strcmp_sse42
->> >   0.06%  [kernel]                 [k] irqtime_account_irq
->> >   0.06%  perf                     [.] 0x000000000004bb7c
->> >   0.05%  [kernel]                 [k] x86_pmu_disable_all
->> >   0.04%  libc-2.15.so             [.] __memcpy_ssse3
->> >   0.04%  [kernel]                 [k] ktime_get
->> >   0.04%  [kernel]                 [k] account_group_user_time
->> >   0.03%  [kernel]                 [k] vbin_printf
->> >
->> > and that is what SPECjbb does: it spends 97% of its time in Java
->> > code - yet there's no Java overhead visible in your profile -
->> > how is that possible? Could you try a newer perf on that box:
->> >
->>
->> It's perf top -U, the benchmark itself was unchanged so I
->> didn't think it was interesting to gather the user symbols.
->> If that would be helpful, let me know!
->
-> Yeah, regular perf top output would be very helpful to get a
-> general sense of proportion. Thanks!
->
->         Ingo
