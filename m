@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab2KTATU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:19:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52970 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab2KTATT (ORCPT
+	id S1753833Ab2KTAUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:20:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57309 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753708Ab2KTAUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:19:19 -0500
-Date: Mon, 19 Nov 2012 16:19:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: Inject NMI when locked up and going to panic
-Message-Id: <20121119161917.229c6d6f.akpm@linux-foundation.org>
-In-Reply-To: <1353198533-24473-1-git-send-email-sasha.levin@oracle.com>
-References: <1353198533-24473-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 19:20:00 -0500
+Date: Tue, 20 Nov 2012 09:19:51 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: ciminaghi@gnudd.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/10] sta2x11-mfd patches
+Message-ID: <20121120001949.GA4483@opensource.wolfsonmicro.com>
+References: <1352470801-2418-1-git-send-email-ciminaghi@gnudd.com>
+ <20121119175858.GI18738@sortiz-mobl>
+ <20121119184423.GA32464@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+In-Reply-To: <20121119184423.GA32464@sortiz-mobl>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Nov 2012 19:28:53 -0500
-Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> Send an NMI to all CPUs when a lockup is detected and the lockup
-> watchdog code is configured to panic. This gives us a fairly uptodate
-> snapshot of all CPUs in the system.
-> 
-> This lets us get stack trace of all CPUs which makes life easier
-> trying to debug a deadlock, and the NMI doesn't change anything
-> since the next step is a kernel panic.
-> 
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-nit: I'll rename this to "watchdog: trigger all-cpu backtrace when
-locked up and going to panic".  We don't know how the arch implements
-trigger_all_cpu_backtrace() at this level!
+On Mon, Nov 19, 2012 at 07:44:23PM +0100, Samuel Ortiz wrote:
 
+> I merged Mark's topic/lock branch into my for-next branch for that patchset to
+> build. Mark, are you fine with that ?
 
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -239,10 +239,12 @@ static void watchdog_overflow_callback(struct perf_event *event,
->  		if (__this_cpu_read(hard_watchdog_warn) == true)
->  			return;
->  
-> -		if (hardlockup_panic)
-> +		if (hardlockup_panic) {
-> +			trigger_all_cpu_backtrace();
->  			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> -		else
-> +		} else {
->  			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> +		}
->  
->  		__this_cpu_write(hard_watchdog_warn, true);
->  		return;
-> @@ -323,8 +325,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  		else
->  			dump_stack();
->  
-> -		if (softlockup_panic)
-> +		if (softlockup_panic) {
-> +			trigger_all_cpu_backtrace();
->  			panic("softlockup: hung tasks");
-> +		}
->  		__this_cpu_write(soft_watchdog_warn, true);
->  	} else
->  		__this_cpu_write(soft_watchdog_warn, false);
+Please never merge any branches of mine, only signed tags.  I've just
+pushed up a tag for this (lock).
 
-The change seems sensible, but I wonder about CONFIG_SMP=n machines. 
-Will they end up getting the same backtrace displayed twice?
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-(I don't remember whether trigger_all_cpu_backtrace() is really
-trigger_all_other_cpu_backtrace() and we didn't document it).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQqsyeAAoJELSic+t+oim9GGIP/2KIp2iD65pNd6hpFKp9ztfz
+F1YaXH0ZuDGUztfjkhxOfdxzGOirr3dfS07stv3ULP8+lXqat5hNjbbjoFShluL6
+gg8qfjSEkcdAWpmUUBmX6PZ+rLAdkCEK7EJTbYVEElD2eja3rkkkFuL0/EtOUng/
+LuT2iO+e+csWvjgoq1TAB4SNh64aKAfLGXpFMn5x0oDTP5FjrGAJ8/w4uBMJDIqD
+XABWNSDcQVh8UyKc1tHFqoSDMD84rTnd54CapY1MPliyQ9rhIQ04pGCw6+EXMnUD
+JjT5BIylY6L3qDsFLBu9l3t1hT5Wqi6AQHyq2VSbqaPLnB+IzbAtJwmR7jEMOD+m
+eE15hC9LIGZ/5UUnvUVonLqSi5+agAEz86BWLBaSqDKm9cmeAzkzJPWsQdzD5yl7
+vDk0MXi/28ca0CpAgrjB+IF6ixb7EyReXec+bAZFazgtD9jINArltBYACdHBKGG6
+XyNVyPGNWRY/JvRvw5Y039WxnWjnbIjI4/UkkkU/lM5/WUx9MUhCGlfP/UUz0Qjf
+Chtm66ataaR14OpIipIuersLECBcEERhi33vwF9Df8t0B/s9bHvWkNPfvh+D3D1e
+smYCQLDANv39vg6xFTVFEeyvwCSC+zxiQGLP049iEH2i5nd7k1atNtxKPkkjM0+i
+GwoTNbROiqrbLYDZkO3e
+=Xgly
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
