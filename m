@@ -1,118 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2KTMDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:03:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46519 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab2KTMC6 (ORCPT
+	id S1753210Ab2KTMFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:05:54 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:22879 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752616Ab2KTMFx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:02:58 -0500
-Date: Tue, 20 Nov 2012 13:02:51 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH] x86/mm: Don't flush the TLB on #WP pmd fixups
-Message-ID: <20121120120251.GA15742@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com>
- <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
- <20121120090637.GA14873@gmail.com>
+	Tue, 20 Nov 2012 07:05:53 -0500
+Message-Id: <201211200843.qAK8VhbV015537@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120090637.GA14873@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY, UPGRADE NOW !!!
+To: Recipients <myburghp@mweb.co.za>
+From: "Webmail System Administrator" <myburghp@mweb.co.za>
+Date: Tue, 20 Nov 2012 09:39:45 +0100
+Reply-To: cyrilwides@mweb.co.za
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
 
-> numa/core profile:
-> 
->     95.66%  perf-1201.map     [.] 0x00007fe4ad1c8fc7                 
->      1.70%  libjvm.so         [.] 0x0000000000381581                 
->      0.59%  [vdso]            [.] 0x0000000000000607                 
->      0.19%  [kernel]          [k] do_raw_spin_lock                   
->      0.11%  [kernel]          [k] generic_smp_call_function_interrupt
->      0.11%  [kernel]          [k] timekeeping_get_ns.constprop.7     
->      0.08%  [kernel]          [k] ktime_get                          
->      0.06%  [kernel]          [k] get_cycles                         
->      0.05%  [kernel]          [k] __native_flush_tlb                 
->      0.05%  [kernel]          [k] rep_nop                            
->      0.04%  perf              [.] add_hist_entry.isra.9              
->      0.04%  [kernel]          [k] rcu_check_callbacks                
->      0.04%  [kernel]          [k] ktime_get_update_offsets           
->      0.04%  libc-2.15.so      [.] __strcmp_sse2                      
-> 
-> No page fault overhead (see the page fault rate further below) 
-> - the NUMA scanning overhead shows up only through some mild 
-> TLB flush activity (which I'll fix btw).
-
-The patch attached below should get rid of that mild TLB 
-flushing activity as well.
-
-Thanks,
-
-	Ingo
-
---------------------------->
-Subject: x86/mm: Don't flush the TLB on #WP pmd fixups
-From: Ingo Molnar <mingo@kernel.org>
-Date: Tue Nov 20 14:46:34 CET 2012
-
-If we have a write protection #PF and fix up the pmd then the
-hugetlb code [the only user of pmdp_set_access_flags], in its
-do_huge_pmd_wp_page() page fault resolution function calls
-pmdp_set_access_flags() to mark the pmd permissive again,
-and flushes the TLB.
-
-This TLB flush is unnecessary: a flush on #PF is guaranteed on
-most (all?) x86 CPUs, and even in the worst-case we'll generate
-a spurious fault.
-
-So remove it.
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/pgtable.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/mm/pgtable.c
-===================================================================
---- linux.orig/arch/x86/mm/pgtable.c
-+++ linux/arch/x86/mm/pgtable.c
-@@ -334,7 +334,12 @@ int pmdp_set_access_flags(struct vm_area
- 	if (changed && dirty) {
- 		*pmdp = entry;
- 		pmd_update_defer(vma->vm_mm, address, pmdp);
--		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-+		/*
-+		 * We had a write-protection fault here and changed the pmd
-+		 * to to more permissive. No need to flush the TLB for that,
-+		 * #PF is architecturally guaranteed to do that and in the
-+		 * worst-case we'll generate a spurious fault.
-+		 */
- 	}
- 
- 	return changed;
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
