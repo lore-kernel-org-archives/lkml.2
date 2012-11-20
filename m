@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2KTA5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:57:23 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:54095 "EHLO ogre.sisk.pl"
+	id S1753624Ab2KTA7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:59:37 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:54135 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab2KTA47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:56:59 -0500
+	id S1753418Ab2KTA7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 19:59:35 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [Update][PATCH 1/3] ACPI: Allow ACPI handles of devices to be initialized in advance
-Date: Tue, 20 Nov 2012 01:57:13 +0100
-Message-ID: <3954977.fT8lC34ML2@vostro.rjw.lan>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Joe Perches <joe@perches.com>, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        imammedo@redhat.com, prarit@redhat.com
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+Date: Tue, 20 Nov 2012 02:04:02 +0100
+Message-ID: <1914456.6xpKcjJgfG@vostro.rjw.lan>
 User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <4036218.zBRlg5OZsZ@vostro.rjw.lan>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <1758879.PKgPhTGcB7@vostro.rjw.lan> <4036218.zBRlg5OZsZ@vostro.rjw.lan>
+In-Reply-To: <1353346003.10939.54.camel@misato.fc.hp.com>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com> <1458606.kpqnW2s3Q0@vostro.rjw.lan> <1353346003.10939.54.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,142 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Monday, November 19, 2012 10:26:43 AM Toshi Kani wrote:
+> On Mon, 2012-11-19 at 18:35 +0100, Rafael J. Wysocki wrote:
+> > On Monday, November 19, 2012 09:16:52 AM Toshi Kani wrote:
+> > > On Mon, 2012-11-19 at 08:06 -0800, Joe Perches wrote:
+> > > > On Mon, 2012-11-19 at 08:51 -0700, Toshi Kani wrote:
+> > > > > On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
+> > > > > > is acpi_bus.h really the right file for these prototypes?
+> > > > > This interface is limited for ACPI, so it should be declared in a header
+> > > > > file under include/acpi.  Among the files in this directory, acpi_bus.h
+> > > > > seems to be a good fit as it declares the interfaces provided by ACPI
+> > > > > core.
+> > > > 
+> > > > I'd've put them in acpi.h or maybe created acpi_utils.h 
+> > > 
+> > > Hi Joe,
+> > > 
+> > > We cannot use acpi.h since it is an ACPICA header.
+> > 
+> > Which acpi.h are you referring to?
+> 
+> 
+> I was referring "include/acpi/acpi.h".
 
-Currently, the ACPI handles of devices are initialized from within
-device_add(), by acpi_bind_one() called from acpi_platform_notify()
-which first uses the .find_device() routine provided by the device's
-bus type to find the matching device node in the ACPI namespace.
-This is a source of some computational overhead and, moreover, the
-correctness of the result depends on the implementation of
-.find_device() which is known to fail occasionally for some bus types
-(e.g. PCI).  In some cases, however, the corresponding ACPI device
-node is known already before calling device_add() for the given
-struct device object and the whole .find_device() dance in
-acpi_platform_notify() is then simply unnecessary.
+There is another acpi.h in include/linux that can be used for this purpose.
 
-For this reason, make it possible to initialize the ACPI handles of
-devices before calling device_add() for them.  Modify
-acpi_platform_notify() to call acpi_bind_one() in advance to check
-the device's existing ACPI handle and skip the .find_device()
-search if that is successful.  Change acpi_bind_one() accordingly.
+Thanks,
+Rafael
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/acpi/glue.c |   44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
 
-Index: linux/drivers/acpi/glue.c
-===================================================================
---- linux.orig/drivers/acpi/glue.c
-+++ linux/drivers/acpi/glue.c
-@@ -130,46 +130,59 @@ static int acpi_bind_one(struct device *
- {
- 	struct acpi_device *acpi_dev;
- 	acpi_status status;
--	struct acpi_device_physical_node *physical_node;
-+	struct acpi_device_physical_node *physical_node, *pn;
- 	char physical_node_name[sizeof(PHYSICAL_NODE_STRING) + 2];
- 	int retval = -EINVAL;
- 
- 	if (dev->acpi_handle) {
--		dev_warn(dev, "Drivers changed 'acpi_handle'\n");
--		return -EINVAL;
-+		if (handle) {
-+			dev_warn(dev, "ACPI handle is already set\n");
-+			return -EINVAL;
-+		} else {
-+			handle = dev->acpi_handle;
-+		}
- 	}
-+	if (!handle)
-+		return -EINVAL;
- 
- 	get_device(dev);
- 	status = acpi_bus_get_device(handle, &acpi_dev);
- 	if (ACPI_FAILURE(status))
- 		goto err;
- 
--	physical_node = kzalloc(sizeof(struct acpi_device_physical_node),
--		GFP_KERNEL);
-+	physical_node = kzalloc(sizeof(*physical_node), GFP_KERNEL);
- 	if (!physical_node) {
- 		retval = -ENOMEM;
- 		goto err;
- 	}
- 
- 	mutex_lock(&acpi_dev->physical_node_lock);
-+
-+	/* Sanity check. */
-+	list_for_each_entry(pn, &acpi_dev->physical_node_list, node)
-+		if (pn->dev == dev) {
-+			dev_warn(dev, "Already associated with ACPI node\n");
-+			goto err_free;
-+		}
-+
- 	/* allocate physical node id according to physical_node_id_bitmap */
- 	physical_node->node_id =
- 		find_first_zero_bit(acpi_dev->physical_node_id_bitmap,
- 		ACPI_MAX_PHYSICAL_NODE);
- 	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
- 		retval = -ENOSPC;
--		mutex_unlock(&acpi_dev->physical_node_lock);
--		kfree(physical_node);
--		goto err;
-+		goto err_free;
- 	}
- 
- 	set_bit(physical_node->node_id, acpi_dev->physical_node_id_bitmap);
- 	physical_node->dev = dev;
- 	list_add_tail(&physical_node->node, &acpi_dev->physical_node_list);
- 	acpi_dev->physical_node_count++;
-+
- 	mutex_unlock(&acpi_dev->physical_node_lock);
- 
--	dev->acpi_handle = handle;
-+	if (!dev->acpi_handle)
-+		dev->acpi_handle = handle;
- 
- 	if (!physical_node->node_id)
- 		strcpy(physical_node_name, PHYSICAL_NODE_STRING);
-@@ -187,8 +200,14 @@ static int acpi_bind_one(struct device *
- 	return 0;
- 
-  err:
-+	dev->acpi_handle = NULL;
- 	put_device(dev);
- 	return retval;
-+
-+ err_free:
-+	mutex_unlock(&acpi_dev->physical_node_lock);
-+	kfree(physical_node);
-+	goto err;
- }
- 
- static int acpi_unbind_one(struct device *dev)
-@@ -247,6 +266,10 @@ static int acpi_platform_notify(struct d
- 	acpi_handle handle;
- 	int ret = -EINVAL;
- 
-+	ret = acpi_bind_one(dev, NULL);
-+	if (!ret)
-+		goto out;
-+
- 	if (!dev->bus || !dev->parent) {
- 		/* bridge devices genernally haven't bus or parent */
- 		ret = acpi_find_bridge_device(dev, &handle);
-@@ -260,10 +283,11 @@ static int acpi_platform_notify(struct d
- 	}
- 	if ((ret = type->find_device(dev, &handle)) != 0)
- 		DBG("Can't get handler for %s\n", dev_name(dev));
--      end:
-+ end:
- 	if (!ret)
- 		acpi_bind_one(dev, handle);
- 
-+ out:
- #if ACPI_GLUE_DEBUG
- 	if (!ret) {
- 		struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
