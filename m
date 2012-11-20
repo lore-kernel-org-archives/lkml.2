@@ -1,71 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2KTTTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:19:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2KTTTo (ORCPT
+	id S1752864Ab2KTTUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:20:19 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57977 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab2KTTUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:19:44 -0500
-Date: Tue, 20 Nov 2012 11:19:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of
- pages occupied by memmap
-Message-Id: <20121120111942.c9596d3f.akpm@linux-foundation.org>
-In-Reply-To: <50AB9F4A.5050500@gmail.com>
-References: <20121115112454.e582a033.akpm@linux-foundation.org>
-	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
-	<1353254850-27336-5-git-send-email-jiang.liu@huawei.com>
-	<20121119154240.91efcc53.akpm@linux-foundation.org>
-	<50AB9F4A.5050500@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 14:20:16 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Stephen Warren <swarren@wwwdotorg.org>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Josh Cartwright <josh.cartwright@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V3 1/2] clocksource: add common of_clksrc_init() function
+Date: Tue, 20 Nov 2012 12:20:05 -0700
+Message-Id: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012 23:18:34 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
+From: Stephen Warren <swarren@nvidia.com>
 
-> >> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
-> >> +				      unsigned long present_pages)
-> >> +{
-> >> +	unsigned long pages = spanned_pages;
-> >> +
-> >> +	/*
-> >> +	 * Provide a more accurate estimation if there are big holes within
-> >> +	 * the zone and SPARSEMEM is in use.
-> >> +	 */
-> >> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
-> >> +	    IS_ENABLED(CONFIG_SPARSEMEM))
-> >> +		pages = present_pages;
-> >> +
-> >> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
-> >> +}
-> > 
-> > Please explain the ">> 4" heuristc more completely - preferably in both
-> > the changelog and code comments.  Why can't we calculate this
-> > requirement exactly?  That might require a second pass, but that's OK for
-> > code like this?
-> Hi Andrew,
-> 	A normal x86 platform always have some holes within the DMA ZONE,
-> so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
-> ZONE on x86 platforms. 
-> 	Because the memmap_size is just an estimation, I feel it's OK to
-> remove the ">> 4" heuristic, that shouldn't affect much.
+It is desirable to move all clocksource drivers to drivers/clocksource,
+yet each requires its own initialization function. We'd rather not
+pollute <linux/> with a header for each function. Instead, create a
+single of_clksrc_init() function which will determine which clocksource
+driver to initialize based on device tree.
 
-Again: why can't we calculate this requirement exactly?  That might
-require a second pass, but that's OK for code like this?
+Inspired by a similar patch for drivers/irqchip by Thomas Petazzoni.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v3: Use a linker section to replace manually maintained table.
+v2: New patch.
+
+This series is based on the ARM sys_timer rework that I reposted today.
+
+I hope that these patches can be taken through arm-soc tree for 3.9;
+I will repost them based on 3.8-rc1 at the appropriate time.
+---
+ drivers/clocksource/Kconfig       |    3 +++
+ drivers/clocksource/Makefile      |    1 +
+ drivers/clocksource/clksrc-of.c   |   41 +++++++++++++++++++++++++++++++++++++
+ include/asm-generic/vmlinux.lds.h |   10 +++++++++
+ include/linux/clocksource.h       |   10 +++++++++
+ 5 files changed, 65 insertions(+)
+ create mode 100644 drivers/clocksource/clksrc-of.c
+
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index c9f67de..4f300c5 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -1,3 +1,6 @@
++config CLKSRC_OF
++	bool
++
+ config CLKSRC_I8253
+ 	bool
+ 
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 24fb888..29017a3 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -1,3 +1,4 @@
++obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
+ obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
+ obj-$(CONFIG_X86_CYCLONE_TIMER)	+= cyclone.o
+ obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+new file mode 100644
+index 0000000..04c7820
+--- /dev/null
++++ b/drivers/clocksource/clksrc-of.c
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/init.h>
++#include <linux/of.h>
++
++extern struct of_device_id *__start_clksrc_of_match_tables[];
++extern struct of_device_id *__stop_clksrc_of_match_tables[];
++
++void __init clocksource_of_init(void)
++{
++	struct of_device_id **table;
++	struct of_device_id **stop;
++	struct device_node *np;
++	const struct of_device_id *match;
++	void (*init_func)(void);
++
++	table = __start_clksrc_of_match_tables;
++	stop = __stop_clksrc_of_match_tables;
++
++	for ( ; table < stop; table++) {
++		for_each_matching_node(np, *table) {
++			match = of_match_node(*table, np);
++			init_func = match->data;
++			init_func();
++		}
++	}
++}
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index d1ea7ce..b17f793 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -149,6 +149,15 @@
+ #define TRACE_SYSCALLS()
+ #endif
+ 
++#ifdef CONFIG_CLKSRC_OF
++#define CLKSRC_OF_MATCH_TABLES() \
++		. = ALIGN(8);						\
++		VMLINUX_SYMBOL(__start_clksrc_of_match_tables) = .;	\
++		*(__clksrc_of_table)					\
++		VMLINUX_SYMBOL(__stop_clksrc_of_match_tables) = .;
++#else
++#define CLKSRC_OF_MATCH_TABLES()
++#endif
+ 
+ #define KERNEL_DTB()							\
+ 	STRUCT_ALIGN();							\
+@@ -490,6 +499,7 @@
+ 	*(.init.rodata)							\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
++	CLKSRC_OF_MATCH_TABLES()					\
+ 	DEV_DISCARD(init.rodata)					\
+ 	CPU_DISCARD(init.rodata)					\
+ 	MEM_DISCARD(init.rodata)					\
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 4dceaf8..3b0f30e 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -332,4 +332,14 @@ extern int clocksource_mmio_init(void __iomem *, const char *,
+ 
+ extern int clocksource_i8253_init(void);
+ 
++#ifdef CONFIG_CLKSRC_OF
++extern void clocksource_of_init(void);
++
++#define CLKSRC_OF_MATCH_TABLE(name, table)			\
++	static const struct of_device_id __used			\
++		__attribute__((section("__clksrc_of_table")))	\
++		*__p_clksrc_of_match_table_##name = table;
++
++#endif
++
+ #endif /* _LINUX_CLOCKSOURCE_H */
+-- 
+1.7.10.4
 
