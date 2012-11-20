@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2KTULs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:11:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53154 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2KTULr (ORCPT
+	id S1752577Ab2KTUNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:13:13 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36893 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2KTUNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:11:47 -0500
-Date: Tue, 20 Nov 2012 20:11:42 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Eilon Greenstein <eilong@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-Message-ID: <20121120201142.GI17797@dm>
-References: <20121120115239.GA7955@dm>
- <1353421624.6559.9.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120144329.GE7955@dm>
- <1353424027.6559.15.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120154443.GK7955@dm>
- <1353427570.6559.21.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120161417.GA17797@dm>
- <20121120163607.GB17797@dm>
- <1353438635.10779.10.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120193249.GH17797@dm>
+	Tue, 20 Nov 2012 15:13:12 -0500
+Message-ID: <50ABE44E.9090307@linux.vnet.ibm.com>
+Date: Wed, 21 Nov 2012 04:13:02 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120193249.GH17797@dm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/3] KVM: x86: clean up reexecute_instruction
+References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7A8.6010309@linux.vnet.ibm.com> <20121120121151.GH21208@redhat.com>
+In-Reply-To: <20121120121151.GH21208@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112020-8256-0000-0000-0000051AF442
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 07:32:49PM +0000, Andy Whitcroft wrote:
-> On Tue, Nov 20, 2012 at 09:10:35PM +0200, Eilon Greenstein wrote:
-> 
-> > About the logic - true, if diff will show deleted lines after newly
-> > added lines, some new double line segments will be missed. However, it
-> > seems like few other things will break if diff will start acting out
-> > like that. The suggestion you posted earlier will miss those as well,
-> > and starting to check for this weird case (of deleted lines after the
-> > added lines) does not seem right.
-> 
-> Actually the version I sent should indeed cope with the deleted lines
-> regardless of order.  It was cirtainly intended to.
+On 11/20/2012 08:11 PM, Gleb Natapov wrote:
+> On Tue, Nov 20, 2012 at 07:58:32AM +0800, Xiao Guangrong wrote:
+>> Little cleanup for reexecute_instruction, also use gpa_to_gfn in
+>> retry_instruction
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/x86.c |   13 ++++++-------
+>>  1 files changed, 6 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 52ae8b5..7be8452 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -4477,19 +4477,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+>>  	if (tdp_enabled)
+>>  		return false;
+>>
+>> +	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
+>> +	if (gpa == UNMAPPED_GVA)
+>> +		return true; /* let cpu generate fault */
+>> +
+>>  	/*
+>>  	 * if emulation was due to access to shadowed page table
+>>  	 * and it failed try to unshadow page and re-enter the
+>>  	 * guest to let CPU execute the instruction.
+>>  	 */
+>> -	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
+>> +	if (kvm_mmu_unprotect_page(vcpu->kvm, c(gpa)))
+> What's c()? Should be gpa_to_gfn(gpa)?
 
-... and I think I thought of a couple more corner cases neither solution
-will find.  So I am going to go away and make up a proper set of tests
-for this apparently simple change.  As it is really annoying when it
-false positives.  I will post against when I have something which works.
+Yes. It is the stupid copy-paste error. Thanks you for pointing it out, Gleb!
+This is the new one have fixed it.
 
--apw
+Subject: [PATCH 1/3] KVM: x86: clean up reexecute_instruction
+
+Little cleanup for reexecute_instruction, also use gpa_to_gfn in
+retry_instruction
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/x86.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 52ae8b5..7be8452 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4477,19 +4477,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+ 	if (tdp_enabled)
+ 		return false;
+
++	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
++	if (gpa == UNMAPPED_GVA)
++		return true; /* let cpu generate fault */
++
+ 	/*
+ 	 * if emulation was due to access to shadowed page table
+ 	 * and it failed try to unshadow page and re-enter the
+ 	 * guest to let CPU execute the instruction.
+ 	 */
+-	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
++	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
+ 		return true;
+
+-	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
+-
+-	if (gpa == UNMAPPED_GVA)
+-		return true; /* let cpu generate fault */
+-
+ 	/*
+ 	 * Do not retry the unhandleable instruction if it faults on the
+ 	 * readonly host memory, otherwise it will goto a infinite loop:
+@@ -4544,7 +4543,7 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+ 	if (!vcpu->arch.mmu.direct_map)
+ 		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+
+-	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
++	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+
+ 	return true;
+ }
+-- 
+1.7.7.6
+
+
