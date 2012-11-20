@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab2KTMZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:25:06 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:55339 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab2KTMZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:25:04 -0500
-X-Nat-Received: from [202.181.97.72]:51942 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1353414289.16540
-To: keescook@chromium.org, linux-kernel@vger.kernel.org
-Cc: james.l.morris@oracle.com, john.johansen@canonical.com,
-        serge.hallyn@ubuntu.com, eparis@redhat.com,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Yama: remove locking from delete path
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20121119233459.GA9524@www.outflux.net>
-In-Reply-To: <20121119233459.GA9524@www.outflux.net>
-Message-Id: <201211202124.FIA41997.SFtOOOLMQFVFHJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 20 Nov 2012 21:24:49 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 20112012 #8460918, status: clean
+	id S1753259Ab2KTM0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:26:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab2KTM0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 07:26:35 -0500
+From: Avi Kivity <avi@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM: Retire as maintainer
+Date: Tue, 20 Nov 2012 14:26:26 +0200
+Message-Id: <1353414386-1055-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> Instead of locking the list during a delete, mark entries as invalid
-> and trigger a workqueue to clean them up. This lets us easily handle
-> task_free from interrupt context.
+After six and a half years of writing and maintaining KVM, it is time to
+move to new things.  Update my MAINTAINERS entry to reflect that.
 
-> @@ -57,9 +80,12 @@ static int yama_ptracer_add(struct task_struct *tracer,
->  
->  	added->tracee = tracee;
->  	added->tracer = tracer;
-> +	added->invalid = false;
->  
-> -	spin_lock_bh(&ptracer_relations_lock);
-> +	spin_lock(&ptracer_relations_lock);
+Signed-off-by: Avi Kivity <avi@redhat.com>
+---
+ CREDITS     | 5 +++++
+ MAINTAINERS | 1 -
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-Can't you use
-	spin_lock_irqsave(&ptracer_relations_lock, flags);
-	spin_unlock_irqrestore(&ptracer_relations_lock, flags);
-instead of adding ->invalid ?
+diff --git a/CREDITS b/CREDITS
+index d8fe12a..2346b09 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -1823,6 +1823,11 @@ S: Kattreinstr 38
+ S: D-64295
+ S: Germany
+ 
++N: Avi Kivity
++E: avi.kivity@gmail.com
++D: Kernel-based Virtual Machine (KVM)
++S: Ra'annana, Israel
++
+ N: Andi Kleen
+ E: andi@firstfloor.org
+ U: http://www.halobates.de
+diff --git a/MAINTAINERS b/MAINTAINERS
+index bb0b27d..6b5b0b7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4280,7 +4280,6 @@ F:	include/linux/lockd/
+ F:	include/linux/sunrpc/
+ 
+ KERNEL VIRTUAL MACHINE (KVM)
+-M:	Avi Kivity <avi@redhat.com>
+ M:	Marcelo Tosatti <mtosatti@redhat.com>
+ L:	kvm@vger.kernel.org
+ W:	http://kvm.qumranet.com
+-- 
+1.7.12
+
