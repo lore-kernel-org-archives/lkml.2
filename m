@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2KTSZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:25:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38129 "EHLO mx2.suse.de"
+	id S1752552Ab2KTScZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:32:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2KTSZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:25:20 -0500
-Date: Tue, 20 Nov 2012 19:25:00 +0100
-From: Jan Kara <jack@suse.cz>
-To: metin d <metdos@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: Problem in Page Cache Replacement
-Message-ID: <20121120182500.GH1408@quack.suse.cz>
-References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
+	id S1751859Ab2KTScX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 13:32:23 -0500
+Date: Tue, 20 Nov 2012 19:32:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+Message-ID: <20121120183243.GA31290@redhat.com>
+References: <20121109182943.GA2789@redhat.com> <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com> <1353349500.6276.9.camel@gandalf.local.home> <20121120154824.GA17534@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121120154824.GA17534@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-11-12 09:42:42, metin d wrote:
-> I have two PostgreSQL databases named data-1 and data-2 that sit on the
-> same machine. Both databases keep 40 GB of data, and the total memory
-> available on the machine is 68GB.
-> 
-> I started data-1 and data-2, and ran several queries to go over all their
-> data. Then, I shut down data-1 and kept issuing queries against data-2.
-> For some reason, the OS still holds on to large parts of data-1's pages
-> in its page cache, and reserves about 35 GB of RAM to data-2's files. As
-> a result, my queries on data-2 keep hitting disk.
-> 
-> I'm checking page cache usage with fincore. When I run a table scan query
-> against data-2, I see that data-2's pages get evicted and put back into
-> the cache in a round-robin manner. Nothing happens to data-1's pages,
-> although they haven't been touched for days.
-> 
-> Does anybody know why data-1's pages aren't evicted from the page cache?
-> I'm open to all kind of suggestions you think it might relate to problem.
-  Curious. Added linux-mm list to CC to catch more attention. If you run
-echo 1 >/proc/sys/vm/drop_caches
-  does it evict data-1 pages from memory?
+On 11/20, Oleg Nesterov wrote:
+>
+> On 11/19, Steven Rostedt wrote:
+> >
+> > Is this really what we want?
+>
+> I am not sure, that is why I am asking.
 
-> This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
-> swap space. The kernel version is:
-> 
-> $ uname -r
-> 3.2.28-45.62.amzn1.x86_64
-> Edit:
-> 
-> and it seems that I use one NUMA instance, if  you think that it can a problem.
-> 
-> $ numactl --hardware
-> available: 1 nodes (0)
-> node 0 cpus: 0 1 2 3 4 5 6 7
-> node 0 size: 70007 MB
-> node 0 free: 360 MB
-> node distances:
-> node   0
->   0:  10
+Yes.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+And,
+
+> Well yes, with the new implementation __vsyscall_page simply does
+> syscall, so I guess (say) strace will "just work". But, afaics, only
+> if vsyscall_mode == NATIVE.
+>
+> So perhaps bp in vsyscall_page still makes sense...
+
+Or. Perhaps we can define TRAP_VSYSCALL and change emulate_vsyscall() to do
+
+
+	if (current->ptrace && test_thread_flag(TIF_SYSCALL_TRACE))
+		send_sigtrap(TRAP_VSYSCALL, ...);
+
+if it returns true?
+
+This way the debugger doesn't need to play with the debug registers,
+it can use ptrace(PTRACE_SYSCALL). The tracee will report SIGTRAP after
+vsyscall, debugger can detect this case looking at info->si_code.
+
+Yes, the tracee won't report _before_ it calls the function, but perhaps
+this is enough? Amnon?
+
+Oleg.
+
