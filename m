@@ -1,51 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab2KTPON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:14:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27024 "EHLO mx1.redhat.com"
+	id S1753169Ab2KTPPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:15:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7696 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364Ab2KTPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:14:12 -0500
-Date: Tue, 20 Nov 2012 12:13:44 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 1/3] perf session: Add perf_session__delete_env
-Message-ID: <20121120151344.GA14928@infradead.org>
-References: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
+	id S1752364Ab2KTPPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:15:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,286,1352102400"; 
+   d="scan'208";a="250015488"
+Date: Tue, 20 Nov 2012 23:15:02 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+Cc: Claudio Freire <klaussfreire@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: fadvise interferes with readahead
+Message-ID: <20121120151502.GD19467@localhost>
+References: <CAGTBQpaDR4+V5b1AwAVyuVLu5rkU=Wc1WeUdLu5ag=WOk5oJzQ@mail.gmail.com>
+ <20121120080427.GA11019@localhost>
+ <50AB8FAA.50100@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <50AB8FAA.50100@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 20, 2012 at 05:31:15PM +0800, Feng Tang escreveu:
-> +static void perf_session__delete_env(struct perf_session *self)
-> +{
-> +	struct perf_session_env *env = &self->header.env;
-> +
-> +	free(env->hostname);
-> +	free(env->os_release);
-> +	free(env->version);
-> +	free(env->arch);
-> +	free(env->cpu_desc);
-> +	free(env->cpuid);
-> +
-> +	free(env->cmdline);
-> +	free(env->sibling_cores);
-> +	free(env->sibling_threads);
-> +	free(env->numa_nodes);
-> +	free(env->pmu_mappings);
-> +}
+On Tue, Nov 20, 2012 at 10:11:54PM +0800, Jaegeuk Hanse wrote:
+> On 11/20/2012 04:04 PM, Fengguang Wu wrote:
+> >Hi Claudio,
+> >
+> >Thanks for the detailed problem description!
+> 
+> Hi Fengguang,
+> 
+> Another question, thanks in advance.
+> 
+> What's the meaning of interleaved reads? If the first process
 
-The object being deleted is a perf_session_env, so please make it
-perf_session_env__delete(struct perf_session_env *env), and avoid using
-'self'.
+It's access patterns like
 
-- Arnaldo
+        1, 1001, 2, 1002, 3, 1003, ...
+
+in which there are two (or more) mixed sequential read streams.
+
+> readahead from start ~ start + size - async_size, another process
+> read start + size - aysnc_size + 1, then what will happen? It seems
+> that variable hit_readahead_marker is false, and related codes can't
+> run, where I miss?
+
+Yes hit_readahead_marker will be false. However on reading 1002,
+hit_readahead_marker()/count_history_pages() will find the previous
+page 1001 already in page cache and trigger context readahead.
+
+Thanks,
+Fengguang
+
+> >On Fri, Nov 09, 2012 at 04:30:32PM -0300, Claudio Freire wrote:
+> >>Hi. First of all, I'm not subscribed to this list, so I'd suggest all
+> >>replies copy me personally.
+> >>
+> >>I have been trying to implement some I/O pipelining in Postgres (ie:
+> >>read the next data page asynchronously while working on the current
+> >>page), and stumbled upon some puzzling behavior involving the
+> >>interaction between fadvise and readahead.
+> >>
+> >>I'm running kernel 3.0.0 (debian testing), on a single-disk system
+> >>which, though unsuitable for database workloads, is slow enough to let
+> >>me experiment with these read-ahead issues.
+> >>
+> >>Typical random I/O performance is on the order of between 150 r/s to
+> >>200 r/s (ballpark 7200rpm I'd say), with thoughput around 1.5MB/s.
+> >>Sequential I/O can go up to 60MB/s, though it tends to be around 50.
+> >>
+> >>Now onto the problem. In order to parallelize I/O with computation,
+> >>I've made postgres fadvise(willneed) the pages it will read next. How
+> >>far ahead is configurable, and I've tested with a number of
+> >>configurations.
+> >>
+> >>The prefetching logic is aware of the OS and pg-specific cache, so it
+> >>will only fadvise a block once. fadvise calls will stay 1 (or a
+> >>configurable N) real I/O ahead of read calls, and there's no fadvising
+> >>of pages that won't be read eventually, in the same order. I checked
+> >>with strace.
+> >>
+> >>However, performance when fadvising drops considerably for a specific
+> >>yet common access pattern:
+> >>
+> >>When a nested loop with two index scans happens, access is random
+> >>locally, but eventually whole ranges of a file get read (in this
+> >>random order). Think block "1 6 8 100 34 299 3 7 68 24" followed by "2
+> >>4 5 101 298 301". Though random, there are ranges there that can be
+> >>merged in one read-request.
+> >>
+> >>The kernel seems to do the merge by applying some form of readahead,
+> >>not sure if it's context, ondemand or adaptive readahead on the 3.0.0
+> >>kernel. Anyway, it seems to do readahead, as iostat says:
+> >>
+> >>Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s
+> >>avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> >>sda               0.00     4.40  224.20    2.00     4.16     0.03
+> >>37.86     1.91    8.43    8.00   56.80   4.40  99.44
+> >>
+> >>(notice the avgrq-sz of 37.8)
+> >>
+> >>With fadvise calls, the thing looks a lot different:
+> >>
+> >>Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s
+> >>avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> >>sda               0.00    18.00  226.80    1.00     1.80     0.07
+> >>16.81     4.00   17.52   17.23   82.40   4.39  99.92
+> >FYI, there is a readahead tracing/stats patchset that can provide far
+> >more accurate numbers about what's going on with readahead, which will
+> >help eliminate lots of the guess works here.
+> >
+> >https://lwn.net/Articles/472798/
+> >
+> >>Notice the avgrq-sz of 16.8. Assuming it's 512-byte sectors, that's
+> >>spot-on with a postgres page (8k). So, fadvise seems to carry out the
+> >>requests verbatim, while read manages to merge at least two of them.
+> >>
+> >>The random nature of reads makes me think the scheduler is failing to
+> >>merge the requests in both cases (rrqm/s = 0), because it only looks
+> >>at successive requests (I'm only guessing here though).
+> >I guess it's not a merging problem, but that the kernel readahead code
+> >manages to submit larger IO requests in the first place.
+> >
+> >>Looking into the kernel code, it seems the problem could be related to
+> >>how fadvise works in conjunction with readahead. fadvise seems to call
+> >>the function in readahead.c that schedules the asynchornous I/O[0]. It
+> >>doesn't seem subject to readahead logic itself[1], which in on itself
+> >>doesn't seem bad. But it does, I assume (not knowing the code that
+> >>well), prevent readahead logic[2] to eventually see the pattern. It
+> >>effectively disables readahead altogether.
+> >You are right. If user space does fadvise() and the fadvised pages
+> >cover all read() pages, the kernel readahead code will not run at all.
+> >
+> >So the title is actually a bit misleading. The kernel readahead won't
+> >interfere with user space prefetching at all. ;)
+> >
+> >>This, I theorize, may be because after the fadvise call starts an
+> >>async I/O on the page, further reads won't hit readahead code because
+> >>of the page cache[3] (!PageUptodate I imagine). Whether this is
+> >>desirable or not is not really obvious. In this particular case, doing
+> >>fadvise calls in what would seem an optimum way, results in terribly
+> >>worse performance. So I'd suggest it's not really that advisable.
+> >Yes. The kernel readahead code by design will outperform simple
+> >fadvise in the case of clustered random reads. Imagine the access
+> >pattern 1, 3, 2, 6, 4, 9. fadvise will trigger 6 IOs literally. While
+> >kernel readahead will likely trigger 3 IOs for 1, 3, 2-9. Because on
+> >the page miss for 2, it will detect the existence of history page 1
+> >and do readahead properly. For hard disks, it's mainly the number of
+> >IOs that matters. So even if kernel readahead loses some opportunities
+> >to do async IO and possibly loads some extra pages that will never be
+> >used, it still manges to perform much better.
+> >
+> >>The fix would lay in fadvise, I think. It should update readahead
+> >>tracking structures. Alternatively, one could try to do it in
+> >>do_generic_file_read, updating readahead on !PageUptodate or even on
+> >>page cache hits. I really don't have the expertise or time to go
+> >>modifying, building and testing the supposedly quite simple patch that
+> >>would fix this. It's mostly about the testing, in fact. So if someone
+> >>can comment or try by themselves, I guess it would really benefit
+> >>those relying on fadvise to fix this behavior.
+> >One possible solution is to try the context readahead at fadvise time
+> >to check the existence of history pages and do readahead accordingly.
+> >
+> >However it will introduce *real interferences* between kernel
+> >readahead and user prefetching. The original scheme is, once user
+> >space starts its own informed prefetching, kernel readahead will
+> >automatically stand out of the way.
+> >
+> >Thanks,
+> >Fengguang
+> >
+> >>Additionally, I would welcome any suggestions for ways to mitigate
+> >>this problem on current kernels, as the patch I'm working I'd like to
+> >>deploy with older kernels. Even if the latest kernel had this behavior
+> >>fixed, I'd still welcome some workarounds.
+> >>
+> >>More details on the benchmarks I've run can be found in the postgresql
+> >>dev ML archive[4].
+> >>
+> >>[0] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=mm/fadvise.c#l95
+> >>[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=mm/readahead.c#l211
+> >>[2] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=mm/readahead.c#l398
+> >>[3] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=mm/filemap.c#l1081
+> >>[4] http://archives.postgresql.org/pgsql-hackers/2012-10/msg01139.php
+> >>--
+> >>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>the body of a message to majordomo@vger.kernel.org
+> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>Please read the FAQ at  http://www.tux.org/lkml/
+> >--
+> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >the body to majordomo@kvack.org.  For more info on Linux MM,
+> >see: http://www.linux-mm.org/ .
+> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
