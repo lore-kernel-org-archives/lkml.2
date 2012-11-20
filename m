@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2KTInO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:43:14 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:18256 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab2KTInN (ORCPT
+	id S1752725Ab2KTInl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:43:41 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38976 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2KTInk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:43:13 -0500
-Message-id: <50AB428A.3050700@samsung.com>
-Date: Tue, 20 Nov 2012 09:42:50 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
- Thunderbird/16.0.2
-MIME-version: 1.0
-To: Philip Rakity <prakity@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-References: <87fw4dn030.fsf@octavius.laptop.org>
- <1352813534-6795-1-git-send-email-m.szyprowski@samsung.com>
- <87bof1mx9m.fsf@octavius.laptop.org> <50A254A0.8000403@samsung.com>
- <877gppmvyd.fsf@octavius.laptop.org>
- <DB83372B-7C12-4670-8C46-207C4A56F8BD@nvidia.com>
-In-reply-to: <DB83372B-7C12-4670-8C46-207C4A56F8BD@nvidia.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Tue, 20 Nov 2012 03:43:40 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, patches@linaro.org
+Subject: [PATCH 1/1] staging: drm/imx: Remove duplicate inclusion of linux/videodev2.h
+Date: Tue, 20 Nov 2012 14:07:16 +0530
+Message-Id: <1353400636-26193-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+linux/videodev2.h was included twice.
 
-On 11/13/2012 10:23 PM, Philip Rakity wrote:
-> Hi Marek,
->
-> Is the regulator dedicated ?  or is it shared ?   Is it used for eMMC ?
->
-> If it cannot be turned off -- then just don't list it in the regulators list for vmmc.
->
-> If it CAN be turned off then need to get back to you.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ arch/arm/mach-omap2/board-overo.c           |    1 -
+ drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
-It is dedicated to eMMC device and can be turned off. Patch "mmc: sdhci: 
-apply
-voltage range check only for non-fixed regulators" restored sdhci to 
-working state
-after merging the regulator fix. However there are lots of error 
-messages from sdhci
-driver:
-s3c-sdhci s3c-sdhci.0: could not set regulator OCR (-1)
-
-The only remaining problem is sdhci driver operation with dummy 
-regulator. Right now
-it simply fails to initialize if dummy regulator is enabled. Do you have 
-any idea how
-to fix it properly?
-
-Best regards
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index 1cfb037..f5ba43f 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -45,7 +45,6 @@
+ #include <asm/mach/flash.h>
+ #include <asm/mach/map.h>
+ 
+-#include "common.h"
+ #include <video/omapdss.h>
+ #include <video/omap-panel-generic-dpi.h>
+ #include <video/omap-panel-tfp410.h>
+diff --git a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+index 22c1196..99d1cce 100644
+--- a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
++++ b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+@@ -16,7 +16,6 @@
+ #include <linux/videodev2.h>
+ #include <linux/bitmap.h>
+ #include <linux/fb.h>
+-#include <linux/videodev2.h>
+ 
+ struct ipu_soc;
+ 
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+1.7.4.1
 
