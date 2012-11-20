@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2KTSho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:37:44 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42444 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab2KTShm (ORCPT
+	id S1752666Ab2KTSiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:38:23 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55415 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751582Ab2KTSiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:37:42 -0500
-Date: Tue, 20 Nov 2012 13:37:40 -0500 (EST)
-Message-Id: <20121120.133740.2078663535446438063.davem@davemloft.net>
-To: tj@kernel.org
-Cc: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch,
-        lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCHSET REPOST v2 cgroup/for-3.8] netcls/prio_cgroup: update
- hierarchy support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1353400211-5182-1-git-send-email-tj@kernel.org>
-References: <1353400211-5182-1-git-send-email-tj@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 13:38:22 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 67.169.73.11
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/36kxUdO1PFkTYgGjbOyAX
+Date: Tue, 20 Nov 2012 10:38:18 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [RESEND PATCH v3 2/4] mfd: introduce retu-mfd driver
+Message-ID: <20121120183815.GL18567@atomide.com>
+References: <1352747326-2195-1-git-send-email-aaro.koskinen@iki.fi>
+ <1352747326-2195-3-git-send-email-aaro.koskinen@iki.fi>
+ <20121120183427.GK18567@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120183427.GK18567@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 20 Nov 2012 00:30:04 -0800
+* Tony Lindgren <tony@atomide.com> [121120 10:36]:
+> * Aaro Koskinen <aaro.koskinen@iki.fi> [121112 11:11]:
+> > Retu is a multi-function device found on Nokia Internet Tablets
+> > implementing at least watchdog, RTC, headset detection and power button
+> > functionality.
+> > 
+> > This patch implements minimum functionality providing register access,
+> > IRQ handling and power off functions.
+> 
+> Samuel, you can pick this one up separately now that Wolfram has taken
+> the i2c-cbus driver.
+> 
+> Also, just noticed that this probably should depend on I2C_CBUS as this
+> chip will not communicate over other I2C adapters?
 
->  0001-netcls_cgroup-move-config-inheritance-to-css_online-.patch
->  0002-netprio_cgroup-simplify-write_priomap.patch
->  0003-netprio_cgroup-shorten-variable-names-in-extend_netd.patch
->  0004-netprio_cgroup-reimplement-priomap-expansion.patch
->  0005-netprio_cgroup-use-cgroup-id-instead-of-cgroup_netpr.patch
->  0006-netprio_cgroup-implement-netprio-_set-_prio-helpers.patch
->  0007-netprio_cgroup-allow-nesting-and-inherit-config-on-c.patch
+Sorry meant to reply to "[PATCH v4 2/4] mfd: introduce retu-mfd driver"
+instead of this v3 thread.
 
-For series:
+Regards,
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Tony
