@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab2KTWZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:25:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39407 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2KTWZw (ORCPT
+	id S1753106Ab2KTW1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:27:52 -0500
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:63186 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab2KTW1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:25:52 -0500
-Date: Tue, 20 Nov 2012 14:25:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Rob Landley <rob@landley.net>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PART4 Patch v2 1/2] numa: add CONFIG_MOVABLE_NODE for
- movable-dedicated node
-Message-Id: <20121120142550.5c126194.akpm@linux-foundation.org>
-In-Reply-To: <1353067090-19468-2-git-send-email-wency@cn.fujitsu.com>
-References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>
-	<1353067090-19468-2-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 17:27:50 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: EXYNOS: Add aliases for i2c controller for exynos4
+Date: Tue, 20 Nov 2012 14:27:03 -0800
+Message-Id: <1353450428-2615-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012 19:58:09 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+This is similar to a recent commit for exynos5250 titled:
+  ARM: EXYNOS: Add aliases for i2c controller
 
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> All are prepared, we can actually introduce N_MEMORY.
-> add CONFIG_MOVABLE_NODE make we can use it for movable-dedicated node
+Adding aliases will be useful to prevent warnings in a future
+change.  See:
+  i2c: s3c2410: Get the i2c bus number from alias id
 
-This description is far too short on details.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-I grabbed this from the [0/n] email:
+---
+ arch/arm/boot/dts/exynos4.dtsi |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-: We need a node which only contains movable memory.  This feature is very
-: important for node hotplug.  If a node has normal/highmem, the memory may
-: be used by the kernel and can't be offlined.  If the node only contains
-: movable memory, we can offline the memory and the node.
-
-which helps a bit, but it's still pretty thin.
-
-Why is this option made configurable?  Why not enable it unconditionally?
-
-Please send a patch which adds the Kconfig help text for
-CONFIG_MOVABLE_NODE.  Let's make that text nice and detailed.
-
-The name MOVABLE_NODE is not a good one.  It means "a node which is
-movable", whereas the concept is actually "a node whcih contains only
-movable memory".  I suppose we could change it to something like
-CONFIG_MOVABLE_MEMORY_ONLY_NODE or similar.  But I suppose that
-CONFIG_MOVABLE_NODE is good enough, as long as it is well-described in
-associated comments or help text.  This is not the case at present.
-
-> +#ifdef CONFIG_MOVABLE_NODE
-> +	N_MEMORY,		/* The node has memory(regular, high, movable) */
-> +#else
-
-I think the comment should be "The node has only movable memory"?
-
+diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
+index a26c3dd..824d362 100644
+--- a/arch/arm/boot/dts/exynos4.dtsi
++++ b/arch/arm/boot/dts/exynos4.dtsi
+@@ -28,6 +28,14 @@
+ 		spi0 = &spi_0;
+ 		spi1 = &spi_1;
+ 		spi2 = &spi_2;
++		i2c0 = &i2c_0;
++		i2c1 = &i2c_1;
++		i2c2 = &i2c_2;
++		i2c3 = &i2c_3;
++		i2c4 = &i2c_4;
++		i2c5 = &i2c_5;
++		i2c6 = &i2c_6;
++		i2c7 = &i2c_7;
+ 	};
+ 
+ 	gic:interrupt-controller@10490000 {
+@@ -121,7 +129,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@13860000 {
++	i2c_0: i2c@13860000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -130,7 +138,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@13870000 {
++	i2c_1: i2c@13870000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -139,7 +147,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@13880000 {
++	i2c_2: i2c@13880000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -148,7 +156,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@13890000 {
++	i2c_3: i2c@13890000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -157,7 +165,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@138A0000 {
++	i2c_4: i2c@138A0000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -166,7 +174,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@138B0000 {
++	i2c_5: i2c@138B0000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -175,7 +183,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@138C0000 {
++	i2c_6: i2c@138C0000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+@@ -184,7 +192,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	i2c@138D0000 {
++	i2c_7: i2c@138D0000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "samsung,s3c2440-i2c";
+-- 
+1.7.7.3
 
