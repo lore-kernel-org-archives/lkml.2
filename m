@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab2KTK0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:26:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31586 "EHLO mga01.intel.com"
+	id S1753121Ab2KTK0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:26:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9201 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab2KTK0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:26:35 -0500
+	id S1752979Ab2KTK0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:26:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
-   d="scan'208";a="249909875"
+   d="scan'208";a="222080809"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
         rafael.j.wysocki@intel.com
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
         ben-linux@fluff.org, bhelgaas@google.com,
         mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v3 1/3] gpio / ACPI: add ACPI support
-Date: Tue, 20 Nov 2012 12:29:42 +0200
-Message-Id: <1353407384-26880-2-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v3 3/3] i2c / ACPI: add ACPI enumeration support
+Date: Tue, 20 Nov 2012 12:29:44 +0200
+Message-Id: <1353407384-26880-4-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -28,139 +28,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
+and configure the I2C slave devices behind the I2C controller. This patch
+adds helper functions to support I2C slave enumeration.
 
-Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
-Needs a gpio controller driver with the acpi handler hook set.
+An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
+in order to get its slave devices enumerated, created and bound to the
+corresponding ACPI handle.
 
-Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
-resources to Linux GPIO's.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/gpio/Kconfig        |    4 ++++
- drivers/gpio/Makefile       |    1 +
- drivers/gpio/gpiolib-acpi.c |   56 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi_gpio.h   |   19 +++++++++++++++
- 4 files changed, 80 insertions(+)
- create mode 100644 drivers/gpio/gpiolib-acpi.c
- create mode 100644 include/linux/acpi_gpio.h
+ drivers/acpi/Kconfig    |    6 +++
+ drivers/acpi/Makefile   |    1 +
+ drivers/acpi/acpi_i2c.c |  112 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/i2c/i2c-core.c  |    6 +++
+ include/linux/i2c.h     |    9 ++++
+ 5 files changed, 134 insertions(+)
+ create mode 100644 drivers/acpi/acpi_i2c.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index f11d8e3..5c9b384 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -49,6 +49,10 @@ config OF_GPIO
- 	def_bool y
- 	depends on OF
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 119d58d..0300bf6 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -181,6 +181,12 @@ config ACPI_DOCK
+ 	  This driver supports ACPI-controlled docking stations and removable
+ 	  drive bays such as the IBM Ultrabay and the Dell Module Bay.
  
-+config GPIO_ACPI
-+	def_bool y
-+	depends on ACPI
++config ACPI_I2C
++	def_tristate I2C
++	depends on I2C
++	help
++	  ACPI I2C enumeration support.
 +
- config DEBUG_GPIO
- 	bool "Debug GPIO calls"
- 	depends on DEBUG_KERNEL
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 9aeed67..420dbac 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ config ACPI_PROCESSOR
+ 	tristate "Processor"
+ 	select THERMAL
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 7289828..2a4502b 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -70,6 +70,7 @@ obj-$(CONFIG_ACPI_HED)		+= hed.o
+ obj-$(CONFIG_ACPI_EC_DEBUGFS)	+= ec_sys.o
+ obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
+ obj-$(CONFIG_ACPI_BGRT)		+= bgrt.o
++obj-$(CONFIG_ACPI_I2C)		+= acpi_i2c.o
  
- obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-+obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
- 
- # Device drivers. Generally keep list sorted alphabetically
- obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+ # processor has its own "processor." module_param namespace
+ processor-y			:= processor_driver.o processor_throttling.o
+diff --git a/drivers/acpi/acpi_i2c.c b/drivers/acpi/acpi_i2c.c
 new file mode 100644
-index 0000000..8285144
+index 0000000..185183d
 --- /dev/null
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -0,0 +1,56 @@
++++ b/drivers/acpi/acpi_i2c.c
+@@ -0,0 +1,112 @@
 +/*
-+ * ACPI helpers for GPIO API
++ * ACPI I2C enumeration support
 + *
 + * Copyright (C) 2012, Intel Corporation
-+ * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
-+ *          Mika Westerberg <mika.westerberg@linux.intel.com>
++ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/export.h>
-+#include <linux/acpi_gpio.h>
 +#include <linux/acpi.h>
++#include <linux/device.h>
++#include <linux/export.h>
++#include <linux/i2c.h>
++#include <linux/ioport.h>
 +
-+static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
++ACPI_MODULE_NAME("i2c");
++
++static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
 +{
-+	acpi_handle handle = data;
++	struct acpi_resource_i2c_serialbus *sb;
++	struct i2c_board_info *info = data;
++	struct resource r;
 +
-+	if (!gc->dev)
-+		return false;
++	switch (ares->type) {
++	case ACPI_RESOURCE_TYPE_IRQ:
++	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
++		/* Only use the first interrupt resource and skip the rest */
++		memset(&r, 0, sizeof(r));
++		if (info->irq < 0 && acpi_dev_resource_interrupt(ares, 0, &r))
++			info->irq = r.start;
++		return 1;
 +
-+	return ACPI_HANDLE(gc->dev) == handle;
++	case ACPI_RESOURCE_TYPE_SERIAL_BUS:
++		sb = &ares->data.i2c_serial_bus;
++		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_I2C) {
++			info->addr = sb->slave_address;
++			if (sb->access_mode == ACPI_I2C_10BIT_MODE) {
++				info->flags |= I2C_CLIENT_TEN;
++				return 1;
++			}
++		}
++		return 0;
++	}
++
++	return 0;
++}
++
++static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
++				       void *data, void **return_value)
++{
++	struct i2c_adapter *adapter = data;
++	struct list_head resource_list;
++	struct i2c_board_info info;
++	struct acpi_device *adev;
++	int ret;
++
++	if (acpi_bus_get_device(handle, &adev))
++		return AE_OK;
++	if (acpi_bus_get_status(adev) || !adev->status.present)
++		return AE_OK;
++
++	memset(&info, 0, sizeof(info));
++	info.acpi_node.handle = handle;
++	info.irq = -1;
++
++	INIT_LIST_HEAD(&resource_list);
++	ret = acpi_dev_get_resources(adev, &resource_list,
++				     acpi_i2c_add_resource, &info);
++	if (ret < 0)
++		return AE_OK;
++
++	acpi_dev_free_resource_list(&resource_list);
++
++	if (!info.addr)
++		return AE_OK;
++
++	strlcpy(info.type, dev_name(&adev->dev), sizeof(info.type));
++	if (!i2c_new_device(adapter, &info)) {
++		dev_err(&adapter->dev,
++			"failed to add I2C device %s from ACPI\n",
++			dev_name(&adev->dev));
++	}
++
++	return AE_OK;
 +}
 +
 +/**
-+ * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
-+ * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
-+ * @pin:	ACPI GPIO pin number (0-based, controller-relative)
++ * acpi_i2c_register_devices - enumerate I2C slave devices behind adapter
++ * @adapter: pointer to adapter
 + *
-+ * Returns GPIO number to use with Linux generic GPIO API, or errno error value
++ * Enumerate all I2C slave devices behind this adapter by walking the ACPI
++ * namespace. When a device is found it will be added to the Linux device
++ * model and bound to the corresponding ACPI handle.
 + */
-+
-+int acpi_get_gpio(char *path, int pin)
++void acpi_i2c_register_devices(struct i2c_adapter *adapter)
 +{
-+	struct gpio_chip *chip;
 +	acpi_handle handle;
 +	acpi_status status;
 +
-+	status = acpi_get_handle(NULL, path, &handle);
++	handle = ACPI_HANDLE(&adapter->dev);
++	if (!handle)
++		return;
++
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
++				     acpi_i2c_add_device, NULL,
++				     adapter, NULL);
 +	if (ACPI_FAILURE(status))
-+		return -ENODEV;
-+
-+	chip = gpiochip_find(handle, acpi_gpiochip_find);
-+	if (!chip)
-+		return -ENODEV;
-+
-+	if (!gpio_is_valid(chip->base + pin))
-+		return -EINVAL;
-+
-+	return chip->base + pin;
++		dev_warn(&adapter->dev, "failed to enumerate I2C slaves\n");
 +}
-+EXPORT_SYMBOL_GPL(acpi_get_gpio);
-diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-new file mode 100644
-index 0000000..91615a3
---- /dev/null
-+++ b/include/linux/acpi_gpio.h
-@@ -0,0 +1,19 @@
-+#ifndef _LINUX_ACPI_GPIO_H_
-+#define _LINUX_ACPI_GPIO_H_
++EXPORT_SYMBOL_GPL(acpi_i2c_register_devices);
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index a7edf98..e388590 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -39,6 +39,7 @@
+ #include <linux/irqflags.h>
+ #include <linux/rwsem.h>
+ #include <linux/pm_runtime.h>
++#include <linux/acpi.h>
+ #include <asm/uaccess.h>
+ 
+ #include "i2c-core.h"
+@@ -78,6 +79,10 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
+ 	if (of_driver_match_device(dev, drv))
+ 		return 1;
+ 
++	/* Then ACPI style match */
++	if (acpi_driver_match_device(dev, drv))
++		return 1;
 +
-+#include <linux/errno.h>
+ 	driver = to_i2c_driver(drv);
+ 	/* match on an id table if there is one */
+ 	if (driver->id_table)
+@@ -539,6 +544,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+ 	client->dev.bus = &i2c_bus_type;
+ 	client->dev.type = &i2c_client_type;
+ 	client->dev.of_node = info->of_node;
++	ACPI_HANDLE_SET(&client->dev, info->acpi_node.handle);
+ 
+ 	/* For 10-bit clients, add an arbitrary offset to avoid collisions */
+ 	dev_set_name(&client->dev, "%d-%04x", i2c_adapter_id(adap),
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 800de22..d0c4db7 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -259,6 +259,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+  * @platform_data: stored in i2c_client.dev.platform_data
+  * @archdata: copied into i2c_client.dev.archdata
+  * @of_node: pointer to OpenFirmware device node
++ * @acpi_node: ACPI device node
+  * @irq: stored in i2c_client.irq
+  *
+  * I2C doesn't actually support hardware probing, although controllers and
+@@ -279,6 +280,7 @@ struct i2c_board_info {
+ 	void		*platform_data;
+ 	struct dev_archdata	*archdata;
+ 	struct device_node *of_node;
++	struct acpi_dev_node acpi_node;
+ 	int		irq;
+ };
+ 
+@@ -501,4 +503,11 @@ static inline int i2c_adapter_id(struct i2c_adapter *adap)
+ 			i2c_del_driver)
+ 
+ #endif /* I2C */
 +
-+#ifdef CONFIG_GPIO_ACPI
++#if IS_ENABLED(CONFIG_ACPI_I2C)
++extern void acpi_i2c_register_devices(struct i2c_adapter *adap);
++#else
++static inline void acpi_i2c_register_devices(struct i2c_adapter *adap) {}
++#endif
 +
-+int acpi_get_gpio(char *path, int pin);
-+
-+#else /* CONFIG_GPIO_ACPI */
-+
-+static inline int acpi_get_gpio(char *path, int pin)
-+{
-+	return -ENODEV;
-+}
-+
-+#endif /* CONFIG_GPIO_ACPI */
-+
-+#endif /* _LINUX_ACPI_GPIO_H_ */
+ #endif /* _LINUX_I2C_H */
 -- 
 1.7.10.4
 
