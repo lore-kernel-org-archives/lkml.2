@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2KTAwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:52:51 -0500
-Received: from mga03.intel.com ([143.182.124.21]:17531 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753049Ab2KTAwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:52:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
-   d="scan'208";a="219936541"
-Message-ID: <1353372766.26072.21.camel@yhuang-dev>
-Subject: Re: [RFC] PCI/PM: Keep runtime PM enabled for unbound PCI devices
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Date: Tue, 20 Nov 2012 08:52:46 +0800
-In-Reply-To: <1521498.PJusLS7B2o@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1211191129060.1598-100000@iolanthe.rowland.org>
-	 <1521498.PJusLS7B2o@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1753474Ab2KTAxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:53:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24377 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab2KTAxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 19:53:31 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=uDR52U3UALsWyJzJ8WcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353372808.6276.11.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.19-rt30
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 19 Nov 2012 19:53:28 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-19 at 23:00 +0100, Rafael J. Wysocki wrote:
-> On Monday, November 19, 2012 11:31:01 AM Alan Stern wrote:
-> > On Mon, 19 Nov 2012, Huang Ying wrote:
-> > 
-> > > For unbound PCI devices, what we need is:
-> > > 
-> > >  - Always in D0 state, because some devices does not work again after
-> > >    being put into D3 by the PCI bus.
-> > > 
-> > >  - In SUSPENDED state if allowed, so that the parent devices can still
-> > >    be put into low power state.
-> > > 
-> > > To satisfy these requirement, the runtime PM for the unbound PCI
-> > > devices are disabled and set to SUSPENDED state.  One issue of this
-> > > solution is that the PCI devices will be put into SUSPENDED state even
-> > > if the SUSPENDED state is forbidden via the sysfs interface
-> > > (.../power/control) of the device.  This is not an issue for most
-> > > devices, because most PCI devices are not used at all if unbounded.
-> > > But there are exceptions.  For example, unbound VGA card can be used
-> > > for display, but suspend its parents make it stop working.
-> > > 
-> > > To fix the issue, we keep the runtime PM enabled when the PCI devices
-> > > are unbound.  But the runtime PM callbacks will do nothing if the PCI
-> > > devices are unbound.  This way, we can put the PCI devices into
-> > > SUSPENDED state without put the PCI devices into D3 state.
-> > > 
-> > > Known issue: after some changing, pci_dev->driver is used to indicate
-> > > whether the PCI devices are bound and whether the runtime PM callbacks
-> > > should do nothing.  Maybe it is better to use a dedicated flag such as
-> > > .skip_rtpm_callbacks.  That may improve code readability.
-> > 
-> > I think it's okay like this, especially if you add a comment in 
-> > pci_runtime_suspend, pci_runtime_resume, and pci_runtime_idle 
-> > explaining that when pci_dev->driver isn't set, the device should 
-> > always remain in D0 regardless of the runtime status.
-> 
-> Yes, I agree with Alan.  Please add comments as Alan's suggesting and it
-> should be fine.
 
-Sure.  Will do that.
+Dear RT Folks,
 
-Best Regards,
-Huang Ying
+I'm pleased to announce the 3.4.19-rt30 stable release.
+
+
+This release is just an update to the new stable 3.4.19 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 9468ca45e78a96d0e6faec6492444efa49f1fa69
+
+
+Or to build 3.4.19-rt30 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.19.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.19-rt30.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
 
 
