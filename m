@@ -1,127 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab2KTQlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:41:14 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:48258 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2KTQlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:41:13 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: andrew.cooper3@citrix.com, hpa@zytor.com, jbeulich@suse.com,
-        konrad.wilk@oracle.com, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
-	<1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
-Date: Tue, 20 Nov 2012 08:40:39 -0800
-In-Reply-To: <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
-	(Daniel Kiper's message of "Tue, 20 Nov 2012 16:04:43 +0100")
-Message-ID: <87lidwtego.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753526Ab2KTQqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:46:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856Ab2KTQqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 11:46:44 -0500
+Date: Tue, 20 Nov 2012 11:46:37 -0500
+From: Dave Jones <davej@redhat.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pi futex oops in __lock_acquire
+Message-ID: <20121120164637.GA19893@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20121018015312.GA29865@redhat.com>
+ <507F9944.50505@kernel.dk>
+ <20121019052136.GA30852@redhat.com>
+ <1350650972.30157.34.camel@twins>
+ <20121023195026.GA2872@redhat.com>
+ <20121024202411.GA20597@redhat.com>
+ <5088C397.3000501@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+ST0kVCjkS5E3qgXUWsB2mRzh+wQAr9lg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Daniel Kiper <daniel.kiper@oracle.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5088C397.3000501@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Kiper <daniel.kiper@oracle.com> writes:
+On Wed, Oct 24, 2012 at 09:44:07PM -0700, Darren Hart wrote:
+ 
+ > > I've been able to trigger this for the last week or so.
+ > > Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
+ > > pi-futex code hasn't changed since the last time it found something..
+ > > 
+ > >  > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ > >  > IP: [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ > >  > PGD 8e72c067 PUD 34f07067 PMD 0 
+ > >  > Oops: 0000 [#1] PREEMPT SMP 
+ > >  > CPU 7 
+ > >  > Pid: 27513, comm: trinity-child0 Not tainted 3.7.0-rc2+ #43
+ > >  > RIP: 0010:[<ffffffff810e185e>]  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ > >  > RSP: 0018:ffff8800803f7b28  EFLAGS: 00010046
+ > >  > RAX: 0000000000000086 RBX: 0000000000000000 RCX: 0000000000000000
+ > >  > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+ > >  > RBP: ffff8800803f7c18 R08: 0000000000000002 R09: 0000000000000000
+ > >  > R10: 0000000000000000 R11: 2222222222222222 R12: 0000000000000002
+ > >  > R13: ffff880051dd8000 R14: 0000000000000002 R15: 0000000000000018
+ > >  > FS:  00007f9fc6ccb740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
+ > >  > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ > >  > CR2: 0000000000000018 CR3: 000000008e6fb000 CR4: 00000000001407e0
+ > >  > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ > >  > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ > >  > Process trinity-child0 (pid: 27513, threadinfo ffff8800803f6000, task ffff880051dd8000)
+ > >  > Stack:
+ > >  >  ffff8800803f7b48 ffffffff816c5c59 ffff8800803f7b48 ffff88014840ebc0
+ > >  >  ffff8800803f7b68 ffffffff816c18e3 ffff8800803f7d10 0000000000000001
+ > >  >  ffff8800803f7ba8 ffffffff810a1e62 ffff8800803f7d10 0000000000000282
+ > >  > Call Trace:
+ > >  >  [<ffffffff816c5c59>] ? sub_preempt_count+0x79/0xd0
+ > >  >  [<ffffffff816c18e3>] ? _raw_spin_unlock_irqrestore+0x73/0xa0
+ > >  >  [<ffffffff810a1e62>] ? hrtimer_try_to_cancel+0x52/0x210
+ > >  >  [<ffffffff810eb9e5>] ? debug_rt_mutex_free_waiter+0x15/0x180
+ > >  >  [<ffffffff816c0107>] ? rt_mutex_slowlock+0x127/0x1b0
+ > >  >  [<ffffffff810b7039>] ? local_clock+0x89/0xa0
+ > >  >  [<ffffffff810e3ac2>] lock_acquire+0xa2/0x220
+ > >  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+ > >  >  [<ffffffff816c09e0>] _raw_spin_lock+0x40/0x80
+ > >  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+ > >  >  [<ffffffff810e812c>] futex_lock_pi.isra.18+0x1cc/0x390
+ > >  >  [<ffffffff810a1980>] ? update_rmtp+0x70/0x70
+ > >  >  [<ffffffff810e99e4>] do_futex+0x394/0xa50
+ > >  >  [<ffffffff8119ec43>] ? might_fault+0x53/0xb0
+ > >  >  [<ffffffff810ea12d>] sys_futex+0x8d/0x190
+ > >  >  [<ffffffff816ca288>] tracesys+0xe1/0xe6
+ > >  > Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 22 fe f3 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d c0 81 06 82 44 0f 44 e2 83 fb 01 
+ > >  > RIP  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ > >  >  RSP <ffff8800803f7b28>
+ > >  > CR2: 0000000000000018
+ > > 
+ > > It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
+ > > 
+ > > Darren, any idea how this could happen ?
+ > 
+ > I'm digging. Can you get trinity to provide the arguments it used that
+ > trigger the crash?u That might help hone in on the exact path.
 
-> Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
-> functions or require some changes in behavior of kexec/kdump generic code.
-> To cope with that problem kexec_ops struct was introduced. It allows
-> a developer to replace all or some functions and control some
-> functionality of kexec/kdump generic code.
->
-> Default behavior of kexec/kdump generic code is not changed.
+Still seeing this on rc6. It happens very quickly when I run with "-c futex"
+I just pushed out all the pending trinity changes I was running with, but
+I don't think they would have been responsible.
 
-Ick.
+	Dave
 
-> v2 - suggestions/fixes:
->    - add comment for kexec_ops.crash_alloc_temp_store member
->      (suggested by Konrad Rzeszutek Wilk),
->    - simplify kexec_ops usage
->      (suggested by Konrad Rzeszutek Wilk).
->
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> ---
->  include/linux/kexec.h |   26 ++++++++++
->  kernel/kexec.c        |  131 +++++++++++++++++++++++++++++++++++++------------
->  2 files changed, 125 insertions(+), 32 deletions(-)
->
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index d0b8458..c8d0b35 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -116,7 +116,33 @@ struct kimage {
->  #endif
->  };
->  
-> +struct kexec_ops {
-> +	/*
-> +	 * Some kdump implementations (e.g. Xen PVOPS dom0) could not access
-> +	 * directly crash kernel memory area. In this situation they must
-> +	 * allocate memory outside of it and later move contents from temporary
-> +	 * storage to final resting places (usualy done by relocate_kernel()).
-> +	 * Such behavior could be enforced by setting
-> +	 * crash_alloc_temp_store member to true.
-> +	 */
-
-Why in the world would Xen not be able to access crash kernel memory?
-As currently defined it is normal memory that the kernel chooses not to
-use.
-
-If relocate kernel can access that memory you definitely can access the
-memory so the comment does not make any sense.
-
-> +	bool crash_alloc_temp_store;
-> +	struct page *(*kimage_alloc_pages)(gfp_t gfp_mask,
-> +						unsigned int order,
-> +						unsigned long limit);
-> +	void (*kimage_free_pages)(struct page *page);
-> +	unsigned long (*page_to_pfn)(struct page *page);
-> +	struct page *(*pfn_to_page)(unsigned long pfn);
-> +	unsigned long (*virt_to_phys)(volatile void *address);
-> +	void *(*phys_to_virt)(unsigned long address);
-> +	int (*machine_kexec_prepare)(struct kimage *image);
-> +	int (*machine_kexec_load)(struct kimage *image);
-> +	void (*machine_kexec_cleanup)(struct kimage *image);
-> +	void (*machine_kexec_unload)(struct kimage *image);
-> +	void (*machine_kexec_shutdown)(void);
-> +	void (*machine_kexec)(struct kimage *image);
-> +};
-
-Ugh.  This is a nasty abstraction.
-
-You are mixing and matching a bunch of things together here.
-
-If you need to override machine_kexec_xxx please do that on a per
-architecture basis.
-
-Special case overrides of page_to_pfn, pfn_to_page, virt_to_phys,
-phys_to_virt, and friends seem completely inappropriate.
-
-There may be a point to all of these but you are mixing and matching
-things badly.
-
-
-Eric
