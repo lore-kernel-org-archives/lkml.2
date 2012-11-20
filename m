@@ -1,96 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2KTLRD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:17:03 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59926 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2KTLRA (ORCPT
+	id S1752985Ab2KTLUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:20:44 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:6812 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751970Ab2KTLUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:17:00 -0500
-Message-ID: <50AB669D.3060007@gmail.com>
-Date: Tue, 20 Nov 2012 19:16:45 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 20 Nov 2012 06:20:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtkJACpmq1B5LbWp/2dsb2JhbABFhTe3H4YBgQmCHgEBBScTHCMQCAMVAy4UJQMhE4gMsA+QWBSMHQmEC2EDlXuJSYZ7gwOBRyA
+Date: Tue, 20 Nov 2012 22:20:38 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, jmoyer@redhat.com, bpm@sgi.com,
+        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        djwong+kernel@djwong.org
+Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct
+ I/O requests
+Message-ID: <20121120112038.GC2591@dastard>
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+ <20121120075114.25270.40680.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
- SPARSEMEM_VMEMMAP
-References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120075114.25270.40680.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 05:44 PM, Wen Congyang wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But even if
-> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
->
-> So the patch add unregister_memory_section() into __remove_section().
-
-Hi Yasuaki,
-
-I have a question about these sparse vmemmap memory related patches. Hot 
-add memory need allocated vmemmap pages, but this time is allocated by 
-buddy system. How can gurantee virtual address is continuous to the 
-address allocated before? If not continuous, page_to_pfn and pfn_to_page 
-can't work correctly.
-
-Regards,
-Jaegeuk
-
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Mon, Nov 19, 2012 at 11:51:14PM -0800, Darrick J. Wong wrote:
+> If a file is opened with O_SYNC|O_DIRECT, the drive cache does not get
+> flushed after the write completion for AIOs.  This patch attempts to fix
+> that problem by marking an I/O as requiring a cache flush in endio
+> processing, and then issuing the cache flush after any unwritten extent
+> conversion is done.
+> 
+> From: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> [darrick.wong@oracle.com: Rework patch to use per-mount workqueues]
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 > ---
->   mm/memory_hotplug.c | 13 ++++++++-----
->   1 file changed, 8 insertions(+), 5 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index ca07433..66a79a7 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid, struct zone *zone,
->   #ifdef CONFIG_SPARSEMEM_VMEMMAP
->   static int __remove_section(struct zone *zone, struct mem_section *ms)
->   {
-> -	/*
-> -	 * XXX: Freeing memmap with vmemmap is not implement yet.
-> -	 *      This should be removed later.
-> -	 */
-> -	return -EBUSY;
-> +	int ret = -EINVAL;
-> +
-> +	if (!valid_section(ms))
-> +		return ret;
-> +
-> +	ret = unregister_memory_section(ms);
-> +
-> +	return ret;
->   }
->   #else
->   static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  fs/xfs/xfs_aops.c  |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  fs/xfs/xfs_aops.h  |    1 +
+>  fs/xfs/xfs_mount.h |    1 +
+>  fs/xfs/xfs_super.c |    8 ++++++++
+>  4 files changed, 61 insertions(+), 1 deletion(-)
+> 
+> 
+> diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+> index e57e2da..9cebbb7 100644
+> --- a/fs/xfs/xfs_aops.c
+> +++ b/fs/xfs/xfs_aops.c
+> @@ -173,6 +173,24 @@ xfs_setfilesize(
+>  }
+>  
+>  /*
+> + * In the case of synchronous, AIO, O_DIRECT writes, we need to flush
+> + * the disk cache when the I/O is complete.
+> + */
 
+That's not quite right - we need to fsync the metadata when the data
+IO is complete. Block device/disk cache flushes are irrelevant at
+this level as that is wholly encapsulated inside the metadata fsync
+processing.
+
+> +STATIC bool
+> +xfs_ioend_needs_cache_flush(
+
+xfs_ioend_need_fsync()
+
+> +	struct xfs_ioend	*ioend)
+> +{
+> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
+> +	struct xfs_mount *mp = ip->i_mount;
+> +
+> +	if (!(mp->m_flags & XFS_MOUNT_BARRIER))
+> +		return false;
+
+And regardless of whether we have barriers enabled or not, we need
+to flush the dirty metadata to the log for O_SYNC/O_DSYNC+AIO+DIO
+writes here. So there should be no check of the mount flags here.
+
+> +	return IS_SYNC(ioend->io_inode) ||
+> +	       (ioend->io_iocb->ki_filp->f_flags & O_DSYNC);
+> +}
+> +
+> +/*
+>   * Schedule IO completion handling on the final put of an ioend.
+>   *
+>   * If there is no work to do we might as well call it a day and free the
+> @@ -189,11 +207,30 @@ xfs_finish_ioend(
+>  			queue_work(mp->m_unwritten_workqueue, &ioend->io_work);
+>  		else if (ioend->io_append_trans)
+>  			queue_work(mp->m_data_workqueue, &ioend->io_work);
+> +		else if (ioend->io_needs_fsync)
+> +			queue_work(mp->m_aio_blkdev_flush_wq, &ioend->io_work);
+>  		else
+>  			xfs_destroy_ioend(ioend);
+>  	}
+>  }
+>  
+> +STATIC int
+> +xfs_ioend_force_cache_flush(
+
+STATIC void
+xfs_ioend_fsync()
+
+> +	xfs_ioend_t	*ioend)
+> +{
+> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
+> +	struct xfs_mount *mp = ip->i_mount;
+> +	int		err = 0;
+> +	int		datasync;
+
+	trace_xfs_ioend_fsync(ip);
+
+> +	datasync = !IS_SYNC(ioend->io_inode) &&
+> +		!(ioend->io_iocb->ki_filp->f_flags & __O_SYNC);
+> +	err = do_xfs_file_fsync(ip, mp, datasync);
+> +	xfs_destroy_ioend(ioend);
+
+I think this is wrong. The ioend is destroyed by the caller, so
+putting it here turns all subsequent uses by the caller into
+use-after-free memory corruption bugs.
+
+
+> +	/* do_xfs_file_fsync returns -errno. our caller expects positive. */
+> +	return -err;
+
+This is why xfs_do_file_fsync() should be returning a positive
+error - to avoid repeated juggling of error signs.
+
+> +}
+> +
+>  /*
+>   * IO write completion.
+>   */
+> @@ -250,12 +287,22 @@ xfs_end_io(
+>  		error = xfs_setfilesize(ioend);
+>  		if (error)
+>  			ioend->io_error = -error;
+> +	} else if (ioend->io_needs_fsync) {
+> +		error = xfs_ioend_force_cache_flush(ioend);
+> +		if (error && ioend->io_result > 0)
+> +			ioend->io_error = -error;
+> +		ioend->io_needs_fsync = 0;
+
+So this is all use-after-free. Also, there's no need to clear
+io_needs_fsync() as the ioend is about to be destroyed.
+
+>  	} else {
+>  		ASSERT(!xfs_ioend_is_append(ioend));
+>  	}
+>  
+>  done:
+> -	xfs_destroy_ioend(ioend);
+> +	/* the honoring of O_SYNC has to be done last */
+> +	if (ioend->io_needs_fsync) {
+> +		atomic_inc(&ioend->io_remaining);
+> +		xfs_finish_ioend(ioend);
+> +	} else
+> +		xfs_destroy_ioend(ioend);
+
+And requeuing work from one workqueue to the next is something that
+we can avoid.  We know at IO submission time (i.e.
+xfs_vm_direct_io)) whether an fsync completion is going to be needed
+during Io completion.  The ioend->io_needs_fsync flag can be set
+then, and the first pass through xfs_finish_ioend() can queue it to
+the correct workqueue.  i.e. it only needs to be queued if it's not
+already an unwritten or append ioend and it needs an fsync.
+
+As it is, all the data completion workqueues run the same completion
+function so all you need to do is handle the fsync case at the end
+of the existing processing - it's not an else case. i.e the end of
+xfs_end_io() becomes:
+
+	if (ioend->io_needs_fsync) {
+		error = xfs_ioend_fsync(ioend);
+		if (error)
+			ioend->io_error = -error;
+		goto done;
+	}
+done:
+	xfs_destroy_ioend(ioend);
+
+As it is, this code is going to change before these changes go in -
+there's a nasty regression in the DIO code that I found this
+afternoon that requires reworking this IO completion logic to
+avoid. The patch will appear on the list soon....
+
+> --- a/fs/xfs/xfs_mount.h
+> +++ b/fs/xfs/xfs_mount.h
+> @@ -209,6 +209,7 @@ typedef struct xfs_mount {
+>  	struct workqueue_struct	*m_data_workqueue;
+>  	struct workqueue_struct	*m_unwritten_workqueue;
+>  	struct workqueue_struct	*m_cil_workqueue;
+> +	struct workqueue_struct *m_aio_blkdev_flush_wq;
+
+	struct workqueue_struct *m_aio_fsync_wq;
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
