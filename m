@@ -1,222 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab2KTJGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:06:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62607 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab2KTJGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:06:45 -0500
-Date: Tue, 20 Nov 2012 10:06:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120090637.GA14873@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com>
- <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
+	id S1752864Ab2KTJHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:07:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39919 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab2KTJG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:06:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
+   d="scan'208";a="249874148"
+Date: Tue, 20 Nov 2012 11:10:07 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [Update][PATCH 2/3] ACPI / driver core: Introduce struct
+ acpi_dev_node and related macros
+Message-ID: <20121120091007.GN17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1758879.PKgPhTGcB7@vostro.rjw.lan>
+ <4036218.zBRlg5OZsZ@vostro.rjw.lan>
+ <6570191.KCDMiILtRE@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
+In-Reply-To: <6570191.KCDMiILtRE@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 20, 2012 at 01:59:23AM +0100, Rafael J. Wysocki wrote:
+> Index: linux/include/linux/device.h
+> ===================================================================
+> --- linux.orig/include/linux/device.h
+> +++ linux/include/linux/device.h
+> @@ -578,6 +578,12 @@ struct device_dma_parameters {
+>  	unsigned long segment_boundary_mask;
+>  };
+>  
+> +struct acpi_dev_node {
+> +#ifdef CONFIG_ACPI
+> +	void	*handle;
+> +#endif
+> +};
+> +
+>  /**
+>   * struct device - The basic device structure
+>   * @parent:	The device's "parent" device, the device to which it is attached.
+> @@ -683,7 +689,7 @@ struct device {
+>  	struct dev_archdata	archdata;
+>  
+>  	struct device_node	*of_node; /* associated device tree node */
+> -	void			*acpi_handle; /* associated ACPI device node */
+> +	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
 
-* David Rientjes <rientjes@google.com> wrote:
-
-> On Tue, 20 Nov 2012, Ingo Molnar wrote:
-> 
-> > > This happened to be an Opteron (but not 83xx series), 2.4Ghz.  
-> > 
-> > Ok - roughly which family/model from /proc/cpuinfo?
-> 
-> It's close enough, it's 23xx.
-
-Ok - which family/model number in /proc/cpuinfo?
-
-I'm asking because that will matter most to page fault 
-micro-characteristics and the 23xx series existed in Barcelona 
-form as well (family/model of 16/2) and it still exists in its 
-current Shanghai form as well.
-
-My guess is Barcelona 16/2?
-
-If that is correct then the closest I can get to your topology 
-is a 4-socket 32-way Opteron system with 32 GB of RAM - which 
-seems close enough for testing purposes.
-
-But checking numa/core on such a system still keeps me 
-absolutely puzzled, as I get the following with a similar 
-16-warehouses SPECjbb 2005 test, using java -Xms8192m -Xmx8192m 
--Xss256k sizing, THP enabled, 2x 240 seconds runs (I tried to 
-configure it all very close to yours), using -tip-a07005cbd847:
-
-         kernel             warehouses    transactions/sec
-         ---------          ----------
-         v3.7-rc6:          16            197802
-                            16            197997
-
-         numa/core:         16            203086
-                            16            203967
-
-So sadly numa/core is about 2%-3% faster on this 4x4 system too!
-:-/
-
-But I have to say, your SPECjbb score is uncharacteristically 
-low even for an oddball-topology Barcelona system - which is the 
-oldest/slowest system I can think of. So there might be more to 
-this.
-
-To further characterise a "good" SPECjbb run, there's no 
-page_fault overhead visible in perf top:
-
-Mainline profile:
-
-    94.99%  perf-1244.map     [.] 0x00007f04cd1aa523                 
-     2.52%  libjvm.so         [.] 0x00000000007004a1                 
-     0.62%  [vdso]            [.] 0x0000000000000972                 
-     0.31%  [kernel]          [k] clear_page_c                       
-     0.17%  [kernel]          [k] timekeeping_get_ns.constprop.7     
-     0.11%  [kernel]          [k] rep_nop                            
-     0.09%  [kernel]          [k] ktime_get                          
-     0.08%  [kernel]          [k] get_cycles                         
-     0.06%  [kernel]          [k] read_tsc                           
-     0.05%  libc-2.15.so      [.] __strcmp_sse2                      
-
-numa/core profile:
-
-    95.66%  perf-1201.map     [.] 0x00007fe4ad1c8fc7                 
-     1.70%  libjvm.so         [.] 0x0000000000381581                 
-     0.59%  [vdso]            [.] 0x0000000000000607                 
-     0.19%  [kernel]          [k] do_raw_spin_lock                   
-     0.11%  [kernel]          [k] generic_smp_call_function_interrupt
-     0.11%  [kernel]          [k] timekeeping_get_ns.constprop.7     
-     0.08%  [kernel]          [k] ktime_get                          
-     0.06%  [kernel]          [k] get_cycles                         
-     0.05%  [kernel]          [k] __native_flush_tlb                 
-     0.05%  [kernel]          [k] rep_nop                            
-     0.04%  perf              [.] add_hist_entry.isra.9              
-     0.04%  [kernel]          [k] rcu_check_callbacks                
-     0.04%  [kernel]          [k] ktime_get_update_offsets           
-     0.04%  libc-2.15.so      [.] __strcmp_sse2                      
-
-No page fault overhead (see the page fault rate further below) - 
-the NUMA scanning overhead shows up only through some mild TLB 
-flush activity (which I'll fix btw).
-
-[ Stupid question: cpufreq is configured to always-2.4GHz, 
-  right? If you could send me your kernel config (you can do 
-  that privately as well) then I can try to boot it and see. ]
-
-> > > It's perf top -U, the benchmark itself was unchanged so I 
-> > > didn't think it was interesting to gather the user 
-> > > symbols.  If that would be helpful, let me know!
-> > 
-> > Yeah, regular perf top output would be very helpful to get a 
-> > general sense of proportion. Thanks!
-> 
-> Ok, here it is:
-> 
->     91.24%  perf-10971.map    [.] 0x00007f116a6c6fb8                            
->      1.19%  libjvm.so         [.] instanceKlass::oop_push_contents(PSPromotionMa
->      1.04%  libjvm.so         [.] PSPromotionManager::drain_stacks_depth(bool)  
->      0.79%  libjvm.so         [.] PSPromotionManager::copy_to_survivor_space(oop
->      0.60%  libjvm.so         [.] PSPromotionManager::claim_or_forward_internal_
->      0.58%  [kernel]          [k] page_fault                                    
->      0.28%  libc-2.3.6.so     [.] __gettimeofday                                        
->      0.26%  libjvm.so         [.] Copy::pd_disjoint_words(HeapWord*, HeapWord*, unsigned
->      0.22%  [kernel]          [k] getnstimeofday                                        
->      0.18%  libjvm.so         [.] CardTableExtension::scavenge_contents_parallel(ObjectS
->      0.15%  [kernel]          [k] _raw_spin_lock                                        
->      0.12%  [kernel]          [k] ktime_get_update_offsets                              
->      0.11%  [kernel]          [k] ktime_get                                             
->      0.11%  [kernel]          [k] rcu_check_callbacks                                   
->      0.10%  [kernel]          [k] generic_smp_call_function_interrupt                   
->      0.10%  [kernel]          [k] read_tsc                                              
->      0.10%  [kernel]          [k] clear_page_c                                          
->      0.10%  [kernel]          [k] __do_page_fault                                       
->      0.08%  [kernel]          [k] handle_mm_fault                                       
->      0.08%  libjvm.so         [.] os::javaTimeMillis()                                  
->      0.08%  [kernel]          [k] emulate_vsyscall                                      
-
-Oh, finally a clue: you seem to have vsyscall emulation 
-overhead!
-
-Vsyscall emulation is fundamentally page fault driven - which 
-might explain why you are seeing page fault overhead. It might 
-also interact with other sources of faults - such as numa/core's 
-working set probing ...
-
-Many JVMs try to be smart with the vsyscall. As a test, does the 
-vsyscall=native boot option change the results/behavior in any 
-way?
-
-Stupid question, if you apply the patch attached below and if 
-you do page fault profiling while the run is in steady state:
-
-   perf record -e faults -g -a sleep 10
-
-do you see it often coming from the vsyscall page?
-
-Also, this:
-
-   perf stat -e faults -a --repeat 10 sleep 1
-
-should normally report something like this during SPECjbb steady 
-state, numa/core:
-
-          warmup:   3,895 faults/sec                ( +- 12.11% )
-    steady state:   3,910 faults/sec                ( +-  6.72% )
-
-Which is about 250 faults/sec/CPU - i.e. it should be barely 
-recognizable in profiles - let alone be prominent as in yours.
-
-Thanks,
-
-	Ingo
-
----
- arch/x86/mm/fault.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux/arch/x86/mm/fault.c
-===================================================================
---- linux.orig/arch/x86/mm/fault.c
-+++ linux/arch/x86/mm/fault.c
-@@ -1030,6 +1030,9 @@ __do_page_fault(struct pt_regs *regs, un
- 	/* Get the faulting address: */
- 	address = read_cr2();
- 
-+	/* Instrument as early as possible: */
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
-+
- 	/*
- 	 * Detect and handle instructions that would cause a page fault for
- 	 * both a tracked kernel page and a userspace page.
-@@ -1107,8 +1110,6 @@ __do_page_fault(struct pt_regs *regs, un
- 		}
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
--
- 	/*
- 	 * If we're in an interrupt, have no user context or are running
- 	 * in an atomic region then we must not take the fault:
+Please update the kerneldoc comment as well.
