@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab2KTOkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:40:08 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59143 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2KTOkG (ORCPT
+	id S1753191Ab2KTOkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:40:43 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58766 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2KTOkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:40:06 -0500
+	Tue, 20 Nov 2012 09:40:41 -0500
+Date: Tue, 20 Nov 2012 06:40:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Daniel Wagner <wagi@monom.org>
+Cc: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
+        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 7/7] netprio_cgroup: allow nesting and inherit config on
+ cgroup creation
+Message-ID: <20121120144036.GP15971@htj.dyndns.org>
+References: <1353400211-5182-1-git-send-email-tj@kernel.org>
+ <1353400211-5182-8-git-send-email-tj@kernel.org>
+ <50AB45EA.2050507@monom.org>
 MIME-Version: 1.0
-In-Reply-To: <1353090754-30233-1-git-send-email-ajax@redhat.com>
-References: <1353090754-30233-1-git-send-email-ajax@redhat.com>
-Date: Tue, 20 Nov 2012 09:40:05 -0500
-Message-ID: <CA+5PVA54A3xcOyrm5GCMj3jE_338=eVFFBGFE61zLpNrh__imA@mail.gmail.com>
-Subject: Re: [PATCH] vt: Drop K_OFF for VC_MUTE
-From: Josh Boyer <jwboyer@gmail.com>
-To: Adam Jackson <ajax@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arthur Taylor <art@ified.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AB45EA.2050507@monom.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 1:32 PM, Adam Jackson <ajax@redhat.com> wrote:
-> The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
-> the keyboard map state; we should be able to switch among cooked/raw/
-> unicode without changing whether events are delivered.  Otherwise - if
-> changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
-> Gnome will switch VT instead of summoning the "run command" dialog.
->
-> Drop the K_OFF handling and replace it with a new "mute" ioctl pair.
-> Anybody using K_OFF would already need to be prepared to handle it
-> throwing -EINVAL for old kernel compatibility, so userspace will degrade
-> gracefully.
->
-> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
-> Cc: Arthur Taylor <art@ified.ca>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Tested-by: Josh Boyer <jwboyer@redhat.com>
-> Signed-off-by: Adam Jackson <ajax@redhat.com>
+Hello, Daniel.
 
-Well, I tested a build with this patch so the tested-by is accurate.
-It fixes the problem when it builds.  But...
+On Tue, Nov 20, 2012 at 09:57:14AM +0100, Daniel Wagner wrote:
+> >-static void cgrp_css_free(struct cgroup *cgrp)
+> >+static int cgrp_css_online(struct cgroup *cgrp)
+> >  {
+> >-	struct cgroup_netprio_state *cs = cgrp_netprio_state(cgrp);
+> >+	struct cgroup *parent = cgrp->parent;
+> >  	struct net_device *dev;
+> >+	int ret = 0;
+> >+
+> >+	if (!parent)
+> >+		return 0;
+> 
+> BTW, parent is always != NULL, because the root cgroup will be
+> attached to the dummytop cgroup.
 
-> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-> index 681765b..08d1d57 100644
-> --- a/drivers/tty/vt/keyboard.c
-> +++ b/drivers/tty/vt/keyboard.c
+Hmmm?  I'm confused.  When ->css_online() is called for dummytop in
+cgroup_init_subsys(), its parent is NULL.  What am I missing?
 
-<snip>
+Thanks.
 
-> +int vt_do_kgdbmute(int console)
-> +{
-> +       struct kbd_struct * kbd = kbd_table + console;
-> +       /* This is a spot read so needs no locking */
-> +       return vc_kbd_mode(kbd, VC_MUTE);
-> +}
-> +
-
-That should be vt_do_kdgkbmute.  I know kgdb is probably easier to type
-because 'gdb' is ingrained into every developer's finger memory, but the
-kernel gets really grumpy when function definitions don't match what
-callers actually call:
-
-drivers/built-in.o: In function `vt_ioctl':
-/home/jwboyer/kernel/drivers/tty/vt/vt_ioctl.c:489: undefined
-reference to `vt_do_kdgkbmute'
-
-
-After that small fixup, the patch does build and does still fix the
-problem with a properly fixed up Xorg.
-
-josh
+-- 
+tejun
