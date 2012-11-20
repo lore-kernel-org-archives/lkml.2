@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2KTPTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:19:52 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab2KTPRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:17:15 -0500
-X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
-        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Cc: Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH v2 03/11] xen: Introduce architecture independent data for kexec/kdump
-Date: Tue, 20 Nov 2012 16:04:45 +0100
-Message-Id: <1353423893-23125-4-git-send-email-daniel.kiper@oracle.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
-X-Bogosity: No, spamicity=0.415109
+	id S1753463Ab2KTPVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:21:01 -0500
+Received: from [93.179.225.50] ([93.179.225.50]:48915 "EHLO shrek.podlesie.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751600Ab2KTPU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:20:59 -0500
+Date: Tue, 20 Nov 2012 16:20:55 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Alan Cox <alan@linux.intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: vt: regression caused by "Fix line garbage in virtual.."
+Message-ID: <20121120152055.GA5684@shrek.podlesie.net>
+References: <20121118110523.GA12094@shrek.podlesie.net>
+ <20121119113828.5a66f112@bob.linux.org.uk>
+ <20121119202149.46fc89c4@armhf>
+ <20121119211553.GA29907@shrek.podlesie.net>
+ <20121120095421.1d4dfa5e@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120095421.1d4dfa5e@armhf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce architecture independent constants and structures
-required by Xen kexec/kdump implementation.
+On Tue, Nov 20, 2012 at 09:54:21AM +0100, Jean-Francois Moine wrote:
+> Thanks for testing. This time, the fix was easy.
+> 
+> But anyway, as it seems that my patch fixes only the Cubox machine and
+> as we are still using a kernel 3.5 with specific patches, the fix may
+> be delayed.
+> 
+> --->8 ---
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -539,25 +539,25 @@
+>  {
+>  	unsigned short *p = (unsigned short *) vc->vc_pos;
+>  
+> -	scr_memmovew(p + nr, p, vc->vc_cols - vc->vc_x);
+> +	scr_memmovew(p + nr, p, (vc->vc_cols - vc->vc_x) * 2);
+>  	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
+>  	vc->vc_need_wrap = 0;
+>  	if (DO_UPDATE(vc))
+>  		do_update_region(vc, (unsigned long) p,
+> -			(vc->vc_cols - vc->vc_x) / 2 + 1);
+> +			vc->vc_cols - vc->vc_x);
+>  }
+>  
+>  static void delete_char(struct vc_data *vc, unsigned int nr)
+>  {
+>  	unsigned short *p = (unsigned short *) vc->vc_pos;
+>  
+> -	scr_memcpyw(p, p + nr, vc->vc_cols - vc->vc_x - nr);
+> +	scr_memcpyw(p, p + nr, (vc->vc_cols - vc->vc_x - nr) * 2);
+>  	scr_memsetw(p + vc->vc_cols - vc->vc_x - nr, vc->vc_video_erase_char,
+>  			nr * 2);
+>  	vc->vc_need_wrap = 0;
+>  	if (DO_UPDATE(vc))
+>  		do_update_region(vc, (unsigned long) p,
+> -			(vc->vc_cols - vc->vc_x) / 2);
+> +			vc->vc_cols - vc->vc_x);
+>  }
+>  
+>  static int softcursor_original;
 
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
----
- include/xen/interface/xen.h |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+Tested-by: Krzysztof Mazur <krzysiek@podlesie.net>
 
-diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-index 886a5d8..09c16ab 100644
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -57,6 +57,7 @@
- #define __HYPERVISOR_event_channel_op     32
- #define __HYPERVISOR_physdev_op           33
- #define __HYPERVISOR_hvm_op               34
-+#define __HYPERVISOR_kexec_op             37
- #define __HYPERVISOR_tmem_op              38
- 
- /* Architecture-specific hypercall definitions. */
-@@ -231,7 +232,39 @@ DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
- #define VMASST_TYPE_pae_extended_cr3     3
- #define MAX_VMASST_TYPE 3
- 
-+/*
-+ * Commands to HYPERVISOR_kexec_op().
-+ */
-+#define KEXEC_CMD_kexec			0
-+#define KEXEC_CMD_kexec_load		1
-+#define KEXEC_CMD_kexec_unload		2
-+#define KEXEC_CMD_kexec_get_range	3
-+
-+/*
-+ * Memory ranges for kdump (utilized by HYPERVISOR_kexec_op()).
-+ */
-+#define KEXEC_RANGE_MA_CRASH		0
-+#define KEXEC_RANGE_MA_XEN		1
-+#define KEXEC_RANGE_MA_CPU		2
-+#define KEXEC_RANGE_MA_XENHEAP		3
-+#define KEXEC_RANGE_MA_BOOT_PARAM	4
-+#define KEXEC_RANGE_MA_EFI_MEMMAP	5
-+#define KEXEC_RANGE_MA_VMCOREINFO	6
-+
- #ifndef __ASSEMBLY__
-+struct xen_kexec_exec {
-+	int type;
-+};
-+
-+struct xen_kexec_range {
-+	int range;
-+	int nr;
-+	unsigned long size;
-+	unsigned long start;
-+};
-+
-+extern unsigned long xen_vmcoreinfo_maddr;
-+extern unsigned long xen_vmcoreinfo_max_size;
- 
- typedef uint16_t domid_t;
- 
--- 
-1.5.6.5
+Thanks,
 
+Krzysiek
