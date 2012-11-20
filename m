@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab2KTX74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:59:56 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33394 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2KTX7y (ORCPT
+	id S1753742Ab2KUAFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 19:05:04 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:26286 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752489Ab2KUAFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:59:54 -0500
-Date: Wed, 21 Nov 2012 00:05:10 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ellyjones@chromium.org, Kay Sievers <kay@vrfy.org>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v3] devtmpfs: mount with noexec and nosuid
-Message-ID: <20121121000510.7a3c6673@pyramind.ukuu.org.uk>
-In-Reply-To: <20121120215059.GA1859@www.outflux.net>
-References: <20121120215059.GA1859@www.outflux.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 19:05:02 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18As8uLLWffzYqTTOXEv+15npVpS87gm9Q=
+Date: Tue, 20 Nov 2012 15:27:27 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20121120202727.GE22106@titan.lakedaemon.net>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <20121120113325.dde266ed.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120113325.dde266ed.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +config DEVTMPFS_SAFE
-> +	bool "Use nosuid,noexec mount options on devtmpfs"
-> +	depends on DEVTMPFS
-> +	help
-> +	  This instructs the kernel to include the MS_NOEXEC and
-> +	  MS_NOSUID mount flags when mounting devtmpfs. This prevents
-> +	  certain kinds of code-execution attacks on embedded platforms.
+On Tue, Nov 20, 2012 at 11:33:25AM -0800, Andrew Morton wrote:
+> On Tue, 20 Nov 2012 15:31:45 +0100
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> 
+> > dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+> > regardless the flags provided by the caller. This causes excessive
+> > pruning of emergency memory pools without any good reason. Additionaly,
+> > on ARM architecture any driver which is using dmapools will sooner or
+> > later  trigger the following error: 
+> > "ERROR: 256 KiB atomic DMA coherent pool is too small!
+> > Please increase it with coherent_pool= kernel parameter!".
+> > Increasing the coherent pool size usually doesn't help much and only
+> > delays such error, because all GFP_ATOMIC DMA allocations are always
+> > served from the special, very limited memory pool.
+> > 
+> 
+> Is this problem serious enough to justify merging the patch into 3.7? 
+> And into -stable kernels?
 
-This description appears to be wrong as well as the code being pointless.
-It doesn't prevent any meaningful code execution attacks and the config
-entry might give people the delusion its useful or a security feature.
+kirkwood and orion5x currently have the following code in their early
+init:
 
-Please provide a valid and meaningful example.
+/*
+ * Some Kirkwood devices allocate their coherent buffers from atomic
+ * context. Increase size of atomic coherent pool to make sure such the
+ * allocations won't fail.
+ */
+init_dma_coherent_pool_size(SZ_1M);
+
+We have a pending patch to do the same for mvebu (new armv7 Marvell
+SoCs).  There is at least one reported real world case where even the
+above isn't sufficient [1].
+
+thx,
+
+Jason.
+
+[1] http://www.spinics.net/lists/arm-kernel/msg205495.html
