@@ -1,86 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2KTKJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:09:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:32113 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2KTKJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:09:50 -0500
-X-IronPort-AV: E=Sophos;i="4.83,285,1352044800"; 
-   d="scan'208";a="6239056"
-Date: Tue, 20 Nov 2012 18:09:48 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Subject: Re: [PATCH v11] kvm: notify host when the guest is panicked
-Message-ID: <20121120100948.GB17311@localhost.localdomain>
-References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
- <20121031011256.GC12325@amt.cnet>
- <50908354.5070608@cn.fujitsu.com>
- <CA+1xoqdcaeAm05_=rx3h9KHph+j7Ab8vRG_w9yUk7jtn+wHuBg@mail.gmail.com>
- <20121106015835.GA11971@localhost.localdomain>
- <CA+1xoqd60YihExEuSU2qzsyFRXLS=XaeeX9AaMLhPHggfM6V3A@mail.gmail.com>
- <20121113021908.GA8176@amt.cnet>
+	id S1752726Ab2KTKN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:13:57 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38781 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab2KTKNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:13:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121113021908.GA8176@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 18:09:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 18:09:34,
-	Serialize complete at 2012/11/20 18:09:34
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+In-Reply-To: <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+	<1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+Date: Tue, 20 Nov 2012 15:43:55 +0530
+Message-ID: <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
+On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> We'll need to invoke clk_unprepare() via a pointer in our devm_*
+> conversion so let's uninline the pair.
 
-On Tue, Nov 13, 2012 at 12:19:08AM -0200, Marcelo Tosatti wrote:
-> On Fri, Nov 09, 2012 at 03:17:39PM -0500, Sasha Levin wrote:
-> > On Mon, Nov 5, 2012 at 8:58 PM, Hu Tao <hutao@cn.fujitsu.com> wrote:
-> > > But in the case of panic notification, more dependency means more
-> > > chances of failure of panic notification. Say, if we use a virtio device
-> > > to do panic notification, then we will fail if: virtio itself has
-> > > problems, virtio for some reason can't be deployed(neither built-in or
-> > > as a module), or guest doesn't support virtio, etc.
-> > 
-> > Add polling to your virtio device. If it didn't notify of a panic but
-> > taking more than 20 sec to answer your poll request you can assume
-> > it's dead.
-> > 
-> > Actually, just use virtio-serial and something in userspace on the guest.
-> 
-> They want the guest to stop, so a memory dump can be taken by management
-> interface.
-> 
-> Hu Tao, lets assume port I/O is the preferred method for communication.
+Sorry, but you aren't doing this :(
+This routine is already uninlined as it is in clk.c
 
-Okey.
+Instead you are just moving clk_prepare(), etc calls within
+#ifdef CONFIG_HAVE_CLK
+#else
+#endif
 
-> Now, the following comments have still not been addressed:
-> 
-> 1) Lifecycle of the stopped guest and interaction with other stopped
-> states in QEMU.
+I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
+earlier. Can they exist without CONFIG_HAVE_CLK
 
-Patch 3 already deals with run state transitions. But in case I'm
-missing something, could you be more specific?
+@Mike: ?
 
-> 
-> 2) Format of the interface for other architectures (you can choose
-> a different KVM supported architecture and write an example).
-> 
-> 3) Clear/documented management interface for the feature.
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/clk/clk.c   |  4 ++++
+>  include/linux/clk.h | 68 +++++++++++++++++++++++++----------------------------
+>  2 files changed, 36 insertions(+), 36 deletions(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 56e4495e..1b642f2 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -374,6 +374,7 @@ struct clk *__clk_lookup(const char *name)
+>
+>  void __clk_unprepare(struct clk *clk)
+>  {
+> +#ifdef CONFIG_HAVE_CLK_PREPARE
 
-It is documented in patch 0: Documentation/virtual/kvm/pv_event.txt.
-Does it need to be improved?
+clk.c is compiled if COMMON_CLK is selected. And COMMON_CLK has following:
+	select HAVE_CLK_PREPARE
+
+So, these checks you added don't have a meaning.
+
+>         if (!clk)
+>                 return;
+>
+> @@ -389,6 +390,7 @@ void __clk_unprepare(struct clk *clk)
+>                 clk->ops->unprepare(clk->hw);
+>
+>         __clk_unprepare(clk->parent);
+> +#endif
+>  }
+>
+>  /**
+> @@ -412,6 +414,7 @@ EXPORT_SYMBOL_GPL(clk_unprepare);
+>
+>  int __clk_prepare(struct clk *clk)
+>  {
+> +#ifdef CONFIG_HAVE_CLK_PREPARE
+
+ditto.
+
+>         int ret = 0;
+>
+>         if (!clk)
+> @@ -432,6 +435,7 @@ int __clk_prepare(struct clk *clk)
+>         }
+>
+>         clk->prepare_count++;
+> +#endif
+>
+>         return 0;
+>  }
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index b3ac22d..f8204c3 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -84,42 +84,6 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+>
+>  #endif
+>
+> -/**
+> - * clk_prepare - prepare a clock source
+> - * @clk: clock source
+> - *
+> - * This prepares the clock source for use.
+> - *
+> - * Must not be called from within atomic context.
+> - */
+> -#ifdef CONFIG_HAVE_CLK_PREPARE
+> -int clk_prepare(struct clk *clk);
+> -#else
+> -static inline int clk_prepare(struct clk *clk)
+> -{
+> -       might_sleep();
+> -       return 0;
+> -}
+> -#endif
+> -
+> -/**
+> - * clk_unprepare - undo preparation of a clock source
+> - * @clk: clock source
+> - *
+> - * This undoes a previously prepared clock.  The caller must balance
+> - * the number of prepare and unprepare calls.
+> - *
+> - * Must not be called from within atomic context.
+> - */
+> -#ifdef CONFIG_HAVE_CLK_PREPARE
+> -void clk_unprepare(struct clk *clk);
+> -#else
+> -static inline void clk_unprepare(struct clk *clk)
+> -{
+> -       might_sleep();
+> -}
+> -#endif
+> -
+>  #ifdef CONFIG_HAVE_CLK
+>  /**
+>   * clk_get - lookup and obtain a reference to a clock producer.
+> @@ -159,6 +123,27 @@ struct clk *clk_get(struct device *dev, const char *id);
+>  struct clk *devm_clk_get(struct device *dev, const char *id);
+>
+>  /**
+> + * clk_prepare - prepare a clock source
+> + * @clk: clock source
+> + *
+> + * This prepares the clock source for use.
+> + *
+> + * Must not be called from within atomic context.
+> + */
+> +int clk_prepare(struct clk *clk);
+> +
+> +/**
+> + * clk_unprepare - undo preparation of a clock source
+> + * @clk: clock source
+> + *
+> + * This undoes a previously prepared clock.  The caller must balance
+> + * the number of prepare and unprepare calls.
+> + *
+> + * Must not be called from within atomic context.
+> + */
+> +void clk_unprepare(struct clk *clk);
+> +
+> +/**
+>   * clk_enable - inform the system when the clock source should be running.
+>   * @clk: clock source
+>   *
+> @@ -292,6 +277,17 @@ static inline void clk_put(struct clk *clk) {}
+>
+>  static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
+>
+> +static inline int clk_prepare(struct clk *clk)
+> +{
+> +       might_sleep();
+> +       return 0;
+> +}
+> +
+> +static inline void clk_unprepare(struct clk *clk)
+> +{
+> +       might_sleep();
+> +}
+> +
+>  static inline int clk_enable(struct clk *clk)
+>  {
+>         return 0;
+> --
+> 1.7.11.7
+>
