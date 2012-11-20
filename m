@@ -1,30 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab2KTMHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:07:13 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:25917 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753260Ab2KTMHJ convert rfc822-to-8bit (ORCPT
+	id S1753244Ab2KTMKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:10:04 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53318 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab2KTMKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:07:09 -0500
-Message-Id: <201211201205.qAKC2XQl033136@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Warning! Your mailbox is almost full.
-To: Recipients <fxzhang@dicp.ac.cn>
-From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
-Date: Tue, 20 Nov 2012 06:05:33 -0600
-Reply-To: fxzhang@dicp.ac.cn
+	Tue, 20 Nov 2012 07:10:02 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 01/16] staging/rtl8187se: Fix spacing coding style in r8180_dm.h
+Date: Tue, 20 Nov 2012 21:09:55 +0900
+Message-Id: <1353413395-24444-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
+The following errors fixed.
+-ERROR: "foo * bar" should be "foo *bar"
 
-click link below:
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/rtl8187se/r8180_dm.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+diff --git a/drivers/staging/rtl8187se/r8180_dm.h b/drivers/staging/rtl8187se/r8180_dm.h
+index b775825..732c06a 100644
+--- a/drivers/staging/rtl8187se/r8180_dm.h
++++ b/drivers/staging/rtl8187se/r8180_dm.h
+@@ -13,10 +13,10 @@ bool CheckDig(struct net_device *dev);
+ bool CheckHighPower(struct net_device *dev);
+ void rtl8180_hw_dig_wq(struct work_struct *work);
+ void rtl8180_tx_pw_wq(struct work_struct *work);
+-void rtl8180_rate_adapter(struct work_struct * work);
++void rtl8180_rate_adapter(struct work_struct *work);
+ void TxPwrTracking87SE(struct net_device *dev);
+ bool CheckTxPwrTracking(struct net_device *dev);
+-void rtl8180_rate_adapter(struct work_struct * work);
++void rtl8180_rate_adapter(struct work_struct *work);
+ void timer_rate_adaptive(unsigned long data);
+ 
+ 
+-- 
+1.7.9.5
+
