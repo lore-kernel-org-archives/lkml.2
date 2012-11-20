@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2KTPvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:51:19 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:42480 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751953Ab2KTPvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:51:16 -0500
-Message-ID: <1353426677.11235.15.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: consolidate if (foo) bar(foo) checks and
- add debugfs_remove
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Constantine Shulyupin <const@makelinux.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Date: Tue, 20 Nov 2012 07:51:17 -0800
-In-Reply-To: <20121120153751.GJ7955@dm>
-References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
-	 <20121120142906.GD7955@dm> <1353422629.11235.10.camel@joe-AO722>
-	 <20121120144742.GG7955@dm>
-	 <CAE7jHC8LsxPaQHqy5-H4-wZp6q+_0s7arnPa3jG7R9x=tf_Oww@mail.gmail.com>
-	 <1353423503.11235.12.camel@joe-AO722> <20121120153751.GJ7955@dm>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1752865Ab2KTPvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:51:50 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50396 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2KTPvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:51:48 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet.Gupta1@synopsys.com
+Subject: Re: [PATCH 2/2] ARC: provide optimal __get_user_fn()
+Date: Tue, 20 Nov 2012 15:51:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1353422297-29079-1-git-send-email-vgupta@synopsys.com> <1353422297-29079-3-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1353422297-29079-3-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201211201551.43791.arnd@arndb.de>
+X-Provags-ID: V02:K0:0tA5IWZoZ5JJJHe0BXsua344CS5AZiVJcpaT9jn0L6o
+ MC9mz5J1Xj+pkL/CiJK1vnqT1Pu0GmcKq4eiHArNJ33ZTVar45
+ KIWtkvgGjV2C84pAbdHPMmhmZRBMFML1vIML4hwPZsfDMYjXkz
+ 7IWfrOpg/0Mi0j1AjMZk5gCGzTipqpKaAagG2RhC4aqheYfDLc
+ LgZPir26p1i9oWWnTlt4rf8VlUg6HuLITZk0oBHxqf+mUYjbtH
+ S6cTari0l0KKJbz3Pzi+dwCewEnsq+ujfaNDfLKffGCM/zwqAE
+ YwsD5yy24WOEsvU0sCkC/wSiLPhonLpdjbBQsMwHnA5AgqSR93
+ DdyoM7y+NsSkeA4/fisI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 15:37 +0000, Andy Whitcroft wrote:
-> Consolidate the if (foo) bar(foo) detectors into a single check.  Add
-> debugfs_remove and family.
+On Tuesday 20 November 2012, Vineet.Gupta1@synopsys.com wrote:
+> From: Vineet Gupta <vgupta@synopsys.com>
 > 
-> Based on a patch by Constantine Shulyupin <const@MakeLinux.com>.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
->  
-> +# check for needless "if (<foo>) fn(<foo>)" uses
-> +		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
-> +			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
-> +
-[]
-> +# check for needless debugfs_remove() and debugfs_remove_recursive*() checks
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 
-Hey Andy, that's an incomplete comment.
-Just remove it.
+Yes, this looks good to me.
 
-> +			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
-> +				WARN('NEEDLESS_IF',
-> +				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
->  			}
->  		}
->  
-
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
