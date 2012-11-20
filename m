@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2KTAuH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:50:07 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab2KTAuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:50:05 -0500
-Date: Mon, 19 Nov 2012 16:50:02 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mgorman@suse.de>
-cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-In-Reply-To: <20121119162909.GL8218@suse.de>
-Message-ID: <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753430Ab2KTAwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:52:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:17531 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753049Ab2KTAwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 19:52:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
+   d="scan'208";a="219936541"
+Message-ID: <1353372766.26072.21.camel@yhuang-dev>
+Subject: Re: [RFC] PCI/PM: Keep runtime PM enabled for unbound PCI devices
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Date: Tue, 20 Nov 2012 08:52:46 +0800
+In-Reply-To: <1521498.PJusLS7B2o@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1211191129060.1598-100000@iolanthe.rowland.org>
+	 <1521498.PJusLS7B2o@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012, Mel Gorman wrote:
-
-> I was not able to run a full sets of tests today as I was distracted so
-> all I have is a multi JVM comparison. I'll keep it shorter than average
+On Mon, 2012-11-19 at 23:00 +0100, Rafael J. Wysocki wrote:
+> On Monday, November 19, 2012 11:31:01 AM Alan Stern wrote:
+> > On Mon, 19 Nov 2012, Huang Ying wrote:
+> > 
+> > > For unbound PCI devices, what we need is:
+> > > 
+> > >  - Always in D0 state, because some devices does not work again after
+> > >    being put into D3 by the PCI bus.
+> > > 
+> > >  - In SUSPENDED state if allowed, so that the parent devices can still
+> > >    be put into low power state.
+> > > 
+> > > To satisfy these requirement, the runtime PM for the unbound PCI
+> > > devices are disabled and set to SUSPENDED state.  One issue of this
+> > > solution is that the PCI devices will be put into SUSPENDED state even
+> > > if the SUSPENDED state is forbidden via the sysfs interface
+> > > (.../power/control) of the device.  This is not an issue for most
+> > > devices, because most PCI devices are not used at all if unbounded.
+> > > But there are exceptions.  For example, unbound VGA card can be used
+> > > for display, but suspend its parents make it stop working.
+> > > 
+> > > To fix the issue, we keep the runtime PM enabled when the PCI devices
+> > > are unbound.  But the runtime PM callbacks will do nothing if the PCI
+> > > devices are unbound.  This way, we can put the PCI devices into
+> > > SUSPENDED state without put the PCI devices into D3 state.
+> > > 
+> > > Known issue: after some changing, pci_dev->driver is used to indicate
+> > > whether the PCI devices are bound and whether the runtime PM callbacks
+> > > should do nothing.  Maybe it is better to use a dedicated flag such as
+> > > .skip_rtpm_callbacks.  That may improve code readability.
+> > 
+> > I think it's okay like this, especially if you add a comment in 
+> > pci_runtime_suspend, pci_runtime_resume, and pci_runtime_idle 
+> > explaining that when pci_dev->driver isn't set, the device should 
+> > always remain in D0 regardless of the runtime status.
 > 
->                           3.7.0                 3.7.0
->                  rc5-stats-v4r2   rc5-schednuma-v16r1
-> TPut   1     101903.00 (  0.00%)     77651.00 (-23.80%)
-> TPut   2     213825.00 (  0.00%)    160285.00 (-25.04%)
-> TPut   3     307905.00 (  0.00%)    237472.00 (-22.87%)
-> TPut   4     397046.00 (  0.00%)    302814.00 (-23.73%)
-> TPut   5     477557.00 (  0.00%)    364281.00 (-23.72%)
-> TPut   6     542973.00 (  0.00%)    420810.00 (-22.50%)
-> TPut   7     540466.00 (  0.00%)    448976.00 (-16.93%)
-> TPut   8     543226.00 (  0.00%)    463568.00 (-14.66%)
-> TPut   9     513351.00 (  0.00%)    468238.00 ( -8.79%)
-> TPut   10    484126.00 (  0.00%)    457018.00 ( -5.60%)
-> TPut   11    467440.00 (  0.00%)    457999.00 ( -2.02%)
-> TPut   12    430423.00 (  0.00%)    447928.00 (  4.07%)
-> TPut   13    445803.00 (  0.00%)    434823.00 ( -2.46%)
-> TPut   14    427388.00 (  0.00%)    430667.00 (  0.77%)
-> TPut   15    437183.00 (  0.00%)    423746.00 ( -3.07%)
-> TPut   16    423245.00 (  0.00%)    416259.00 ( -1.65%)
-> TPut   17    417666.00 (  0.00%)    407186.00 ( -2.51%)
-> TPut   18    413046.00 (  0.00%)    398197.00 ( -3.59%)
-> 
-> This version of the patches manages to cripple performance entirely. I
-> do not have a single JVM comparison available as the machine has been in
-> use during the day. I accept that it is very possible that the single
-> JVM figures are better.
-> 
+> Yes, I agree with Alan.  Please add comments as Alan's suggesting and it
+> should be fine.
 
-I confirm that SPECjbb2005 1.07 -Xmx4g regresses in terms of throughput on 
-my 16-way, 4 node system with 32GB of memory using 16 warehouses and 240 
-measurement seconds.  I averaged the throughput for five runs on each 
-kernel.
+Sure.  Will do that.
 
-Java(TM) SE Runtime Environment (build 1.6.0_06-b02)
-Java HotSpot(TM) 64-Bit Server VM (build 10.0-b22, mixed mode)
+Best Regards,
+Huang Ying
 
-Both kernels have
-CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
-CONFIG_TRANSPARENT_HUGEPAGE=y
-CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
 
-numa/core at 01aa90068b12 ("sched: Use the best-buddy 'ideal cpu' in 
-balancing decisions") with
-
-CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
-CONFIG_ARCH_WANTS_NUMA_GENERIC_PGPROT=y
-CONFIG_NUMA_BALANCING=y
-CONFIG_NUMA_BALANCING_HUGEPAGE=y
-CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT=y
-CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT_HUGEPAGE=y
-
-had a throughput of 128315.19 SPECjbb2005 bops.
-
-numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into sched/core") 
-had an average throughput of 136918.34 SPECjbb2005 bops, which is a 6.3% 
-regression.
