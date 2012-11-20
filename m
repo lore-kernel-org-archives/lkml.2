@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab2KTKlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:41:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55798 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab2KTKk7 (ORCPT
+	id S1752103Ab2KTKn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:43:56 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48867 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2KTKnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:40:59 -0500
-Date: Tue, 20 Nov 2012 11:40:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120104053.GA15302@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
+	Tue, 20 Nov 2012 05:43:55 -0500
+Message-ID: <50AB5EDC.20009@in.ibm.com>
+Date: Tue, 20 Nov 2012 16:13:40 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121119223604.GA13470@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] perf/powerpc: Use uapi/unistd.h to fix build error
+References: <20121107191818.GA16211@us.ibm.com>
+In-Reply-To: <20121107191818.GA16211@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112010-6102-0000-0000-00000298C477
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00192924; UDB=6.00043717; UTC=2012-11-20
+ 10:40:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/08/2012 12:48 AM, Sukadev Bhattiprolu wrote:
+>
+>  From b8beef080260c1625c8f801105504a82005295e5 Mon Sep 17 00:00:00 2001
+> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> Date: Wed, 31 Oct 2012 11:21:28 -0700
+> Subject: [PATCH 1/4] perf/powerpc: Use uapi/unistd.h to fix build error
+>
+> Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
+>
+> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Without this patch, I couldn't build perf on powerpc, with 3.7.0-rc2
 
-btw., mind sending me a fuller/longer profile than the one 
-you've sent before? In particular does your system have any 
-vsyscall emulation page fault overhead?
+Tested-by: Suzuki K. Poulose <suzuki@in.ibm.com>
 
-If yes, does the patch below change anything for you?
-
-Thanks,
-
-	Ingo
-
----------------->
-Subject: x86/vsyscall: Add Kconfig option to use native vsyscalls, switch to it
-From: Ingo Molnar <mingo@kernel.org>
-
-Apparently there's still plenty of systems out there triggering
-the vsyscall emulation page faults - causing hard to track down
-performance regressions on page fault intense workloads...
-
-Some people seem to have run into that with threading-intense
-Java workloads.
-
-So until there's a better solution to this, add a Kconfig switch
-to make the vsyscall mode configurable and turn native vsyscall
-support back on by default.
-
-Distributions whose libraries and applications use the vDSO and never
-access the vsyscall page can change the config option to off.
-
-Note, I don't think we want to expose the "none" option via a Kconfig
-switch - it breaks the ABI. So it's "native" versus "emulate", with
-"none" being available as a kernel boot option, for the super paranoid.
-
-For more background, see these upstream commits:
-
-  3ae36655b97a x86-64: Rework vsyscall emulation and add vsyscall= parameter
-  5cec93c216db x86-64: Emulate legacy vsyscalls
-
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/Kconfig              |   21 +++++++++++++++++++++
- arch/x86/kernel/vsyscall_64.c |    8 +++++++-
- 2 files changed, 28 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/Kconfig
-===================================================================
---- linux.orig/arch/x86/Kconfig
-+++ linux/arch/x86/Kconfig
-@@ -2234,6 +2234,27 @@ config X86_X32
- 	  elf32_x86_64 support enabled to compile a kernel with this
- 	  option set.
- 
-+config X86_VSYSCALL_COMPAT
-+	bool "vsyscall compatibility"
-+	default y
-+	help
-+	  vsyscalls, as global executable pages, can be a security hole
-+	  escallation helper by exposing an easy shell code target with
-+	  a predictable address.
-+
-+	  Many versions of glibc rely on the vsyscall page though, so it
-+	  cannot be eliminated unconditionally. If you disable this
-+	  option these systems will still work but might incur the overhead
-+	  of vsyscall emulation page faults.
-+
-+	  The vsyscall=none, vsyscall=emulate, vsyscall=native kernel boot
-+	  option can be used to override this mode as well.
-+
-+	  Keeping this option enabled leaves the vsyscall page enabled,
-+	  i.e. vsyscall=native. Disabling this option means vsyscall=emulate.
-+
-+	  If unsure, say Y.
-+
- config COMPAT
- 	def_bool y
- 	depends on IA32_EMULATION || X86_X32
-Index: linux/arch/x86/kernel/vsyscall_64.c
-===================================================================
---- linux.orig/arch/x86/kernel/vsyscall_64.c
-+++ linux/arch/x86/kernel/vsyscall_64.c
-@@ -56,7 +56,13 @@
- DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
--static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
-+static enum { EMULATE, NATIVE, NONE } vsyscall_mode =
-+#ifdef CONFIG_X86_VSYSCALL_COMPAT
-+	NATIVE
-+#else
-+	EMULATE
-+#endif
-+;
- 
- static int __init vsyscall_setup(char *str)
- {
+Thanks
+Suzuki
+> ---
+>   tools/perf/perf.h |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 054182e..f4952da 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -26,7 +26,7 @@ void get_term_dimensions(struct winsize *ws);
+>   #endif
+>
+>   #ifdef __powerpc__
+> -#include "../../arch/powerpc/include/asm/unistd.h"
+> +#include "../../arch/powerpc/include/uapi/asm/unistd.h"
+>   #define rmb()		asm volatile ("sync" ::: "memory")
+>   #define cpu_relax()	asm volatile ("" ::: "memory");
+>   #define CPUINFO_PROC	"cpu"
+>
 
