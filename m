@@ -1,196 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab2KTQsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:48:03 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:45467 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2KTQsB (ORCPT
+	id S1753605Ab2KTQu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:50:29 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46191 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2KTQu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:48:01 -0500
-Date: Tue, 20 Nov 2012 08:48:00 -0800 (PST)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH RFC 03/12] userns: Convert ceph to use kuid/kgid where
- appropriate
-In-Reply-To: <1353415420-5457-3-git-send-email-ebiederm@xmission.com>
-Message-ID: <alpine.DEB.2.00.1211200847110.7369@cobra.newdream.net>
-References: <87pq38wimv.fsf@xmission.com> <1353415420-5457-1-git-send-email-ebiederm@xmission.com> <1353415420-5457-3-git-send-email-ebiederm@xmission.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 20 Nov 2012 11:50:28 -0500
+Date: Tue, 20 Nov 2012 17:50:19 +0100
+From: Robert Richter <rric@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, linuxppc-dev@ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf: POWER-event translation questions
+Message-ID: <20121120165019.GP2504@rric.localhost>
+References: <20121108011035.GA20670@us.ibm.com>
+ <CABPqkBQrUVTY9rfeaO+pdaNwZcAgXF45SHnAYJfTvi4HAsPPeQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQrUVTY9rfeaO+pdaNwZcAgXF45SHnAYJfTvi4HAsPPeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On 09.11.12 11:26:26, Stephane Eranian wrote:
+> On Thu, Nov 8, 2012 at 2:10 AM, Sukadev Bhattiprolu
+> <sukadev@linux.vnet.ibm.com> wrote:
+
+> > 2. Can we allow hyphens in the {name} token  (please see my change to
+> >    util/parse-events.l below). With this change, I can run:
+> >
+> The current code does not support this but Andi fixed that in his HSW patch
+> and I use it for the PEBS-LL patch series as well.
 >
-> Cc: Sage Weil <sage@inktank.com>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> >           perf stat -e cpu/cmplu-stall-bru /tmp/nop
+> >
+> >    without any changes to the user level tool (parse-events.l) I have
+> >    tested some common cases, not sure if it will break something :-)
 
-Acked-by: Sage Weil <sage@inktank.com>
+But ...
 
-Do you want me to take this via the ceph tree?
+> > diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> > index c87efc1..1967bb2 100644
+> > --- a/tools/perf/util/parse-events.l
+> > +++ b/tools/perf/util/parse-events.l
+> > @@ -80,7 +80,7 @@ event         [^,{}/]+
+> >  num_dec                [0-9]+
+> >  num_hex                0x[a-fA-F0-9]+
+> >  num_raw_hex    [a-fA-F0-9]+
+> > -name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
+> > +name           [-a-zA-Z_*?][-a-zA-Z0-9_*?]*
+                     ^
 
-sage
+... I wouldn't allow hyphens at the beginning of a name.
 
+And, I am wondering if parsing reserved names like 'cpu-cycles' works
+too, e.g. cpu/cpu-cycles-foobar/. There are many reserved words in the
+lexer with hyphens in it. This might cause unexpected problems.
 
-> ---
->  fs/ceph/caps.c       |   16 ++++++++--------
->  fs/ceph/inode.c      |   18 +++++++++---------
->  fs/ceph/mds_client.c |    4 ++--
->  fs/ceph/super.h      |    4 ++--
->  init/Kconfig         |    1 -
->  5 files changed, 21 insertions(+), 22 deletions(-)
-> 
-> diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
-> index 3251e9c..ee29cc6 100644
-> --- a/fs/ceph/caps.c
-> +++ b/fs/ceph/caps.c
-> @@ -928,7 +928,7 @@ static int send_cap_msg(struct ceph_mds_session *session,
->  			u64 size, u64 max_size,
->  			struct timespec *mtime, struct timespec *atime,
->  			u64 time_warp_seq,
-> -			uid_t uid, gid_t gid, umode_t mode,
-> +			kuid_t uid, kgid_t gid, umode_t mode,
->  			u64 xattr_version,
->  			struct ceph_buffer *xattrs_buf,
->  			u64 follows)
-> @@ -972,8 +972,8 @@ static int send_cap_msg(struct ceph_mds_session *session,
->  		ceph_encode_timespec(&fc->atime, atime);
->  	fc->time_warp_seq = cpu_to_le32(time_warp_seq);
->  
-> -	fc->uid = cpu_to_le32(uid);
-> -	fc->gid = cpu_to_le32(gid);
-> +	fc->uid = cpu_to_le32(from_kuid(&init_user_ns, uid));
-> +	fc->gid = cpu_to_le32(from_kgid(&init_user_ns, gid));
->  	fc->mode = cpu_to_le32(mode);
->  
->  	fc->xattr_version = cpu_to_le64(xattr_version);
-> @@ -1079,8 +1079,8 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
->  	struct timespec mtime, atime;
->  	int wake = 0;
->  	umode_t mode;
-> -	uid_t uid;
-> -	gid_t gid;
-> +	kuid_t uid;
-> +	kgid_t gid;
->  	struct ceph_mds_session *session;
->  	u64 xattr_version = 0;
->  	struct ceph_buffer *xattr_blob = NULL;
-> @@ -2353,10 +2353,10 @@ static void handle_cap_grant(struct inode *inode, struct ceph_mds_caps *grant,
->  
->  	if ((issued & CEPH_CAP_AUTH_EXCL) == 0) {
->  		inode->i_mode = le32_to_cpu(grant->mode);
-> -		inode->i_uid = le32_to_cpu(grant->uid);
-> -		inode->i_gid = le32_to_cpu(grant->gid);
-> +		i_uid_write(inode, le32_to_cpu(grant->uid));
-> +		i_gid_write(inode, le32_to_cpu(grant->gid));
->  		dout("%p mode 0%o uid.gid %d.%d\n", inode, inode->i_mode,
-> -		     inode->i_uid, inode->i_gid);
-> +		     i_uid_read(inode), i_gid_read(inode));
->  	}
->  
->  	if ((issued & CEPH_CAP_LINK_EXCL) == 0)
-> diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-> index ba95eea..195b7fd 100644
-> --- a/fs/ceph/inode.c
-> +++ b/fs/ceph/inode.c
-> @@ -612,10 +612,10 @@ static int fill_inode(struct inode *inode,
->  
->  	if ((issued & CEPH_CAP_AUTH_EXCL) == 0) {
->  		inode->i_mode = le32_to_cpu(info->mode);
-> -		inode->i_uid = le32_to_cpu(info->uid);
-> -		inode->i_gid = le32_to_cpu(info->gid);
-> +		i_uid_write(inode, le32_to_cpu(info->uid));
-> +		i_gid_write(inode, le32_to_cpu(info->gid));
->  		dout("%p mode 0%o uid.gid %d.%d\n", inode, inode->i_mode,
-> -		     inode->i_uid, inode->i_gid);
-> +		     i_uid_read(inode), i_gid_read(inode));
->  	}
->  
->  	if ((issued & CEPH_CAP_LINK_EXCL) == 0)
-> @@ -1562,26 +1562,26 @@ int ceph_setattr(struct dentry *dentry, struct iattr *attr)
->  
->  	if (ia_valid & ATTR_UID) {
->  		dout("setattr %p uid %d -> %d\n", inode,
-> -		     inode->i_uid, attr->ia_uid);
-> +		     i_uid_read(inode), from_kuid(&init_user_ns, attr->ia_uid));
->  		if (issued & CEPH_CAP_AUTH_EXCL) {
->  			inode->i_uid = attr->ia_uid;
->  			dirtied |= CEPH_CAP_AUTH_EXCL;
->  		} else if ((issued & CEPH_CAP_AUTH_SHARED) == 0 ||
-> -			   attr->ia_uid != inode->i_uid) {
-> -			req->r_args.setattr.uid = cpu_to_le32(attr->ia_uid);
-> +			   !uid_eq(attr->ia_uid, inode->i_uid)) {
-> +			req->r_args.setattr.uid = cpu_to_le32(from_kuid(&init_user_ns, attr->ia_uid));
->  			mask |= CEPH_SETATTR_UID;
->  			release |= CEPH_CAP_AUTH_SHARED;
->  		}
->  	}
->  	if (ia_valid & ATTR_GID) {
->  		dout("setattr %p gid %d -> %d\n", inode,
-> -		     inode->i_gid, attr->ia_gid);
-> +		     i_gid_read(inode), from_kgid(&init_user_ns, attr->ia_gid));
->  		if (issued & CEPH_CAP_AUTH_EXCL) {
->  			inode->i_gid = attr->ia_gid;
->  			dirtied |= CEPH_CAP_AUTH_EXCL;
->  		} else if ((issued & CEPH_CAP_AUTH_SHARED) == 0 ||
-> -			   attr->ia_gid != inode->i_gid) {
-> -			req->r_args.setattr.gid = cpu_to_le32(attr->ia_gid);
-> +			   !gid_eq(attr->ia_gid, inode->i_gid)) {
-> +			req->r_args.setattr.gid = cpu_to_le32(from_kgid(&init_user_ns, attr->ia_gid));
->  			mask |= CEPH_SETATTR_GID;
->  			release |= CEPH_CAP_AUTH_SHARED;
->  		}
-> diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-> index 1bcf712..59e45fe 100644
-> --- a/fs/ceph/mds_client.c
-> +++ b/fs/ceph/mds_client.c
-> @@ -578,8 +578,8 @@ static void __register_request(struct ceph_mds_client *mdsc,
->  	ceph_mdsc_get_request(req);
->  	__insert_request(mdsc, req);
->  
-> -	req->r_uid = current_fsuid();
-> -	req->r_gid = current_fsgid();
-> +	req->r_uid = from_kuid(&init_user_ns, current_fsuid());
-> +	req->r_gid = from_kgid(&init_user_ns, current_fsgid());
->  
->  	if (dir) {
->  		struct ceph_inode_info *ci = ceph_inode(dir);
-> diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-> index 66ebe72..f053bbd 100644
-> --- a/fs/ceph/super.h
-> +++ b/fs/ceph/super.h
-> @@ -138,8 +138,8 @@ struct ceph_cap_snap {
->  	struct ceph_snap_context *context;
->  
->  	umode_t mode;
-> -	uid_t uid;
-> -	gid_t gid;
-> +	kuid_t uid;
-> +	kgid_t gid;
->  
->  	struct ceph_buffer *xattr_blob;
->  	u64 xattr_version;
-> diff --git a/init/Kconfig b/init/Kconfig
-> index dfa391d..cb2c46a 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -999,7 +999,6 @@ config UIDGID_CONVERTED
->  	default y
->  
->  	# Filesystems
-> -	depends on CEPH_FS = n
->  	depends on CIFS = n
->  	depends on CODA_FS = n
->  	depends on GFS2_FS = n
-> -- 
-> 1.7.5.4
-> 
-> 
+-Robert
