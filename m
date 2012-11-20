@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2KTOGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:06:43 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:57488 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752314Ab2KTOGm (ORCPT
+	id S1753036Ab2KTOI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:08:58 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:34925 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab2KTOI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:06:42 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] cgroup: remove obsolete guarantee from cgroup_task_migrate.
-Date: Tue, 20 Nov 2012 22:06:18 +0800
-Message-Id: <1353420379-3131-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 123.121.144.191 authed with tm@tao.ma}
+	Tue, 20 Nov 2012 09:08:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 20 Nov 2012 19:38:57 +0530
+Message-ID: <CAKohpom4Dd=ubVL8shGSOvCCUBYqRRPOViS6V0_7SrOzADb95A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] dw_dmac: store direction in the custom channel structure
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On 20 November 2012 19:08, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Currently the direction value is come from the generic slave configuration
 
-'guarantee' is already removed from cgroup_task_migrate, so remove
-the corresponding comments. Some other typos in cgroup are also
-changed.
+s/is come/comes
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- include/linux/cgroup.h |    4 ++--
- kernel/cgroup.c        |    8 +++-----
- 2 files changed, 5 insertions(+), 7 deletions(-)
+> structure and explicitly as a preparation function parameter. The first one is
+> kinda obsoleted. Thus, we have to store the value passed to the preparation
+> function somewhere in our structures to be able to use it later. The best
+> candidate to provide the storage is a custom channel structure. Until now we
+> still keep and check the direction field of the slave config structure as well.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c      |   10 ++++++++--
+>  drivers/dma/dw_dmac_regs.h |    2 ++
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index 5e2c4dc..58c6d3c 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -178,9 +178,9 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+>                 cfghi = dws->cfg_hi;
+>                 cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+>         } else {
+> -               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
+> +               if (dwc->direction == DMA_MEM_TO_DEV)
+>                         cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
+> -               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
+> +               else if (dwc->direction == DMA_DEV_TO_MEM)
+>                         cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+>         }
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index f8a030c..7508ac0 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -66,7 +66,7 @@ struct cgroup_subsys_state {
- 	/*
- 	 * State maintained by the cgroup system to allow subsystems
- 	 * to be "busy". Should be accessed via css_get(),
--	 * css_tryget() and and css_put().
-+	 * css_tryget() and css_put().
- 	 */
- 
- 	atomic_t refcnt;
-@@ -282,7 +282,7 @@ struct cgroup_map_cb {
- 
- /* cftype->flags */
- #define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
--#define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create onp root cg */
-+#define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create on root cg */
- 
- #define MAX_CFTYPE_NAME		64
- 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a9f8388..46b8f7d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -782,12 +782,12 @@ static struct cgroup *task_cgroup_from_root(struct task_struct *task,
-  *	The task_lock() exception
-  *
-  * The need for this exception arises from the action of
-- * cgroup_attach_task(), which overwrites one tasks cgroup pointer with
-+ * cgroup_attach_task(), which overwrites one task's cgroup pointer with
-  * another.  It does so using cgroup_mutex, however there are
-  * several performance critical places that need to reference
-  * task->cgroup without the expense of grabbing a system global
-  * mutex.  Therefore except as noted below, when dereferencing or, as
-- * in cgroup_attach_task(), modifying a task'ss cgroup pointer we use
-+ * in cgroup_attach_task(), modifying a task's cgroup pointer we use
-  * task_lock(), which acts on a spinlock (task->alloc_lock) already in
-  * the task_struct routinely used for such matters.
-  *
-@@ -1930,9 +1930,7 @@ EXPORT_SYMBOL_GPL(cgroup_taskset_size);
- /*
-  * cgroup_task_migrate - move a task from one cgroup to another.
-  *
-- * 'guarantee' is set if the caller promises that a new css_set for the task
-- * will already exist. If not set, this function might sleep, and can fail with
-- * -ENOMEM. Must be called with cgroup_mutex and threadgroup locked.
-+ * Must be called with cgroup_mutex and threadgroup locked.
-  */
- static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 				struct task_struct *tsk, struct css_set *newcg)
--- 
-1.7.1
+I have a doubt here. This routine is called both for memcpy and slave transfers.
+Earlier if (dws), code was used to check slave/non-slave transfer but with your
+earlier patch, for if (!dws) case too, there can be slave transfers
+based on direction.
 
+Consider a situation. A channel is used for slave transfers and have
+direction set
+to DMA_DEV_TO_MEM. Now, channel is freed and used for memcpy. Now the
+direction value is retained as we haven't updated it. So, is this a
+potential bug?
+
+> @@ -807,6 +807,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>         if (unlikely(!dws || !sg_len))
+>                 return NULL;
+>
+> +       dwc->direction = direction;
+> +
+>         prev = first = NULL;
+>
+>         switch (direction) {
+> @@ -983,6 +985,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+>                 return -EINVAL;
+>
+>         memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
+> +       dwc->direction = sconfig->direction;
+>
+>         convert_burst(&dwc->dma_sconfig.src_maxburst);
+>         convert_burst(&dwc->dma_sconfig.dst_maxburst);
+> @@ -1339,6 +1342,8 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+>         if (unlikely(!is_slave_xfer(direction)))
+>                 goto out_err;
+>
+> +       dwc->direction = direction;
+> +
+>         if (direction == DMA_MEM_TO_DEV)
+>                 reg_width = __ffs(sconfig->dst_addr_width);
+>         else
+> @@ -1713,6 +1718,7 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>                 channel_clear_bit(dw, CH_EN, dwc->mask);
+>
+>                 dwc->dw = dw;
+> +               dwc->direction = DMA_TRANS_NONE;
+>
+>                 /* hardware configuration */
+>                 if (autocfg) {
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index 8881e9b..362aba1 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -9,6 +9,7 @@
+>   * published by the Free Software Foundation.
+>   */
+>
+> +#include <linux/dmaengine.h>
+>  #include <linux/dw_dmac.h>
+>
+>  #define DW_DMA_MAX_NR_CHANNELS 8
+> @@ -188,6 +189,7 @@ struct dw_dma_chan {
+>         void __iomem            *ch_regs;
+>         u8                      mask;
+>         u8                      priority;
+> +       enum dma_transfer_direction direction;
+>         bool                    paused;
+>         bool                    initialized;
+
+better align it with tabs and update earlier ones too with extra tabs.
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
