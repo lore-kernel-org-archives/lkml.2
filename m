@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2KTBkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:40:31 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37560 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2KTBk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:40:29 -0500
+	id S1753053Ab2KTBmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:42:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15728 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab2KTBmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 20:42:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
+   d="scan'208";a="244600303"
+Message-ID: <50AADF90.8090506@intel.com>
+Date: Tue, 20 Nov 2012 09:40:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
-References: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
-Date: Tue, 20 Nov 2012 10:40:28 +0900
-X-Google-Sender-Auth: b1dwz4JabI4NsSbhdqhpscbjuFs
-Message-ID: <CAH9JG2VKYSAQ=Og4-fgToV_aNwEV_aH-=UQZDbAOnA-ShfKdYw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
-From: Kyungmin Park <kmpark@infradead.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>,
-        "jonghwa3.lee" <jonghwa3.lee@samsung.com>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 22/58] arch/x86/kernel/cpu/common.c: Mark cpu_detect_tlb
+ static
+References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org> <1353302917-13995-23-git-send-email-josh@joshtriplett.org>
+In-Reply-To: <1353302917-13995-23-git-send-email-josh@joshtriplett.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> TMU urgently sends active-high signal (thermal trip) to PMU,
-> and thermal tripping by hardware logic i.e PMU is performed.
-> Thermal tripping means that PMU cut off the whole power of SoC
-> by controlling external voltage regulator.
->
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Ackedy-by: Kyungmin Park <kyungmin.park@samsung.com>
+On 11/19/2012 01:28 PM, Josh Triplett wrote:
+> Nothing outside of arch/x86/kernel/cpu/common.c references
+> cpu_detect_tlb, so mark it static.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 > ---
->  drivers/thermal/exynos_thermal.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/thermal/exynos_thermal.c
-> b/drivers/thermal/exynos_thermal.c
-> index 129e827..569478d 100644
-> --- a/drivers/thermal/exynos_thermal.c
-> +++ b/drivers/thermal/exynos_thermal.c
-> @@ -58,6 +58,7 @@
->  #define EXYNOS_TMU_CORE_ON             BIT(0)
->  #define EXYNOS_TMU_CORE_ON_SHIFT       0
->  #define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
-> EXYNOS_TMU_CORE_ON_SHIFT)
-> +#define EXYNOS_TMU_TRIP_EN             BIT(12)
->  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
->
->  /* Exynos4210 specific registers */
-> @@ -631,6 +632,12 @@ static int exynos_tmu_initialize(struct
-> platform_device
-> *pdev)
->                         goto out;
->                 }
->                 rising_threshold |= (threshold_code << 16);
-> +               threshold_code = temp_to_code(data,
-> pdata->trigger_levels[3]);
-> +               if (threshold_code < 0) {
-> +                       ret = threshold_code;
-> +                       goto out;
-> +               }
-> +               rising_threshold |= (threshold_code << 24);
->
->                 writel(rising_threshold,
->                                 data->base + EXYNOS_THD_TEMP_RISE);
-> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct platform_device
-> *pdev, bool on)
->                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
->                 con |= pdata->noise_cancel_mode <<
-> EXYNOS_TMU_TRIP_MODE_SHIFT;
->                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-> +               if (pdata->trigger_levels[3])
-> +                       con |= EXYNOS_TMU_TRIP_EN;
->         }
->
->         if (on) {
-> @@ -770,6 +779,7 @@ static struct exynos_tmu_platform_data const
-> exynos_default_tmu_data = {
->         .trigger_levels[0] = 85,
->         .trigger_levels[1] = 103,
->         .trigger_levels[2] = 110,
-> +       .trigger_levels[3] = 120,
->         .trigger_level0_en = 1,
->         .trigger_level1_en = 1,
->         .trigger_level2_en = 1,
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>  arch/x86/kernel/cpu/common.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index 7505f7b..eb12c08 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -482,7 +482,7 @@ u16 __read_mostly tlb_lld_4m[NR_INFO];
+>   */
+>  s8  __read_mostly tlb_flushall_shift = -1;
+>  
+> -void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
+> +static void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
+>  {
+>  	if (this_cpu->c_detect_tlb)
+>  		this_cpu->c_detect_tlb(c);
+> 
+
+Acked-by: Alex Shi <alex.shi@intel.com>
