@@ -1,153 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab2KTGch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:32:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50410 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab2KTGcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:32:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
-   d="scan'208";a="249820965"
-Message-ID: <1353393150.3833.5.camel@rzhang1-mobl4>
-Subject: Re: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu
- core
-From: Zhang Rui <rui.zhang@intel.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, dg77.kim@samsung.com
-Date: Tue, 20 Nov 2012 14:32:30 +0800
-In-Reply-To: <CAH9JG2Xtdo0tpxEAW4m5LG4q--M9zXi-N+FiCtjhZ7Q=5DZ_Tw@mail.gmail.com>
-References: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
-	 <CAH9JG2UYsQ6VFMO4COyEr9fBzCL03+37bXTN=AgjKbD7NjR1MA@mail.gmail.com>
-	 <1353390792.3833.1.camel@rzhang1-mobl4>
-	 <CAH9JG2Xtdo0tpxEAW4m5LG4q--M9zXi-N+FiCtjhZ7Q=5DZ_Tw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751530Ab2KTGdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:33:35 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:29203 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2KTGdd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 01:33:33 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] AER-PCI: Add infrastructure for notification of errors
+ to other subsystems
+Thread-Topic: [PATCH 1/4] AER-PCI: Add infrastructure for notification of
+ errors to other subsystems
+Thread-Index: AQHNxujB/Xyzo5mhSk2u1XfRKKc16Q==
+Date: Tue, 20 Nov 2012 06:32:04 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C90146FCE3@G4W3208.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 15:16 +0900, Kyungmin Park wrote:
-> On 11/20/12, Zhang Rui <rui.zhang@intel.com> wrote:
-> > On Tue, 2012-11-20 at 10:39 +0900, Kyungmin Park wrote:
-> >> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> >> > [0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
-> >> >
-> >> > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> >> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >
-> > Amit and Donggeun Kim,
-> FYI: Donggeun was working together with me and he left the company an
-> year ago and now Mr. Lee are take over.
 
-I see.
+- Adds infrastructure support for error notifications from AER subsystem
+to other subsystems. The generic notifier_chain functionality is used.
 
-so Amit and Lee,
-will any of you be the maintainer of this driver?
+- When the AER rootport driver detects an uncorrected error, invoke the
+callbacks registered for notifications as well as mark the device as
+tainted.
 
-I'd like to see your comments for the changes, as you know more about
-the hardware details.
+- After the recovery is successful, clear the tainted flag on the device.
 
-thanks,
-rui
-> > any comments on this patch?
-> >
-> > thanks,
-> > rui
-> >
-> >> > ---
-> >> >  drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
-> >> >  1 files changed, 12 insertions(+), 4 deletions(-)
-> >> >
-> >> > diff --git a/drivers/thermal/exynos_thermal.c
-> >> > b/drivers/thermal/exynos_thermal.c
-> >> > index 6dd29e4..129e827 100644
-> >> > --- a/drivers/thermal/exynos_thermal.c
-> >> > +++ b/drivers/thermal/exynos_thermal.c
-> >> > @@ -52,9 +52,12 @@
-> >> >
-> >> >  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
-> >> >  #define EXYNOS_TMU_GAIN_SHIFT          8
-> >> > +#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
-> >> >  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
-> >> > -#define EXYNOS_TMU_CORE_ON             3
-> >> > -#define EXYNOS_TMU_CORE_OFF            2
-> >> > +#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
-> >> > EXYNOS_TMU_REF_VOLTAGE_SHIFT)
-> >> > +#define EXYNOS_TMU_CORE_ON             BIT(0)
-> >> > +#define EXYNOS_TMU_CORE_ON_SHIFT       0
-> >> > +#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
-> >> > EXYNOS_TMU_CORE_ON_SHIFT)
-> >> >  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
-> >> >
-> >> >  /* Exynos4210 specific registers */
-> >> > @@ -85,7 +88,9 @@
-> >> >  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
-> >> >  #define EXYNOS_MUX_ADDR_VALUE          6
-> >> >  #define EXYNOS_MUX_ADDR_SHIFT          20
-> >> > +#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
-> >> >  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
-> >> > +#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 <<
-> >> > EXYNOS_TMU_TRIP_MODE_SHIFT)
-> >> >
-> >> >  #define EFUSE_MIN_VALUE 40
-> >> >  #define EFUSE_MAX_VALUE 100
-> >> > @@ -650,10 +655,14 @@ static void exynos_tmu_control(struct
-> >> > platform_device
-> >> > *pdev, bool on)
-> >> >         mutex_lock(&data->lock);
-> >> >         clk_enable(data->clk);
-> >> >
-> >> > -       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT
-> >> > |
-> >> > +       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
-> >> > +       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
-> >> > +               EXYNOS_TMU_CORE_ON_MASK);
-> >> > +       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT
-> >> > |
-> >> >                 pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-> >> >
-> >> >         if (data->soc == SOC_ARCH_EXYNOS) {
-> >> > +               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK |
-> >> > EXYNOS_MUX_ADDR_MASK);
-> >> >                 con |= pdata->noise_cancel_mode <<
-> >> > EXYNOS_TMU_TRIP_MODE_SHIFT;
-> >> >                 con |= (EXYNOS_MUX_ADDR_VALUE <<
-> >> > EXYNOS_MUX_ADDR_SHIFT);
-> >> >         }
-> >> > @@ -665,7 +674,6 @@ static void exynos_tmu_control(struct
-> >> > platform_device
-> >> > *pdev, bool on)
-> >> >                         pdata->trigger_level1_en << 4 |
-> >> >                         pdata->trigger_level0_en;
-> >> >         } else {
-> >> > -               con |= EXYNOS_TMU_CORE_OFF;
-> >> >                 interrupt_en = 0; /* Disable all interrupts */
-> >> >         }
-> >> >         writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
-> >> > --
-> >> > 1.7.4.1
-> >> >
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> >> > in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at  http://www.tux.org/lkml/
-> >> >
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 
+---
+ drivers/pci/pcie/aer/aerdrv.c      | 20 ++++++++++++++++++++
+ drivers/pci/pcie/aer/aerdrv_core.c |  9 ++++++++-
+ include/linux/aer.h                |  4 ++++
+ include/linux/pci.h                |  2 ++
+ 4 files changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index 030cf12..92dc54c 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -68,6 +68,26 @@ static struct pcie_port_service_driver aerdriver = {
+ 
+ static int pcie_aer_disable;
+ 
++ATOMIC_NOTIFIER_HEAD(aer_notifier_list);
++
++void aer_notifier_register(struct notifier_block *nb)
++{
++	atomic_notifier_chain_register(&aer_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(aer_notifier_register);
++
++void aer_notifier_unregister(struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&aer_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(aer_notifier_unregister);
++
++void aer_notify(unsigned long val, void *v)
++{
++	atomic_notifier_call_chain(&aer_notifier_list, val, v);
++}
++EXPORT_SYMBOL_GPL(aer_notify);
++
+ void pci_no_aer(void)
+ {
+ 	pcie_aer_disable = 1;	/* has priority over 'forceload' */
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index af4e31c..be6c3ee 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -215,6 +215,8 @@ static int report_error_detected(struct pci_dev *dev, void *data)
+ 
+ 	device_lock(&dev->dev);
+ 	dev->error_state = result_data->state;
++	dev->dev_flags |= PCI_DEV_FLAGS_ERR_DETECTED;
++	aer_notify(0, NULL);
+ 
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+@@ -291,6 +293,7 @@ static int report_resume(struct pci_dev *dev, void *data)
+ 
+ 	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_normal;
++	dev->dev_flags &= ~PCI_DEV_FLAGS_ERR_DETECTED;
+ 
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+@@ -521,6 +524,7 @@ static void do_recovery(struct pci_dev *dev, int severity)
+ 				"resume",
+ 				report_resume);
+ 
++	dev->dev_flags &= ~PCI_DEV_FLAGS_ERR_DETECTED;
+ 	dev_info(&dev->dev, "AER: Device recovery successful\n");
+ 	return;
+ 
+@@ -552,8 +556,11 @@ static void handle_error_source(struct pcie_device *aerdev,
+ 		if (pos)
+ 			pci_write_config_dword(dev, pos + PCI_ERR_COR_STATUS,
+ 					info->status);
+-	} else
++	} else {
++		dev->dev_flags |= PCI_DEV_FLAGS_ERR_DETECTED;
++		aer_notify(0, NULL);
+ 		do_recovery(dev, info->severity);
++	}
+ }
+ 
+ #ifdef CONFIG_ACPI_APEI_PCIEAER
+diff --git a/include/linux/aer.h b/include/linux/aer.h
+index 544abdb..f8df468 100644
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -54,5 +54,9 @@ extern void cper_print_aer(const char *prefix, int cper_severity,
+ extern int cper_severity_to_aer(int cper_severity);
+ extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+ 			      int severity);
++extern void aer_notifier_register(struct notifier_block *nb);
++extern void aer_notifier_unregister(struct notifier_block *nb);
++extern void aer_notify(unsigned long val, void *v);
++
+ #endif //_AER_H_
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index ee21795..ab17a08 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -155,6 +155,8 @@ enum pci_dev_flags {
+ 	PCI_DEV_FLAGS_NO_D3 = (__force pci_dev_flags_t) 2,
+ 	/* Provide indication device is assigned by a Virtual Machine Manager */
+ 	PCI_DEV_FLAGS_ASSIGNED = (__force pci_dev_flags_t) 4,
++	/* Indicates that hw has reported an uncorrected error for the device */
++	PCI_DEV_FLAGS_ERR_DETECTED = (__force pci_dev_flags_t) 8,
+ };
+ 
+ enum pci_irq_reroute_variant {
+-- 
+1.7.11.3
 
