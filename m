@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2KTTUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:20:19 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57977 "EHLO
+	id S1753197Ab2KTTUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:20:33 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56914 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab2KTTUQ (ORCPT
+	with ESMTP id S1751901Ab2KTTUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:20:16 -0500
+	Tue, 20 Nov 2012 14:20:17 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Stephen Warren <swarren@wwwdotorg.org>, John Stultz <johnstul@us.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
@@ -15,10 +15,12 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 1/2] clocksource: add common of_clksrc_init() function
-Date: Tue, 20 Nov 2012 12:20:05 -0700
-Message-Id: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 2/2] ARM: tegra: move timer.c to drivers/clocksource/
+Date: Tue, 20 Nov 2012 12:20:06 -0700
+Message-Id: <1353439206-1654-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
+References: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,146 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-It is desirable to move all clocksource drivers to drivers/clocksource,
-yet each requires its own initialization function. We'd rather not
-pollute <linux/> with a header for each function. Instead, create a
-single of_clksrc_init() function which will determine which clocksource
-driver to initialize based on device tree.
-
-Inspired by a similar patch for drivers/irqchip by Thomas Petazzoni.
+Move arch/arm/mach-tegra/timer.c to drivers/clocksource/tegra20_timer.c
+so that the code is co-located with other clocksource drivers, and to
+reduce the size of the mach-tegra directory.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v3: Use a linker section to replace manually maintained table.
-v2: New patch.
-
-This series is based on the ARM sys_timer rework that I reposted today.
-
-I hope that these patches can be taken through arm-soc tree for 3.9;
-I will repost them based on 3.8-rc1 at the appropriate time.
+v3: Rework using CLKSRC_OF_MATCH_TABLE() for registration, rather than a
+    manually maintained table in clksrc-of.c.
+v2: Rebase on ARM sys_timer rework, and addition of clocksource_of_init().
 ---
- drivers/clocksource/Kconfig       |    3 +++
- drivers/clocksource/Makefile      |    1 +
- drivers/clocksource/clksrc-of.c   |   41 +++++++++++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h |   10 +++++++++
- include/linux/clocksource.h       |   10 +++++++++
- 5 files changed, 65 insertions(+)
- create mode 100644 drivers/clocksource/clksrc-of.c
+ arch/arm/Kconfig                                           |    1 +
+ arch/arm/mach-tegra/Makefile                               |    1 -
+ arch/arm/mach-tegra/board-dt-tegra20.c                     |    3 ++-
+ arch/arm/mach-tegra/board-dt-tegra30.c                     |    3 ++-
+ arch/arm/mach-tegra/board.h                                |    1 -
+ drivers/clocksource/Makefile                               |    1 +
+ .../timer.c => drivers/clocksource/tegra20_timer.c         |   12 +++++++-----
+ 7 files changed, 13 insertions(+), 9 deletions(-)
+ rename arch/arm/mach-tegra/timer.c => drivers/clocksource/tegra20_timer.c (96%)
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index c9f67de..4f300c5 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -1,3 +1,6 @@
-+config CLKSRC_OF
-+	bool
-+
- config CLKSRC_I8253
- 	bool
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 14f8160..9eb54f6 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -633,6 +633,7 @@ config ARCH_TEGRA
+ 	select ARCH_HAS_CPUFREQ
+ 	select CLKDEV_LOOKUP
+ 	select CLKSRC_MMIO
++	select CLKSRC_OF
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_GPIO
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index 6f224f7..6ab3ed5 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -2,7 +2,6 @@ obj-y                                   += common.o
+ obj-y                                   += io.o
+ obj-y                                   += irq.o
+ obj-y                                   += clock.o
+-obj-y                                   += timer.o
+ obj-y					+= fuse.o
+ obj-y					+= pmc.o
+ obj-y					+= flowctrl.o
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 794a7bf..0bee85a 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -15,6 +15,7 @@
+  *
+  */
  
++#include <linux/clocksource.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+@@ -194,7 +195,7 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+ 	.init_early	= tegra20_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.init_time	= tegra_init_timer,
++	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra_dt_init,
+ 	.init_late	= tegra_dt_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index 08d3b19..a2b6cf1 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -23,6 +23,7 @@
+  *
+  */
+ 
++#include <linux/clocksource.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -104,7 +105,7 @@ DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
+ 	.init_early	= tegra30_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.init_time	= tegra_init_timer,
++	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra30_dt_init,
+ 	.init_late	= tegra_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index 744cdd2..da8f5a3 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -55,5 +55,4 @@ static inline int harmony_pcie_init(void) { return 0; }
+ 
+ void __init tegra_paz00_wifikill_init(void);
+ 
+-extern void tegra_init_timer(void);
+ #endif
 diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 24fb888..29017a3 100644
+index 29017a3..ecf37f3 100644
 --- a/drivers/clocksource/Makefile
 +++ b/drivers/clocksource/Makefile
-@@ -1,3 +1,4 @@
-+obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
- obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
- obj-$(CONFIG_X86_CYCLONE_TIMER)	+= cyclone.o
- obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
-diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-new file mode 100644
-index 0000000..04c7820
---- /dev/null
-+++ b/drivers/clocksource/clksrc-of.c
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of.h>
-+
-+extern struct of_device_id *__start_clksrc_of_match_tables[];
-+extern struct of_device_id *__stop_clksrc_of_match_tables[];
-+
-+void __init clocksource_of_init(void)
-+{
-+	struct of_device_id **table;
-+	struct of_device_id **stop;
-+	struct device_node *np;
-+	const struct of_device_id *match;
-+	void (*init_func)(void);
-+
-+	table = __start_clksrc_of_match_tables;
-+	stop = __stop_clksrc_of_match_tables;
-+
-+	for ( ; table < stop; table++) {
-+		for_each_matching_node(np, *table) {
-+			match = of_match_node(*table, np);
-+			init_func = match->data;
-+			init_func();
-+		}
-+	}
-+}
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index d1ea7ce..b17f793 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -149,6 +149,15 @@
- #define TRACE_SYSCALLS()
+@@ -16,5 +16,6 @@ obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
+ obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
+ obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
+ obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
++obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+ 
+ obj-$(CONFIG_CLKSRC_ARM_GENERIC)	+= arm_generic.o
+diff --git a/arch/arm/mach-tegra/timer.c b/drivers/clocksource/tegra20_timer.c
+similarity index 96%
+rename from arch/arm/mach-tegra/timer.c
+rename to drivers/clocksource/tegra20_timer.c
+index b0036e5..13636a4 100644
+--- a/arch/arm/mach-tegra/timer.c
++++ b/drivers/clocksource/tegra20_timer.c
+@@ -1,6 +1,4 @@
+ /*
+- * arch/arch/mach-tegra/timer.c
+- *
+  * Copyright (C) 2010 Google, Inc.
+  *
+  * Author:
+@@ -33,8 +31,6 @@
+ #include <asm/smp_twd.h>
+ #include <asm/sched_clock.h>
+ 
+-#include "board.h"
+-
+ #define RTC_SECONDS            0x08
+ #define RTC_SHADOW_SECONDS     0x0c
+ #define RTC_MILLISECONDS       0x10
+@@ -168,7 +164,7 @@ static const struct of_device_id rtc_match[] __initconst = {
+ 	{}
+ };
+ 
+-void __init tegra_init_timer(void)
++static void __init tegra20_init_timer(void)
+ {
+ 	struct device_node *np;
+ 	struct clk *clk;
+@@ -286,3 +282,9 @@ void tegra_timer_resume(void)
+ 	timer_writel(usec_config, TIMERUS_USEC_CFG);
+ }
  #endif
- 
-+#ifdef CONFIG_CLKSRC_OF
-+#define CLKSRC_OF_MATCH_TABLES() \
-+		. = ALIGN(8);						\
-+		VMLINUX_SYMBOL(__start_clksrc_of_match_tables) = .;	\
-+		*(__clksrc_of_table)					\
-+		VMLINUX_SYMBOL(__stop_clksrc_of_match_tables) = .;
-+#else
-+#define CLKSRC_OF_MATCH_TABLES()
-+#endif
- 
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
-@@ -490,6 +499,7 @@
- 	*(.init.rodata)							\
- 	FTRACE_EVENTS()							\
- 	TRACE_SYSCALLS()						\
-+	CLKSRC_OF_MATCH_TABLES()					\
- 	DEV_DISCARD(init.rodata)					\
- 	CPU_DISCARD(init.rodata)					\
- 	MEM_DISCARD(init.rodata)					\
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 4dceaf8..3b0f30e 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -332,4 +332,14 @@ extern int clocksource_mmio_init(void __iomem *, const char *,
- 
- extern int clocksource_i8253_init(void);
- 
-+#ifdef CONFIG_CLKSRC_OF
-+extern void clocksource_of_init(void);
 +
-+#define CLKSRC_OF_MATCH_TABLE(name, table)			\
-+	static const struct of_device_id __used			\
-+		__attribute__((section("__clksrc_of_table")))	\
-+		*__p_clksrc_of_match_table_##name = table;
-+
-+#endif
-+
- #endif /* _LINUX_CLOCKSOURCE_H */
++static const struct of_device_id tegra20_timer_match[] __initconst = {
++	{ .compatible = "nvidia,tegra20-timer", .data = tegra20_init_timer },
++	{}
++};
++CLKSRC_OF_MATCH_TABLE(tegra20, tegra20_timer_match);
 -- 
 1.7.10.4
 
