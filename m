@@ -1,78 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab2KTRH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 12:07:29 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:51688 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752970Ab2KTRH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 12:07:27 -0500
-Date: Tue, 20 Nov 2012 11:07:25 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dimitri Sivanich <sivanich@sgi.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: Re: [patch] x86, UV: integer wrap bug in uv_hub_ipi_value()
-Message-ID: <20121120170723.GC11150@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20121117151611.GB16900@elgon.mountain> <20121120004834.GE5060@sgi.com> <20121120042855.GE6186@mwanda>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120042855.GE6186@mwanda>
-User-Agent: Mutt/1.4.2.2i
+	id S1753682Ab2KTRHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 12:07:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57471 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab2KTRHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 12:07:50 -0500
+Date: Tue, 20 Nov 2012 18:07:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] perf fixes for 3.7
+Message-ID: <alpine.LFD.2.02.1211201806580.2701@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 07:28:56AM +0300, Dan Carpenter wrote:
-> On Mon, Nov 19, 2012 at 06:48:34PM -0600, Russ Anderson wrote:
-> > On Sat, Nov 17, 2012 at 06:16:11PM +0300, Dan Carpenter wrote:
-> > > This is a static checker fix.  The problem is that we store the bits
-> > > from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
-> > > shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
-> > > them.
-> > 
-> > Is this the complete patch?  phys_apicid is an int, but gets
-> > cast as unsigned long.  Doesn't phys_apicid also have to be
-> > changed to unsigned long?  And why ulong instead of uint (on x86_64)?
-> 
-> Uint is 32bit across all arches in linux and unix, according to
-> wikipedia.
+Linus,
 
-But long isn't 32bit across all arches.
+please pull the latest perf-urgent-for-linus git tree from:
 
-http://software.intel.com/en-us/articles/size-of-long-integer-type-on-different-architecture-and-os
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
->             The wakeup_secondary_cpu() function pointer takes an int
-> so I couldn't change the parameter.
+* Fix to lookup the installed breakpoint(s) on the correct cpu
+* Two fixes related to header printout (tools)
 
-Yes.  The real problem is much of the apicid code is based 
-on signed int (ie parameters in struct apic).  Not sure why
-they chose to make it signed, but since they did that decision
-ripples through the rest of the code.  Changing it to unsigned
-means changing struct apic, which likewise will ripple through
-the rest of the code.  That is a much bigger change than
-your patch deals with.
+Thanks,
 
-> > I agree with changing signed to unsigned where appropriate, but
-> > this looks like a partial fix.  Am I missing something?
-> > 
-> 
-> I do feel a little embarrassed that I didn't use "unsigned long"
-> consistently.  I just used ulong to make the line a bit shorter, but
-> I could redo it with "unsigned long" if you want.
+	tglx
 
-The issue isn't "ulong" vs "unsigned long".  The issue
-is int is 32 bit and long is 64 bit on x86_64.  Your 
-patch is casting the value as an "unsigned long" (64 bit
-on x86_64) into an int (32 bit).  I don't think that
-was your intent.
+------------------>
+Michael Neuling (1):
+      perf, powerpc: Fix hw breakpoints returning -ENOSPC
 
-This does highlight the problematic nature of "long" being
-different size on different architectures.
+Namhyung Kim (2):
+      perf header: Fix numa topology printing
+      perf tools: Fix strbuf_addf() when the buffer needs to grow
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+
+ kernel/events/hw_breakpoint.c |   12 +++++++-----
+ tools/perf/util/header.c      |    2 ++
+ tools/perf/util/strbuf.c      |    8 ++++----
+ 3 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index 9a7b487..fe8a916 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -111,14 +111,16 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
+  * Count the number of breakpoints of the same type and same task.
+  * The given event must be not on the list.
+  */
+-static int task_bp_pinned(struct perf_event *bp, enum bp_type_idx type)
++static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
+ {
+ 	struct task_struct *tsk = bp->hw.bp_target;
+ 	struct perf_event *iter;
+ 	int count = 0;
+ 
+ 	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
+-		if (iter->hw.bp_target == tsk && find_slot_idx(iter) == type)
++		if (iter->hw.bp_target == tsk &&
++		    find_slot_idx(iter) == type &&
++		    cpu == iter->cpu)
+ 			count += hw_breakpoint_weight(iter);
+ 	}
+ 
+@@ -141,7 +143,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		if (!tsk)
+ 			slots->pinned += max_task_bp_pinned(cpu, type);
+ 		else
+-			slots->pinned += task_bp_pinned(bp, type);
++			slots->pinned += task_bp_pinned(cpu, bp, type);
+ 		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
+ 
+ 		return;
+@@ -154,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		if (!tsk)
+ 			nr += max_task_bp_pinned(cpu, type);
+ 		else
+-			nr += task_bp_pinned(bp, type);
++			nr += task_bp_pinned(cpu, bp, type);
+ 
+ 		if (nr > slots->pinned)
+ 			slots->pinned = nr;
+@@ -188,7 +190,7 @@ static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
+ 	int old_idx = 0;
+ 	int idx = 0;
+ 
+-	old_count = task_bp_pinned(bp, type);
++	old_count = task_bp_pinned(cpu, bp, type);
+ 	old_idx = old_count - 1;
+ 	idx = old_idx + weight;
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 7daad23..566b84c 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1378,6 +1378,8 @@ static void print_numa_topology(struct perf_header *ph, int fd __maybe_unused,
+ 
+ 		str = tmp + 1;
+ 		fprintf(fp, "# node%u cpu list : %s\n", c, str);
++
++		str += strlen(str) + 1;
+ 	}
+ 	return;
+ error:
+diff --git a/tools/perf/util/strbuf.c b/tools/perf/util/strbuf.c
+index 2eeb51b..cfa9068 100644
+--- a/tools/perf/util/strbuf.c
++++ b/tools/perf/util/strbuf.c
+@@ -90,17 +90,17 @@ void strbuf_addf(struct strbuf *sb, const char *fmt, ...)
+ 	if (!strbuf_avail(sb))
+ 		strbuf_grow(sb, 64);
+ 	va_start(ap, fmt);
+-	len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
++	len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
+ 	va_end(ap);
+ 	if (len < 0)
+-		die("your vscnprintf is broken");
++		die("your vsnprintf is broken");
+ 	if (len > strbuf_avail(sb)) {
+ 		strbuf_grow(sb, len);
+ 		va_start(ap, fmt);
+-		len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
++		len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
+ 		va_end(ap);
+ 		if (len > strbuf_avail(sb)) {
+-			die("this should not happen, your snprintf is broken");
++			die("this should not happen, your vsnprintf is broken");
+ 		}
+ 	}
+ 	strbuf_setlen(sb, sb->len + len);
