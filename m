@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2KTKrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:47:42 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17738 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751798Ab2KTKrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:47:41 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtkJAOVeq1B5LbWp/2dsb2JhbABFhTe3H4YBgQmCHgEBBScTHCMQCAMVAy4UJQMhE4gMsA+QVhSMHYQUYQOVe4lJhnuDAw
-Date: Tue, 20 Nov 2012 21:47:37 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, tytso@mit.edu, jmoyer@redhat.com, bpm@sgi.com,
-        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/9] xfs: factor out everything but the
- filemap_write_and_wait from xfs_file_fsync
-Message-ID: <20121120104737.GB2591@dastard>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
- <20121120074138.24645.36708.stgit@blackbox.djwong.org>
+	id S1752754Ab2KTKry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:47:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42140 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798Ab2KTKrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:47:52 -0500
+Date: Tue, 20 Nov 2012 10:47:47 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121120104747.GQ8218@suse.de>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+ <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
+ <20121120071704.GA14199@gmail.com>
+ <20121120102010.GP8218@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121120074138.24645.36708.stgit@blackbox.djwong.org>
+In-Reply-To: <20121120102010.GP8218@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 11:41:38PM -0800, Darrick J. Wong wrote:
-> Hi,
-> 
-> Fsyncing is tricky business, so factor out the bits of the xfs_file_fsync
-> function that can be used from the I/O post-processing path.
-> 
-> From: Jeff Moyer <jmoyer@redhat.com>
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->  fs/xfs/xfs_file.c  |   44 +++++++++++++++++++++++++++++---------------
->  fs/xfs/xfs_inode.h |    1 +
->  2 files changed, 30 insertions(+), 15 deletions(-)
-> 
-> 
-> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> index aa473fa..507f446 100644
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -152,25 +152,18 @@ xfs_dir_fsync(
->  	return _xfs_log_force_lsn(mp, lsn, XFS_LOG_SYNC, NULL);
->  }
->  
-> -STATIC int
-> -xfs_file_fsync(
-> -	struct file		*file,
-> -	loff_t			start,
-> -	loff_t			end,
-> +/*
-> + * Returns 0 on success, -errno on failure.
-> + */
-> +int
-> +do_xfs_file_fsync(
-> +	struct xfs_inode	*ip,
-> +	struct xfs_mount	*mp,
->  	int			datasync)
+On Tue, Nov 20, 2012 at 10:20:10AM +0000, Mel Gorman wrote:
+> I've added two extra configuration files to run specjbb single and multi
+> JVMs with THP enabled. It takes about 1.5 to 2 hours to complete a single
 
-xfs_do_file_fsync()
+1.5 to 2 hours if running to the full set of warehouses required for a
+compliant run. Configuration is current limited to a smaller number of
+threads so each specjbb should complete between 40 minutes and an hour.
 
-And being an internal XFS function, it should return a positive
-error number.
-
-....
-
-> +{
-> +	struct inode		*inode = file->f_mapping->host;
-> +	struct xfs_inode	*ip = XFS_I(inode);
-> +	struct xfs_mount	*mp = ip->i_mount;
-> +	int			error = 0;
-> +
-> +	trace_xfs_file_fsync(ip);
-> +
-> +	error = filemap_write_and_wait_range(inode->i_mapping, start, end);
-> +	if (error)
-> +		return error;
-> +
-> +	return do_xfs_file_fsync(ip, mp, datasync);
-
-And be negated here.
-
-> +}
-> +
->  STATIC ssize_t
->  xfs_file_aio_read(
->  	struct kiocb		*iocb,
-> diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
-> index 94b32f9..d5bf105 100644
-> --- a/fs/xfs/xfs_inode.h
-> +++ b/fs/xfs/xfs_inode.h
-> @@ -546,6 +546,7 @@ do { \
->  	iput(VFS_I(ip)); \
->  } while (0)
->  
-> +int	do_xfs_file_fsync(struct xfs_inode *, struct xfs_mount *, int);
->  #endif /* __KERNEL__ */
-
-This should probably go in fs/xfs/xfs_vnodeops.h (like the only
-other non-static function (xfs_zero_eof) in fs/xfs/xfs_file.c is.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Mel Gorman
+SUSE Labs
