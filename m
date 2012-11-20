@@ -1,59 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab2KTLWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:22:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64013 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab2KTLWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:22:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,285,1352102400"; 
-   d="scan'208";a="244777409"
-Date: Tue, 20 Nov 2012 12:22:17 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/2] mfd: arizona: Updates for v3.8
-Message-ID: <20121120112217.GN18738@sortiz-mobl>
-References: <20121120043211.GE4483@opensource.wolfsonmicro.com>
+	id S1753012Ab2KTLXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:23:47 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:51042 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752669Ab2KTLXr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 06:23:47 -0500
+Message-Id: <201211201116.qAKAoO0K091875@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120043211.GE4483@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY, UPGRADE NOW !!!
+To: Recipients <myburghp@mweb.co.za>
+From: "Webmail System Administrator" <myburghp@mweb.co.za>
+Date: Tue, 20 Nov 2012 12:15:26 +0100
+Reply-To: cyrilwides@mweb.co.za
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi mark
+ Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
-On Tue, Nov 20, 2012 at 01:32:12PM +0900, Mark Brown wrote:
-> The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
-> 
->   Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-3.8
-> 
-> for you to fetch changes up to ffe70f1e526c43b9bb56c9b4408b6e39d2b8473c:
-> 
->   mfd: wm5102: Mark some more status registers as volatile (2012-11-20 13:21:54 +0900)
-> 
-> ----------------------------------------------------------------
-> mfd: arizona: Enhancements for v3.8
-> 
-> These have all previously been posted.
-> 
-> ----------------------------------------------------------------
-> Mark Brown (2):
->       mfd: wm5102: Update maximum register
->       mfd: wm5102: Mark some more status registers as volatile
-Both patches applied to my for-next branch, thanks.
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
