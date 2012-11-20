@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab2KTUzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:55:44 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48788 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab2KTUzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:55:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <23b6f8fe-37cd-4cbb-9c90-511dab4e5b5b@email.android.com>
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
-	<1353222571-31544-4-git-send-email-yinghai@kernel.org>
-	<50AAB5E8.5070807@zytor.com>
-	<CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
-	<50AABD15.1050809@zytor.com>
-	<CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com>
-	<41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com>
-	<CAE9FiQVAxkS6AH6zDJAjuyiJtR2xztRG+raCk4L6yvKuskzBkg@mail.gmail.com>
-	<CAE9FiQVrjRvQYNDdJFcyDFrr88B6v-86Zdq5a15kdHN_byDG3g@mail.gmail.com>
-	<23b6f8fe-37cd-4cbb-9c90-511dab4e5b5b@email.android.com>
-Date: Tue, 20 Nov 2012 12:55:41 -0800
-X-Google-Sender-Auth: zW47f4fBaoToP3kkOaBNQIFUp58
-Message-ID: <CAE9FiQUjZG_UakYdpxEf8_EHQ4UBo6GK1E_g4wDY576MFcVL4Q@mail.gmail.com>
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753165Ab2KTU5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:57:33 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43119 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752464Ab2KTU5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 15:57:32 -0500
+Message-ID: <1353445050.17819.16.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Allow control over line length warning, default
+ remains 80
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Constantine Shulyupin <const@makelinux.com>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Date: Tue, 20 Nov 2012 12:57:30 -0800
+In-Reply-To: <20121120152227.GI7955@dm>
+References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
+	 <20121120142906.GD7955@dm> <1353422629.11235.10.camel@joe-AO722>
+	 <20121120144742.GG7955@dm>
+	 <CAE7jHC8LsxPaQHqy5-H4-wZp6q+_0s7arnPa3jG7R9x=tf_Oww@mail.gmail.com>
+	 <1353423503.11235.12.camel@joe-AO722>
+	 <CAE7jHC-QqYCvSVR2JwCQjrSx6yH0-41GXfid6FSPP3xB8FV=2w@mail.gmail.com>
+	 <20121120152227.GI7955@dm>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 12:44 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I don't see any point in three flags here.  Let's stick to one flag; then it fits in the existing boot_flags field.
+Some projects might want a longer line length so allow
+a command line --max-line-length=n control over the
+long line warnings.  The default line length is 80.
 
-the magic AA55
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-boot/header.S:boot_flag:        .word 0xAA55
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d2d5ba1..38e8890 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -33,6 +33,7 @@ my %ignore_type = ();
+ my @ignore = ();
+ my $help = 0;
+ my $configuration_file = ".checkpatch.conf";
++my $max_line_length = 80;
+ 
+ sub help {
+ 	my ($exitcode) = @_;
+@@ -51,6 +52,7 @@ Options:
+   -f, --file                 treat FILE as regular source file
+   --subjective, --strict     enable more subjective tests
+   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
++  --max-line-length=n        set the maximum line length, if exceeded, warn
+   --show-types               show the message "types" in the output
+   --root=PATH                PATH to the kernel tree root
+   --no-summary               suppress the per-file summary
+@@ -107,6 +109,7 @@ GetOptions(
+ 	'strict!'	=> \$check,
+ 	'ignore=s'	=> \@ignore,
+ 	'show-types!'	=> \$show_types,
++	'max-line-length=i' => \$max_line_length,
+ 	'root=s'	=> \$root,
+ 	'summary!'	=> \$summary,
+ 	'mailback!'	=> \$mailback,
+@@ -1760,15 +1763,15 @@ sub process {
+ # check we are in a valid source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+ 
+-#80 column limit
++#line length limit
+ 		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
+ 		    $rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
+ 		    !($line =~ /^\+\s*$logFunctions\s*\(\s*(?:(KERN_\S+\s*|[^"]*))?"[X\t]*"\s*(?:|,|\)\s*;)\s*$/ ||
+ 		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
+-		    $length > 80)
++		    $length > $max_line_length)
+ 		{
+ 			WARN("LONG_LINE",
+-			     "line over 80 characters\n" . $herecurr);
++			     "line over $max_line_length characters\n" . $herecurr);
+ 		}
+ 
+ # Check for user-visible strings broken across lines, which breaks the ability
 
-if change that to other value, would it break existing boot loader?
-aka old boot loader could boot the new bzImage anymore.
 
-Thanks
-
-Yinghai
