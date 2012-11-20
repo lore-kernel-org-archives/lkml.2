@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab2KTIUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:20:10 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55572 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab2KTIUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:20:05 -0500
-Date: Tue, 20 Nov 2012 00:20:02 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-In-Reply-To: <20121120074445.GA14539@gmail.com>
-Message-ID: <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com> <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com> <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com> <20121120074445.GA14539@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752668Ab2KTIUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:20:32 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:59627 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751924Ab2KTIU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:20:29 -0500
+Message-ID: <50AB3D43.2030005@parallels.com>
+Date: Tue, 20 Nov 2012 12:20:19 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, <nhorman@tuxdriver.com>,
+        <containers@lists.linux-foundation.org>, <daniel.wagner@bmw-carit.de>,
+        <linux-kernel@vger.kernel.org>, <john.r.fastabend@intel.com>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/8] cgroup: add cgroup->id
+References: <1353093624-22608-1-git-send-email-tj@kernel.org> <1353093624-22608-2-git-send-email-tj@kernel.org> <50AB086E.70901@jp.fujitsu.com> <20121120053112.GE25790@mtj.dyndns.org> <50AB2BCF.2050204@jp.fujitsu.com>
+In-Reply-To: <50AB2BCF.2050204@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Ingo Molnar wrote:
-
-> > This happened to be an Opteron (but not 83xx series), 2.4Ghz.  
+On 11/20/2012 11:05 AM, Kamezawa Hiroyuki wrote:
+> (2012/11/20 14:31), Tejun Heo wrote:
+>> Hello, Kamezawa.
+>>
+>> On Tue, Nov 20, 2012 at 01:34:54PM +0900, Kamezawa Hiroyuki wrote:
+>>> I'm sorry if I misunderstand ... current usage of css-id in
+>>> memory/swap cgroup
+>>> is for recording information of memory cgroup which may be destroyed.
+>>> In some case,
+>>> a memcg's cgroup is freed but a struct memcgroup and its css are
+>>> available, swap_cgroup
+>>> may contain id ot if.
+>>> This patch puts cgroup's id at diput(), so, the id used in
+>>> swap_cgroup can be
+>>> reused while it's in use. Right ?
+>>
+>> CSSes hold onto cgroups, so if memcg is around, its cgroup doesn't go
+>> away, so the right thing to do would be holding onto CSS whlie there
+>> are remaining references, which IMHO is the way it should have been
+>> implemented from the beginning.  The only reason memcg currently has
+>> its own refcnt nested inside css refcnt is because cgroup used to
+>> require css refs to be completely drained for cgroup_rmdir() to
+>> proceed.  Now that that weirdity is gone, we should go back to sane
+>> css based reference counting, right?
+>>
 > 
-> Ok - roughly which family/model from /proc/cpuinfo?
+> Ah, hm, Maybe I missed new __css_put() implementation...
+> 
+>> void __css_put(struct cgroup_subsys_state *css)
+>> {
+>>         struct cgroup *cgrp = css->cgroup;
+>>         int v;
+>>
+>>         rcu_read_lock();
+>>         v = css_unbias_refcnt(atomic_dec_return(&css->refcnt));
+>>
+>>         switch (v) {
+>>         case 1:
+>>                 if (notify_on_release(cgrp)) {
+>>                         set_bit(CGRP_RELEASABLE, &cgrp->flags);
+>>                         check_for_release(cgrp);
+>>                 }
+>>                 break;
+>>         case 0:
+>>                 schedule_work(&css->dput_work);
+>>                 break;
+>>         }
+>>         rcu_read_unlock();
+>> }
+> 
+> If swap_cgroup holds css's refcnt instead of memcg's....
+> final dput will be invoked when the last swap_cgroup release a reference.
+> 
+> It seems to work and we can drop memcg's refcnt (maybe).
+> 
+> BTW, css's ID was limited to 65535 to be encoded in 2bytes.
+> If we use INT, this will increase size of swap_cgroup.
+> (2bytes per page => 4bytes per page) It's preallocated at swapon()
+> because allocating memory dynamically when we swap a memory is not good.
+> 
+> Do we really need 4bytes for ID ? If so, swap_cgroup should be totally
+> re-designed.
 > 
 
-It's close enough, it's 23xx.
+For the record, I've already came to the conclusion myself that
+swap_cgroup should be redesigned for this very same reason. (I was
+testing it a while ago). I haven't had much time to think about it,
+though. But I was considering using the memcg address itself, in a
+sparsely populated structure.
 
-> > It's perf top -U, the benchmark itself was unchanged so I 
-> > didn't think it was interesting to gather the user symbols.  
-> > If that would be helpful, let me know!
-> 
-> Yeah, regular perf top output would be very helpful to get a 
-> general sense of proportion. Thanks!
-> 
 
-Ok, here it is:
 
-    91.24%  perf-10971.map    [.] 0x00007f116a6c6fb8                            
-     1.19%  libjvm.so         [.] instanceKlass::oop_push_contents(PSPromotionMa
-     1.04%  libjvm.so         [.] PSPromotionManager::drain_stacks_depth(bool)  
-     0.79%  libjvm.so         [.] PSPromotionManager::copy_to_survivor_space(oop
-     0.60%  libjvm.so         [.] PSPromotionManager::claim_or_forward_internal_
-     0.58%  [kernel]          [k] page_fault                                    
-     0.28%  libc-2.3.6.so     [.] __gettimeofday                                        
-     0.26%  libjvm.so         [.] Copy::pd_disjoint_words(HeapWord*, HeapWord*, unsigned
-     0.22%  [kernel]          [k] getnstimeofday                                        
-     0.18%  libjvm.so         [.] CardTableExtension::scavenge_contents_parallel(ObjectS
-     0.15%  [kernel]          [k] _raw_spin_lock                                        
-     0.12%  [kernel]          [k] ktime_get_update_offsets                              
-     0.11%  [kernel]          [k] ktime_get                                             
-     0.11%  [kernel]          [k] rcu_check_callbacks                                   
-     0.10%  [kernel]          [k] generic_smp_call_function_interrupt                   
-     0.10%  [kernel]          [k] read_tsc                                              
-     0.10%  [kernel]          [k] clear_page_c                                          
-     0.10%  [kernel]          [k] __do_page_fault                                       
-     0.08%  [kernel]          [k] handle_mm_fault                                       
-     0.08%  libjvm.so         [.] os::javaTimeMillis()                                  
-     0.08%  [kernel]          [k] emulate_vsyscall                                      
-     0.08%  [kernel]          [k] flush_tlb_func                                        
-     0.07%  [kernel]          [k] task_tick_fair                                        
-     0.07%  [kernel]          [k] retint_swapgs                                         
-     0.06%  libjvm.so         [.] oopDesc::size_given_klass(Klass*)                     
-     0.05%  [kernel]          [k] handle_pte_fault                                      
-     0.05%  perf              [.] 0x0000000000033190                                    
-     0.05%  sanctuaryd        [.] 0x00000000006f0ad3                                    
-     0.05%  [kernel]          [k] copy_user_generic_string                              
-     0.05%  libjvm.so         [.] objArrayKlass::oop_push_contents(PSPromotionManager*, 
-     0.04%  [kernel]          [k] find_vma                                              
-     0.04%  [kernel]          [k] mpol_misplaced                                        
-     0.04%  [kernel]          [k] __bad_area_nosemaphore                                
-     0.04%  [kernel]          [k] get_vma_policy                                        
-     0.04%  [kernel]          [k] task_numa_fault                                       
-     0.04%  [kernel]          [k] error_sti                                             
-     0.03%  [kernel]          [k] write_ok_or_segv                                      
-     0.03%  [kernel]          [k] do_gettimeofday                                       
-     0.03%  [kernel]          [k] down_read_trylock                                     
-     0.03%  [kernel]          [k] update_cfs_shares                                     
-     0.03%  [kernel]          [k] error_entry                                           
-     0.03%  [kernel]          [k] run_timer_softirq
