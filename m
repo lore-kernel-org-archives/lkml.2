@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab2KTXs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:48:26 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57069 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab2KTXsZ (ORCPT
+	id S1753850Ab2KTXsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:48:42 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33368 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab2KTXsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:48:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
-References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com>
-	<CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
-Date: Tue, 20 Nov 2012 15:48:24 -0800
-X-Google-Sender-Auth: pGfZAr_iBxUk9iQjiYJW0TeWwPY
-Message-ID: <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
-Subject: Re: Device tree node to major/minor?
-From: Simon Glass <sjg@chromium.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: lk <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Che-liang Chiou <clchiou@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Nov 2012 18:48:41 -0500
+Date: Tue, 20 Nov 2012 23:53:53 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ellyjones@chromium.org, Kay Sievers <kay@vrfy.org>,
+        Roland Eggner <edvx1@systemanalysen.net>
+Subject: Re: [PATCH v2] devtmpfs: mount with noexec and nosuid
+Message-ID: <20121120235353.3092c8d2@pyramind.ukuu.org.uk>
+In-Reply-To: <CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
+References: <20121120204238.GA19554@www.outflux.net>
+	<20121120211312.57f1b63d@pyramind.ukuu.org.uk>
+	<CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+> > 1. Why not just have your userspace mount -o remount the file system this
+> > way already in early boot. (and if you trojanned boot that early then any
+> > supposed security gain is already lost)
+> 
+> That's certainly possible, but I am hoping to avoid adding any extra
+> boot time. The kernel is responsible for this mount, so its flags
+> should be configurable, resulting in no time penalty anywhere.
 
-On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
->> Hi,
->>
->> I hope this is a stupid question with an easy answer, but I cannot find it.
->>
->> I have a device tree node for an mmc block device and I want to use
->> that block device from another driver. I have a phandle which lets me
->> get the node of the mmc device, but I am not sure how to convert that
->> into a block_device. In order to do so, I think I need a major/minor
->> number. Of course the phandle might in fact point to a SCSI driver and
->> I want that to work correctly also.
->>
->> I imagine I might be able to search through the wonders of sysfs in
->> user space, but is there a better way?
->
-> Do you /want/ to do it from userspace? What is your use case? Mounting
-> the rootfs?
+You just broke my bullshitometer
 
-The use case is storing some raw data on a block device from within a
-driver in the kernel. It is used to keep track of the verified boot
-state.
+It's a single syscall from your init binary, its microseconds.
 
->
-> Regardless, userspace can monitor the uevents when devices are added
-> (that's what udev does) and watch for the full path of the node you
-> want in the uevent attribute. Then you can look for the child device
-> with the block major/minor numbers in it.
+> > 2. If you want to do this right then you need to work out what you are
+> > trying to prevent. Your devtmpfs can force file permissions on the
+> > underlying device nodes by having its own operation handling for chmod.
+> >
+> > At that point you can force permissions on anything that you want to
+> > avoid floating around that filesystem with other rights, while not
+> > touching it on device or directory nodes where the meaning is different.
+> >
+> > In its current form however it appears to be a kernel implementation of
+> > "mount is too hard".
+> 
+> This change also stops mmap() with PROT_EXEC which a chmod handler
+> wouldn't be able to do.
 
-So is there a way to do this entirely in the kernel ex post? It might
-need to happen during kernel boot, before user space.
+You don't want to stop mmap with PROT_EXEC on /dev/mem as that breaks a
+load of stuff, you want to stop people adding stuff to that file system
+and executing it.
 
->
-> g.
+Think about it more carefully - if I've got access to /dev/mem you
+already lost.
 
-Thanks,
-Simon
+The patch is as is nonsense. It's doable in all kernels (including
+existing legacy ones) as a single syscall in your init code. That's
+portable back compatible and works all over the place. Your patch
+introduces a pointless config option to make things less compatible than
+before. It's bogus.
+
+Alan
+
+
