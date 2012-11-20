@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2KTOSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:18:14 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:40498 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2KTOSM (ORCPT
+	id S1752505Ab2KTOSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:18:55 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:38593 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2KTOSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:18:12 -0500
-Message-ID: <50AB9116.3090401@synopsys.com>
-Date: Tue, 20 Nov 2012 19:47:58 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 20 Nov 2012 09:18:54 -0500
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>, <arnd@arndb.de>
-Subject: Re: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <20121120134737.GB8111@elf.ucw.cz> <20121120135901.GA9227@elf.ucw.cz>
-In-Reply-To: <20121120135901.GA9227@elf.ucw.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+In-Reply-To: <1353420249-17957-1-git-send-email-linus.walleij@stericsson.com>
+References: <1353420249-17957-1-git-send-email-linus.walleij@stericsson.com>
+Date: Tue, 20 Nov 2012 19:48:53 +0530
+Message-ID: <CAKohpo=7k2W6RSX1WMwi0kHbO3Hnr_7T4_LvOhru8YFRTo-34A@mail.gmail.com>
+Subject: Re: [PATCH 1/7 v2] gpiolib: let gpiochip_add_pin_range() specify offset
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 November 2012 07:29 PM, Pavel Machek wrote:
-> On Tue 2012-11-20 14:47:37, Pavel Machek wrote:
->> Hi!
->>
->>>     https://raw.github.com/vineetgarc/publish/master/ELCE-2012-ARC-Linux.pdf
->>>
->>> All comments/criticisms are welcome !
->> Huh. arch/arc is very similar to arch/arm. So similar that it took me
->> 10 minutes to figure out. I guess theres no alternate name arc could
->> use?
-> Hmm... "Advanced Risc"... :-(.
+On 20 November 2012 19:34, Linus Walleij <linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 >
-> Ok, plus there's already computing standard called "arc".
+> Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
+> it is not always enough to specify all the pins of a gpio_chip
+> from offset zero to be added to a pin map range, since the
+> mapping from GPIO to pin controller may not be linear at all,
+> but need to be broken into a few consecutive sub-ranges or
+> 1-pin entries for complicated cases. The ranges may also be
+> sparse.
 >
-> https://www.linux-mips.org/wiki/ARC
+> This alters the signature of the function to accept offsets
+> into both the GPIO-chip local pinspace and the pin controller
+> local pinspace.
 >
-> What about calling the architecture "sarc" or "syarc" ?
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-I think it would be best use of everybody's time if you could focus on
-the technical content of the port rather than the name. It has been like
-that for +10 years and I don't intend to make the kernel port name
-different from THE arch name itself.
-
-
-
-
->
-> 									Pavel
-
+For all 7 patches:
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
