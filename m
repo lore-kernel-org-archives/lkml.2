@@ -1,193 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2KTK1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:27:24 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31586 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab2KTK0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:26:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
-   d="scan'208";a="249909878"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
-        rafael.j.wysocki@intel.com
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
-        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org,
-        ben-linux@fluff.org, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v3 2/3] spi / ACPI: add ACPI enumeration support
-Date: Tue, 20 Nov 2012 12:29:43 +0200
-Message-Id: <1353407384-26880-3-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
- <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1752971Ab2KTKdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:33:46 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:20215 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab2KTKdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:33:45 -0500
+Message-ID: <ffbad99ce24a54ce51dbcd9557f3a993.squirrel@mail.sublimeip.com>
+In-Reply-To: <1353349500.6276.9.camel@gandalf.local.home>
+References: <20121109182943.GA2789@redhat.com>
+    <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com>
+    <1353349500.6276.9.camel@gandalf.local.home>
+Date: Tue, 20 Nov 2012 21:33:42 +1100
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+From: u3557@miso.sublimeip.com
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "Oleg Nesterov" <oleg@redhat.com>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Ingo Molnar" <mingo@redhat.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Amnon Shiloh" <u3557@miso.sublimeip.com>,
+        linux-kernel@vger.kernel.org
+Reply-To: mosix@mosix.com.au
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-configure the SPI slave devices behind the SPI controller. This patch adds
-support for this to the SPI core.
+Dear Steve,
 
-In addition we bind ACPI nodes to SPI devices. This makes it possible for
-the slave drivers to get the ACPI handle for further configuration.
+> But here, there's no prejudice between tasks. All tasks will now hit the
+> breakpoint regardless of if it is being traced or not.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/spi/spi.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 114 insertions(+), 1 deletion(-)
+Just to clarify, there is no intention to allow conventional breakpoints
+in the vsyscall page - that would indeed be a disaster affecting all other
+processes.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 84c2861..3ae5351 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -35,6 +35,8 @@
- #include <linux/sched.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
-+#include <linux/ioport.h>
-+#include <linux/acpi.h>
- 
- static void spidev_release(struct device *dev)
- {
-@@ -93,6 +95,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
- 	if (of_driver_match_device(dev, drv))
- 		return 1;
- 
-+	/* Then try ACPI */
-+	if (acpi_driver_match_device(dev, drv))
-+		return 1;
-+
- 	if (sdrv->id_table)
- 		return !!spi_match_id(sdrv->id_table, spi);
- 
-@@ -888,6 +894,112 @@ static void of_register_spi_devices(struct spi_master *master)
- static void of_register_spi_devices(struct spi_master *master) { }
- #endif
- 
-+#ifdef CONFIG_ACPI
-+static int acpi_spi_add_resource(struct acpi_resource *ares, void *data)
-+{
-+	struct acpi_resource_spi_serialbus *sb;
-+	struct spi_device *spi = data;
-+	struct resource r;
-+
-+	switch (ares->type) {
-+	case ACPI_RESOURCE_TYPE_IRQ:
-+	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-+		/* Only use the first interrupt resource and skip the rest */
-+		memset(&r, 0, sizeof(r));
-+		if (spi->irq < 0 && acpi_dev_resource_interrupt(ares, 0, &r))
-+			spi->irq = r.start;
-+		return 1;
-+
-+	case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-+		sb = &ares->data.spi_serial_bus;
-+		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
-+			spi->chip_select = sb->device_selection;
-+			spi->max_speed_hz = sb->connection_speed;
-+
-+			if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-+				spi->mode |= SPI_CPHA;
-+			if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-+				spi->mode |= SPI_CPOL;
-+			if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-+				spi->mode |= SPI_CS_HIGH;
-+
-+			return 1;
-+		}
-+		return 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
-+{
-+	struct spi_master *master = data;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	struct spi_device *spi;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	spi = spi_alloc_device(master);
-+	if (!spi) {
-+		dev_err(&master->dev, "failed to allocate SPI device for %s\n",
-+			dev_name(&adev->dev));
-+		return AE_NO_MEMORY;
-+	}
-+
-+	ACPI_HANDLE_SET(&spi->dev, handle);
-+	spi->irq = -1;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_spi_add_resource, spi);
-+	if (ret < 0)
-+		goto fail_put_dev;
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (!spi->max_speed_hz)
-+		goto fail_put_dev;
-+
-+	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
-+	if (spi_add_device(spi)) {
-+		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
-+			dev_name(&adev->dev));
-+		goto fail_put_dev;
-+	}
-+
-+	return AE_OK;
-+
-+fail_put_dev:
-+	spi_dev_put(spi);
-+
-+	return AE_OK;
-+}
-+
-+static void acpi_register_spi_devices(struct spi_master *master)
-+{
-+	acpi_status status;
-+	acpi_handle handle;
-+
-+	handle = ACPI_HANDLE(&master->dev);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-+				     acpi_spi_add_device, NULL,
-+				     master, NULL);
-+	if (ACPI_FAILURE(status))
-+		dev_warn(&master->dev, "failed to enumerate SPI slaves\n");
-+}
-+#else
-+static inline void acpi_register_spi_devices(struct spi_master *master) {}
-+#endif /* CONFIG_ACPI */
-+
- static void spi_master_release(struct device *dev)
- {
- 	struct spi_master *master;
-@@ -1023,8 +1135,9 @@ int spi_register_master(struct spi_master *master)
- 		spi_match_master_to_boardinfo(master, &bi->board_info);
- 	mutex_unlock(&board_lock);
- 
--	/* Register devices from the device tree */
-+	/* Register devices from the device tree and ACPI */
- 	of_register_spi_devices(master);
-+	acpi_register_spi_devices(master);
- done:
- 	return status;
- }
--- 
-1.7.10.4
+The aim of this patch is to allow ptracers to set the x86 debug-registers
+of their traced process, so that it stops when it reaches the entry points
+of those (few) system-calls that are in the vsyscall page.  Note that those
+debug registers are anyway swapped at context-switch, so no other processes
+are affected.
+
+> Is this really what we want? I mean, isn't syscall tracing in the kernel
+> done by a flag set to the task's structure. If the task has a flag set,
+> then it does the slow (ptrace) path which handles the breakpoint for the
+> user.
+
+Most system-calls can be trapped by the PTRACE_SYSCALL option (and the
+later PTRACE_SYSEMU), but those few system-calls on the vsyscall page
+defy the intention to trap ALL system-calls.  They also cannot be
+checkpointed by inserting a trap-instruction (as that, if allowed, would
+break all other processes), hence the only alternative left is to have
+this patch that fixes the oversight in the design of
+PTRACE_SYSCALL/PTRACE_SYSEMU in the presence of a vsyscall page.
+
+Best Regards,
+Amnon.
+
+> On Mon, 2012-11-19 at 18:47 +0100, Oleg Nesterov wrote:
+>> On 11/09, Oleg Nesterov wrote:
+>> >
+>> > On 11/09, Oleg Nesterov wrote:
+>> > >
+>> > > Note: TASK_SIZE doesn't look right at least on x86, I think it
+>> should
+>> > > be replaced by TASK_SIZE_MAX.
+>> > > ...
+>> > > --- x/arch/x86/kernel/hw_breakpoint.c
+>> > > +++ x/arch/x86/kernel/hw_breakpoint.c
+>> > > @@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct
+>> > >  	va = info->address;
+>> > >  	len = get_hbp_len(info->len);
+>> > >
+>> > > -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
+>> > > +	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+>> >
+>> > But actully I'd like to ask another question.
+>> >
+>> > Can't we add the additional !in_gate_area_no_mm() check to allow
+>> > the hw breakpoints in vsyscall?
+>> >
+>> > Quoting Amnon:
+>> >
+>> > 	My service needs to catch the system-calls of its traced son.
+>> > 	Almost all system-calls are caught with PTRACE_SYSCALL, but not those
+>> > 	using the vsyscall page - especially "gettimeofday()" and "time()".
+>> >
+>> > 	...> Is this really what we want? I mean, isn't syscall tracing in
+the kernel
+> done by a flag set to the task's structure. If the task has a flag set,
+> then it does the slow (ptrace) path which handles the breakpoint for the
+> user.
+>> >
+>> > 	However, the code in "arch/x86/kernel/ptrace.c" forbids catching
+>> kernel
+>> > 	addresses.
+>> >
+>> > I tend to agree with Amnon...
+>> >
+>> > What do you think?
+>>
+>> ping ;)
+>>
+>> I agree the patch I sent is very minor (although it looks like the
+>> trivial
+>> bugfix to me).
+>>
+>> Just I think Amnon has a point, shouldn't we change this change like
+>> below?
+>> (on top of this fixlet).
+>>
+>> Oleg.
+>>
+>> --- x/arch/x86/kernel/hw_breakpoint.c
+>> +++ x/arch/x86/kernel/hw_breakpoint.c
+>> @@ -188,6 +188,11 @@ static int get_hbp_len(u8 hbp_len)
+>>  	return len_in_bytes;
+>>  }
+>>
+>> +static inline bool bp_in_gate(unsigned long start, unsigned long end)
+>> +{
+>> +	return in_gate_area_no_mm(start) && in_gate_area_no_mm(end);
+>> +}
+>> +
+>>  /*
+>>   * Check for virtual address in kernel space.
+>>   */
+>> @@ -200,7 +205,8 @@ int arch_check_bp_in_kernelspace(struct
+>>  	va = info->address;
+>>  	len = get_hbp_len(info->len);
+>>
+>> -	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+>> +	return ((va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE)) &&
+>> +		!bp_in_gate(va, va + len - 1);
+>
+> So we want to allow non privileged to add a breakpoint in a vsyscall
+> area even if it happens to lay in kernel space?
+>
+> Is this really what we want? I mean, isn't syscall tracing in the kernel
+> done by a flag set to the task's structure. If the task has a flag set,
+> then it does the slow (ptrace) path which handles the breakpoint for the
+> user.
+>
+> But here, there's no prejudice between tasks. All tasks will now hit the
+> breakpoint regardless of if it is being traced or not.
+>
+> -- Steve
+>
+>
+>>  }
+>>
+>>  int arch_bp_generic_fields(int x86_len, int x86_type,
+>
+>
+>
+
 
