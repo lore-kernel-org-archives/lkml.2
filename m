@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab2KTOnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:43:50 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:32835 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752888Ab2KTOns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:43:48 -0500
-Message-ID: <1353422629.11235.10.camel@joe-AO722>
-Subject: Re: [PATCH v4] checkpatch: debugfs_remove() can take NULL
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Date: Tue, 20 Nov 2012 06:43:49 -0800
-In-Reply-To: <20121120142906.GD7955@dm>
-References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
-	 <20121120142906.GD7955@dm>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753006Ab2KTOoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:44:30 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60686 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab2KTOo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 09:44:29 -0500
+From: Johan Meiring <johanmeiring@gmail.com>
+To: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
+        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Johan Meiring <johanmeiring@gmail.com>
+Subject: [PATCH 1/8] staging: wlags49_h2: wl_if.h: fixes macro styling issues
+Date: Tue, 20 Nov 2012 16:44:10 +0200
+Message-Id: <1353422650-14437-1-git-send-email-johanmeiring@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 14:29 +0000, Andy Whitcroft wrote:
+This commit sorts out macro styling issues that were indicated by
+the checkpatch.pl script,
 
-> This all looks sensible, though we still have three blocks doing the
-> same thing.  How about we standardise this check into a single check,
-> generating the capacity from the matched name.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> +			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
-> +				my $func = $1;
-> +				my $func_capacity = "NEEDLESS_$1";
-> +
-> +				$func_capacity =~ s/(.$)/\U$1\E/;
-> +
-> +				WARN($func_capacity,
-> +				     "$func(NULL) is safe this check is probably not required\n" . $hereprev);
+Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+---
+ drivers/staging/wlags49_h2/wl_if.h |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Perhaps just
-				WARN("NEEDLESS_IF",
-...
-
+diff --git a/drivers/staging/wlags49_h2/wl_if.h b/drivers/staging/wlags49_h2/wl_if.h
+index 6d66dab..d070e47 100644
+--- a/drivers/staging/wlags49_h2/wl_if.h
++++ b/drivers/staging/wlags49_h2/wl_if.h
+@@ -121,7 +121,7 @@
+ #define MAX_RTS_BYTES               2347
+ 
+ #define MAX_RATES                   8
+-#define MEGABIT                     1024*1024
++#define MEGABIT                     (1024 * 1024)
+ 
+ #define HCF_FAILURE                 0xFF
+ #define UIL_FAILURE		            0xFF
+@@ -154,15 +154,15 @@ UIL_FUN_GET_INFO
+ UIL_FUN_PUT_INFO
+ */
+ 
+-#define SIOCSIWNETNAME              SIOCDEVPRIVATE+1
+-#define SIOCGIWNETNAME              SIOCDEVPRIVATE+2
+-#define SIOCSIWSTANAME              SIOCDEVPRIVATE+3
+-#define SIOCGIWSTANAME              SIOCDEVPRIVATE+4
+-#define SIOCSIWPORTTYPE             SIOCDEVPRIVATE+5
+-#define SIOCGIWPORTTYPE             SIOCDEVPRIVATE+6
++#define SIOCSIWNETNAME              (SIOCDEVPRIVATE + 1)
++#define SIOCGIWNETNAME              (SIOCDEVPRIVATE + 2)
++#define SIOCSIWSTANAME              (SIOCDEVPRIVATE + 3)
++#define SIOCGIWSTANAME              (SIOCDEVPRIVATE + 4)
++#define SIOCSIWPORTTYPE             (SIOCDEVPRIVATE + 5)
++#define SIOCGIWPORTTYPE             (SIOCDEVPRIVATE + 6)
+ 
+ /* IOCTL code for the RTS interface */
+-#define WL_IOCTL_RTS                SIOCDEVPRIVATE+7
++#define WL_IOCTL_RTS                (SIOCDEVPRIVATE + 7)
+ 
+ /* IOCTL subcodes for WL_IOCTL_RTS */
+ #define WL_IOCTL_RTS_READ           1
+-- 
+1.7.10.4
 
