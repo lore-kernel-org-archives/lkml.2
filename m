@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2KTSMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:12:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46889 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab2KTSMb (ORCPT
+	id S1753369Ab2KTSPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:15:20 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42248 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab2KTSPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:12:31 -0500
-Date: Tue, 20 Nov 2012 10:12:28 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 3/3] man-pages: Add man page for vmpressure_fd(2)
-In-Reply-To: <20121120062400.GA9468@lizard>
-Message-ID: <alpine.DEB.2.00.1211201004390.4200@chino.kir.corp.google.com>
-References: <20121107105348.GA25549@lizard> <20121107110152.GC30462@lizard> <20121119215211.6370ac3b.akpm@linux-foundation.org> <20121120062400.GA9468@lizard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 20 Nov 2012 13:15:18 -0500
+Date: Tue, 20 Nov 2012 13:15:16 -0500 (EST)
+Message-Id: <20121120.131516.311189144173456123.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: paolo.valente@unimore.it, jhs@mojatatu.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
+Subject: Re: [PATCH] pkt_sched: QFQ Plus: fair-queueing service at DRR cost
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121120100958.010e7605@nehalam.linuxnetplumber.net>
+References: <20121120095304.420ded7c@nehalam.linuxnetplumber.net>
+	<20121120.130202.1918742054229219388.davem@davemloft.net>
+	<20121120100958.010e7605@nehalam.linuxnetplumber.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Nov 2012, Anton Vorontsov wrote:
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Tue, 20 Nov 2012 10:09:58 -0800
 
-> We try to make userland freeing resources when the system becomes low on
-> memory. Once we're short on memory, sometimes it's better to discard
-> (free) data, rather than let the kernel to drain file caches or even start
-> swapping.
+> On Tue, 20 Nov 2012 13:02:02 -0500 (EST)
+> David Miller <davem@davemloft.net> wrote:
 > 
+>> From: Stephen Hemminger <shemminger@vyatta.com>
+>> Date: Tue, 20 Nov 2012 09:53:04 -0800
+>> 
+>> > There are actually lots of bogus warnings than seem to only occur
+>> > because gcc 4.4 does a bad job of checking. Later versions are fixed
+>> > and don't generate warnings.
+>> > 
+>> > My preference is to not add the unnecessary initialization because
+>> > if you get in the habit of doing it. The whole purpose of the uninitialized
+>> > check is lost. 
+>> 
+>> Try again, this was with gcc-4.7.2-2 on Fedora.
+>> 
+>> There are too many preconditions, across multiple basic block, which
+>> together ensure the skb is in fact initialized at the point in
+>> question and the compiler simply isn't sophisticated enough to see
+>> that.
+> 
+> Weird, it compiles  clean on x86-84 on Debian.
+> gcc-4.7.real (Debian 4.7.2-4) 4.7.2
 
-To add another usecase: its possible to modify our version of malloc (or 
-any malloc) so that memory that is free()'d can be released back to the 
-kernel only when necessary, i.e. when keeping the extra memory around 
-starts to have a detremental effect on the system, memcg, or cpuset.  When 
-there is an abundance of memory available such that allocations need not 
-defragment or reclaim memory to be allocated, it can improve performance 
-to keep a memory arena from which to allocate from immediately without 
-calling the kernel.
-
-Our version of malloc frees memory back to the kernel with 
-madvise(MADV_DONTNEED) which ends up zaping the mapped ptes.  With 
-pressure events, we only need to do this when faced with memory pressure; 
-to keep our rss low, we require that thp's max_ptes_none tunable be set to 
-0; we don't want our applications to use any additional memory.  This 
-requires splitting a hugepage anytime memory is free()'d back to the 
-kernel.
-
-I'd like to use this as a hook into malloc() for applications that do not 
-have strict memory footprint requirements to be able to increase 
-performance by keeping around a memory arena from which to allocate.
+Fedora backports a lot more stuff into gcc than Debian does.
