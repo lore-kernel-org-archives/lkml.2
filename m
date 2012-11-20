@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2KTUA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:00:58 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17495 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751858Ab2KTUA5 (ORCPT
+	id S1752496Ab2KTUCP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:02:15 -0500
+Received: from mo2.mail-out.ovh.net ([178.32.228.2]:53093 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab2KTUCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:00:57 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 67.169.73.11
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/vdRxfjTFxLS263IOvN/GA
-Date: Tue, 20 Nov 2012 12:00:53 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Omar Ramirez Luna <omar.luna@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 0/6] Move rest of omap-iommu to live in drivers/iommu
-Message-ID: <20121120200051.GN18567@atomide.com>
-References: <20121102192221.4253.34303.stgit@muffinssi.local>
- <CAK=WgbYR8UMyDjySJLRC0tEbJO3FaFgjWxceNwMyVdMgEgwPig@mail.gmail.com>
- <CALLhW=5WNg8X0nX8U+AExocyNKW=wJ7oS36xg4ENMnfyJkX8RQ@mail.gmail.com>
- <20121112220033.GO6801@atomide.com>
- <20121117121021.GS25742@8bytes.org>
+	Tue, 20 Nov 2012 15:02:14 -0500
+Date: Tue, 20 Nov 2012 21:00:14 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [GIT PULL] at91: fixes for 3.7-rc7
+Message-ID: <20121120200014.GN4398@game.jcrosoft.org>
+References: <50AA5ED5.8090901@atmel.com>
+ <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
+ <50AA6C76.3000606@atmel.com>
+ <CACRpkdbP0kRvt29vdMi2rR_c8xTv3+MrVgHg+V66B29SAtU+1Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121117121021.GS25742@8bytes.org>
+In-Reply-To: <CACRpkdbP0kRvt29vdMi2rR_c8xTv3+MrVgHg+V66B29SAtU+1Q@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16267564806060878813
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joerg Roedel <joro@8bytes.org> [121117 04:12]:
-> On Mon, Nov 12, 2012 at 02:00:34PM -0800, Tony Lindgren wrote:
-> > Assuming Joerg is OK with these changes, I can push them into
-> > an immutable branch that Joerg can merge in as needed.
-> > 
-> > Further patches on top of this series can then be queued by
-> > Joerg as arch/arm/*omap* and me are then out of the way of
-> > iommu development.
+On 19:47 Tue 20 Nov     , Linus Walleij wrote:
+> On Mon, Nov 19, 2012 at 6:29 PM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 > 
-> Okay, from my side:
+> > If you do not take it for 3.7, maybe we will have to queue these patches
+> > on top of our AT91 pinctrl work (on Linus Walleij side), so, you do need
+> > to queue this one for the moment...
 > 
-> Acked-by: Joerg Roedel <joro@8bytes.org>
-> 
-> Please let me know which branch I need to pull into my tree when you
-> merged these patches.
+> Tell me what the outcome is, if I should merge some stuff on top
+> of my pinctrl tree just send me the patches...
+I send you the pull with  few patch for pinctrl
 
-Thanks, I've pushed it out to omap-for-v3.8/cleanup-headers-iommu at
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
-so you can merge it into the iommu tree.
-
-Regards,
-
-Tony
+Best Regards,
+J.
