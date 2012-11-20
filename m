@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab2KTXw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:52:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab2KTXwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:52:24 -0500
-Date: Tue, 20 Nov 2012 21:51:47 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
-Message-ID: <20121120235147.GA12391@amt.cnet>
-References: <5097AC70.1080904@linux.vnet.ibm.com>
- <5097ACA0.7080408@linux.vnet.ibm.com>
- <20121112231223.GC5798@amt.cnet>
- <50A20750.8050808@linux.vnet.ibm.com>
- <20121120221853.GA31427@amt.cnet>
- <50AC10EE.8000008@linux.vnet.ibm.com>
+	id S1753894Ab2KTXxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:53:32 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64815 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab2KTXxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 18:53:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AC10EE.8000008@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121120235353.3092c8d2@pyramind.ukuu.org.uk>
+References: <20121120204238.GA19554@www.outflux.net>
+	<20121120211312.57f1b63d@pyramind.ukuu.org.uk>
+	<CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
+	<20121120235353.3092c8d2@pyramind.ukuu.org.uk>
+Date: Tue, 20 Nov 2012 15:53:30 -0800
+X-Google-Sender-Auth: txt2x8lv9j-G5miWhKhMVm65noY
+Message-ID: <CAGXu5jKS1OQPxiBPewtfOTJqntOMFnw4n08-zP7=87nD+z6eSg@mail.gmail.com>
+Subject: Re: [PATCH v2] devtmpfs: mount with noexec and nosuid
+From: Kees Cook <keescook@chromium.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ellyjones@chromium.org, Kay Sievers <kay@vrfy.org>,
+        Roland Eggner <edvx1@systemanalysen.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 07:23:26AM +0800, Xiao Guangrong wrote:
-> On 11/21/2012 06:18 AM, Marcelo Tosatti wrote:
-> 
-> >>>> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
-> >>>> -			drop_parent_pte(child, sptep);
-> >>>> -			kvm_flush_remote_tlbs(vcpu->kvm);
-> >>>
-> >>> How come its safe to drop this case?
-> >>
-> >> We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
-> >> There are two cases:
-> >> 1) the sptep is not the last mapping.
-> >>    under this case, sptep must point to a shadow page table, that means
-> >>    spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
-> >>    so, 'if' condition must be satisfied, the sptep will be dropped.
-> >>
-> >>    Actually, This is the origin case:
-> >>   | if (level > PT_PAGE_TABLE_LEVEL &&
-> >>   |	    !is_large_pte(*sptep))"
-> >>
-> >> 2) the sptep is the last mapping.
-> >>    under this case, the level of spte (sp.level) must equal the 'level' which
-> >>    we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
-> >>    we drop it.
-> >>
-> >> I think this is safe. :)
-> > 
-> > mmu_page_zap_pte takes care of it, OK.
-> > 
-> > What if was_rmapped=true but gfn is different? Say if the spte comes
-> > from an unsync shadow page, the guest modifies that shadow page (but
-> > does not invalidate it with invlpg), then faults. gfn can still point
-> > to the same gfn (but in that case, with your patch,
-> > page_header_update_slot is not called.
-> 
-> Marcelo,
-> 
-> Page fault path and other sync/prefetch paths will reread guest page table,
-> then it get a different target pfn.
-> 
-> The scenario is like this:
-> 
-> gfn1 = pfn1, gfn2 = pfn2
-> gpte = pfn1, spte is shadowed by gpte and it is a unsync spte
-> 
-> Guest                               Host
->                                      spte = (gfn1, pfn1)
-> 
-> modify gpte to let it point to gfn2
->                                     spte = (gfn1, pfn1)
-> page-fault on gpte
->                                     intercept the page-fault, then
->                                     want to update spte to (gfn2, pfn2)
-> 
->                                     in mmu_set_spte, we can detect
->                                     pfn2 != pfn1, then drop it.
-> 
-> Hmm, the interesting thing is what if different gfns map to the same pfn.
-> For example, spte1 is shadowed by gfn1 and spte2 is shadowed by pfn2, both
-> gfn1 and gfn2 map to pfn, the code (including the current code) will set
-> spte1 to the gfn2's rmap and spte2 to the gfn1's rmap. But i think it is ok.
+On Tue, Nov 20, 2012 at 3:53 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> > 1. Why not just have your userspace mount -o remount the file system this
+>> > way already in early boot. (and if you trojanned boot that early then any
+>> > supposed security gain is already lost)
+>>
+>> That's certainly possible, but I am hoping to avoid adding any extra
+>> boot time. The kernel is responsible for this mount, so its flags
+>> should be configurable, resulting in no time penalty anywhere.
+>
+> You just broke my bullshitometer
+>
+> It's a single syscall from your init binary, its microseconds.
 
-Current code updates gfn properly in set_spte by
-page_header_update_slot. 
+Whatever, I still see it as a needless inefficiency.
 
-Better keep state properly.
+>> > 2. If you want to do this right then you need to work out what you are
+>> > trying to prevent. Your devtmpfs can force file permissions on the
+>> > underlying device nodes by having its own operation handling for chmod.
+>> >
+>> > At that point you can force permissions on anything that you want to
+>> > avoid floating around that filesystem with other rights, while not
+>> > touching it on device or directory nodes where the meaning is different.
+>> >
+>> > In its current form however it appears to be a kernel implementation of
+>> > "mount is too hard".
+>>
+>> This change also stops mmap() with PROT_EXEC which a chmod handler
+>> wouldn't be able to do.
+>
+> You don't want to stop mmap with PROT_EXEC on /dev/mem as that breaks a
+> load of stuff, you want to stop people adding stuff to that file system
+> and executing it.
 
+Well, initially the latter, yes. But as it turns out, setting noexec
+also stops PROT_EXEC on /dev/mem. Since the systems I'm building for
+all use KMS, there's no need to execute regions of /dev/mem (e.g. VESA
+BIOS init, etc).
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
