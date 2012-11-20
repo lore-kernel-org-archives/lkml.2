@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2KTQOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:14:31 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41062 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752621Ab2KTQO2 (ORCPT
+	id S1753428Ab2KTQQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:16:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51732 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab2KTQQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:14:28 -0500
-Date: Tue, 20 Nov 2012 11:14:27 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: 3.4.4: disabling irq
-In-Reply-To: <50AB96A0.80009@xs4all.nl>
-Message-ID: <Pine.LNX.4.44L0.1211201112360.1692-100000@iolanthe.rowland.org>
+	Tue, 20 Nov 2012 11:16:44 -0500
+Date: Tue, 20 Nov 2012 16:16:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, linus.walleij@stericsson.com,
+        jonas.aberg@stericsson.com, will.deacon@arm.com, arnd@arndb.de,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Subject: Re: [PATCH 1/2] Boottime: A tool for automatic measurement of
+ kernel/bootloader boot time
+Message-ID: <20121120161638.GD28265@gmail.com>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org>
+ <1352973847-21605-2-git-send-email-lee.jones@linaro.org>
+ <CAH9JG2UX0Wyr-QKw3=tbUXeuEhHe04_cFkkAp6bB2Rr-x7ViHQ@mail.gmail.com>
+ <20121115112543.GC21682@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121115112543.GC21682@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Udo van den Heuvel wrote:
-
-> > Secondly, try building a kernel with the patch below and 
-> > CONFIG_USB_DEBUG enabled.  Let's see what the dmesg log says when the 
-> > problem occurs.
+> > > +/* for automatic boot timing testcases */
+> > > +#define ATAG_BOOTTIME  0x41000403
+> > Where can I refer this ATAG usage? can you point out the reference URL
+> > or patches?
 > 
-> I just booted into 3.6.7 with the patch:
+> I assumed this would be in Mainline u-boot, but apparently not.
+> On closer inspection of the internal ST-Ericsson u-boot, this
+> functionality appears to be provided by patches which currently
+> exist as delta. So in essence, the bootloader you use will have
+> to be patched in a similar way for you to retrieve information
+> surrounding bootloader boot times.
 > 
-> # dmesg|sort|uniq
-> ohci_hcd 0000:00:12.0: IRQ: 24 8000005a
-> ohci_hcd 0000:00:14.5: IRQ: 24 8000005a
-> #
-> 
-> So what does this mean?
-> I did not get the `disabling irq` yet.
+> And there was me thinking it was magic. ;)
 
-It means your system was working normally.  Which you already knew, 
-because the IRQ didn't get disabled.
+Okay, so I'm going through the motions of upstreaming this magic
+now. Please see the link below for reference:
 
-Alan Stern
+http://marc.info/?l=u-boot&m=135342273317337&w=2
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
