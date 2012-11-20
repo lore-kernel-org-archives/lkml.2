@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab2KTHG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:06:27 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38772 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab2KTHG0 (ORCPT
+	id S1752264Ab2KTHGk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:06:40 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:49167 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab2KTHGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:06:26 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50AB2BCF.2050204@jp.fujitsu.com>
-Date: Tue, 20 Nov 2012 16:05:51 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
-        john.r.fastabend@intel.com, nhorman@tuxdriver.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] cgroup: add cgroup->id
-References: <1353093624-22608-1-git-send-email-tj@kernel.org> <1353093624-22608-2-git-send-email-tj@kernel.org> <50AB086E.70901@jp.fujitsu.com> <20121120053112.GE25790@mtj.dyndns.org>
-In-Reply-To: <20121120053112.GE25790@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 02:06:38 -0500
+From: Tejun Heo <tj@kernel.org>
+To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
+Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCHSET v2 cgroup/for-3.8] netcls/prio_cgroup: update hierarchy support
+Date: Mon, 19 Nov 2012 23:06:23 -0800
+Message-Id: <1353395190-4530-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/20 14:31), Tejun Heo wrote:
-> Hello, Kamezawa.
->
-> On Tue, Nov 20, 2012 at 01:34:54PM +0900, Kamezawa Hiroyuki wrote:
->> I'm sorry if I misunderstand ... current usage of css-id in memory/swap cgroup
->> is for recording information of memory cgroup which may be destroyed. In some case,
->> a memcg's cgroup is freed but a struct memcgroup and its css are available, swap_cgroup
->> may contain id ot if.
->> This patch puts cgroup's id at diput(), so, the id used in swap_cgroup can be
->> reused while it's in use. Right ?
->
-> CSSes hold onto cgroups, so if memcg is around, its cgroup doesn't go
-> away, so the right thing to do would be holding onto CSS whlie there
-> are remaining references, which IMHO is the way it should have been
-> implemented from the beginning.  The only reason memcg currently has
-> its own refcnt nested inside css refcnt is because cgroup used to
-> require css refs to be completely drained for cgroup_rmdir() to
-> proceed.  Now that that weirdity is gone, we should go back to sane
-> css based reference counting, right?
->
+Hello, guys.
 
-Ah, hm, Maybe I missed new __css_put() implementation...
+This patchset replaces the following two patchsets.
 
-> void __css_put(struct cgroup_subsys_state *css)
-> {
->         struct cgroup *cgrp = css->cgroup;
->         int v;
->
->         rcu_read_lock();
->         v = css_unbias_refcnt(atomic_dec_return(&css->refcnt));
->
->         switch (v) {
->         case 1:
->                 if (notify_on_release(cgrp)) {
->                         set_bit(CGRP_RELEASABLE, &cgrp->flags);
->                         check_for_release(cgrp);
->                 }
->                 break;
->         case 0:
->                 schedule_work(&css->dput_work);
->                 break;
->         }
->         rcu_read_unlock();
-> }
+ [1] "[PATCHSET cgroup/for-3.8] netprio_cgroup: implement hierarchy support"
+ [2] "[PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy support"
 
-If swap_cgroup holds css's refcnt instead of memcg's....
-final dput will be invoked when the last swap_cgroup release a reference.
+It turns out that we'll have to live with attributes which are
+inherited only while creating a new cgroup - such attributes are
+already in wide use in cpuset, and there doesn't seem to be much point
+in trying to implement fully hierarchical behavior on all attributes
+especially as it requires an otherwise-unnecessary userland behavior
+change on netcls_cgroup.
 
-It seems to work and we can drop memcg's refcnt (maybe).
+This patchset drop .broken_hierarchy from netcls_cgroup while
+retaining the current behavior, and implements the same behavior on
+netprio_cgroup.
 
-BTW, css's ID was limited to 65535 to be encoded in 2bytes.
-If we use INT, this will increase size of swap_cgroup.
-(2bytes per page => 4bytes per page) It's preallocated at swapon()
-because allocating memory dynamically when we swap a memory is not good.
+ 0001-netcls_cgroup-move-config-inheritance-to-css_online-.patch
+ 0002-netprio_cgroup-simplify-write_priomap.patch
+ 0003-netprio_cgroup-shorten-variable-names-in-extend_netd.patch
+ 0004-netprio_cgroup-reimplement-priomap-expansion.patch
+ 0005-netprio_cgroup-use-cgroup-id-instead-of-cgroup_netpr.patch
+ 0006-netprio_cgroup-implement-netprio-_set-_prio-helpers.patch
+ 0007-netprio_cgroup-allow-nesting-and-inherit-config-on-c.patch
 
-Do we really need 4bytes for ID ? If so, swap_cgroup should be totally re-designed.
+0001 drops .broken_hierarchy from netcls_cgroup.
 
-Thanks,
--Kame
+0002-0006 prepare for inheritance implementation.  These patches are
+identical from the previous posting[1].
 
+0007 implements inheritance on cgroup creation.
 
+This patchset is on top of cgroup/for-3.8 0a950f65e1 ("cgroup: add
+cgroup->id").
 
+and available in the following git branch.
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-net-cls-prio-hierarchy
 
+diffstat follows.
 
+ Documentation/cgroups/net_prio.txt |    2
+ include/net/netprio_cgroup.h       |   11 -
+ net/core/netprio_cgroup.c          |  254 ++++++++++++++++---------------------
+ net/sched/cls_cgroup.c             |   20 +-
+ 4 files changed, 124 insertions(+), 163 deletions(-)
 
+Thanks.
 
+--
+tejun
 
-
-
-
-
-
-
-
+[1] https://lkml.org/lkml/2012/11/16/514
+[2] http://thread.gmane.org/gmane.linux.kernel.cgroups/5094
