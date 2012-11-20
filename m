@@ -1,192 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab2KTHU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:20:58 -0500
-Received: from gate.crashing.org ([63.228.1.57]:49322 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab2KTHU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:20:56 -0500
-Message-ID: <1353396032.17856.7.camel@pasglop>
-Subject: Re: [PATCH] PCI: MSI: Restore read_msi_msg_desc(); add
- get_cached_msi_msg_desc()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Nov 2012 18:20:32 +1100
-In-Reply-To: <1279893388.2089.9.camel@achroite.uk.solarflarecom.com>
-References: <20100723102202.871a3131.sfr@canb.auug.org.au>
-	 <1279847985.4883.391.camel@localhost> <1279850740.6381.19.camel@concordia>
-	 <1279893388.2089.9.camel@achroite.uk.solarflarecom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752246Ab2KTHWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:22:24 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39528 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751426Ab2KTHWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 02:22:23 -0500
+Message-ID: <50AB26D2.5090602@vmware.com>
+Date: Tue, 20 Nov 2012 07:44:34 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Dave Airlie <airlied@gmail.com>
+CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] drm/ttm, drm/vmwgfx: Use RCU locking for object lookups
+ v3
+References: <1352201511-6383-1-git-send-email-thellstrom@vmware.com> <1352201511-6383-4-git-send-email-thellstrom@vmware.com> <CAPM=9txb2aQ6zXYKdxDiuL0jOBA9epM_kBT8zeOOcUDN42gQ_w@mail.gmail.com>
+In-Reply-To: <CAPM=9txb2aQ6zXYKdxDiuL0jOBA9epM_kBT8zeOOcUDN42gQ_w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-23 at 14:56 +0100, Ben Hutchings wrote:
-> commit 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 "PCI: MSI: Remove
-> unsafe and unnecessary hardware access" changed read_msi_msg_desc() to
-> return the last MSI message written instead of reading it from the
-> device, since it may be called while the device is in a reduced
-> power state.
+On 11/20/2012 07:19 AM, Dave Airlie wrote:
+> On Tue, Nov 6, 2012 at 9:31 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>> The mostly used lookup+get put+potential_destroy path of TTM objects
+>> is converted to use RCU locks. This will substantially decrease the amount
+>> of locked bus cycles during normal operation.
+>> Since we use kfree_rcu to free the objects, no rcu synchronization is needed
+>> at module unload time.
+> As this is the first use of RCU in a drm driver from what I can see,
+> let me remind that the
+> RCU patent agreement AFAIK only covers GPL works.
+>
+> So non-GPL or other OSes porting this code should take not of this.
+>
+> Dave.
 
-Looks reasonable... Jesse ?
+ From VMware's side this won't be a problem, since other VMware kernel 
+modules (VMCI IIRC) use RCU.
 
-Cheers,
-Ben.
+In any case I have a new version of the "vmwgfx optimization" patch 
+series that mostly add documentation and
+annotation (by  using a drm_ht_xxx_rcu) interface for hashtab, after an 
+internal review by Dmitry Torkov. I see you've already
+applied the original patch series. Do you want me to send out the new 
+one or rebase it against current drm-next?
 
-> However, the pSeries platform code really does need to read messages
-> from the device, since they are initially written by firmware.
-> Therefore:
-> - Restore the previous behaviour of read_msi_msg_desc()
-> - Add new functions get_cached_msi_msg{,_desc}() which return the
->   last MSI message written
-> - Use the new functions where appropriate
-> 
-> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-> ---
-> Compile-tested only.
-> 
-> Ben.
-> 
->  arch/ia64/kernel/msi_ia64.c    |    2 +-
->  arch/ia64/sn/kernel/msi_sn.c   |    2 +-
->  arch/x86/kernel/apic/io_apic.c |    2 +-
->  drivers/pci/msi.c              |   47 +++++++++++++++++++++++++++++++++++----
->  include/linux/msi.h            |    2 +
->  5 files changed, 47 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-> index 6c89228..4a746ea 100644
-> --- a/arch/ia64/kernel/msi_ia64.c
-> +++ b/arch/ia64/kernel/msi_ia64.c
-> @@ -25,7 +25,7 @@ static int ia64_set_msi_irq_affinity(unsigned int irq,
->  	if (irq_prepare_move(irq, cpu))
->  		return -1;
->  
-> -	read_msi_msg(irq, &msg);
-> +	get_cached_msi_msg(irq, &msg);
->  
->  	addr = msg.address_lo;
->  	addr &= MSI_ADDR_DEST_ID_MASK;
-> diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
-> index ebfdd6a..0c72dd4 100644
-> --- a/arch/ia64/sn/kernel/msi_sn.c
-> +++ b/arch/ia64/sn/kernel/msi_sn.c
-> @@ -175,7 +175,7 @@ static int sn_set_msi_irq_affinity(unsigned int irq,
->  	 * Release XIO resources for the old MSI PCI address
->  	 */
->  
-> -	read_msi_msg(irq, &msg);
-> +	get_cached_msi_msg(irq, &msg);
->          sn_pdev = (struct pcidev_info *)sn_irq_info->irq_pciioinfo;
->  	pdev = sn_pdev->pdi_linux_pcidev;
->  	provider = SN_PCIDEV_BUSPROVIDER(pdev);
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index e41ed24..4dc0084 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -3397,7 +3397,7 @@ static int set_msi_irq_affinity(unsigned int irq, const struct cpumask *mask)
->  
->  	cfg = desc->chip_data;
->  
-> -	read_msi_msg_desc(desc, &msg);
-> +	get_cached_msi_msg_desc(desc, &msg);
->  
->  	msg.data &= ~MSI_DATA_VECTOR_MASK;
->  	msg.data |= MSI_DATA_VECTOR(cfg->vector);
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 4c14f31..69b7be3 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -197,9 +197,46 @@ void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
->  {
->  	struct msi_desc *entry = get_irq_desc_msi(desc);
->  
-> -	/* We do not touch the hardware (which may not even be
-> -	 * accessible at the moment) but return the last message
-> -	 * written.  Assert that this is valid, assuming that
-> +	BUG_ON(entry->dev->current_state != PCI_D0);
-> +
-> +	if (entry->msi_attrib.is_msix) {
-> +		void __iomem *base = entry->mask_base +
-> +			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
-> +
-> +		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
-> +		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
-> +		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
-> +	} else {
-> +		struct pci_dev *dev = entry->dev;
-> +		int pos = entry->msi_attrib.pos;
-> +		u16 data;
-> +
-> +		pci_read_config_dword(dev, msi_lower_address_reg(pos),
-> +					&msg->address_lo);
-> +		if (entry->msi_attrib.is_64) {
-> +			pci_read_config_dword(dev, msi_upper_address_reg(pos),
-> +						&msg->address_hi);
-> +			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
-> +		} else {
-> +			msg->address_hi = 0;
-> +			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
-> +		}
-> +		msg->data = data;
-> +	}
-> +}
-> +
-> +void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-> +{
-> +	struct irq_desc *desc = irq_to_desc(irq);
-> +
-> +	read_msi_msg_desc(desc, msg);
-> +}
-> +
-> +void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
-> +{
-> +	struct msi_desc *entry = get_irq_desc_msi(desc);
-> +
-> +	/* Assert that the cache is valid, assuming that
->  	 * valid messages are not all-zeroes. */
->  	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
->  		 entry->msg.data));
-> @@ -207,11 +244,11 @@ void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
->  	*msg = entry->msg;
->  }
->  
-> -void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-> +void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
->  {
->  	struct irq_desc *desc = irq_to_desc(irq);
->  
-> -	read_msi_msg_desc(desc, msg);
-> +	get_cached_msi_msg_desc(desc, msg);
->  }
->  
->  void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
-> diff --git a/include/linux/msi.h b/include/linux/msi.h
-> index 6991ab5..91b05c1 100644
-> --- a/include/linux/msi.h
-> +++ b/include/linux/msi.h
-> @@ -14,8 +14,10 @@ struct irq_desc;
->  extern void mask_msi_irq(unsigned int irq);
->  extern void unmask_msi_irq(unsigned int irq);
->  extern void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
-> +extern void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
->  extern void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
->  extern void read_msi_msg(unsigned int irq, struct msi_msg *msg);
-> +extern void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg);
->  extern void write_msi_msg(unsigned int irq, struct msi_msg *msg);
->  
->  struct msi_desc {
-> -- 
-> 1.6.2.5
-> 
-
+Thanks,
+Thomas
 
