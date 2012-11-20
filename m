@@ -1,239 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2KTI7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:59:32 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64890 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab2KTI7a (ORCPT
+	id S1752817Ab2KTJGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:06:49 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62607 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2KTJGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:59:30 -0500
+	Tue, 20 Nov 2012 04:06:45 -0500
+Date: Tue, 20 Nov 2012 10:06:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121120090637.GA14873@gmail.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+ <20121120060014.GA14065@gmail.com>
+ <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+ <20121120074445.GA14539@gmail.com>
+ <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <50AB34E2.1010206@samsung.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-	<50AB34E2.1010206@samsung.com>
-Date: Tue, 20 Nov 2012 16:59:28 +0800
-Message-ID: <CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Hello,
->
->
-> On 11/14/2012 8:11 AM, Kevin Liu wrote:
->>
->> > From: linux-mmc-owner@vger.kernel.org
->> > [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
->> > Sent: Tuesday, November 13, 2012 10:14 PM
->> > To: Marek Szyprowski
->> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org; Kyungmin
->> > Park; Mark Brown; Liam Girdwood; Philip Rakity
->> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for
->> > non-fixed regulators
->> >
->> > Hi,
->> >
->> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >>> > Fixed regulators cannot change their voltage, so disable all voltage
->> >>> > range checking for them, otherwise the driver fails to operate with
->> >>> > fixed regulators. Up to now it worked only by luck, because
->> >>> > regulator_is_supported_voltage() function returned incorrect values.
->> >>> > Commit "regulator: fix voltage check in
->> >>> > regulator_is_supported_voltage()"
->> >>> > fixed that function and now additional check is needed for fixed
->> >>> > regulators.
->> >>> >
->> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> >>> > ---
->> >>> >  drivers/mmc/host/sdhci.c |    2 +-
->> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >>> >
->> >>> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> >>> > index c7851c0..6f6534e 100644
->> >>> > --- a/drivers/mmc/host/sdhci.c
->> >>> > +++ b/drivers/mmc/host/sdhci.c
->> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
->> >>> >            regulator_enable(host->vmmc);
->> >>> >
->> >>> >  #ifdef CONFIG_REGULATOR
->> >>> > -  if (host->vmmc) {
->> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
->> >>> >            ret = regulator_is_supported_voltage(host->vmmc, 3300000,
->> >>> >                    3300000);
->> >>> >            if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->> >>>
->> >>> Thanks for the longer explanation.  I'm still missing something,
->> >>> though;
->> >>> what's wrong with running the check as it was with the new regulator
->> >>> code?
->> >>> (I haven't tried it yet.)
->> >>>
->> >>> #ifdef CONFIG_REGULATOR
->> >>>          if (host->vmmc) {
->> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
->> >>> 3300000,
->> >>>                          3300000);
->> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
->> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
->> >>> 3000000,
->> >>>                          3000000);
->> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
->> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
->> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
->> >>> 1800000,
->> >>>                          1800000);
->> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
->> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
->> >>>          }
->> >>> #endif /* CONFIG_REGULATOR */
->> >>>
->> >>> The point is to remove unsupported voltages, so if someone sets up a
->> >>> fixed regulator at 3300000, all of the other caps are disabled.  Why
->> >>> wouldn't that work without this change, and how are we supposed to
->> >>> remove those caps on a fixed regulator after your patchset?
->> >>>
->> >>> Thanks, sorry if I'm missing something obvious,
->> >>
->> >> On our boards eMMC is connected to fixed 2.8V regulator, what results
->> >> in
->> >> clearing all available voltages and fail. The same situation is when
->> >> one
->> >> enable dummy regulator and try to use sdhci with it. My patch fixes
->> >> this
->> >> and restores sdhci to working state as it was before (before fixing
->> >> regulator regulator_is_supported_voltage() function and earlier when
->> >> MMC_BROKEN_VOLATGE capability was used).
->> >
->> > I see.  Sounds like a separate bug -- Philip (or anyone else), any
->> > idea how we should be treating eMMCs with a fixed voltage here?
->> >
->>
->> I think we should check the voltage range rather than the voltage
->> point accoring to the spec.
->> Otherwise some valid voltage like 2.8v will be discarded by mistake.
->> My below old patch aim to fix this issue.
->> How do you think?
->>
->> -----Original Message-----
->> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
->> Sent: Friday, September 28, 2012 3:56 PM
->> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
->> ulf.hansson@linaro.org; Zhangfei Gao
->> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing Fu
->> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
->> range according to spec
->>
->> From: Kevin Liu <kliu5@marvell.com>
->>
->> For regulator vmmc/vmmcq, use voltage range as below
->> 3.3v/3.0v: (2.7v, 3.6v)
->> 1.8v: (1.7v, 1.95v)
->> Original code use the specific value which may fail in regulator
->> driver if it does NOT support the specific voltage.
->>
->> Signed-off-by: Jialing Fu <jlfu@marvell.com>
->> Signed-off-by: Kevin Liu <kliu5@marvell.com>
->
->
-> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
->
-> This patch restores sdhci devices to working state on Samsung boards
-> (tested on GONI and UniversalC210) after merging "regulator: fix voltage
-> check in regulator_is_supported_voltage()" patch to v3.7-rc6 (commit
-> f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have it
-> merged before the final v3.7 is out.
->
-Marek,
 
-thanks a lot for the verification!
-And your patch "mmc: sdhci: apply voltage range check only for
-non-fixed regulators" (commit
-d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
-mmc-next) can be reverted if this patch merged?
+* David Rientjes <rientjes@google.com> wrote:
 
-Kevin
->> ---
->>   drivers/mmc/host/sdhci.c |   16 +++++++---------
->>   1 files changed, 7 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> index 3aef580..36afd47 100644
->> --- a/drivers/mmc/host/sdhci.c
->> +++ b/drivers/mmc/host/sdhci.c
->> @@ -1628,7 +1628,7 @@ static int
->> sdhci_do_3_3v_signal_voltage_switch(struct sdhci_host *host,
->>         sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
->>
->>         if (host->vqmmc) {
->> -               ret = regulator_set_voltage(host->vqmmc, 3300000,
->> 3300000);
->> +               ret = regulator_set_voltage(host->vqmmc, 2700000,
->> 3600000);
->>                 if (ret) {
->>                         pr_warning("%s: Switching to 3.3V signalling
->> voltage "
->>                                    " failed\n", mmc_hostname(host->mmc));
->> @@ -1672,7 +1672,7 @@ static int
->> sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
->>                  */
->>                 if (host->vqmmc)
->>                         ret = regulator_set_voltage(host->vqmmc,
->> -                               1800000, 1800000);
->> +                               1700000, 1950000);
->>                 else
->>                         ret = 0;
->>
->> @@ -2856,7 +2856,7 @@ int sdhci_add_host(struct sdhci_host *host)
->>                 pr_info("%s: no vqmmc regulator found\n",
->> mmc_hostname(mmc));
->>                 host->vqmmc = NULL;
->>         }
->> -       else if (regulator_is_supported_voltage(host->vqmmc, 1800000,
->> 1800000))
->> +       else if (regulator_is_supported_voltage(host->vqmmc, 1700000,
->> 1950000))
->>                 regulator_enable(host->vqmmc);
->>         else
->>                 caps[1] &= ~(SDHCI_SUPPORT_SDR104 | SDHCI_SUPPORT_SDR50 |
->> @@ -2927,16 +2927,14 @@ int sdhci_add_host(struct sdhci_host *host)
->>
->>   #ifdef CONFIG_REGULATOR
->>         if (host->vmmc) {
->> -               ret = regulator_is_supported_voltage(host->vmmc, 3300000,
->> -                       3300000);
->> +               ret = regulator_is_supported_voltage(host->vmmc, 2700000,
->> +                       3600000);
->>                 if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_330))
->>                         caps[0] &= ~SDHCI_CAN_VDD_330;
->> -               ret = regulator_is_supported_voltage(host->vmmc, 3000000,
->> -                       3000000);
->>                 if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_300))
->>                         caps[0] &= ~SDHCI_CAN_VDD_300;
->> -               ret = regulator_is_supported_voltage(host->vmmc, 1800000,
->> -                       1800000);
->> +               ret = regulator_is_supported_voltage(host->vmmc, 1700000,
->> +                       1950000);
->>                 if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_180))
->>                         caps[0] &= ~SDHCI_CAN_VDD_180;
->>         }
->
->
-> Best regards
-> --
-> Marek Szyprowski
-> Samsung Poland R&D Center
->
->
+> On Tue, 20 Nov 2012, Ingo Molnar wrote:
+> 
+> > > This happened to be an Opteron (but not 83xx series), 2.4Ghz.  
+> > 
+> > Ok - roughly which family/model from /proc/cpuinfo?
+> 
+> It's close enough, it's 23xx.
+
+Ok - which family/model number in /proc/cpuinfo?
+
+I'm asking because that will matter most to page fault 
+micro-characteristics and the 23xx series existed in Barcelona 
+form as well (family/model of 16/2) and it still exists in its 
+current Shanghai form as well.
+
+My guess is Barcelona 16/2?
+
+If that is correct then the closest I can get to your topology 
+is a 4-socket 32-way Opteron system with 32 GB of RAM - which 
+seems close enough for testing purposes.
+
+But checking numa/core on such a system still keeps me 
+absolutely puzzled, as I get the following with a similar 
+16-warehouses SPECjbb 2005 test, using java -Xms8192m -Xmx8192m 
+-Xss256k sizing, THP enabled, 2x 240 seconds runs (I tried to 
+configure it all very close to yours), using -tip-a07005cbd847:
+
+         kernel             warehouses    transactions/sec
+         ---------          ----------
+         v3.7-rc6:          16            197802
+                            16            197997
+
+         numa/core:         16            203086
+                            16            203967
+
+So sadly numa/core is about 2%-3% faster on this 4x4 system too!
+:-/
+
+But I have to say, your SPECjbb score is uncharacteristically 
+low even for an oddball-topology Barcelona system - which is the 
+oldest/slowest system I can think of. So there might be more to 
+this.
+
+To further characterise a "good" SPECjbb run, there's no 
+page_fault overhead visible in perf top:
+
+Mainline profile:
+
+    94.99%  perf-1244.map     [.] 0x00007f04cd1aa523                 
+     2.52%  libjvm.so         [.] 0x00000000007004a1                 
+     0.62%  [vdso]            [.] 0x0000000000000972                 
+     0.31%  [kernel]          [k] clear_page_c                       
+     0.17%  [kernel]          [k] timekeeping_get_ns.constprop.7     
+     0.11%  [kernel]          [k] rep_nop                            
+     0.09%  [kernel]          [k] ktime_get                          
+     0.08%  [kernel]          [k] get_cycles                         
+     0.06%  [kernel]          [k] read_tsc                           
+     0.05%  libc-2.15.so      [.] __strcmp_sse2                      
+
+numa/core profile:
+
+    95.66%  perf-1201.map     [.] 0x00007fe4ad1c8fc7                 
+     1.70%  libjvm.so         [.] 0x0000000000381581                 
+     0.59%  [vdso]            [.] 0x0000000000000607                 
+     0.19%  [kernel]          [k] do_raw_spin_lock                   
+     0.11%  [kernel]          [k] generic_smp_call_function_interrupt
+     0.11%  [kernel]          [k] timekeeping_get_ns.constprop.7     
+     0.08%  [kernel]          [k] ktime_get                          
+     0.06%  [kernel]          [k] get_cycles                         
+     0.05%  [kernel]          [k] __native_flush_tlb                 
+     0.05%  [kernel]          [k] rep_nop                            
+     0.04%  perf              [.] add_hist_entry.isra.9              
+     0.04%  [kernel]          [k] rcu_check_callbacks                
+     0.04%  [kernel]          [k] ktime_get_update_offsets           
+     0.04%  libc-2.15.so      [.] __strcmp_sse2                      
+
+No page fault overhead (see the page fault rate further below) - 
+the NUMA scanning overhead shows up only through some mild TLB 
+flush activity (which I'll fix btw).
+
+[ Stupid question: cpufreq is configured to always-2.4GHz, 
+  right? If you could send me your kernel config (you can do 
+  that privately as well) then I can try to boot it and see. ]
+
+> > > It's perf top -U, the benchmark itself was unchanged so I 
+> > > didn't think it was interesting to gather the user 
+> > > symbols.  If that would be helpful, let me know!
+> > 
+> > Yeah, regular perf top output would be very helpful to get a 
+> > general sense of proportion. Thanks!
+> 
+> Ok, here it is:
+> 
+>     91.24%  perf-10971.map    [.] 0x00007f116a6c6fb8                            
+>      1.19%  libjvm.so         [.] instanceKlass::oop_push_contents(PSPromotionMa
+>      1.04%  libjvm.so         [.] PSPromotionManager::drain_stacks_depth(bool)  
+>      0.79%  libjvm.so         [.] PSPromotionManager::copy_to_survivor_space(oop
+>      0.60%  libjvm.so         [.] PSPromotionManager::claim_or_forward_internal_
+>      0.58%  [kernel]          [k] page_fault                                    
+>      0.28%  libc-2.3.6.so     [.] __gettimeofday                                        
+>      0.26%  libjvm.so         [.] Copy::pd_disjoint_words(HeapWord*, HeapWord*, unsigned
+>      0.22%  [kernel]          [k] getnstimeofday                                        
+>      0.18%  libjvm.so         [.] CardTableExtension::scavenge_contents_parallel(ObjectS
+>      0.15%  [kernel]          [k] _raw_spin_lock                                        
+>      0.12%  [kernel]          [k] ktime_get_update_offsets                              
+>      0.11%  [kernel]          [k] ktime_get                                             
+>      0.11%  [kernel]          [k] rcu_check_callbacks                                   
+>      0.10%  [kernel]          [k] generic_smp_call_function_interrupt                   
+>      0.10%  [kernel]          [k] read_tsc                                              
+>      0.10%  [kernel]          [k] clear_page_c                                          
+>      0.10%  [kernel]          [k] __do_page_fault                                       
+>      0.08%  [kernel]          [k] handle_mm_fault                                       
+>      0.08%  libjvm.so         [.] os::javaTimeMillis()                                  
+>      0.08%  [kernel]          [k] emulate_vsyscall                                      
+
+Oh, finally a clue: you seem to have vsyscall emulation 
+overhead!
+
+Vsyscall emulation is fundamentally page fault driven - which 
+might explain why you are seeing page fault overhead. It might 
+also interact with other sources of faults - such as numa/core's 
+working set probing ...
+
+Many JVMs try to be smart with the vsyscall. As a test, does the 
+vsyscall=native boot option change the results/behavior in any 
+way?
+
+Stupid question, if you apply the patch attached below and if 
+you do page fault profiling while the run is in steady state:
+
+   perf record -e faults -g -a sleep 10
+
+do you see it often coming from the vsyscall page?
+
+Also, this:
+
+   perf stat -e faults -a --repeat 10 sleep 1
+
+should normally report something like this during SPECjbb steady 
+state, numa/core:
+
+          warmup:   3,895 faults/sec                ( +- 12.11% )
+    steady state:   3,910 faults/sec                ( +-  6.72% )
+
+Which is about 250 faults/sec/CPU - i.e. it should be barely 
+recognizable in profiles - let alone be prominent as in yours.
+
+Thanks,
+
+	Ingo
+
+---
+ arch/x86/mm/fault.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux/arch/x86/mm/fault.c
+===================================================================
+--- linux.orig/arch/x86/mm/fault.c
++++ linux/arch/x86/mm/fault.c
+@@ -1030,6 +1030,9 @@ __do_page_fault(struct pt_regs *regs, un
+ 	/* Get the faulting address: */
+ 	address = read_cr2();
+ 
++	/* Instrument as early as possible: */
++	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
++
+ 	/*
+ 	 * Detect and handle instructions that would cause a page fault for
+ 	 * both a tracked kernel page and a userspace page.
+@@ -1107,8 +1110,6 @@ __do_page_fault(struct pt_regs *regs, un
+ 		}
+ 	}
+ 
+-	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+-
+ 	/*
+ 	 * If we're in an interrupt, have no user context or are running
+ 	 * in an atomic region then we must not take the fault:
