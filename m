@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2KTIcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:32:47 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:29290 "EHLO relay.sw.ru"
+	id S1753006Ab2KTIcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:32:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9471 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab2KTIcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:32:45 -0500
+	id S1752949Ab2KTIcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:32:47 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Turner <pjt@google.com>, Balbir Singh <bsingharora@gmail.com>,
         Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 2/6] cgroup: implement CFTYPE_NO_PREFIX
-Date: Tue, 20 Nov 2012 12:32:00 +0400
-Message-Id: <1353400324-10897-3-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>, Dave Jones <davej@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [PATCH 5/6] sched: adjust exec_clock to use it as cpu usage metric
+Date: Tue, 20 Nov 2012 12:32:03 +0400
+Message-Id: <1353400324-10897-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353400324-10897-1-git-send-email-glommer@parallels.com>
 References: <1353400324-10897-1-git-send-email-glommer@parallels.com>
@@ -23,49 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+exec_clock already provides per-group cpu usage metrics, and can be
+reused by cpuacct in case cpu and cpuacct are comounted.
 
-When cgroup files are created, cgroup core automatically prepends the
-name of the subsystem as prefix.  This patch adds CFTYPE_NO_PREFIX
-which disables the automatic prefix.
+However, it is only provided by tasks in fair class. Doing the same for
+rt is easy, and can be done in an already existing hierarchy loop. This
+is an improvement over the independent hierarchy walk executed by
+cpuacct.
 
-This will be used to deprecate cpuacct which will make cpu create and
-serve the cpuacct files.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Ben Hutchings <ben@decadent.org.uk>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+CC: Lennart Poettering <lennart@poettering.net>
+CC: Kay Sievers <kay.sievers@vrfy.org>
+CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h | 1 +
- kernel/cgroup.c        | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ kernel/sched/rt.c    | 1 +
+ kernel/sched/sched.h | 3 +++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index a178a91..018468b 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -272,6 +272,7 @@ struct cgroup_map_cb {
- /* cftype->flags */
- #define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
- #define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create onp root cg */
-+#define CFTYPE_NO_PREFIX	(1U << 2)	/* skip subsys prefix */
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 0c70807..68e9daf 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -945,6 +945,7 @@ static void update_curr_rt(struct rq *rq)
  
- #define MAX_CFTYPE_NAME		64
+ 	for_each_sched_rt_entity(rt_se) {
+ 		rt_rq = rt_rq_of_se(rt_se);
++		schedstat_add(rt_rq, exec_clock, delta_exec);
  
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3d68aad..4081fee 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2629,7 +2629,8 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 	if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
- 		return 0;
+ 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
+ 			raw_spin_lock(&rt_rq->rt_runtime_lock);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index bc05c05..854d2e9 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -208,6 +208,7 @@ struct cfs_rq {
+ 	unsigned int nr_running, h_nr_running;
  
--	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
-+	if (subsys && !(cft->flags & CFTYPE_NO_PREFIX) &&
-+	    !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
- 	}
+ 	u64 exec_clock;
++	u64 prev_exec_clock;
+ 	u64 min_vruntime;
+ #ifndef CONFIG_64BIT
+ 	u64 min_vruntime_copy;
+@@ -299,6 +300,8 @@ struct rt_rq {
+ 	struct plist_head pushable_tasks;
+ #endif
+ 	int rt_throttled;
++	u64 exec_clock;
++	u64 prev_exec_clock;
+ 	u64 rt_time;
+ 	u64 rt_runtime;
+ 	/* Nests inside the rq lock: */
 -- 
 1.7.11.7
 
