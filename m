@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab2KTIlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:41:42 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:41063 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab2KTIll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:41:41 -0500
-Date: Tue, 20 Nov 2012 09:41:35 +0100
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap: introduce tables for readable/writeable/volatile/precious checks
-Message-ID: <20121120084135.GC10665@mail.gnudd.com>
-References: <1353331913-24941-1-git-send-email-ciminaghi@gnudd.com> <20121120060509.GB10560@opensource.wolfsonmicro.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121120060509.GB10560@opensource.wolfsonmicro.com>
-X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
-	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+	id S1752514Ab2KTInO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:43:14 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:18256 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab2KTInN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:43:13 -0500
+Message-id: <50AB428A.3050700@samsung.com>
+Date: Tue, 20 Nov 2012 09:42:50 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
+MIME-version: 1.0
+To: Philip Rakity <prakity@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+References: <87fw4dn030.fsf@octavius.laptop.org>
+ <1352813534-6795-1-git-send-email-m.szyprowski@samsung.com>
+ <87bof1mx9m.fsf@octavius.laptop.org> <50A254A0.8000403@samsung.com>
+ <877gppmvyd.fsf@octavius.laptop.org>
+ <DB83372B-7C12-4670-8C46-207C4A56F8BD@nvidia.com>
+In-reply-to: <DB83372B-7C12-4670-8C46-207C4A56F8BD@nvidia.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 03:05:11PM +0900, Mark Brown wrote:
-> On Mon, Nov 19, 2012 at 02:31:53PM +0100, Davide Ciminaghi wrote:
-> > Many of the regmap enabled drivers implementing one or more of the
-> > readable, writeable, volatile and precious methods use the same code
-> > pattern:
-> > 
-> > 	return ((reg >= X && reg <= Y) || (reg >= W && reg <= Z) || ...)
-> > 
-> > Switch to a data driven approach, using tables to describe
-> > readable/writeable/volatile and precious registers ranges instead.
-> > The table based check can still be overridden by passing the usual function
-> > pointers via struct regmap_config.
-> 
-> Sorry, the code looks good but I just realised we already have a feature
-> called ranges - the paged window support also calls the regions it uses
-> ranges.  Can I suggest access_table or similar instead?  Sorry about
-> that - I should've realised.
 
-ok no problem, I'll change the name and resend.
+On 11/13/2012 10:23 PM, Philip Rakity wrote:
+> Hi Marek,
+>
+> Is the regulator dedicated ?  or is it shared ?   Is it used for eMMC ?
+>
+> If it cannot be turned off -- then just don't list it in the regulators list for vmmc.
+>
+> If it CAN be turned off then need to get back to you.
 
-Thanks and regards
-Davide
+It is dedicated to eMMC device and can be turned off. Patch "mmc: sdhci: 
+apply
+voltage range check only for non-fixed regulators" restored sdhci to 
+working state
+after merging the regulator fix. However there are lots of error 
+messages from sdhci
+driver:
+s3c-sdhci s3c-sdhci.0: could not set regulator OCR (-1)
+
+The only remaining problem is sdhci driver operation with dummy 
+regulator. Right now
+it simply fails to initialize if dummy regulator is enabled. Do you have 
+any idea how
+to fix it properly?
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
