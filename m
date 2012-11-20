@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2KTAMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:12:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52960 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab2KTAMv (ORCPT
+	id S1753740Ab2KTAPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:15:11 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40107 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752943Ab2KTAPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:12:51 -0500
-Date: Mon, 19 Nov 2012 16:12:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: kerolasa@gmail.com
-Cc: Sami Kerola <kerolasa@iki.fi>, Al Viro <viro@zeniv.linux.org.uk>,
-        Doug Ledford <dledford@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Karel Zak <kzak@redhat.com>
-Subject: Re: ipc: object information data in proc and sysfs
-Message-Id: <20121119161250.ae0b25ff.akpm@linux-foundation.org>
-In-Reply-To: <CAG27Bk1q5t590bvGg7Ka+2M-yWEMk_58sZsOxDKx-1XNn8mHww@mail.gmail.com>
-References: <CAG27Bk1q5t590bvGg7Ka+2M-yWEMk_58sZsOxDKx-1XNn8mHww@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 19:15:10 -0500
+X-Sasl-enc: nKKJBp2jZGEervt6mWHNyjnMPSlg6NTjOA4z4N+GCgsF 1353370509
+Message-ID: <50AACB7E.8060601@imap.cc>
+Date: Tue, 20 Nov 2012 01:14:54 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: possible regression in kernel 3.6: system hangs during nightly tape
+ backup
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1D6E4DB681D736380794D687"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Nov 2012 12:31:08 +0000
-Sami Kerola <kerolasa@iki.fi> wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1D6E4DB681D736380794D687
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-> Hello,
-> 
-> While back I started to look how to get util-linux ipcs(1) tool to
-> read values from /proc instead of using IPC multiplex functions.  Most
-> of the data ipcs(1) is interested is available in /proc, but there are
-> few exceptions, such as
-> 
-> msgctl q_qbytes
-> semctl getval
-> semctl sempid
-> semctl semncnt
-> semctl semzcnt
-> 
-> The simplest thing to do would be to add values in /proc/sysvipc/msg
-> and /proc/sysvipc/sem as additional fields, but that does not seem
-> right, as it would result to ABI change.
-> 
-> More effort requiring change would be to add information in new sysfs
-> paths.  The IPC facilities are using id's which could be used as
-> placeholder directories for the data needed.  Something like
-> 
-> /proc/sys/kernel/ipc/{m,s,q}/id/info
->                  ^^^^^^^^^^^^^^^^^^^
-> 
-> That sort of structure would allow future extensions IPC data without
-> much pain.  I also assume that subdirectories could allow a little
-> more precise controls, and perhaps some selected values might be made
-> writable in future.  If nothing else at least expressing in sensible
-> format semaphore lock wait queues could make debugging tools, such as
-> lslocks(8), more useful.
-> 
-> I could give a try this change, but not without hearing the concept
-> makes sense and could be considered part of upstream kernel (assuming
-> my coding meets the usual quality criteria).
-> 
-> Any thoughts, comments, recommendations?
+For the 4th time now after switching to kernel 3.6, my system became
+unresponsive during the nightly Bacula backup run. It looks as if
+all disk accesses are suddenly blocked:
+- Desktop apps stop responding one after another, starting with
+  Firefox followed by other "heavy" apps, while Konsole windows
+  continue being usable for a while.
+- "top" shows the load average steadily increasing with no process
+  actually consuming relevant quantities of CPU.
+- I can do "dmesg > /root/dmesg.out" followed by "less /root/dmesg.out"
+  in a Konsole window just fine, but after the inevitable hard reset
+  the file /root/dmesg.out isn't there.
+- The "sync" command hangs indefinitely.
+- The "shutdown" command and ctrl/alt/Del emit "system going down"
+  broadcast messages but never get anywhere.
+- Killing processes manually works for some (bacula-sd even ejects
+  the tape before exiting) but most remain in state D or Z.
+- Eventually, all text consoles are blocked and a hardware reset is
+  the only remaining option.
+- After the reboot, a Bacula spool file is left behind in
+  /var/spool/bacula, proof that the hang happened during the backup.
 
-Where's the benefit in switching ipcs over to using /proc?
+This does not happen during every backup run, but frequently enough
+to be annoying. (About once per week.) It never happened with kernel
+3.5. For comparison went back to kernel 3.5.7 for a week and it
+never happened during that time. Last night I booted 3.6.7 and the
+very next backup caused the hang again. The last kernel message that
+made it to the syslog on disk was
 
-procfs reads are probably slower than the syscalls?
+Nov 19 23:05:04 xenon kernel: [73877.128546] st0: Block limits 256 -
+524288 bytes.
+
+triggered by the start of the backup. In dmesg the next message was
+
+[74401.249091] INFO: task flush-253:2:1320 blocked for more than 120
+seconds.
+
+followed by a backtrace. I have photos of the remaining dmesg output
+which I'll try to upload somewhere accessible tomorrow.
+
+Hardware configuration:
+Intel Pentium D, Intel DQ965GF mainboard, 6 GB RAM
+onboard S-ATA controller driving two 500 GB S-ATA disks
+and a Pioneer DVR-216D DVD-RW drive
+Adaptec 29160B Ultra160 SCSI adapter driving a
+Tandberg TS400 LTO-2 tape drive
+
+Disk configuration: md RAID1, LVM, ext3 and ext4 volumes
+
+Software: Opensuse 11.4 64 bit, vanilla kernel 3.5.7 and 3.6.7,
+Bacula 5.2.12
+
+HTH
+T.
+
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+
+
+--------------enig1D6E4DB681D736380794D687
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iEYEARECAAYFAlCqy4wACgkQQ3+did9BuFv7NwCfQTN1HrT6TtX7b3A5YElwRLVH
+u4oAn3NWyKlJFcjrTSHe8ZSidnUivZif
+=bdu3
+-----END PGP SIGNATURE-----
+
+--------------enig1D6E4DB681D736380794D687--
