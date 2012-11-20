@@ -1,204 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab2KTPSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:18:41 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab2KTPRR (ORCPT
+	id S1753680Ab2KTPSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:18:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45101 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2KTPSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:17:17 -0500
-X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
-        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Cc: Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH v2 05/11] x86/xen: Register resources required by kexec-tools
-Date: Tue, 20 Nov 2012 16:04:47 +0100
-Message-Id: <1353423893-23125-6-git-send-email-daniel.kiper@oracle.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1353423893-23125-5-git-send-email-daniel.kiper@oracle.com>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-4-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-5-git-send-email-daniel.kiper@oracle.com>
-X-Bogosity: No, spamicity=0.006529
+	Tue, 20 Nov 2012 10:18:48 -0500
+Message-ID: <50AB9F4A.5050500@gmail.com>
+Date: Tue, 20 Nov 2012 23:18:34 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of pages
+ occupied by memmap
+References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <1353254850-27336-5-git-send-email-jiang.liu@huawei.com> <20121119154240.91efcc53.akpm@linux-foundation.org>
+In-Reply-To: <20121119154240.91efcc53.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register resources required by kexec-tools.
+On 11/20/2012 07:42 AM, Andrew Morton wrote:
+> On Mon, 19 Nov 2012 00:07:29 +0800
+> Jiang Liu <liuj97@gmail.com> wrote:
+> 
+>> If SPARSEMEM is enabled, it won't build page structures for
+>> non-existing pages (holes) within a zone, so provide a more accurate
+>> estimation of pages occupied by memmap if there are big holes within
+>> the zone.
+>>
+>> And pages for highmem zones' memmap will be allocated from lowmem,
+>> so charge nr_kernel_pages for that.
+>>
+>> ...
+>>
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -4435,6 +4435,22 @@ void __init set_pageblock_order(void)
+>>  
+>>  #endif /* CONFIG_HUGETLB_PAGE_SIZE_VARIABLE */
+>>  
+>> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
+>> +				      unsigned long present_pages)
+>> +{
+>> +	unsigned long pages = spanned_pages;
+>> +
+>> +	/*
+>> +	 * Provide a more accurate estimation if there are big holes within
+>> +	 * the zone and SPARSEMEM is in use.
+>> +	 */
+>> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
+>> +	    IS_ENABLED(CONFIG_SPARSEMEM))
+>> +		pages = present_pages;
+>> +
+>> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
+>> +}
+> 
+> Please explain the ">> 4" heuristc more completely - preferably in both
+> the changelog and code comments.  Why can't we calculate this
+> requirement exactly?  That might require a second pass, but that's OK for
+> code like this?
+Hi Andrew,
+	A normal x86 platform always have some holes within the DMA ZONE,
+so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
+ZONE on x86 platforms. 
+	Because the memmap_size is just an estimation, I feel it's OK to
+remove the ">> 4" heuristic, that shouldn't affect much.
 
-v2 - suggestions/fixes:
-   - change logging level
-     (suggested by Konrad Rzeszutek Wilk).
-
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
----
- arch/x86/xen/kexec.c |  150 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 150 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/xen/kexec.c
-
-diff --git a/arch/x86/xen/kexec.c b/arch/x86/xen/kexec.c
-new file mode 100644
-index 0000000..7ec4c45
---- /dev/null
-+++ b/arch/x86/xen/kexec.c
-@@ -0,0 +1,150 @@
-+/*
-+ * Copyright (c) 2011 Daniel Kiper
-+ * Copyright (c) 2012 Daniel Kiper, Oracle Corporation
-+ *
-+ * kexec/kdump implementation for Xen was written by Daniel Kiper.
-+ * Initial work on it was sponsored by Google under Google Summer
-+ * of Code 2011 program and Citrix. Konrad Rzeszutek Wilk from Oracle
-+ * was the mentor for this project.
-+ *
-+ * Some ideas are taken from:
-+ *   - native kexec/kdump implementation,
-+ *   - kexec/kdump implementation for Xen Linux Kernel Ver. 2.6.18,
-+ *   - PV-GRUB.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/ioport.h>
-+#include <linux/kernel.h>
-+#include <linux/kexec.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+
-+#include <xen/interface/platform.h>
-+#include <xen/interface/xen.h>
-+#include <xen/xen.h>
-+
-+#include <asm/xen/hypercall.h>
-+
-+unsigned long xen_vmcoreinfo_maddr = 0;
-+unsigned long xen_vmcoreinfo_max_size = 0;
-+
-+static int __init xen_init_kexec_resources(void)
-+{
-+	int rc;
-+	static struct resource xen_hypervisor_res = {
-+		.name = "Hypervisor code and data",
-+		.flags = IORESOURCE_BUSY | IORESOURCE_MEM
-+	};
-+	struct resource *cpu_res;
-+	struct xen_kexec_range xkr;
-+	struct xen_platform_op cpuinfo_op;
-+	uint32_t cpus, i;
-+
-+	if (!xen_initial_domain())
-+		return 0;
-+
-+	if (strstr(boot_command_line, "crashkernel="))
-+		pr_warn("kexec: Ignoring crashkernel option. "
-+			"It should be passed to Xen hypervisor.\n");
-+
-+	/* Register Crash kernel resource. */
-+	xkr.range = KEXEC_RANGE_MA_CRASH;
-+	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
-+
-+	if (rc) {
-+		pr_warn("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_CRASH)"
-+			": %i\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	if (!xkr.size)
-+		return 0;
-+
-+	crashk_res.start = xkr.start;
-+	crashk_res.end = xkr.start + xkr.size - 1;
-+	insert_resource(&iomem_resource, &crashk_res);
-+
-+	/* Register Hypervisor code and data resource. */
-+	xkr.range = KEXEC_RANGE_MA_XEN;
-+	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
-+
-+	if (rc) {
-+		pr_warn("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_XEN)"
-+			": %i\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	xen_hypervisor_res.start = xkr.start;
-+	xen_hypervisor_res.end = xkr.start + xkr.size - 1;
-+	insert_resource(&iomem_resource, &xen_hypervisor_res);
-+
-+	/* Determine maximum number of physical CPUs. */
-+	cpuinfo_op.cmd = XENPF_get_cpuinfo;
-+	cpuinfo_op.u.pcpu_info.xen_cpuid = 0;
-+	rc = HYPERVISOR_dom0_op(&cpuinfo_op);
-+
-+	if (rc) {
-+		pr_warn("kexec: %s: HYPERVISOR_dom0_op(): %i\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	cpus = cpuinfo_op.u.pcpu_info.max_present + 1;
-+
-+	/* Register CPUs Crash note resources. */
-+	cpu_res = kcalloc(cpus, sizeof(struct resource), GFP_KERNEL);
-+
-+	if (!cpu_res) {
-+		pr_warn("kexec: %s: kcalloc(): %i\n", __func__, -ENOMEM);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < cpus; ++i) {
-+		xkr.range = KEXEC_RANGE_MA_CPU;
-+		xkr.nr = i;
-+		rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
-+
-+		if (rc) {
-+			pr_warn("kexec: %s: cpu: %u: HYPERVISOR_kexec_op"
-+				"(KEXEC_RANGE_MA_XEN): %i\n", __func__, i, rc);
-+			continue;
-+		}
-+
-+		cpu_res->name = "Crash note";
-+		cpu_res->start = xkr.start;
-+		cpu_res->end = xkr.start + xkr.size - 1;
-+		cpu_res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
-+		insert_resource(&iomem_resource, cpu_res++);
-+	}
-+
-+	/* Get vmcoreinfo address and maximum allowed size. */
-+	xkr.range = KEXEC_RANGE_MA_VMCOREINFO;
-+	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
-+
-+	if (rc) {
-+		pr_warn("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_VMCOREINFO)"
-+			": %i\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	xen_vmcoreinfo_maddr = xkr.start;
-+	xen_vmcoreinfo_max_size = xkr.size;
-+
-+	return 0;
-+}
-+
-+core_initcall(xen_init_kexec_resources);
--- 
-1.5.6.5
-
+Thanks
+Gerry
