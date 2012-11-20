@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab2KTRGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 12:06:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46134 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2KTRGK (ORCPT
+	id S1753636Ab2KTRHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 12:07:00 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57448 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab2KTRG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 12:06:10 -0500
-Date: Tue, 20 Nov 2012 18:06:01 +0100
-From: Robert Richter <rric@kernel.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Maynard Johnson <maynardj@us.ibm.com>,
-        "jgq516@gmail.com" <jgq516@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: oprofile: add A5/A7/A15 entries in op_perf_name
-Message-ID: <20121120170601.GR2504@rric.localhost>
-References: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
- <20121105113102.GF3351@mudshark.cambridge.arm.com>
- <20121120121747.GJ2504@rric.localhost>
- <20121120155717.GD26475@mudshark.cambridge.arm.com>
- <20121120163158.GO2504@rric.localhost>
- <20121120165517.GC27765@mudshark.cambridge.arm.com>
+	Tue, 20 Nov 2012 12:06:59 -0500
+Date: Tue, 20 Nov 2012 18:06:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] core fixes for 3.7
+Message-ID: <alpine.LFD.2.02.1211201805550.2701@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120165517.GC27765@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.11.12 16:55:17, Will Deacon wrote:
-> On Tue, Nov 20, 2012 at 04:31:58PM +0000, Robert Richter wrote:
-> > I am thinking of the following:
-> > 
-> >  # cat /root/cpu_type
-> >  arm/armv7-ca5
-> >  # cat /dev/oprofile/cpu_type
-> >  unknown
-> >  # mount --bind /root/cpu_type /dev/oprofile/cpu_type
-> >  # cat /dev/oprofile/cpu_type
-> >  arm/armv7-ca5
-> > 
-> > From here legacy oprofile tools work as expected using oprofilefs. (I
-> > think. Did not test it.) We need to change the kernel for this a bit
-> > to return 'unknown'. The mount could be done by the oprofile tools
-> > using existing cpu detection code. This is only one way to setup
-> > cpu_type from userland, there could be other ways too.
-> 
-> Ok, this is functionally equivalent to the patch that was submitted at the
-> start of this thread: it solves the problem of mapping a single ARM core to
-> a oprofile's CPU ID string. Technically, I don't mind doing that in the
-> kernel (at least, it means you don't need to do your trick above)
+Linus,
 
-The advantage of a solution where userland updates cpu_type is that we
-never need to update the kernel anymore. This means, cpu detection can
-be part of the tools.
+please pull the latest core-urgent-for-linus git tree from:
 
--Robert
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+
+* One line fix, which plugs a rcu_user leak.
+
+Thanks,
+
+	tglx
+
+------------------>
+Frederic Weisbecker (1):
+      rcu: Fix unrecovered RCU user mode in syscall_trace_leave()
+
+
+ arch/x86/kernel/ptrace.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index b00b33a..eff5b8c 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1511,6 +1511,13 @@ void syscall_trace_leave(struct pt_regs *regs)
+ {
+ 	bool step;
+ 
++	/*
++	 * We may come here right after calling schedule_user()
++	 * or do_notify_resume(), in which case we can be in RCU
++	 * user mode.
++	 */
++	rcu_user_exit();
++
+ 	audit_syscall_exit(regs);
+ 
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
