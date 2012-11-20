@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab2KTPRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:17:19 -0500
+	id S1753620Ab2KTPRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:17:22 -0500
 Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab2KTPRN (ORCPT
+	with ESMTP id S1753453Ab2KTPRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:17:13 -0500
+	Tue, 20 Nov 2012 10:17:19 -0500
 X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
@@ -16,94 +16,108 @@ To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
         virtualization@lists.linux-foundation.org,
         xen-devel@lists.xensource.com
 Cc: Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH v2 02/11] x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
-Date: Tue, 20 Nov 2012 16:04:44 +0100
-Message-Id: <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v2 10/11] drivers/xen: Export vmcoreinfo through sysfs
+Date: Tue, 20 Nov 2012 16:04:52 +0100
+Message-Id: <1353423893-23125-11-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1353423893-23125-10-git-send-email-daniel.kiper@oracle.com>
 References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
  <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
-X-Bogosity: No, spamicity=0.395697
+ <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-4-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-5-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-6-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-7-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-8-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-9-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-10-git-send-email-daniel.kiper@oracle.com>
+X-Bogosity: No, spamicity=0.193071
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some implementations (e.g. Xen PVOPS) could not use part of identity page table
-to construct transition page table. It means that they require separate PUDs,
-PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
-requirement add extra pointer to PGD, PUD, PMD and PTE and align existing code.
+Export vmcoreinfo through sysfs.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
- arch/x86/include/asm/kexec.h       |   10 +++++++---
- arch/x86/kernel/machine_kexec_64.c |   12 ++++++------
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/xen/sys-hypervisor.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-index 317ff17..3cf5600 100644
---- a/arch/x86/include/asm/kexec.h
-+++ b/arch/x86/include/asm/kexec.h
-@@ -157,9 +157,13 @@ struct kimage_arch {
- };
- #else
- struct kimage_arch {
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *pte;
-+	pgd_t *pgd;
-+	pud_t *pud0;
-+	pud_t *pud1;
-+	pmd_t *pmd0;
-+	pmd_t *pmd1;
-+	pte_t *pte0;
-+	pte_t *pte1;
- };
- #endif
- 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index b3ea9db..976e54b 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -137,9 +137,9 @@ out:
- 
- static void free_transition_pgtable(struct kimage *image)
- {
--	free_page((unsigned long)image->arch.pud);
--	free_page((unsigned long)image->arch.pmd);
--	free_page((unsigned long)image->arch.pte);
-+	free_page((unsigned long)image->arch.pud0);
-+	free_page((unsigned long)image->arch.pmd0);
-+	free_page((unsigned long)image->arch.pte0);
+diff --git a/drivers/xen/sys-hypervisor.c b/drivers/xen/sys-hypervisor.c
+index 96453f8..6edc289 100644
+--- a/drivers/xen/sys-hypervisor.c
++++ b/drivers/xen/sys-hypervisor.c
+@@ -368,6 +368,41 @@ static void xen_properties_destroy(void)
+ 	sysfs_remove_group(hypervisor_kobj, &xen_properties_group);
  }
  
- static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
-@@ -157,7 +157,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
- 		pud = (pud_t *)get_zeroed_page(GFP_KERNEL);
- 		if (!pud)
- 			goto err;
--		image->arch.pud = pud;
-+		image->arch.pud0 = pud;
- 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
- 	}
- 	pud = pud_offset(pgd, vaddr);
-@@ -165,7 +165,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
- 		pmd = (pmd_t *)get_zeroed_page(GFP_KERNEL);
- 		if (!pmd)
- 			goto err;
--		image->arch.pmd = pmd;
-+		image->arch.pmd0 = pmd;
- 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
- 	}
- 	pmd = pmd_offset(pud, vaddr);
-@@ -173,7 +173,7 @@ static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
- 		pte = (pte_t *)get_zeroed_page(GFP_KERNEL);
- 		if (!pte)
- 			goto err;
--		image->arch.pte = pte;
-+		image->arch.pte0 = pte;
- 		set_pmd(pmd, __pmd(__pa(pte) | _KERNPG_TABLE));
- 	}
- 	pte = pte_offset_kernel(pmd, vaddr);
++#ifdef CONFIG_KEXEC
++static ssize_t vmcoreinfo_show(struct hyp_sysfs_attr *attr, char *buffer)
++{
++	return sprintf(buffer, "%lx %lx\n", xen_vmcoreinfo_maddr,
++						xen_vmcoreinfo_max_size);
++}
++
++HYPERVISOR_ATTR_RO(vmcoreinfo);
++
++static int __init xen_vmcoreinfo_init(void)
++{
++	if (!xen_vmcoreinfo_max_size)
++		return 0;
++
++	return sysfs_create_file(hypervisor_kobj, &vmcoreinfo_attr.attr);
++}
++
++static void xen_vmcoreinfo_destroy(void)
++{
++	if (!xen_vmcoreinfo_max_size)
++		return;
++
++	sysfs_remove_file(hypervisor_kobj, &vmcoreinfo_attr.attr);
++}
++#else
++static int __init xen_vmcoreinfo_init(void)
++{
++	return 0;
++}
++
++static void xen_vmcoreinfo_destroy(void)
++{
++}
++#endif
++
+ static int __init hyper_sysfs_init(void)
+ {
+ 	int ret;
+@@ -390,9 +425,14 @@ static int __init hyper_sysfs_init(void)
+ 	ret = xen_properties_init();
+ 	if (ret)
+ 		goto prop_out;
++	ret = xen_vmcoreinfo_init();
++	if (ret)
++		goto vmcoreinfo_out;
+ 
+ 	goto out;
+ 
++vmcoreinfo_out:
++	xen_properties_destroy();
+ prop_out:
+ 	xen_sysfs_uuid_destroy();
+ uuid_out:
+@@ -407,12 +447,12 @@ out:
+ 
+ static void __exit hyper_sysfs_exit(void)
+ {
++	xen_vmcoreinfo_destroy();
+ 	xen_properties_destroy();
+ 	xen_compilation_destroy();
+ 	xen_sysfs_uuid_destroy();
+ 	xen_sysfs_version_destroy();
+ 	xen_sysfs_type_destroy();
+-
+ }
+ module_init(hyper_sysfs_init);
+ module_exit(hyper_sysfs_exit);
 -- 
 1.5.6.5
 
