@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab2KTF5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 00:57:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55246 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2KTF5g (ORCPT
+	id S1751778Ab2KTGAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:00:22 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57698 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab2KTGAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 00:57:36 -0500
-Date: Mon, 19 Nov 2012 21:57:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Erwan Velu <erwanaliasr1@gmail.com>
-Cc: ak@linux.intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: Unexpected latencies on lseek() SEEK_SET on block devices
-Message-Id: <20121119215730.d346cefd.akpm@linux-foundation.org>
-In-Reply-To: <509AC911.1040700@gmail.com>
-References: <509AC911.1040700@gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 01:00:20 -0500
+Date: Tue, 20 Nov 2012 07:00:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121120060014.GA14065@gmail.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Nov 2012 21:48:17 +0100 Erwan Velu <erwanaliasr1@gmail.com> wrote:
 
-> Hi fellows,
-> 
-> I'm been facing some lseek() troubles on a very light hardware (Atom E660) under heavy load (network + cpu  + disk IOs). I'm using 3.2.32 on a 32bit Os with a local SSD as mass storage.
-> 
-> If a do open a block device like sdb1 and lseek SEEK_SET in it, some unexpected latencies occurs.
-> Using the same load, everything works perfectly by using contigous streams but once I do lseek it start to be laggy. I've been searching around for a while and finally found this message : https://lkml.org/lkml/2011/9/15/399 from Andy.
-> 
-> The description was very similar to what I experienced but the patch from Andy was on to the fs layer.
-> 
-> I've been looking the code for the block level layer and found the implementation is pretty different.
-> http://lxr.linux.no/#linux+v3.2.33/fs/read_write.c#L69
-> vs
-> http://lxr.linux.no/#linux+v3.2.33/fs/block_dev.c#L353
-> 
-> As I can see, we do first put the mutex, then i_size_read and then considering the kind of SEEK we want.
-> The semantic changes from the read_write implementation where it does the locking only for SEEK_CUR and i_size_read isn't executed for SEEK_SET.
-> 
-> So I really wonder if we shall rework this part to avoid the uncessary locking for all of them except SEEK_CUR and remove i_size_read from SEEK_SET. The i_size_read is also a matter as it does a memory barrier. On such low-end hardware I have, that could costs.
-> 
-> I can work on it and validate its performances unless the experts you are told me this is a mandatory feature.
-> 
-> Thanks for your attention and comments on this topic.
+* David Rientjes <rientjes@google.com> wrote:
 
-If your lseek()ing process is indeed blocking on i_mutex then something
-else must be holding it.  ie: there's some heavy I/O happening against
-that device at the same time?  Tell us more...
+> > numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into 
+> > sched/core") had an average throughput of 136918.34 
+> > SPECjbb2005 bops, which is a 6.3% regression.
+> 
+> perftop during the run on numa/core at 01aa90068b12 ("sched: 
+> Use the best-buddy 'ideal cpu' in balancing decisions"):
+> 
+>     15.99%  [kernel]  [k] page_fault                         
+>      4.05%  [kernel]  [k] getnstimeofday                     
+>      3.96%  [kernel]  [k] _raw_spin_lock                     
+>      3.20%  [kernel]  [k] rcu_check_callbacks                
+>      2.93%  [kernel]  [k] generic_smp_call_function_interrupt
+>      2.90%  [kernel]  [k] __do_page_fault                    
+>      2.82%  [kernel]  [k] ktime_get                          
 
-Another possibility is that the delay is not in lseek() but is actually
-in the device open/close, doing lots of pagecache invalidation and/or
-writeout.  It used to be the case that blockdev close() would do a
-heavyweight flush/invalidate, but I haven't checked lately.
+Thanks for testing, that's very interesting - could you tell me 
+more about exactly what kind of hardware this is? I'll try to 
+find a similar system and reproduce the performance regression.
 
+(A wild guess would be an older 4x Opteron system, 83xx series 
+or so?)
+
+Also, the profile looks weird to me. Here is how perf top looks 
+like on my system during a similarly configured, "healthy" 
+SPECjbb run:
+
+ 91.29%  perf-6687.map            [.] 0x00007fffed1e8f21
+  4.81%  libjvm.so                [.] 0x00000000007004a0
+  0.93%  [vdso]                   [.] 0x00007ffff7ffe60c
+  0.72%  [kernel]                 [k] do_raw_spin_lock
+  0.36%  [kernel]                 [k] generic_smp_call_function_interrupt
+  0.10%  [kernel]                 [k] format_decode
+  0.07%  [kernel]                 [k] rcu_check_callbacks
+  0.07%  [kernel]                 [k] apic_timer_interrupt
+  0.07%  [kernel]                 [k] call_function_interrupt
+  0.06%  libc-2.15.so             [.] __strcmp_sse42
+  0.06%  [kernel]                 [k] irqtime_account_irq
+  0.06%  perf                     [.] 0x000000000004bb7c
+  0.05%  [kernel]                 [k] x86_pmu_disable_all
+  0.04%  libc-2.15.so             [.] __memcpy_ssse3
+  0.04%  [kernel]                 [k] ktime_get
+  0.04%  [kernel]                 [k] account_group_user_time
+  0.03%  [kernel]                 [k] vbin_printf
+
+and that is what SPECjbb does: it spends 97% of its time in Java 
+code - yet there's no Java overhead visible in your profile - 
+how is that possible? Could you try a newer perf on that box:
+
+  cd tools/perf/
+  make -j install
+
+to make sure perf picks up the Java symbols as well (or at least 
+includes them as a summary, as in the profile above). Note that 
+no page fault overhead is visible in my profile.
+
+Thanks,
+
+	Ingo
