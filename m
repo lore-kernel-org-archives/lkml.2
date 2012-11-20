@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab2KTXlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:41:16 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40571 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752489Ab2KTXlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:41:15 -0500
-Message-ID: <1353454874.17819.41.camel@joe-AO722>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 20 Nov 2012 15:41:14 -0800
-In-Reply-To: <20121120231930.GA27492@localhost>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
-	 <20121120115239.GA7955@dm> <1353448728.17819.33.camel@joe-AO722>
-	 <20121120231930.GA27492@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753695Ab2KTXs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:48:26 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57069 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab2KTXsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 18:48:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
+References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com>
+	<CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
+Date: Tue, 20 Nov 2012 15:48:24 -0800
+X-Google-Sender-Auth: pGfZAr_iBxUk9iQjiYJW0TeWwPY
+Message-ID: <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
+Subject: Re: Device tree node to major/minor?
+From: Simon Glass <sjg@chromium.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: lk <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Che-liang Chiou <clchiou@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 23:19 +0000, Andy Whitcroft wrote:
-> On Tue, Nov 20, 2012 at 01:58:48PM -0800, Joe Perches wrote:
-> 
-> > +# check for multiple blank lines, warn only on the second one in a block
-> > +		if ($rawline =~ /^.\s*$/ &&
-> > +		    $prevrawline =~ /^.\s*$/ &&
-> > +		    $linenr != $last_blank_linenr + 1) {
-> > +			CHK("DOUBLE_EMPTY_LINE",
-> > +			    "One blank line separating blocks is generally sufficient\n" . $herecurr);
-> > +			$last_blank_linenr = $linenr;
-> > +		}
-> > +
-> >  # check for line continuations in quoted strings with odd counts of "
-> >  		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
-> >  			WARN("LINE_CONTINUATIONS",
-> 
-> Pretty sure that will fail with combination which have removed lines.
+Hi Grant,
 
-Not as far as I can tell.
-Deleted lines followed by inserted lines seem
-to work OK.
+On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
+>> Hi,
+>>
+>> I hope this is a stupid question with an easy answer, but I cannot find it.
+>>
+>> I have a device tree node for an mmc block device and I want to use
+>> that block device from another driver. I have a phandle which lets me
+>> get the node of the mmc device, but I am not sure how to convert that
+>> into a block_device. In order to do so, I think I need a major/minor
+>> number. Of course the phandle might in fact point to a SCSI driver and
+>> I want that to work correctly also.
+>>
+>> I imagine I might be able to search through the wonders of sysfs in
+>> user space, but is there a better way?
+>
+> Do you /want/ to do it from userspace? What is your use case? Mounting
+> the rootfs?
 
-This check is located after the test that ensures
-the current $line/$rawline is an insertion.
+The use case is storing some raw data on a block device from within a
+driver in the kernel. It is used to keep track of the verified boot
+state.
 
-> I have a version here which I am testing with the combinations I have
-> isolated to far ...
+>
+> Regardless, userspace can monitor the uevents when devices are added
+> (that's what udev does) and watch for the full path of the node you
+> want in the uevent attribute. Then you can look for the child device
+> with the block major/minor numbers in it.
 
-Enjoy.
-Can you please test my proposal against those combinations too?
+So is there a way to do this entirely in the kernel ex post? It might
+need to happen during kernel boot, before user space.
 
-cheers, Joe
+>
+> g.
 
-
+Thanks,
+Simon
