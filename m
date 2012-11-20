@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab2KTOj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:39:27 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:43025 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083Ab2KTOjZ (ORCPT
+	id S1753061Ab2KTOkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:40:08 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59143 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KTOkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:39:25 -0500
-From: <Vineet.Gupta1@synopsys.com>
-To: <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 2/2] ARC: provide optimal __get_user_fn()
-Date: Tue, 20 Nov 2012 20:08:17 +0530
-Message-ID: <1353422297-29079-3-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353422297-29079-1-git-send-email-vgupta@synopsys.com>
-References: <1353422297-29079-1-git-send-email-vgupta@synopsys.com>
+	Tue, 20 Nov 2012 09:40:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.205]
+In-Reply-To: <1353090754-30233-1-git-send-email-ajax@redhat.com>
+References: <1353090754-30233-1-git-send-email-ajax@redhat.com>
+Date: Tue, 20 Nov 2012 09:40:05 -0500
+Message-ID: <CA+5PVA54A3xcOyrm5GCMj3jE_338=eVFFBGFE61zLpNrh__imA@mail.gmail.com>
+Subject: Re: [PATCH] vt: Drop K_OFF for VC_MUTE
+From: Josh Boyer <jwboyer@gmail.com>
+To: Adam Jackson <ajax@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arthur Taylor <art@ified.ca>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <vgupta@synopsys.com>
+On Fri, Nov 16, 2012 at 1:32 PM, Adam Jackson <ajax@redhat.com> wrote:
+> The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
+> the keyboard map state; we should be able to switch among cooked/raw/
+> unicode without changing whether events are delivered.  Otherwise - if
+> changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
+> Gnome will switch VT instead of summoning the "run command" dialog.
+>
+> Drop the K_OFF handling and replace it with a new "mute" ioctl pair.
+> Anybody using K_OFF would already need to be prepared to handle it
+> throwing -EINVAL for old kernel compatibility, so userspace will degrade
+> gracefully.
+>
+> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
+> Cc: Arthur Taylor <art@ified.ca>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Tested-by: Josh Boyer <jwboyer@redhat.com>
+> Signed-off-by: Adam Jackson <ajax@redhat.com>
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/uaccess.h |   51 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 51 insertions(+), 0 deletions(-)
+Well, I tested a build with this patch so the tested-by is accurate.
+It fixes the problem when it builds.  But...
 
-diff --git a/arch/arc/include/asm/uaccess.h b/arch/arc/include/asm/uaccess.h
-index 503c98d..d9cbae4 100644
---- a/arch/arc/include/asm/uaccess.h
-+++ b/arch/arc/include/asm/uaccess.h
-@@ -35,6 +35,57 @@
- #define __access_ok(addr, sz)	(unlikely(__kernel_ok) || \
- 				 likely(__user_ok((addr), (sz))))
- 
-+/*********** Single byte/s-word/word copies ******************/
-+
-+#define __get_user_fn(sz, u, k)					\
-+({								\
-+	long __ret = 0;	/* success by default */	\
-+	switch (sz) {						\
-+	case 1: __arc_get_user_one(*(k), u, "ldb", __ret); break;	\
-+	case 2: __arc_get_user_one(*(k), u, "ldw", __ret); break;	\
-+	case 4: __arc_get_user_one(*(k), u, "ld", __ret);  break;	\
-+	case 8: __arc_get_user_one_64(*(k), u, __ret);     break;	\
-+	}							\
-+	__ret;							\
-+})
-+
-+#define __arc_get_user_one(dst, src, op, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	"op"    %1,[%2]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret), "=r" (dst)		\
-+	: "r" (src), "i" (-EFAULT))
-+
-+#define __arc_get_user_one_64(dst, src, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	ld   %1,[%2]\n"			\
-+	"4:	ld  %R1,[%2, 4]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.word 4b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret), "=r" (dst)		\
-+	: "r" (src), "i" (-EFAULT))
-+
-+
- static inline unsigned long
- __arc_copy_from_user(void *to, const void __user *from, unsigned long n)
- {
--- 
-1.7.4.1
+> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+> index 681765b..08d1d57 100644
+> --- a/drivers/tty/vt/keyboard.c
+> +++ b/drivers/tty/vt/keyboard.c
 
+<snip>
+
+> +int vt_do_kgdbmute(int console)
+> +{
+> +       struct kbd_struct * kbd = kbd_table + console;
+> +       /* This is a spot read so needs no locking */
+> +       return vc_kbd_mode(kbd, VC_MUTE);
+> +}
+> +
+
+That should be vt_do_kdgkbmute.  I know kgdb is probably easier to type
+because 'gdb' is ingrained into every developer's finger memory, but the
+kernel gets really grumpy when function definitions don't match what
+callers actually call:
+
+drivers/built-in.o: In function `vt_ioctl':
+/home/jwboyer/kernel/drivers/tty/vt/vt_ioctl.c:489: undefined
+reference to `vt_do_kdgkbmute'
+
+
+After that small fixup, the patch does build and does still fix the
+problem with a properly fixed up Xorg.
+
+josh
