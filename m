@@ -1,241 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab2KTNNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:13:09 -0500
-Received: from 8bytes.org ([85.214.48.195]:58234 "EHLO mail.8bytes.org"
+	id S1752727Ab2KTNTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:19:50 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:55502 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753375Ab2KTNNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:13:07 -0500
-From: Joerg Roedel <joro@8bytes.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 04/19] x86, io_apic: Introduce x86_io_apic_ops.print_entries for debugging
-Date: Tue, 20 Nov 2012 14:12:41 +0100
-Message-Id: <1353417176-18945-5-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353417176-18945-1-git-send-email-joro@8bytes.org>
-References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Nov 20 14:13:05 2012
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50ab81e122977124395289
+	id S1751876Ab2KTNTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:19:47 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, broonie@opensource.wolfsonmicro.com,
+        khali@linux-fr.org, ben-linux@fluff.org, bhelgaas@google.com,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] spi / ACPI: add ACPI enumeration support
+Date: Tue, 20 Nov 2012 14:24:13 +0100
+Message-ID: <27079030.Z1vFSRAahZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121120131525.GU17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <12657869.yQS4p6Y8j3@vostro.rjw.lan> <20121120131525.GU17774@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This call-back is used to dump IO-APIC entries for debugging
-purposes into the kernel log. VT-d needs a special routine
-for this and will overwrite the default.
+On Tuesday, November 20, 2012 03:15:25 PM Mika Westerberg wrote:
+> On Tue, Nov 20, 2012 at 02:05:26PM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, November 20, 2012 12:29:43 PM Mika Westerberg wrote:
+> > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
+> > > configure the SPI slave devices behind the SPI controller. This patch adds
+> > > support for this to the SPI core.
+> > > 
+> > > In addition we bind ACPI nodes to SPI devices. This makes it possible for
+> > > the slave drivers to get the ACPI handle for further configuration.
+> > > 
+> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > ---
+> > >  drivers/spi/spi.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+> > >  1 file changed, 114 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> > > index 84c2861..3ae5351 100644
+> > > --- a/drivers/spi/spi.c
+> > > +++ b/drivers/spi/spi.c
+> > > @@ -35,6 +35,8 @@
+> > >  #include <linux/sched.h>
+> > >  #include <linux/delay.h>
+> > >  #include <linux/kthread.h>
+> > > +#include <linux/ioport.h>
+> > > +#include <linux/acpi.h>
+> > >  
+> > >  static void spidev_release(struct device *dev)
+> > >  {
+> > > @@ -93,6 +95,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
+> > >  	if (of_driver_match_device(dev, drv))
+> > >  		return 1;
+> > >  
+> > > +	/* Then try ACPI */
+> > > +	if (acpi_driver_match_device(dev, drv))
+> > > +		return 1;
+> > > +
+> > >  	if (sdrv->id_table)
+> > >  		return !!spi_match_id(sdrv->id_table, spi);
+> > >  
+> > > @@ -888,6 +894,112 @@ static void of_register_spi_devices(struct spi_master *master)
+> > >  static void of_register_spi_devices(struct spi_master *master) { }
+> > >  #endif
+> > >  
+> > > +#ifdef CONFIG_ACPI
+> > > +static int acpi_spi_add_resource(struct acpi_resource *ares, void *data)
+> > > +{
+> > > +	struct acpi_resource_spi_serialbus *sb;
+> > > +	struct spi_device *spi = data;
+> > > +	struct resource r;
+> > > +
+> > > +	switch (ares->type) {
+> > > +	case ACPI_RESOURCE_TYPE_IRQ:
+> > > +	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+> > 
+> > It is not necessary to check the resource type for IRQ resources here,
+> > because acpi_dev_resource_interrupt() will do it for you anyway. :-)
+> > 
+> > So, I would first check if the resource type is ACPI_RESOURCE_TYPE_SERIAL_BUS
+> > (and populate the spi_device fields if so) and then do something like this:
+> > 
+> > if (acpi_dev_resource_interrupt(ares, 0, &r)) {
+> > 	if (spi->irq < 0)
+> > 		spi->irq = r.start;
+> > 
+> > 	return 1;
+> > }
+> > 
+> > We don't even need to memset(), because we're not going to use that resource
+> > object going forward.
+> 
+> But doesn't acpi_dev_resource_interrupt() do acpi_register_gsi() and all
+> that stuff? And we were supposed to avoid that.
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/x86/include/asm/io_apic.h      |    3 +
- arch/x86/include/asm/x86_init.h     |    1 +
- arch/x86/kernel/apic/io_apic.c      |  109 ++++++++++++++++++-----------------
- arch/x86/kernel/x86_init.c          |    1 +
- drivers/iommu/intel_irq_remapping.c |    8 +++
- 5 files changed, 69 insertions(+), 53 deletions(-)
+Right.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index d59e172..21aa81e 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -180,6 +180,8 @@ extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
- extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_disable_io_apic(void);
-+extern void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
-+extern void intel_ir_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
- 
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
- {
-@@ -225,6 +227,7 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
-+#define native_io_apic_print_entries	NULL
- #endif
- 
- #endif /* _ASM_X86_IO_APIC_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index b1d2d6a..8ff79f7 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -195,6 +195,7 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
-+	void		(*print_entries)(unsigned int apic, unsigned int nr_entries);
- };
- 
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3603bc4..edaaad9 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1527,9 +1527,63 @@ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
- 	ioapic_write_entry(ioapic_idx, pin, entry);
- }
- 
--__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
-+void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
-+{
-+	int i;
-+
-+	pr_debug(" NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:\n");
-+
-+	for (i = 0; i <= nr_entries; i++) {
-+		struct IO_APIC_route_entry entry;
-+
-+		entry = ioapic_read_entry(apic, i);
-+
-+		pr_debug(" %02x %02X  ", i, entry.dest);
-+		pr_cont("%1d    %1d    %1d   %1d   %1d    "
-+			"%1d    %1d    %02X\n",
-+			entry.mask,
-+			entry.trigger,
-+			entry.irr,
-+			entry.polarity,
-+			entry.delivery_status,
-+			entry.dest_mode,
-+			entry.delivery_mode,
-+			entry.vector);
-+	}
-+}
-+
-+void intel_ir_io_apic_print_entries(unsigned int apic,
-+				    unsigned int nr_entries)
- {
- 	int i;
-+
-+	pr_debug(" NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:\n");
-+
-+	for (i = 0; i <= nr_entries; i++) {
-+		struct IR_IO_APIC_route_entry *ir_entry;
-+		struct IO_APIC_route_entry entry;
-+
-+		entry = ioapic_read_entry(apic, i);
-+
-+		ir_entry = (struct IR_IO_APIC_route_entry *)&entry;
-+
-+		pr_debug(" %02x %04X ", i, ir_entry->index);
-+		pr_cont("%1d   %1d    %1d    %1d   %1d   "
-+			"%1d    %1d     %X    %02X\n",
-+			ir_entry->format,
-+			ir_entry->mask,
-+			ir_entry->trigger,
-+			ir_entry->irr,
-+			ir_entry->polarity,
-+			ir_entry->delivery_status,
-+			ir_entry->index2,
-+			ir_entry->zero,
-+			ir_entry->vector);
-+	}
-+}
-+
-+__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
-+{
- 	union IO_APIC_reg_00 reg_00;
- 	union IO_APIC_reg_01 reg_01;
- 	union IO_APIC_reg_02 reg_02;
-@@ -1582,58 +1636,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
- 
- 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
- 
--	if (irq_remapping_enabled) {
--		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
--			" Pol Stat Indx2 Zero Vect:\n");
--	} else {
--		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
--			" Stat Dmod Deli Vect:\n");
--	}
--
--	for (i = 0; i <= reg_01.bits.entries; i++) {
--		if (irq_remapping_enabled) {
--			struct IO_APIC_route_entry entry;
--			struct IR_IO_APIC_route_entry *ir_entry;
--
--			entry = ioapic_read_entry(ioapic_idx, i);
--			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
--			printk(KERN_DEBUG " %02x %04X ",
--				i,
--				ir_entry->index
--			);
--			pr_cont("%1d   %1d    %1d    %1d   %1d   "
--				"%1d    %1d     %X    %02X\n",
--				ir_entry->format,
--				ir_entry->mask,
--				ir_entry->trigger,
--				ir_entry->irr,
--				ir_entry->polarity,
--				ir_entry->delivery_status,
--				ir_entry->index2,
--				ir_entry->zero,
--				ir_entry->vector
--			);
--		} else {
--			struct IO_APIC_route_entry entry;
--
--			entry = ioapic_read_entry(ioapic_idx, i);
--			printk(KERN_DEBUG " %02x %02X  ",
--				i,
--				entry.dest
--			);
--			pr_cont("%1d    %1d    %1d   %1d   %1d    "
--				"%1d    %1d    %02X\n",
--				entry.mask,
--				entry.trigger,
--				entry.irr,
--				entry.polarity,
--				entry.delivery_status,
--				entry.dest_mode,
--				entry.delivery_mode,
--				entry.vector
--			);
--		}
--	}
-+	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
- }
- 
- __apicdebuginit(void) print_IO_APICs(void)
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 754524a..ee4af8b 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -123,4 +123,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
-+	.print_entries		= native_io_apic_print_entries,
- };
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index af8904d..cb9a72d 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -617,6 +617,14 @@ static int __init intel_enable_irq_remapping(void)
- 		goto error;
- 
- 	irq_remapping_enabled = 1;
-+
-+	/*
-+	 * VT-d has a different layout for IO-APIC entries when
-+	 * interrupt remapping is enabled. So it needs a special routine
-+	 * to print IO-APIC entries for debugging purposes too.
-+	 */
-+	x86_io_apic_ops.print_entries = intel_ir_io_apic_print_entries;
-+
- 	pr_info("Enabled IRQ remapping in %s mode\n", eim ? "x2apic" : "xapic");
- 
- 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
+So, because the function will always return 1 anyway, you can do
+
+if (spi->irq < 0) {
+	struct resource r;
+
+	if (acpi_dev_resource_interrupt(ares, 0, &r))
+		spi->irq = r.start;
+}
+
+after checking the ACPI_RESOURCE_TYPE_SERIAL_BUS type.
+
+> > 
+> > > +		/* Only use the first interrupt resource and skip the rest */
+> > > +		memset(&r, 0, sizeof(r));
+> > > +		if (spi->irq < 0 && acpi_dev_resource_interrupt(ares, 0, &r))
+> > > +			spi->irq = r.start;
+> > > +		return 1;
+> > > +
+> > > +	case ACPI_RESOURCE_TYPE_SERIAL_BUS:
+> > > +		sb = &ares->data.spi_serial_bus;
+> > > +		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
+> > > +			spi->chip_select = sb->device_selection;
+> > > +			spi->max_speed_hz = sb->connection_speed;
+> > > +
+> > > +			if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
+> > > +				spi->mode |= SPI_CPHA;
+> > > +			if (sb->clock_polarity == ACPI_SPI_START_HIGH)
+> > > +				spi->mode |= SPI_CPOL;
+> > > +			if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
+> > > +				spi->mode |= SPI_CS_HIGH;
+> > > +
+> > > +			return 1;
+> > > +		}
+> > > +		return 0;
+> > > +	}
+> > > +
+> > > +	return 0;
+> > 
+> > We're not interested in any resources except for the above, so I think we
+> > can just always return 1 from this function, or am I missing anything?
+> 
+> Right you are, we can return 1 always. I'll update this.
+> 
+> > > +}
+> > > +
+> > > +static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
+> > > +				       void *data, void **return_value)
+> > > +{
+> > > +	struct spi_master *master = data;
+> > > +	struct list_head resource_list;
+> > > +	struct acpi_device *adev;
+> > > +	struct spi_device *spi;
+> > > +	int ret;
+> > > +
+> > > +	if (acpi_bus_get_device(handle, &adev))
+> > > +		return AE_OK;
+> > > +	if (acpi_bus_get_status(adev) || !adev->status.present)
+> > > +		return AE_OK;
+> > > +
+> > > +	spi = spi_alloc_device(master);
+> > > +	if (!spi) {
+> > > +		dev_err(&master->dev, "failed to allocate SPI device for %s\n",
+> > > +			dev_name(&adev->dev));
+> > > +		return AE_NO_MEMORY;
+> > > +	}
+> > > +
+> > > +	ACPI_HANDLE_SET(&spi->dev, handle);
+> > > +	spi->irq = -1;
+> > > +
+> > > +	INIT_LIST_HEAD(&resource_list);
+> > > +	ret = acpi_dev_get_resources(adev, &resource_list,
+> > > +				     acpi_spi_add_resource, spi);
+> > 
+> > acpi_dev_free_resource_list(&resource_list); can be done here (the list
+> > is going to be empty anyway if acpi_spi_add_resource() always returns 1)
+> > and then you won't need the fail_put_dev label.
+> 
+> OK, but there are still two cases below where we need to do
+> spi_dev_put(spi). Or do you mean that for each case I just call that
+> directly instead of goto fail_put_dev?
+
+Yes, that's what I meant.  I'd just do
+
+if (ret < 0 || !spi->max_speed_hz) {
+	spi_dev_put(spi);
+	return AE_OK;
+}
+
+> > > +	if (ret < 0)
+> > > +		goto fail_put_dev;
+> > > +
+> > > +	acpi_dev_free_resource_list(&resource_list);
+> > > +
+> > > +	if (!spi->max_speed_hz)
+> > > +		goto fail_put_dev;
+> > > +
+> > > +	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
+> > > +	if (spi_add_device(spi)) {
+> > > +		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
+> > > +			dev_name(&adev->dev));
+> > > +		goto fail_put_dev;
+> > > +	}
+> > > +
+> > > +	return AE_OK;
+> > > +
+> > > +fail_put_dev:
+> > > +	spi_dev_put(spi);
+> > > +
+> > > +	return AE_OK;
+> > > +}
+> > > +
+> > > +static void acpi_register_spi_devices(struct spi_master *master)
+> > > +{
+> > > +	acpi_status status;
+> > > +	acpi_handle handle;
+> > > +
+> > > +	handle = ACPI_HANDLE(&master->dev);
+> > > +	if (!handle)
+> > > +		return;
+> > > +
+> > > +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
+> > > +				     acpi_spi_add_device, NULL,
+> > > +				     master, NULL);
+> > > +	if (ACPI_FAILURE(status))
+> > > +		dev_warn(&master->dev, "failed to enumerate SPI slaves\n");
+> > > +}
+> > > +#else
+> > > +static inline void acpi_register_spi_devices(struct spi_master *master) {}
+> > > +#endif /* CONFIG_ACPI */
+> > > +
+> > >  static void spi_master_release(struct device *dev)
+> > >  {
+> > >  	struct spi_master *master;
+> > > @@ -1023,8 +1135,9 @@ int spi_register_master(struct spi_master *master)
+> > >  		spi_match_master_to_boardinfo(master, &bi->board_info);
+> > >  	mutex_unlock(&board_lock);
+> > >  
+> > > -	/* Register devices from the device tree */
+> > > +	/* Register devices from the device tree and ACPI */
+> > >  	of_register_spi_devices(master);
+> > > +	acpi_register_spi_devices(master);
+> > >  done:
+> > >  	return status;
+> > >  }
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.9.5
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
