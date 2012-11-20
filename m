@@ -1,346 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab2KTJWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:22:51 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36813 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab2KTJWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:22:31 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] CLK: add more managed APIs
-Date: Tue, 20 Nov 2012 01:22:19 -0800
-Message-Id: <1353403339-11679-4-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+	id S1752541Ab2KTJXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:23:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab2KTJXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:23:32 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-raid@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        akpm@linux-foundation.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH 2/2 v4] loop: Limit the number of requests in the bio list
+Date: Tue, 20 Nov 2012 10:23:05 +0100
+Message-Id: <1353403385-735-2-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1353403385-735-1-git-send-email-lczerner@redhat.com>
+References: <1353403385-735-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When converting a driver to managed resources it is desirable to be able to
-manage all resources in the same fashion. This change allows managing clocks
-in the same way we manage all otehr resources.
+Currently there is not limitation of number of requests in the loop bio
+list. This can lead into some nasty situations when the caller spawns
+tons of bio requests taking huge amount of memory. This is even more
+obvious with discard where blkdev_issue_discard() will submit all bios
+for the range and wait for them to finish afterwards. On really big loop
+devices and slow backing file system this can lead to OOM situation as
+reported by Dave Chinner.
 
-This adds the following managed APIs:
+With this patch we will wait in loop_make_request() if the number of
+bios in the loop bio list would exceed 'nr_congestion_on'.
+We'll wake up the process as we process the bios form the list. Some
+threshold hysteresis is in place to avoid high frequency oscillation.
 
-- devm_clk_prepare()/devm_clk_unprepare();
-- devm_clk_enable()/devm_clk_disable();
-- devm_clk_preapre_enable()/devm_clk_diable_unprepare().
-
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reported-by: Dave Chinner <dchinner@redhat.com>
 ---
- drivers/clk/clk-devres.c |  91 +++++++++++++++++++++++++++++++---------
- include/linux/clk.h      | 105 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 177 insertions(+), 19 deletions(-)
+ v2: add threshold hysteresis
+ v3: Wait uninterruptible, use nr_congestion_off/on
+ v4: use wait_event_lock_irq()
 
-diff --git a/drivers/clk/clk-devres.c b/drivers/clk/clk-devres.c
-index 8f57154..2703fa9 100644
---- a/drivers/clk/clk-devres.c
-+++ b/drivers/clk/clk-devres.c
-@@ -9,6 +9,33 @@
- #include <linux/export.h>
- #include <linux/gfp.h>
- 
-+static int devm_clk_match(struct device *dev, void *res, void *data)
-+{
-+	struct clk **c = res;
-+	if (!c || !*c) {
-+		WARN_ON(!c || !*c);
-+		return 0;
-+	}
-+	return *c == data;
-+}
-+
-+
-+static int devm_clk_create_devres(struct device *dev,
-+				  struct clk *clk,
-+				  void (*release)(struct device *, void *))
-+{
-+	struct clk **ptr;
-+
-+	ptr = devres_alloc(release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return -ENOMEM;
-+
-+	*ptr = clk;
-+	devres_add(dev, ptr);
-+
-+	return 0;
-+}
-+
- static void devm_clk_release(struct device *dev, void *res)
+ drivers/block/loop.c |   10 ++++++++++
+ include/linux/loop.h |    3 +++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 54046e5..ae12512 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -463,6 +463,7 @@ out:
+  */
+ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
  {
- 	clk_put(*(struct clk **)res);
-@@ -16,34 +43,22 @@ static void devm_clk_release(struct device *dev, void *res)
- 
- struct clk *devm_clk_get(struct device *dev, const char *id)
- {
--	struct clk **ptr, *clk;
--
--	ptr = devres_alloc(devm_clk_release, sizeof(*ptr), GFP_KERNEL);
--	if (!ptr)
--		return ERR_PTR(-ENOMEM);
-+	struct clk *clk;
-+	int error;
- 
- 	clk = clk_get(dev, id);
- 	if (!IS_ERR(clk)) {
--		*ptr = clk;
--		devres_add(dev, ptr);
--	} else {
--		devres_free(ptr);
-+		error = devm_clk_create_devres(dev, clk, devm_clk_release);
-+		if (error) {
-+			clk_put(clk);
-+			return ERR_PTR(error);
-+		}
- 	}
- 
- 	return clk;
- }
- EXPORT_SYMBOL(devm_clk_get);
- 
--static int devm_clk_match(struct device *dev, void *res, void *data)
--{
--	struct clk **c = res;
--	if (!c || !*c) {
--		WARN_ON(!c || !*c);
--		return 0;
--	}
--	return *c == data;
--}
--
- void devm_clk_put(struct device *dev, struct clk *clk)
- {
- 	int ret;
-@@ -53,3 +68,41 @@ void devm_clk_put(struct device *dev, struct clk *clk)
- 	WARN_ON(ret);
- }
- EXPORT_SYMBOL(devm_clk_put);
-+
-+#define DEFINE_DEVM_CLK_OP(create_op, destroy_op)			\
-+static void devm_##destroy_op##_release(struct device *devm, void *res)	\
-+{									\
-+	destroy_op(*(struct clk **)res);				\
-+}									\
-+									\
-+int devm_##create_op(struct device *dev, struct clk *clk)		\
-+{									\
-+	int error;							\
-+									\
-+	error = devm_clk_create_devres(dev, clk,			\
-+					devm_##destroy_op##_release);	\
-+	if (error)							\
-+		return error;						\
-+									\
-+	error = create_op(clk);						\
-+	if (error) {							\
-+		WARN_ON(devres_destroy(dev,				\
-+					devm_##destroy_op##_release,	\
-+					devm_clk_match, clk));		\
-+		return error;						\
-+	}								\
-+									\
-+	return 0;							\
-+}									\
-+EXPORT_SYMBOL(devm_##create_op);					\
-+									\
-+void devm_##destroy_op(struct device *dev, struct clk *clk)		\
-+{									\
-+	WARN_ON(devres_release(dev, devm_##destroy_op##_release,	\
-+				devm_clk_match, clk));			\
-+}									\
-+EXPORT_SYMBOL(devm_##destroy_op)
-+
-+DEFINE_DEVM_CLK_OP(clk_prepare, clk_unprepare);
-+DEFINE_DEVM_CLK_OP(clk_prepare_enable, clk_disable_unprepare);
-+DEFINE_DEVM_CLK_OP(clk_enable, clk_disable);
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 8bf149e..04b6300 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -133,6 +133,17 @@ struct clk *devm_clk_get(struct device *dev, const char *id);
- int clk_prepare(struct clk *clk);
- 
- /**
-+ * devm_clk_prepare - prepare a clock source as managed resource
-+ * @dev: device owning the resource
-+ * @clk: clock source
-+ *
-+ * This prepares the clock source for use.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+int devm_clk_prepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_unprepare - undo preparation of a clock source
-  * @clk: clock source
-  *
-@@ -144,6 +155,18 @@ int clk_prepare(struct clk *clk);
- void clk_unprepare(struct clk *clk);
- 
- /**
-+ * devm_clk_unprepare - undo preparation of a managed clock source.
-+ * @dev: device used to prepare the clock
-+ * @clk: clock source
-+ *
-+ * This undoes preparation of a clock previously prepared with call
-+ * to devm_clk_pepare().
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+void devm_clk_unprepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_enable - inform the system when the clock source should be running.
-  * @clk: clock source
-  *
-@@ -156,6 +179,19 @@ void clk_unprepare(struct clk *clk);
- int clk_enable(struct clk *clk);
- 
- /**
-+ * devm_clk_enable - enable the clock source as managed resource
-+ * @dev: device owning the resource
-+ * @clk: clock source
-+ *
-+ * If the clock can not be enabled/disabled, this should return success.
-+ *
-+ * May be not called from atomic contexts.
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int devm_clk_enable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_disable - inform the system when the clock source is no longer required.
-  * @clk: clock source
-  *
-@@ -172,6 +208,18 @@ int clk_enable(struct clk *clk);
- void clk_disable(struct clk *clk);
- 
- /**
-+ * devm_clk_disable - disable managed clock source resource
-+ * @dev: device used to enable the clock
-+ * @clk: clock source
-+ *
-+ * Inform the system that a clock source is no longer required by
-+ * a driver and may be shut down.
-+ *
-+ * Must not be called from atomic contexts.
-+ */
-+void devm_clk_disable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_prepare_enable - prepare and enable a clock source
-  * @clk: clock source
-  *
-@@ -182,6 +230,17 @@ void clk_disable(struct clk *clk);
- int clk_prepare_enable(struct clk *clk);
- 
- /**
-+ * devm_clk_prepare_enable - prepare and enable a managed clock source
-+ * @dev: device owning the clock source
-+ * @clk: clock source
-+ *
-+ * This prepares the clock source for use and enables it.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+int devm_clk_prepare_enable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_disable_unprepare - disable and undo preparation of a clock source
-  * @clk: clock source
-  *
-@@ -192,6 +251,17 @@ int clk_prepare_enable(struct clk *clk);
- void clk_disable_unprepare(struct clk *clk);
- 
- /**
-+ * clk_disable_unprepare - disable and undo preparation of a managed clock source
-+ * @dev: device used to prepare and enable the clock
-+ * @clk: clock source
-+ *
-+ * This disables and undoes a previously prepared clock.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+void devm_clk_disable_unprepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
-  *		  This is only valid once the clock source has been enabled.
-  * @clk: clock source
-@@ -303,29 +373,64 @@ static inline int clk_prepare(struct clk *clk)
- 	return 0;
++	lo->lo_bio_count++;
+ 	bio_list_add(&lo->lo_bio_list, bio);
  }
  
-+static inline int devm_clk_prepare(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_unprepare(struct clk *clk)
+@@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+  */
+ static struct bio *loop_get_bio(struct loop_device *lo)
  {
- 	might_sleep();
++	lo->lo_bio_count--;
+ 	return bio_list_pop(&lo->lo_bio_list);
  }
  
-+static inline void devm_clk_unprepare(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+}
-+
- static inline int clk_enable(struct clk *clk)
- {
- 	return 0;
- }
+@@ -489,6 +491,10 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+ 		goto out;
+ 	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+ 		goto out;
++	if (lo->lo_bio_count >= q->nr_congestion_on)
++		wait_event_lock_irq(lo->lo_req_wait,
++				    lo->lo_bio_count < q->nr_congestion_off,
++				    lo->lo_lock);
+ 	loop_add_bio(lo, old_bio);
+ 	wake_up(&lo->lo_event);
+ 	spin_unlock_irq(&lo->lo_lock);
+@@ -546,6 +552,8 @@ static int loop_thread(void *data)
+ 			continue;
+ 		spin_lock_irq(&lo->lo_lock);
+ 		bio = loop_get_bio(lo);
++		if (lo->lo_bio_count < lo->lo_queue->nr_congestion_off)
++			wake_up(&lo->lo_req_wait);
+ 		spin_unlock_irq(&lo->lo_lock);
  
-+static inline int devm_clk_enable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_disable(struct clk *clk) {}
+ 		BUG_ON(!bio);
+@@ -873,6 +881,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	lo->transfer = transfer_none;
+ 	lo->ioctl = NULL;
+ 	lo->lo_sizelimit = 0;
++	lo->lo_bio_count = 0;
+ 	lo->old_gfp_mask = mapping_gfp_mask(mapping);
+ 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask & ~(__GFP_IO|__GFP_FS));
  
-+static inline void devm_clk_disable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline int clk_prepare_enable(struct clk *clk)
- {
- 	might_sleep();
- 	return 0;
- }
+@@ -1673,6 +1682,7 @@ static int loop_add(struct loop_device **l, int i)
+ 	lo->lo_number		= i;
+ 	lo->lo_thread		= NULL;
+ 	init_waitqueue_head(&lo->lo_event);
++	init_waitqueue_head(&lo->lo_req_wait);
+ 	spin_lock_init(&lo->lo_lock);
+ 	disk->major		= LOOP_MAJOR;
+ 	disk->first_minor	= i << part_shift;
+diff --git a/include/linux/loop.h b/include/linux/loop.h
+index 6492181..460b60f 100644
+--- a/include/linux/loop.h
++++ b/include/linux/loop.h
+@@ -53,10 +53,13 @@ struct loop_device {
  
-+static inline int devm_clk_prepare_enable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_disable_unprepare(struct clk *clk)
- {
- 	might_sleep();
- }
+ 	spinlock_t		lo_lock;
+ 	struct bio_list		lo_bio_list;
++	unsigned int		lo_bio_count;
+ 	int			lo_state;
+ 	struct mutex		lo_ctl_mutex;
+ 	struct task_struct	*lo_thread;
+ 	wait_queue_head_t	lo_event;
++	/* wait queue for incoming requests */
++	wait_queue_head_t	lo_req_wait;
  
-+static inline void devm_clk_disable_unprepare(struct device *dev,
-+					      struct clk *clk)
-+{
-+	might_sleep();
-+}
-+
- static inline unsigned long clk_get_rate(struct clk *clk)
- {
- 	return 0;
+ 	struct request_queue	*lo_queue;
+ 	struct gendisk		*lo_disk;
 -- 
-1.7.11.7
+1.7.7.6
 
