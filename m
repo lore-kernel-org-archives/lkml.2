@@ -1,30 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2KTMjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:39:47 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:20138 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751876Ab2KTMjq convert rfc822-to-8bit (ORCPT
+	id S1753361Ab2KTMlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:41:19 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34076 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KTMlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:39:46 -0500
-Message-Id: <201211200850.qAK8mCc8019140@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	Tue, 20 Nov 2012 07:41:18 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Warning! Your mailbox is almost full.
-To: Recipients <fxzhang@dicp.ac.cn>
-From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
-Date: Tue, 20 Nov 2012 02:50:17 -0600
-Reply-To: fxzhang@dicp.ac.cn
+In-Reply-To: <1443f143846f22125e3d6631cf3a2fdf75d925d3.1353349191.git.josh.cartwright@ni.com>
+References: <cover.1353349191.git.josh.cartwright@ni.com>
+	<1443f143846f22125e3d6631cf3a2fdf75d925d3.1353349191.git.josh.cartwright@ni.com>
+Date: Tue, 20 Nov 2012 13:41:16 +0100
+Message-ID: <CAHTX3dK2AEGh72XMuPSyBCV1sdM6jDvdiyPdh5VGXhTnwOqWTA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: zynq: remove TTC early mapping
+From: Michal Simek <monstr@monstr.eu>
+To: Josh Cartwright <josh.cartwright@ni.com>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
+2012/11/19 Josh Cartwright <josh.cartwright@ni.com>:
+> Now that the TTC driver has proper support for DT bindings, it is not
+> necessary for the registers to be mapped early.  They will be mapped
+> during clock initialization using of_iomap().  Remove the early mapping.
+>
+> In addition, remove the extraneous zynq_soc.h include from the timer
+> driver.
+>
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> ---
+>  arch/arm/mach-zynq/common.c                | 5 -----
+>  arch/arm/mach-zynq/include/mach/zynq_soc.h | 6 +-----
+>  arch/arm/mach-zynq/timer.c                 | 1 -
+>  3 files changed, 1 insertion(+), 11 deletions(-)
 
-click link below:
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
+Tested-by: Michal Simek <michal.simek@xilinx.com>
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Applied to xilinx arm-next branch.
+
+Thanks,
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
