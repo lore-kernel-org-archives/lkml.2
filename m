@@ -1,30 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab2KTLgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:36:51 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:51753 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752556Ab2KTLgu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:36:50 -0500
-Message-Id: <201211201136.qAKBVVki014652@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753108Ab2KTLkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:40:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44202 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883Ab2KTLkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 06:40:07 -0500
+Date: Tue, 20 Nov 2012 11:40:01 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121120114001.GR8218@suse.de>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+ <20121120104053.GA15302@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Warning! Your mailbox is almost full.
-To: Recipients <fxzhang@dicp.ac.cn>
-From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
-Date: Tue, 20 Nov 2012 05:35:58 -0600
-Reply-To: fxzhang@dicp.ac.cn
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121120104053.GA15302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
+On Tue, Nov 20, 2012 at 11:40:53AM +0100, Ingo Molnar wrote:
+> 
+> btw., mind sending me a fuller/longer profile than the one 
+> you've sent before? In particular does your system have any 
+> vsyscall emulation page fault overhead?
+> 
 
-click link below:
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
+I can't, the results for specjbb got trashed after I moved to 3.7-rc6 and
+the old run was incomplete :( I'll have to re-run for profiles. I generally
+do not run with profiling enabled because it can distort results very badly.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+I went back and re-examined anything else that could distort the results. I
+have monitoring other than profiles enabled and the heaviest monitor by
+far is reading smaps every 10 seconds to see how processes are currently
+distributed between nodes and what CPU they are running on. The intention
+was to be able to examine after the fact if the individual java processes
+were ending up on the same nodes and scheduled properly.
+
+However, this would impact the peak performance and affect contention on
+mmap_sem every 10 seconds as it's possible for the PTE scanner and smaps
+reader to contend. Care is taken to only read smaps once per process. So
+for each JVM instance, it would read smaps once even though it would
+examine where every thread is running. This minimises the distortion.
+top is also updating every 10 seconds which will also contend on locks.
+The other monitors are relatively harmless and are reading files like
+/proc/vmstat, each numastat file every 10 seconds. As before, all tests
+had these monitors enabled so they would all have suffered evenly.
+
+Normally when I'm looking at a series I run both with and without monitors. I
+report without monitors and use monitors to help debug and problems that
+are identified. Unfortunately, time pressure is not allowing me to do that
+this time.
+
+> If yes, does the patch below change anything for you?
+> 
+
+I'll check it.
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
