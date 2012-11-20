@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2KTIci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:32:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42552 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752514Ab2KTIch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:32:37 -0500
-Date: Tue, 20 Nov 2012 17:32:29 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: max8973: add regulator driver support
-Message-ID: <20121120083227.GW10560@opensource.wolfsonmicro.com>
-References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
- <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
- <20121120004356.GC4483@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1211200840590.21420@axis700.grange>
- <20121120080805.GU10560@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1211200921190.21420@axis700.grange>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L0mHLbha4YKvhGtu"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1211200921190.21420@axis700.grange>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752914Ab2KTIcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:32:43 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:28097 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab2KTIcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:32:41 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Balbir Singh <bsingharora@gmail.com>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/6] don't call cpuacct_charge in stop_task.c
+Date: Tue, 20 Nov 2012 12:31:59 +0400
+Message-Id: <1353400324-10897-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353400324-10897-1-git-send-email-glommer@parallels.com>
+References: <1353400324-10897-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 8f618968 changed stop_task to do the same bookkeping as the
+other classes. However, the call to cpuacct_charge() doesn't affect
+the scheduler decisions at all, and doesn't need to be moved over.
 
---L0mHLbha4YKvhGtu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Moreover, being a kthread, the migration thread won't belong to any
+cgroup anyway, rendering this call quite useless.
 
-On Tue, Nov 20, 2012 at 09:23:41AM +0100, Guennadi Liakhovetski wrote:
-> On Tue, 20 Nov 2012, Mark Brown wrote:
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Mike Galbraith <mgalbraith@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/stop_task.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-> > Modern devices tend to use multiple GPIOs for this control for a jolly
-> > good reason.  If you've only got two levels then the wm831x algorithm is
-> > probably the most sensible.
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index da5eb5b..fda1cbe 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -68,7 +68,6 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+ 	curr->se.exec_start = rq->clock_task;
+-	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+-- 
+1.7.11.7
 
-> Ok, I see, but other my comments still hold.
-
-Not sure what those were?
-
---L0mHLbha4YKvhGtu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQq0ASAAoJELSic+t+oim9eXsQAIG1KZH4u3OF0k9PVByJydea
-GFJnJXhKnV2fNMecRSvMlOSu9NkTdY8GdlY+cZ8rO/QsEnvfZ29BltKbnmurGR2K
-SxoTrPmw+HWp3vFdn6bJ7MTtF3d1AtnWNFVbcE56pXAZA18VCwRtb7jlU0wsJ5nk
-Vv/2pzWw1xPYBp4bU+8ATO+QiLExzflAO3kQlGoXGoz2D4BUpW3AhCI7H5WoPLUM
-fVNQZH/aeJ5X1U4cOMC+bjdVBIQ6cksF4Hni+QT3il4tXtv1ZggUN0CulseKD7tA
-kSuLEHb92cFI4+fiYj9JximVDZ2brbasXt/CfGwgmluNsSEzv62Dde3gRFVL2QeB
-R8+xpJrG5nTIGwEYVZUHQnoGgpPgqE0CKPfg7tX/GlTpLwBA9Iyq9ZclAGSzRRPM
-LRJEUk0T3DxVHxr1mD63+hkz+V8ccMf+BrxtntC8v+hG8P0SV2lOgG+1txW2MoRj
-VszoVGIUjn/omhEoQ5pWRGe2m4n1zPSMFtC35SD4XMpTgyOJ/9CummQ+kaQdl714
-a2pNi+JXNbpkcX2c8F8isY0pQPfWUJumx1bhHs7pTNobH4Dei2APA2V2/DIgYvmP
-v9tqe7sHnO8kvQzGHjQvosWSIye00S8wUChR7Pqj9ObYt+Ydiv74/Jd0lBrQIvo8
-8FfkCtFBHulyGODpx1Bz
-=Xf6u
------END PGP SIGNATURE-----
-
---L0mHLbha4YKvhGtu--
