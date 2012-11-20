@@ -1,177 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab2KTWwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:52:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab2KTWwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:52:07 -0500
-Date: Tue, 20 Nov 2012 20:51:48 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
-Message-ID: <20121120225148.GA6027@amt.cnet>
-References: <20121114013611.5338.15086.stgit@yunodevel>
- <1352858437.18025.47.camel@gandalf.local.home>
- <CAJL_ekvb89saY9F0F3ip-8xipuuRyJ1_M8hOyThu_0Q2=5sXgA@mail.gmail.com>
- <1352860305.18025.48.camel@gandalf.local.home>
- <50A355A2.5040101@hitachi.com>
- <20121116191537.GB28622@amt.cnet>
- <50AB5D31.7060305@hitachi.com>
+	id S1753659Ab2KTWxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:53:04 -0500
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:31321
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753430Ab2KTWxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 17:53:01 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z551biz98dI1432Ic8kzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
+Message-ID: <50AC09C5.3030402@freescale.com>
+Date: Tue, 20 Nov 2012 16:52:53 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Firefox/16.0 SeaMonkey/2.13.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AB5D31.7060305@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Varun Sethi <Varun.Sethi@freescale.com>
+CC: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <scottwood@freescale.com>
+Subject: Re: [PATCH 4/4 v5] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com> <1353419697-31269-5-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1353419697-31269-5-git-send-email-Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 07:36:33PM +0900, Yoshihiro YUNOMAE wrote:
-> Hi Marcelo,
-> 
-> Sorry for the late reply.
-> 
-> (2012/11/17 4:15), Marcelo Tosatti wrote:
-> >On Wed, Nov 14, 2012 at 05:26:10PM +0900, Yoshihiro YUNOMAE wrote:
-> >>Thank you for commenting on my patch set.
-> >>
-> >>(2012/11/14 11:31), Steven Rostedt wrote:
-> >>>On Tue, 2012-11-13 at 18:03 -0800, David Sharp wrote:
-> >>>>On Tue, Nov 13, 2012 at 6:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >>>>>On Wed, 2012-11-14 at 10:36 +0900, Yoshihiro YUNOMAE wrote:
-> >>>>>
-> >>>>>>To merge the data like previous pattern, we apply this patch set. Then, we can
-> >>>>>>get TSC offset of the guest as follows:
-> >>>>>>
-> >>>>>>$ dmesg | grep kvm
-> >>>>>>[   57.717180] kvm: (2687) write TSC offset 18446743360465545001, now clock ##
-> >>>>>>                      ^^^^                   ^^^^^^^^^^^^^^^^^^^^            |
-> >>>>>>                      PID                         TSC offset                 |
-> >>>>>>                                                            HOST TSC value --+
-> >>>>>>
-> >>>>>
-> >>>>>Using printk to export something like this is IMO a nasty hack.
-> >>>>>
-> >>>>>Can't we create a /sys or /proc file to export the same thing?
-> >>>>
-> >>>>Since the value changes over the course of the trace, and seems to be
-> >>>>part of the context of the trace, I think I'd include it as a
-> >>>>tracepoint.
-> >>>>
-> >>>
-> >>>I'm fine with that too.
-> >>
-> >>Using some tracepoint is a nice idea, but there is one problem. Here,
-> >>our discussion point is "the event which TSC offset is changed does not
-> >>frequently occur, but the buffer must keep the event data."
-> >>
-> >>There are two ideas for using tracepoint. First, we define new
-> >>tracepoint for changed TSC offset. This is simple and the overhead will
-> >>be low. However, this trace event stored in the buffer will be
-> >>overwritten by other trace events because this TSC offset event does
-> >>not frequently occur. Second, we add TSC offset information to the
-> >>tracepoint frequently occured. For example, we assume that TSC offset
-> >>information is added to arguments of trace_kvm_exit().
-> >
-> >The TSC offset is in the host trace. So given a host trace with two TSC
-> >offset updates, how do you know which events in the guest trace
-> >(containing a number of events) refer to which tsc offset update?
-> >
-> >Unless i am missing something, you can't solve this easily (well, except
-> >exporting information to the guest that allows it to transform RDTSC ->
-> >host TSC value, which can be done via pvclock).
-> 
-> As you say, TSC offset events are in the host trace, but we don't need
-> to notify guests of updating TSC offset. The offset event will output
-> the next TSC offset value and the current TSC value, so we can
-> calculate the guest TSC (T1) for the event. Guest TSCs since T1 can be
-> converted to host TSC using the TSC offset, so we can integrate those
-> trace data.
+Varun Sethi wrote:
 
-Think of this scenario:
 
-host trace
-1h. event tsc write tsc_offset=-1000
-3h. vmenter
-4h. vmexit
-... (event sequence)
-99h. vmexit
-100h. event tsc_write tsc_offset=-2000
-101h. vmenter
-... (event sequence).
-500h. event tsc_write tsc_offset=-3000
+> diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
+> new file mode 100644
+> index 0000000..6d32fb5
+> --- /dev/null
+> +++ b/drivers/iommu/fsl_pamu.h
+> @@ -0,0 +1,398 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+> + *
+> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> + *
+> + */
+> +
+> +#ifndef __FSL_PAMU_H
+> +#define __FSL_PAMU_H
+> +
+> +/* Bit Field macros
+> + * 	v = bit field variable; m = mask, m##_SHIFT = shift, x = value to load
+> + */
+> +#define set_bf(v, m, x)		(v = ((v) & ~(m)) | (((x) << (m##_SHIFT)) & (m)))
+> +#define get_bf(v, m)		(((v) & (m)) >> (m##_SHIFT))
+> +
+> +/* PAMU CCSR space */
+> +#define PAMU_PGC 0x00000000     /* Allows all peripheral accesses */
+> +#define PAMU_PE 0x40000000      /* enable PAMU                    */
+> +
+> +/* PAMU_OFFSET to the next pamu space in ccsr */
+> +#define PAMU_OFFSET 0x1000
+> +
+> +#define PAMU_MMAP_REGS_BASE 0
+> +
+> +struct pamu_mmap_regs {
+> +	u32 ppbah;
+> +	u32 ppbal;
+> +	u32 pplah;
+> +	u32 pplal;
+> +	u32 spbah;
+> +	u32 spbal;
+> +	u32 splah;
+> +	u32 splal;
+> +	u32 obah;
+> +	u32 obal;
+> +	u32 olah;
+> +	u32 olal;
+> +};
+> +
+> +/* PAMU Error Registers */
+> +#define PAMU_POES1 0x0040
+> +#define PAMU_POES2 0x0044
+> +#define PAMU_POEAH 0x0048
+> +#define PAMU_POEAL 0x004C
+> +#define PAMU_AVS1  0x0050
+> +#define PAMU_AVS1_AV    0x1
+> +#define PAMU_AVS1_OTV   0x6
+> +#define PAMU_AVS1_APV   0x78
+> +#define PAMU_AVS1_WAV   0x380
+> +#define PAMU_AVS1_LAV   0x1c00
+> +#define PAMU_AVS1_GCV   0x2000
+> +#define PAMU_AVS1_PDV   0x4000
+> +#define PAMU_AV_MASK    (PAMU_AVS1_AV | PAMU_AVS1_OTV | PAMU_AVS1_APV | PAMU_AVS1_WAV \
+> +			| PAMU_AVS1_LAV | PAMU_AVS1_GCV | PAMU_AVS1_PDV)
+> +#define PAMU_AVS1_LIODN_SHIFT 16
+> +#define PAMU_LAV_LIODN_NOT_IN_PPAACT 0x400
 
-Then a guest trace containing events with a TSC timestamp.
-Which tsc_offset to use? 
+I think you can move most of macros in this .h file into one of the .c files.
 
-(that is the problem, which unless i am mistaken can only be solved
-easily if the guest can convert RDTSC -> TSC of host).
+> diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+> new file mode 100644
+> index 0000000..d473447
+> --- /dev/null
+> +++ b/drivers/iommu/fsl_pamu_domain.c
 
-> >Another issue as mentioned is lack of TSC synchronization in the host.
-> >Should you provide such a feature without the possibility of proper
-> >chronological order on systems with unsynchronized TSC?
-> 
-> I think, we cannot support this sorting feature using TSC on systems
-> with unsynchronized TSC. On systems with unsynchronized TSC, it is
-> difficult to sort not only trace data of guests and the host but trace
-> data of a guest or a host using TSC in chronological order. Actually,
-> if we want to output tracing data of ftrace in chronological order with
-> unsynchronized TSC, we will use the "global" mode as the timestamp. The
-> global mode uses wallclock added TSC correction, so the mode guarantees
-> to sort in chronological order for trace data of the guest or of
-> the host. If we use this mode to sort the trace data of guests and the
-> host in chronological order, we need to consider about the difference
-> between the guest and the host and timekeeping of guests and the host,
-> so it is difficult to solve these issues. At least, I haven't came up
-> with the good solution.
+The code in this file is generally hard to read because you
 
-I suppose the tradeoff is performance (RDTSC) versus reliability, when
-using ftrace. But then, even ftrace on the host suffers from the
-same problem, with unsynchronized TSCs.
+1) have very few comments
+2) you have a lot of expressions that span several lines, like this one:
 
-> We cannot sort the trace data of guests and the host in chronological
-> order with unsynchronized TSC, but if we can set following
-> synchronization events for both guests and the host, we will know where
-> we should sort.
-> 
-> First, a guest and the host uses the global mode as the timestamp of
-> ftrace. Next, a user on the guest writes "1" to the synchronization I/F
-> as the ID, then the synchronization event "1" is recorded in a
-> ring-buffer of the guest. The synchronization operation induces
-> hypercall, so the host can handle the event. After the operation moves
-> to the host, the host records the event "1" in a ring-buffer of the
-> host. In the end, the operation returns to the host, and the
-> synchronization is finished.
-> 
-> When we integrate tracing data of the guest and the host, we
-> calculate difference of the timestamp between the synchronizing events
-> with the same ID. This value is a temporary "offset". We will convert
-> the timestamp of the guests to the timestamp of the host before the
-> next synchronizing event. If the synchronizing event cycle is very
-> short, we will not need to consider the timekeeping. Then, we can sort
-> the trace data in chronological order.
-> 
-> Would you comment for this or do you have another idea?
+		if ((iova >= geom_attr->aperture_start &&
+			iova < geom_attr->aperture_end - 1 &&
+			size <= geom_size) &&
+			!align_check) {
 
-Performance of any solution across without synchronized TSC will be bad.
-Lets try to reduce coverage of the feature by providing ordering of
-guest/host events on per-vcpu basis (that is, you can only
-chronologically order events on a per-vm basis if the host TSC is
-synchronized).
+Try adding a few more comments (e.g. each function should be commented)
+and maybe try to break up a few of these lines.
 
-Which depends on the discussion above about multiple tsc offsets 
-in the host trace.
+> @@ -0,0 +1,978 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+> + *
+> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> + * Author: Varun Sethi <varun.sethi@freescale.com>
+> + *
+> + */
+> +
+> +#define pr_fmt(fmt)    "fsl-pamu-domain: %s: " fmt, __func__
 
-BTW, this issue came up during the KVM-RT BOF at KVMForum earlier this
-month. Currently there is no way to correlate (and be able to measure) 
-events across host/guest, to profile RT behaviour.
+You don't use this macro.
+
+> +
+> +#include <linux/init.h>
+> +#include <linux/iommu.h>
+> +#include <linux/notifier.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/mm.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/device.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/bootmem.h>
+> +#include <linux/err.h>
+> +#include <asm/io.h>
+> +#include <asm/bitops.h>
+> +
+> +#include "fsl_pamu_domain.h"
+> +
+> +/* This bitmap advertises the page sizes supported by PAMU hardware
+> + * to the IOMMU API.
+> + */
+> +#define FSL_PAMU_PGSIZES	(~0xFFFUL)
+> +
+> +/* global spinlock that needs to be held while
+> + * configuring PAMU.
+> + */
+> +static DEFINE_SPINLOCK(iommu_lock);
+> +
+> +static struct kmem_cache *fsl_pamu_domain_cache;
+> +static struct kmem_cache *iommu_devinfo_cache;
+> +static DEFINE_SPINLOCK(device_domain_lock);
+> +
+> +int __init iommu_init_mempool(void)
+> +{
+> +
+> +	fsl_pamu_domain_cache = kmem_cache_create("fsl_pamu_domain",
+> +					 sizeof(struct fsl_dma_domain),
+> +					 0,
+> +					 SLAB_HWCACHE_ALIGN,
+> +
+> +					 NULL);
+> +	if (!fsl_pamu_domain_cache) {
+> +		pr_err("Couldn't create fsl iommu_domain cache\n");
+
+ALL of these pr_xxx functions (in the entire file) need to have a
+"fsl-pamu-domain:" prefix.  Maybe that's why you created pr_fmt(), but you
+forgot to use it.
+
+The above message should look like this:
+
+	pr_err("fsl-pamu-domain: could not create iommu domain cache\n");
+
+> +		return -ENOMEM;
+> +	}
+> +
+> +	iommu_devinfo_cache = kmem_cache_create("iommu_devinfo",
+> +					 sizeof(struct device_domain_info),
+> +					 0,
+> +					 SLAB_HWCACHE_ALIGN,
+> +					 NULL);
+> +	if (!iommu_devinfo_cache) {
+> +		pr_err("Couldn't create devinfo cache\n");
+> +		kmem_cache_destroy(fsl_pamu_domain_cache);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +
+> +static int reconfig_win(int liodn, struct fsl_dma_domain *domain)
+> +{
+> +	int ret;
+> +
+> +	spin_lock(&iommu_lock);
+> +	ret = pamu_config_ppaace(liodn, domain->mapped_iova,
+> +				 domain->mapped_size,
+> +				 ~(u32)0,
+> +				 domain->paddr >> PAMU_PAGE_SHIFT,
+> +				 domain->snoop_id, domain->stash_id,
+> +				 0, domain->prot);
+> +	spin_unlock(&iommu_lock);
+> +	if (ret) {
+> +		pr_err("PAMU PAACE configuration failed for liodn %d\n",
+> +			 liodn);
+> +	}
+> +	return ret;
+> +}
+> +
+> +static void update_domain_subwin(struct fsl_dma_domain *dma_domain,
+> +				unsigned long iova, size_t size,
+> +				phys_addr_t paddr, int prot, int status)
+> +{
+> +	struct iommu_domain *domain = dma_domain->iommu_domain;
+> +	u32 subwin_cnt = dma_domain->subwin_cnt;
+> +	dma_addr_t geom_size = dma_domain->geom_size;
+> +	u32 subwin_size;
+> +	u32 mapped_subwin;
+> +	u32 mapped_subwin_cnt;
+> +	struct dma_subwindow *sub_win_ptr;
+> +	int i;
+> +
+> +	subwin_size = geom_size >> ilog2(subwin_cnt);
+> +	mapped_subwin = (iova - domain->geometry.aperture_start)
+> +				 >> ilog2(subwin_size);
+> +	sub_win_ptr = &dma_domain->sub_win_arr[mapped_subwin];
+> +	mapped_subwin_cnt = (size < subwin_size) ? 1 :
+> +				size >> ilog2(subwin_size);
+> +	for (i = 0; i < mapped_subwin_cnt; i++) {
+> +		if (status) {
+> +			sub_win_ptr[i].paddr = paddr;
+> +			sub_win_ptr[i].size = (size < subwin_size) ?
+> +						 size : subwin_size;
+> +			paddr += subwin_size;
+> +			sub_win_ptr[i].iova = iova;
+> +			iova += subwin_size;
+> +		}
+> +		sub_win_ptr[i].valid = status;
+> +		sub_win_ptr[i].prot = prot;
+> +	}
+> +
+> +	dma_domain->mapped_subwin = mapped_subwin;
+> +	dma_domain->mapped_subwin_cnt =  mapped_subwin_cnt;
+> +}
+> +
+> +static int reconfig_subwin(int liodn, struct fsl_dma_domain *dma_domain)
+> +{
+> +	u32 subwin_cnt = dma_domain->subwin_cnt;
+> +	int ret = 0;
+> +	u32 mapped_subwin;
+> +	u32 mapped_subwin_cnt;
+> +	struct dma_subwindow *sub_win_ptr;
+> +	unsigned long rpn;
+> +	int i;
+> +
+> +	mapped_subwin = dma_domain->mapped_subwin;
+> +	mapped_subwin_cnt = dma_domain->mapped_subwin_cnt;
+> +	sub_win_ptr = &dma_domain->sub_win_arr[mapped_subwin];
+> +
+> +	for (i = 0; i < mapped_subwin_cnt; i++) {
+> +		rpn = sub_win_ptr[i].paddr >> PAMU_PAGE_SHIFT,
+> +	
+> +		spin_lock(&iommu_lock);
+> +		ret = pamu_config_spaace(liodn, subwin_cnt, mapped_subwin,
+> +					 sub_win_ptr[i].size,
+> +					 ~(u32)0, 
+> +					 rpn, dma_domain->snoop_id,
+> +					 dma_domain->stash_id, 
+> +					 (mapped_subwin == 0 &&
+> +					 !dma_domain->enabled) ?
+> +					 0 : sub_win_ptr[i].valid,
+
+Break out this expression into another variable.  This code is illegible.
+
+	int enabled = 0;
+	
+	for (...
+		if (mapped_subwin || dma_domain->enabled)
+			enabled = sub_win_ptr[i].valid;
+
+> +					 sub_win_ptr[i].prot);
+> +		spin_unlock(&iommu_lock);
+> +		if (ret) {
+> +			pr_err("PAMU SPAACE configuration failed for liodn %d\n",liodn);
+> +			return ret;
+> +		}
+> +		mapped_subwin++;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static phys_addr_t get_phys_addr(struct fsl_dma_domain *dma_domain, unsigned long iova)
+> +{
+> +	u32 subwin_cnt = dma_domain->subwin_cnt;
+> +
+> +	if (subwin_cnt) {
+> +		int i;
+> +		struct dma_subwindow *sub_win_ptr = 
+> +					&dma_domain->sub_win_arr[0];
+> +
+> +		for (i = 0; i < subwin_cnt; i++) {
+> +			if (sub_win_ptr[i].valid &&
+> +			    iova >= sub_win_ptr[i].iova &&
+> +			    iova < (sub_win_ptr[i].iova +
+> +			    sub_win_ptr[i].size - 1))
+> +				return (sub_win_ptr[i].paddr + (iova &
+> +					(sub_win_ptr[i].size - 1)));
+> +		}
+> +	} else {
+> +		return (dma_domain->paddr + (iova & (dma_domain->mapped_size - 1)));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int map_liodn_subwins(int liodn, struct fsl_dma_domain *dma_domain, u32 subwin_cnt)
+> +{
+> +	struct dma_subwindow *sub_win_ptr = 
+> +				&dma_domain->sub_win_arr[0];
+> +	int i, ret;
+> +	unsigned long rpn;
+> +
+> +	for (i = 0; i < subwin_cnt; i++) {
+> +		if (sub_win_ptr[i].valid) {
+> +			rpn = sub_win_ptr[i].paddr >>
+> +				 PAMU_PAGE_SHIFT,
+> +			spin_lock(&iommu_lock);
+> +			ret = pamu_config_spaace(liodn, subwin_cnt, i,
+> +						 sub_win_ptr[i].size,
+> +						 ~(u32)0,
+> +						 rpn,
+> +						 dma_domain->snoop_id,
+> +						 dma_domain->stash_id,
+> +						 (i > 0) ? 1 : 0,
+> +						 sub_win_ptr[i].prot);
+> +			spin_unlock(&iommu_lock);
+> +			if (ret) {
+> +				pr_err("PAMU SPAACE configuration failed for liodn %d\n",
+> +					 liodn);
+> +				return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int map_liodn_win(int liodn, struct fsl_dma_domain *dma_domain)
+> +{
+> +	unsigned long rpn;
+> +	int ret;
+> +
+> +	rpn = dma_domain->paddr >> PAMU_PAGE_SHIFT;
+> +	spin_lock(&iommu_lock);
+> +	ret = pamu_config_ppaace(liodn, dma_domain->mapped_iova,
+> +				 dma_domain->mapped_size,
+> +				 ~(u32)0,
+> +				 rpn,
+> +				dma_domain->snoop_id, dma_domain->stash_id,
+> +				0, dma_domain->prot);
+
+Indentation problem
+
+> +	spin_unlock(&iommu_lock);
+> +	if (ret)
+> +		pr_err("PAMU PAACE configuration failed for liodn %d\n",
+> +			liodn);
+> +
+> +	return ret;
+> +}
+> +
+> +static int map_liodn(int liodn, struct fsl_dma_domain *dma_domain)
+> +{
+> +	u32 subwin_cnt = dma_domain->subwin_cnt;
+> +
+> +	if (subwin_cnt)
+> +		return map_liodn_subwins(liodn, dma_domain, subwin_cnt);
+> +	else
+> +		return map_liodn_win(liodn, dma_domain);
+> +
+> +}
+> +
+> +static int update_liodn(int liodn, struct fsl_dma_domain *dma_domain)
+> +{
+> +	int ret;
+> +
+> +	if (dma_domain->subwin_cnt) {
+> +		ret = reconfig_subwin(liodn, dma_domain);
+> +		if (ret)
+> +			pr_err("Subwindow reconfiguration failed for liodn %d\n", liodn);
+> +	} else {
+> +		ret = reconfig_win(liodn, dma_domain);
+> +		if (ret)
+> +			pr_err("Window reconfiguration failed for liodn %d\n", liodn);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int update_liodn_stash(int liodn, struct fsl_dma_domain *dma_domain,
+> +				 u32 val)
+> +{
+> +	int ret = 0, i;
+> +
+> +	spin_lock(&iommu_lock);
+> +	if (!dma_domain->subwin_cnt) {
+> +		ret = pamu_update_paace_stash(liodn, 0, val);
+> +		if (ret) {
+> +			pr_err("Failed to update PAACE field for liodn %d\n ", liodn);
+> +			spin_unlock(&iommu_lock);
+> +			return ret;
+> +		}
+> +	} else {
+> +		for (i = 0; i < dma_domain->subwin_cnt; i++) {
+> +			ret = pamu_update_paace_stash(liodn, i, val);
+> +			if (ret) {
+> +				pr_err("Failed to update SPAACE %d field for liodn %d\n ", i, liodn);
+> +				spin_unlock(&iommu_lock);
+> +				return ret;
+> +			}
+> +		}
+> +	}
+> +	spin_unlock(&iommu_lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static int configure_liodn(int liodn, struct device *dev,
+> +			   struct fsl_dma_domain *dma_domain,
+> +			   struct iommu_domain_geometry *geom_attr,
+> +			   u32 subwin_cnt)
+> +{
+> +	phys_addr_t window_addr, window_size;
+> +	phys_addr_t subwin_size;
+> +	int ret = 0, i;
+> +	u32 omi_index = ~(u32)0;
+> +
+> +	/* Configure the omi_index at the geometry setup time.
+> +	 * This is a static value which depends on the type of
+> +	 * device and would not change thereafter.
+> +	 */
+
+	/*
+	 * multi-line comments
+	 * look like this
+	 */
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
