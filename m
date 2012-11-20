@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2KTBaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:30:22 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36956 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2KTBaV (ORCPT
+	id S1753260Ab2KTBfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:35:13 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:17345 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab2KTBfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:30:21 -0500
-Message-ID: <50AADCDE.1010301@huawei.com>
-Date: Tue, 20 Nov 2012 09:29:02 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <linfeng@cn.fujitsu.com>, <rob@landley.net>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <yinghai@kernel.org>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Add movablecore_map boot option.
-References: <1353335246-9127-1-git-send-email-tangchen@cn.fujitsu.com> <20121119125325.ed1abba0.akpm@linux-foundation.org>
-In-Reply-To: <20121119125325.ed1abba0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 19 Nov 2012 20:35:11 -0500
+Message-ID: <1353374815.10939.95.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 RESEND 1/5] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Joe Perches <joe@perches.com>, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        imammedo@redhat.com, prarit@redhat.com
+Date: Mon, 19 Nov 2012 18:26:55 -0700
+In-Reply-To: <1914456.6xpKcjJgfG@vostro.rjw.lan>
+References: <1352214130-12055-1-git-send-email-toshi.kani@hp.com>
+	 <1458606.kpqnW2s3Q0@vostro.rjw.lan>
+	 <1353346003.10939.54.camel@misato.fc.hp.com>
+	 <1914456.6xpKcjJgfG@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-20 4:53, Andrew Morton wrote:
-> On Mon, 19 Nov 2012 22:27:21 +0800
-> Tang Chen <tangchen@cn.fujitsu.com> wrote:
+On Tue, 2012-11-20 at 02:04 +0100, Rafael J. Wysocki wrote:
+> On Monday, November 19, 2012 10:26:43 AM Toshi Kani wrote:
+> > On Mon, 2012-11-19 at 18:35 +0100, Rafael J. Wysocki wrote:
+> > > On Monday, November 19, 2012 09:16:52 AM Toshi Kani wrote:
+> > > > On Mon, 2012-11-19 at 08:06 -0800, Joe Perches wrote:
+> > > > > On Mon, 2012-11-19 at 08:51 -0700, Toshi Kani wrote:
+> > > > > > On Mon, 2012-11-19 at 00:56 -0800, Joe Perches wrote:
+> > > > > > > is acpi_bus.h really the right file for these prototypes?
+> > > > > > This interface is limited for ACPI, so it should be declared in a header
+> > > > > > file under include/acpi.  Among the files in this directory, acpi_bus.h
+> > > > > > seems to be a good fit as it declares the interfaces provided by ACPI
+> > > > > > core.
+> > > > > 
+> > > > > I'd've put them in acpi.h or maybe created acpi_utils.h 
+> > > > 
+> > > > Hi Joe,
+> > > > 
+> > > > We cannot use acpi.h since it is an ACPICA header.
+> > > 
+> > > Which acpi.h are you referring to?
+> > 
+> > 
+> > I was referring "include/acpi/acpi.h".
 > 
->> This patchset provide a boot option for user to specify ZONE_MOVABLE memory
->> map for each node in the system.
->>
->> movablecore_map=nn[KMG]@ss[KMG]
->>
->> This option make sure memory range from ss to ss+nn is movable memory.
->> 1) If the range is involved in a single node, then from ss to the end of
->>    the node will be ZONE_MOVABLE.
->> 2) If the range covers two or more nodes, then from ss to the end of
->>    the node will be ZONE_MOVABLE, and all the other nodes will only
->>    have ZONE_MOVABLE.
->> 3) If no range is in the node, then the node will have no ZONE_MOVABLE
->>    unless kernelcore or movablecore is specified.
->> 4) This option could be specified at most MAX_NUMNODES times.
->> 5) If kernelcore or movablecore is also specified, movablecore_map will have
->>    higher priority to be satisfied.
->> 6) This option has no conflict with memmap option.
-> 
-> This doesn't describe the problem which the patchset solves.  I can
-> kinda see where it's coming from, but it would be nice to have it all
-> spelled out, please.
-> 
-> - What is wrong with the kernel as it stands?
-> - What are the possible ways of solving this?
-> - Describe the chosen way, explain why it is superior to alternatives
-> 
-> The amount of manual system configuration in this proposal looks quite
-> high.  Adding kernel boot parameters really is a last resort.  Why was
-> it unavoidable here?
-Agree, manual configuration should be last resort.
-We should ask help from BIOS to provide more help about hotplug functionality,
-and it should work out of box on platforms with hotplug capabilities.
-For CPU/memory/node hotplug, I feel the backward compatibility burden on OS
-should be minor, so why don't ask help from BIOS to better support hotplug?
-We could shape the interfaces between BIOS and OS to support system device
-hotplug.
-Thanks
-Gerry
+> There is another acpi.h in include/linux that can be used for this purpose.
+
+I see.  I agree that include/linux/acpi.h can be used.  I will update
+the patchset to use this header.
+
+Thanks,
+-Toshi
+
 
