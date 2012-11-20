@@ -1,131 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2KTHG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:06:58 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:49167 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab2KTHG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:06:56 -0500
-From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
-Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/7] netprio_cgroup: allow nesting and inherit config on cgroup creation
-Date: Mon, 19 Nov 2012 23:06:30 -0800
-Message-Id: <1353395190-4530-8-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353395190-4530-1-git-send-email-tj@kernel.org>
-References: <1353395190-4530-1-git-send-email-tj@kernel.org>
+	id S1752408Ab2KTHHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:07:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab2KTHHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 02:07:31 -0500
+Date: Tue, 20 Nov 2012 08:07:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, memcg: avoid unnecessary function call when memcg is
+ disabled
+Message-ID: <20121120070728.GA7754@dhcp22.suse.cz>
+References: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inherit netprio configuration from ->css_online(), allow nesting and
-remove .broken_hierarchy marking.  This makes netprio_cgroup's
-behavior match netcls_cgroup's.
+On Mon 19-11-12 17:44:34, David Rientjes wrote:
+> While profiling numa/core v16 with cgroup_disable=memory on the command 
+> line, I noticed mem_cgroup_count_vm_event() still showed up as high as 
+> 0.60% in perftop.
+> 
+> This occurs because the function is called extremely often even when memcg 
+> is disabled.
+> 
+> To fix this, inline the check for mem_cgroup_disabled() so we avoid the 
+> unnecessary function call if memcg is disabled.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Note that this patch changes userland-visible behavior.  Nesting is
-allowed and the first level cgroups below the root cgroup behave
-differently - they inherit priorities from the root cgroup on creation
-instead of starting with 0.  This is unfortunate but not doing so is
-much crazier.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- Documentation/cgroups/net_prio.txt |  2 ++
- net/core/netprio_cgroup.c          | 42 ++++++++++++++++++++++----------------
- 2 files changed, 26 insertions(+), 18 deletions(-)
+Thanks!
 
-diff --git a/Documentation/cgroups/net_prio.txt b/Documentation/cgroups/net_prio.txt
-index 01b3226..a82cbd2 100644
---- a/Documentation/cgroups/net_prio.txt
-+++ b/Documentation/cgroups/net_prio.txt
-@@ -51,3 +51,5 @@ One usage for the net_prio cgroup is with mqprio qdisc allowing application
- traffic to be steered to hardware/driver based traffic classes. These mappings
- can then be managed by administrators or other networking protocols such as
- DCBX.
-+
-+A new net_prio cgroup inherits the parent's configuration.
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index b2af0d0..bde53da 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -136,9 +136,6 @@ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs;
- 
--	if (cgrp->parent && cgrp->parent->id)
--		return ERR_PTR(-EINVAL);
--
- 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
- 	if (!cs)
- 		return ERR_PTR(-ENOMEM);
-@@ -146,16 +143,34 @@ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
- 	return &cs->css;
- }
- 
--static void cgrp_css_free(struct cgroup *cgrp)
-+static int cgrp_css_online(struct cgroup *cgrp)
- {
--	struct cgroup_netprio_state *cs = cgrp_netprio_state(cgrp);
-+	struct cgroup *parent = cgrp->parent;
- 	struct net_device *dev;
-+	int ret = 0;
-+
-+	if (!parent)
-+		return 0;
- 
- 	rtnl_lock();
--	for_each_netdev(&init_net, dev)
--		WARN_ON_ONCE(netprio_set_prio(cgrp, dev, 0));
-+	/*
-+	 * Inherit prios from the parent.  As all prios are set during
-+	 * onlining, there is no need to clear them on offline.
-+	 */
-+	for_each_netdev(&init_net, dev) {
-+		u32 prio = netprio_prio(parent, dev);
-+
-+		ret = netprio_set_prio(cgrp, dev, prio);
-+		if (ret)
-+			break;
-+	}
- 	rtnl_unlock();
--	kfree(cs);
-+	return ret;
-+}
-+
-+static void cgrp_css_free(struct cgroup *cgrp)
-+{
-+	kfree(cgrp_netprio_state(cgrp));
- }
- 
- static u64 read_prioidx(struct cgroup *cgrp, struct cftype *cft)
-@@ -237,21 +252,12 @@ static struct cftype ss_files[] = {
- struct cgroup_subsys net_prio_subsys = {
- 	.name		= "net_prio",
- 	.css_alloc	= cgrp_css_alloc,
-+	.css_online	= cgrp_css_online,
- 	.css_free	= cgrp_css_free,
- 	.attach		= net_prio_attach,
- 	.subsys_id	= net_prio_subsys_id,
- 	.base_cftypes	= ss_files,
- 	.module		= THIS_MODULE,
--
--	/*
--	 * net_prio has artificial limit on the number of cgroups and
--	 * disallows nesting making it impossible to co-mount it with other
--	 * hierarchical subsystems.  Remove the artificially low PRIOIDX_SZ
--	 * limit and properly nest configuration such that children follow
--	 * their parents' configurations by default and are allowed to
--	 * override and remove the following.
--	 */
--	.broken_hierarchy = true,
- };
- 
- static int netprio_device_event(struct notifier_block *unused,
+> ---
+>  include/linux/memcontrol.h |    9 ++++++++-
+>  mm/memcontrol.c            |    9 ++++-----
+>  2 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -181,7 +181,14 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>  						gfp_t gfp_mask,
+>  						unsigned long *total_scanned);
+>  
+> -void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
+> +void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
+> +static inline void mem_cgroup_count_vm_event(struct mm_struct *mm,
+> +					     enum vm_event_item idx)
+> +{
+> +	if (mem_cgroup_disabled() || !mm)
+> +		return;
+> +	__mem_cgroup_count_vm_event(mm, idx);
+> +}
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  void mem_cgroup_split_huge_fixup(struct page *head);
+>  #endif
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -59,6 +59,8 @@
+>  #include <trace/events/vmscan.h>
+>  
+>  struct cgroup_subsys mem_cgroup_subsys __read_mostly;
+> +EXPORT_SYMBOL(mem_cgroup_subsys);
+> +
+>  #define MEM_CGROUP_RECLAIM_RETRIES	5
+>  static struct mem_cgroup *root_mem_cgroup __read_mostly;
+>  
+> @@ -1015,13 +1017,10 @@ void mem_cgroup_iter_break(struct mem_cgroup *root,
+>  	     iter != NULL;				\
+>  	     iter = mem_cgroup_iter(NULL, iter, NULL))
+>  
+> -void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+> +void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+>  {
+>  	struct mem_cgroup *memcg;
+>  
+> -	if (!mm)
+> -		return;
+> -
+>  	rcu_read_lock();
+>  	memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>  	if (unlikely(!memcg))
+> @@ -1040,7 +1039,7 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+>  out:
+>  	rcu_read_unlock();
+>  }
+> -EXPORT_SYMBOL(mem_cgroup_count_vm_event);
+> +EXPORT_SYMBOL(__mem_cgroup_count_vm_event);
+>  
+>  /**
+>   * mem_cgroup_zone_lruvec - get the lru list vector for a zone and memcg
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.11.7
-
+Michal Hocko
+SUSE Labs
