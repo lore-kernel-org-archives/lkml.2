@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2KTWm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:42:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51342 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab2KTWm2 convert rfc822-to-8bit (ORCPT
+	id S1753509Ab2KTWnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:43:31 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56335 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137Ab2KTWn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:42:28 -0500
+	Tue, 20 Nov 2012 17:43:29 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmcJALcGrFB5LbLL/2dsb2JhbABEvFeGAxdzgh4BAQU6HCMQCAMVAy4UJQMhE4gMDL8oBBSMIYR1A5V9kEKDAw
+Date: Wed, 21 Nov 2012 09:43:27 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sendfile: allows bypassing of notifier events
+Message-ID: <20121120224327.GJ2591@dastard>
+References: <20121120163133.11806.15152.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
-Message-ID: <748aba10-531a-4ad5-bad3-7af0f86c0489@default>
-Date: Tue, 20 Nov 2012 14:42:18 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Subject: [PATCH] xen: tmem: selfballooning should be enabled when xen tmem is
- enabled
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Disposition: inline
+In-Reply-To: <20121120163133.11806.15152.stgit@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad: Any chance this can get in for the upcoming window?
-(Or is it enough of a bug fix that it can go in at an -rcN?)
+On Tue, Nov 20, 2012 at 04:31:34PM +0000, Alan Cox wrote:
+> From: Scott Wolchok <swolchok@umich.edu>
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=12812
 
-It was just pointed out to me that some kernels have
-cleancache and frontswap and xen_tmem enabled but NOT
-xen_selfballooning!  While this configuration should be
-possible, nearly all kernels that have CONFIG_XEN_TMEM=y should
-also have CONFIG_XEN_SELFBALLOONING=y, since Transcendent
-Memory (tmem) for Xen has very limited value without
-selfballooning.
+Please add a suitable commit message describing the bug and the fix.
+Pointers to bug reports are good references, but they don't replace
+a properly written commit message.
 
-This is probably a result of a Kconfig mistake fixed I think
-by the patch below.  Note that the year-old Oracle UEK2 kernel
-distro has both CONFIG_XEN_TMEM and CONFIG_XEN_SELFBALLOONING
-enabled, as does a Fedora 17 kernel update (3.6.6-1.fc17), so
-the combination should be well tested.  Also, Xen tmem (and thus
-selfballooning) are currently only enabled when a kernel boot
-parameter is supplied so there is no runtime impact without
-that boot parameter.
+Cheers,
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index d4dffcd..b5f02f3 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -10,9 +10,9 @@ config XEN_BALLOON
- 	  return unneeded memory to the system.
- 
- config XEN_SELFBALLOONING
--	bool "Dynamically self-balloon kernel memory to target"
--	depends on XEN && XEN_BALLOON && CLEANCACHE && SWAP && XEN_TMEM
--	default n
-+	bool
-+	depends on XEN_BALLOON && SWAP
-+	default y if XEN_TMEM
- 	help
- 	  Self-ballooning dynamically balloons available kernel memory driven
- 	  by the current usage of anonymous memory ("committed AS") and
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
