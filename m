@@ -1,204 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab2KTEp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 23:45:29 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45282 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab2KTEp2 (ORCPT
+	id S1751868Ab2KTEp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 23:45:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57301 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751564Ab2KTEp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 23:45:28 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rob.herring@calxeda.com, grant.likely@secretlab.ca
-Cc: spear-devel@list.st.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, andriy.shevchenko@intel.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org, swarren@wwwdotorg.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] dt: add helper function to read u8 & u16 variables & arrays
-Date: Tue, 20 Nov 2012 10:15:19 +0530
-Message-Id: <0ee5b74534a09d75c14b22c2d9330c4971ab30fb.1353386646.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 20 Nov 2012 04:45:24.0140 (UTC) FILETIME=[DA9AE6C0:01CDC6D9]
-X-MC-Unique: 112112004452601801
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 19 Nov 2012 23:45:56 -0500
+Date: Tue, 20 Nov 2012 13:45:47 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH 0/5] mfd: arizona: Updates for v3.7
+Message-ID: <20121120044544.GF4483@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="p8BcnzLwh3ipgLRM"
+Content-Disposition: inline
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qAK4jXib019573
-
-This adds following helper routines:
-- of_property_read_u8_array()
-- of_property_read_u16_array()
-- of_property_read_u8()
-- of_property_read_u16()
-
-This expects arrays from DT to be passed as:
-- u8 array:
-	property = /bits/ 8 <0x50 0x60 0x70>;
-- u16 array:
-	property = /bits/ 16 <0x5000 0x6000 0x7000>;
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V2->V3:
-- Expect u8 & u16 arrays to be passed using: /bits/ 8 or 16
-- remove common macro, as not much common now :(
-- Tested on ARM platform.
-
- drivers/of/base.c  | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h | 30 +++++++++++++++++++++
- 2 files changed, 107 insertions(+)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index af3b22a..f564e31 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -671,12 +671,89 @@ struct device_node *of_find_node_by_phandle(phandle handle)
- EXPORT_SYMBOL(of_find_node_by_phandle);
- 
- /**
-+ * of_property_read_u8_array - Find and read an array of u8 from a property.
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_value:	pointer to return value, modified only if return value is 0.
-+ * @sz:		number of array elements to read
-+ *
-+ * Search for a property in a device node and read 8-bit value(s) from
-+ * it. Returns 0 on success, -EINVAL if the property does not exist,
-+ * -ENODATA if property does not have a value, and -EOVERFLOW if the
-+ * property data isn't large enough.
-+ *
-+ * dts entry of array should be like:
-+ *	property = /bits/ 8 <0x50 0x60 0x70>;
-+ *
-+ * The out_value is modified only if a valid u8 value can be decoded.
-+ */
-+int of_property_read_u8_array(const struct device_node *np,
-+			const char *propname, u8 *out_values, size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const u8 *val;
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(*out_values)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	val = prop->value;
-+	while (sz--)
-+		*out_values++ = *val++;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_property_read_u8_array);
-+
-+/**
-+ * of_property_read_u16_array - Find and read an array of u16 from a property.
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_value:	pointer to return value, modified only if return value is 0.
-+ * @sz:		number of array elements to read
-+ *
-+ * Search for a property in a device node and read 16-bit value(s) from
-+ * it. Returns 0 on success, -EINVAL if the property does not exist,
-+ * -ENODATA if property does not have a value, and -EOVERFLOW if the
-+ * property data isn't large enough.
-+ *
-+ * dts entry of array should be like:
-+ *	property = /bits/ 16 <0x5000 0x6000 0x7000>;
-+ *
-+ * The out_value is modified only if a valid u16 value can be decoded.
-+ */
-+int of_property_read_u16_array(const struct device_node *np,
-+			const char *propname, u16 *out_values, size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const __be16 *val;
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(*out_values)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	val = prop->value;
-+	while (sz--)
-+		*out_values++ = be16_to_cpup(val++);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_property_read_u16_array);
-+
-+/**
-  * of_property_read_u32_array - Find and read an array of 32 bit integers
-  * from a property.
-  *
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
-  * @out_value:	pointer to return value, modified only if return value is 0.
-+ * @sz:		number of array elements to read
-  *
-  * Search for a property in a device node and read 32-bit value(s) from
-  * it. Returns 0 on success, -EINVAL if the property does not exist,
-diff --git a/include/linux/of.h b/include/linux/of.h
-index b4e50d5..bfdc130 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -223,6 +223,10 @@ extern struct device_node *of_find_node_with_property(
- extern struct property *of_find_property(const struct device_node *np,
- 					 const char *name,
- 					 int *lenp);
-+extern int of_property_read_u8_array(const struct device_node *np,
-+			const char *propname, u8 *out_values, size_t sz);
-+extern int of_property_read_u16_array(const struct device_node *np,
-+			const char *propname, u16 *out_values, size_t sz);
- extern int of_property_read_u32_array(const struct device_node *np,
- 				      const char *propname,
- 				      u32 *out_values,
-@@ -364,6 +368,18 @@ static inline struct device_node *of_find_compatible_node(
- 	return NULL;
- }
- 
-+static inline int of_property_read_u8_array(const struct device_node *np,
-+			const char *propname, u8 *out_values, size_t sz)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int of_property_read_u16_array(const struct device_node *np,
-+			const char *propname, u16 *out_values, size_t sz)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int of_property_read_u32_array(const struct device_node *np,
- 					     const char *propname,
- 					     u32 *out_values, size_t sz)
-@@ -470,6 +486,20 @@ static inline bool of_property_read_bool(const struct device_node *np,
- 	return prop ? true : false;
- }
- 
-+static inline int of_property_read_u8(const struct device_node *np,
-+				       const char *propname,
-+				       u8 *out_value)
-+{
-+	return of_property_read_u8_array(np, propname, out_value, 1);
-+}
-+
-+static inline int of_property_read_u16(const struct device_node *np,
-+				       const char *propname,
-+				       u16 *out_value)
-+{
-+	return of_property_read_u16_array(np, propname, out_value, 1);
-+}
-+
- static inline int of_property_read_u32(const struct device_node *np,
- 				       const char *propname,
- 				       u32 *out_value)
--- 
-1.7.12.rc2.18.g61b472e
 
 
+--p8BcnzLwh3ipgLRM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
+
+  Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-3.7
+
+for you to fetch changes up to 82db57511f6fcef74b60f7a48182637133cf2ba2:
+
+  mfd: arizona: Sync regcache after reset (2012-11-20 13:16:10 +0900)
+
+----------------------------------------------------------------
+mfd: Bug fixes for arizona for v3.7
+
+These have built up over the release cycle.
+
+----------------------------------------------------------------
+Charles Keepax (3):
+      mfd: arizona: Use correct array for ARRAY_SIZE in mfd_add_devices call
+      mfd: arizona: Correctly report when AIF2/AIF1 is underclocked
+      mfd: arizona: Sync regcache after reset
+
+Mark Brown (2):
+      mfd: wm5102: Update register patch for latest evaluation
+      mfd: wm5110: Disable control interface error report for WM5110 rev B
+
+ drivers/mfd/arizona-core.c  |   14 +-
+ drivers/mfd/arizona-irq.c   |    1 +
+ drivers/mfd/wm5102-tables.c |  519 +------------------------------------------
+ 3 files changed, 13 insertions(+), 521 deletions(-)
+
+--p8BcnzLwh3ipgLRM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQqwqsAAoJELSic+t+oim9musP/0eE46Vl+sJUm5vHXbifUBCC
+LycDkROxaWePdgG4X50TTifmn+XOraaBS4RdqhmIMe6zt+y+5iv+DI9AjPcu5kkB
+FfwsGb6Xl1mTtaGSZUaPnu8RHjNL3I8fotxIrRkdcc2veiLG7DNeI2Q0JWBp6sMR
+5/3YYvNtivPnaahL3cqzX5ebnBXT72JYDknJHmWBh7Nf60c4LG3UznHquo/adwQz
+Ae1ytbZPGQneE8REuQZTPyR4RntcesZSjz6Nrpr7pGynjP6HtD4l+dH4LiDaH/n8
+mvHnPL1GN9p2vxUY23dWKi0PC8JHQckPBfhdqun77uSuzyIfexox4FXmRBc9XIK0
+g1XUckEeYLTuI7ONdxrqHKWmxVDsrjg89Y+PBH5QMCBSh6v7S55aQiO4eDYCGVuU
+uHGKVZDmM0PKQgUIxb9td0qMYVOqajmefErDzJ6/4nnxUwcUVVMvB2jy2uxnlApM
+xPy89ri4OI1yoYSfDhehIU77n9pReFguvY3CB2zM+g+ChV8OLLuFx80Wko1qsqnH
+VdpDbetnBdfyHg1psl62WjztRaT8Pw/ABO+9kXyQyLBkYH7IFiphGEb0MIdDC6jz
+pqonrgqkZ2VAjkjLTCVfYEMIS4/4hhaf2Ntvkwnnl7QbYaRrMqyeuGZo6tpcSszs
+EEMQtfcdehutE1u+5arm
+=Zb/j
+-----END PGP SIGNATURE-----
+
+--p8BcnzLwh3ipgLRM--
