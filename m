@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab2KTOpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:45:40 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36327 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2KTOph (ORCPT
+	id S1753194Ab2KTOpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:45:13 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:60329 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab2KTOpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:45:37 -0500
-From: Johan Meiring <johanmeiring@gmail.com>
-To: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Johan Meiring <johanmeiring@gmail.com>
-Subject: [PATCH 6/8] staging: wlags49_h2: wl_if.h: gets rid of C99 // comments
-Date: Tue, 20 Nov 2012 16:44:58 +0200
-Message-Id: <1353422700-14485-5-git-send-email-johanmeiring@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353422700-14485-1-git-send-email-johanmeiring@gmail.com>
-References: <1353422700-14485-1-git-send-email-johanmeiring@gmail.com>
+	Tue, 20 Nov 2012 09:45:10 -0500
+X-Authority-Analysis: v=2.0 cv=OOOlLFmB c=1 sm=0 a=QKCpt3RAcCy1PgeoOVilzg==:17 a=2oGSFm5vdZwA:10 a=5xodDPq3oQwA:10 a=649elMfuWG0A:10 a=svWV0_fRAAAA:8 a=V42lzKT-7ucA:10 a=VwQbUJbxAAAA:8 a=wT8LoILcmU6lcX3Kn-YA:9 a=OSKtzXyDyhAA:10 a=QKCpt3RAcCy1PgeoOVilzg==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 24.73.230.86
+From: Solomon Peachy <pizza@shaftnet.org>
+To: linux-kernel@vger.kernel.org
+Cc: Solomon Peachy <pizza@shaftnet.org>, stable@vger.kernel.org
+Subject: [PATCH] [firmware_class]  Fix compile with no builtin firmware
+Date: Tue, 20 Nov 2012 09:45:14 -0500
+Message-Id: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit converts all C99 // comments to standard /* */ comments
+When compiling the firmware loader, the builtin firmware functions were
+erroneously compiled as they were wrapped with CONFIG_FW_LOADER instead
+of CONFIG_FIRMWARE_IN_KERNEL.  This is normally harmless, except when
+there was actually no firmware to compile into the kernel, causing the
+build to fail with a linking error:
 
-Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+drivers/built-in.o: In function `release_firmware':
+(.text+0x192e2): undefined reference to `__end_builtin_fw'
+drivers/built-in.o: In function `release_firmware':
+(.text+0x19304): undefined reference to `__end_builtin_fw'
+drivers/built-in.o: In function `_request_firmware':
+firmware_class.c:(.text+0x1986c): undefined reference to `__end_builtin_fw'
+firmware_class.c:(.text+0x19886): undefined reference to `__end_builtin_fw'
+firmware_class.c:(.text+0x19a98): undefined reference to `__end_builtin_fw'
+drivers/built-in.o: In function `release_firmware':
+(.text+0x192dc): undefined reference to `__start_builtin_fw'
+drivers/built-in.o: In function `_request_firmware':
+firmware_class.c:(.text+0x19860): undefined reference to `__start_builtin_fw'
+firmware_class.c:(.text+0x19a8a): undefined reference to `__start_builtin_fw'
+
+This trivial patch fixes this oversight.
+
+Signed-off-by: Solomon Peachy <pizza@shaftnet.org>
+CC: stable@vger.kernel.org
 ---
- drivers/staging/wlags49_h2/wl_if.h |   39 +++++++++++++++---------------------
- 1 file changed, 16 insertions(+), 23 deletions(-)
+ drivers/base/firmware_class.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/wlags49_h2/wl_if.h b/drivers/staging/wlags49_h2/wl_if.h
-index 351d29b..425d373 100644
---- a/drivers/staging/wlags49_h2/wl_if.h
-+++ b/drivers/staging/wlags49_h2/wl_if.h
-@@ -80,24 +80,17 @@
- #define TX_TIMEOUT                  ((800 * HZ) / 1000)
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8945f4e..3474e7f 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -38,7 +38,7 @@ MODULE_LICENSE("GPL");
  
+ /* Builtin firmware support */
  
--//#define HCF_MIN_COMM_QUALITY        0
--//#define HCF_MAX_COMM_QUALITY        92
--//#define HCF_MIN_SIGNAL_LEVEL        47
--//#define HCF_MAX_SIGNAL_LEVEL        138
--//#define HCF_MIN_NOISE_LEVEL         47
--//#define HCF_MAX_NOISE_LEVEL         138
--//#define HCF_0DBM_OFFSET             149
--
--// PE1DNN
--// Better data from the real world. Not scientific but empirical data gathered
--// from a Thomson Speedtouch 110 which is identified as:
--// PCMCIA Info: "Agere Systems" "Wireless PC Card Model 0110"
--//              Manufacture ID: 0156,0003
--// Lowest measurment for noise floor seen is value 54
--// Highest signal strength in close proximity to the AP seen is value 118
--// Very good must be around 100 (otherwise its never "full scale"
--// All other constants are derrived from these. This makes the signal gauge
--// work for me...
-+/* PE1DNN
-+ * Better data from the real world. Not scientific but empirical data gathered
-+ * from a Thomson Speedtouch 110 which is identified as:
-+ * PCMCIA Info: "Agere Systems" "Wireless PC Card Model 0110"
-+ *              Manufacture ID: 0156,0003
-+ * Lowest measurment for noise floor seen is value 54
-+ * Highest signal strength in close proximity to the AP seen is value 118
-+ * Very good must be around 100 (otherwise its never "full scale"
-+ * All other constants are derrived from these. This makes the signal gauge
-+ * work for me...
-+ */
- #define HCF_MIN_SIGNAL_LEVEL        54
- #define HCF_MAX_SIGNAL_LEVEL        100
- #define HCF_MIN_NOISE_LEVEL         HCF_MIN_SIGNAL_LEVEL
-@@ -109,8 +102,8 @@
+-#ifdef CONFIG_FW_LOADER
++#ifdef CONFIG_FIRMWARE_IN_KERNEL
  
- 
- /* For encryption (WEP) */
--#define MIN_KEY_SIZE                5       // 40 bits RC4 - WEP
--#define MAX_KEY_SIZE                13      // 104 bits
-+#define MIN_KEY_SIZE                5       /* 40 bits RC4 - WEP */
-+#define MAX_KEY_SIZE                13      /* 104 bits */
- #define MAX_KEYS                    4
- 
- #define RADIO_CHANNELS              14
-@@ -126,8 +119,8 @@
- 
- #define HCF_FAILURE                 0xFF
- #define UIL_FAILURE		            0xFF
--#define CFG_UIL_CONNECT             0xA123          // Define differently?
--#define CFG_UIL_CONNECT_ACK_CODE    0x5653435A      // VSCZ
-+#define CFG_UIL_CONNECT             0xA123          /* Define differently? */
-+#define CFG_UIL_CONNECT_ACK_CODE    0x5653435A      /* VSCZ */
- #define WVLAN2_UIL_CONNECTED        (0x01L << 0)
- #define WVLAN2_UIL_BUSY             (0x01L << 1)
- 
-@@ -224,5 +217,5 @@ struct rtsreq {
- };
- 
- 
--#endif  // __WAVELAN2_IF_H__
-+#endif  /* __WAVELAN2_IF_H__ */
- 
+ extern struct builtin_fw __start_builtin_fw[];
+ extern struct builtin_fw __end_builtin_fw[];
 -- 
-1.7.10.4
+1.7.11.7
 
