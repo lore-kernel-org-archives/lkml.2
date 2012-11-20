@@ -1,150 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab2KTVaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:30:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53415 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab2KTVaE (ORCPT
+	id S1753888Ab2KTVbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:31:09 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:56467 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753833Ab2KTVbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:30:04 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
-        Dudley Du <dudl@cypress.com>,
-        Cypress Semiconductor Corporation <customercare@cypress.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Kyle Fazzari <git@status.e4ward.com>,
-        Mario Limonciello <mario_limonciello@dell.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH v2 3/3] input: Cypress PS/2 Trackpad link into psmouse-base
-Date: Tue, 20 Nov 2012 13:30:10 -0800
-Message-Id: <1353447010-4852-4-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353447010-4852-1-git-send-email-kamal@canonical.com>
-References: <1353447010-4852-1-git-send-email-kamal@canonical.com>
+	Tue, 20 Nov 2012 16:31:08 -0500
+Message-ID: <1353447066.19434.25.camel@x61.thuisdomein>
+Subject: [PATCH] [TRIVIAL] radeon: Fix typo and copy/paste error in comments
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 20 Nov 2012 22:31:06 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Nov 2012 21:31:06.0486 (UTC) FILETIME=[59723160:01CDC766]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cypress Semiconductor Corporation <customercare@cypress.com>
-
-Original code contributed by Cypress Semiconductor Corporation,
-modified by Kamal Mostafa.
-
-BugLink: http://launchpad.net/bugs/978807
-
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Mario Limonciello <mario_limonciello@dell.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/input/mouse/Kconfig        |   10 ++++++++++
- drivers/input/mouse/Makefile       |    1 +
- drivers/input/mouse/psmouse-base.c |   32 ++++++++++++++++++++++++++++++++
- drivers/input/mouse/psmouse.h      |    1 +
- 4 files changed, 44 insertions(+)
+Entirely ntested.
 
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index cd6268c..88954dd 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -68,6 +68,16 @@ config MOUSE_PS2_SYNAPTICS
- 
- 	  If unsure, say Y.
- 
-+config MOUSE_PS2_CYPRESS
-+       bool "Cypress PS/2 mouse protocol extension" if EXPERT
-+       default y
-+       depends on MOUSE_PS2
-+       help
-+         Say Y here if you have a Cypress PS/2 Trackpad connected to
-+         your system.
-+
-+         If unsure, say Y.
-+
- config MOUSE_PS2_LIFEBOOK
- 	bool "Fujitsu Lifebook PS/2 mouse protocol extension" if EXPERT
- 	default y
-diff --git a/drivers/input/mouse/Makefile b/drivers/input/mouse/Makefile
-index 46ba755..323e352 100644
---- a/drivers/input/mouse/Makefile
-+++ b/drivers/input/mouse/Makefile
-@@ -32,3 +32,4 @@ psmouse-$(CONFIG_MOUSE_PS2_LIFEBOOK)	+= lifebook.o
- psmouse-$(CONFIG_MOUSE_PS2_SENTELIC)	+= sentelic.o
- psmouse-$(CONFIG_MOUSE_PS2_TRACKPOINT)	+= trackpoint.o
- psmouse-$(CONFIG_MOUSE_PS2_TOUCHKIT)	+= touchkit_ps2.o
-+psmouse-$(CONFIG_MOUSE_PS2_CYPRESS)	+= cypress_ps2.o
-diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
-index 22fe254..cff065f 100644
---- a/drivers/input/mouse/psmouse-base.c
-+++ b/drivers/input/mouse/psmouse-base.c
-@@ -34,6 +34,7 @@
- #include "touchkit_ps2.h"
- #include "elantech.h"
- #include "sentelic.h"
-+#include "cypress_ps2.h"
- 
- #define DRIVER_DESC	"PS/2 mouse driver"
- 
-@@ -759,6 +760,28 @@ static int psmouse_extensions(struct psmouse *psmouse,
- 	}
- 
- /*
-+ * Try Cypress Trackpad.
-+ * Must try it before Finger Sensing Pad because Finger Sensing Pad probe
-+ * upsets some modules of Cypress Trackpads.
-+ */
-+	if (max_proto > PSMOUSE_IMEX &&
-+			cypress_detect(psmouse, set_properties) == 0) {
-+		if (cypress_supported()) {
-+			if (cypress_init(psmouse) == 0)
-+				return PSMOUSE_CYPRESS;
-+
-+			/*
-+			 * Finger Sensing Pad probe upsets some modules of
-+			 * Cypress Trackpad, must avoid Finger Sensing Pad
-+			 * probe if Cypress Trackpad device detected.
-+			 */
-+			return PSMOUSE_PS2;
-+		}
-+
-+		max_proto = PSMOUSE_IMEX;
-+	}
-+
-+/*
-  * Try ALPS TouchPad
+ drivers/gpu/drm/radeon/radeon_ring.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+index 47634f2..ebd6956 100644
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -459,7 +459,7 @@ void radeon_ring_unlock_commit(struct radeon_device *rdev, struct radeon_ring *r
+  *
+  * @ring: radeon_ring structure holding ring information
+  *
+- * Reset the driver's copy of the wtpr (all asics).
++ * Reset the driver's copy of the wptr (all asics).
   */
- 	if (max_proto > PSMOUSE_IMEX) {
-@@ -896,6 +919,15 @@ static const struct psmouse_protocol psmouse_protocols[] = {
- 		.alias		= "thinkps",
- 		.detect		= thinking_detect,
- 	},
-+#ifdef CONFIG_MOUSE_PS2_CYPRESS
-+	{
-+		.type		= PSMOUSE_CYPRESS,
-+		.name		= "CyPS/2",
-+		.alias		= "cypress",
-+		.detect		= cypress_detect,
-+		.init		= cypress_init,
-+	},
-+#endif
- 	{
- 		.type		= PSMOUSE_GENPS,
- 		.name		= "GenPS/2",
-diff --git a/drivers/input/mouse/psmouse.h b/drivers/input/mouse/psmouse.h
-index fe1df23..2f0b39d 100644
---- a/drivers/input/mouse/psmouse.h
-+++ b/drivers/input/mouse/psmouse.h
-@@ -95,6 +95,7 @@ enum psmouse_type {
- 	PSMOUSE_ELANTECH,
- 	PSMOUSE_FSP,
- 	PSMOUSE_SYNAPTICS_RELATIVE,
-+	PSMOUSE_CYPRESS,
- 	PSMOUSE_AUTO		/* This one should always be last */
- };
+ void radeon_ring_undo(struct radeon_ring *ring)
+ {
+@@ -503,7 +503,7 @@ void radeon_ring_force_activity(struct radeon_device *rdev, struct radeon_ring *
+ }
  
+ /**
+- * radeon_ring_force_activity - update lockup variables
++ * radeon_ring_lockup_update - update lockup variables
+  *
+  * @ring: radeon_ring structure holding ring information
+  *
 -- 
-1.7.10.4
+1.7.7.6
 
