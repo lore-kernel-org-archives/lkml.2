@@ -1,195 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2KTW33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:29:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61583 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752721Ab2KTW2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:28:53 -0500
-Date: Tue, 20 Nov 2012 20:24:56 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/5] KVM: MMU: simplify set_spte
-Message-ID: <20121120222456.GB31427@amt.cnet>
-References: <5097AC70.1080904@linux.vnet.ibm.com>
- <5097ACD7.5030201@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5097ACD7.5030201@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753410Ab2KTW3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:29:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39428 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab2KTW3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 17:29:30 -0500
+Date: Tue, 20 Nov 2012 14:29:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rob Landley <rob@landley.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PART4 Patch v2 2/2] memory_hotplug: allow online/offline
+ memory to result movable node
+Message-Id: <20121120142928.0aaf8fc8.akpm@linux-foundation.org>
+In-Reply-To: <1353067090-19468-3-git-send-email-wency@cn.fujitsu.com>
+References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>
+	<1353067090-19468-3-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 08:11:03PM +0800, Xiao Guangrong wrote:
-> It is more cleaner if we can update pte_access fist then set spte according
-> to pte_access, also introduce gfn_need_write_protect to check whether the
-> gfn need to be write-protected
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+On Fri, 16 Nov 2012 19:58:10 +0800
+Wen Congyang <wency@cn.fujitsu.com> wrote:
 
-Please separate patch in:
-- code movement with no logical modification.
-- logical modification (such as condition for mark_page_dirty).
-- move code to helper functions.
-
->  arch/x86/kvm/mmu.c |  109 ++++++++++++++++++++++++++++++++--------------------
->  1 files changed, 67 insertions(+), 42 deletions(-)
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
 > 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 4ea731e..49957df 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2329,6 +2329,63 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+> Now, memory management can handle movable node or nodes which don't have
+> any normal memory, so we can dynamic configure and add movable node by:
+> 	online a ZONE_MOVABLE memory from a previous offline node
+> 	offline the last normal memory which result a non-normal-memory-node
+> 
+> movable-node is very important for power-saving,
+> hardware partitioning and high-available-system(hardware fault management).
+> 
+> ...
+>
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -589,11 +589,19 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
 >  	return 0;
 >  }
-> 
-> +static bool gfn_need_write_protect(struct kvm_vcpu *vcpu, u64 *sptep,
-> +				   int level,  gfn_t gfn, bool can_unsync)
+>  
+> +#ifdef CONFIG_MOVABLE_NODE
+> +/* when CONFIG_MOVABLE_NODE, we allow online node don't have normal memory */
+
+The comment is hard to understand.  Should it read "When
+CONFIG_MOVABLE_NODE, we permit onlining of a node which doesn't have
+normal memory"?
+
+> +static bool can_online_high_movable(struct zone *zone)
 > +{
-> +	/*
-> +	 * Optimization: for pte sync, if spte was writable the hash
-> +	 * lookup is unnecessary (and expensive). Write protection
-> +	 * is responsibility of mmu_get_page / kvm_sync_page.
-> +	 * Same reasoning can be applied to dirty page accounting.
-> +	 */
-> +	if (!can_unsync && is_writable_pte(*sptep))
-> +		return false;
-> +
-> +	if ((level > PT_PAGE_TABLE_LEVEL &&
-> +	   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
-> +	      mmu_need_write_protect(vcpu, gfn, can_unsync))
-> +		return true;
-> +
-> +	return false;
+> +	return true;
 > +}
-> +
-> +/* The return value indicates whether the @gfn need to be write protected. */
-> +static bool vcpu_adjust_access(struct kvm_vcpu *vcpu, u64 *sptep,
-> +			       unsigned *pte_access, int user_fault,
-> +			       int write_fault, int level, gfn_t gfn,
-> +			       bool can_unsync, bool host_writable)
+> +#else /* #ifdef CONFIG_MOVABLE_NODE */
+>  /* ensure every online node has NORMAL memory */
+>  static bool can_online_high_movable(struct zone *zone)
+>  {
+>  	return node_state(zone_to_nid(zone), N_NORMAL_MEMORY);
+>  }
+> +#endif /* #ifdef CONFIG_MOVABLE_NODE */
+>  
+>  /* check which state of node_states will be changed when online memory */
+>  static void node_states_check_changes_online(unsigned long nr_pages,
+> @@ -1097,6 +1105,13 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
+>  	return offlined;
+>  }
+>  
+> +#ifdef CONFIG_MOVABLE_NODE
+> +/* when CONFIG_MOVABLE_NODE, we allow online node don't have normal memory */
+
+Ditto, after replacing "online" with offlining".
+
+> +static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
 > +{
-> +	bool ret = false;
-> +	unsigned access = *pte_access;
-> +
-> +	if (!host_writable)
-> +		access &= ~ACC_WRITE_MASK;
-> +
-> +	if (!(access & ACC_WRITE_MASK) && (!vcpu->arch.mmu.direct_map &&
-> +	      write_fault && !is_write_protection(vcpu) && !user_fault)) {
-> +		access |= ACC_WRITE_MASK;
-> +		access &= ~ACC_USER_MASK;
-> +
-> +		/*
-> +		 * If we converted a user page to a kernel page,
-> +		 * so that the kernel can write to it when cr0.wp=0,
-> +		 * then we should prevent the kernel from executing it
-> +		 * if SMEP is enabled.
-> +		 */
-> +		if (kvm_read_cr4_bits(vcpu, X86_CR4_SMEP))
-> +			access &= ~ACC_EXEC_MASK;
-> +	}
-> +
-> +	if ((access & ACC_WRITE_MASK) &&
-> +		  gfn_need_write_protect(vcpu, sptep, level, gfn, can_unsync)) {
-> +		access &= ~ACC_WRITE_MASK;
-> +		ret = true;
-> +	}
-> +
-> +	*pte_access = access;
-> +	return ret;
+> +	return true;
 > +}
-> +
->  static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  		    unsigned pte_access, int user_fault,
->  		    int write_fault, int level,
-> @@ -2341,6 +2398,9 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
->  		return 0;
-> 
-> +	ret = vcpu_adjust_access(vcpu, sptep, &pte_access, user_fault,
-> +		      write_fault, level, gfn, can_unsync, host_writable);
-> +
->  	spte = PT_PRESENT_MASK;
->  	if (!speculative)
->  		spte |= shadow_accessed_mask;
-> @@ -2353,61 +2413,26 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  	if (pte_access & ACC_USER_MASK)
->  		spte |= shadow_user_mask;
-> 
-> +	if (pte_access & ACC_WRITE_MASK) {
-> +		spte |= PT_WRITABLE_MASK;
-> +		spte |= SPTE_MMU_WRITEABLE;
-> +	}
-> +
->  	if (level > PT_PAGE_TABLE_LEVEL)
->  		spte |= PT_PAGE_SIZE_MASK;
-> +
->  	if (tdp_enabled)
->  		spte |= kvm_x86_ops->get_mt_mask(vcpu, gfn,
->  			kvm_is_mmio_pfn(pfn));
-> 
->  	if (host_writable)
->  		spte |= SPTE_HOST_WRITEABLE;
-> -	else
-> -		pte_access &= ~ACC_WRITE_MASK;
-> 
->  	spte |= (u64)pfn << PAGE_SHIFT;
-> 
-> -	if ((pte_access & ACC_WRITE_MASK)
-> -	    || (!vcpu->arch.mmu.direct_map && write_fault
-> -		&& !is_write_protection(vcpu) && !user_fault)) {
-> -		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
-> -
-> -		if (!vcpu->arch.mmu.direct_map
-> -		    && !(pte_access & ACC_WRITE_MASK)) {
-> -			spte &= ~PT_USER_MASK;
-> -			/*
-> -			 * If we converted a user page to a kernel page,
-> -			 * so that the kernel can write to it when cr0.wp=0,
-> -			 * then we should prevent the kernel from executing it
-> -			 * if SMEP is enabled.
-> -			 */
-> -			if (kvm_read_cr4_bits(vcpu, X86_CR4_SMEP))
-> -				spte |= PT64_NX_MASK;
-> -		}
-> -
-> -		/*
-> -		 * Optimization: for pte sync, if spte was writable the hash
-> -		 * lookup is unnecessary (and expensive). Write protection
-> -		 * is responsibility of mmu_get_page / kvm_sync_page.
-> -		 * Same reasoning can be applied to dirty page accounting.
-> -		 */
-> -		if (!can_unsync && is_writable_pte(*sptep))
-> -			goto set_pte;
-> -
-> -		if ((level > PT_PAGE_TABLE_LEVEL &&
-> -		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
-> -		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
-> -			pgprintk("%s: found shadow page for %llx, marking ro\n",
-> -				 __func__, gfn);
-> -			ret = 1;
-> -			pte_access &= ~ACC_WRITE_MASK;
-> -			spte &= ~(PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE);
-> -		}
-> -	}
-> -
-> -	if (pte_access & ACC_WRITE_MASK)
-> +	if (is_writable_pte(spte))
->  		mark_page_dirty(vcpu->kvm, gfn);
-> 
-> -set_pte:
->  	if (mmu_spte_update(sptep, spte))
->  		kvm_flush_remote_tlbs(vcpu->kvm);
->  	return ret;
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +#else /* #ifdef CONFIG_MOVABLE_NODE */
+>  /* ensure the node has NORMAL memory if it is still online */
+>  static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+>  {
+> @@ -1120,6 +1135,7 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+>  	 */
+>  	return present_pages == 0;
+>  }
+> +#endif /* #ifdef CONFIG_MOVABLE_NODE */
+
+Please, spend more time over the accuracy and completeness of the
+changelog and comments?  That will result in better and more
+maintainable code.  And it results in *much* more effective code
+reviewing.
+
+
