@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2KTRXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 12:23:01 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:40154 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2KTRW7 (ORCPT
+	id S1752267Ab2KTRXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 12:23:13 -0500
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:40065 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KTRXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 12:22:59 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Steve French <smfrench@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Steve French <sfrench@samba.org>
-References: <87pq38wimv.fsf@xmission.com>
-	<1353415420-5457-1-git-send-email-ebiederm@xmission.com>
-	<1353415420-5457-4-git-send-email-ebiederm@xmission.com>
-	<CAH2r5mt91Av7w6GQUPNu2A9EGRNbPGGAhMO=EobOMi5Cn8gh5g@mail.gmail.com>
-Date: Tue, 20 Nov 2012 09:22:42 -0800
-In-Reply-To: <CAH2r5mt91Av7w6GQUPNu2A9EGRNbPGGAhMO=EobOMi5Cn8gh5g@mail.gmail.com>
-	(Steve French's message of "Tue, 20 Nov 2012 10:56:40 -0600")
-Message-ID: <87lidwqjdp.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18psH8+QZ937nTWEeSdosJn4Mmi2yDL0R0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0018]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Steve French <smfrench@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH RFC 04/12] userns: Convert cifs to use kuid/kgid where appropriate
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Tue, 20 Nov 2012 12:23:10 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-samsung-soc@vger.kernel.org
+Cc: Olof Johansson <olofj@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Arun Kumar K <arun.kk@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: dts: exynos: Move the dwmmc aliases from smdk5250 dts to exynos
+Date: Tue, 20 Nov 2012 09:22:30 -0800
+Message-Id: <1353432158-22999-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve French <smfrench@gmail.com> writes:
+The aliases for dwmmc were placed in the SMDK5250 dts file but really
+should be common for all exynos5250 boards.  Move it to the common CPU
+file.
 
-> Do you have a pointer to the background on kuid/kgid
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-You might try this lwn article
-https://lwn.net/Articles/491310/
+---
+ arch/arm/boot/dts/exynos5250-smdk5250.dts |   12 ++++--------
+ arch/arm/boot/dts/exynos5250.dtsi         |   12 ++++++++----
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-In a nutshell each user namespace has it's own view of uid_t and gid_t
-values.  Those values are mapped into kernel internal kuid_t and kgid_t
-values.  Then user space interfaces convert from kuid_t and kgid_t when
-read from userspace.
+diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+index 405009c..541fe39 100644
+--- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
++++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+@@ -17,10 +17,6 @@
+ 	compatible = "samsung,smdk5250", "samsung,exynos5250";
+ 
+ 	aliases {
+-		mshc0 = &dwmmc_0;
+-		mshc1 = &dwmmc_1;
+-		mshc2 = &dwmmc_2;
+-		mshc3 = &dwmmc_3;
+ 	};
+ 
+ 	memory {
+@@ -97,7 +93,7 @@
+ 		};
+ 	};
+ 
+-	dwmmc_0: dwmmc0@12200000 {
++	dwmmc0@12200000 {
+ 		num-slots = <1>;
+ 		supports-highspeed;
+ 		broken-cd;
+@@ -118,11 +114,11 @@
+ 		};
+ 	};
+ 
+-	dwmmc_1: dwmmc1@12210000 {
++	dwmmc1@12210000 {
+ 		status = "disabled";
+ 	};
+ 
+-	dwmmc_2: dwmmc2@12220000 {
++	dwmmc2@12220000 {
+ 		num-slots = <1>;
+ 		supports-highspeed;
+ 		fifo-depth = <0x80>;
+@@ -143,7 +139,7 @@
+ 		};
+ 	};
+ 
+-	dwmmc_3: dwmmc3@12230000 {
++	dwmmc3@12230000 {
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index cf6a02d..7c5664b 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -31,6 +31,10 @@
+ 		gsc1 = &gsc_1;
+ 		gsc2 = &gsc_2;
+ 		gsc3 = &gsc_3;
++		mshc0 = &dwmmc_0;
++		mshc1 = &dwmmc_1;
++		mshc2 = &dwmmc_2;
++		mshc3 = &dwmmc_3;
+ 	};
+ 
+ 	gic:interrupt-controller@10481000 {
+@@ -206,7 +210,7 @@
+ 		#size-cells = <0>;
+ 	};
+ 
+-	dwmmc0@12200000 {
++	dwmmc_0: dwmmc0@12200000 {
+ 		compatible = "samsung,exynos5250-dw-mshc";
+ 		reg = <0x12200000 0x1000>;
+ 		interrupts = <0 75 0>;
+@@ -214,7 +218,7 @@
+ 		#size-cells = <0>;
+ 	};
+ 
+-	dwmmc1@12210000 {
++	dwmmc_1: dwmmc1@12210000 {
+ 		compatible = "samsung,exynos5250-dw-mshc";
+ 		reg = <0x12210000 0x1000>;
+ 		interrupts = <0 76 0>;
+@@ -222,7 +226,7 @@
+ 		#size-cells = <0>;
+ 	};
+ 
+-	dwmmc2@12220000 {
++	dwmmc_2: dwmmc2@12220000 {
+ 		compatible = "samsung,exynos5250-dw-mshc";
+ 		reg = <0x12220000 0x1000>;
+ 		interrupts = <0 77 0>;
+@@ -230,7 +234,7 @@
+ 		#size-cells = <0>;
+ 	};
+ 
+-	dwmmc3@12230000 {
++	dwmmc_3: dwmmc3@12230000 {
+ 		compatible = "samsung,exynos5250-dw-mshc";
+ 		reg = <0x12230000 0x1000>;
+ 		interrupts = <0 78 0>;
+-- 
+1.7.7.3
 
-The initial user namespace as a 1-1 identity mapping between kuid_t and
-uid_t values.
-
-kuid_t and kgid_t are not assignment compatible with uid_t and gid_t so
-that if the conversions are left out a compile error results.
-
-My strategy is to push kuid_t and kgid_t values as deeply into the
-kernel data structures as possible so that there is a high propbability
-that when we get it wrong a compile error will happen.
-
-Eric
