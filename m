@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab2KTIaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:30:20 -0500
+	id S1752711Ab2KTIaa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:30:30 -0500
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:46901 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2KTIaT (ORCPT
+	with ESMTP id S1752480Ab2KTIa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:30:19 -0500
+	Tue, 20 Nov 2012 03:30:28 -0500
 From: Tejun Heo <tj@kernel.org>
 To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
         ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
 Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCHSET REPOST v2 cgroup/for-3.8] netcls/prio_cgroup: update hierarchy support
-Date: Tue, 20 Nov 2012 00:30:04 -0800
-Message-Id: <1353400211-5182-1-git-send-email-tj@kernel.org>
+        netdev@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/7] netprio_cgroup: simplify write_priomap()
+Date: Tue, 20 Nov 2012 00:30:06 -0800
+Message-Id: <1353400211-5182-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353400211-5182-1-git-send-email-tj@kernel.org>
+References: <1353400211-5182-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Reposting w/ cc to netdev added as requested by David.  Sorry about
-the noise.)
+sscanf() doesn't bite.
 
-Hello, guys.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+---
+ net/core/netprio_cgroup.c | 56 ++++++++++-------------------------------------
+ 1 file changed, 11 insertions(+), 45 deletions(-)
 
-This patchset replaces the following two patchsets.
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index f0b6b0d..66d98da 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -176,66 +176,32 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 			 const char *buffer)
+ {
+-	char *devname = kstrdup(buffer, GFP_KERNEL);
+-	int ret = -EINVAL;
+ 	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
+-	unsigned long priority;
+-	char *priostr;
++	char devname[IFNAMSIZ + 1];
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
++	u32 prio;
++	int ret;
+ 
+-	if (!devname)
+-		return -ENOMEM;
+-
+-	/*
+-	 * Minimally sized valid priomap string
+-	 */
+-	if (strlen(devname) < 3)
+-		goto out_free_devname;
+-
+-	priostr = strstr(devname, " ");
+-	if (!priostr)
+-		goto out_free_devname;
+-
+-	/*
+-	 *Separate the devname from the associated priority
+-	 *and advance the priostr pointer to the priority value
+-	 */
+-	*priostr = '\0';
+-	priostr++;
+-
+-	/*
+-	 * If the priostr points to NULL, we're at the end of the passed
+-	 * in string, and its not a valid write
+-	 */
+-	if (*priostr == '\0')
+-		goto out_free_devname;
+-
+-	ret = kstrtoul(priostr, 10, &priority);
+-	if (ret < 0)
+-		goto out_free_devname;
+-
+-	ret = -ENODEV;
++	if (sscanf(buffer, "%"__stringify(IFNAMSIZ)"s %u", devname, &prio) != 2)
++		return -EINVAL;
+ 
+ 	dev = dev_get_by_name(&init_net, devname);
+ 	if (!dev)
+-		goto out_free_devname;
++		return -ENODEV;
+ 
+ 	rtnl_lock();
++
+ 	ret = write_update_netdev_table(dev);
+-	if (ret < 0)
+-		goto out_put_dev;
++	if (ret)
++		goto out_unlock;
+ 
+ 	map = rtnl_dereference(dev->priomap);
+ 	if (map)
+-		map->priomap[prioidx] = priority;
+-
+-out_put_dev:
++		map->priomap[prioidx] = prio;
++out_unlock:
+ 	rtnl_unlock();
+ 	dev_put(dev);
+-
+-out_free_devname:
+-	kfree(devname);
+ 	return ret;
+ }
+ 
+-- 
+1.7.11.7
 
- [1] "[PATCHSET cgroup/for-3.8] netprio_cgroup: implement hierarchy support"
- [2] "[PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy support"
-
-It turns out that we'll have to live with attributes which are
-inherited only while creating a new cgroup - such attributes are
-already in wide use in cpuset, and there doesn't seem to be much point
-in trying to implement fully hierarchical behavior on all attributes
-especially as it requires an otherwise-unnecessary userland behavior
-change on netcls_cgroup.
-
-This patchset drop .broken_hierarchy from netcls_cgroup while
-retaining the current behavior, and implements the same behavior on
-netprio_cgroup.
-
- 0001-netcls_cgroup-move-config-inheritance-to-css_online-.patch
- 0002-netprio_cgroup-simplify-write_priomap.patch
- 0003-netprio_cgroup-shorten-variable-names-in-extend_netd.patch
- 0004-netprio_cgroup-reimplement-priomap-expansion.patch
- 0005-netprio_cgroup-use-cgroup-id-instead-of-cgroup_netpr.patch
- 0006-netprio_cgroup-implement-netprio-_set-_prio-helpers.patch
- 0007-netprio_cgroup-allow-nesting-and-inherit-config-on-c.patch
-
-0001 drops .broken_hierarchy from netcls_cgroup.
-
-0002-0006 prepare for inheritance implementation.  These patches are
-identical from the previous posting[1].
-
-0007 implements inheritance on cgroup creation.
-
-This patchset is on top of cgroup/for-3.8 0a950f65e1 ("cgroup: add
-cgroup->id").
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-net-cls-prio-hierarchy
-
-diffstat follows.
-
- Documentation/cgroups/net_prio.txt |    2
- include/net/netprio_cgroup.h       |   11 -
- net/core/netprio_cgroup.c          |  254 ++++++++++++++++---------------------
- net/sched/cls_cgroup.c             |   20 +-
- 4 files changed, 124 insertions(+), 163 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] https://lkml.org/lkml/2012/11/16/514
-[2] http://thread.gmane.org/gmane.linux.kernel.cgroups/5094
