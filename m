@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab2KTH0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:26:46 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16206 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2KTH0o (ORCPT
+	id S1751933Ab2KTH2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:28:52 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7632 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2KTH2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:26:44 -0500
+	Tue, 20 Nov 2012 02:28:51 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 19 Nov 2012 23:26:35 -0800
+	by hqnvupgp07.nvidia.com on Mon, 19 Nov 2012 23:28:04 -0800
 From: Mark Zhang <markz@nvidia.com>
-To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
-        <swarren@nvidia.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Mark Zhang <markz@nvidia.com>
-Subject: [PATCH V2] drm: Add NVIDIA Tegra30 support
-Date: Tue, 20 Nov 2012 15:26:16 +0800
-Message-ID: <1353396376-24121-1-git-send-email-markz@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Mark Zhang <markz@nvidia.com>
+Subject: [PATCH V2] ARM: dt: tegra: cardhu: Add drm components
+Date: Tue, 20 Nov 2012 15:27:52 +0800
+Message-ID: <1353396472-24167-1-git-send-email-markz@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -25,51 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is based on Thierry's drm patch for Tegra20:
-- [PATCH v2 0/6] Device tree updates for host1x support
-- [PATCH v3 0/2] NVIDIA Tegra DRM driver
-
-It adds the support for NVIDIA Tegra30.
+This patch adds the rgb node which is needed by
+tegra drm driver.
 
 Signed-off-by: Mark Zhang <markz@nvidia.com>
 ---
- drivers/gpu/drm/tegra/dc.c     |    1 +
- drivers/gpu/drm/tegra/host1x.c |    3 +++
- 2 files changed, 4 insertions(+)
+Changes in V2:
+- Remove HDMI node in dts. Currently tegra drm driver doesn't 
+  work while RGB and HDMI are enabled simultaneously
 
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 53b9852..37bd759 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -818,6 +818,7 @@ static int tegra_dc_remove(struct platform_device *pdev)
- }
+ arch/arm/boot/dts/tegra30-cardhu.dtsi |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+index bdb2a66..20af79e 100644
+--- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
++++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+@@ -27,6 +27,15 @@
+ 	model = "NVIDIA Tegra30 Cardhu evaluation board";
+ 	compatible = "nvidia,cardhu", "nvidia,tegra30";
  
- static struct of_device_id tegra_dc_of_match[] = {
-+	{ .compatible = "nvidia,tegra30-dc", },
- 	{ .compatible = "nvidia,tegra20-dc", },
- 	{ },
- };
-diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/drm/tegra/host1x.c
-index 1f728cd..28c28ac 100644
---- a/drivers/gpu/drm/tegra/host1x.c
-+++ b/drivers/gpu/drm/tegra/host1x.c
-@@ -66,6 +66,8 @@ static int host1x_remove_drm_client(struct host1x *host1x,
- static int host1x_parse_dt(struct host1x *host1x)
- {
- 	static const char * const compat[] = {
-+		"nvidia,tegra30-dc",
-+		"nvidia,tegra30-hdmi",
- 		"nvidia,tegra20-dc",
- 		"nvidia,tegra20-hdmi",
++	host1x {
++		dc@54200000 {
++			rgb {
++				status = "okay";
++				nvidia,ddc-i2c-bus = <&rgbddc>;
++			};
++		};
++	};
++
+ 	memory {
+ 		reg = <0x80000000 0x40000000>;
  	};
-@@ -268,6 +270,7 @@ int host1x_unregister_client(struct host1x *host1x,
- }
+@@ -114,7 +123,7 @@
+ 		clock-frequency = <408000000>;
+ 	};
  
- static struct of_device_id tegra_host1x_of_match[] = {
-+	{ .compatible = "nvidia,tegra30-host1x", },
- 	{ .compatible = "nvidia,tegra20-host1x", },
- 	{ },
- };
+-	i2c@7000c000 {
++	rgbddc: i2c@7000c000 {
+ 		status = "okay";
+ 		clock-frequency = <100000>;
+ 	};
 -- 
 1.7.9.5
 
