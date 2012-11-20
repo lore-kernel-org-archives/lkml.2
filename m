@@ -1,308 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2KTN1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:27:15 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47718 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2KTN1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:27:14 -0500
-From: MAACHE Mehdi <mehdi.maache@gmail.com>
-To: mehdi.maache@gmail.com, greg@kroah.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: rtl8187se: fixed some checkpatch warnings and errors in r8180_wx.c
-Date: Tue, 20 Nov 2012 14:26:42 +0100
-Message-Id: <1353418002-8254-1-git-send-email-mehdi.maache@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753465Ab2KTN1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:27:21 -0500
+Received: from void.printf.net ([89.145.121.20]:56686 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab2KTN1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:27:18 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Kevin Liu <keyuan.liu@gmail.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
+        Philip Rakity <prakity@nvidia.com>
+Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for non-fixed regulators
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+	<50AB34E2.1010206@samsung.com>
+	<CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
+	<50AB587F.3040405@samsung.com>
+	<CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
+	<50AB81C8.4090300@samsung.com>
+Date: Tue, 20 Nov 2012 08:27:05 -0500
+In-Reply-To: <50AB81C8.4090300@samsung.com> (Marek Szyprowski's message of
+	"Tue, 20 Nov 2012 14:12:40 +0100")
+Message-ID: <878v9wflqu.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the r8180_wx.c file that fixes up some warnings and errors found by the checkpatch.pl tool
-- WARNING: line over 80 characters
-- ERROR: "(foo*)" should be "(foo *)"
-- ERROR: "foo* bar" should be "foo *bar"
-- ERROR: trailing whitespace
-- ERROR: that open brace { should be on the previous line
+Hi,
 
-Signed-off-by MAACHE Mehdi <mehdi.maache@gmail.com>
----
- drivers/staging/rtl8187se/r8180_wx.c |   95 +++++++++++++++++++---------------
- 1 files changed, 53 insertions(+), 42 deletions(-)
+On Tue, Nov 20 2012, Marek Szyprowski wrote:
+>> >> >> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
+>> >> >> range according to spec
+>> >> >>
+>> >> >> From: Kevin Liu <kliu5@marvell.com>
+>> >> >>
+>> >> >> For regulator vmmc/vmmcq, use voltage range as below
+>> >> >> 3.3v/3.0v: (2.7v, 3.6v)
+>> >> >> 1.8v: (1.7v, 1.95v)
+>> >> >> Original code use the specific value which may fail in regulator
+>> >> >> driver if it does NOT support the specific voltage.
+>> >> >>
+>> >> >> Signed-off-by: Jialing Fu <jlfu@marvell.com>
+>> >> >> Signed-off-by: Kevin Liu <kliu5@marvell.com>
+>> >> >
+>> >> >
+>> >> > Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> >> >
+>> >> > This patch restores sdhci devices to working state on Samsung boards
+>> >> > (tested on GONI and UniversalC210) after merging "regulator: fix voltage
+>> >> > check in regulator_is_supported_voltage()" patch to v3.7-rc6 (commit
+>> >> > f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have it
+>> >> > merged before the final v3.7 is out.
+>> >> >
+>> >> Marek,
+>> >>
+>> >> thanks a lot for the verification!
+>> >> And your patch "mmc: sdhci: apply voltage range check only for
+>> >> non-fixed regulators" (commit
+>> >> d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
+>> >> mmc-next) can be reverted if this patch merged?
+>> >
+>> >
+>> > Yes, it can be replaced with it, although there is still an issue that need
+>> > to be resolved somehow. Right now SDHCI driver fails to initialize if
+>> > support
+>> > for dummy regulator is enabled.
+>> >
+>> Then I think the dummy issue can be resolved with your patch merged
+>> and if you can just update your patch from
+>>       "regulator_count_voltages(host->vmmc) > 1"
+>> to
+>>       "regulator_count_voltages(host->vmmc) > 0"
+>> to let fix regulator work.
+>
+> regulator_count_voltages() returns 1 for both fixed regulators and for
+> virtual dummy regulator, so the above change makes no sense.
+>
+> However I was so focused on fixing the 2.8V supply case that I missed the
+> fact that my "mmc: sdhci: apply voltage range check only for non-fixed
+> regulators" patch also fixed the dummy regulator case.
+>
+> The conclusion is that applying both patches should finally fix the
+> regulator issues with for the Samsung boards (2.8V supply for eMMC) and
+> 'dummy-regulators' cases.
 
-diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
-index 52f63d7..805c253 100644
---- a/drivers/staging/rtl8187se/r8180_wx.c
-+++ b/drivers/staging/rtl8187se/r8180_wx.c
-@@ -11,7 +11,8 @@
- 	Parts of this driver are based on the rtl8180 driver skeleton
- 	from Patric Schenke & Andres Salomon.
- 
--	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
-+	Parts of this driver are based on the
-+	Intel Pro Wireless 2100 GPL driver.
- 
- 	We want to thanks the Authors of those projects and the Ndiswrapper
- 	project Authors.
-@@ -24,7 +25,8 @@
- #include "ieee80211/dot11d.h"
- 
- u32 rtl8180_rates[] = {1000000, 2000000, 5500000, 11000000,
--	6000000, 9000000, 12000000, 18000000, 24000000, 36000000, 48000000, 54000000};
-+	6000000, 9000000, 12000000, 18000000, 24000000, 36000000,
-+	48000000, 54000000};
- 
- #define RATE_COUNT ARRAY_SIZE(rtl8180_rates)
- 
-@@ -59,10 +61,8 @@ int r8180_wx_set_key(struct net_device *dev, struct iw_request_info *info,
- 	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
- 
--	if (erq->flags & IW_ENCODE_DISABLED)
--
--	if (erq->length > 0) {
--		u32* tkey = (u32*) key;
-+	if ((erq->flags & IW_ENCODE_DISABLED) && erq->length > 0) {
-+		u32 *tkey = (u32 *) key;
- 		priv->key0[0] = tkey[0];
- 		priv->key0[1] = tkey[1];
- 		priv->key0[2] = tkey[2];
-@@ -75,8 +75,9 @@ int r8180_wx_set_key(struct net_device *dev, struct iw_request_info *info,
- }
- 
- 
--static int r8180_wx_set_beaconinterval(struct net_device *dev, struct iw_request_info *aa,
--			  union iwreq_data *wrqu, char *b)
-+static int r8180_wx_set_beaconinterval(struct net_device *dev,
-+					struct iw_request_info *aa,
-+					union iwreq_data *wrqu, char *b)
- {
- 	int *parms = (int *)b;
- 	int bi = parms[0];
-@@ -208,7 +209,7 @@ struct  iw_range_with_scan_capa	{
- 
- 		/* NWID (or domain id)	*/
- 		__u32           min_nwid; /* Minimal NWID we are able to set */
--		__u32			max_nwid; /* Maximal NWID we are able to set */
-+		__u32		max_nwid; /* Maximal NWID we are able to set */
- 
- 		/* Old Frequency (backward compat - moved lower ) */
- 		__u16			old_num_channels;
-@@ -296,12 +297,12 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 		}
- 
- 		if (val == IW_MAX_FREQUENCIES)
--		break;
-+			break;
- 	}
- 
- 	range->num_frequency = val;
- 	range->enc_capa = IW_ENC_CAPA_WPA | IW_ENC_CAPA_WPA2 |
--						IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
-+			IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
- 
- 	return 0;
- }
-@@ -312,26 +313,28 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int ret;
--	struct ieee80211_device* ieee = priv->ieee80211;
-+	struct ieee80211_device *ieee = priv->ieee80211;
- 
- 
- 	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
- 
- 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)	{
--		struct iw_scan_req* req = (struct iw_scan_req*)b;
-+		struct iw_scan_req *req = (struct iw_scan_req *)b;
- 		if (req->essid_len)		{
- 			ieee->current_network.ssid_len = req->essid_len;
--			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-+			memcpy(ieee->current_network.ssid,
-+					req->essid, req->essid_len);
- 		}
- 	}
- 
- 	down(&priv->wx_sem);
- 	if (priv->up)	{
- 		priv->ieee80211->actscanning = true;
--		if (priv->bInactivePs && (priv->ieee80211->state != IEEE80211_LINKED))	{
-+		if (priv->bInactivePs &&
-+			(priv->ieee80211->state != IEEE80211_LINKED))	{
- 			IPSLeave(dev);
--		ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
-+			ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
- 			ret = 0;
- 		}	else	{
- 			/* prevent scan in BusyTraffic */
-@@ -341,7 +344,8 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- 				printk("Now traffic is busy, please try later!\n");
- 			}	else
- 				/* prevent scan in BusyTraffic,end */
--				ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
-+				ret = ieee80211_wx_set_scan(priv->ieee80211,
-+						a, wrqu, b);
- 		}
- 	}	else
- 			ret = -1;
-@@ -517,10 +521,12 @@ static int r8180_wx_set_enc(struct net_device *dev,
- 
- 	down(&priv->wx_sem);
- 
--	if (priv->hw_wep) ret = r8180_wx_set_key(dev, info, wrqu, key);
-+	if (priv->hw_wep)
-+		ret = r8180_wx_set_key(dev, info, wrqu, key);
- 	else	{
- 		DMESG("Setting SW wep key");
--		ret = ieee80211_wx_set_encode(priv->ieee80211, info, wrqu, key);
-+		ret = ieee80211_wx_set_encode(priv->ieee80211,
-+						info, wrqu, key);
- 	}
- 
- 	up(&priv->wx_sem);
-@@ -538,11 +544,12 @@ static int r8180_wx_get_enc(struct net_device *dev,
- }
- 
- 
--static int r8180_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa, union
--	iwreq_data *wrqu, char *p)	{
-+static int r8180_wx_set_scan_type(struct net_device *dev,
-+		struct iw_request_info *aa, union iwreq_data *wrqu, char *p)
-+{
- 
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	int *parms = (int*)p;
-+	int *parms = (int *)p;
- 	int mode = parms[0];
- 
- 	if (priv->ieee80211->bHwRadioOff)
-@@ -581,11 +588,12 @@ static int r8180_wx_set_retry(struct net_device *dev,
- 	}
- 	if (wrqu->retry.flags & IW_RETRY_MAX) {
- 		priv->retry_rts = wrqu->retry.value;
--		DMESG("Setting retry for RTS/CTS data to %d", wrqu->retry.value);
--
-+		DMESG("Setting retry for RTS/CTS data to %d",
-+				wrqu->retry.value);
- 	}	else {
- 		priv->retry_data = wrqu->retry.value;
--		DMESG("Setting retry for non RTS/CTS data to %d", wrqu->retry.value);
-+		DMESG("Setting retry for non RTS/CTS data to %d",
-+				wrqu->retry.value);
- 	}
- 
- 	/* FIXME !
-@@ -853,7 +861,7 @@ static int r8180_wx_get_preamble(struct net_device *dev,
- 
- 
- 
--	*extra = (char) priv->plcp_preamble_mode;	/* 0:auto 1:short 2:long */
-+	*extra = (char) priv->plcp_preamble_mode; /* 0:auto 1:short 2:long */
- 	up(&priv->wx_sem);
- 
- 	return 0;
-@@ -1036,7 +1044,6 @@ static int r8180_wx_set_channelplan(struct net_device *dev,
- 		/* Set new channel map */
- 		for (i = 1; i <= DefaultChannelPlan[*val].Len; i++)
- 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[DefaultChannelPlan[*val].Channel[i-1]] = 1;
--		
- 	}
- 	up(&priv->wx_sem);
- 
-@@ -1058,7 +1065,8 @@ static int r8180_wx_get_version(struct net_device *dev,
- }
- 
- /* added by amy 080818 */
--/*receive datarate from user typing valid rate is from 2 to 108 (1 - 54M), if input 0, return to normal rate adaptive. */
-+/*receive datarate from user typing valid rate is from 2 to 108 (1 - 54M),
-+ *  if input 0, return to normal rate adaptive. */
- static int r8180_wx_set_forcerate(struct net_device *dev,
- 			     struct iw_request_info *info,
- 			     union iwreq_data *wrqu, char *extra)
-@@ -1069,10 +1077,10 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
- 	down(&priv->wx_sem);
- 
- 	printk("==============>%s(): forcerate is %d\n", __func__, forcerate);
--	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) || (forcerate == 22) || (forcerate == 12) ||
--		(forcerate == 18) || (forcerate == 24) || (forcerate == 36) || (forcerate == 48) || (forcerate == 72) ||
--		(forcerate == 96) || (forcerate == 108))
--	{
-+	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) ||
-+		(forcerate == 22) || (forcerate == 12) || (forcerate == 18) ||
-+		(forcerate == 24) || (forcerate == 36) || (forcerate == 48) ||
-+		(forcerate == 72) || (forcerate == 96) || (forcerate == 108)) {
- 		priv->ForcedDataRate = 1;
- 		priv->ieee80211->rate = forcerate * 5;
- 	}	else if (forcerate == 0)	{
-@@ -1085,8 +1093,8 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
- }
- 
- static int r8180_wx_set_enc_ext(struct net_device *dev,
--										struct iw_request_info *info,
--										union iwreq_data *wrqu, char *extra)
-+				struct iw_request_info *info,
-+				union iwreq_data *wrqu, char *extra)
- {
- 
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-@@ -1119,8 +1127,8 @@ static int r8180_wx_set_auth(struct net_device *dev,
- }
- 
- static int r8180_wx_set_mlme(struct net_device *dev,
--										struct iw_request_info *info,
--										union iwreq_data *wrqu, char *extra)
-+				struct iw_request_info *info,
-+				union iwreq_data *wrqu, char *extra)
- {
- 	int ret = 0;
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-@@ -1150,7 +1158,8 @@ static int r8180_wx_set_gen_ie(struct net_device *dev,
- 
- 		down(&priv->wx_sem);
- #if 1
--		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, wrqu->data.length);
-+		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra,
-+						wrqu->data.length);
- #endif
- 		up(&priv->wx_sem);
- 		return ret;
-@@ -1351,7 +1360,7 @@ static iw_handler r8180_private_handler[] = {
- };
- 
- static inline int is_same_network(struct ieee80211_network *src,
--									struct ieee80211_network *dst,
-+				  struct ieee80211_network *dst,
- 				  struct ieee80211_device *ieee)
- {
- 		/* A network is only a duplicate if the channel, BSSID, ESSID
-@@ -1359,10 +1368,12 @@ static inline int is_same_network(struct ieee80211_network *src,
- 		 * We treat all <hidden> with the same BSSID and channel
- 		 * as one network
- 		 */
--		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
-+		return (((src->ssid_len == dst->ssid_len) ||
-+			(ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
- 			(src->channel == dst->channel) &&
- 			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
--			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
-+			(!memcmp(src->ssid, dst->ssid, src->ssid_len) ||
-+			(ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
- 			((src->capability & WLAN_CAPABILITY_IBSS) ==
- 			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
- 			((src->capability & WLAN_CAPABILITY_BSS) ==
-@@ -1373,8 +1384,8 @@ static inline int is_same_network(struct ieee80211_network *src,
- static struct iw_statistics *r8180_get_wireless_stats(struct net_device *dev)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	struct ieee80211_device* ieee = priv->ieee80211;
--	struct iw_statistics* wstats = &priv->wstats;
-+	struct ieee80211_device *ieee = priv->ieee80211;
-+	struct iw_statistics *wstats = &priv->wstats;
- 	int tmp_level = 0;
- 	int tmp_qual = 0;
- 	int tmp_noise = 0;
+Thanks, I've pushed v5 of "mmc: sdhci: use regulator min/max voltage
+range according to spec" to mmc-next for 3.7 with Marek's Tested-by now.
+
+- Chris.
 -- 
-1.7.1
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
