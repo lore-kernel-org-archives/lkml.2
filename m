@@ -1,57 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab2KTIRk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:17:40 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:49559 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab2KTIRX (ORCPT
+	id S1752696Ab2KTIRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:17:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:53396 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2KTIRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:17:23 -0500
-Date: Tue, 20 Nov 2012 09:17:11 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Josh Cartwright <josh.cartwright@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 2/2] ARM: tegra: move timer.c to drivers/clocksource/
-Message-ID: <20121120091711.2609af06@skate>
-In-Reply-To: <20121120005036.GA6280@kryptos>
-References: <1353371237-2482-1-git-send-email-swarren@wwwdotorg.org>
-	<1353371237-2482-2-git-send-email-swarren@wwwdotorg.org>
-	<20121120005036.GA6280@kryptos>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 03:17:48 -0500
+Date: Tue, 20 Nov 2012 09:17:46 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: DVS regulator drivers
+In-Reply-To: <20121120010547.GD4483@opensource.wolfsonmicro.com>
+Message-ID: <Pine.LNX.4.64.1211200856380.21420@axis700.grange>
+References: <Pine.LNX.4.64.1211191213380.11024@axis700.grange>
+ <20121120010547.GD4483@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:W2GIBct5+ohReG1WPSZAh++4BLNRUPg2zPoX5wyF8tO
+ mm9xOQ/+24dG0IRuA/6XLsKxEFDZ6XRupTjOjd1UrlV8jPqW0H
+ +XNTGX5Xq5W1KiE7jfjr7EQuMiqAqQ015ZJxdSeuE+GUbtpNe6
+ HHHPy7s0ZZL1iGU4ITOT5OPDu3z5kThmfL32GvaF1QthYuRJKn
+ eCjdUZ+U/G6NrajrRPZqrM4k8NfT0JGmlC7Z48CnjgmTsSzypk
+ DRnqZoVVrnBjf0q8dhP3U6u68C3EptKIAqUeJDHXJ1BTbCuOB2
+ eQXARw6TL5Swy1iG+JBDzhMbNaSvFXGAhBmP9BL2KAMgf89Vvx
+ cALFXhWidVzI4qVW7rw6BUKULtWrB29XaO+QhSHozTeLERmis6
+ j2JBE/YrS3rgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh,
+Hi Mark
 
-On Mon, 19 Nov 2012 18:50:36 -0600, Josh Cartwright wrote:
+Thanks for your reply.
 
-> I had suggested this with Thomas Petazzoni's consolidated irq_chip patch
-> as well:
+On Tue, 20 Nov 2012, Mark Brown wrote:
+
+> On Mon, Nov 19, 2012 at 12:52:09PM +0100, Guennadi Liakhovetski wrote:
+> > As I mentioned in an earlier mail today [1] I have a difficulty seeing how 
+> > the current regulator API can efficiently be used for DVS-type regulators. 
 > 
-> It seems like it would be a bit cleaner/easier to maintain if we relied
-> on the linker to stitch together a clksrc_of_match table, based on what
-> clocksources are being built into the image.  With that approach, at
-> least, a public initialization header wouldn't have to be exposed, and
-> this central table wouldn't have to be maintained (as more clocksrcs are
-> added, I forsee [admittedly trivial] merge conflicts).
+> Please don't invent terminology or repurpose existing terminology like
+> this, it's just confusing - obvious essentially all regulators covered
+> by the regulator API support voltage scaling which is the usual meaning
+> of DVS.
 
-... and I indeed have a new version of my irqchip patches that indeed
-use the linker to merge together the of_device_id entries!
+Right, sorry, a more precise term would be a "pin-selectable DVS," right?
 
-Best regards,
+> > wm831x-dcdc.c handles 2 voltages: "DVS" and "ON." If the new voltage in 
+> > .set_voltage_sel() is equal to one of them, it is just used. If it is a 
+> > new voltage, there's a comment in the driver in 
+> > wm831x_buckv_set_voltage_sel():
+> 
+> > 	/* Always set the ON status to the minimum voltage */
+> 
+> > but I actually don't see, where the minimum is selected. It seems instead 
+> > in this case the "ON" value is just set:
+> 
+> > 	ret = wm831x_set_bits(wm831x, on_reg, WM831X_DC1_ON_VSEL_MASK, vsel);
+> > 	if (ret < 0)
+> > 		return ret;
+> > 	dcdc->on_vsel = vsel;
+> 
+> Can you be more specific about your concern here?  The above code does
+> exactly what the comment says, it will set the selector it just picked.
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Your patch fixes exactly the problem, that I was pointing at, thanks.
+
+> You did spot one bug (I think due to bitrot) which I just fixed but in
+> general I've just TLDRed this as it's a bit unclear what you're trying
+> to say here, can you be a bit more concise here?  I'm not sure if
+> there's a general point or if it's specific code issues?
+
+Sorry, let's try again. Just to bring back the "too long and a bit unclear 
+part:"
+
+> > lp872x.c seems to be selecting between ON and DVS (or V1 and V2 in lp872x' 
+> > terminology) in lp872x_set_dvs(), which is called every time a voltage is 
+> > set. But this function always gets the same arguments - supplied from the 
+> > platform data and therefore only one voltage is ever used... The two 
+> > "dynamic" DVS selection fields in struct lp872x: .dvs_pin and .dvs_gpio 
+> > seem just to always stay constant, the latter is also just initialised 
+> > once and is never used again.
+
+Ok, what I meant is the following:
+
+1. some fields of struct lp872x are superfluous / unused, e.g. .dvs_gpio 
+is only set once and never used again, .dvs_pin seems to be used, but I 
+think it's never changed either, because:
+
+2. .dvs_pin is initialised in lp872x_init_dvs() from platform data:
+
+	pinstate = dvs->init_state;
+	...
+	lp->dvs_pin = pinstate;
+
+There's one more location in the code, where .dvs_pin gets assigned: in 
+lp872x_set_dvs():
+
+	lp->dvs_pin = state;
+
+but, I think, it will always be set to one and the same value: "state" is 
+calculated as
+
+	state = dvs_sel == SEL_V1 ? DVS_HIGH : DVS_LOW;
+
+where dvs_sel is a parameter of this function. The function is called only 
+from one location in lp872x_buck_set_voltage_sel() as
+
+		lp872x_set_dvs(lp, dvs->vsel, dvs->gpio);
+
+where dvs is platform data, i.e., all parameters are constant. So, 
+lp872x_set_dvs() never switches anything, and in fact it could just have 
+been called just once from initialisation to set the GPIO. This also 
+means, that only one context - either SEL_V1 or SEL_V2 is used.
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
