@@ -1,96 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab2KTQzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:55:51 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36952 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751915Ab2KTQzu (ORCPT
+	id S1752845Ab2KTQ7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:59:49 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45442 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2KTQ7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:55:50 -0500
-Date: Tue, 20 Nov 2012 16:55:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Maynard Johnson <maynardj@us.ibm.com>,
-        "jgq516@gmail.com" <jgq516@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: oprofile: add A5/A7/A15 entries in op_perf_name
-Message-ID: <20121120165517.GC27765@mudshark.cambridge.arm.com>
-References: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
- <20121105113102.GF3351@mudshark.cambridge.arm.com>
- <20121120121747.GJ2504@rric.localhost>
- <20121120155717.GD26475@mudshark.cambridge.arm.com>
- <20121120163158.GO2504@rric.localhost>
+	Tue, 20 Nov 2012 11:59:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120163158.GO2504@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121120142854.GB4619@e103034-lin>
+References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org>
+	<1349595838-31274-4-git-send-email-vincent.guittot@linaro.org>
+	<20121109171344.GB16082@e103034-lin>
+	<CAKfTPtBf3b2DdLHGHaJP0_mZO2mgH6dH3bcZR=ppputyMAGLqQ@mail.gmail.com>
+	<20121120142854.GB4619@e103034-lin>
+Date: Tue, 20 Nov 2012 17:59:46 +0100
+Message-ID: <CAKfTPtCQmjoprsr+raac8CMJbrgTPWK+6kkrL3_YR2-Bb-OWdQ@mail.gmail.com>
+Subject: Re: [RFC 3/6] sched: pack small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 04:31:58PM +0000, Robert Richter wrote:
-> On 20.11.12 15:57:17, Will Deacon wrote:
-> > On Tue, Nov 20, 2012 at 12:17:47PM +0000, Robert Richter wrote:
-> > > 
-> > > since this is just an update of cpu detection I would be willing to
-> > > include this into kernel code anyway.
-> > 
-> > Perhaps, but one day we might like to remove this compatibility layer as
-> > tools move over to the perf system call, so adding new CPUs here is actively
-> > going against that.
-> 
-> This would help people to use oprofile as they did before with legacy
-> oprofile tools. There is not much effort to keep oprofile kernel
-> support for these tools if in-kernel perf_event support exists for new
-> hardware. As this is not much effort to maintain, we could keep
-> supporting this.  Forcing users to use operf since this is the only
-> way to connect to newer hardware might not be what they want.
+On 20 November 2012 15:28, Morten Rasmussen <Morten.Rasmussen@arm.com> wrote:
+> Hi Vincent,
+>
+> On Mon, Nov 12, 2012 at 01:51:00PM +0000, Vincent Guittot wrote:
+>> On 9 November 2012 18:13, Morten Rasmussen <Morten.Rasmussen@arm.com> wrote:
+>> > Hi Vincent,
+>> >
+>> > I have experienced suboptimal buddy selection on a dual cluster setup
+>> > (ARM TC2) if SD_SHARE_POWERLINE is enabled at MC level and disabled at
+>> > CPU level. This seems to be the correct flag settings for a system with
+>> > only cluster level power gating.
+>> >
+>> > To me it looks like update_packing_domain() is not doing the right
+>> > thing. See inline comments below.
+>>
+>> Hi Morten,
+>>
+>> Thanks for testing the patches.
+>>
+>> It seems that I have too optimized the loop and remove some use cases.
+>>
+>> >
+>> > On Sun, Oct 07, 2012 at 08:43:55AM +0100, Vincent Guittot wrote:
+>> >> During sched_domain creation, we define a pack buddy CPU if available.
+>> >>
+>> >> On a system that share the powerline at all level, the buddy is set to -1
+>> >>
+>> >> On a dual clusters / dual cores system which can powergate each core and
+>> >> cluster independantly, the buddy configuration will be :
+>> >>       | CPU0 | CPU1 | CPU2 | CPU3 |
+>> >> -----------------------------------
+>> >> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>> >>
+>> >> Small tasks tend to slip out of the periodic load balance.
+>> >> The best place to choose to migrate them is at their wake up.
+>> >>
+>> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> >> ---
+>> >>  kernel/sched/core.c  |    1 +
+>> >>  kernel/sched/fair.c  |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>> >>  kernel/sched/sched.h |    1 +
+>> >>  3 files changed, 111 insertions(+)
+>> >>
+>> >> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> >> index dab7908..70cadbe 100644
+>> >> --- a/kernel/sched/core.c
+>> >> +++ b/kernel/sched/core.c
+>> >> @@ -6131,6 +6131,7 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+>> >>       rcu_assign_pointer(rq->sd, sd);
+>> >>       destroy_sched_domains(tmp, cpu);
+>> >>
+>> >> +     update_packing_domain(cpu);
+>> >>       update_top_cache_domain(cpu);
+>> >>  }
+>> >>
+>> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> >> index 4f4a4f6..8c9d3ed 100644
+>> >> --- a/kernel/sched/fair.c
+>> >> +++ b/kernel/sched/fair.c
+>> >> @@ -157,6 +157,63 @@ void sched_init_granularity(void)
+>> >>       update_sysctl();
+>> >>  }
+>> >>
+>> >> +
+>> >> +/*
+>> >> + * Save the id of the optimal CPU that should be used to pack small tasks
+>> >> + * The value -1 is used when no buddy has been found
+>> >> + */
+>> >> +DEFINE_PER_CPU(int, sd_pack_buddy);
+>> >> +
+>> >> +/* Look for the best buddy CPU that can be used to pack small tasks
+>> >> + * We make the assumption that it doesn't wort to pack on CPU that share the
+>> >> + * same powerline. We looks for the 1st sched_domain without the
+>> >> + * SD_SHARE_POWERLINE flag. Then We look for the sched_group witht the lowest
+>> >> + * power per core based on the assumption that their power efficiency is
+>> >> + * better */
+>> >> +void update_packing_domain(int cpu)
+>> >> +{
+>> >> +     struct sched_domain *sd;
+>> >> +     int id = -1;
+>> >> +
+>> >> +     sd = highest_flag_domain(cpu, SD_SHARE_POWERLINE);
+>> >> +     if (!sd)
+>> >> +             sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+>> >> +     else
+>> >> +             sd = sd->parent;
+>> > sd is the highest level where SD_SHARE_POWERLINE is enabled so the sched
+>> > groups of the parent level would represent the power domains. If get it
+>> > right, we want to pack inside the cluster first and only let first cpu
+>>
+>> You probably wanted to use sched_group instead of cluster because
+>> cluster is only a special use case, didn't you ?
+>>
+>> > of the cluster do packing on another cluster. So all cpus - except the
+>> > first one - in the current sched domain should find its buddy within the
+>> > domain and only the first one should go to the parent sched domain to
+>> > find its buddy.
+>>
+>> We don't want to pack in the current sched_domain because it shares
+>> power domain. We want to pack at the parent level
+>>
+>
+> Yes. I think we mean the same thing. The packing takes place at the
+> parent sched_domain but the sched_group that we are looking at only
+> contains the cpus of the level below.
+>
+>> >
+>> > I propose the following fix:
+>> >
+>> > -               sd = sd->parent;
+>> > +               if (cpumask_first(sched_domain_span(sd)) == cpu
+>> > +                       || !sd->parent)
+>> > +                       sd = sd->parent;
+>>
+>> We always look for the buddy in the parent level whatever the cpu
+>> position in the mask is.
+>>
+>> >
+>> >
+>> >> +
+>> >> +     while (sd) {
+>> >> +             struct sched_group *sg = sd->groups;
+>> >> +             struct sched_group *pack = sg;
+>> >> +             struct sched_group *tmp = sg->next;
+>> >> +
+>> >> +             /* 1st CPU of the sched domain is a good candidate */
+>> >> +             if (id == -1)
+>> >> +                     id = cpumask_first(sched_domain_span(sd));
+>> >
+>> > There is no guarantee that id is in the sched group pointed to by
+>> > sd->groups, which is implicitly assumed later in the search loop. We
+>> > need to find the sched group that contains id and point sg to that
+>> > instead. I haven't found an elegant way to find that group, but the fix
+>> > below should at least give the right result.
+>> >
+>> > +               /* Find sched group of candidate */
+>> > +               tmp = sd->groups;
+>> > +               do {
+>> > +                       if (cpumask_test_cpu(id, sched_group_cpus(tmp)))
+>> > +                       {
+>> > +                               sg = tmp;
+>> > +                               break;
+>> > +                       }
+>> > +               } while (tmp = tmp->next, tmp != sd->groups);
+>> > +
+>> > +               pack = sg;
+>> > +               tmp = sg->next;
+>>
+>>
+>> I have a new loop which solves your issue and others. I will use it
+>> for the next version
+>>
+>> +     while (sd) {
+>> +             struct sched_group *sg = sd->groups;
+>> +             struct sched_group *pack = sg;
+>> +             struct sched_group *tmp;
+>> +
+>> +             /* The 1st CPU of the local group is a good candidate */
+>> +             id = cpumask_first(sched_group_cpus(pack));
+>
+> You make the assumption that the first sched_group in the list always contains
+> the current cpu. I think that is always the case, but I haven't verified
+> it. Maybe a comment about this would help people to understand the code
+> easier.
 
-For arch/arm/, yes, it's not a lot of work but I'm thinking more of things
-like heterogeneous multi-core (big/little) and arm64, which we definitely
-don't want to deal with in the old tools.
+yes, the first sched_group contains the cpu. I will add a comment
 
-I think newer hardware really will require operf.
+>
+>> +
+>> +             /* loop the sched groups to find the best one */
+>> +             for (tmp = sg->next; tmp != sg; tmp = tmp->next) {
+>> +                     if (tmp->sgp->power * pack->group_weight >
+>> +                                     pack->sgp->power * tmp->group_weight)
+>> +                             continue;
+>> +
+>> +                     if ((tmp->sgp->power * pack->group_weight ==
+>> +                                     pack->sgp->power * tmp->group_weight)
+>> +                      && (cpumask_first(sched_group_cpus(tmp)) >= id))
+>> +                             continue;
+>> +
+>> +                     /* we have found a better group */
+>> +                     pack = tmp;
+>> +
+>> +                     /* Take the 1st CPU of the new group */
+>> +                     id = cpumask_first(sched_group_cpus(pack));
+>> +             }
+>> +
+>
+> Works great on my setup.
+>
+>> +             /* Look for another CPU than itself */
+>> +             if ((id != cpu)
+>> +              || ((sd->parent) && !(sd->parent->flags && SD_LOAD_BALANCE)))
+>> +                     break;
+>
+> If I understand correctly the last part of this check should avoid
+> selecting a buddy in a sched_group that is not load balanced with the
+> current one. In that case, I think that this check (or a similar check)
+> should be done before the loop as well. As it is, the first iteration of
+> the loop will always search all the groups of the first domain where
+> SD_SHARE_POWERLINE is disabled regardless of the state of
+> SD_LOAD_BALANCE flag. So if they are both disabled at the same level
+> packing will happen across groups that are not supposed to be
+> load-balanced.
 
-> > > We could further move the cpu detection to userspace if perf_event
-> > > exists. We let the kernel enable oprofile with cpu_type="unknown".
-> > > User space then could either bind mount the file (user could do this
-> > > manually) or we implement to write to cpu_type. Doing so oprofile
-> > > could use in-kernel perf_events if it exists always as fallback.
-> > 
-> > Not sure I follow you... operf already does the CPU detection from
-> > userspace, so I guess that code could simply be re-used. What does the bind
-> > mount involve?
-> 
-> I am thinking of the following:
-> 
->  # cat /root/cpu_type
->  arm/armv7-ca5
->  # cat /dev/oprofile/cpu_type
->  unknown
->  # mount --bind /root/cpu_type /dev/oprofile/cpu_type
->  # cat /dev/oprofile/cpu_type
->  arm/armv7-ca5
-> 
-> From here legacy oprofile tools work as expected using oprofilefs. (I
-> think. Did not test it.) We need to change the kernel for this a bit
-> to return 'unknown'. The mount could be done by the oprofile tools
-> using existing cpu detection code. This is only one way to setup
-> cpu_type from userland, there could be other ways too.
+you're right, i'm going to fix it
 
-Ok, this is functionally equivalent to the patch that was submitted at the
-start of this thread: it solves the problem of mapping a single ARM core to
-a oprofile's CPU ID string. Technically, I don't mind doing that in the
-kernel (at least, it means you don't need to do your trick above) but going
-forward it *will* fall apart and people will have to move to newer tools.
+Thanks
 
-So the question is: do we want to migrate users now or later?
-
-Cheers,
-
-Will
+>
+> Regards,
+> Morten
+>
+>> +
+>> +             sd = sd->parent;
+>> +     }
+>>
+>> Regards,
+>> Vincent
+>>
+>> >
+>> > Regards,
+>> > Morten
+>> >
+>> >> +
+>> >> +             /* loop the sched groups to find the best one */
+>> >> +             while (tmp != sg) {
+>> >> +                     if (tmp->sgp->power * sg->group_weight <
+>> >> +                                     sg->sgp->power * tmp->group_weight)
+>> >> +                             pack = tmp;
+>> >> +                     tmp = tmp->next;
+>> >> +             }
+>> >> +
+>> >> +             /* we have found a better group */
+>> >> +             if (pack != sg)
+>> >> +                     id = cpumask_first(sched_group_cpus(pack));
+>> >> +
+>> >> +             /* Look for another CPU than itself */
+>> >> +             if ((id != cpu)
+>> >> +              || ((sd->parent) && !(sd->parent->flags && SD_LOAD_BALANCE)))
+>> >> +                     break;
+>> >> +
+>> >> +             sd = sd->parent;
+>> >> +     }
+>> >> +
+>> >> +     pr_info(KERN_INFO "CPU%d packing on CPU%d\n", cpu, id);
+>> >> +     per_cpu(sd_pack_buddy, cpu) = id;
+>> >> +}
+>> >> +
+>> >>  #if BITS_PER_LONG == 32
+>> >>  # define WMULT_CONST (~0UL)
+>> >>  #else
+>> >> @@ -3073,6 +3130,55 @@ static int select_idle_sibling(struct task_struct *p, int target)
+>> >>       return target;
+>> >>  }
+>> >>
+>> >> +static inline bool is_buddy_busy(int cpu)
+>> >> +{
+>> >> +     struct rq *rq = cpu_rq(cpu);
+>> >> +
+>> >> +     /*
+>> >> +      * A busy buddy is a CPU with a high load or a small load with a lot of
+>> >> +      * running tasks.
+>> >> +      */
+>> >> +     return ((rq->avg.usage_avg_sum << rq->nr_running) >
+>> >> +                     rq->avg.runnable_avg_period);
+>> >> +}
+>> >> +
+>> >> +static inline bool is_light_task(struct task_struct *p)
+>> >> +{
+>> >> +     /* A light task runs less than 25% in average */
+>> >> +     return ((p->se.avg.usage_avg_sum << 2) < p->se.avg.runnable_avg_period);
+>> >> +}
+>> >> +
+>> >> +static int check_pack_buddy(int cpu, struct task_struct *p)
+>> >> +{
+>> >> +     int buddy = per_cpu(sd_pack_buddy, cpu);
+>> >> +
+>> >> +     /* No pack buddy for this CPU */
+>> >> +     if (buddy == -1)
+>> >> +             return false;
+>> >> +
+>> >> +     /*
+>> >> +      * If a task is waiting for running on the CPU which is its own buddy,
+>> >> +      * let the default behavior to look for a better CPU if available
+>> >> +      * The threshold has been set to 37.5%
+>> >> +      */
+>> >> +     if ((buddy == cpu)
+>> >> +      && ((p->se.avg.usage_avg_sum << 3) < (p->se.avg.runnable_avg_sum * 5)))
+>> >> +             return false;
+>> >> +
+>> >> +     /* buddy is not an allowed CPU */
+>> >> +     if (!cpumask_test_cpu(buddy, tsk_cpus_allowed(p)))
+>> >> +             return false;
+>> >> +
+>> >> +     /*
+>> >> +      * If the task is a small one and the buddy is not overloaded,
+>> >> +      * we use buddy cpu
+>> >> +      */
+>> >> +      if (!is_light_task(p) || is_buddy_busy(buddy))
+>> >> +             return false;
+>> >> +
+>> >> +     return true;
+>> >> +}
+>> >> +
+>> >>  /*
+>> >>   * sched_balance_self: balance the current task (running on cpu) in domains
+>> >>   * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+>> >> @@ -3098,6 +3204,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>> >>       if (p->nr_cpus_allowed == 1)
+>> >>               return prev_cpu;
+>> >>
+>> >> +     if (check_pack_buddy(cpu, p))
+>> >> +             return per_cpu(sd_pack_buddy, cpu);
+>> >> +
+>> >>       if (sd_flag & SD_BALANCE_WAKE) {
+>> >>               if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
+>> >>                       want_affine = 1;
+>> >> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+>> >> index a95d5c1..086d8bf 100644
+>> >> --- a/kernel/sched/sched.h
+>> >> +++ b/kernel/sched/sched.h
+>> >> @@ -875,6 +875,7 @@ static inline void idle_balance(int cpu, struct rq *rq)
+>> >>
+>> >>  extern void sysrq_sched_debug_show(void);
+>> >>  extern void sched_init_granularity(void);
+>> >> +extern void update_packing_domain(int cpu);
+>> >>  extern void update_max_interval(void);
+>> >>  extern void update_group_power(struct sched_domain *sd, int cpu);
+>> >>  extern int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu);
+>> >> --
+>> >> 1.7.9.5
+>> >>
+>> >>
+>> >> _______________________________________________
+>> >> linaro-dev mailing list
+>> >> linaro-dev@lists.linaro.org
+>> >> http://lists.linaro.org/mailman/listinfo/linaro-dev
+>> >>
+>> >
+>>
+>
