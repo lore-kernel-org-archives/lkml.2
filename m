@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2KTCfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 21:35:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37350 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab2KTCfG (ORCPT
+	id S1753431Ab2KTCkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 21:40:55 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:51546 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869Ab2KTCkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 21:35:06 -0500
-Message-ID: <1353378896.6455.1.camel@phoenix>
-Subject: [PATCH RFT] mfd: rc5t583: Fix array subscript is above array bounds
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org
-Date: Tue, 20 Nov 2012 10:34:56 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 19 Nov 2012 21:40:53 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qAK2eF0P005910, This message is released by code: ctaloc0852
+Message-ID: <50AAED8E.4030201@realsil.com.cn>
+Date: Tue, 20 Nov 2012 10:40:14 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Chris Ball <cjb@laptop.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
+        "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH v2 1/2] mmc/host/rtsx: Configure SD_CFG2 register in sd_rw_multi
+References: <cover.1353377266.git.wei_wang@realsil.com.cn> <00fb063304a0720f3ba9db6f79bb67263d450356.1353377266.git.wei_wang@realsil.com.cn> <87ip91f1zo.fsf@octavius.laptop.org>
+In-Reply-To: <87ip91f1zo.fsf@octavius.laptop.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got below build warning while compiling this driver.
-It's obviously RC5T583_MAX_INTERRUPT_MASK_REGS is 9 but irq_en_add array only
-has 8 elements.
+于 2012年11月20日 10:21, Chris Ball 写道:
+> Hi,
+>
+> Sorry to be pedantic, but:
+>
+> On Mon, Nov 19 2012, wei_wang@realsil.com.cn wrote:
+>> For Realtek card reader, internal regsiter SD_CFG2 should be configured
+>> before transferring data. In the prior version, the value of this register
+>> has been calculated, but forgotten to write back to the internal register.
+> With what consequences?  Was the  data transfer failing?  Under which
+> circumstances?
+>
+> Thanks,
+>
+> - Chris.
 
-  CC      drivers/mfd/rc5t583-irq.o
-drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_sync_unlock':
-drivers/mfd/rc5t583-irq.c:227: warning: array subscript is above array bounds
-drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_init':
-drivers/mfd/rc5t583-irq.c:349: warning: array subscript is above array bounds
+Hi Chris:
 
-Since the number of interrupt enable registers is 8, this patch adds define for
-RC5T583_MAX_INTERRUPT_EN_REGS to fix this bug.
+It's about compatibility issue. The default value of SD_CFG2 is proper 
+for writing data. But for reading sequence, the timing is not good 
+enough. So in some extreme circumstance,  card reader may sample the 
+response data from the card as good even if the data is wrong. And this 
+will cause the bad consequence.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Laxman,
-  I don't have this hardware, I'd appreciate if you can review and test this patch.
-Thank you,
-Axel
- drivers/mfd/rc5t583-irq.c   |    2 +-
- include/linux/mfd/rc5t583.h |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+Shall I modify the commit and resend the patchset again?
 
-diff --git a/drivers/mfd/rc5t583-irq.c b/drivers/mfd/rc5t583-irq.c
-index fe00cdd..b41db59 100644
---- a/drivers/mfd/rc5t583-irq.c
-+++ b/drivers/mfd/rc5t583-irq.c
-@@ -345,7 +345,7 @@ int rc5t583_irq_init(struct rc5t583 *rc5t583, int irq, int irq_base)
- 	mutex_init(&rc5t583->irq_lock);
- 
- 	/* Initailize all int register to 0 */
--	for (i = 0; i < RC5T583_MAX_INTERRUPT_MASK_REGS; i++)  {
-+	for (i = 0; i < RC5T583_MAX_INTERRUPT_EN_REGS; i++)  {
- 		ret = rc5t583_write(rc5t583->dev, irq_en_add[i],
- 				rc5t583->irq_en_reg[i]);
- 		if (ret < 0)
-diff --git a/include/linux/mfd/rc5t583.h b/include/linux/mfd/rc5t583.h
-index 36c242e..fd413cc 100644
---- a/include/linux/mfd/rc5t583.h
-+++ b/include/linux/mfd/rc5t583.h
-@@ -33,6 +33,7 @@
- /* Maximum number of main interrupts */
- #define MAX_MAIN_INTERRUPT		5
- #define RC5T583_MAX_GPEDGE_REG		2
-+#define RC5T583_MAX_INTERRUPT_EN_REGS	8
- #define RC5T583_MAX_INTERRUPT_MASK_REGS	9
- 
- /* Interrupt enable register */
-@@ -304,7 +305,7 @@ struct rc5t583 {
- 	uint8_t		intc_inten_reg;
- 
- 	/* For group interrupt bits and address */
--	uint8_t		irq_en_reg[RC5T583_MAX_INTERRUPT_MASK_REGS];
-+	uint8_t		irq_en_reg[RC5T583_MAX_INTERRUPT_EN_REGS];
- 
- 	/* For gpio edge */
- 	uint8_t		gpedge_reg[RC5T583_MAX_GPEDGE_REG];
--- 
-1.7.9.5
-
-
-
+BR,
+Wei WANG
