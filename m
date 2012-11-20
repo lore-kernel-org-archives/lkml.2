@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2KTOng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:43:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51196 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2KTOnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:43:35 -0500
-Date: Tue, 20 Nov 2012 14:43:29 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Eilon Greenstein <eilong@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-Message-ID: <20121120144329.GE7955@dm>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120115239.GA7955@dm>
- <1353421624.6559.9.camel@lb-tlvb-eilong.il.broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353421624.6559.9.camel@lb-tlvb-eilong.il.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753232Ab2KTOnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:43:50 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:32835 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752888Ab2KTOns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 09:43:48 -0500
+Message-ID: <1353422629.11235.10.camel@joe-AO722>
+Subject: Re: [PATCH v4] checkpatch: debugfs_remove() can take NULL
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Date: Tue, 20 Nov 2012 06:43:49 -0800
+In-Reply-To: <20121120142906.GD7955@dm>
+References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
+	 <20121120142906.GD7955@dm>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 04:27:04PM +0200, Eilon Greenstein wrote:
-> On Tue, 2012-11-20 at 11:52 +0000, Andy Whitcroft wrote:
-> 
-> Andy, thanks for reviewing this patch.
-> 
-> > On Sat, Nov 17, 2012 at 01:17:37PM +0200, Eilon Greenstein wrote:
-> > > Changes from previous attempt:
-> > > - Use CHK instead of WARN
-> > > - Issue only one warning per empty lines block
-> > > 
-> > > Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
-> > > ---
-> > >  scripts/checkpatch.pl |    8 ++++++++
-> > >  1 file changed, 8 insertions(+)
-> > > 
-> > > diff --git a/scripts/checkpatch.pl b/scripts/linescheckpatch.pl
-> > > index 21a9f5d..13d264f 100755
-> > > --- a/scripts/checkpatch.pl
-> > > +++ b/scripts/checkpatch.pl
-> > > @@ -3579,6 +3579,14 @@ sub process {
-> > >  			WARN("EXPORTED_WORLD_WRITABLE",
-> > >  			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
-> > >  		}
-> > > +
-> > > +# check for double empty lines
-> > > +		if ($line =~ /^\+\s*$/ &&
-> > > +		    ($rawlines[$linenr] =~ /^\s*$/ ||
-> > > +		     $prevline =~ /^\+?\s*$/ && $rawlines[$linenr] !~ /^\+\s*$/)) {
-> > > +			CHK("DOUBLE_EMPTY_LINE",
-> > > +			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-> > > +		}
-> > >  	}
-> > >  
-> > >  	# If we have no input at all, then there is nothing to report on
-> > 
-> > In your previous version you indicated you would be emiting one per group
-> > of lines, I do not see how this does that.
-> 
-> This is what I'm testing:
-> Only if the current line is a new blank line and:
-> 	if the next line is empty but not newly added (this is the part that
-> will make sure we get only one warning for a bunch of new lines - only
-> the last newly added line will hit this condition)
-> or
-> 	if the previous line was empty (either new empty line or existing empty
-> line) and the next line is not a new empty line (so we will issue just
-> one warning).
-> 
-> I tested it on few examples, and did not see a problem. Can you share an
-> example where it issues more than a single warning for a newly
-> introduced consecutive new lines?
+On Tue, 2012-11-20 at 14:29 +0000, Andy Whitcroft wrote:
 
-No indeed.  That was testing failure on my behalf.
-> 
-> > Also this fails if the fragment
-> > is at the top of the hunk emiting a perl warning.
-> 
-> I did not see this warning. Can you please share this example? I tried
-> adding a couple of empty lines at the beginning of a file and it seemed
-> to work just fine for me (using perl v5.14.2).lines
+> This all looks sensible, though we still have three blocks doing the
+> same thing.  How about we standardise this check into a single check,
+> generating the capacity from the matched name.
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> +			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
+> +				my $func = $1;
+> +				my $func_capacity = "NEEDLESS_$1";
+> +
+> +				$func_capacity =~ s/(.$)/\U$1\E/;
+> +
+> +				WARN($func_capacity,
+> +				     "$func(NULL) is safe this check is probably not required\n" . $hereprev);
 
-Ok, this is actually if it is at the bottom, not the top.  So if you
-have a range of lines newly added to the bottom of the file.  Leading to
-this warning:
+Perhaps just
+				WARN("NEEDLESS_IF",
+...
 
-Use of uninitialized value within @rawlines in pattern match (m//) at
-../checkpatch/scripts/checkpatch.pl line 3586.
 
--apw
