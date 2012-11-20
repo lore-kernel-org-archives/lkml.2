@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab2KTNRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:17:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4386 "EHLO mx1.redhat.com"
+	id S1753581Ab2KTNNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:13:13 -0500
+Received: from 8bytes.org ([85.214.48.195]:58220 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab2KTNQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:16:58 -0500
-Message-ID: <50AB82C6.6060901@redhat.com>
-Date: Tue, 20 Nov 2012 15:16:54 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [GIT PULL] KVM maintainership update
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753199Ab2KTNNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:13:06 -0500
+From: Joerg Roedel <joro@8bytes.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH 01/19] x86, apic: Move irq_remapping_enabled checks into IRQ-remapping code
+Date: Tue, 20 Nov 2012 14:12:38 +0100
+Message-Id: <1353417176-18945-2-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353417176-18945-1-git-send-email-joro@8bytes.org>
+References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Nov 20 14:13:04 2012
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50ab81e022975919999284
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from:
+Move the three easy to move checks in the x86' apic.c file
+into the IRQ-remapping code.
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ arch/x86/kernel/apic/apic.c   |    9 +++------
+ drivers/iommu/irq_remapping.c |   11 +++++++++--
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-to receive this MAINTAINERS update.  After many years of maintaining KVM,
-I am moving on.  It was a real pleasure for me to work with so many talented
-and dedicated hackers on this project.
-
-Replacing me will be one of those talented and dedicated hackers, Gleb, who
-has authored hundreds of patches in and around KVM.
-
-
-----------------------------------------------------------------
-Avi Kivity (1):
-      KVM: Retire as maintainer
-
-Gleb Natapov (1):
-      KVM: taking co-maintenance
-
- CREDITS     | 5 +++++
- MAINTAINERS | 2 +-
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/CREDITS b/CREDITS
-index d8fe12a..2346b09 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -1823,6 +1823,11 @@ S: Kattreinstr 38
- S: D-64295
- S: Germany
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b17416e..69cba83 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1444,8 +1444,7 @@ void __init bsp_end_local_APIC_setup(void)
+ 	 * Now that local APIC setup is completed for BP, configure the fault
+ 	 * handling for interrupt remapping.
+ 	 */
+-	if (irq_remapping_enabled)
+-		irq_remap_enable_fault_handling();
++	irq_remap_enable_fault_handling();
  
-+N: Avi Kivity
-+E: avi.kivity@gmail.com
-+D: Kernel-based Virtual Machine (KVM)
-+S: Ra'annana, Israel
+ }
+ 
+@@ -2218,8 +2217,7 @@ static int lapic_suspend(void)
+ 	local_irq_save(flags);
+ 	disable_local_APIC();
+ 
+-	if (irq_remapping_enabled)
+-		irq_remapping_disable();
++	irq_remapping_disable();
+ 
+ 	local_irq_restore(flags);
+ 	return 0;
+@@ -2287,8 +2285,7 @@ static void lapic_resume(void)
+ 	apic_write(APIC_ESR, 0);
+ 	apic_read(APIC_ESR);
+ 
+-	if (irq_remapping_enabled)
+-		irq_remapping_reenable(x2apic_mode);
++	irq_remapping_reenable(x2apic_mode);
+ 
+ 	local_irq_restore(flags);
+ }
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index faf85d6..19381b9 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -87,7 +87,9 @@ int __init irq_remapping_enable(void)
+ 
+ void irq_remapping_disable(void)
+ {
+-	if (!remap_ops || !remap_ops->disable)
++	if (!irq_remapping_enabled ||
++	    !remap_ops ||
++	    !remap_ops->disable)
+ 		return;
+ 
+ 	remap_ops->disable();
+@@ -95,7 +97,9 @@ void irq_remapping_disable(void)
+ 
+ int irq_remapping_reenable(int mode)
+ {
+-	if (!remap_ops || !remap_ops->reenable)
++	if (!irq_remapping_enabled ||
++	    !remap_ops ||
++	    !remap_ops->reenable)
+ 		return 0;
+ 
+ 	return remap_ops->reenable(mode);
+@@ -103,6 +107,9 @@ int irq_remapping_reenable(int mode)
+ 
+ int __init irq_remap_enable_fault_handling(void)
+ {
++	if (!irq_remapping_enabled)
++		return 0;
 +
- N: Andi Kleen
- E: andi@firstfloor.org
- U: http://www.halobates.de
-diff --git a/MAINTAINERS b/MAINTAINERS
-index bb0b27d..b273360 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4280,8 +4280,8 @@ F:	include/linux/lockd/
- F:	include/linux/sunrpc/
+ 	if (!remap_ops || !remap_ops->enable_faulting)
+ 		return -ENODEV;
  
- KERNEL VIRTUAL MACHINE (KVM)
--M:	Avi Kivity <avi@redhat.com>
- M:	Marcelo Tosatti <mtosatti@redhat.com>
-+M:	Gleb Natapov <gleb@redhat.com>
- L:	kvm@vger.kernel.org
- W:	http://kvm.qumranet.com
- S:	Supported
-
 -- 
-error compiling committee.c: too many arguments to function
+1.7.9.5
+
+
