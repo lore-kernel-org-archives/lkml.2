@@ -1,168 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2KTJKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:10:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38740 "EHLO arroyo.ext.ti.com"
+	id S1752866Ab2KTJOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:14:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46516 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300Ab2KTJKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:10:40 -0500
-Message-ID: <50AB48FE.1090101@ti.com>
-Date: Tue, 20 Nov 2012 14:40:22 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1751698Ab2KTJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:14:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
+   d="scan'208";a="222059395"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: anish singh <anish198519851985@gmail.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
+        "lockwood@android.com" <lockwood@android.com>,
+        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "Anton Vorontsov (cbouatmailru@gmail.com)" <cbouatmailru@gmail.com>,
+        "Anton Vorontsov (anton.vorontsov@linaro.org)" 
+	<anton.vorontsov@linaro.org>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] extcon : callback function to read cable property
+Thread-Topic: [PATCH] extcon : callback function to read cable property
+Thread-Index: AQHNpqL6iLZgSIxMH0GKmzwm7ve2K5eyQk0AgAEKtWCAAHd6AIAJUHGggCHhgICAAoy5YIAAyB8AgAgrt0CAAK9KgIAHC3AA//+ymoCAAF3mEP//374AgACE/eA=
+Date: Tue, 20 Nov 2012 09:14:41 +0000
+Message-ID: <20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
+References: <1349864628-21479-1-git-send-email-jenny.tc@intel.com>
+ <1349880328.22926.2.camel@anish-Inspiron-N5050>
+ <20ADAB092842284E95860F279283C56439BC4A@BGSMSX101.gar.corp.intel.com>
+ <1349963260.8329.1.camel@anish-Inspiron-N5050>
+ <20ADAB092842284E95860F279283C5643BA10D@BGSMSX101.gar.corp.intel.com>
+ <509B0A0F.5000406@samsung.com>
+ <20ADAB092842284E95860F279283C5644017F6@BGSMSX101.gar.corp.intel.com>
+ <1352521082.1526.230.camel@anish-Inspiron-N5050>
+ <20ADAB092842284E95860F279283C56442034B@BGSMSX101.gar.corp.intel.com>
+ <CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
+ <20ADAB092842284E95860F279283C56444A584@BGSMSX101.gar.corp.intel.com>
+ <50AAEB15.6000703@samsung.com>
+ <20ADAB092842284E95860F279283C56444A6A1@BGSMSX101.gar.corp.intel.com>
+ <50AB1ECA.5020005@samsung.com>
+In-Reply-To: <50AB1ECA.5020005@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] davinci: vpbe: pass different platform names to handle
- different ip's
-References: <1353331080-26056-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1353331080-26056-1-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAK9F1P4020799
 
-
-On 11/19/2012 6:48 PM, Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >>>>>>>> I think that the role of extcon subsystem notify changed
+> >>>>>>>> state(attached/detached) of cable to notifiee, but if you want
+> >>>>>>>> to add property feature of cable, you should solve ambiguous
+> issues.
+> >>>>>>>>
+> >>>>>>>> First,
+> >>>>>>>> This patch only support the properties of charger cable but,
+> >>>>>>>> never support property of other cable. The following structure
+> >>>>>>>> depend on only charger cable. We can check it the following
+> >> structure:
+> >>>>>>>>   struct extcon_chrg_cbl_props {
+> >>>>>>>>           enum extcon_chrgr_cbl_stat cable_state;
+> >>>>>>>>           unsigned long mA;
+> >>>>>>>>   };
+> >>>>>>>>
+> >>>>>>>> I think that the patch have to support all of cables for
+> >>>>>>>> property
+> >>>> feature.
+> >>>>>>>
+> >>>>>>> My suggestion is to have a structure like this
+> >>>>>>>
+> >>>>>>> struct  extcon_cablel_props {
+> >>>>>>>     unsigned int cable_state;
+> >>>>>>>             unsigned int data;
+> >>>>>> Why can't it be float/long/double??
+> >>>>>>> }
+> >>>>>>> Not all cables will have more than two states. If any cable has
+> >>>>>>> more than two states, the above structure makes it flexible to
+> >>>>>>> represent additional state and the data associated
+> >>>>>>>
+> >>>>>>>>
+> >>>>>>>> Second,
+> >>>>>>>> Certainly, you should define common properties of all cables
+> >>>>>>>> and specific properties of each cable. The properties of
+> >>>>>>>> charger cable should never be defined only.
+> >>>>>> IMHO the extcon doesn't know anything about the cable except the
+> >>>>>> state which is currently it is in and which also is set by the
+> >>>>>> provider.I am unable to understand why should extcon provide
+> more
+> >>>>>> than what it knows?It should just limit itself to broadcasting
+> >>>>>> the cable state and exploiting it for any other information would
+> >>>>>> only lead to
+> >>>> more un-necessary code.
+> >>>>>> It should be same as IIO subsystem where the consumer and
+> >>>>>> provider knows before hand what information they are going to
+> >>>>>> share and with what precision and IIO core is just a way to do
+> >>>>>> that.It doesn't know anything beyond what is given by the provider.
+> >>>>>> Same is the case with driver core where individual driver sets
+> >>>>>> it's own private data and the driver core just gives that private
+> >>>>>> data back to the driver as and when it needs but parsing the
+> >>>>>> private data in the right way is up to the individual driver.
+> >>>>>>
+> >>>>>> I fail to understand why is not the case here.
+> >>>>>
+> >>>>> The requirement is different from the IIO case. I am trying to
+> >>>>> extend the Power Supply class to support charging in a generic way
+> >>>> (https://lkml.org/lkml/2012/10/18/219).
+> >>>>> The extcon consumer in this case is not a device driver. It's part
+> >>>>> of power
+> >>>> supply class driver itself.
+> >>>>> I am open to any solution to get the cable properties dynamically.
+> >>>>> Do you find a better but generic mechanism for this?
+> >>>>>
+> >>>>> I am trying to extend  extcon just because I couldnâ€™t find any
+> >>>>> other subsystem which gives cable notifications. IMHO, it's good
+> >>>>> if we can avoid consumer and provider driver level dependencies
+> >>>>> just by extending extcon. This will ensure that the same driver
+> >>>>> will work on any
+> >>>> platform as long as it's having the dependency only on extcon.
+> >>>>> We shouldn't put any driver level dependency between extcon
+> >> consumer
+> >>>> and provider.
+> >>>>> When we do like that, the extcon consumer is expecting the similar
+> >>>>> implementation for the provider on all platforms. This may not be
+> >>>>> possible
+> >>>> Is there anything wrong in assuming similar implementation for all
+> >>>> the providers?I think the providers know what it can provide and
+> >>>> this may vary quite a lot.Or can we make a generic provider driver
+> >>>> which will encompass all the randomness in the various provider
+> >>>> drivers?This generic driver will get all the properties and since
+> >>>> it will be generice anyone can use it to know what properties to
+> >>>> expect.This
+> >> will keep the extcon design intact.
+> >>>
+> >>> Maintainer??
+> >>
+> >> I agreed about opinion of anish singh. The extcon provider driver
+> >> provide generic
+> >>
+> >> ----
+> >> struct  extcon_cablel_props {
+> >>      unsigned int cable_state;
+> >>      unsigned int data;
+> >> }
+> >> ----
+> >> You suggested upper structure and said it is only flexible to
+> >> represent additional state, But, it is non-standard. What store real
+> >> data on "unsigned int data"? It isn't determined and flexible. That
+> >> is extcon consumer driver should already know type of real data or
+> >> value of real data. The extcon consumer driver has strong dependency
+> >> on extcon provider driver. In this case, if extcon provider driver
+> >> can change data value of "unsigned int data", extcon consumer provider
+> have to be modified according to extcon provider driver.
+> >> I think it isn't correct apporach. So, I proposed that we should
+> >> define properties for all cables.
+> >
+> > I couldnâ€™t find properties common for all type of cables. Alternate
+> > method I can think of is a new driver "extcon-charger.c".  This driver will
+> register with extcon subsystem.
+> >
+> > The consumer and provider can use the APIs and properties exposed by
+> > this driver.  This way we can ensure that extcon design is intact and
+> > the additional charger cable state and properties can be handled by this
+> driver. Does that make sense?
 > 
-> The vpbe driver can handle different platforms DM644X, DM36X and
-> DM355. To differentiate between this platforms venc_type/vpbe_type
-> was passed as part of platform data which was incorrect. The correct
-> way to differentiate to handle this case is by passing different
-> platform names.
+> I don't agree about 'extcon-charger.c' because the 'extcon-class.c' driver
+> support already charger cable.
+> Also it is duplicate feature between 'extcon-class.c' and 'extcon-charger.c'.
 > 
-> This patch creates platform_device_id[] array supporting different
-> platforms and assigns id_table to the platform driver, and finally
-> in the probe gets the actual device by using platform_get_device_id()
-> and gets the appropriate driver data for that platform.
+> Also,
+> The obvious difference between the state of external cable and the state of
+> host system is existence.
+> I think that extcon cable state isn't changed when state of host system move
+> from normal state to suspend state or opposite case. If consumer driver
+> hope to know new state of host system, power_supply charging framework
+> communicate with other driver or framework that provide API for checking
+> state of host system.
 > 
-> Taking this approach will also make the DT transition easier.
+> I suggest a approach that some framework related OTG/USB need to
+> implement something like below notifier block, this notifier block inform
+> changed state of host system of some driver/framework that need state of
+> host system.
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-
-Looks good to me except some comments below. After addressing those,
-please feel free to add my:
-
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-I assume you want to merge this from media tree to manage dependencies?
-
-> ---
->  arch/arm/mach-davinci/board-dm644x-evm.c      |    8 ++--
->  arch/arm/mach-davinci/dm644x.c                |    7 +--
->  drivers/media/platform/davinci/vpbe.c         |    9 +++-
->  drivers/media/platform/davinci/vpbe_display.c |    4 +-
->  drivers/media/platform/davinci/vpbe_osd.c     |   27 +++++++++-
->  drivers/media/platform/davinci/vpbe_venc.c    |   67 +++++++++++++++++--------
->  include/media/davinci/vpbe_osd.h              |    5 +-
->  include/media/davinci/vpbe_venc.h             |    5 +-
->  8 files changed, 94 insertions(+), 38 deletions(-)
+> /*
+>   * Host system notifier
+>   */
+> #define HOST_SYSTEM_NORMAL		0x1
+> #define HOST_SYSTEM_SUSPEND	0x2
 > 
-> diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-> index f22572ce..b00ade4 100644
-> --- a/arch/arm/mach-davinci/board-dm644x-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-> @@ -689,7 +689,7 @@ static struct vpbe_output dm644xevm_vpbe_outputs[] = {
->  			.std		= VENC_STD_ALL,
->  			.capabilities	= V4L2_OUT_CAP_STD,
->  		},
-> -		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
-> +		.subdev_name	= DM644X_VPBE_VENC_SUBDEV_NAME,
->  		.default_mode	= "ntsc",
->  		.num_modes	= ARRAY_SIZE(dm644xevm_enc_std_timing),
->  		.modes		= dm644xevm_enc_std_timing,
-> @@ -701,7 +701,7 @@ static struct vpbe_output dm644xevm_vpbe_outputs[] = {
->  			.type		= V4L2_OUTPUT_TYPE_ANALOG,
->  			.capabilities	= V4L2_OUT_CAP_DV_TIMINGS,
->  		},
-> -		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
-> +		.subdev_name	= DM644X_VPBE_VENC_SUBDEV_NAME,
->  		.default_mode	= "480p59_94",
->  		.num_modes	= ARRAY_SIZE(dm644xevm_enc_preset_timing),
->  		.modes		= dm644xevm_enc_preset_timing,
-> @@ -712,10 +712,10 @@ static struct vpbe_config dm644xevm_display_cfg = {
->  	.module_name	= "dm644x-vpbe-display",
->  	.i2c_adapter_id	= 1,
->  	.osd		= {
-> -		.module_name	= VPBE_OSD_SUBDEV_NAME,
-> +		.module_name	= DM644X_VPBE_OSD_SUBDEV_NAME,
->  	},
->  	.venc		= {
-> -		.module_name	= VPBE_VENC_SUBDEV_NAME,
-> +		.module_name	= DM644X_VPBE_VENC_SUBDEV_NAME,
->  	},
->  	.num_outputs	= ARRAY_SIZE(dm644xevm_vpbe_outputs),
->  	.outputs	= dm644xevm_vpbe_outputs,
-> diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-> index cd0c8b1..7b785ec 100644
-> --- a/arch/arm/mach-davinci/dm644x.c
-> +++ b/arch/arm/mach-davinci/dm644x.c
-> @@ -670,11 +670,11 @@ static struct resource dm644x_osd_resources[] = {
->  };
->  
->  static struct osd_platform_data dm644x_osd_data = {
-> -	.vpbe_type     = VPBE_VERSION_1,
-> +	.field_inv_wa_enable = 0,
+> extern int register_host_system_notifier(struct notifier_block *nb); extern
+> void unregister_host_system_notifier(struct notifier_block *nb); int
+> host_system_notify(..)
+> 
+> For example,
+> Firstly, the power_supply charging framework check state of charger cable
+> whether attached or detached cable. Second, when power_supply charging
+> framework receive the changed state of host system from 'Host system
+> notifier', change charging current of charger cable.
 
-Stray change in the patch? You anyway do not need to zero initialize.
+Not just SUSPEND, but we need to handle RESUME , UPDATE etc.  Also this doesnâ€™t help us to
+define a standard interface for the charger cable state/properties. IMHO it's not right
+to provide different interfaces for different cables. This doesn't help us to standardize
+the charger cable interface.
 
->  };
->  
->  static struct platform_device dm644x_osd_dev = {
-> -	.name		= VPBE_OSD_SUBDEV_NAME,
-> +	.name		= DM644X_VPBE_OSD_SUBDEV_NAME,
->  	.id		= -1,
->  	.num_resources	= ARRAY_SIZE(dm644x_osd_resources),
->  	.resource	= dm644x_osd_resources,
-> @@ -752,12 +752,11 @@ static struct platform_device dm644x_vpbe_display = {
->  };
->  
->  static struct venc_platform_data dm644x_venc_pdata = {
-> -	.venc_type	= VPBE_VERSION_1,
->  	.setup_clock	= dm644x_venc_setup_clock,
->  };
->  
->  static struct platform_device dm644x_venc_dev = {
-> -	.name		= VPBE_VENC_SUBDEV_NAME,
-> +	.name		= DM644X_VPBE_VENC_SUBDEV_NAME,
->  	.id		= -1,
->  	.num_resources	= ARRAY_SIZE(dm644x_venc_resources),
->  	.resource	= dm644x_venc_resources,
-> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-> index 7f5cf9b..0dd3c62 100644
-> --- a/drivers/media/platform/davinci/vpbe.c
-> +++ b/drivers/media/platform/davinci/vpbe.c
-> @@ -558,9 +558,14 @@ static int platform_device_get(struct device *dev, void *data)
->  	struct platform_device *pdev = to_platform_device(dev);
->  	struct vpbe_device *vpbe_dev = data;
->  
-> -	if (strcmp("vpbe-osd", pdev->name) == 0)
-> +	if (!strcmp(DM644X_VPBE_OSD_SUBDEV_NAME, pdev->name) ||
-> +	    !strcmp(DM365_VPBE_OSD_SUBDEV_NAME, pdev->name) ||
-> +	    !strcmp(DM355_VPBE_OSD_SUBDEV_NAME, pdev->name))
+This thread has been running for a quite long time. Unfortunately we couldn't make an
+agreement on the final solution. I would like to recap the overall requirement and
+would like to propose alternate solutions. The requirements is  to
+"Provide a generic interface for charger cable states and charger cable properties"
 
-How about using strstr("vpbe-osd", pdev->name) != NULL instead? Here and
-in multiple other places in the patch.
+Even though extcon subsystem handles charger cable states, it's not enough to handle
+all kind of charger cable states. It can handle just 2 states CONNECT/DISCONNECT.
+But there are scenarios where we need to handle more than 2 states
+(eg. USB SUSPEND/RESUME/UPDATE etc). Also extcon doesn't have any mechanism to
+read cable properties in a generic way.  Extcon charger-cable consumer driver
+implementations (eg charger-manager), defines charger cable properties statically (current in mA)
+inside the consumer driver. This is not enough, since the charger cable properties may change dynamically
 
-> @@ -341,8 +356,8 @@ static int venc_set_576p50(struct v4l2_subdev *sd)
->  
->  	v4l2_dbg(debug, 2, sd, "venc_set_576p50\n");
->  
-> -	if ((pdata->venc_type != VPBE_VERSION_1) &&
-> -	  (pdata->venc_type != VPBE_VERSION_2))
-> +	if ((venc->venc_type != VPBE_VERSION_1) &&
-> +	  (venc->venc_type != VPBE_VERSION_2))
+In existing form extcon cannot support different charger cable states and their 
+properties in a generic way. Also we couldn't find a final solution on how to modify the
+extcon to support these requirements. From the whole discussion what I conclude is
+ * extcon is not designed to support cable properties
+ * extcon is not designed to support any cable state other than CONNECT/DISCONNECT
 
-The broken line should be aligned correctly.
+(Feel free to correct me if my conclusion is wrong)
 
-Thanks,
-Sekhar
 
+Considering these facts and the above discussion, what I feel is extcon subsystem cannot provide generic
+interface to handle multiple charger cable states and their properties
+
+Based on this, I would like to propose a generic interface for the charger cable notification which
+can handle multiple cable states and can provide charger cable properties in a generic manner.
+Since the charger cables are related to power supply subsystem, my suggestion is to have a notifier
+chain inside the power_supply subsystem  and have APIs to query the charger cable properties.
+This will help to standardize the charger cable handling.
+
+Both extcon and power_supply maintainers are CCed in this thread. Please help me to identify a solution.
+
+
+> 
+> >
+> >>
+> >>>>
+> >>>>> and does not seems to  be a scalable solution. IMHO, the extcon
+> >>>>> should provide a mechanism to retrieve the cable properties.
+> >>>>> Consumer drivers can use this API to get the cable properties
+> >>>>> without knowing the provider driver implementation. This will
+> >>>>> make the extcon drivers more
+> >>>> scalable and reusable across multiple platforms.
+> >>>>>
+> >>>>>>>
+> >>>>>>> Hope above structure would be enough to represent the common
+> >> cable
+> >>>>>>> state and it's data. If a cable has more than two states, then
+> >>>>>>> extcon_update_state can be used to notify the consumer
+> >>>>>>> 1)Provider can just toggle the "state" argument to notify the
+> >>>>>>> consumer that cable state is changed OR
+> >>>>>>> 2) Add one more argument  like  extcon_update_state(struct
+> >>>>>>> extcon_dev *edev, u32 mask, u32 state1, u32 sate2)
+> >>>>>> This will cause other drivers to change such as arizona.
+> >>>>>>> If the state2 is set, then consumers can use
+> >>>>>>> get_cable_properties() to query the cable properties. State2
+> >>>>>>> need to be used only if the cable need to represent more than
+> >>>>>>> two state
+> >>>>>>>
+> >>>>>>>>
+> >>>>>>>> Third,
+> >>>>>>>> If we finish to decide the properties for all cables, I'd like
+> >>>>>>>> to see a example
+> >>>>>> Why do we think that state and property is the only thing which
+> >>>>>> the consumer want to know?I am sure there would be some more
+> >> properties
+> >>>>>> which would be of some interest to consumers and there is quite a
+> >>>>>> possibility that in future we might get a patch for that also.So
+> >>>>>> instead of that limiting it to just state is a good idea.
+> >>>>>>>> code.
+> >>>>>>>
+> >>>>>>> Agreed. If we  agree on the above structure, I can modify the
+> >>>>>>> charging subsystem patch to use the same structure.
+> >>>>>>> (https://lkml.org/lkml/2012/10/18/219). This would give a
+> >>>>>>> reference for the
+> >>>>>> new feature.
+> >>>>>>>
+> >>>>>>>>
+> >>>>>>>> You explained following changed state of USB according to Host
+> >>>>>>>> state on other patch.
+> >>>>>>>> ---------------------------
+> >>>>>>>> For USB2.0
+> >>>>>>>> 1) CONNECT (100mA)->UPDATE(500mA)->DISCONNECT(0mA)
+> >>>>>>>> 2) CONNECT (100mA)->UPDATE(500mA)->HOST
+> >>>>>> SUSPEND(2.5mA/500mA)-
+> >>>>>>>>> DISCONNECT(0mA)
+> >>>>>>>> 3) CONNECT (100mA)->UPDATE(500mA)->HOST
+> >>>>>> SUSPEND(2.5mA/500mA)-
+> >>>>>>>>> HOST RESUME(500mA)->DISCONNECT(0mA)
+> >>>>>>>>
+> >>>>>>>> For USB 3.0
+> >>>>>>>> 4) CONNECT (150mA)->UPDATE(900mA)->DISCONNECT(0mA)
+> >>>>>>>> 5) CONNECT (150mA)->UPDATE(900mA)-> HOST
+> >>>>>> SUSPEND(2.5mA/900mA)-
+> >>>>>>>>> DISCONNECT(0mA)
+> >>>>>>>> 6) CONNECT (100mA)->UPDATE(900mA)->HOST
+> >>>>>> SUSPEND(2.5mA/900mA)-
+> >>>>>>>>> HOST RESUME(900mA)->DISCONNECT(0mA)
+> >>>>>>>> ---------------------------
+> >>>>>>>>
+> >>>>>>>> I have a question. Can the provider device driver(e.g.,
+> >>>>>>>> extcon-max77693.c/
+> >>>>>>>> extcon-max8997.c) detect the changed state of host? I'd like to
+> >>>>>>>> see the example device driver that the provider device driver
+> >>>>>>>> detect changed state of host.
+> >>>>>>>> Could you provide example device driver?
+> >>>>>>>
+> >>>>>>> Good question. The OTG drivers are capable of identifying the
+> >>>>>>> SUSPEND
+> >>>>>> event.
+> >>>>>>> System cannot setup SDP (USB host) charging with maximum
+> >>>>>>> charging current - 500mA (USB2.0/ 900mA(USB 3)) without
+> >>>>>>> enumerating the
+> >> USB.
+> >>>>>>> The USB enumeration can be done only with a USB/OTG driver.
+> IMHO
+> >>>>>>> the above extcon drivers (extcon-max77693.c/ extcon-max8997.c)
+> >>>>>>> are not capable of doing the USB enumeration and identifying the
+> >>>>>>> charge current. They can just identify the charger type -
+> >>>> SDP/DCP/CDP/ACA/AC.
+> >>>>>>> The intelligence for USB enumeration should be inside USB/OTG
+> >> driver.
+> >>
+> >
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
