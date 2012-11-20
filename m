@@ -1,126 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2KTO3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:29:06 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19210 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2KTO3A convert rfc822-to-8bit (ORCPT
+	id S1752745Ab2KTOcH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:32:07 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:64733 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KTOcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:29:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 20 Nov 2012 06:28:49 -0800
-From: Ramalingam C <ramalingamc@nvidia.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>,
-        "fabien.andre@gmail.com" <fabien.andre@gmail.com>,
-        "scott.liu@emc.com.tw" <scott.liu@emc.com.tw>,
-        Jean Delvare <khali@linux-fr.org>, JJ Ding <jj_ding@emc.com.tw>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Nov 2012 19:58:44 +0530
-Subject: RE: [PATCH v3] i2c-hid: introduce HID over i2c specification
- implementation
-Thread-Topic: [PATCH v3] i2c-hid: introduce HID over i2c specification
- implementation
-Thread-Index: Ac3ECoRi2DKt1tG4S0y3Gc2hTx3aeQDH2qXw
-Message-ID: <EC245B9844DE6242B3F3C3BED1ECD10F6D5A21CAC0@BGMAIL02.nvidia.com>
-References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
-	<alpine.LNX.2.00.1211151450140.15877@pobox.suse.cz>
-	<CAN+gG=FeNBzdbBcH6uSWB_rUOS6PjyjpVSuY3b--g1mXo17fXA@mail.gmail.com>
- <CAN+gG=Gm2JXur1HsL=-EEpahGZjqG5BQqoR6hpO8Dvsah0XyVg@mail.gmail.com>
-In-Reply-To: <CAN+gG=Gm2JXur1HsL=-EEpahGZjqG5BQqoR6hpO8Dvsah0XyVg@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Nov 2012 09:32:05 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-fc-50ab946350ad
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Date: Tue, 20 Nov 2012 15:31:45 +0100
+Message-id: <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <20121119144826.f59667b2.akpm@linux-foundation.org>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t9jAd3kKasDDE4vsLK4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZj59PYSlYIl+x+fh3pgbGa5JdjJwcEgImEs8u/GWCsMUkLtxb
+	z9bFyMUhJLCIUeL4y00sEM4KJom/v5aAVbEJGEp0ve0CquLgEBGokZg3gxGkhlngC7PErb8L
+	mUFqhAViJD43HmIEsVkEVCX+fVoEFucVcJe4+vIXI0ivhICCxJxJNiAmp4CDxPZ+QZAKIQF7
+	iWm3p7JPYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyPY38+kdzCuarA4xCjAwajE
+	w/swYVWAEGtiWXFl7iFGCQ5mJRFe157VAUK8KYmVValF+fFFpTmpxYcYpTlYlMR5mz1SAoQE
+	0hNLUrNTUwtSi2CyTBycUg2MBp6fRfvl58u/e7jyyu7b334sfKM/veXnOaOdE3cyejzuuBbb
+	Xj1x8YNl3aads49fykkoiREq8LSe0ixZWbmNT8Tu0yUTmbW7EhI/uE570Ptf+OOll/ybWYqT
+	+5a7VTXb39tgP6tgU/7cZbzMr84ucTZep/j4S9vN2fs9ZX7MOmmb8oHZv/CmiBJLcUaioRZz
+	UXEiAGh1IPTzAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+regardless the flags provided by the caller. This causes excessive
+pruning of emergency memory pools without any good reason. Additionaly,
+on ARM architecture any driver which is using dmapools will sooner or
+later  trigger the following error: 
+"ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!".
+Increasing the coherent pool size usually doesn't help much and only
+delays such error, because all GFP_ATOMIC DMA allocations are always
+served from the special, very limited memory pool.
 
-> -----Original Message-----
-> From: Benjamin Tissoires [mailto:benjamin.tissoires@gmail.com]
-> Sent: Friday, November 16, 2012 8:26 PM
-> To: Jiri Kosina; Ramalingam C
-> Cc: Dmitry Torokhov; Stephane Chatty; fabien.andre@gmail.com;
-> scott.liu@emc.com.tw; Jean Delvare; JJ Ding; Jiri Slaby; Shubhrajyoti Datta;
-> linux-i2c@vger.kernel.org; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification
-> implementation
-> 
-> On Thu, Nov 15, 2012 at 3:04 PM, Benjamin Tissoires
-> <benjamin.tissoires@gmail.com> wrote:
-> > On Thu, Nov 15, 2012 at 2:51 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> >> On Mon, 12 Nov 2012, Benjamin Tissoires wrote:
-> >>
-> >>> Microsoft published the protocol specification of HID over i2c:
-> >>> http://msdn.microsoft.com/en-
-> us/library/windows/hardware/hh852380.as
-> >>> px
-> >>>
-> >>> This patch introduces an implementation of this protocol.
-> >>>
-> >>> This implementation does not includes the ACPI part of the specification.
-> >>> This will come when ACPI 5.0 devices enumeration will be available.
-> >>>
-> >>> Once the ACPI part is done, OEM will not have to declare HID over
-> >>> I2C devices in their platform specific driver.
-> >>>
-> >>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> >>
-> >> Out of curiosity -- has this been tested on a real device (is there
-> >> any such device available anyway?), or is that just the
-> >> implementation of the defined protocol?
-> >
-> > It has been tested on an ELAN microelectronics device (a prototype),
-> > on an odroid-x board. That's how we figure out the bug in the
-> > set_report command.
-> > I think we manage to test all main features of the protocol
-> > (get_report, irqs, hid descriptor, report descriptors, set_report).
-> >
-> > I'm currently waiting for a Synaptics touchpad to check if it's also
-> > working with their devices.
-> >
-> > The thing is that HID over i2c for x86 platform will presumably
-> > require the Haswell platform from Intel (we need ACPI 5 for
-> > enumeration), but it would be very nice to get this in the kernel just
-> > before hardware arrive on the market :) However, I won't be surprise
-> > if android OEMs also start using this specification because it won't
-> > force them to write kernel drivers...
-> 
-> And as a complement, Ramalingam tested it for Nvidia on an early NVIDIA's
-> Tegra reference board for PISMO which is registered at
-> http://www.arm.linux.org.uk/developer/machines/list.php?id=4439 , with a
-> HID over i2c keyboard.
-> He is up to test also his Synaptics touchpad.
+This patch changes the dmapool code to correctly use gfp flags provided
+by the dmapool caller.
 
-I have tested with Synaptics trackpad. It is working fine. Thank you Benjamin.
+Reported-by: Soeren Moch <smoch@web.de>
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Soeren Moch <smoch@web.de>
+---
 
-Thanks and Regards,
-Ramalingam C
+changelog
+v2:
+ - removed all waitq related stuff
+ - extended commit message
 
-> 
-> Cheers,
-> Benjamin
-> 
-> >
-> > Cheers,
-> > Benjamin
-> >
-> >>
-> >> Thanks,
-> >>
-> >> --
-> >> Jiri Kosina
-> >> SUSE Labs
+ mm/dmapool.c |   31 +++++++------------------------
+ 1 file changed, 7 insertions(+), 24 deletions(-)
+
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index c5ab33b..da1b0f0 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -50,7 +50,6 @@ struct dma_pool {		/* the pool */
+ 	size_t allocation;
+ 	size_t boundary;
+ 	char name[32];
+-	wait_queue_head_t waitq;
+ 	struct list_head pools;
+ };
+ 
+@@ -62,8 +61,6 @@ struct dma_page {		/* cacheable header for 'allocation' bytes */
+ 	unsigned int offset;
+ };
+ 
+-#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
+-
+ static DEFINE_MUTEX(pools_lock);
+ 
+ static ssize_t
+@@ -172,7 +169,6 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+ 		int ret;
+@@ -227,7 +223,6 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
+ 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+ #endif
+ 		pool_initialise_page(pool, page);
+-		list_add(&page->page_list, &pool->page_list);
+ 		page->in_use = 0;
+ 		page->offset = 0;
+ 	} else {
+@@ -315,30 +310,21 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+- restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+ 		if (page->offset < pool->allocation)
+ 			goto ready;
+ 	}
+-	page = pool_alloc_page(pool, GFP_ATOMIC);
+-	if (!page) {
+-		if (mem_flags & __GFP_WAIT) {
+-			DECLARE_WAITQUEUE(wait, current);
+ 
+-			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			__add_wait_queue(&pool->waitq, &wait);
+-			spin_unlock_irqrestore(&pool->lock, flags);
++	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
++	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-			schedule_timeout(POOL_TIMEOUT_JIFFIES);
++	page = pool_alloc_page(pool, mem_flags);
++	if (!page)
++		return NULL;
+ 
+-			spin_lock_irqsave(&pool->lock, flags);
+-			__remove_wait_queue(&pool->waitq, &wait);
+-			goto restart;
+-		}
+-		retval = NULL;
+-		goto done;
+-	}
++	spin_lock_irqsave(&pool->lock, flags);
+ 
++	list_add(&page->page_list, &pool->page_list);
+  ready:
+ 	page->in_use++;
+ 	offset = page->offset;
+@@ -348,7 +334,6 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ #ifdef	DMAPOOL_DEBUG
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+ #endif
+- done:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 	return retval;
+ }
+@@ -435,8 +420,6 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
+ 	page->in_use--;
+ 	*(int *)vaddr = page->offset;
+ 	page->offset = offset;
+-	if (waitqueue_active(&pool->waitq))
+-		wake_up_locked(&pool->waitq);
+ 	/*
+ 	 * Resist a temptation to do
+ 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
+-- 
+1.7.9.5
+
