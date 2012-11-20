@@ -1,137 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab2KTBDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:03:09 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54079 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753486Ab2KTBDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:03:08 -0500
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Zheng Li <zheng.x.li@oracle.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: rlb mode of bond should not alter ARP originating via bridge
-In-reply-to: <1352972861-17577-1-git-send-email-zheng.x.li@oracle.com>
-References: <1352972861-17577-1-git-send-email-zheng.x.li@oracle.com>
-Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
-   message dated "Thu, 15 Nov 2012 17:47:41 +0800."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-Date: Mon, 19 Nov 2012 17:02:34 -0800
-Message-ID: <30871.1353373354@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112001-5930-0000-0000-00000E4F673B
+	id S1753715Ab2KTBFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:05:16 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59831 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab2KTBFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 20:05:14 -0500
+Date: Mon, 19 Nov 2012 17:05:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mel Gorman <mgorman@suse.de>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+In-Reply-To: <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zheng Li <zheng.x.li@oracle.com> wrote:
+On Mon, 19 Nov 2012, David Rientjes wrote:
 
->ARP traffic passing through a bridge and out via the bond (when the bond is a 
->port of the bridge) should not have its source MAC address adjusted by the 
->receive load balance code in rlb_arp_xmit.
+> I confirm that SPECjbb2005 1.07 -Xmx4g regresses in terms of throughput on 
+> my 16-way, 4 node system with 32GB of memory using 16 warehouses and 240 
+> measurement seconds.  I averaged the throughput for five runs on each 
+> kernel.
+> 
+> Java(TM) SE Runtime Environment (build 1.6.0_06-b02)
+> Java HotSpot(TM) 64-Bit Server VM (build 10.0-b22, mixed mode)
+> 
+> Both kernels have
+> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+> CONFIG_TRANSPARENT_HUGEPAGE=y
+> CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+> 
+> numa/core at 01aa90068b12 ("sched: Use the best-buddy 'ideal cpu' in 
+> balancing decisions") with
+> 
+> CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+> CONFIG_ARCH_WANTS_NUMA_GENERIC_PGPROT=y
+> CONFIG_NUMA_BALANCING=y
+> CONFIG_NUMA_BALANCING_HUGEPAGE=y
+> CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT=y
+> CONFIG_ARCH_USES_NUMA_GENERIC_PGPROT_HUGEPAGE=y
+> 
+> had a throughput of 128315.19 SPECjbb2005 bops.
+> 
+> numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into sched/core") 
+> had an average throughput of 136918.34 SPECjbb2005 bops, which is a 6.3% 
+> regression.
+> 
 
-	This patch differs from prior versions in that it does more than
-what's described here; it also disables the receive load balance logic
-for any ARPs (request or reply) that are passing through the bond (not
-of local origin).  For ARP replies, that's mostly harmless, as the ARPs
-passing through will simply always be sent from one particular slave
-(the active slave) instead of being balanced.
+perftop during the run on numa/core at 01aa90068b12 ("sched: Use the 
+best-buddy 'ideal cpu' in balancing decisions"):
 
-	For ARP requests, though, they are already always sent via the
-active slave, but there is also some logic in rlb_arp_xmit to limit the
-side effects from the broadcast ARP, in particular this part:
+    15.99%  [kernel]  [k] page_fault                         
+     4.05%  [kernel]  [k] getnstimeofday                     
+     3.96%  [kernel]  [k] _raw_spin_lock                     
+     3.20%  [kernel]  [k] rcu_check_callbacks                
+     2.93%  [kernel]  [k] generic_smp_call_function_interrupt
+     2.90%  [kernel]  [k] __do_page_fault                    
+     2.82%  [kernel]  [k] ktime_get                          
+     2.62%  [kernel]  [k] read_tsc                           
+     2.41%  [kernel]  [k] handle_mm_fault                    
+     2.01%  [kernel]  [k] flush_tlb_func                     
+     1.99%  [kernel]  [k] retint_swapgs                      
+     1.83%  [kernel]  [k] emulate_vsyscall                   
+     1.71%  [kernel]  [k] handle_pte_fault                   
+     1.63%  [kernel]  [k] task_tick_fair                     
+     1.57%  [kernel]  [k] clear_page_c                       
+     1.55%  [kernel]  [k] down_read_trylock                  
+     1.54%  [kernel]  [k] copy_user_generic_string           
+     1.48%  [kernel]  [k] ktime_get_update_offsets           
+     1.37%  [kernel]  [k] find_vma                           
+     1.23%  [kernel]  [k] mpol_misplaced                     
+     1.14%  [kernel]  [k] task_numa_fault                    
+     1.10%  [kernel]  [k] run_timer_softirq                  
+     1.06%  [kernel]  [k] up_read                            
+     0.87%  [kernel]  [k] __bad_area_nosemaphore             
+     0.82%  [kernel]  [k] write_ok_or_segv                   
+     0.77%  [kernel]  [k] update_cfs_shares                  
+     0.76%  [kernel]  [k] update_curr                        
+     0.75%  [kernel]  [k] error_sti                          
+     0.75%  [kernel]  [k] get_vma_policy                     
+     0.73%  [kernel]  [k] smp_call_function_many             
+     0.66%  [kernel]  [k] do_wp_page                         
+     0.60%  [kernel]  [k] error_entry                        
+     0.60%  [kernel]  [k] call_function_interrupt            
+     0.59%  [kernel]  [k] error_exit                         
+     0.58%  [kernel]  [k] _raw_spin_lock_irqsave             
+     0.58%  [kernel]  [k] tick_sched_timer                   
+     0.57%  [kernel]  [k] __do_softirq                       
+     0.57%  [kernel]  [k] mem_cgroup_count_vm_event          
+     0.56%  [kernel]  [k] account_user_time                  
+     0.56%  [kernel]  [k] spurious_fault                     
+     0.54%  [kernel]  [k] acct_update_integrals              
+     0.54%  [kernel]  [k] bad_area_nosemaphore
 
-		/* The ARP reply packets must be delayed so that
-		 * they can cancel out the influence of the ARP request.
-		 */
-		bond->alb_info.rlb_update_delay_counter = RLB_UPDATE_DELAY;
-
-		/* arp requests are broadcast and are sent on the primary
-		 * the arp request will collapse all clients on the subnet to
-		 * the primary slave. We must register these clients to be
-		 * updated with their assigned mac.
-		 */
-		rlb_req_update_subnet_clients(bond, arp->ip_src);
-
-	that arranges for clients to be given ARP updates for their
-slave assignments (which may change to the active slave, due to the ARP
-broadcast being sent via the active slave).
-
-	I think the ARP reply side of this is fine (and is what is
-described in teh changelog), but the ARP request behavior change is new
-with this version.
-
-	Since prior versions of the patch didn't cause this code to be
-skipped, is this change intentional?
-
-	Did you check to see if the above logic is necessary for ARP
-requests passing through via a bridge to prevent peers from "stacking"
-(in terms of load balance assignment) on the active slave due to bridged
-ARP traffic?
-
-	-J
-
->Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->Cc: Jay Vosburgh <fubar@us.ibm.com>
->Cc: Andy Gospodarek <andy@greyhouse.net>
->Cc: "David S. Miller" <davem@davemloft.net>
->
->---
-> drivers/net/bonding/bond_alb.c |    6 ++++++
-> drivers/net/bonding/bonding.h  |   13 +++++++++++++
-> 2 files changed, 19 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->index e15cc11..75f6f0d 100644
->--- a/drivers/net/bonding/bond_alb.c
->+++ b/drivers/net/bonding/bond_alb.c
->@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
-> 	struct arp_pkt *arp = arp_pkt(skb);
-> 	struct slave *tx_slave = NULL;
->
->+	/* Only modify ARP's MAC if it originates locally;
->+	 * don't change ARPs arriving via a bridge.
->+	 */
->+	if (!bond_slave_has_mac(bond, arp->mac_src))
->+		return NULL;
->+
-> 	if (arp->op_code == htons(ARPOP_REPLY)) {
-> 		/* the arp must be sent on the selected
-> 		* rx channel
->diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
->index f8af2fc..6dded56 100644
->--- a/drivers/net/bonding/bonding.h
->+++ b/drivers/net/bonding/bonding.h
->@@ -22,6 +22,7 @@
-> #include <linux/in6.h>
-> #include <linux/netpoll.h>
-> #include <linux/inetdevice.h>
->+#include <linux/etherdevice.h>
-> #include "bond_3ad.h"
-> #include "bond_alb.h"
->
->@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
-> }
-> #endif
->
->+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
->+					       const u8 *mac)
->+{
->+	int i = 0;
->+	struct slave *tmp;
->+
->+	bond_for_each_slave(bond, tmp, i)
->+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
->+			return tmp;
->+
->+	return NULL;
->+}
->
-> /* exported from bond_main.c */
-> extern int bond_net_id;
->-- 
->1.7.6.5
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-
+ [ Both kernels for this test were booted with cgroup_disable=memory on 
+   the command line, why mem_cgroup_count_vm_event shows up at all here is 
+   strange... ]
