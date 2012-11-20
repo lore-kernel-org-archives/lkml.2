@@ -1,246 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2KTOO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:14:56 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35780 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab2KTOOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:14:54 -0500
+	id S1753486Ab2KTOPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:15:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab2KTOO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 09:14:58 -0500
+Date: Tue, 20 Nov 2012 12:14:39 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v12 4/7] mm: introduce compaction and migration for
+ ballooned pages
+Message-ID: <20121120141438.GA21672@x61.redhat.com>
+References: <cover.1352656285.git.aquini@redhat.com>
+ <6602296b38c073a5c6faa13ddbc74ceb1eceb2dd.1352656285.git.aquini@redhat.com>
+ <50A7D0FA.2080709@gmail.com>
+ <20121117215434.GA23879@x61.redhat.com>
+ <CA+1xoqfbxL-mL3XRDXxnuv0R6b9w6qxU7t+8U3FwS2eK5Sf0OA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50AB81C8.4090300@samsung.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-	<50AB34E2.1010206@samsung.com>
-	<CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
-	<50AB587F.3040405@samsung.com>
-	<CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
-	<50AB81C8.4090300@samsung.com>
-Date: Tue, 20 Nov 2012 22:14:52 +0800
-Message-ID: <CADz5_gL3uHbvhb2ccp03=9P88u1Catxe9+Xffs3KmJsZGWmWvA@mail.gmail.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqfbxL-mL3XRDXxnuv0R6b9w6qxU7t+8U3FwS2eK5Sf0OA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Hello,
->
->
-> On 11/20/2012 12:36 PM, Kevin Liu wrote:
->>
->> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
->> > On 11/20/2012 9:59 AM, Kevin Liu wrote:
->> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
->> >> > On 11/14/2012 8:11 AM, Kevin Liu wrote:
->> >> >>
->> >> >> > From: linux-mmc-owner@vger.kernel.org
->> >> >> > [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
->> >> >> > Sent: Tuesday, November 13, 2012 10:14 PM
->> >> >> > To: Marek Szyprowski
->> >> >> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org;
->> >> >> > Kyungmin
->> >> >> > Park; Mark Brown; Liam Girdwood; Philip Rakity
->> >> >> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only
->> >> >> > for non-fixed regulators
->> >> >> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >> >> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
->> >> >> >>> > Fixed regulators cannot change their voltage, so disable all
->> >> >> >>> > voltage
->> >> >> >>> > range checking for them, otherwise the driver fails to operate
->> >> >> >>> > with
->> >> >> >>> > fixed regulators. Up to now it worked only by luck, because
->> >> >> >>> > regulator_is_supported_voltage() function returned incorrect
->> >> >> >>> > values.
->> >> >> >>> > Commit "regulator: fix voltage check in
->> >> >> >>> > regulator_is_supported_voltage()"
->> >> >> >>> > fixed that function and now additional check is needed for
->> >> >> >>> > fixed
->> >> >> >>> > regulators.
->> >> >> >>> >
->> >> >> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> >> >> >>> > ---
->> >> >> >>> >  drivers/mmc/host/sdhci.c |    2 +-
->> >> >> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >> >> >>> >
->> >> >> >>> > diff --git a/drivers/mmc/host/sdhci.c
->> >> >> >>> > b/drivers/mmc/host/sdhci.c
->> >> >> >>> > index c7851c0..6f6534e 100644
->> >> >> >>> > --- a/drivers/mmc/host/sdhci.c
->> >> >> >>> > +++ b/drivers/mmc/host/sdhci.c
->> >> >> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host
->> >> >> >>> > *host)
->> >> >> >>> >            regulator_enable(host->vmmc);
->> >> >> >>> >
->> >> >> >>> >  #ifdef CONFIG_REGULATOR
->> >> >> >>> > -  if (host->vmmc) {
->> >> >> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) > 1)
->> >> >> >>> > {
->> >> >> >>> >            ret = regulator_is_supported_voltage(host->vmmc,
->> >> >> >>> > 3300000,
->> >> >> >>> >                    3300000);
->> >> >> >>> >            if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->> >> >> >>>
->> >> >> >>> Thanks for the longer explanation.  I'm still missing something,
->> >> >> >>> though;
->> >> >> >>> what's wrong with running the check as it was with the new
->> >> >> >>> regulator
->> >> >> >>> code?
->> >> >> >>> (I haven't tried it yet.)
->> >> >> >>>
->> >> >> >>> #ifdef CONFIG_REGULATOR
->> >> >> >>>          if (host->vmmc) {
->> >> >> >>>                  ret =
->> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >>> 3300000,
->> >> >> >>>                          3300000);
->> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >>> SDHCI_CAN_VDD_330)))
->> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
->> >> >> >>>                  ret =
->> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >>> 3000000,
->> >> >> >>>                          3000000);
->> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >>> SDHCI_CAN_VDD_300)))
->> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
->> >> >> >>>                  ret =
->> >> >> >>> regulator_is_supported_voltage(host->vmmc,
->> >> >> >>> 1800000,
->> >> >> >>>                          1800000);
->> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
->> >> >> >>> SDHCI_CAN_VDD_180)))
->> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
->> >> >> >>>          }
->> >> >> >>> #endif /* CONFIG_REGULATOR */
->> >> >> >>>
->> >> >> >>> The point is to remove unsupported voltages, so if someone sets
->> >> >> >>> up
->> >> >> >>> a
->> >> >> >>> fixed regulator at 3300000, all of the other caps are disabled.
->> >> >> >>> Why
->> >> >> >>> wouldn't that work without this change, and how are we supposed
->> >> >> >>> to
->> >> >> >>> remove those caps on a fixed regulator after your patchset?
->> >> >> >>>
->> >> >> >>> Thanks, sorry if I'm missing something obvious,
->> >> >> >>
->> >> >> >> On our boards eMMC is connected to fixed 2.8V regulator, what
->> >> >> >> results
->> >> >> >> in
->> >> >> >> clearing all available voltages and fail. The same situation is
->> >> >> >> when
->> >> >> >> one
->> >> >> >> enable dummy regulator and try to use sdhci with it. My patch
->> >> >> >> fixes
->> >> >> >> this
->> >> >> >> and restores sdhci to working state as it was before (before
->> >> >> >> fixing
->> >> >> >> regulator regulator_is_supported_voltage() function and earlier
->> >> >> >> when
->> >> >> >> MMC_BROKEN_VOLATGE capability was used).
->> >> >> >
->> >> >> > I see.  Sounds like a separate bug -- Philip (or anyone else), any
->> >> >> > idea how we should be treating eMMCs with a fixed voltage here?
->> >> >> >
->> >> >>
->> >> >> I think we should check the voltage range rather than the voltage
->> >> >> point accoring to the spec.
->> >> >> Otherwise some valid voltage like 2.8v will be discarded by mistake.
->> >> >> My below old patch aim to fix this issue.
->> >> >> How do you think?
->> >> >>
->> >> >> -----Original Message-----
->> >> >> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
->> >> >> Sent: Friday, September 28, 2012 3:56 PM
->> >> >> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
->> >> >> ulf.hansson@linaro.org; Zhangfei Gao
->> >> >> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing Fu
->> >> >> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
->> >> >> range according to spec
->> >> >>
->> >> >> From: Kevin Liu <kliu5@marvell.com>
->> >> >>
->> >> >> For regulator vmmc/vmmcq, use voltage range as below
->> >> >> 3.3v/3.0v: (2.7v, 3.6v)
->> >> >> 1.8v: (1.7v, 1.95v)
->> >> >> Original code use the specific value which may fail in regulator
->> >> >> driver if it does NOT support the specific voltage.
->> >> >>
->> >> >> Signed-off-by: Jialing Fu <jlfu@marvell.com>
->> >> >> Signed-off-by: Kevin Liu <kliu5@marvell.com>
->> >> >
->> >> >
->> >> > Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> >> >
->> >> > This patch restores sdhci devices to working state on Samsung boards
->> >> > (tested on GONI and UniversalC210) after merging "regulator: fix
->> >> > voltage
->> >> > check in regulator_is_supported_voltage()" patch to v3.7-rc6 (commit
->> >> > f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have it
->> >> > merged before the final v3.7 is out.
->> >> >
->> >> Marek,
->> >>
->> >> thanks a lot for the verification!
->> >> And your patch "mmc: sdhci: apply voltage range check only for
->> >> non-fixed regulators" (commit
->> >> d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
->> >> mmc-next) can be reverted if this patch merged?
->> >
->> >
->> > Yes, it can be replaced with it, although there is still an issue that
->> > need
->> > to be resolved somehow. Right now SDHCI driver fails to initialize if
->> > support
->> > for dummy regulator is enabled.
->> >
->> Then I think the dummy issue can be resolved with your patch merged
->> and if you can just update your patch from
->>       "regulator_count_voltages(host->vmmc) > 1"
->> to
->>       "regulator_count_voltages(host->vmmc) > 0"
->> to let fix regulator work.
->
->
-> regulator_count_voltages() returns 1 for both fixed regulators and for
-> virtual dummy regulator, so the above change makes no sense.
+On Sun, Nov 18, 2012 at 09:59:47AM -0500, Sasha Levin wrote:
+> On Sat, Nov 17, 2012 at 4:54 PM, Rafael Aquini <aquini@redhat.com> wrote:
+> > On Sat, Nov 17, 2012 at 01:01:30PM -0500, Sasha Levin wrote:
+> >>
+> >> I'm getting the following while fuzzing using trinity inside a KVM tools guest,
+> >> on latest -next:
+> >>
+> >> [ 1642.783728] BUG: unable to handle kernel NULL pointer dereference at 0000000000000194
+> >> [ 1642.785083] IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
+> >>
+> >> My guess is that we see those because of a race during the check in
+> >> isolate_migratepages_range().
+> >>
+> >>
+> >> Thanks,
+> >> Sasha
+> >
+> > Sasha, could you share your .config and steps you did used with trinity? So I
+> > can attempt to reproduce this issue you reported.
+> 
+> Basically try running trinity (with ./trinity -m --quiet --dangerous
+> -l off) inside a disposable guest as root.
+> 
+> I manage to hit that every couple of hours.
+> 
+> Config attached.
+> 
 
-I think regulator_count_voltage should return -EINVAL for dummy
-regulator since n_voltages is not defined for dummy regulator:
-int regulator_count_voltages(struct regulator *regulator)
-{
-        struct regulator_dev    *rdev = regulator->rdev;
+Howdy Sasha,
 
-        return rdev->desc->n_voltages ? : -EINVAL;
-}
-can you double check this?
+After several hours since last Sunday running trinity tests on a traditional
+KVM-QEMU guest as well as running it on a lkvm guest (both running
+next-20121115) I couldn't hit a single time the crash you've reported,
+(un)fortunately.
 
-> However I was so focused on fixing the 2.8V supply case that I missed the
-> fact that my "mmc: sdhci: apply voltage range check only for non-fixed
-> regulators" patch also fixed the dummy regulator case.
->
-> The conclusion is that applying both patches should finally fix the
-> regulator issues with for the Samsung boards (2.8V supply for eMMC) and
-> 'dummy-regulators' cases.
->
+Also, the .config you gave me, applied on top of next-20121115, haven't produced
+the same bin you've running and hitting the mentioned bug, apparently.
 
-After thinking again, I think we don't need the check for
-regulator_count_voltages.
-In fact, dummy regulator should NOT be used for the sd/mmc power
-supply. We should use controllable or fixed regulator. If dummy
-regulator is used, then it means we won't control it and we don't know
-its voltage. It's not reasonable for sd/mmc power supply. If dummy
-regulator is used, I think it's ok to return error and disable all
-voltage support caps.
+Here's the RIP for your crash:
+[ 1642.783728] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000194
+[ 1642.785083] IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
 
-Thanks
-Kevin
+
+And here's the symbol address for the next-20121115 with your .config I've been
+running tests on:
+[raquini@x61 linux]$ nm -n vmlinux | grep isolate_migratepages_range 
+ffffffff8122d890 T isolate_migratepages_range
+
+Also, it seems quite clear I'm missing something from your tree, as applying the
+RIP displacement (0x344) to my local isolate_migratepages_range sym addr leads
+me to the _middle_ of a instruction opcode that does not dereference any
+pointers at all.
+
+So, if you're consistently reproducing the same crash, consider to share with us
+a disassembled dump from the isolate_migratepages_range() you're running along
+with the crash stack-dump, please.
+
+Cheers!
+-- Rafael
+
