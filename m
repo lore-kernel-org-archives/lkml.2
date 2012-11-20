@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab2KTIcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:32:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:9471 "EHLO relay.sw.ru"
+	id S1753025Ab2KTIdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:33:20 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:28663 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab2KTIcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:32:47 -0500
+	id S1752756Ab2KTIcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:32:46 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Turner <pjt@google.com>, Balbir Singh <bsingharora@gmail.com>,
         Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Glauber Costa <glommer@parallels.com>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [PATCH 5/6] sched: adjust exec_clock to use it as cpu usage metric
-Date: Tue, 20 Nov 2012 12:32:03 +0400
-Message-Id: <1353400324-10897-6-git-send-email-glommer@parallels.com>
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 0/6] Automatic NUMA placement of tasks in cpu cgroup
+Date: Tue, 20 Nov 2012 12:31:58 +0400
+Message-Id: <1353400324-10897-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353400324-10897-1-git-send-email-glommer@parallels.com>
-References: <1353400324-10897-1-git-send-email-glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exec_clock already provides per-group cpu usage metrics, and can be
-reused by cpuacct in case cpu and cpuacct are comounted.
+Hi,
 
-However, it is only provided by tasks in fair class. Doing the same for
-rt is easy, and can be done in an already existing hierarchy loop. This
-is an improvement over the independent hierarchy walk executed by
-cpuacct.
+This patchset has absolutely nothing to do with NUMA. But now that I got your
+attention:
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Jones <davej@redhat.com>
-CC: Ben Hutchings <ben@decadent.org.uk>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
-CC: Lennart Poettering <lennart@poettering.net>
-CC: Kay Sievers <kay.sievers@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>
----
- kernel/sched/rt.c    | 1 +
- kernel/sched/sched.h | 3 +++
- 2 files changed, 4 insertions(+)
+This is an attempt to ressurect a patchset that Tejun Heo sent a while ago,
+aiming at deprecation of cpuacct. He only went as far as publishing the files
+in the cpu cgroup, but the final work would require us to take advantage
+of it by not incurring in hierarchy walks more times than necessary.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 0c70807..68e9daf 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -945,6 +945,7 @@ static void update_curr_rt(struct rq *rq)
- 
- 	for_each_sched_rt_entity(rt_se) {
- 		rt_rq = rt_rq_of_se(rt_se);
-+		schedstat_add(rt_rq, exec_clock, delta_exec);
- 
- 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
- 			raw_spin_lock(&rt_rq->rt_runtime_lock);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index bc05c05..854d2e9 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -208,6 +208,7 @@ struct cfs_rq {
- 	unsigned int nr_running, h_nr_running;
- 
- 	u64 exec_clock;
-+	u64 prev_exec_clock;
- 	u64 min_vruntime;
- #ifndef CONFIG_64BIT
- 	u64 min_vruntime_copy;
-@@ -299,6 +300,8 @@ struct rt_rq {
- 	struct plist_head pushable_tasks;
- #endif
- 	int rt_throttled;
-+	u64 exec_clock;
-+	u64 prev_exec_clock;
- 	u64 rt_time;
- 	u64 rt_runtime;
- 	/* Nests inside the rq lock: */
+It is trivial to do it in the case where we have SCHEDSTATS enabled: we already
+record a statistic that is exactly the same as cpuusage: exec_clock. That is
+not collected for rt tasks, so the only thing we need to do is to also collect
+it for them, and print them back for cpuusage.
+
+In theory, it would also be possible to avoid hierarchy walks even without
+SCHEDSTATS: we could modify task_group_charge() to stop walking, and then
+update cpuusage only for the current group, during the walk we already do.
+I didn't do so, because I believe we care more about setups that would enable
+a bunch of options anyway - which is likely to include SCHEDSTATS. Custom setups
+can take a much easier route and just compile out the whole thing! But let me
+know if I should do it.
+
+
+Glauber Costa (3):
+  don't call cpuacct_charge in stop_task.c
+  sched: adjust exec_clock to use it as cpu usage metric
+  cpuacct: don't actually do anything.
+
+Tejun Heo (3):
+  cgroup: implement CFTYPE_NO_PREFIX
+  cgroup, sched: let cpu serve the same files as cpuacct
+  cgroup, sched: deprecate cpuacct
+
+ include/linux/cgroup.h   |   1 +
+ init/Kconfig             |  11 +-
+ kernel/cgroup.c          |  57 ++++++++++-
+ kernel/sched/core.c      | 262 ++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/fair.c      |   1 +
+ kernel/sched/rt.c        |   2 +
+ kernel/sched/sched.h     |  14 ++-
+ kernel/sched/stop_task.c |   1 -
+ 8 files changed, 341 insertions(+), 8 deletions(-)
+
 -- 
 1.7.11.7
 
