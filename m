@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab2KTOW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:22:57 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:51089 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2KTOW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:22:56 -0500
-X-Nat-Received: from [202.181.97.72]:60757 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1353421338.22984
-To: dhowells@redhat.com, sam@ravnborg.org
-Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        davej@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201211192202.IBE48444.VHFLtOSOQFOMJF@I-love.SAKURA.ne.jp>
-	<201211172227.BHB30739.OVOMFtFLHOFSQJ@I-love.SAKURA.ne.jp>
-	<24020.1353323415@warthog.procyon.org.uk>
-	<26846.1353334165@warthog.procyon.org.uk>
-In-Reply-To: <26846.1353334165@warthog.procyon.org.uk>
-Message-Id: <201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 20 Nov 2012 23:22:19 +0900
-Mime-Version: 1.0
+	id S1752776Ab2KTOXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:23:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab2KTOXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 09:23:43 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
+        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH v1 0/9] fs: fix up AIO+DIO+O_SYNC to actually do the sync part
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 20 Nov 2012 09:23:18 -0500
+In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org> (Darrick
+	J. Wong's message of "Mon, 19 Nov 2012 23:41:16 -0800")
+Message-ID: <x49pq38jquh.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 20112012 #8466525, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells wrote:
-> Does $(info ...) not work at all in version 3.80?  If it does, can you get it
-> to display the values $(destination-y), $(dst) and $(obj) at the top of
-> Makefile.headersinst?  If $(info ...) doesn't exist, does $(warning ...)?
+"Darrick J. Wong" <darrick.wong@oracle.com> writes:
 
-$(info ...) does not work, but $(warning ...) works.
+> Hi everybody,
+>
+> On March 29th, Jeff Moyer posted to lkml a patchset with this note:
+>
+>> Currently, AIO+DIO+O_SYNC writes are not actually sync'd (for xfs), or they
+>> are sync'd before the I/O is actually issued (everybody else).  The following
+>> patch series fixes this in two parts.  First, for the file systems that use
+>> the generic routines, Jan has provided some generic infrastructure to perform
+>> the syncs after the I/O is completed.  Second, for those file systems which
+>> require some endio processing of their own for O_DIRECT writes (xfs and
+>> ext4), [Jeff] implemented file system specific syncing.  This passes the
+>> updated xfs-tests 113 test [Jeff] posted earlier, as well as all of the tests
+>> in the aio group.  [Jeff] tested ext3, ext4, xfs, and btrfs only.
+>
+> Since the original post a few months ago, this patchset doesn't seem to have
+> made any progress.  An internal testing team here discovered that the issue
+> also affects O_SYNC+AIO+DIO writes to block devices.  Worse yet, since the
+> flushes were being issued (and waited upon) directly in the io_submit call
+> graph, the io_submit calls themselves would take a very long time to complete.
+> Therefore, I added another patch to move the flush to the io_end processing.
+>
+> The blockdev patch was written by me.  The ext4 patch had to be updated to
+> accomodate a rework of the ext4 endio code that landed since March.  Everything
+> else has been passed through from Jeff's March 30th resend, with few changes.
+>
+> This patchset has been tested (albeit lightly) against 3.7-rc6 on x64, with
+> ext4, xfs, btrfs, vfat, jfs, hfsplus, ext2, ext3, and raw block devices.
+>
+> Comments and questions are, as always, welcome.
 
-Debug print shows that command line variable "dst=" passed to
-  make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst
-line is wrong.
+Hi, Darrick,
 
----------- debug print ----------
---- a/scripts/Makefile.headersinst
-+++ b/scripts/Makefile.headersinst
-@@ -7,6 +7,10 @@
- #
- # ==========================================================================
- 
-+$(warning DDDDD "$(destination-y)")
-+$(warning EEEEE "$(dst)")
-+$(warning FFFFF "$(obj)")
-+
- # called may set destination dir (when installing to asm/)
- _dst := $(or $(destination-y),$(dst),$(obj))
----------- make 3.81 ----------
-make -f scripts/Makefile.build obj=scripts build_unifdef
-make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst obj=include/uapi
-/usr/src/all/linux/scripts/Makefile.headersinst:10: DDDDD ""
-/usr/src/all/linux/scripts/Makefile.headersinst:11: EEEEE ""
-/usr/src/all/linux/scripts/Makefile.headersinst:12: FFFFF "include/uapi"
-make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst obj=include/uapi/asm-generic dst=include/uapi/asm-generic
-/usr/src/all/linux/scripts/Makefile.headersinst:10: DDDDD ""
-/usr/src/all/linux/scripts/Makefile.headersinst:11: EEEEE "include/uapi/asm-generic"
-/usr/src/all/linux/scripts/Makefile.headersinst:12: FFFFF "include/uapi/asm-generic"
-make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst obj=include/uapi/drm dst=include/uapi/drm
-/usr/src/all/linux/scripts/Makefile.headersinst:10: DDDDD ""
-/usr/src/all/linux/scripts/Makefile.headersinst:11: EEEEE "include/uapi/drm"
-/usr/src/all/linux/scripts/Makefile.headersinst:12: FFFFF "include/uapi/drm"
----------- make 3.80 ----------
-make -f scripts/Makefile.build obj=scripts build_unifdef
-make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst obj=include/uapi
-/usr/src/all/linux/scripts/Makefile.headersinst:10: DDDDD ""
-/usr/src/all/linux/scripts/Makefile.headersinst:11: EEEEE ""
-/usr/src/all/linux/scripts/Makefile.headersinst:12: FFFFF "include/uapi"
-make -rR -f /usr/src/all/linux/scripts/Makefile.headersinst obj=include/uapi/asm-generic dst=/asm-generic
-/usr/src/all/linux/scripts/Makefile.headersinst:10: DDDDD ""
-/usr/src/all/linux/scripts/Makefile.headersinst:11: EEEEE "/asm-generic"
-/usr/src/all/linux/scripts/Makefile.headersinst:12: FFFFF "include/uapi/asm-generic"
-/usr/src/all/linux/scripts/Makefile.headersinst:54: *** Missing UAPI file /usr/src/all/linux/include/uapi/asm-generic/auxvec.h.  Stop.
+I just finished testing my version of this patch set on ext4 and xfs
+(btrfs is next), but you beat me to the posting!  Sorry, I should have
+been more clear when I said I would see about refreshing the series.
+
+How have you tested these patches?  You just said "lightly", and I'm
+afraid I don't know what that means.  xfstests?  You should at least run
+them through test 113.
+
+Would you like to push the set in, or should I post the patches I've
+got?  Doesn't matter to me, just let me know.
+
+Cheers,
+Jeff
