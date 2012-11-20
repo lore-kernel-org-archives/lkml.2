@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab2KTKDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:03:09 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62390 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab2KTKDH (ORCPT
+	id S1752468Ab2KTKFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:05:44 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:35001 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab2KTKFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:03:07 -0500
-Date: Tue, 20 Nov 2012 11:02:57 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: DVS regulator drivers
-In-Reply-To: <20121120010547.GD4483@opensource.wolfsonmicro.com>
-Message-ID: <Pine.LNX.4.64.1211201054260.21420@axis700.grange>
-References: <Pine.LNX.4.64.1211191213380.11024@axis700.grange>
- <20121120010547.GD4483@opensource.wolfsonmicro.com>
+	Tue, 20 Nov 2012 05:05:43 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:YgRvDOwAZmvSFt7NgS+oo2a4BsHd7+UUe/IOF4KMLDp
- aOiwRXnsHj29widFzx/voOilhUOoNjKRhhZ49WdOmm1lLaeWo0
- goXA4VBrhD6+Gt2VvoEO9G5hmO9/dfOk4pp9aLMu8/HesgMEuW
- djlhA6Qnhqtw5ET/mR8B7wMDYeka1qTzvba7fEJy71KFtbLF/X
- TIqxOUnF5sA1eZG8OXncLcWoLM4OPfn50CATKtTed+P55N+D/j
- yvvWqEm8uybkcvRU6GY3nm6awG8LRmWmvmJSWD6FQKk3iMhvTh
- VcKX/5SMPXMG1/jhXfz83nWjvZWs8YVxvcPfvZTAU4hrac+M63
- xR+AJfXh3JCzY+O1872UpvxvLJb1udfZa5bThLL3bmkqJjUvF7
- U9w7igJpCrY5Q==
+In-Reply-To: <1353403339-11679-4-git-send-email-dmitry.torokhov@gmail.com>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+	<1353403339-11679-4-git-send-email-dmitry.torokhov@gmail.com>
+Date: Tue, 20 Nov 2012 15:35:42 +0530
+Message-ID: <CAKohpo=PMQanmVyo22HoqoXT2e3DUU8coPS85wDPDZjyFsRunQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] CLK: add more managed APIs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, one more point, that I raised in the original mail yesterday and 
-that I forgot about, when replying today:
+On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> When converting a driver to managed resources it is desirable to be able to
+> manage all resources in the same fashion. This change allows managing clocks
+> in the same way we manage all otehr resources.
 
-On Tue, 20 Nov 2012, Mark Brown wrote:
+s/otehr/other
 
-> On Mon, Nov 19, 2012 at 12:52:09PM +0100, Guennadi Liakhovetski wrote:
+> This adds the following managed APIs:
+>
+> - devm_clk_prepare()/devm_clk_unprepare();
+> - devm_clk_enable()/devm_clk_disable();
+> - devm_clk_preapre_enable()/devm_clk_diable_unprepare().
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/clk/clk-devres.c |  91 +++++++++++++++++++++++++++++++---------
+>  include/linux/clk.h      | 105 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 177 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/clk/clk-devres.c b/drivers/clk/clk-devres.c
+> index 8f57154..2703fa9 100644
+> --- a/drivers/clk/clk-devres.c
+> +++ b/drivers/clk/clk-devres.c
+> @@ -9,6 +9,33 @@
+>  #include <linux/export.h>
+>  #include <linux/gfp.h>
+>
+> +static int devm_clk_match(struct device *dev, void *res, void *data)
+> +{
+> +       struct clk **c = res;
+> +       if (!c || !*c) {
+> +               WARN_ON(!c || !*c);
 
-[snip]
+I know, you just moved this routine higher in the file. But above two
+lines look duplicated. Can we just use WARN(); here?
 
-> > 	/* Always set the ON status to the minimum voltage */
-> > 
-> > but I actually don't see, where the minimum is selected. It seems instead 
-> > in this case the "ON" value is just set:
+> +               return 0;
+> +       }
+> +       return *c == data;
+> +}
+> +
+> +
+> +static int devm_clk_create_devres(struct device *dev,
+> +                                 struct clk *clk,
+> +                                 void (*release)(struct device *, void *))
 
-In other words, I don't see where voltages are compared to select the 
-minimum to be used for .on_vsel. Instead, it seems, .on_vsel is always set 
-to the new value, and, if it is also higher then the old .dvs_vsel value, 
-.dvs_vsel is _also_ set to the new voltage, in which case they become 
-equal. Is this the intended behaviour?
+This didn't came in two lines?
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> +{
+
+Apart from that, looks fine.
+
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
