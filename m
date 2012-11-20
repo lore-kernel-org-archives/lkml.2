@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab2KTHIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:08:47 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62851 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2KTHGq (ORCPT
+	id S1752638Ab2KTHI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:08:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61384 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab2KTHIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:06:46 -0500
+	Tue, 20 Nov 2012 02:08:55 -0500
+Date: Mon, 19 Nov 2012 23:08:51 -0800
 From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
-Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] netprio_cgroup: shorten variable names in extend_netdev_table()
-Date: Mon, 19 Nov 2012 23:06:26 -0800
-Message-Id: <1353395190-4530-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353395190-4530-1-git-send-email-tj@kernel.org>
-References: <1353395190-4530-1-git-send-email-tj@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
+        john.r.fastabend@intel.com, nhorman@tuxdriver.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] cgroup: add cgroup->id
+Message-ID: <20121120070851.GG25790@mtj.dyndns.org>
+References: <1353093624-22608-1-git-send-email-tj@kernel.org>
+ <1353093624-22608-2-git-send-email-tj@kernel.org>
+ <50AB086E.70901@jp.fujitsu.com>
+ <20121120053112.GE25790@mtj.dyndns.org>
+ <50AB2BCF.2050204@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AB2BCF.2050204@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function is about to go through a rewrite.  In preparation,
-shorten the variable names so that we don't repeat "priomap" so often.
+Hello, Kamezawa.
 
-This patch is cosmetic.
+On Tue, Nov 20, 2012 at 04:05:51PM +0900, Kamezawa Hiroyuki wrote:
+> BTW, css's ID was limited to 65535 to be encoded in 2bytes.
+> If we use INT, this will increase size of swap_cgroup.
+> (2bytes per page => 4bytes per page) It's preallocated at swapon()
+> because allocating memory dynamically when we swap a memory is not good.
+> 
+> Do we really need 4bytes for ID ? If so, swap_cgroup should be totally re-designed.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
----
- net/core/netprio_cgroup.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+That's a memcg restriction which shouldn't have been imposed on cgroup
+core from the beginning.  What memcg should do is rejecting to become
+online from ->css_onilne() if cgrp->id is out of the range it can
+handle.
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 66d98da..92cc54c 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -71,26 +71,25 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
- {
- 	size_t new_size = sizeof(struct netprio_map) +
- 			   ((sizeof(u32) * new_len));
--	struct netprio_map *new_priomap = kzalloc(new_size, GFP_KERNEL);
--	struct netprio_map *old_priomap;
-+	struct netprio_map *new = kzalloc(new_size, GFP_KERNEL);
-+	struct netprio_map *old;
- 
--	old_priomap  = rtnl_dereference(dev->priomap);
-+	old = rtnl_dereference(dev->priomap);
- 
--	if (!new_priomap) {
-+	if (!new) {
- 		pr_warn("Unable to alloc new priomap!\n");
- 		return -ENOMEM;
- 	}
- 
--	if (old_priomap)
--		memcpy(new_priomap->priomap, old_priomap->priomap,
--		       old_priomap->priomap_len *
--		       sizeof(old_priomap->priomap[0]));
-+	if (old)
-+		memcpy(new->priomap, old->priomap,
-+		       old->priomap_len * sizeof(old->priomap[0]));
- 
--	new_priomap->priomap_len = new_len;
-+	new->priomap_len = new_len;
- 
--	rcu_assign_pointer(dev->priomap, new_priomap);
--	if (old_priomap)
--		kfree_rcu(old_priomap, rcu);
-+	rcu_assign_pointer(dev->priomap, new);
-+	if (old)
-+		kfree_rcu(old, rcu);
- 	return 0;
- }
- 
+Thanks.
+
 -- 
-1.7.11.7
-
+tejun
