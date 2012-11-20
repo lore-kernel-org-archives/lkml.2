@@ -1,116 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2KTN0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:26:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49440 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2KTN0G (ORCPT
+	id S1753343Ab2KTN1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:27:15 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47718 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab2KTN1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:26:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lars Poeschel <larsi@wh2.tu-dresden.de>
-Subject: Re: [PATCH] video console: add a driver for lcd2s character display
-Date: Tue, 20 Nov 2012 13:25:57 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: FlorianSchandinat@gmx.de, poeschel@lemonage.de, mathieu.poirier@linaro.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1353416206-3243-1-git-send-email-larsi@wh2.tu-dresden.de>
-In-Reply-To: <1353416206-3243-1-git-send-email-larsi@wh2.tu-dresden.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211201325.57883.arnd@arndb.de>
-X-Provags-ID: V02:K0:e5sKKj4Wbq+XjlrV35tvFqu49AsFRaa9CjxOx9zYQNj
- 64DqaipyTVdjkOqphXlIdYEblbc2LEppOh4XgTpg5esyEM5qzU
- byyFlXpEBi9iAXSTf5OlQQ28FUgEjHkBbGx4ry9d7B45U5+wUo
- 27K+WamDWOYCEbmR6bz3xS7WQ8fXKejZNqztxhfAUufRgjcMxW
- xolTomJPa4Ez/H4tGGKBwEAvSpQB47ckQsxdSCnwD9ki2AMcku
- WBC/mHXtM2WhvjHffG90/L95I2SLqszcOnWqGPux6AtabUfOnR
- LRRiZdhikraVBmmtdnaGiQbbtsqKkDINeeW2n7qUXDKsRsOcYn
- 1pmDdqkl6LJ/XAA4Rttk=
+	Tue, 20 Nov 2012 08:27:14 -0500
+From: MAACHE Mehdi <mehdi.maache@gmail.com>
+To: mehdi.maache@gmail.com, greg@kroah.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8187se: fixed some checkpatch warnings and errors in r8180_wx.c
+Date: Tue, 20 Nov 2012 14:26:42 +0100
+Message-Id: <1353418002-8254-1-git-send-email-mehdi.maache@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 November 2012, Lars Poeschel wrote:
-> From: Lars Poeschel <poeschel@lemonage.de>
-> 
-> This driver allows to use a lcd2s 20x4 character display as
-> a linux console output device.
-> 
-> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+This is a patch to the r8180_wx.c file that fixes up some warnings and errors found by the checkpatch.pl tool
+- WARNING: line over 80 characters
+- ERROR: "(foo*)" should be "(foo *)"
+- ERROR: "foo* bar" should be "foo *bar"
+- ERROR: trailing whitespace
+- ERROR: that open brace { should be on the previous line
 
-The driver looks nice overall, but I found two style issues:
+Signed-off-by MAACHE Mehdi <mehdi.maache@gmail.com>
+---
+ drivers/staging/rtl8187se/r8180_wx.c |   95 +++++++++++++++++++---------------
+ 1 files changed, 53 insertions(+), 42 deletions(-)
 
-> +static int __devinit lcd2s_i2c_probe(struct i2c_client *i2c,
-> +				const struct i2c_device_id *id)
-> +{
-> +	struct lcd2s_data *data;
-> +
-> +	if (!i2c_check_functionality(i2c->adapter,
-> +			I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA))
-> +		return -EIO;
-> +	data = devm_kzalloc(&i2c->dev, sizeof(struct lcd2s_data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->i2c = i2c;
-> +	data->consw.owner		= THIS_MODULE;
-> +	data->consw.con_startup		= lcd2s_startup;
-> +	data->consw.con_init		= lcd2s_init;
-> +	data->consw.con_deinit		= lcd2s_deinit;
-> +	data->consw.con_clear		= lcd2s_clear;
-> +	data->consw.con_putc		= lcd2s_putc;
-> +	data->consw.con_putcs		= lcd2s_putcs;
-> +	data->consw.con_cursor		= lcd2s_cursor;
-> +	data->consw.con_scroll		= lcd2s_scroll;
-> +	data->consw.con_bmove		= lcd2s_bmove;
-> +	data->consw.con_switch		= lcd2s_switch;
-> +	data->consw.con_blank		= lcd2s_blank;
-> +	data->consw.con_set_palette	= lcd2s_set_palette;
-> +	data->consw.con_scrolldelta	= lcd2s_scrolldelta;
-> +
-> +	i2c_set_clientdata(i2c, data);
-> +
-> +	take_over_console(&data->consw, LCD2S_FIRST, LCD2S_LAST, 1);
-> +
-> +	return 0;
-> +}
-
-It's better to define the struct consw as a preinitialized
-'static const' object, rather than dynamically setting each
-member.
-
-> +static struct i2c_driver lcd2s_i2c_driver = {
-> +	.driver = {
-> +		.name = "lcd2s",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = lcd2s_i2c_probe,
-> +	.remove = __devexit_p(lcd2s_i2c_remove),
-> +	.id_table = lcd2s_i2c_id,
-> +};
-> +
-> +static int __init lcd2s_modinit(void)
-> +{
-> +	int ret = 0;
-> +
-> +	ret = i2c_add_driver(&lcd2s_i2c_driver);
-> +	if (ret != 0)
-> +		pr_err("Failed to register lcd2s driver\n");
-> +
-> +	return ret;
-> +}
-> +module_init(lcd2s_modinit)
-> +
-> +static void __exit lcd2s_exit(void)
-> +{
-> +	i2c_del_driver(&lcd2s_i2c_driver);
-> +}
-> +module_exit(lcd2s_exit)
-
-Here, you can use module_i2c_driver.
-
-	Arnd
+diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
+index 52f63d7..805c253 100644
+--- a/drivers/staging/rtl8187se/r8180_wx.c
++++ b/drivers/staging/rtl8187se/r8180_wx.c
+@@ -11,7 +11,8 @@
+ 	Parts of this driver are based on the rtl8180 driver skeleton
+ 	from Patric Schenke & Andres Salomon.
+ 
+-	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
++	Parts of this driver are based on the
++	Intel Pro Wireless 2100 GPL driver.
+ 
+ 	We want to thanks the Authors of those projects and the Ndiswrapper
+ 	project Authors.
+@@ -24,7 +25,8 @@
+ #include "ieee80211/dot11d.h"
+ 
+ u32 rtl8180_rates[] = {1000000, 2000000, 5500000, 11000000,
+-	6000000, 9000000, 12000000, 18000000, 24000000, 36000000, 48000000, 54000000};
++	6000000, 9000000, 12000000, 18000000, 24000000, 36000000,
++	48000000, 54000000};
+ 
+ #define RATE_COUNT ARRAY_SIZE(rtl8180_rates)
+ 
+@@ -59,10 +61,8 @@ int r8180_wx_set_key(struct net_device *dev, struct iw_request_info *info,
+ 	if (priv->ieee80211->bHwRadioOff)
+ 		return 0;
+ 
+-	if (erq->flags & IW_ENCODE_DISABLED)
+-
+-	if (erq->length > 0) {
+-		u32* tkey = (u32*) key;
++	if ((erq->flags & IW_ENCODE_DISABLED) && erq->length > 0) {
++		u32 *tkey = (u32 *) key;
+ 		priv->key0[0] = tkey[0];
+ 		priv->key0[1] = tkey[1];
+ 		priv->key0[2] = tkey[2];
+@@ -75,8 +75,9 @@ int r8180_wx_set_key(struct net_device *dev, struct iw_request_info *info,
+ }
+ 
+ 
+-static int r8180_wx_set_beaconinterval(struct net_device *dev, struct iw_request_info *aa,
+-			  union iwreq_data *wrqu, char *b)
++static int r8180_wx_set_beaconinterval(struct net_device *dev,
++					struct iw_request_info *aa,
++					union iwreq_data *wrqu, char *b)
+ {
+ 	int *parms = (int *)b;
+ 	int bi = parms[0];
+@@ -208,7 +209,7 @@ struct  iw_range_with_scan_capa	{
+ 
+ 		/* NWID (or domain id)	*/
+ 		__u32           min_nwid; /* Minimal NWID we are able to set */
+-		__u32			max_nwid; /* Maximal NWID we are able to set */
++		__u32		max_nwid; /* Maximal NWID we are able to set */
+ 
+ 		/* Old Frequency (backward compat - moved lower ) */
+ 		__u16			old_num_channels;
+@@ -296,12 +297,12 @@ static int rtl8180_wx_get_range(struct net_device *dev,
+ 		}
+ 
+ 		if (val == IW_MAX_FREQUENCIES)
+-		break;
++			break;
+ 	}
+ 
+ 	range->num_frequency = val;
+ 	range->enc_capa = IW_ENC_CAPA_WPA | IW_ENC_CAPA_WPA2 |
+-						IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
++			IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
+ 
+ 	return 0;
+ }
+@@ -312,26 +313,28 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
+ {
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+ 	int ret;
+-	struct ieee80211_device* ieee = priv->ieee80211;
++	struct ieee80211_device *ieee = priv->ieee80211;
+ 
+ 
+ 	if (priv->ieee80211->bHwRadioOff)
+ 		return 0;
+ 
+ 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)	{
+-		struct iw_scan_req* req = (struct iw_scan_req*)b;
++		struct iw_scan_req *req = (struct iw_scan_req *)b;
+ 		if (req->essid_len)		{
+ 			ieee->current_network.ssid_len = req->essid_len;
+-			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
++			memcpy(ieee->current_network.ssid,
++					req->essid, req->essid_len);
+ 		}
+ 	}
+ 
+ 	down(&priv->wx_sem);
+ 	if (priv->up)	{
+ 		priv->ieee80211->actscanning = true;
+-		if (priv->bInactivePs && (priv->ieee80211->state != IEEE80211_LINKED))	{
++		if (priv->bInactivePs &&
++			(priv->ieee80211->state != IEEE80211_LINKED))	{
+ 			IPSLeave(dev);
+-		ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
++			ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
+ 			ret = 0;
+ 		}	else	{
+ 			/* prevent scan in BusyTraffic */
+@@ -341,7 +344,8 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
+ 				printk("Now traffic is busy, please try later!\n");
+ 			}	else
+ 				/* prevent scan in BusyTraffic,end */
+-				ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
++				ret = ieee80211_wx_set_scan(priv->ieee80211,
++						a, wrqu, b);
+ 		}
+ 	}	else
+ 			ret = -1;
+@@ -517,10 +521,12 @@ static int r8180_wx_set_enc(struct net_device *dev,
+ 
+ 	down(&priv->wx_sem);
+ 
+-	if (priv->hw_wep) ret = r8180_wx_set_key(dev, info, wrqu, key);
++	if (priv->hw_wep)
++		ret = r8180_wx_set_key(dev, info, wrqu, key);
+ 	else	{
+ 		DMESG("Setting SW wep key");
+-		ret = ieee80211_wx_set_encode(priv->ieee80211, info, wrqu, key);
++		ret = ieee80211_wx_set_encode(priv->ieee80211,
++						info, wrqu, key);
+ 	}
+ 
+ 	up(&priv->wx_sem);
+@@ -538,11 +544,12 @@ static int r8180_wx_get_enc(struct net_device *dev,
+ }
+ 
+ 
+-static int r8180_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa, union
+-	iwreq_data *wrqu, char *p)	{
++static int r8180_wx_set_scan_type(struct net_device *dev,
++		struct iw_request_info *aa, union iwreq_data *wrqu, char *p)
++{
+ 
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+-	int *parms = (int*)p;
++	int *parms = (int *)p;
+ 	int mode = parms[0];
+ 
+ 	if (priv->ieee80211->bHwRadioOff)
+@@ -581,11 +588,12 @@ static int r8180_wx_set_retry(struct net_device *dev,
+ 	}
+ 	if (wrqu->retry.flags & IW_RETRY_MAX) {
+ 		priv->retry_rts = wrqu->retry.value;
+-		DMESG("Setting retry for RTS/CTS data to %d", wrqu->retry.value);
+-
++		DMESG("Setting retry for RTS/CTS data to %d",
++				wrqu->retry.value);
+ 	}	else {
+ 		priv->retry_data = wrqu->retry.value;
+-		DMESG("Setting retry for non RTS/CTS data to %d", wrqu->retry.value);
++		DMESG("Setting retry for non RTS/CTS data to %d",
++				wrqu->retry.value);
+ 	}
+ 
+ 	/* FIXME !
+@@ -853,7 +861,7 @@ static int r8180_wx_get_preamble(struct net_device *dev,
+ 
+ 
+ 
+-	*extra = (char) priv->plcp_preamble_mode;	/* 0:auto 1:short 2:long */
++	*extra = (char) priv->plcp_preamble_mode; /* 0:auto 1:short 2:long */
+ 	up(&priv->wx_sem);
+ 
+ 	return 0;
+@@ -1036,7 +1044,6 @@ static int r8180_wx_set_channelplan(struct net_device *dev,
+ 		/* Set new channel map */
+ 		for (i = 1; i <= DefaultChannelPlan[*val].Len; i++)
+ 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[DefaultChannelPlan[*val].Channel[i-1]] = 1;
+-		
+ 	}
+ 	up(&priv->wx_sem);
+ 
+@@ -1058,7 +1065,8 @@ static int r8180_wx_get_version(struct net_device *dev,
+ }
+ 
+ /* added by amy 080818 */
+-/*receive datarate from user typing valid rate is from 2 to 108 (1 - 54M), if input 0, return to normal rate adaptive. */
++/*receive datarate from user typing valid rate is from 2 to 108 (1 - 54M),
++ *  if input 0, return to normal rate adaptive. */
+ static int r8180_wx_set_forcerate(struct net_device *dev,
+ 			     struct iw_request_info *info,
+ 			     union iwreq_data *wrqu, char *extra)
+@@ -1069,10 +1077,10 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
+ 	down(&priv->wx_sem);
+ 
+ 	printk("==============>%s(): forcerate is %d\n", __func__, forcerate);
+-	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) || (forcerate == 22) || (forcerate == 12) ||
+-		(forcerate == 18) || (forcerate == 24) || (forcerate == 36) || (forcerate == 48) || (forcerate == 72) ||
+-		(forcerate == 96) || (forcerate == 108))
+-	{
++	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) ||
++		(forcerate == 22) || (forcerate == 12) || (forcerate == 18) ||
++		(forcerate == 24) || (forcerate == 36) || (forcerate == 48) ||
++		(forcerate == 72) || (forcerate == 96) || (forcerate == 108)) {
+ 		priv->ForcedDataRate = 1;
+ 		priv->ieee80211->rate = forcerate * 5;
+ 	}	else if (forcerate == 0)	{
+@@ -1085,8 +1093,8 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
+ }
+ 
+ static int r8180_wx_set_enc_ext(struct net_device *dev,
+-										struct iw_request_info *info,
+-										union iwreq_data *wrqu, char *extra)
++				struct iw_request_info *info,
++				union iwreq_data *wrqu, char *extra)
+ {
+ 
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+@@ -1119,8 +1127,8 @@ static int r8180_wx_set_auth(struct net_device *dev,
+ }
+ 
+ static int r8180_wx_set_mlme(struct net_device *dev,
+-										struct iw_request_info *info,
+-										union iwreq_data *wrqu, char *extra)
++				struct iw_request_info *info,
++				union iwreq_data *wrqu, char *extra)
+ {
+ 	int ret = 0;
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+@@ -1150,7 +1158,8 @@ static int r8180_wx_set_gen_ie(struct net_device *dev,
+ 
+ 		down(&priv->wx_sem);
+ #if 1
+-		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, wrqu->data.length);
++		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra,
++						wrqu->data.length);
+ #endif
+ 		up(&priv->wx_sem);
+ 		return ret;
+@@ -1351,7 +1360,7 @@ static iw_handler r8180_private_handler[] = {
+ };
+ 
+ static inline int is_same_network(struct ieee80211_network *src,
+-									struct ieee80211_network *dst,
++				  struct ieee80211_network *dst,
+ 				  struct ieee80211_device *ieee)
+ {
+ 		/* A network is only a duplicate if the channel, BSSID, ESSID
+@@ -1359,10 +1368,12 @@ static inline int is_same_network(struct ieee80211_network *src,
+ 		 * We treat all <hidden> with the same BSSID and channel
+ 		 * as one network
+ 		 */
+-		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
++		return (((src->ssid_len == dst->ssid_len) ||
++			(ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
+ 			(src->channel == dst->channel) &&
+ 			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
+-			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
++			(!memcmp(src->ssid, dst->ssid, src->ssid_len) ||
++			(ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
+ 			((src->capability & WLAN_CAPABILITY_IBSS) ==
+ 			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
+ 			((src->capability & WLAN_CAPABILITY_BSS) ==
+@@ -1373,8 +1384,8 @@ static inline int is_same_network(struct ieee80211_network *src,
+ static struct iw_statistics *r8180_get_wireless_stats(struct net_device *dev)
+ {
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+-	struct ieee80211_device* ieee = priv->ieee80211;
+-	struct iw_statistics* wstats = &priv->wstats;
++	struct ieee80211_device *ieee = priv->ieee80211;
++	struct iw_statistics *wstats = &priv->wstats;
+ 	int tmp_level = 0;
+ 	int tmp_qual = 0;
+ 	int tmp_noise = 0;
+-- 
+1.7.1
 
