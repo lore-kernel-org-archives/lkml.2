@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab2KTIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:48:09 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44146 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab2KTIsD (ORCPT
+	id S1752854Ab2KTIw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:52:57 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:51303 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab2KTIw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:48:03 -0500
-Date: Tue, 20 Nov 2012 00:47:58 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH 2/3] Input: spear-keyboard: Add clk_{un}prepare() support
-Message-ID: <20121120084758.GA29199@core.coreip.homeip.net>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
- <27d9eea3815593df228c85958096bc14d7985e7e.1352381962.git.viresh.kumar@linaro.org>
- <CAKohpomky4s0OBYtQhDTZc9OeSo6w_mN9uAqUXpukqR1icvKPA@mail.gmail.com>
- <CAKohpoknJqMzro4gbTH+Rh=T2Bc9ZOVmDbYZsqC4Fjq2Sqsszg@mail.gmail.com>
+	Tue, 20 Nov 2012 03:52:56 -0500
+Message-ID: <50AB44E6.1060105@monom.org>
+Date: Tue, 20 Nov 2012 09:52:54 +0100
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpoknJqMzro4gbTH+Rh=T2Bc9ZOVmDbYZsqC4Fjq2Sqsszg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch,
+        davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 6/7] netprio_cgroup: implement netprio[_set]_prio() helpers
+References: <1353400211-5182-1-git-send-email-tj@kernel.org> <1353400211-5182-7-git-send-email-tj@kernel.org>
+In-Reply-To: <1353400211-5182-7-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 01:26:29PM +0530, Viresh Kumar wrote:
-> On 12 November 2012 11:27, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 8 November 2012 19:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
-> >>
-> >> clk_{un}prepare is mandatory for platforms using common clock framework. Because
-> >> for SPEAr we don't do anything in clk_{un}prepare() calls, just call them ones
-> >> in probe/remove.
-> >>
-> >> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >
-> > Missed applying this one ?
-> 
-> This one you missed :)
+On 20.11.2012 09:30, Tejun Heo wrote:
+> Introduce two helpers - netprio_prio() and netprio_set_prio() - which
+> hide the details of priomap access and expansion.  This will help
+> implementing hierarchy support.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-No, not really, it just does not work well with devm_* patches that got
-applied: on removal you unprepare clock as the very first operation and
-then devm_* does the rest which is wrong order.
+Tested and Acked-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
 
-I am looking at adding dem_* for clocks.
-
-Thanks.
-
--- 
-Dmitry
