@@ -1,47 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab2KTOSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:18:55 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:38593 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2KTOSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:18:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353420249-17957-1-git-send-email-linus.walleij@stericsson.com>
-References: <1353420249-17957-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 20 Nov 2012 19:48:53 +0530
-Message-ID: <CAKohpo=7k2W6RSX1WMwi0kHbO3Hnr_7T4_LvOhru8YFRTo-34A@mail.gmail.com>
-Subject: Re: [PATCH 1/7 v2] gpiolib: let gpiochip_add_pin_range() specify offset
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752098Ab2KTOUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:20:53 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:42937 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993Ab2KTOUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 09:20:52 -0500
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: [PATCH] regmap: introduce tables for readable/writeable/volatile/precious checks
+Date: Tue, 20 Nov 2012 15:20:30 +0100
+Message-Id: <1353421230-16070-1-git-send-email-ciminaghi@gnudd.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2012 19:34, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
-> it is not always enough to specify all the pins of a gpio_chip
-> from offset zero to be added to a pin map range, since the
-> mapping from GPIO to pin controller may not be linear at all,
-> but need to be broken into a few consecutive sub-ranges or
-> 1-pin entries for complicated cases. The ranges may also be
-> sparse.
->
-> This alters the signature of the function to accept offsets
-> into both the GPIO-chip local pinspace and the pin controller
-> local pinspace.
->
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Many of the regmap enabled drivers implementing one or more of the
+readable, writeable, volatile and precious methods use the same code
+pattern:
 
-For all 7 patches:
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+	return ((reg >= X && reg <= Y) || (reg >= W && reg <= Z) || ...)
+
+Switch to a data driven approach, using tables to describe
+readable/writeable/volatile and precious registers ranges instead.
+The table based check can still be overridden by passing the usual function
+pointers via struct regmap_config.
+
+Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+---
+
+Hi Mark,
+
+renamed struct regmap_range_table to regmap_access_table.
+Did not touch struct regmap_range because it actually represents a generic
+range, so it looked a little bit misleading renaming it to regmap_access_range
+or something like that (but I'm open to suggestions, of course).
+
+Regards
+Davide
+
+ drivers/base/regmap/internal.h |    4 ++
+ drivers/base/regmap/regmap.c   |   46 ++++++++++++++++++++++
+ include/linux/regmap.h         |   83 ++++++++++++++++++++++++++++++++++------
+ 3 files changed, 122 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 2cd01b5..288e135 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -55,6 +55,10 @@ struct regmap {
+ 	bool (*readable_reg)(struct device *dev, unsigned int reg);
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
++	const struct regmap_access_table *wr_table;
++	const struct regmap_access_table *rd_table;
++	const struct regmap_access_table *volatile_table;
++	const struct regmap_access_table *precious_table;
+ 
+ 	u8 read_flag_mask;
+ 	u8 write_flag_mask;
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 273bf30..42d5cb0 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -34,6 +34,36 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 			       unsigned int mask, unsigned int val,
+ 			       bool *change);
+ 
++bool regmap_reg_in_ranges(unsigned int reg,
++			  const struct regmap_range *ranges,
++			  unsigned int nranges)
++{
++	const struct regmap_range *r;
++	int i;
++
++	for (i = 0, r = ranges; i < nranges; i++, r++)
++		if (regmap_reg_in_range(reg, r))
++			return true;
++	return false;
++}
++EXPORT_SYMBOL_GPL(regmap_reg_in_ranges);
++
++static bool _regmap_check_range_table(struct regmap *map,
++				      unsigned int reg,
++				      const struct regmap_access_table *table)
++{
++	/* Check "no ranges" first */
++	if (regmap_reg_in_ranges(reg, table->no_ranges, table->n_no_ranges))
++		return false;
++
++	/* In case zero "yes ranges" are supplied, any reg is OK */
++	if (!table->n_yes_ranges)
++		return true;
++
++	return regmap_reg_in_ranges(reg, table->yes_ranges,
++				    table->n_yes_ranges);
++}
++
+ bool regmap_writeable(struct regmap *map, unsigned int reg)
+ {
+ 	if (map->max_register && reg > map->max_register)
+@@ -42,6 +72,9 @@ bool regmap_writeable(struct regmap *map, unsigned int reg)
+ 	if (map->writeable_reg)
+ 		return map->writeable_reg(map->dev, reg);
+ 
++	if (map->wr_table)
++		return _regmap_check_range_table(map, reg, map->wr_table);
++
+ 	return true;
+ }
+ 
+@@ -56,6 +89,9 @@ bool regmap_readable(struct regmap *map, unsigned int reg)
+ 	if (map->readable_reg)
+ 		return map->readable_reg(map->dev, reg);
+ 
++	if (map->rd_table)
++		return _regmap_check_range_table(map, reg, map->rd_table);
++
+ 	return true;
+ }
+ 
+@@ -67,6 +103,9 @@ bool regmap_volatile(struct regmap *map, unsigned int reg)
+ 	if (map->volatile_reg)
+ 		return map->volatile_reg(map->dev, reg);
+ 
++	if (map->volatile_table)
++		return _regmap_check_range_table(map, reg, map->volatile_table);
++
+ 	return true;
+ }
+ 
+@@ -78,6 +117,9 @@ bool regmap_precious(struct regmap *map, unsigned int reg)
+ 	if (map->precious_reg)
+ 		return map->precious_reg(map->dev, reg);
+ 
++	if (map->precious_table)
++		return _regmap_check_range_table(map, reg, map->precious_table);
++
+ 	return false;
+ }
+ 
+@@ -370,6 +412,10 @@ struct regmap *regmap_init(struct device *dev,
+ 	map->bus = bus;
+ 	map->bus_context = bus_context;
+ 	map->max_register = config->max_register;
++	map->wr_table = config->wr_table;
++	map->rd_table = config->rd_table;
++	map->volatile_table = config->volatile_table;
++	map->precious_table = config->precious_table;
+ 	map->writeable_reg = config->writeable_reg;
+ 	map->readable_reg = config->readable_reg;
+ 	map->volatile_reg = config->volatile_reg;
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index fedf7ba..b7e95bf 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -54,6 +54,36 @@ enum regmap_endian {
+ 	REGMAP_ENDIAN_NATIVE,
+ };
+ 
++/**
++ * A register range, used for access related checks
++ * (readable/writeable/volatile/precious checks)
++ *
++ * @range_min: address of first register
++ * @range_max: address of last register
++ */
++struct regmap_range {
++	unsigned int range_min;
++	unsigned int range_max;
++};
++
++/*
++ * A table of ranges including some yes ranges and some no ranges.
++ * If a register belongs to a no_range, the corresponding check function
++ * will return false. If a register belongs to a yes range, the corresponding
++ * check function will return true. "no_ranges" are searched first.
++ *
++ * @yes_ranges : pointer to an array of regmap ranges used as "yes ranges"
++ * @n_yes_ranges: size of the above array
++ * @no_ranges: pointer to an array of regmap ranges used as "no ranges"
++ * @n_no_ranges: size of the above array
++ */
++struct regmap_access_table {
++	const struct regmap_range *yes_ranges;
++	unsigned int n_yes_ranges;
++	const struct regmap_range *no_ranges;
++	unsigned int n_no_ranges;
++};
++
+ typedef void (*regmap_lock)(void *);
+ typedef void (*regmap_unlock)(void *);
+ 
+@@ -71,22 +101,39 @@ typedef void (*regmap_unlock)(void *);
+  * @val_bits: Number of bits in a register value, mandatory.
+  *
+  * @writeable_reg: Optional callback returning true if the register
+- *                 can be written to.
++ *		   can be written to. If this field is NULL but wr_table
++ *		   (see below) is not, the check is performed on such table
++ *                 (a register is writeable if it belongs to one of the ranges
++ *                  specified by wr_table).
+  * @readable_reg: Optional callback returning true if the register
+- *                can be read from.
++ *		  can be read from. If this field is NULL but rd_table
++ *		   (see below) is not, the check is performed on such table
++ *                 (a register is readable if it belongs to one of the ranges
++ *                  specified by rd_table).
+  * @volatile_reg: Optional callback returning true if the register
+- *                value can't be cached.
++ *		  value can't be cached. If this field is NULL but
++ *		  volatile_table (see below) is not, the check is performed on
++ *                such table (a register is volatile if it belongs to one of
++ *                the ranges specified by volatile_table).
+  * @precious_reg: Optional callback returning true if the rgister
+- *                should not be read outside of a call from the driver
+- *                (eg, a clear on read interrupt status register).
+- * @lock:         Optional lock callback (overrides regmap's default lock
+- *                function, based on spinlock or mutex).
+- * @unlock:       As above for unlocking.
+- * @lock_arg:     this field is passed as the only argument of lock/unlock
+- *                functions (ignored in case regular lock/unlock functions
+- *                are not overridden).
++ *		  should not be read outside of a call from the driver
++ *		  (eg, a clear on read interrupt status register). If this
++ *                field is NULL but precious_table (see below) is not, the
++ *                check is performed on such table (a register is precious if
++ *                it belongs to one of the ranges specified by precious_table).
++ * @lock:	  Optional lock callback (overrides regmap's default lock
++ *		  function, based on spinlock or mutex).
++ * @unlock:	  As above for unlocking.
++ * @lock_arg:	  this field is passed as the only argument of lock/unlock
++ *		  functions (ignored in case regular lock/unlock functions
++ *		  are not overridden).
+  *
+  * @max_register: Optional, specifies the maximum valid register index.
++ * @wr_table:     Optional, points to a struct regmap_access_table specifying
++ *                valid ranges for write access.
++ * @rd_table:     As above, for read access.
++ * @volatile_table: As above, for volatile registers.
++ * @precious_table: As above, for precious registers.
+  * @reg_defaults: Power on reset values for registers (for use with
+  *                register cache support).
+  * @num_reg_defaults: Number of elements in reg_defaults.
+@@ -131,6 +178,10 @@ struct regmap_config {
+ 	void *lock_arg;
+ 
+ 	unsigned int max_register;
++	const struct regmap_access_table *wr_table;
++	const struct regmap_access_table *rd_table;
++	const struct regmap_access_table *volatile_table;
++	const struct regmap_access_table *precious_table;
+ 	const struct reg_default *reg_defaults;
+ 	unsigned int num_reg_defaults;
+ 	enum regcache_type cache_type;
+@@ -281,6 +332,16 @@ void regcache_mark_dirty(struct regmap *map);
+ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 			  int num_regs);
+ 
++static inline bool regmap_reg_in_range(unsigned int reg,
++				       const struct regmap_range *range)
++{
++	return reg >= range->range_min && reg <= range->range_max;
++}
++
++bool regmap_reg_in_ranges(unsigned int reg,
++			  const struct regmap_range *ranges,
++			  unsigned int nranges);
++
+ /**
+  * Description of an IRQ for the generic regmap irq_chip.
+  *
+-- 
+1.7.10.4
+
