@@ -1,181 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab2KTGON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:14:13 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45163 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab2KTGOL (ORCPT
+	id S1751600Ab2KTGQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:16:12 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:37411 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab2KTGQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:14:11 -0500
+	Tue, 20 Nov 2012 01:16:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121120034515.GA5212@sergelap>
-References: <20121119233459.GA9524@www.outflux.net>
-	<20121120034515.GA5212@sergelap>
-Date: Mon, 19 Nov 2012 22:14:08 -0800
-X-Google-Sender-Auth: lNk5sTaizlF4K4Mx_5l0fE2X-zI
-Message-ID: <CAGXu5j+B=kx6847EUn6tppNwNk=YHbBwekqr6V22+gh2Lfea0g@mail.gmail.com>
-Subject: Re: [PATCH] Yama: remove locking from delete path
-From: Kees Cook <keescook@chromium.org>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        John Johansen <john.johansen@canonical.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org
+In-Reply-To: <1353390792.3833.1.camel@rzhang1-mobl4>
+References: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
+	<CAH9JG2UYsQ6VFMO4COyEr9fBzCL03+37bXTN=AgjKbD7NjR1MA@mail.gmail.com>
+	<1353390792.3833.1.camel@rzhang1-mobl4>
+Date: Tue, 20 Nov 2012 15:16:09 +0900
+X-Google-Sender-Auth: N6OBWJ8Ro0zSGOtTmDuQ6aRATF8
+Message-ID: <CAH9JG2Xtdo0tpxEAW4m5LG4q--M9zXi-N+FiCtjhZ7Q=5DZ_Tw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu core
+From: Kyungmin Park <kmpark@infradead.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
+        "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, dg77.kim@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 7:45 PM, Serge Hallyn
-<serge.hallyn@canonical.com> wrote:
-> Quoting Kees Cook (keescook@chromium.org):
->> Instead of locking the list during a delete, mark entries as invalid
->> and trigger a workqueue to clean them up. This lets us easily handle
->> task_free from interrupt context.
->>
->> Cc: Sasha Levin <sasha.levin@oracle.com>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  security/yama/yama_lsm.c |   43 ++++++++++++++++++++++++++++++++++++-------
->>  1 file changed, 36 insertions(+), 7 deletions(-)
->>
->> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
->> index 17da6ca..1cba901 100644
->> --- a/security/yama/yama_lsm.c
->> +++ b/security/yama/yama_lsm.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/ptrace.h>
->>  #include <linux/prctl.h>
->>  #include <linux/ratelimit.h>
->> +#include <linux/workqueue.h>
->>
->>  #define YAMA_SCOPE_DISABLED  0
->>  #define YAMA_SCOPE_RELATIONAL        1
->> @@ -29,6 +30,7 @@ static int ptrace_scope = YAMA_SCOPE_RELATIONAL;
->>  struct ptrace_relation {
->>       struct task_struct *tracer;
->>       struct task_struct *tracee;
->> +     bool invalid;
->>       struct list_head node;
->>       struct rcu_head rcu;
->>  };
->> @@ -36,6 +38,27 @@ struct ptrace_relation {
->>  static LIST_HEAD(ptracer_relations);
->>  static DEFINE_SPINLOCK(ptracer_relations_lock);
->>
->> +static void yama_relation_cleanup(struct work_struct *work);
->> +static DECLARE_WORK(yama_relation_work, yama_relation_cleanup);
->> +
->> +/**
->> + * yama_relation_cleanup - remove invalid entries from the relation list
->> + *
->> + */
->> +static void yama_relation_cleanup(struct work_struct *work)
->> +{
->> +     struct ptrace_relation *relation;
->> +
->> +     spin_lock(&ptracer_relations_lock);
->> +     list_for_each_entry_rcu(relation, &ptracer_relations, node) {
->> +             if (relation->invalid) {
->> +                     list_del_rcu(&relation->node);
->> +                     kfree_rcu(relation, rcu);
->> +             }
->> +     }
->> +     spin_unlock(&ptracer_relations_lock);
->> +}
->> +
->>  /**
->>   * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
->>   * @tracer: the task_struct of the process doing the ptrace
->> @@ -57,9 +80,12 @@ static int yama_ptracer_add(struct task_struct *tracer,
->>
->>       added->tracee = tracee;
->>       added->tracer = tracer;
->> +     added->invalid = false;
->>
->> -     spin_lock_bh(&ptracer_relations_lock);
->> +     spin_lock(&ptracer_relations_lock);
->>       list_for_each_entry_rcu(relation, &ptracer_relations, node) {
->> +             if (relation->invalid)
->> +                     continue;
->>               if (relation->tracee == tracee) {
->>                       list_replace_rcu(&relation->node, &added->node);
->>                       kfree_rcu(relation, rcu);
->> @@ -70,7 +96,7 @@ static int yama_ptracer_add(struct task_struct *tracer,
->>       list_add_rcu(&added->node, &ptracer_relations);
->>
->>  out:
->> -     spin_unlock_bh(&ptracer_relations_lock);
->> +     spin_unlock(&ptracer_relations_lock);
->>       return 0;
->>  }
->>
->> @@ -84,15 +110,15 @@ static void yama_ptracer_del(struct task_struct *tracer,
->>  {
->>       struct ptrace_relation *relation;
->>
->> -     spin_lock_bh(&ptracer_relations_lock);
+On 11/20/12, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Tue, 2012-11-20 at 10:39 +0900, Kyungmin Park wrote:
+>> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+>> > [0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
+>> >
+>> > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 >
-> I don't understand - is there a patch I don't have sitting around
-> which puts the calls to yama_ptracer_del() under rcu_read_lock()?
-> If not, I don't see how it's safe to walk the list here and risk
-> racing against another yama_relation_cleanup() run.
+> Amit and Donggeun Kim,
+FYI: Donggeun was working together with me and he left the company an
+year ago and now Mr. Lee are take over.
+> any comments on this patch?
 >
-> I'm probably missing something really cool about the locking,
-> but it doesn't look right to me.  I would think you'd want to
-> do the loop under rcu_read_lock(), set a boolean if one is
-> changed, and call schedule_work() once at the end if the boolean
-> is set.
-
-Unless I'm mistaken and my lockdep tests are wrong,
-list_for_each_entry_rcu runs under rcu_read_lock().
-
-I could optimize it to only run schedule_work() once all the marking
-is done at the end of the loop.
-
--Kees
-
+> thanks,
+> rui
 >
->>       list_for_each_entry_rcu(relation, &ptracer_relations, node) {
->> +             if (relation->invalid)
->> +                     continue;
->>               if (relation->tracee == tracee ||
->>                   (tracer && relation->tracer == tracer)) {
->> -                     list_del_rcu(&relation->node);
->> -                     kfree_rcu(relation, rcu);
->> +                     relation->invalid = true;
->> +                     schedule_work(&yama_relation_work);
->>               }
->>       }
->> -     spin_unlock_bh(&ptracer_relations_lock);
->>  }
->>
->>  /**
->> @@ -219,12 +245,15 @@ static int ptracer_exception_found(struct task_struct *tracer,
->>       rcu_read_lock();
->>       if (!thread_group_leader(tracee))
->>               tracee = rcu_dereference(tracee->group_leader);
->> -     list_for_each_entry_rcu(relation, &ptracer_relations, node)
->> +     list_for_each_entry_rcu(relation, &ptracer_relations, node) {
->> +             if (relation->invalid)
->> +                     continue;
->>               if (relation->tracee == tracee) {
->>                       parent = relation->tracer;
->>                       found = true;
->>                       break;
->>               }
->> +     }
->>
->>       if (found && (parent == NULL || task_is_descendant(parent, tracer)))
->>               rc = 1;
->> --
->> 1.7.9.5
->>
->>
->> --
->> Kees Cook
->> Chrome OS Security
-
--- 
-Kees Cook
-Chrome OS Security
+>> > ---
+>> >  drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
+>> >  1 files changed, 12 insertions(+), 4 deletions(-)
+>> >
+>> > diff --git a/drivers/thermal/exynos_thermal.c
+>> > b/drivers/thermal/exynos_thermal.c
+>> > index 6dd29e4..129e827 100644
+>> > --- a/drivers/thermal/exynos_thermal.c
+>> > +++ b/drivers/thermal/exynos_thermal.c
+>> > @@ -52,9 +52,12 @@
+>> >
+>> >  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
+>> >  #define EXYNOS_TMU_GAIN_SHIFT          8
+>> > +#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
+>> >  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
+>> > -#define EXYNOS_TMU_CORE_ON             3
+>> > -#define EXYNOS_TMU_CORE_OFF            2
+>> > +#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
+>> > EXYNOS_TMU_REF_VOLTAGE_SHIFT)
+>> > +#define EXYNOS_TMU_CORE_ON             BIT(0)
+>> > +#define EXYNOS_TMU_CORE_ON_SHIFT       0
+>> > +#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+>> > EXYNOS_TMU_CORE_ON_SHIFT)
+>> >  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+>> >
+>> >  /* Exynos4210 specific registers */
+>> > @@ -85,7 +88,9 @@
+>> >  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
+>> >  #define EXYNOS_MUX_ADDR_VALUE          6
+>> >  #define EXYNOS_MUX_ADDR_SHIFT          20
+>> > +#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
+>> >  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
+>> > +#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 <<
+>> > EXYNOS_TMU_TRIP_MODE_SHIFT)
+>> >
+>> >  #define EFUSE_MIN_VALUE 40
+>> >  #define EFUSE_MAX_VALUE 100
+>> > @@ -650,10 +655,14 @@ static void exynos_tmu_control(struct
+>> > platform_device
+>> > *pdev, bool on)
+>> >         mutex_lock(&data->lock);
+>> >         clk_enable(data->clk);
+>> >
+>> > -       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT
+>> > |
+>> > +       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
+>> > +       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
+>> > +               EXYNOS_TMU_CORE_ON_MASK);
+>> > +       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT
+>> > |
+>> >                 pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+>> >
+>> >         if (data->soc == SOC_ARCH_EXYNOS) {
+>> > +               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK |
+>> > EXYNOS_MUX_ADDR_MASK);
+>> >                 con |= pdata->noise_cancel_mode <<
+>> > EXYNOS_TMU_TRIP_MODE_SHIFT;
+>> >                 con |= (EXYNOS_MUX_ADDR_VALUE <<
+>> > EXYNOS_MUX_ADDR_SHIFT);
+>> >         }
+>> > @@ -665,7 +674,6 @@ static void exynos_tmu_control(struct
+>> > platform_device
+>> > *pdev, bool on)
+>> >                         pdata->trigger_level1_en << 4 |
+>> >                         pdata->trigger_level0_en;
+>> >         } else {
+>> > -               con |= EXYNOS_TMU_CORE_OFF;
+>> >                 interrupt_en = 0; /* Disable all interrupts */
+>> >         }
+>> >         writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+>> > --
+>> > 1.7.4.1
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> > in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>
+>
+>
