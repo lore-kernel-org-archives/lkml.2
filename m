@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab2KTVgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:36:01 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:56466 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab2KTVf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:35:57 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [Update][PATCH 0/3] ACPI: Simplify "glueing" to physical nodes
-Date: Tue, 20 Nov 2012 22:40:23 +0100
-Message-ID: <6745342.DnJuWJEcJZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121120180905.GC12328@kroah.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <4036218.zBRlg5OZsZ@vostro.rjw.lan> <20121120180905.GC12328@kroah.com>
+	id S1752480Ab2KTVl5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:41:57 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53240 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab2KTVl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 16:41:56 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20121120205459.GA12859@kroah.com>
+References: <20121120204238.GA19554@www.outflux.net>
+	<20121120205459.GA12859@kroah.com>
+Date: Tue, 20 Nov 2012 13:41:55 -0800
+X-Google-Sender-Auth: OZPLN3NIRp67sws3fEJRBp_PWyw
+Message-ID: <CAGXu5jJ0fyjku1OpuGZvfJWKfj9qfQyaUMxzkjWdCpYc9m8-hA@mail.gmail.com>
+Subject: Re: [PATCH v2] devtmpfs: mount with noexec and nosuid
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, ellyjones@chromium.org,
+        Kay Sievers <kay@vrfy.org>, Roland Eggner <edvx1@systemanalysen.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 20, 2012 10:09:05 AM Greg Kroah-Hartman wrote:
-> On Tue, Nov 20, 2012 at 01:55:46AM +0100, Rafael J. Wysocki wrote:
-> > On Sunday, November 18, 2012 10:10:33 PM Rafael J. Wysocki wrote:
-> > > On Sunday, November 18, 2012 05:55:39 PM Mika Westerberg wrote:
-> > > > On Sat, Nov 17, 2012 at 12:24:45PM +0100, Rafael J. Wysocki wrote:
-> > > > > Well, maybe there is one.  Perhaps we can make acpi_platform_notify() 
-> > > > > call acpi_bind_one() upfront and only if that fails, do the whole
-> > > > > type->find_device() dance?  Of course, acpi_bind_one() would need to
-> > > > > be modified slightly too, like in the patch below.
-> > > > > 
-> > > > > If we did that, acpi_i2c_add_device() would only need to assign acpi_handle
-> > > > > as appropriate before calling i2c_new_device() (and analogously for SPI).
-> > > > > 
-> > > > > What do you think? 
-> > > > 
-> > > > This is certainly better than the thing we use currently. It makes adding
-> > > > I2C and SPI support much shorter and simpler. If others don't object I
-> > > > would suggest that we switch to use this method.
-> > > 
-> > > OK, thanks.
-> > > 
-> > > The first of the following two patches is a slightly modified version of the
-> > > one that you commented.  Patch [2/2] implements the idea for platform devices
-> > > and since it modifies struct platform_device_info, I'm adding a CC to Greg.
-> > > 
-> > > The patches are on top of current linux-pm.git/linux-next.
-> > > 
-> > > It looks like we may be able to use this approach for PCI too, in which case
-> > > the whole .find_device() stuff won't be necessary any more.
-> > 
-> > Following is the series with the Greg's feedback taken into account.
-> > Patch [1/3] is the same as before with the bug found by Mika fixed, [2/3] is
-> > an additional patch adding struct acpi_dev_node to compile out unused stuff if
-> > CONFIG_ACPI is not set and [3/3] is the previous [2/2] rebased on top of it.
-> 
-> Looks great, thanks for the changes.
+On Tue, Nov 20, 2012 at 12:54 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Nov 20, 2012 at 12:42:38PM -0800, Kees Cook wrote:
+>> Since devtmpfs is writable, make the default noexec,nosuid as well. This
+>> protects from the case of a privileged process having an arbitrary file
+>> write flaw and an argumentless arbitrary execution (i.e. it would lack
+>> the ability to run "mount -o remount,exec,suid /dev").
+>>
+>> Cc: ellyjones@chromium.org
+>> Cc: Kay Sievers <kay@vrfy.org>
+>> Cc: Roland Eggner <edvx1@systemanalysen.net>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>
+>> ---
+>> v2:
+>> - use CONFIG_DEVTMPFS_SAFE to wrap the logic.
+>
+> That's better, thanks.
+>
+> One tiny bikeshead request though:
+>
+>> --- a/drivers/base/devtmpfs.c
+>> +++ b/drivers/base/devtmpfs.c
+>> @@ -340,6 +340,10 @@ static int handle_remove(const char *nodename, struct device *dev)
+>>  int devtmpfs_mount(const char *mntdir)
+>>  {
+>>       int err;
+>> +     int mflags = MS_SILENT;
+>> +#ifdef CONFIG_DEVTMPFS_SAFE
+>> +     mflags |= MS_NOEXEC | MS_NOSUID;
+>> +#endif
+>
+> You duplicate this in two places, which makes the c code harder to read.
+> How about, at the top of the file, you do:
+>
+> #ifdef CONFIG_DEVTMPFS_SAFE
+> #define DEVTMPFS_MFLAGS MS_SILENT | MS_NOEXEC | MS_NOSUID
+> #else
+> #define DEVTMPFS_MFLAGS MS_SILENT
+> #endif
+>
+> And then just use DEVTMPFS_MFLAGS in both places?
+>
+> That should make the patch smaller, which is always nice :)
 
-Thanks and no problem.
+Excellent idea.
 
-> I'm assuming this will go through your tree, right?
-
-Yes, it depends some previous changes already there.
-
-Thanks,
-Rafael
-
+-Kees
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kees Cook
+Chrome OS Security
