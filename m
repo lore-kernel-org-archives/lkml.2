@@ -1,314 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab2KTRXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 12:23:31 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:40065 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab2KTRX1 (ORCPT
+	id S1752231Ab2KTRYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 12:24:44 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41325 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab2KTRYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 12:23:27 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Olof Johansson <olofj@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Arun Kumar K <arun.kk@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: dts: snow: Add board dts file for Snow board (ARM Chromebook)
-Date: Tue, 20 Nov 2012 09:22:31 -0800
-Message-Id: <1353432158-22999-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1353432158-22999-1-git-send-email-dianders@chromium.org>
-References: <1353432158-22999-1-git-send-email-dianders@chromium.org>
+	Tue, 20 Nov 2012 12:24:43 -0500
+Message-ID: <50ABBCD7.3000006@wwwdotorg.org>
+Date: Tue, 20 Nov 2012 10:24:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] gpiolib: let gpiochip_add_pin_range() specify offset
+References: <1353411953-27423-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1353411953-27423-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This dts file is based on the Snow dts file in the Chromium OS kernel
-tree with the following changes:
-* Some details have been updated to match the exynos5250-smdk5250.dts
-  file from linux-next (as of
-  c11068538994430547722dc9fb515a0ceefd5cb9).
-* This file doesn't include references to hardware whose upstream
-  support isn't quite there yet.  That includes most i2c devices.
-  Note that most i2c busses have been included with no devices.
+On 11/20/2012 04:45 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
+> it is not always enough to specify all the pins of a gpio_chip
+> from offset zero to be added to a pin map range, since the
+> mapping from GPIO to pin controller may not be linear at all,
+> but need to be broken into a few consecutive sub-ranges or
+> 1-pin entries for complicated cases. The ranges may also be
+> sparse.
+> 
+> This alters the signature of the function to accept offsets
+> into both the GPIO-chip local pinspace and the pin controller
+> local pinspace.
 
-The Snow dts file is mostly just an include of the "cros5250" dts file
-which describes a class of similar boards.  Support for other boards
-has not yet been send upstream.
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-With this file and a change to use UART3 for serial output I can:
-* Boot to a command line using either SD or EMMC as a root filesystem
-* See the power button and lid switch using evtest.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/Makefile             |    3 +-
- arch/arm/boot/dts/cros5250-common.dtsi |  184 ++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5250-snow.dts  |   43 ++++++++
- 3 files changed, 229 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/cros5250-common.dtsi
- create mode 100644 arch/arm/boot/dts/exynos5250-snow.dts
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 701388b..7d43a13 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -36,7 +36,8 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos4210-smdkv310.dtb \
- 	exynos4210-trats.dtb \
- 	exynos4412-smdk4412.dtb \
--	exynos5250-smdk5250.dtb
-+	exynos5250-smdk5250.dtb \
-+	exynos5250-snow.dtb
- dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
- 	ecx-2000.dtb
- dtb-$(CONFIG_ARCH_INTEGRATOR) += integratorap.dtb \
-diff --git a/arch/arm/boot/dts/cros5250-common.dtsi b/arch/arm/boot/dts/cros5250-common.dtsi
-new file mode 100644
-index 0000000..fddd174
---- /dev/null
-+++ b/arch/arm/boot/dts/cros5250-common.dtsi
-@@ -0,0 +1,184 @@
-+/*
-+ * Common device tree include for all Exynos 5250 boards based off of Daisy.
-+ *
-+ * Copyright (c) 2012 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/ {
-+	aliases {
-+	};
-+
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	chosen {
-+	};
-+
-+	i2c@12C60000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <378000>;
-+		gpios = <&gpb3 0 2 3 0>,
-+			<&gpb3 1 2 3 0>;
-+	};
-+
-+	i2c@12C70000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <378000>;
-+		gpios = <&gpb3 2 2 3 0>,
-+			<&gpb3 3 2 3 0>;
-+	};
-+
-+	i2c@12C80000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <66000>;
-+
-+		/*
-+		 * Disabled pullups since external part has its own pullups and
-+		 * double-pulling gets us out of spec in some cases.
-+		 */
-+		gpios = <&gpa0 6 3 0 0>,
-+			<&gpa0 7 3 0 0>;
-+
-+		hdmiddc@50 {
-+			compatible = "samsung,exynos5-hdmiddc";
-+			reg = <0x50>;
-+		};
-+	};
-+
-+	i2c@12C90000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <66000>;
-+		gpios = <&gpa1 2 3 3 0>,
-+			<&gpa1 3 3 3 0>;
-+	};
-+
-+	i2c@12CA0000 {
-+		status = "disabled";
-+	};
-+
-+	i2c@12CB0000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <66000>;
-+		gpios = <&gpa2 2 3 3 0>,
-+			<&gpa2 3 3 3 0>;
-+	};
-+
-+	i2c@12CC0000 {
-+		status = "disabled";
-+	};
-+
-+	i2c@12CD0000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <66000>;
-+		gpios = <&gpb2 2 3 3 0>,
-+			<&gpb2 3 3 3 0>;
-+	};
-+
-+	i2c@12CE0000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <378000>;
-+
-+		hdmiphy@38 {
-+			compatible = "samsung,exynos5-hdmiphy";
-+			reg = <0x38>;
-+		};
-+	};
-+
-+	dwmmc0@12200000 {
-+		num-slots = <1>;
-+		supports-highspeed;
-+		broken-cd;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2 3>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <8>;
-+			gpios = <&gpc0 0 2 0 3>, <&gpc0 1 2 0 3>,
-+				<&gpc1 0 2 3 3>, <&gpc1 1 2 3 3>,
-+				<&gpc1 2 2 3 3>, <&gpc1 3 2 3 3>,
-+				<&gpc0 3 2 3 3>, <&gpc0 4 2 3 3>,
-+				<&gpc0 5 2 3 3>, <&gpc0 6 2 3 3>;
-+		};
-+	};
-+
-+	dwmmc1@12210000 {
-+		status = "disabled";
-+	};
-+
-+	dwmmc2@12220000 {
-+		num-slots = <1>;
-+		supports-highspeed;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2 3>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <4>;
-+			samsung,cd-pinmux-gpio = <&gpc3 2 2 3 3>;
-+			wp-gpios = <&gpc2 1 0 0 3>;
-+			gpios = <&gpc3 0 2 0 3>, <&gpc3 1 2 0 3>,
-+				<&gpc3 3 2 3 3>, <&gpc3 4 2 3 3>,
-+				<&gpc3 5 2 3 3>, <&gpc3 6 2 3 3>;
-+		};
-+	};
-+
-+	dwmmc3@12230000 {
-+		num-slots = <1>;
-+		supports-highspeed;
-+		broken-cd;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2 3>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <4>;
-+			/* See board-specific dts files for GPIOs */
-+		};
-+	};
-+
-+	spi_0: spi@12d20000 {
-+		status = "disabled";
-+	};
-+
-+	spi_1: spi@12d30000 {
-+		gpios = <&gpa2 4 2 3 0>,
-+			<&gpa2 6 2 3 0>,
-+			<&gpa2 7 2 3 0>;
-+		samsung,spi-src-clk = <0>;
-+		num-cs = <1>;
-+	};
-+
-+	spi_2: spi@12d40000 {
-+		status = "disabled";
-+	};
-+
-+	hdmi {
-+		hpd-gpio = <&gpx3 7 0xf 1 3>;
-+	};
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		power {
-+			label = "Power";
-+			gpios = <&gpx1 3 0 0x10000 0>;
-+			linux,code = <116>; /* KEY_POWER */
-+			gpio-key,wakeup;
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-new file mode 100644
-index 0000000..17dd951
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -0,0 +1,43 @@
-+/*
-+ * Google Snow board device tree source
-+ *
-+ * Copyright (c) 2012 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/dts-v1/;
-+/include/ "exynos5250.dtsi"
-+/include/ "cros5250-common.dtsi"
-+
-+/ {
-+	model = "Google Snow";
-+	compatible = "google,snow", "samsung,exynos5250";
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		lid-switch {
-+			label = "Lid";
-+			gpios = <&gpx3 5 0 0x10000 0>;
-+			linux,input-type = <5>; /* EV_SW */
-+			linux,code = <0>; /* SW_LID */
-+			debounce-interval = <1>;
-+			gpio-key,wakeup;
-+		};
-+	};
-+
-+	/*
-+	 * On Snow we've got SIP WiFi and so can keep drive strengths low to
-+	 * reduce EMI.
-+	 */
-+	dwmmc3@12230000 {
-+		slot@0 {
-+			gpios = <&gpc4 0 2 0 0>, <&gpc4 1 2 3 0>,
-+				<&gpc4 3 2 3 0>, <&gpc4 4 2 3 0>,
-+				<&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
-+		};
-+	};
-+};
--- 
-1.7.7.3
-
+Although perhaps rename the new "offset" parameter to "gpio_base" or
+"gpio_offset", just like the existing "pin_base" rather than
+pin/base/offset?
