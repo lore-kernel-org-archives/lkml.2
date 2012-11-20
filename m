@@ -1,146 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab2KTKgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:36:38 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45768 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab2KTKgg (ORCPT
+	id S1752382Ab2KTKia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:38:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57826 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750953Ab2KTKi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:36:36 -0500
-X-AuditID: b753bd60-98653ba000002f78-88-50ab5d31345b
-X-AuditID: b753bd60-98653ba000002f78-88-50ab5d31345b
-Message-ID: <50AB5D31.7060305@hitachi.com>
-Date: Tue, 20 Nov 2012 19:36:33 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Tue, 20 Nov 2012 05:38:29 -0500
+Date: Tue, 20 Nov 2012 19:38:21 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: DVS regulator drivers
+Message-ID: <20121120103818.GG10560@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.64.1211191213380.11024@axis700.grange>
+ <20121120010547.GD4483@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1211201054260.21420@axis700.grange>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
-References: <20121114013611.5338.15086.stgit@yunodevel> <1352858437.18025.47.camel@gandalf.local.home> <CAJL_ekvb89saY9F0F3ip-8xipuuRyJ1_M8hOyThu_0Q2=5sXgA@mail.gmail.com> <1352860305.18025.48.camel@gandalf.local.home> <50A355A2.5040101@hitachi.com> <20121116191537.GB28622@amt.cnet>
-In-Reply-To: <20121116191537.GB28622@amt.cnet>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8qjQX3lIKI8OJLo6"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211201054260.21420@axis700.grange>
+X-Cookie: Avoid gunfire in the bathroom tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
 
-Sorry for the late reply.
+--8qjQX3lIKI8OJLo6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(2012/11/17 4:15), Marcelo Tosatti wrote:
-> On Wed, Nov 14, 2012 at 05:26:10PM +0900, Yoshihiro YUNOMAE wrote:
->> Thank you for commenting on my patch set.
->>
->> (2012/11/14 11:31), Steven Rostedt wrote:
->>> On Tue, 2012-11-13 at 18:03 -0800, David Sharp wrote:
->>>> On Tue, Nov 13, 2012 at 6:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>>>> On Wed, 2012-11-14 at 10:36 +0900, Yoshihiro YUNOMAE wrote:
->>>>>
->>>>>> To merge the data like previous pattern, we apply this patch set. Then, we can
->>>>>> get TSC offset of the guest as follows:
->>>>>>
->>>>>> $ dmesg | grep kvm
->>>>>> [   57.717180] kvm: (2687) write TSC offset 18446743360465545001, now clock ##
->>>>>>                       ^^^^                   ^^^^^^^^^^^^^^^^^^^^            |
->>>>>>                       PID                         TSC offset                 |
->>>>>>                                                             HOST TSC value --+
->>>>>>
->>>>>
->>>>> Using printk to export something like this is IMO a nasty hack.
->>>>>
->>>>> Can't we create a /sys or /proc file to export the same thing?
->>>>
->>>> Since the value changes over the course of the trace, and seems to be
->>>> part of the context of the trace, I think I'd include it as a
->>>> tracepoint.
->>>>
->>>
->>> I'm fine with that too.
->>
->> Using some tracepoint is a nice idea, but there is one problem. Here,
->> our discussion point is "the event which TSC offset is changed does not
->> frequently occur, but the buffer must keep the event data."
->>
->> There are two ideas for using tracepoint. First, we define new
->> tracepoint for changed TSC offset. This is simple and the overhead will
->> be low. However, this trace event stored in the buffer will be
->> overwritten by other trace events because this TSC offset event does
->> not frequently occur. Second, we add TSC offset information to the
->> tracepoint frequently occured. For example, we assume that TSC offset
->> information is added to arguments of trace_kvm_exit().
->
-> The TSC offset is in the host trace. So given a host trace with two TSC
-> offset updates, how do you know which events in the guest trace
-> (containing a number of events) refer to which tsc offset update?
->
-> Unless i am missing something, you can't solve this easily (well, except
-> exporting information to the guest that allows it to transform RDTSC ->
-> host TSC value, which can be done via pvclock).
+On Tue, Nov 20, 2012 at 11:02:57AM +0100, Guennadi Liakhovetski wrote:
+> On Tue, 20 Nov 2012, Mark Brown wrote:
 
-As you say, TSC offset events are in the host trace, but we don't need
-to notify guests of updating TSC offset. The offset event will output
-the next TSC offset value and the current TSC value, so we can
-calculate the guest TSC (T1) for the event. Guest TSCs since T1 can be
-converted to host TSC using the TSC offset, so we can integrate those
-trace data.
+> > On Mon, Nov 19, 2012 at 12:52:09PM +0100, Guennadi Liakhovetski wrote:
 
-> Another issue as mentioned is lack of TSC synchronization in the host.
-> Should you provide such a feature without the possibility of proper
-> chronological order on systems with unsynchronized TSC?
+> > > 	/* Always set the ON status to the minimum voltage */
 
-I think, we cannot support this sorting feature using TSC on systems
-with unsynchronized TSC. On systems with unsynchronized TSC, it is
-difficult to sort not only trace data of guests and the host but trace
-data of a guest or a host using TSC in chronological order. Actually,
-if we want to output tracing data of ftrace in chronological order with
-unsynchronized TSC, we will use the "global" mode as the timestamp. The
-global mode uses wallclock added TSC correction, so the mode guarantees
-to sort in chronological order for trace data of the guest or of
-the host. If we use this mode to sort the trace data of guests and the
-host in chronological order, we need to consider about the difference
-between the guest and the host and timekeeping of guests and the host,
-so it is difficult to solve these issues. At least, I haven't came up
-with the good solution.
+> > > but I actually don't see, where the minimum is selected. It seems ins=
+tead=20
+> > > in this case the "ON" value is just set:
 
-We cannot sort the trace data of guests and the host in chronological
-order with unsynchronized TSC, but if we can set following
-synchronization events for both guests and the host, we will know where
-we should sort.
+This is where I was asking you to clarify what you were trying to say :/
 
-First, a guest and the host uses the global mode as the timestamp of
-ftrace. Next, a user on the guest writes "1" to the synchronization I/F
-as the ID, then the synchronization event "1" is recorded in a
-ring-buffer of the guest. The synchronization operation induces
-hypercall, so the host can handle the event. After the operation moves
-to the host, the host records the event "1" in a ring-buffer of the
-host. In the end, the operation returns to the host, and the
-synchronization is finished.
+> In other words, I don't see where voltages are compared to select the=20
+> minimum to be used for .on_vsel. Instead, it seems, .on_vsel is always se=
+t=20
+> to the new value, and, if it is also higher then the old .dvs_vsel value,=
+=20
+> .dvs_vsel is _also_ set to the new voltage, in which case they become=20
+> equal. Is this the intended behaviour?
 
-When we integrate tracing data of the guest and the host, we
-calculate difference of the timestamp between the synchronizing events
-with the same ID. This value is a temporary "offset". We will convert
-the timestamp of the guests to the timestamp of the host before the
-next synchronizing event. If the synchronizing event cycle is very
-short, we will not need to consider the timekeeping. Then, we can sort
-the trace data in chronological order.
+There's no need to do any comparison because we only ever get one
+selector value, there's nothing to compare it against.  We're setting it
+to the dvs_vsel since normal practice is to keep the upper end of the
+voltage range constant.  This isn't going to do much good if they but
+anyone who actually has that use can worry about it - it's rare.
 
-Would you comment for this or do you have another idea?
+--8qjQX3lIKI8OJLo6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQq12TAAoJELSic+t+oim9J3cP/00iw6/wrMCozn1Y8ShMPjwL
+FdVYL5wK+dO9YW1BxZmDor8lzYJrcHyvP8nd3dsGv/IIGHcWq7PkVV+pbqK0tpnK
+eW86BJZ/P3+TftVmU55B1F8WY0gtjoh+1GJxsFfuYwqCRbKjqDRsY66Tmn+5uSpG
+9ZAOR1qmos1nISqzfi3kHra7t1/YSNkg60oG5NecbCd+bIwEFspvCaGBLx6VwIUd
+l9sN/Je75/sCRju3RjkrYfCpON2T5LJksf1gjYrFctQ7H0SNbxPyTGwCEbZ40O9V
+6awGR9P+JEqvFZzoie1k+607KZxdct37Msc34wvP44mGzwlzAcjyfAHsVfWN7ha3
+QZKjY1v5vugXE5yMlOHg0px/x0SxycQ0IBF1LRPd6lBLPlQ+eSWNaJBYd374cTyu
+YTzGXD4Xd9KdexlkAPIhg47jo9y1ochfOECB4jhxDgZTTPeugaZvjUbxV6jc2UGK
+OivsA986jChvK9yn2VmA6xbIIJEiudBS0c5HUBI1CtW+drUHWlYSw+NuBHXDoIoJ
++T4kSsnTat0dxGous3mxgMs/1z7QT1u7+zzL8SNHvvBbRKF+ZkLBgN6zNZGr7GRu
+nATWb8oBQ3XE9WaixKEtE/OKb61v+BqDwIw5ejz0mjhP3j7veW02U6l9J5pWWOiq
+G7XN3kZw550E7Xlh3fRo
+=6E9D
+-----END PGP SIGNATURE-----
 
+--8qjQX3lIKI8OJLo6--
