@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2KTX2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:28:10 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37833 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab2KTX2I (ORCPT
+	id S1753488Ab2KTX3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:29:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39730 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab2KTX3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:28:08 -0500
-Message-ID: <50AC1200.8070402@linux.vnet.ibm.com>
-Date: Wed, 21 Nov 2012 07:28:00 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/5] KVM: MMU: move adjusting softmmu pte access to FNAME(page_fault)
-References: <5097AC70.1080904@linux.vnet.ibm.com> <5097AD17.4010001@linux.vnet.ibm.com> <20121120222749.GC31427@amt.cnet>
-In-Reply-To: <20121120222749.GC31427@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Nov 2012 18:29:47 -0500
+Date: Tue, 20 Nov 2012 15:29:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 7/7] mm: add vm event counters for balloon pages
+ compaction
+Message-Id: <20121120152946.823cd2d9.akpm@linux-foundation.org>
+In-Reply-To: <20121109145829.GC4308@optiplex.redhat.com>
+References: <cover.1352256081.git.aquini@redhat.com>
+	<8dde7996f3e36a5efbe569afe1aadfc84355e79e.1352256088.git.aquini@redhat.com>
+	<20121109122033.GR3886@csn.ul.ie>
+	<20121109145829.GC4308@optiplex.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112023-8256-0000-0000-0000051B5585
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 06:27 AM, Marcelo Tosatti wrote:
+On Fri, 9 Nov 2012 12:58:29 -0200
+Rafael Aquini <aquini@redhat.com> wrote:
 
->> @@ -544,6 +544,21 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->>  		return 0;
->>  	}
->>
->> +	if (write_fault && !(walker.pte_access & ACC_WRITE_MASK) &&
->> +	      !is_write_protection(vcpu) && !user_fault) {
->> +		walker.pte_access |= ACC_WRITE_MASK;
->> +		walker.pte_access &= ~ACC_USER_MASK;
->> +
->> +		/*
->> +		 * If we converted a user page to a kernel page,
->> +		 * so that the kernel can write to it when cr0.wp=0,
->> +		 * then we should prevent the kernel from executing it
->> +		 * if SMEP is enabled.
->> +		 */
->> +		if (kvm_read_cr4_bits(vcpu, X86_CR4_SMEP))
->> +			walker.pte_access &= ~ACC_EXEC_MASK;
->> +	}
->> +
+> On Fri, Nov 09, 2012 at 12:20:33PM +0000, Mel Gorman wrote:
+> > On Wed, Nov 07, 2012 at 01:05:54AM -0200, Rafael Aquini wrote:
+> > > This patch introduces a new set of vm event counters to keep track of
+> > > ballooned pages compaction activity.
+> > > 
+> > > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > 
+> > Other than confirming the thing actually works can any meaningful
+> > conclusions be drawn from this counters?
+> > 
+> > I know I have been inconsistent on this myself in the past but recently
+> > I've been taking the attitude that the counters can be used to fit into
+> > some other metric. I'm looking to change the compaction counters to be
+> > able to build a basic cost model for example. The same idea could be
+> > used for balloons of course but it's a less critical path than
+> > compaction for THP for example.
+> > 
+> > Assuming it builds and all the defines are correct when the feature is
+> > not configured (I didn't check) then there is nothing wrong with the
+> > patch. However, if it was dropped would it make life very hard or would
+> > you notice?
+> > 
 > 
-> What about sync_page path?
+> Originally, I proposed this patch as droppable (and it's still droppable)
+> because its major purpose was solely to show the thing working consistently
+> 
+> OTOH, it might make the life easier to spot breakages if it remains with the
+> merged bits, and per a reviewer request I removed its 'DROP BEFORE MERGE'
+> disclaimer.
+> 
+>    https://lkml.org/lkml/2012/8/8/616
 
-The sync_page and other prefetch paths only do read-prefetch, means
-they call set_spte with write_fault = 0.
+There's a lot to be said for not merging things.
 
+I think I'll maintain this as a mm-only patch.  That way it's
+available in linux-next and we can merge it later if a need arises.
