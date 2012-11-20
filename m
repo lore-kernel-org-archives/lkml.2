@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2KTSiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:38:23 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55415 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751582Ab2KTSiW (ORCPT
+	id S1752831Ab2KTSm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:42:57 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:35381 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab2KTSmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:38:22 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 67.169.73.11
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/36kxUdO1PFkTYgGjbOyAX
-Date: Tue, 20 Nov 2012 10:38:18 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [RESEND PATCH v3 2/4] mfd: introduce retu-mfd driver
-Message-ID: <20121120183815.GL18567@atomide.com>
-References: <1352747326-2195-1-git-send-email-aaro.koskinen@iki.fi>
- <1352747326-2195-3-git-send-email-aaro.koskinen@iki.fi>
- <20121120183427.GK18567@atomide.com>
+	Tue, 20 Nov 2012 13:42:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120183427.GK18567@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50AA23C4.1000706@ti.com>
+References: <1352799313-21019-1-git-send-email-peter.ujfalusi@ti.com>
+	<CACRpkdayZK2sPXJW=COFi7C=P5=fbi-q7UukWbQ8dheaJ=bjAA@mail.gmail.com>
+	<50A9F335.80107@ti.com>
+	<CACRpkdbvXFtHoOXThUrT4Z+8nO_HJCFq-May+4zaOsNv-886LA@mail.gmail.com>
+	<50AA23C4.1000706@ti.com>
+Date: Tue, 20 Nov 2012 19:42:52 +0100
+Message-ID: <CACRpkda6s2_76_GAWk3u5zEvRjjtE07wSah7orym_=19vJvmRA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: twl4030: Use only TWL4030_MODULE_LED for LED configuration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [121120 10:36]:
-> * Aaro Koskinen <aaro.koskinen@iki.fi> [121112 11:11]:
-> > Retu is a multi-function device found on Nokia Internet Tablets
-> > implementing at least watchdog, RTC, headset detection and power button
-> > functionality.
-> > 
-> > This patch implements minimum functionality providing register access,
-> > IRQ handling and power off functions.
-> 
-> Samuel, you can pick this one up separately now that Wolfram has taken
-> the i2c-cbus driver.
-> 
-> Also, just noticed that this probably should depend on I2C_CBUS as this
-> chip will not communicate over other I2C adapters?
+On Mon, Nov 19, 2012 at 1:19 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> On 11/19/2012 11:40 AM, Linus Walleij wrote:
+>> So what we're dealing with is: a LED-specific PWM, being used
+>> as a PWM with eternal dutycycle and then being used as GPIO.
+>>
+>> Well, we get to deal with it ... :-/
+>
+> gpio/gpio-pwm driver?
 
-Sorry meant to reply to "[PATCH v4 2/4] mfd: introduce retu-mfd driver"
-instead of this v3 thread.
+Yeah something like that, but such a driver would need some huge
+boilerplate saying that this approach isn't entirely sound.
 
-Regards,
-
-Tony
+Yours,
+Linus Walleij
