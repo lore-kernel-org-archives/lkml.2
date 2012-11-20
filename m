@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab2KTPSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:18:51 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45101 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab2KTPSs (ORCPT
+	id S1753551Ab2KTPRR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:17:17 -0500
+Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab2KTPRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:18:48 -0500
-Message-ID: <50AB9F4A.5050500@gmail.com>
-Date: Tue, 20 Nov 2012 23:18:34 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of pages
- occupied by memmap
-References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <1353254850-27336-5-git-send-email-jiang.liu@huawei.com> <20121119154240.91efcc53.akpm@linux-foundation.org>
-In-Reply-To: <20121119154240.91efcc53.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 10:17:12 -0500
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
+        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
+        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: [PATCH v2 00/11] xen: Initial kexec/kdump implementation
+Date: Tue, 20 Nov 2012 16:04:42 +0100
+Message-Id: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Bogosity: No, spamicity=0.475885
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 07:42 AM, Andrew Morton wrote:
-> On Mon, 19 Nov 2012 00:07:29 +0800
-> Jiang Liu <liuj97@gmail.com> wrote:
-> 
->> If SPARSEMEM is enabled, it won't build page structures for
->> non-existing pages (holes) within a zone, so provide a more accurate
->> estimation of pages occupied by memmap if there are big holes within
->> the zone.
->>
->> And pages for highmem zones' memmap will be allocated from lowmem,
->> so charge nr_kernel_pages for that.
->>
->> ...
->>
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -4435,6 +4435,22 @@ void __init set_pageblock_order(void)
->>  
->>  #endif /* CONFIG_HUGETLB_PAGE_SIZE_VARIABLE */
->>  
->> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
->> +				      unsigned long present_pages)
->> +{
->> +	unsigned long pages = spanned_pages;
->> +
->> +	/*
->> +	 * Provide a more accurate estimation if there are big holes within
->> +	 * the zone and SPARSEMEM is in use.
->> +	 */
->> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
->> +	    IS_ENABLED(CONFIG_SPARSEMEM))
->> +		pages = present_pages;
->> +
->> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
->> +}
-> 
-> Please explain the ">> 4" heuristc more completely - preferably in both
-> the changelog and code comments.  Why can't we calculate this
-> requirement exactly?  That might require a second pass, but that's OK for
-> code like this?
-Hi Andrew,
-	A normal x86 platform always have some holes within the DMA ZONE,
-so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
-ZONE on x86 platforms. 
-	Because the memmap_size is just an estimation, I feel it's OK to
-remove the ">> 4" heuristic, that shouldn't affect much.
 
-Thanks
-Gerry
+Hi,
+
+This set of patches contains initial kexec/kdump implementation for Xen v2
+(previous version were posted to few people by mistake; sorry for that).
+Currently only dom0 is supported, however, almost all infrustructure
+required for domU support is ready.
+
+Jan Beulich suggested to merge Xen x86 assembler code with baremetal x86 code.
+This could simplify and reduce a bit size of kernel code. However, this solution
+requires some changes in baremetal x86 code. The most important thing which should
+be changed in that case is format of page_list array. Xen kexec hypercall requires
+to alternate physical addresses with virtual ones. This and other required things
+have not done in that version because I am not sure that solution will be accepted
+by kexec/kdump maintainers. I hope that this email spark discussion about that topic.
+
+Daniel
+
+ arch/x86/include/asm/kexec.h         |   10 +-
+ arch/x86/include/asm/xen/hypercall.h |    6 +
+ arch/x86/include/asm/xen/kexec.h     |   83 +++++++++
+ arch/x86/kernel/machine_kexec_64.c   |   12 +-
+ arch/x86/kernel/vmlinux.lds.S        |    7 +-
+ arch/x86/xen/Makefile                |    3 +
+ arch/x86/xen/enlighten.c             |   12 ++
+ arch/x86/xen/kexec.c                 |  150 ++++++++++++++++
+ arch/x86/xen/machine_kexec_32.c      |  245 ++++++++++++++++++++++++++
+ arch/x86/xen/machine_kexec_64.c      |  301 +++++++++++++++++++++++++++++++
+ arch/x86/xen/relocate_kernel_32.S    |  323 ++++++++++++++++++++++++++++++++++
+ arch/x86/xen/relocate_kernel_64.S    |  309 ++++++++++++++++++++++++++++++++
+ drivers/xen/sys-hypervisor.c         |   42 +++++-
+ include/linux/kexec.h                |   18 ++
+ include/xen/interface/xen.h          |   33 ++++
+ kernel/kexec.c                       |  125 ++++++++++----
+ 16 files changed, 1636 insertions(+), 43 deletions(-)
+
+Daniel Kiper (11):
+      kexec: introduce kexec_ops struct
+      x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
+      xen: Introduce architecture independent data for kexec/kdump
+      x86/xen: Introduce architecture dependent data for kexec/kdump
+      x86/xen: Register resources required by kexec-tools
+      x86/xen: Add i386 kexec/kdump implementation
+      x86/xen: Add x86_64 kexec/kdump implementation
+      x86/xen: Add kexec/kdump makefile rules
+      x86/xen/enlighten: Add init and crash kexec/kdump hooks
+      drivers/xen: Export vmcoreinfo through sysfs
+      x86: Add Xen kexec control code size check to linker script
