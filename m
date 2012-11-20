@@ -1,41 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2KTAAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:00:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34699 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab2KTAA2 (ORCPT
+	id S1753701Ab2KTABg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:01:36 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57102 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab2KTABf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:00:28 -0500
-Date: Mon, 19 Nov 2012 19:00:26 -0500 (EST)
-Message-Id: <20121119.190026.1217383174465455504.davem@davemloft.net>
-To: shanwei88@gmail.com
-Cc: venkat.x.venkatsubra@oracle.com, rds-devel@oss.oracle.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cl@linux-foundation.org, htejun@gmail.com
-Subject: Re: [PATCH v4 2/9] net: rds: use this_cpu_* per-cpu helper
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50A5FB89.4000400@gmail.com>
-References: <50A1A7C1.50308@gmail.com>
-	<50A5FB89.4000400@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Nov 2012 19:01:35 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-86-50aac85d4ca0
+Date: Tue, 20 Nov 2012 09:01:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
+ approaches low water mark
+Message-ID: <20121120000137.GC447@bbox>
+References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shan Wei <shanwei88@gmail.com>
-Date: Fri, 16 Nov 2012 16:38:33 +0800
+Hi Marek,
 
-> Shan Wei said, at 2012/11/13 9:52:
->> From: Shan Wei <davidshan@tencent.com>
->> 
->> 
->> Signed-off-by: Shan Wei <davidshan@tencent.com>
->> Reviewed-by: Christoph Lameter <cl@linux.com>
+On Mon, Nov 12, 2012 at 09:59:42AM +0100, Marek Szyprowski wrote:
+> It has been observed that system tends to keep a lot of CMA free pages
+> even in very high memory pressure use cases. The CMA fallback for movable
+
+CMA free pages are just fallback for movable pages so if user requires many
+user pages, it ends up consuming cma free pages after out of movable pages.
+What do you mean that system tend to keep free pages even in very
+high memory pressure?
+
+> pages is used very rarely, only when system is completely pruned from
+> MOVABLE pages, what usually means that the out-of-memory even will be
+> triggered very soon. To avoid such situation and make better use of CMA
+
+Why does OOM is triggered very soon if movable pages are burned out while
+there are many cma pages?
+
+It seems I can't understand your point quitely.
+Please make your problem clear for silly me to understand clearly.
+
+Thanks.
+
+> pages, a heuristics is introduced which turns on CMA fallback for movable
+> pages when the real number of free pages (excluding CMA free pages)
+> approaches low water mark.
 > 
-> David Miller,  would you like to pick it up to your net-next tree?
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  mm/page_alloc.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index fcb9719..90b51f3 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1076,6 +1076,15 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>  {
+>  	struct page *page;
+>  
+> +#ifdef CONFIG_CMA
+> +	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
+> +	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
+> +
+> +	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
+> +	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
+> +		migratetype = MIGRATE_CMA;
+> +#endif /* CONFIG_CMA */
+> +
+>  retry_reserve:
+>  	page = __rmqueue_smallest(zone, order, migratetype);
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Applied.
+-- 
+Kind regards,
+Minchan Kim
