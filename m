@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2KTUmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:42:17 -0500
-Received: from nm3-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.108]:44868
-	"EHLO nm3-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751933Ab2KTUmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:42:15 -0500
-X-Yahoo-Newman-Id: 964531.40375.bm@smtp115.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: FmlQtYoVM1mai4iwJSpXEUQSoU6Z9RbkH9aQKY4CS4U36WS
- w4_qFxe030FBCUy4sn0s7LNQe6hVYZQrb660ND9jsQfMIvcLRR_NI4ZrwliF
- 5S3MN_RIetbsSxNhKf3tTHrdrrm17OPubgLtG1vzOMMf7u.qayJejftxbNR9
- ztVxjAkQ2ZlpMAiAWBhG6rTbtmMVts2NTJ_BxIGPIiSABKfpG64hMIhY_f4d
- NEN3nDuO6DiykQ3dASAfpN6mUm3yw5gPAr1yNadLfps.9olZzx6d6qUpZXP_
- Q2ih4Z7BP5PY8x5KjkrAb8BdC6VPYHkS8355eFIT2JMVuOXlzAqQjfflezYG
- 5NkGoelQhliAUtljgd6wb6UcC2z9Hnd5C_8OYBUcqVwugJDf7yVPyOXY1x3a
- cFKJdspymj9R9ttBRebSeaB5hthE38F8AY8ETrcPKGOJgZKwSt6RLEBLovkp
- frH9MYw8eFxS6Cz.vbwCFpuOoBlXc
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-From: danielfsantos@att.net
-To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v6 0/9] Cleanup & new features for compiler*.h and bug.h
-Date: Tue, 20 Nov 2012 14:42:03 -0600
-Message-Id: <1353444132-6809-1-git-send-email-daniel.santos@pobox.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
+	id S1753012Ab2KTUmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:42:45 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:58689 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752866Ab2KTUmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 15:42:43 -0500
+Date: Tue, 20 Nov 2012 12:42:38 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, ellyjones@chromium.org,
+        Kay Sievers <kay@vrfy.org>, Roland Eggner <edvx1@systemanalysen.net>
+Subject: [PATCH v2] devtmpfs: mount with noexec and nosuid
+Message-ID: <20121120204238.GA19554@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since devtmpfs is writable, make the default noexec,nosuid as well. This
+protects from the case of a privileged process having an arbitrary file
+write flaw and an argumentless arbitrary execution (i.e. it would lack
+the ability to run "mount -o remount,exec,suid /dev").
 
- include/linux/bug.h           |   47 ++++++++++++++++++++++------------------
- include/linux/compiler-gcc.h  |    3 ++
- include/linux/compiler-gcc3.h |    8 +++---
- include/linux/compiler-gcc4.h |   28 ++++++++++++------------
- include/linux/compiler.h      |   32 +++++++++++++++++++++++++--
- 5 files changed, 76 insertions(+), 42 deletions(-)
+Cc: ellyjones@chromium.org
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Roland Eggner <edvx1@systemanalysen.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Changes in v6:
-o Remove extraneous double negation
-o Fixed faulty macro expansion in last patch
+---
+v2:
+- use CONFIG_DEVTMPFS_SAFE to wrap the logic.
+---
+ drivers/base/Kconfig    |   12 ++++++++++++
+ drivers/base/devtmpfs.c |   12 ++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-Changes in v5:
-o Move BUILD_BUG* guts to a new compiletime_assert() macro in compiler.h.
-o Fix a double-evaluation problem.
-o Fix another bad macro definition when __CHECKER__ defined.
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index b34b5cd..a37fcf2 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -56,6 +56,18 @@ config DEVTMPFS_MOUNT
+ 	  rescue mode with init=/bin/sh, even when the /dev directory
+ 	  on the rootfs is completely empty.
+ 
++config DEVTMPFS_SAFE
++	bool "Use nosuid,noexec mount options on devtmpfs"
++	depends on DEVTMPFS
++	help
++	  This instructs the kernel to include the MS_NOEXEC and
++	  MS_NOSUID mount flags when mounting devtmpfs. This prevents
++	  certain kinds of code-execution attacks on embedded platforms.
++
++	  Notice: If enabled, things like /dev/mem cannot be mmapped
++	  with the PROT_EXEC flag. This can break, for example, non-KMS
++	  video drivers.
++
+ config STANDALONE
+ 	bool "Select only drivers that don't need compile-time external firmware" if EXPERIMENTAL
+ 	default y
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 147d1a4..bf85fbf 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -340,6 +340,10 @@ static int handle_remove(const char *nodename, struct device *dev)
+ int devtmpfs_mount(const char *mntdir)
+ {
+ 	int err;
++	int mflags = MS_SILENT;
++#ifdef CONFIG_DEVTMPFS_SAFE
++	mflags |= MS_NOEXEC | MS_NOSUID;
++#endif
+ 
+ 	if (!mount_dev)
+ 		return 0;
+@@ -347,7 +351,7 @@ int devtmpfs_mount(const char *mntdir)
+ 	if (!thread)
+ 		return 0;
+ 
+-	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
++	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", mflags, NULL);
+ 	if (err)
+ 		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
+ 	else
+@@ -369,10 +373,14 @@ static int devtmpfsd(void *p)
+ {
+ 	char options[] = "mode=0755";
+ 	int *err = p;
++	int mflags = MS_SILENT;
++#ifdef CONFIG_DEVTMPFS_SAFE
++	mflags |= MS_NOEXEC | MS_NOSUID;
++#endif
+ 	*err = sys_unshare(CLONE_NEWNS);
+ 	if (*err)
+ 		goto out;
+-	*err = sys_mount("devtmpfs", "/", "devtmpfs", MS_SILENT, options);
++	*err = sys_mount("devtmpfs", "/", "devtmpfs", mflags, options);
+ 	if (*err)
+ 		goto out;
+ 	sys_chdir("/.."); /* will traverse into overmounted root */
+-- 
+1.7.9.5
 
-Changes in v4:
-o Squash a minor commit (per Borislav Petkov)
-o Change some comment text (per Borislav Petkov)
-o Add some acks
 
-This patch set is a dependency of the generic red-black tree patch set, which
-I have now split up into three smaller sets and is based off of linux-next.
-
-The major aim of this patch set is to cleanup compiler-gcc*.h and improve
-the manageability of of compiler features at various versions (when they
-are broken, etc.), add some needed features to bug.h and clean that up as
-well.
-
-compiler-gcc*.h
-o Introduce GCC_VERSION - (e.g., gcc 4.7.1 becomes 40701).
-o Reorder all features based upon the version introduced (readability).
-o Change all version checks to use GCC_VERSION.
-o Remove redundant __linktime_error macro.
-o Introduce compiletime_assert() macro.
-
-bug.h
-o Improve BUILD_BUG_ON(expr) - now generates compile-time error post-gcc-4.4
-o Remove duplicate error messages in some cases.
-o Fix double-evaluation problem in BUILD_BUG_ON.
-o Fix bad macro definitions when using __CHECKER__.
-o Introduce BUILD_BUG_ON_MSG and clean up the implementations of the
-  BUILD_BUG* macros.
+-- 
+Kees Cook
+Chrome OS Security
