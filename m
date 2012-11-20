@@ -1,164 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab2KTSKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 13:10:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23717 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab2KTSKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 13:10:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,287,1352102400"; 
-   d="scan'208";a="222258555"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
-        rafael.j.wysocki@intel.com
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
-        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org,
-        ben-linux@fluff.org, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v4 1/3] gpio / ACPI: add ACPI support
-Date: Tue, 20 Nov 2012 20:13:30 +0200
-Message-Id: <1353435212-15325-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1353435212-15325-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
- <1353435212-15325-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753637Ab2KTSMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 13:12:09 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:35143 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab2KTSMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 13:12:07 -0500
+X-Authority-Analysis: v=2.0 cv=GZOVbHrL c=1 sm=0 a=QKCpt3RAcCy1PgeoOVilzg==:17 a=2oGSFm5vdZwA:10 a=wom5GMh1gUkA:10 a=pTRqrO9sSn4A:10 a=649elMfuWG0A:10 a=svWV0_fRAAAA:8 a=erfvF8y-hRwA:10 a=Ydt4blHB-P6nXVy4_0cA:9 a=CjuIK1q_8ugA:10 a=HwHvl2IHzvvasiQn5MYA:9 a=QKCpt3RAcCy1PgeoOVilzg==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 24.73.230.86
+Date: Tue, 20 Nov 2012 13:12:03 -0500
+From: Solomon Peachy <pizza@shaftnet.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
+Message-ID: <20121120181203.GA7922@shaftnet.org>
+References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
+ <CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
+ <20121120161011.GD18015@shaftnet.org>
+ <20121120163309.GB4990@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Disposition: inline
+In-Reply-To: <20121120163309.GB4990@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
-Needs a gpio controller driver with the acpi handler hook set.
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
-resources to Linux GPIO's.
+On Tue, Nov 20, 2012 at 08:33:09AM -0800, Greg KH wrote:
+> > The corresponding .config is attached.  Note that it is for a uClinux=
+=20
+> > 3.3.0-uc0 kernel.
+>=20
+> Lots of things have changed in the firmware code since 3.3.0, can you
+> retest this on the 3.7-rc6 tree?
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/gpio/Kconfig        |    4 ++++
- drivers/gpio/Makefile       |    1 +
- drivers/gpio/gpiolib-acpi.c |   54 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi_gpio.h   |   19 +++++++++++++++
- 4 files changed, 78 insertions(+)
- create mode 100644 drivers/gpio/gpiolib-acpi.c
- create mode 100644 include/linux/acpi_gpio.h
+Not easily; My employer is contracted to do some driver porting and=20
+we're stuck with the kernel the client provided.  However, the patch is=20
+still relevant for upstream, because the underlying problem still=20
+exists:
+=20
+ * The #ifdef wraps code that pertains solely to built-in firmware, (ie=20
+   CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disabled.
+ * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c=20
+   when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index f11d8e3..5c9b384 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -49,6 +49,10 @@ config OF_GPIO
- 	def_bool y
- 	depends on OF
- 
-+config GPIO_ACPI
-+	def_bool y
-+	depends on ACPI
-+
- config DEBUG_GPIO
- 	bool "Debug GPIO calls"
- 	depends on DEBUG_KERNEL
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 9aeed67..420dbac 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
- 
- obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-+obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
- 
- # Device drivers. Generally keep list sorted alphabetically
- obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-new file mode 100644
-index 0000000..cbad6e9
---- /dev/null
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -0,0 +1,54 @@
-+/*
-+ * ACPI helpers for GPIO API
-+ *
-+ * Copyright (C) 2012, Intel Corporation
-+ * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
-+ *          Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/export.h>
-+#include <linux/acpi_gpio.h>
-+#include <linux/acpi.h>
-+
-+static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
-+{
-+	if (!gc->dev)
-+		return false;
-+
-+	return ACPI_HANDLE(gc->dev) == data;
-+}
-+
-+/**
-+ * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
-+ * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
-+ * @pin:	ACPI GPIO pin number (0-based, controller-relative)
-+ *
-+ * Returns GPIO number to use with Linux generic GPIO API, or errno error value
-+ */
-+
-+int acpi_get_gpio(char *path, int pin)
-+{
-+	struct gpio_chip *chip;
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	status = acpi_get_handle(NULL, path, &handle);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
-+
-+	chip = gpiochip_find(handle, acpi_gpiochip_find);
-+	if (!chip)
-+		return -ENODEV;
-+
-+	if (!gpio_is_valid(chip->base + pin))
-+		return -EINVAL;
-+
-+	return chip->base + pin;
-+}
-+EXPORT_SYMBOL_GPL(acpi_get_gpio);
-diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-new file mode 100644
-index 0000000..91615a3
---- /dev/null
-+++ b/include/linux/acpi_gpio.h
-@@ -0,0 +1,19 @@
-+#ifndef _LINUX_ACPI_GPIO_H_
-+#define _LINUX_ACPI_GPIO_H_
-+
-+#include <linux/errno.h>
-+
-+#ifdef CONFIG_GPIO_ACPI
-+
-+int acpi_get_gpio(char *path, int pin);
-+
-+#else /* CONFIG_GPIO_ACPI */
-+
-+static inline int acpi_get_gpio(char *path, int pin)
-+{
-+	return -ENODEV;
-+}
-+
-+#endif /* CONFIG_GPIO_ACPI */
-+
-+#endif /* _LINUX_ACPI_GPIO_H_ */
--- 
-1.7.10.4
+Perhaps the compile problem is solved in newer kernels (by always=20
+generating an empty builtin firmware list?) but the #ifdef is still=20
+incorrect.
 
+> Also, when sending patches, please cc: the proper maintainers (the
+> scripts/get_maintainers.pl tool can help you with that.)
+
+Ooops, sorry.  I'll double-check that next time.
+
+ - Solomon
+--=20
+Solomon Peachy        		       pizza at shaftnet dot org	=20
+Melbourne, FL                          ^^ (mail/jabber/gtalk) ^^
+Quidquid latine dictum sit, altum viditur.
+
+--wac7ysb48OaltWcw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iD8DBQFQq8fzPuLgii2759ARAs1nAJ9/Ovxir0f89ANXEETM3vmhNoZ/eACdF2ue
+tnW6yUqUNONSuYfYOn5sfwc=
+=UDfB
+-----END PGP SIGNATURE-----
+
+--wac7ysb48OaltWcw--
