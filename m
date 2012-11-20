@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2KTLwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:52:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50407 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2KTLwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:52:45 -0500
-Date: Tue, 20 Nov 2012 11:52:39 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Eilon Greenstein <eilong@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-Message-ID: <20121120115239.GA7955@dm>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+	id S1753165Ab2KTLyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:54:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47004 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab2KTLyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 06:54:18 -0500
+Message-ID: <50AB6F63.9040009@ti.com>
+Date: Tue, 20 Nov 2012 12:54:11 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 3/3] pwm: New driver to support PWM driven LEDs on
+ TWL4030/6030 series of PMICs
+References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com> <1353405382-9226-4-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1353405382-9226-4-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 01:17:37PM +0200, Eilon Greenstein wrote:
-> Changes from previous attempt:
-> - Use CHK instead of WARN
-> - Issue only one warning per empty lines block
+On 11/20/2012 10:56 AM, Peter Ujfalusi wrote:
+> The driver supports the following LED outputs as generic PWM driver:
+> TWL4030 LEDA and LEDB (PWMA and PWMB)
+> TWL6030 Charging indicator LED (PWM LED)
 > 
-> Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
+> On TWL6030 when the PWM requested LED is configured to be controlled by SW.
+> In this case the user can enable/disable and set the duty period freely.
+> When the PWM has been freed, the LED driver is put back to HW control.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > ---
->  scripts/checkpatch.pl |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 21a9f5d..13d264f 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3579,6 +3579,14 @@ sub process {
->  			WARN("EXPORTED_WORLD_WRITABLE",
->  			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
->  		}
+>  drivers/pwm/Kconfig       |  10 ++
+>  drivers/pwm/Makefile      |   1 +
+>  drivers/pwm/pwm-twl-led.c | 303 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 314 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-twl-led.c
+
+...
+
+> +static int twl4030_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +			      int duty_ns, int period_ns)
+> +{
+> +	int duty_cycle = DIV_ROUND_UP(duty_ns * TWL4030_LED_MAX, period_ns);
+> +	u8 pwm_config[2] = {1, 0};
+> +	int base, ret;
 > +
-> +# check for double empty lines
-> +		if ($line =~ /^\+\s*$/ &&
-> +		    ($rawlines[$linenr] =~ /^\s*$/ ||
-> +		     $prevline =~ /^\+?\s*$/ && $rawlines[$linenr] !~ /^\+\s*$/)) {
-> +			CHK("DOUBLE_EMPTY_LINE",
-> +			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-> +		}
->  	}
->  
->  	# If we have no input at all, then there is nothing to report on
+> +	/*
+> +	 * To configure the duty period:
+> +	 * On-cycle is set to 1 (the minimum allowed value)
+> +	 * The off time of 0 is not configurable, so the mapping is:
+> +	 * 0 -> off cycle = 2,
+> +	 * 1 -> off cycle = 2,
+> +	 * 2 -> off cycle = 3,
+> +	 * 125 - > off cycle 127,
+> +	 * 126 - > off cycle 1
 
-In your previous version you indicated you would be emiting one per group
-of lines, I do not see how this does that.  Also this fails if the fragment
-is at the top of the hunk emiting a perl warning.  We should probabally
-use the suppress approach.
+Oh, I missed to save the updated comment before I commited the change.
+Can I just send and update patch instead of the whole series again?
 
-How about something like the below.
-
--apw
+> +	 * When on cycle == off cycle the PWM will be always on
+> +	 */
 
 
->From 848ebffa8656a1ff96a91788ec0f1c04dab9c3e9 Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Sat, 17 Nov 2012 13:17:37 +0200
-Subject: [PATCH] checkpatch: strict warning for multiple blank lines
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f18750e..dbc68f3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1411,6 +1411,7 @@ sub process {
- 	my %suppress_whiletrailers;
- 	my %suppress_export;
- 	my $suppress_statement = 0;
-+	my $suppress_multipleblank = -1;
- 
- 	# Pre-scan the patch sanitizing the lines.
- 	# Pre-scan the patch looking for any __setup documentation.
-@@ -1521,6 +1522,7 @@ sub process {
- 			%suppress_whiletrailers = ();
- 			%suppress_export = ();
- 			$suppress_statement = 0;
-+			$suppress_multipleblank = -1;
- 			next;
- 
- # track the line number as we move through the hunk, note that
-@@ -1930,6 +1932,15 @@ sub process {
- 			      "use the SSYNC() macro in asm/blackfin.h\n" . $herevet);
- 		}
- 
-+# multiple blank lines.
-+		if ($line =~ /^-/ || ($suppress_multipleblank == $linenr && $line =~ /^[ \+]\s*$/)) {
-+			$suppress_multipleblank++;
-+		} elsif ($prevline =~ /^\+\s*$/ and $line =~ /^\+\s*$/) {
-+			$suppress_multipleblank = $linenr + 1;
-+			CHK("MULTIPLE_EMPTY_LINE",
-+			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-+		}
-+
- # Check for potential 'bare' types
- 		my ($stat, $cond, $line_nr_next, $remain_next, $off_next,
- 		    $realline_next);
 -- 
-1.7.10.4
-
+Péter
