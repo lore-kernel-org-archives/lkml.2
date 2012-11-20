@@ -1,143 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab2KTKYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:24:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41112 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922Ab2KTKYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:24:23 -0500
-Date: Tue, 20 Nov 2012 11:24:20 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
-        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, djwong+kernel@djwong.org
-Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct
- I/O requests
-Message-ID: <20121120102420.GD1408@quack.suse.cz>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
- <20121120075114.25270.40680.stgit@blackbox.djwong.org>
+	id S1752989Ab2KTKZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:25:29 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:52442 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751798Ab2KTKZ2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:25:28 -0500
+Message-Id: <201211201025.qAKAMnOw075855@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120075114.25270.40680.stgit@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Warning! Your mailbox is almost full.
+To: Recipients <fxzhang@dicp.ac.cn>
+From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
+Date: Tue, 20 Nov 2012 04:24:43 -0600
+Reply-To: fxzhang@dicp.ac.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-11-12 23:51:14, Darrick J. Wong wrote:
-> If a file is opened with O_SYNC|O_DIRECT, the drive cache does not get
-> flushed after the write completion for AIOs.  This patch attempts to fix
-> that problem by marking an I/O as requiring a cache flush in endio
-> processing, and then issuing the cache flush after any unwritten extent
-> conversion is done.
-> 
-> From: Jeff Moyer <jmoyer@redhat.com>
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> [darrick.wong@oracle.com: Rework patch to use per-mount workqueues]
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> ---
->  fs/xfs/xfs_aops.c  |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
->  fs/xfs/xfs_aops.h  |    1 +
->  fs/xfs/xfs_mount.h |    1 +
->  fs/xfs/xfs_super.c |    8 ++++++++
->  4 files changed, 61 insertions(+), 1 deletion(-)
-> 
-> 
-> diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
-> index e57e2da..9cebbb7 100644
-> --- a/fs/xfs/xfs_aops.c
-> +++ b/fs/xfs/xfs_aops.c
-> @@ -173,6 +173,24 @@ xfs_setfilesize(
->  }
->  
->  /*
-> + * In the case of synchronous, AIO, O_DIRECT writes, we need to flush
-> + * the disk cache when the I/O is complete.
-> + */
-> +STATIC bool
-> +xfs_ioend_needs_cache_flush(
-> +	struct xfs_ioend	*ioend)
-> +{
-> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
-> +	struct xfs_mount *mp = ip->i_mount;
-> +
-> +	if (!(mp->m_flags & XFS_MOUNT_BARRIER))
-> +		return false;
-> +
-> +	return IS_SYNC(ioend->io_inode) ||
-> +	       (ioend->io_iocb->ki_filp->f_flags & O_DSYNC);
-> +}
-  I'm not really a XFS developer but calling things "...cache_flush" when
-you actually mean fsync is IMHO misleading.
+You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
 
-> +
-> +/*
->   * Schedule IO completion handling on the final put of an ioend.
->   *
->   * If there is no work to do we might as well call it a day and free the
-> @@ -189,11 +207,30 @@ xfs_finish_ioend(
->  			queue_work(mp->m_unwritten_workqueue, &ioend->io_work);
->  		else if (ioend->io_append_trans)
->  			queue_work(mp->m_data_workqueue, &ioend->io_work);
-> +		else if (ioend->io_needs_fsync)
-> +			queue_work(mp->m_aio_blkdev_flush_wq, &ioend->io_work);
->  		else
->  			xfs_destroy_ioend(ioend);
->  	}
->  }
->  
-> +STATIC int
-> +xfs_ioend_force_cache_flush(
-> +	xfs_ioend_t	*ioend)
-> +{
-> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
-> +	struct xfs_mount *mp = ip->i_mount;
-> +	int		err = 0;
-> +	int		datasync;
-> +
-> +	datasync = !IS_SYNC(ioend->io_inode) &&
-> +		!(ioend->io_iocb->ki_filp->f_flags & __O_SYNC);
-> +	err = do_xfs_file_fsync(ip, mp, datasync);
-> +	xfs_destroy_ioend(ioend);
-> +	/* do_xfs_file_fsync returns -errno. our caller expects positive. */
-> +	return -err;
-> +}
-> +
->  /*
->   * IO write completion.
->   */
-> @@ -250,12 +287,22 @@ xfs_end_io(
->  		error = xfs_setfilesize(ioend);
->  		if (error)
->  			ioend->io_error = -error;
-> +	} else if (ioend->io_needs_fsync) {
-> +		error = xfs_ioend_force_cache_flush(ioend);
-> +		if (error && ioend->io_result > 0)
-> +			ioend->io_error = -error;
-> +		ioend->io_needs_fsync = 0;
->  	} else {
->  		ASSERT(!xfs_ioend_is_append(ioend));
->  	}
->  
->  done:
-> -	xfs_destroy_ioend(ioend);
-> +	/* the honoring of O_SYNC has to be done last */
-> +	if (ioend->io_needs_fsync) {
-> +		atomic_inc(&ioend->io_remaining);
-> +		xfs_finish_ioend(ioend);
-> +	} else
-> +		xfs_destroy_ioend(ioend);
->  }
-  Umm, I don't quite get why you do things the way you do in xfs_end_io().
-Why don't you handle fsync there always but offload it instead to workqueue
-again in some cases? Is it so that it gets processed in the right workqueue
-or why?
+click link below:
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
