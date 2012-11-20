@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab2KTNYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:24:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46687 "EHLO
+	id S1753419Ab2KTNYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:24:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46895 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab2KTNYX (ORCPT
+	with ESMTP id S1752246Ab2KTNYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:24:23 -0500
-Message-ID: <50AB8471.7080607@oracle.com>
-Date: Tue, 20 Nov 2012 21:24:01 +0800
+	Tue, 20 Nov 2012 08:24:48 -0500
+Message-ID: <50AB8491.4070508@oracle.com>
+Date: Tue, 20 Nov 2012 21:24:33 +0800
 From: Joe Jin <joe.jin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
@@ -22,7 +22,7 @@ References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487
 In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,7 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 11/20/12 16:59, Dave, Tushar N wrote:
 > Have you power off the system completely after modifying eeprom? If not please do so.
 
-seems not works for me, would you please help to check what is wrong of my operations?
+Hi Tushar,
+
+Seems not works for me, would you please help to check what is wrong of my operations?
 
 Original eeprom dump:
 
