@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2KTQD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:03:26 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47112 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab2KTQDZ (ORCPT
+	id S1752812Ab2KTQEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:04:11 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:38025 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab2KTQEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:03:25 -0500
-Message-ID: <50ABA9B7.7020702@gmail.com>
-Date: Wed, 21 Nov 2012 00:03:03 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 20 Nov 2012 11:04:09 -0500
+From: Betty Dall <betty.dall@hp.com>
+To: bhelgaas@google.com, jbarnes@virtuousgeek.org, alex.williamson@redhat.com,
+        wangyijing@huawei.com, ddutile@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Betty Dall <betty.dall@hp.com>
+Subject: =?UTF-8?q?=5BPATCH=5D=20PCI=3A=20add=20PCIe=208=2E0=20GT/s=20supported=20link=20speed=20define?=
+Date: Tue, 20 Nov 2012 11:58:59 -0700
+Message-Id: <1353437939-29210-1-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-To: maciej.rutecki@gmail.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 0/5] fix up inaccurate zone->present_pages
-References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <201211192236.32152.maciej.rutecki@gmail.com>
-In-Reply-To: <201211192236.32152.maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Maciej!
+Add a new define for the 8.0 GT/s supported link speed added in the PCI
+3.0 specification.  This is used to identify a device's current link speed
+(PCI_EXP_CLS).
 
-On 11/20/2012 05:36 AM, Maciej Rutecki wrote:
-> On niedziela, 18 listopada 2012 o 17:07:25 Jiang Liu wrote:
->> The commit 7f1290f2f2a4 ("mm: fix-up zone present pages") tries to
->> resolve an issue caused by inaccurate zone->present_pages, but that
->> fix is incomplete and causes regresions with HIGHMEM. And it has been
->> reverted by commit
->> 5576646 revert "mm: fix-up zone present pages"
->>
->> This is a following-up patchset for the issue above. It introduces a
->> new field named "managed_pages" to struct zone, which counts pages
->> managed by the buddy system from the zone. And zone->present_pages
->> is used to count pages existing in the zone, which is
->> 	spanned_pages - absent_pages.
->>
->> But that way, zone->present_pages will be kept in consistence with
->> pgdat->node_present_pages, which is sum of zone->present_pages.
->>
->> This patchset has only been tested on x86_64 with nobootmem.c. So need
->> help to test this patchset on machines:
->> 1) use bootmem.c
->> 2) have highmem
->>
->> This patchset applies to "f4a75d2e Linux 3.7-rc6" from
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->>
->> Any comments and helps are welcomed!
->>
->> Jiang Liu (5):
->>   mm: introduce new field "managed_pages" to struct zone
->>   mm: replace zone->present_pages with zone->managed_pages if
->>     appreciated
->>   mm: set zone->present_pages to number of existing pages in the zone
->>   mm: provide more accurate estimation of pages occupied by memmap
->>   mm: increase totalram_pages when free pages allocated by bootmem
->>     allocator
->>
->>  include/linux/mmzone.h |    1 +
->>  mm/bootmem.c           |   14 ++++++++
->>  mm/memory_hotplug.c    |    6 ++++
->>  mm/mempolicy.c         |    2 +-
->>  mm/nobootmem.c         |   15 ++++++++
->>  mm/page_alloc.c        |   89
->> +++++++++++++++++++++++++++++++----------------- mm/vmscan.c            | 
->>  16 ++++-----
->>  mm/vmstat.c            |    8 +++--
->>  8 files changed, 108 insertions(+), 43 deletions(-)
-> Tested in 32 bit linux with HIGHMEM. Seems be OK.
-> 
-> Regards
-> 
+Here is the section of the PCI 3.0 specification:
+"Supported Link Speeds Vector – This field indicates the
+supported Link speed(s) of the associated Port. For each bit, a
+value of 1b indicates that the corresponding Link speed is
+supported; otherwise, the Link speed is not supported.
+Bit definitions within this field are:
+Bit 0 2.5 GT/s
+Bit 1 5.0 GT/s
+Bit 2 8.0 GT/s
+Bits 6:3 RsvdP
+Multi-Function devices associated with an Upstream Port must
+report the same value in this field for all Functions."
+
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
+ include/uapi/linux/pci_regs.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+index 20ae747..0cf8abb 100644
+--- a/include/uapi/linux/pci_regs.h
++++ b/include/uapi/linux/pci_regs.h
+@@ -469,6 +469,7 @@
+ #define  PCI_EXP_LNKSTA_CLS	0x000f	/* Current Link Speed */
+ #define  PCI_EXP_LNKSTA_CLS_2_5GB 0x01	/* Current Link Speed 2.5GT/s */
+ #define  PCI_EXP_LNKSTA_CLS_5_0GB 0x02	/* Current Link Speed 5.0GT/s */
++#define  PCI_EXP_LNKSTA_CLS_8_0GB 0x04	/* Current Link Speed 8.0GT/s */
+ #define  PCI_EXP_LNKSTA_NLW	0x03f0	/* Nogotiated Link Width */
+ #define  PCI_EXP_LNKSTA_NLW_SHIFT 4	/* start of NLW mask in link status */
+ #define  PCI_EXP_LNKSTA_LT	0x0800	/* Link Training */
+-- 
+1.7.7.6
 
