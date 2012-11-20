@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751064Ab2KTFLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 00:11:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46345 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2KTFLh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 00:11:37 -0500
+	id S1751781Ab2KTFLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 00:11:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56384 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751238Ab2KTFLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 00:11:50 -0500
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>
@@ -15,78 +14,103 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
         "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v3 00/10] Support for AM33xx PWM Subsystem
-Date: Tue, 20 Nov 2012 10:33:41 +0530
-Message-ID: <1353387831-31538-1-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v3 02/10] ARM: am33xx: clk: Add optional clock for EHRPWM
+Date: Tue, 20 Nov 2012 10:33:43 +0530
+Message-ID: <1353387831-31538-3-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1353387831-31538-1-git-send-email-avinashphilip@ti.com>
+References: <1353387831-31538-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In AM33xx PWM sub modules like ECAP, EHRPWM & EQEP are  integrated to
-PWM subsystem. All these submodules shares the resources (clock) & has
-a clock gating register in PWM Subsystem. This patch series creates a
-parent PWM Subsystem driver to handle access synchronization of shared
-resources & clock gating from PWM Subsystem configuration space.
-Also Device tree nodes populated to support parent child relation
-between PWMSS, ECAP & EHRPWM submodules.
-In addition EHRPWM module requires explicit clock gating from control
-module & is handled by patch #2 & 8.
+EHRPWM module requires explicit clock gating from control module.
+Hence add clock node in clock tree for EHRPWM modules.
 
-Patch #4 & 6 submitted is a second revision as suggested by  Thierry
-for handling clock gating with a global function . This requires config
-space handling done independent from driver and is done at parent driver.
-So the parent<->child relation adopted to handle
-1. pm runtime synchronization
-2. PWM subsystem common config space clock gating for PWM submodules.
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 17e3de5... 833260f... M	arch/arm/mach-omap2/clock33xx_data.c
+:100644 100644 a89e825... c0e34e6... M	arch/arm/mach-omap2/control.h
+ arch/arm/mach-omap2/clock33xx_data.c |   37 ++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/control.h        |    8 +++++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
 
-Patches supports
-- Driver support for parent child relation handled patch #1
-- Optional EHRPWM tb clock in patch #2
-- Parent child in HWMOD handled at patch #3
-- Device tree binding support handled in patch #4, 6 &8
-- pinctrl support in patch #5 & 7.
-- DT node populated in patch #9 & 10.
-
-This patch series based on linux-next/20121115 and tested on AM33xx.
-It depends on [1]
-
-1. https://lkml.org/lkml/2012/11/19/338
-pwm: Device tree support for PWM polarity
-
-Philip, Avinash (10):
-  PWMSS: Add PWM Subsystem driver for parent<->child relationship
-  ARM: am33xx: clk: Add optional clock for EHRPWM
-  ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM
-    subsystem
-  pwm: pwm-tiecap: Add device-tree binding support for APWM driver
-  pwm: pwm-tiecap: pinctrl support
-  pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
-  pwm: pwm-tiehrpwm: pinctrl support
-  pwm: pwm-tiehrpwm: Adding TBCLK gating support.
-  ARM: dts: AM33XX: Add PWMSS device tree nodes
-  ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
-
- .../devicetree/bindings/pwm/pwm-tiecap.txt         |   23 ++
- .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |   23 ++
- .../devicetree/bindings/pwm/pwm-tipwmss.txt        |   32 ++
- arch/arm/boot/dts/am335x-evm.dts                   |   21 +
- arch/arm/boot/dts/am33xx.dtsi                      |   84 ++++
- arch/arm/mach-omap2/clock33xx_data.c               |   37 ++
- arch/arm/mach-omap2/control.h                      |    8 +
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c         |  419 +++++++++++++-------
- drivers/pwm/Kconfig                                |   11 +
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-tiecap.c                           |   50 +++-
- drivers/pwm/pwm-tiehrpwm.c                         |   65 +++-
- drivers/pwm/pwm-tipwmss.c                          |  143 +++++++
- drivers/pwm/tipwmss.h                              |   39 ++
- 14 files changed, 811 insertions(+), 145 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiehrpwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt
- create mode 100644 drivers/pwm/pwm-tipwmss.c
- create mode 100644 drivers/pwm/tipwmss.h
+diff --git a/arch/arm/mach-omap2/clock33xx_data.c b/arch/arm/mach-omap2/clock33xx_data.c
+index 17e3de5..833260f 100644
+--- a/arch/arm/mach-omap2/clock33xx_data.c
++++ b/arch/arm/mach-omap2/clock33xx_data.c
+@@ -995,6 +995,40 @@ static struct clk wdt1_fck = {
+ };
+ 
+ /*
++ * PWMSS Time based module clock node. This node is
++ * requred to enable clock gating for EHRPWM TBCLK.
++ */
++static struct clk ehrpwm0_tbclk = {
++	.name		= "ehrpwm0_tbclk",
++	.clkdm_name	= "l4ls_clkdm",
++	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
++	.enable_bit	= AM33XX_PWMSS0_TBCLKEN_SHIFT,
++	.ops		= &clkops_omap2_dflt,
++	.parent		= &l4ls_gclk,
++	.recalc		= &followparent_recalc,
++};
++
++static struct clk ehrpwm1_tbclk = {
++	.name		= "ehrpwm1_tbclk",
++	.clkdm_name	= "l4ls_clkdm",
++	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
++	.enable_bit	= AM33XX_PWMSS1_TBCLKEN_SHIFT,
++	.ops		= &clkops_omap2_dflt,
++	.parent		= &l4ls_gclk,
++	.recalc		= &followparent_recalc,
++};
++
++static struct clk ehrpwm2_tbclk = {
++	.name		= "ehrpwm2_tbclk",
++	.clkdm_name	= "l4ls_clkdm",
++	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
++	.enable_bit	= AM33XX_PWMSS2_TBCLKEN_SHIFT,
++	.ops		= &clkops_omap2_dflt,
++	.parent		= &l4ls_gclk,
++	.recalc		= &followparent_recalc,
++};
++
++/*
+  * clkdev
+  */
+ static struct omap_clk am33xx_clks[] = {
+@@ -1074,6 +1108,9 @@ static struct omap_clk am33xx_clks[] = {
+ 	CLK(NULL,	"clkout2_ck",		&clkout2_ck,	CK_AM33XX),
+ 	CLK(NULL,	"timer_32k_ck",		&clkdiv32k_ick,	CK_AM33XX),
+ 	CLK(NULL,	"timer_sys_ck",		&sys_clkin_ck,	CK_AM33XX),
++	CLK(NULL,	"ehrpwm0_tbclk",	&ehrpwm0_tbclk,	CK_AM33XX),
++	CLK(NULL,	"ehrpwm1_tbclk",	&ehrpwm1_tbclk,	CK_AM33XX),
++	CLK(NULL,	"ehrpwm2_tbclk",	&ehrpwm2_tbclk,	CK_AM33XX),
+ };
+ 
+ int __init am33xx_clk_init(void)
+diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
+index a89e825..c0e34e6 100644
+--- a/arch/arm/mach-omap2/control.h
++++ b/arch/arm/mach-omap2/control.h
+@@ -357,6 +357,14 @@
+ #define AM33XX_CONTROL_STATUS_SYSBOOT1_WIDTH		0x2
+ #define AM33XX_CONTROL_STATUS_SYSBOOT1_MASK		(0x3 << 22)
+ 
++/* AM33XX PWMSS Control register */
++#define AM33XX_PWMSS_TBCLK_CLKCTRL			0x664
++
++/* AM33XX  PWMSS Control bitfields */
++#define AM33XX_PWMSS0_TBCLKEN_SHIFT			0
++#define AM33XX_PWMSS1_TBCLKEN_SHIFT			1
++#define AM33XX_PWMSS2_TBCLKEN_SHIFT			2
++
+ /* CONTROL OMAP STATUS register to identify OMAP3 features */
+ #define OMAP3_CONTROL_OMAP_STATUS	0x044c
+ 
+-- 
+1.7.0.4
 
