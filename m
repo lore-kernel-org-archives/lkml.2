@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab2KTM53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:57:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50210 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2KTM52 (ORCPT
+	id S1753215Ab2KTNAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:00:06 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:50843 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab2KTNAD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:57:28 -0500
+	Tue, 20 Nov 2012 08:00:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=u=8PbJ3886tcRrVujyYpPwe+QoRh5Gqk-=uxvMwYfRA@mail.gmail.com>
-References: <1353411953-27423-1-git-send-email-linus.walleij@stericsson.com>
-	<CAKohpo=u=8PbJ3886tcRrVujyYpPwe+QoRh5Gqk-=uxvMwYfRA@mail.gmail.com>
-Date: Tue, 20 Nov 2012 13:57:27 +0100
-Message-ID: <CACRpkdbQAzv4c1d0hg1qwbr-h1nWzQBxC7k25Tn41sVSxeVBYQ@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: let gpiochip_add_pin_range() specify offset
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20121119071732.GD6135@mwanda>
+References: <1353084883-8860-1-git-send-email-johanmeiring@gmail.com>
+	<20121119071732.GD6135@mwanda>
+Date: Tue, 20 Nov 2012 15:00:01 +0200
+Message-ID: <CALqZ13v31eMRhXQ_12a9mYnF1L6gEzM8TqE9_zUUHQ_RLToAKg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] staging: wlags49_h2: wl_if.h: fixes several coding
+ style issues
+From: Johan Meiring <johanmeiring@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
+        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 1:55 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 November 2012 17:15, Linus Walleij <linus.walleij@stericsson.com> wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
+100%, will do.
+
+On 19 November 2012 09:17, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Fri, Nov 16, 2012 at 06:54:43PM +0200, Johan Meiring wrote:
+>> This commit sorts out several coding style issues, including the use of C99 // comments, spaces at the start of lines, spaces before tabs, incorrect brace placement, and macros with complex values that have not been wrapped in parentheses.  The only remaining issue is the use of typedefs in two instances, but that's something that the original author might need to have a look at.
 >>
->> Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
->> it is not always enough to specify all the pins of a gpio_chip
->> from offset zero to be added to a pin map range, since the
->> mapping from GPIO to pin controller may not be linear at all,
->> but need to be broken into a few consecutive sub-ranges or
->> 1-pin entries for complicated cases. The ranges may also be
->> sparse.
->>
->> This alters the signature of the function to accept offsets
->> into both the GPIO-chip local pinspace and the pin controller
->> local pinspace.
->>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Could you line wrap your commit message at something like 72-73
+> characters?  I think that's they rule on email, but I forget.
 >
-> Aren't there any users of this routine?
-
-No so I'm trying to use it right now and have to fix it up :-)
-
-I just only got Shiraz to create it to handle non-DT devices...
-
-Will spin a V2 by the way..
-
-Yours,
-Linus Walleij
+> Normally we ask that people break these kinds of changes into
+> multiple patches.
+> [patch 1/x] Staging: wlags49_h2: wl_if.h: use tab indents
+> [patch 2/x] Staging: wlags49_h2: wl_if.h: fix comment style
+> etc...
+>
+>> +/*
+>> +#define HCF_MIN_COMM_QUALITY        0
+>> +#define HCF_MAX_COMM_QUALITY        92
+>> +#define HCF_MIN_SIGNAL_LEVEL        47
+>> +#define HCF_MAX_SIGNAL_LEVEL        138
+>> +#define HCF_MIN_NOISE_LEVEL         47
+>> +#define HCF_MAX_NOISE_LEVEL         138
+>> +#define HCF_0DBM_OFFSET             149
+>> +*/
+>
+> Just delete this dead code.
+>
+>> +#define SIOCSIWNETNAME              (SIOCDEVPRIVATE+1)
+>> +#define SIOCGIWNETNAME              (SIOCDEVPRIVATE+2)
+>> +#define SIOCSIWSTANAME              (SIOCDEVPRIVATE+3)
+>> +#define SIOCGIWSTANAME              (SIOCDEVPRIVATE+4)
+>> +#define SIOCSIWPORTTYPE             (SIOCDEVPRIVATE+5)
+>> +#define SIOCGIWPORTTYPE             (SIOCDEVPRIVATE+6)
+>
+> Could you put spaces around the '+' operator?
+> #define SIOCSIWNETNAME          (SIOCDEVPRIVATE + 1)
+>
+> regards,
+> dan carpenter
+>
