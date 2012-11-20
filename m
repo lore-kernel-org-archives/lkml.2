@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab2KTFtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 00:49:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41961 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750872Ab2KTFtT (ORCPT
+	id S1751440Ab2KTFwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 00:52:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55227 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2KTFwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 00:49:19 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: arizona: Sync regcache after reset
-Date: Tue, 20 Nov 2012 14:49:10 +0900
-Message-Id: <1353390550-28077-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353386781-10468-5-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1353386781-10468-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Tue, 20 Nov 2012 00:52:18 -0500
+Date: Mon, 19 Nov 2012 21:52:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC 3/3] man-pages: Add man page for vmpressure_fd(2)
+Message-Id: <20121119215211.6370ac3b.akpm@linux-foundation.org>
+In-Reply-To: <20121107110152.GC30462@lizard>
+References: <20121107105348.GA25549@lizard>
+	<20121107110152.GC30462@lizard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+On Wed, 7 Nov 2012 03:01:52 -0800 Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-In the absence of a physical reset line the chip is reset by writing the
-first register, which is done after the register patch has been applied.
-This patch synchronises the register cache after the reset to preserve
-any register changes that had been applied.
+>        Upon  these  notifications,  userland programs can cooperate with
+>        the kernel, achieving better system's memory management.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Well I read through the whole thread and afaict the above is the only
+attempt to describe why this patchset exists!
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 202bf55..f4f9bf8 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -415,11 +415,19 @@ int __devinit arizona_dev_init(struct arizona *arizona)
- 
- 	/* If we have a /RESET GPIO we'll already be reset */
- 	if (!arizona->pdata.reset) {
-+		regcache_mark_dirty(arizona->regmap);
-+
- 		ret = regmap_write(arizona->regmap, ARIZONA_SOFTWARE_RESET, 0);
- 		if (ret != 0) {
- 			dev_err(dev, "Failed to reset device: %d\n", ret);
- 			goto err_reset;
- 		}
-+
-+		ret = regcache_sync(arizona->regmap);
-+		if (ret != 0) {
-+			dev_err(dev, "Failed to sync device: %d\n", ret);
-+			goto err_reset;
-+		}
- 	}
- 
- 	ret = arizona_wait_for_boot(arizona);
--- 
-1.7.10.4
-
+How about we step away from implementation details for a while and
+discuss observed problems, use-cases, requirements and such?  What are
+we actually trying to achieve here?
