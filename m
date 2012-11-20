@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab2KTLtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:49:31 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:52779 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2KTLta (ORCPT
+	id S1753149Ab2KTLwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:52:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50407 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab2KTLwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:49:30 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-ee-50ab6e3fcb47
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, patches@linaro.org
-References: <1353300961-22632-1-git-send-email-sachin.kamat@linaro.org>
-In-reply-to: <1353300961-22632-1-git-send-email-sachin.kamat@linaro.org>
-Subject: RE: [PATCH 1/1] pinctrl: Samsung: Do not initialise statics to 0
-Date: Tue, 20 Nov 2012 20:49:19 +0900
-Message-id: <0c8a01cdc715$1312c410$39384c30$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3GEwe7xGUJWj8aTxycVDMrdoC0XQBAem7w
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI137vNUBBr3TBCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG9QeLWAqecVTsP9bO3sDYx97FyMEhIWAi0XmpoouRE8gUk7hw
-	bz1bFyMXh5DAMkaJhmcrWCESJhJ7jt1ghUgsYpS4ebCFHcKZxyTR8HoxO0gVm4CGxOH3z8Bs
-	EQEviYvzfzOC2MwCBhJTz+4FiwsJuEv0T1vMBmJzCnhITPvYA1YjLOAp8a51Cdg2FgFViRvf
-	VrKCXMcrYCvReCgeJMwrICjxY/I9FoiRWhLrdx5ngrDlJTavecsM8Yy6xKO/uhAXGEl0z33L
-	DlEiIrHvxTtGiOkCEt8mH2KBKJeV2HSAGeQTCYFF7BKvp71ngvhXUuLgihssExglZiHZPAvJ
-	5llINs9CsmIBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjJC4kt7BuKrB4hCjAAejEg/v
-	w4RVAUKsiWXFlbmHGCU4mJVEeJ0CVgcI8aYkVlalFuXHF5XmpBYfYvQBunwis5Rocj4w5vNK
-	4g2NjU3MTExNzC1NzU1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYLTXUX0R8uPL64R4
-	g3lMdxbnx/7bu1VT4MqS6ts8bmnc3Efzvz4ysZrWWLvWVdI/dMc72X0Wki9zDEo5xXdcLX7U
-	skDy8bK5WZZZdrNOT+KZ5uM7d9G6DUZlmRKXrNwyJBeonA++PDnutaSbbNep5n/5171qHzF9
-	LAvo8flp//LOHbZ1xSXtX5RYijMSDbWYi4oTAav3/nDYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAV37vNUBBp+f8Fhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjOsPFrEUPOOo2H+snb2B
-	sY+9i5GTQ0LARGLPsRusELaYxIV769m6GLk4hAQWMUrcPNjCDuHMY5JoeL0YrINNQEPi8Ptn
-	YLaIgJfExfm/GUFsZgEDialn94LFhQTcJfqnLWYDsTkFPCSmfewBqxEW8JR417oEbBuLgKrE
-	jW8rgWwODl4BW4nGQ/EgYV4BQYkfk++xQIzUkli/8zgThC0vsXnNW2aQcgkBdYlHf3UhLjCS
-	6J77lh2iRERi34t3jBMYhWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpe
-	cn7uJkZw3D6T3sG4qsHiEKMAB6MSD+/DhFUBQqyJZcWVuYcYJTiYlUR4nQJWBwjxpiRWVqUW
-	5ccXleakFh9i9AH6cyKzlGhyPjCl5JXEGxqbmBlZGplZGJmYm+MQVhLnbfZICRASSE8sSc1O
-	TS1ILYIZx8TBKdXAWPP6j8+JXyzXUrckN19z3cM2qyQ8flGaG9ufuhqjxGuLdHSL+tgYU1VO
-	+31infKbn3dfZkby85d/2Q5FhK9LqT32IrVwUv8Ht0l2M8LnfutcfX3xgpZ33D7pe7RVF107
-	mZhx5HSn3/u5+dPEdA86x8n94GYxnrUpZ+7P1r0WzrfOqWddr93PrMRSnJFoqMVcVJwIAOXP
-	4cMIAwAA
-X-CFilter-Loop: Reflected
+	Tue, 20 Nov 2012 06:52:45 -0500
+Date: Tue, 20 Nov 2012 11:52:39 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Eilon Greenstein <eilong@broadcom.com>
+Cc: Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2] checkpatch: add double empty line check
+Message-ID: <20121120115239.GA7955@dm>
+References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sachin Kamat wrote:
+On Sat, Nov 17, 2012 at 01:17:37PM +0200, Eilon Greenstein wrote:
+> Changes from previous attempt:
+> - Use CHK instead of WARN
+> - Issue only one warning per empty lines block
 > 
-> Static variables are initialised to 0 by GCC.
-> Fixes the following checkpatch error:
-> ERROR: do not initialise statics to 0 or NULL
-> FILE: pinctrl/pinctrl-samsung.c:50:
-> static unsigned int pin_base = 0;
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
 > ---
->  drivers/pinctrl/pinctrl-samsung.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  scripts/checkpatch.pl |    8 ++++++++
+>  1 file changed, 8 insertions(+)
 > 
-> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-
-> samsung.c
-> index 81c9896..36f8875 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.c
-> +++ b/drivers/pinctrl/pinctrl-samsung.c
-> @@ -47,7 +47,7 @@ struct pin_config {
->  	{ "samsung,pin-pud-pdn", PINCFG_TYPE_PUD_PDN },
->  };
-> 
-> -static unsigned int pin_base = 0;
-> +static unsigned int pin_base;
-> 
->  static inline struct samsung_pin_bank *gc_to_pin_bank(struct gpio_chip
-> *gc)
->  {
-> --
-> 1.7.4.1
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 21a9f5d..13d264f 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3579,6 +3579,14 @@ sub process {
+>  			WARN("EXPORTED_WORLD_WRITABLE",
+>  			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+>  		}
+> +
+> +# check for double empty lines
+> +		if ($line =~ /^\+\s*$/ &&
+> +		    ($rawlines[$linenr] =~ /^\s*$/ ||
+> +		     $prevline =~ /^\+?\s*$/ && $rawlines[$linenr] !~ /^\+\s*$/)) {
+> +			CHK("DOUBLE_EMPTY_LINE",
+> +			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
+> +		}
+>  	}
+>  
+>  	# If we have no input at all, then there is nothing to report on
 
-Looks OK to me.
+In your previous version you indicated you would be emiting one per group
+of lines, I do not see how this does that.  Also this fails if the fragment
+is at the top of the hunk emiting a perl warning.  We should probabally
+use the suppress approach.
 
-Linus, can I pick this up in my tree?
+How about something like the below.
 
-Thanks.
+-apw
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+>From 848ebffa8656a1ff96a91788ec0f1c04dab9c3e9 Mon Sep 17 00:00:00 2001
+From: Andy Whitcroft <apw@canonical.com>
+Date: Sat, 17 Nov 2012 13:17:37 +0200
+Subject: [PATCH] checkpatch: strict warning for multiple blank lines
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f18750e..dbc68f3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1411,6 +1411,7 @@ sub process {
+ 	my %suppress_whiletrailers;
+ 	my %suppress_export;
+ 	my $suppress_statement = 0;
++	my $suppress_multipleblank = -1;
+ 
+ 	# Pre-scan the patch sanitizing the lines.
+ 	# Pre-scan the patch looking for any __setup documentation.
+@@ -1521,6 +1522,7 @@ sub process {
+ 			%suppress_whiletrailers = ();
+ 			%suppress_export = ();
+ 			$suppress_statement = 0;
++			$suppress_multipleblank = -1;
+ 			next;
+ 
+ # track the line number as we move through the hunk, note that
+@@ -1930,6 +1932,15 @@ sub process {
+ 			      "use the SSYNC() macro in asm/blackfin.h\n" . $herevet);
+ 		}
+ 
++# multiple blank lines.
++		if ($line =~ /^-/ || ($suppress_multipleblank == $linenr && $line =~ /^[ \+]\s*$/)) {
++			$suppress_multipleblank++;
++		} elsif ($prevline =~ /^\+\s*$/ and $line =~ /^\+\s*$/) {
++			$suppress_multipleblank = $linenr + 1;
++			CHK("MULTIPLE_EMPTY_LINE",
++			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
++		}
++
+ # Check for potential 'bare' types
+ 		my ($stat, $cond, $line_nr_next, $remain_next, $off_next,
+ 		    $realline_next);
+-- 
+1.7.10.4
 
