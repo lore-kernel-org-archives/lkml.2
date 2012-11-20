@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2KTJ1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:27:22 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:54964 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab2KTJ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:27:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [Update][PATCH 0/3] ACPI: Simplify "glueing" to physical nodes
-Date: Tue, 20 Nov 2012 10:31:45 +0100
-Message-ID: <2533952.O6l5mYitDO@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121120091141.GO17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <4036218.zBRlg5OZsZ@vostro.rjw.lan> <20121120091141.GO17774@intel.com>
+	id S1752526Ab2KTJ1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:27:36 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51113 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2KTJ1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:27:33 -0500
+Date: Tue, 20 Nov 2012 01:24:19 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        anish singh <anish198519851985@gmail.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
+        "lockwood@android.com" <lockwood@android.com>,
+        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH] extcon : callback function to read cable property
+Message-ID: <20121120092419.GA27280@lizard>
+References: <509B0A0F.5000406@samsung.com>
+ <20ADAB092842284E95860F279283C5644017F6@BGSMSX101.gar.corp.intel.com>
+ <1352521082.1526.230.camel@anish-Inspiron-N5050>
+ <20ADAB092842284E95860F279283C56442034B@BGSMSX101.gar.corp.intel.com>
+ <CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
+ <20ADAB092842284E95860F279283C56444A584@BGSMSX101.gar.corp.intel.com>
+ <50AAEB15.6000703@samsung.com>
+ <20ADAB092842284E95860F279283C56444A6A1@BGSMSX101.gar.corp.intel.com>
+ <50AB1ECA.5020005@samsung.com>
+ <20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 20, 2012 11:11:41 AM Mika Westerberg wrote:
-> On Tue, Nov 20, 2012 at 01:55:46AM +0100, Rafael J. Wysocki wrote:
-> > 
-> > Following is the series with the Greg's feedback taken into account.
-> > Patch [1/3] is the same as before with the bug found by Mika fixed, [2/3] is
-> > an additional patch adding struct acpi_dev_node to compile out unused stuff if
-> > CONFIG_ACPI is not set and [3/3] is the previous [2/2] rebased on top of it.
+On Tue, Nov 20, 2012 at 09:14:41AM +0000, Tc, Jenny wrote:
+[...]
+> > For example,
+> > Firstly, the power_supply charging framework check state of charger cable
+> > whether attached or detached cable. Second, when power_supply charging
+> > framework receive the changed state of host system from 'Host system
+> > notifier', change charging current of charger cable.
 > 
-> I've tested this on my ACPI 5 test machine and it works as expected. I also
-> adapted the I2C, GPIO and SPI patches on top of this series and planning to
-> post them shortly.
+> Not just SUSPEND, but we need to handle RESUME , UPDATE etc.  Also this doesn’t help us to
+> define a standard interface for the charger cable state/properties. IMHO it's not right
+> to provide different interfaces for different cables. This doesn't help us to standardize
+> the charger cable interface.
+> 
+> This thread has been running for a quite long time. Unfortunately we couldn't make an
+> agreement on the final solution. I would like to recap the overall requirement and
+> would like to propose alternate solutions. The requirements is  to
+> "Provide a generic interface for charger cable states and charger cable properties"
+> 
+> Even though extcon subsystem handles charger cable states, it's not enough to handle
+> all kind of charger cable states. It can handle just 2 states CONNECT/DISCONNECT.
+> But there are scenarios where we need to handle more than 2 states
+> (eg. USB SUSPEND/RESUME/UPDATE etc). Also extcon doesn't have any mechanism to
+> read cable properties in a generic way.  Extcon charger-cable consumer driver
+> implementations (eg charger-manager), defines charger cable properties statically (current in mA)
+> inside the consumer driver. This is not enough, since the charger cable properties may change dynamically
+> 
+> In existing form extcon cannot support different charger cable states and their 
+> properties in a generic way. Also we couldn't find a final solution on how to modify the
+> extcon to support these requirements. From the whole discussion what I conclude is
+>  * extcon is not designed to support cable properties
 
-Great, thanks a lot!
+The idea of using union seemed good to me, what happened to it?
 
-Rafael
+I mean, MyungJoo Ham wrote:
 
+| We may have:
+|        enum extcon_cable_type {
+|                EXTCON_CT_REGULATOR,
+|                EXTCON_CT_PSY,
+|                EXTCON_CT_CHARGER_CB,
+|                ...
+|        };
+| and have the following included at struct extcon_cable:
+|        union {
+|                struct regulator *reg;
+|                struct power_supply *psy;
+|                struct charger_cable *charger_cb;
+|                ...
+|        } cable data;
+|        enum extcon_cable_type cable_type;
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This sounds good to me...
+
+>  * extcon is not designed to support any cable state other than CONNECT/DISCONNECT
+
+Dunno for this one. Can we get these additional states via "properties" as
+described above?
+
+Thanks,
+Anton.
