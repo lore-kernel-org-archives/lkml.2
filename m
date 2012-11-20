@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2KTPot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:44:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51551 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2KTPos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:44:48 -0500
-Date: Tue, 20 Nov 2012 15:44:43 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Eilon Greenstein <eilong@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-Message-ID: <20121120154443.GK7955@dm>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120115239.GA7955@dm>
- <1353421624.6559.9.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120144329.GE7955@dm>
- <1353424027.6559.15.camel@lb-tlvb-eilong.il.broadcom.com>
+	id S1752246Ab2KTPsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:48:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751559Ab2KTPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:48:05 -0500
+Date: Tue, 20 Nov 2012 16:48:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+Message-ID: <20121120154824.GA17534@redhat.com>
+References: <20121109182943.GA2789@redhat.com> <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com> <1353349500.6276.9.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353424027.6559.15.camel@lb-tlvb-eilong.il.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1353349500.6276.9.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 05:07:07PM +0200, Eilon Greenstein wrote:
-> On Tue, 2012-11-20 at 14:43 +0000, Andy Whitcroft wrote:
-> 
-> > > > Also this fails if the fragment
-> > > > is at the top of the hunk emiting a perl warning.
-> > > 
-> > > I did not see this warning. Can you please share this example? I tried
-> > > adding a couple of empty lines at the beginning of a file and it seemed
-> > > to work just fine for me (using perl v5.14.2).lines
-> > 
-> > Ok, this is actually if it is at the bottom, not the top.  So if you
-> > have a range of lines newly added to the bottom of the file.  Leading to
-> > this warning:
-> > 
-> > Use of uninitialized value within @rawlines in pattern match (m//) at
-> > ../checkpatch/scripts/checkpatch.pl line 3586.
-> 
-> Oh... of course, I should have seen that. I did not check changes at the
-> end of the file.
-> 
-> What do you say about something like that (using nextline out of
-> rawlines only if it defined):
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 21a9f5d..c0c610c 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3579,6 +3579,19 @@ sub process {
->                         WARN("EXPORTED_WORLD_WRITABLE",
->                              "Exporting world writable files is usually an error. Consider more restrictive permissions.
->                 }
-> +
-> +# check for double empty lines
-> +               if ($line =~ /^\+\s*$/) {
-> +                       my $nextline = "";
-> +                       if (defined($rawlines[$linenr])) {
-> +                               $nextline = $rawlines[$linenr];
-> +                       }
-> +                       if ($nextline =~ /^\s*$/ ||
-> +                           $prevline =~ /^\+?\s*$/ && $nextline !~ /^\+\s*$/) {
-> +                               CHK("DOUBLE_EMPTY_LINE",
-> +                                   "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-> +                       }
-> +               }
->         }
->  
-> 
-> 
+On 11/19, Steven Rostedt wrote:
+>
+> On Mon, 2012-11-19 at 18:47 +0100, Oleg Nesterov wrote:
+> >
+> > Just I think Amnon has a point, shouldn't we change this change like below?
+> > (on top of this fixlet).
+> >
+> > Oleg.
+> >
+> > --- x/arch/x86/kernel/hw_breakpoint.c
+> > +++ x/arch/x86/kernel/hw_breakpoint.c
+> > @@ -188,6 +188,11 @@ static int get_hbp_len(u8 hbp_len)
+> >  	return len_in_bytes;
+> >  }
+> >
+> > +static inline bool bp_in_gate(unsigned long start, unsigned long end)
+> > +{
+> > +	return in_gate_area_no_mm(start) && in_gate_area_no_mm(end);
+> > +}
+> > +
+> >  /*
+> >   * Check for virtual address in kernel space.
+> >   */
+> > @@ -200,7 +205,8 @@ int arch_check_bp_in_kernelspace(struct
+> >  	va = info->address;
+> >  	len = get_hbp_len(info->len);
+> >
+> > -	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+> > +	return ((va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE)) &&
+> > +		!bp_in_gate(va, va + len - 1);
+>
+> So we want to allow non privileged to add a breakpoint in a vsyscall
+> area even if it happens to lay in kernel space?
 
-You cannot really rely on nextline even if valid as it may not even be
-from this hunk.  This is why in my attempt I detected the top of a long
-run of blanks and let the hunk start initialisation reset the detector.
+Yes,
 
--apw
+> Is this really what we want?
 
->From 6556d7bc2f9447e1d179c1dd32a618b124c26e46 Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Sat, 17 Nov 2012 13:17:37 +0200
-Subject: [PATCH] checkpatch: strict warning for multiple blank lines
+I am not sure, that is why I am asking.
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+Hmm... I have to admit, I didn't even know this code was completely
+rewritten, and a long ago... and in the default mode it works via
+emulate_vsyscall() from page-fault, iow not in user_mode().
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index fb67d47..ae01b90 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1413,6 +1413,7 @@ sub process {
- 	my %suppress_whiletrailers;
- 	my %suppress_export;
- 	my $suppress_statement = 0;
-+	my $suppress_multipleblank = -1;
- 
- 	# Pre-scan the patch sanitizing the lines.
- 	# Pre-scan the patch looking for any __setup documentation.
-@@ -1523,6 +1524,7 @@ sub process {
- 			%suppress_whiletrailers = ();
- 			%suppress_export = ();
- 			$suppress_statement = 0;
-+			$suppress_multipleblank = -1;
- 			next;
- 
- # track the line number as we move through the hunk, note that
-@@ -1945,6 +1947,15 @@ sub process {
- 			      "use the SSYNC() macro in asm/blackfin.h\n" . $herevet);
- 		}
- 
-+# multiple blank lines.
-+		if ($line =~ /^-/ || ($suppress_multipleblank == $linenr && $line =~ /^[ \+]\s*$/)) {
-+			$suppress_multipleblank++;
-+		} elsif ($prevline =~ /^\+\s*$/ and $line =~ /^\+\s*$/) {
-+			$suppress_multipleblank = $linenr + 1;
-+			CHK("MULTIPLE_EMPTY_LINE",
-+			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-+		}
-+
- # Check for potential 'bare' types
- 		my ($stat, $cond, $line_nr_next, $remain_next, $off_next,
- 		    $realline_next);
--- 
-1.7.10.4
+> I mean, isn't syscall tracing in the kernel
+> done by a flag set to the task's structure. If the task has a flag set,
+> then it does the slow (ptrace) path which handles the breakpoint for the
+> user.
+
+Well yes, with the new implementation __vsyscall_page simply does
+syscall, so I guess (say) strace will "just work". But, afaics, only
+if vsyscall_mode == NATIVE.
+
+So perhaps bp in vsyscall_page still makes sense...
+
+> But here, there's no prejudice between tasks. All tasks will now hit the
+> breakpoint regardless of if it is being traced or not.
+  ^^^^^^^^^^
+
+This is hardware breakpoint, it is per-task.
+
+Oleg.
 
