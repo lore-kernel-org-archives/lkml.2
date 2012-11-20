@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2KTNQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:16:40 -0500
-Received: from 8bytes.org ([85.214.48.195]:58374 "EHLO mail.8bytes.org"
+	id S1753673Ab2KTNRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:17:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4386 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2KTNNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:13:14 -0500
-From: Joerg Roedel <joro@8bytes.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 09/19] x86, io_apic: Move irq_remapping_enabled checks out of check_timer()
-Date: Tue, 20 Nov 2012 14:12:46 +0100
-Message-Id: <1353417176-18945-10-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353417176-18945-1-git-send-email-joro@8bytes.org>
-References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Nov 20 14:13:10 2012
-X-DSPAM-Confidence: 0.9995
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50ab81e522971391816532
+	id S1753285Ab2KTNQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:16:58 -0500
+Message-ID: <50AB82C6.6060901@redhat.com>
+Date: Tue, 20 Nov 2012 15:16:54 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [GIT PULL] KVM maintainership update
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move these checks to IRQ remapping code by introducing the
-panic_on_irq_remap() function.
+Linus, please pull from:
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/x86/include/asm/irq_remapping.h |    5 +++++
- arch/x86/kernel/apic/io_apic.c       |    6 ++----
- drivers/iommu/irq_remapping.c        |    6 ++++++
- 3 files changed, 13 insertions(+), 4 deletions(-)
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index f1afa04..fb99a73 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -45,6 +45,7 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
- 				     unsigned int irq, unsigned int dest,
- 				     struct msi_msg *msg, u8 hpet_id);
- extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
-+extern void panic_if_irq_remap(const char *msg);
+to receive this MAINTAINERS update.  After many years of maintaining KVM,
+I am moving on.  It was a real pleasure for me to work with so many talented
+and dedicated hackers on this project.
+
+Replacing me will be one of those talented and dedicated hackers, Gleb, who
+has authored hundreds of patches in and around KVM.
+
+
+----------------------------------------------------------------
+Avi Kivity (1):
+      KVM: Retire as maintainer
+
+Gleb Natapov (1):
+      KVM: taking co-maintenance
+
+ CREDITS     | 5 +++++
+ MAINTAINERS | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/CREDITS b/CREDITS
+index d8fe12a..2346b09 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -1823,6 +1823,11 @@ S: Kattreinstr 38
+ S: D-64295
+ S: Germany
  
- #else  /* CONFIG_IRQ_REMAP */
- 
-@@ -75,6 +76,10 @@ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- {
- 	return -ENODEV;
- }
++N: Avi Kivity
++E: avi.kivity@gmail.com
++D: Kernel-based Virtual Machine (KVM)
++S: Ra'annana, Israel
 +
-+static inline void panic_if_irq_remap(const char *msg)
-+{
-+}
- #endif /* CONFIG_IRQ_REMAP */
+ N: Andi Kleen
+ E: andi@firstfloor.org
+ U: http://www.halobates.de
+diff --git a/MAINTAINERS b/MAINTAINERS
+index bb0b27d..b273360 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4280,8 +4280,8 @@ F:	include/linux/lockd/
+ F:	include/linux/sunrpc/
  
- #endif /* __X86_IRQ_REMAPPING_H */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ed43e90..edaa528 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2789,8 +2789,7 @@ static inline void __init check_timer(void)
- 	 * 8259A.
- 	 */
- 	if (pin1 == -1) {
--		if (irq_remapping_enabled)
--			panic("BIOS bug: timer not connected to IO-APIC");
-+		panic_if_irq_remap("BIOS bug: timer not connected to IO-APIC");
- 		pin1 = pin2;
- 		apic1 = apic2;
- 		no_pin1 = 1;
-@@ -2822,8 +2821,7 @@ static inline void __init check_timer(void)
- 				clear_IO_APIC_pin(0, pin1);
- 			goto out;
- 		}
--		if (irq_remapping_enabled)
--			panic("timer doesn't work through Interrupt-remapped IO-APIC");
-+		panic_if_irq_remap("timer doesn't work through Interrupt-remapped IO-APIC");
- 		local_irq_disable();
- 		clear_IO_APIC_pin(apic1, pin1);
- 		if (!no_pin1)
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 6662ae9..3514604 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -266,3 +266,9 @@ int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- 
- 	return remap_ops->setup_hpet_msi(irq, id);
- }
-+
-+void panic_if_irq_remap(const char *msg)
-+{
-+	if (irq_remapping_enabled)
-+		panic(msg);
-+}
+ KERNEL VIRTUAL MACHINE (KVM)
+-M:	Avi Kivity <avi@redhat.com>
+ M:	Marcelo Tosatti <mtosatti@redhat.com>
++M:	Gleb Natapov <gleb@redhat.com>
+ L:	kvm@vger.kernel.org
+ W:	http://kvm.qumranet.com
+ S:	Supported
+
 -- 
-1.7.9.5
-
-
+error compiling committee.c: too many arguments to function
