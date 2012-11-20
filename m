@@ -1,174 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2KTNYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:24:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46895 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab2KTNYs (ORCPT
+	id S1753267Ab2KTN0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:26:08 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49440 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab2KTN0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:24:48 -0500
-Message-ID: <50AB8491.4070508@oracle.com>
-Date: Tue, 20 Nov 2012 21:24:33 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 20 Nov 2012 08:26:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Subject: Re: [PATCH] video console: add a driver for lcd2s character display
+Date: Tue, 20 Nov 2012 13:25:57 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: FlorianSchandinat@gmx.de, poeschel@lemonage.de, mathieu.poirier@linaro.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1353416206-3243-1-git-send-email-larsi@wh2.tu-dresden.de>
+In-Reply-To: <1353416206-3243-1-git-send-email-larsi@wh2.tu-dresden.de>
 MIME-Version: 1.0
-To: "Dave, Tushar N" <tushar.n.dave@intel.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com> <50A30656.6090508@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com> <50A43828.6000702@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com> <50A9C5CC.1030300@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Message-Id: <201211201325.57883.arnd@arndb.de>
+X-Provags-ID: V02:K0:e5sKKj4Wbq+XjlrV35tvFqu49AsFRaa9CjxOx9zYQNj
+ 64DqaipyTVdjkOqphXlIdYEblbc2LEppOh4XgTpg5esyEM5qzU
+ byyFlXpEBi9iAXSTf5OlQQ28FUgEjHkBbGx4ry9d7B45U5+wUo
+ 27K+WamDWOYCEbmR6bz3xS7WQ8fXKejZNqztxhfAUufRgjcMxW
+ xolTomJPa4Ez/H4tGGKBwEAvSpQB47ckQsxdSCnwD9ki2AMcku
+ WBC/mHXtM2WhvjHffG90/L95I2SLqszcOnWqGPux6AtabUfOnR
+ LRRiZdhikraVBmmtdnaGiQbbtsqKkDINeeW2n7qUXDKsRsOcYn
+ 1pmDdqkl6LJ/XAA4Rttk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/12 16:59, Dave, Tushar N wrote:
-> Have you power off the system completely after modifying eeprom? If not please do so.
+On Tuesday 20 November 2012, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> This driver allows to use a lcd2s 20x4 character display as
+> a linux console output device.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 
-Hi Tushar,
+The driver looks nice overall, but I found two style issues:
 
-Seems not works for me, would you please help to check what is wrong of my operations?
+> +static int __devinit lcd2s_i2c_probe(struct i2c_client *i2c,
+> +				const struct i2c_device_id *id)
+> +{
+> +	struct lcd2s_data *data;
+> +
+> +	if (!i2c_check_functionality(i2c->adapter,
+> +			I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA))
+> +		return -EIO;
+> +	data = devm_kzalloc(&i2c->dev, sizeof(struct lcd2s_data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->i2c = i2c;
+> +	data->consw.owner		= THIS_MODULE;
+> +	data->consw.con_startup		= lcd2s_startup;
+> +	data->consw.con_init		= lcd2s_init;
+> +	data->consw.con_deinit		= lcd2s_deinit;
+> +	data->consw.con_clear		= lcd2s_clear;
+> +	data->consw.con_putc		= lcd2s_putc;
+> +	data->consw.con_putcs		= lcd2s_putcs;
+> +	data->consw.con_cursor		= lcd2s_cursor;
+> +	data->consw.con_scroll		= lcd2s_scroll;
+> +	data->consw.con_bmove		= lcd2s_bmove;
+> +	data->consw.con_switch		= lcd2s_switch;
+> +	data->consw.con_blank		= lcd2s_blank;
+> +	data->consw.con_set_palette	= lcd2s_set_palette;
+> +	data->consw.con_scrolldelta	= lcd2s_scrolldelta;
+> +
+> +	i2c_set_clientdata(i2c, data);
+> +
+> +	take_over_console(&data->consw, LCD2S_FIRST, LCD2S_LAST, 1);
+> +
+> +	return 0;
+> +}
 
-Original eeprom dump:
+It's better to define the struct consw as a preinitialized
+'static const' object, rather than dynamically setting each
+member.
 
-# ethtool -e eth3 | head -8
-Offset		Values
-------		------
-0x0000		00 15 17 16 ee 9a 24 05 ff ff a2 50 ff ff ff ff 
-0x0010		57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020		08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030		f6 6c b0 37 a6 07 03 84 83 07 00 00 03 c3 02 06 
-                            ^^^^^
-0x0040		08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+> +static struct i2c_driver lcd2s_i2c_driver = {
+> +	.driver = {
+> +		.name = "lcd2s",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = lcd2s_i2c_probe,
+> +	.remove = __devexit_p(lcd2s_i2c_remove),
+> +	.id_table = lcd2s_i2c_id,
+> +};
+> +
+> +static int __init lcd2s_modinit(void)
+> +{
+> +	int ret = 0;
+> +
+> +	ret = i2c_add_driver(&lcd2s_i2c_driver);
+> +	if (ret != 0)
+> +		pr_err("Failed to register lcd2s driver\n");
+> +
+> +	return ret;
+> +}
+> +module_init(lcd2s_modinit)
+> +
+> +static void __exit lcd2s_exit(void)
+> +{
+> +	i2c_del_driver(&lcd2s_i2c_driver);
+> +}
+> +module_exit(lcd2s_exit)
 
-# lspci -s 0000:52:00.1 -vvv
-52:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (rev 06)
-<--snip-->
-	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 4096 bytes
-                        ^^^^^^^^^^^^^^^^^^^^^
-<--snip-->
+Here, you can use module_i2c_driver.
 
-# ethtool eth3
-Settings for eth3:
-	Supported ports: [ TP ]
-	Supported link modes:   10baseT/Half 10baseT/Full 
-	                        100baseT/Half 100baseT/Full 
-	                        1000baseT/Full 
-	Supports auto-negotiation: Yes
-	Advertised link modes:  10baseT/Half 10baseT/Full 
-	                        100baseT/Half 100baseT/Full 
-	                        1000baseT/Full 
-	Advertised pause frame use: No
-	Advertised auto-negotiation: Yes
-	Speed: 1000Mb/s
-	Duplex: Full
-	Port: Twisted Pair
-	PHYAD: 1
-	Transceiver: internal
-	Auto-negotiation: on
-	MDI-X: off
-	Supports Wake-on: d
-	Wake-on: d
-	Current message level: 0x00000007 (7)
-	Link detected: yes
-
-# ethtool -E eth3 magic 0x10a48086 offset 0x34 value 0xa7
-# ethtool -e eth3 | head -8
-Offset		Values
-------		------
-0x0000		00 15 17 16 ee 9a 24 05 ff ff a2 50 ff ff ff ff 
-0x0010		57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020		08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030		f6 6c b0 37 a7 07 03 84 83 07 00 00 03 c3 02 06 
-                            ^^^^^ <== a6 --> a7
-0x0040		08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-
-# reboot
-
-# ethtool -e eth3 | head -8
-Offset		Values
-------		------
-0x0000		00 15 17 16 ee 9a 24 05 ff ff a2 50 ff ff ff ff 
-0x0010		57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020		08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030		f6 6c b0 37 a7 07 03 84 83 07 00 00 03 c3 02 06 
-0x0040		08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-
-# lspci -s 0000:52:00.1 -vvv
-52:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (rev 06)
-<--snip-->
-	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 4096 bytes
-                        ^^^^^^^^^^^^^^^^^^^^^
-		DevSta:	CorrErr- UncorrErr- FatalErr+ UnsuppReq+ AuxPwr- TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x4, ASPM L0s, Latency L0 <4us, L1 <64us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-<--snip-->
-
-#  ethtool -E eth3 magic 0x10a48086 offset 0x35 value 0x17
-
-# ethtool -e eth3 | head -8
-Offset		Values
-------		------
-0x0000		00 15 17 16 ee 9a 24 05 ff ff a2 50 ff ff ff ff 
-0x0010		57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020		08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030		f6 6c b0 37 a6 17 03 84 83 07 00 00 03 c3 02 06 
-                            ^^^^^<== 07 -> 17
-0x0040		08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-
-# reboot
-
-# ethtool -e eth3 | head -8
-Offset		Values
-------		------
-0x0000		00 15 17 16 ee 9a 24 05 ff ff a2 50 ff ff ff ff 
-0x0010		57 d4 07 74 2f a4 a4 11 86 80 a4 10 86 80 65 b1 
-0x0020		08 00 a4 10 00 58 00 00 01 50 00 00 00 00 00 01 
-0x0030		f6 6c b0 37 a6 17 03 84 83 07 00 00 03 c3 02 06 
-                            ^^^^^<== 07 -> 17
-0x0040		08 00 f0 0e 64 21 40 00 01 40 00 00 00 00 00 00 
-0x0050		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-
-# lspci -s 0000:52:00.1 -vvv
-52:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (rev 06)
-<--snip-->
-	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 4096 bytes
-                        ^^^^^^^^^^^^^^^^^^^^^
-		DevSta:	CorrErr- UncorrErr- FatalErr+ UnsuppReq+ AuxPwr- TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x4, ASPM L0s, Latency L0 <4us, L1 <64us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-<--snip-->
-
-Thanks,
-Joe
+	Arnd
 
