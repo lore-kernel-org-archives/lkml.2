@@ -1,504 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2KTPYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:24:51 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:50258 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2KTPYt (ORCPT
+	id S1753335Ab2KTPY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:24:56 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58536 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2KTPYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:24:49 -0500
-Date: Tue, 20 Nov 2012 10:24:48 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <236960257.70191.1353425088265.JavaMail.root@elliptictech.com>
-Subject: [PATCH] Added NIST CMAC to the CryptoAPI library
+	Tue, 20 Nov 2012 10:24:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.112]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC23 (Linux)/7.2.1_GA_2790)
+In-Reply-To: <50AB9B90.1030404@samsung.com>
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+	<50AB34E2.1010206@samsung.com>
+	<CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
+	<50AB587F.3040405@samsung.com>
+	<CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
+	<50AB81C8.4090300@samsung.com>
+	<CADz5_gL3uHbvhb2ccp03=9P88u1Catxe9+Xffs3KmJsZGWmWvA@mail.gmail.com>
+	<50AB9B90.1030404@samsung.com>
+Date: Tue, 20 Nov 2012 23:24:50 +0800
+Message-ID: <CADz5_gLfy69YksiFuxEKeAv387go_8cOcK_uxbKuhrTBrXdjdQ@mail.gmail.com>
+Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+From: Kevin Liu <keyuan.liu@gmail.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
+        Philip Rakity <prakity@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds NIST CMAC cipher based MAC as described in FIPS 800-38B to
-the CryptoAPI stack.  It also wires up the MAC to the IPsec stack as per
-RFC 4494.
+2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+> Hello,
+>
+>
+> On 11/20/2012 3:14 PM, Kevin Liu wrote:
+>>
+>> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+>> > Hello,
+>> >
+>> >
+>> > On 11/20/2012 12:36 PM, Kevin Liu wrote:
+>> >>
+>> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+>> >> > On 11/20/2012 9:59 AM, Kevin Liu wrote:
+>> >> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+>> >> >> > On 11/14/2012 8:11 AM, Kevin Liu wrote:
+>> >> >> >>
+>> >> >> >> > From: linux-mmc-owner@vger.kernel.org
+>> >> >> >> > [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris
+>> >> >> >> > Ball
+>> >> >> >> > Sent: Tuesday, November 13, 2012 10:14 PM
+>> >> >> >> > To: Marek Szyprowski
+>> >> >> >> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org;
+>> >> >> >> > Kyungmin
+>> >> >> >> > Park; Mark Brown; Liam Girdwood; Philip Rakity
+>> >> >> >> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check
+>> >> >> >> > only
+>> >> >> >> > for non-fixed regulators
+>> >> >> >> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
+>> >> >> >> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
+>> >> >> >> >>> > Fixed regulators cannot change their voltage, so disable
+>> >> >> >> >>> > all
+>> >> >> >> >>> > voltage
+>> >> >> >> >>> > range checking for them, otherwise the driver fails to
+>> >> >> >> >>> > operate
+>> >> >> >> >>> > with
+>> >> >> >> >>> > fixed regulators. Up to now it worked only by luck, because
+>> >> >> >> >>> > regulator_is_supported_voltage() function returned
+>> >> >> >> >>> > incorrect
+>> >> >> >> >>> > values.
+>> >> >> >> >>> > Commit "regulator: fix voltage check in
+>> >> >> >> >>> > regulator_is_supported_voltage()"
+>> >> >> >> >>> > fixed that function and now additional check is needed for
+>> >> >> >> >>> > fixed
+>> >> >> >> >>> > regulators.
+>> >> >> >> >>> >
+>> >> >> >> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> >> >> >> >>> > ---
+>> >> >> >> >>> >  drivers/mmc/host/sdhci.c |    2 +-
+>> >> >> >> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >> >> >> >>> >
+>> >> >> >> >>> > diff --git a/drivers/mmc/host/sdhci.c
+>> >> >> >> >>> > b/drivers/mmc/host/sdhci.c
+>> >> >> >> >>> > index c7851c0..6f6534e 100644
+>> >> >> >> >>> > --- a/drivers/mmc/host/sdhci.c
+>> >> >> >> >>> > +++ b/drivers/mmc/host/sdhci.c
+>> >> >> >> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host
+>> >> >> >> >>> > *host)
+>> >> >> >> >>> >            regulator_enable(host->vmmc);
+>> >> >> >> >>> >
+>> >> >> >> >>> >  #ifdef CONFIG_REGULATOR
+>> >> >> >> >>> > -  if (host->vmmc) {
+>> >> >> >> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) >
+>> >> >> >> >>> > 1)
+>> >> >> >> >>> > {
+>> >> >> >> >>> >            ret = regulator_is_supported_voltage(host->vmmc,
+>> >> >> >> >>> > 3300000,
+>> >> >> >> >>> >                    3300000);
+>> >> >> >> >>> >            if ((ret <= 0) || (!(caps[0] &
+>> >> >> >> >>> > SDHCI_CAN_VDD_330)))
+>> >> >> >> >>>
+>> >> >> >> >>> Thanks for the longer explanation.  I'm still missing
+>> >> >> >> >>> something,
+>> >> >> >> >>> though;
+>> >> >> >> >>> what's wrong with running the check as it was with the new
+>> >> >> >> >>> regulator
+>> >> >> >> >>> code?
+>> >> >> >> >>> (I haven't tried it yet.)
+>> >> >> >> >>>
+>> >> >> >> >>> #ifdef CONFIG_REGULATOR
+>> >> >> >> >>>          if (host->vmmc) {
+>> >> >> >> >>>                  ret =
+>> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
+>> >> >> >> >>> 3300000,
+>> >> >> >> >>>                          3300000);
+>> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+>> >> >> >> >>> SDHCI_CAN_VDD_330)))
+>> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
+>> >> >> >> >>>                  ret =
+>> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
+>> >> >> >> >>> 3000000,
+>> >> >> >> >>>                          3000000);
+>> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+>> >> >> >> >>> SDHCI_CAN_VDD_300)))
+>> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
+>> >> >> >> >>>                  ret =
+>> >> >> >> >>> regulator_is_supported_voltage(host->vmmc,
+>> >> >> >> >>> 1800000,
+>> >> >> >> >>>                          1800000);
+>> >> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+>> >> >> >> >>> SDHCI_CAN_VDD_180)))
+>> >> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
+>> >> >> >> >>>          }
+>> >> >> >> >>> #endif /* CONFIG_REGULATOR */
+>> >> >> >> >>>
+>> >> >> >> >>> The point is to remove unsupported voltages, so if someone
+>> >> >> >> >>> sets
+>> >> >> >> >>> up
+>> >> >> >> >>> a
+>> >> >> >> >>> fixed regulator at 3300000, all of the other caps are
+>> >> >> >> >>> disabled.
+>> >> >> >> >>> Why
+>> >> >> >> >>> wouldn't that work without this change, and how are we
+>> >> >> >> >>> supposed
+>> >> >> >> >>> to
+>> >> >> >> >>> remove those caps on a fixed regulator after your patchset?
+>> >> >> >> >>>
+>> >> >> >> >>> Thanks, sorry if I'm missing something obvious,
+>> >> >> >> >>
+>> >> >> >> >> On our boards eMMC is connected to fixed 2.8V regulator, what
+>> >> >> >> >> results
+>> >> >> >> >> in
+>> >> >> >> >> clearing all available voltages and fail. The same situation
+>> >> >> >> >> is
+>> >> >> >> >> when
+>> >> >> >> >> one
+>> >> >> >> >> enable dummy regulator and try to use sdhci with it. My patch
+>> >> >> >> >> fixes
+>> >> >> >> >> this
+>> >> >> >> >> and restores sdhci to working state as it was before (before
+>> >> >> >> >> fixing
+>> >> >> >> >> regulator regulator_is_supported_voltage() function and
+>> >> >> >> >> earlier
+>> >> >> >> >> when
+>> >> >> >> >> MMC_BROKEN_VOLATGE capability was used).
+>> >> >> >> >
+>> >> >> >> > I see.  Sounds like a separate bug -- Philip (or anyone else),
+>> >> >> >> > any
+>> >> >> >> > idea how we should be treating eMMCs with a fixed voltage here?
+>> >> >> >> >
+>> >> >> >>
+>> >> >> >> I think we should check the voltage range rather than the voltage
+>> >> >> >> point accoring to the spec.
+>> >> >> >> Otherwise some valid voltage like 2.8v will be discarded by
+>> >> >> >> mistake.
+>> >> >> >> My below old patch aim to fix this issue.
+>> >> >> >> How do you think?
+>> >> >> >>
+>> >> >> >> -----Original Message-----
+>> >> >> >> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
+>> >> >> >> Sent: Friday, September 28, 2012 3:56 PM
+>> >> >> >> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
+>> >> >> >> ulf.hansson@linaro.org; Zhangfei Gao
+>> >> >> >> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing
+>> >> >> >> Fu
+>> >> >> >> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max
+>> >> >> >> voltage
+>> >> >> >> range according to spec
+>> >> >> >>
+>> >> >> >> From: Kevin Liu <kliu5@marvell.com>
+>> >> >> >>
+>> >> >> >> For regulator vmmc/vmmcq, use voltage range as below
+>> >> >> >> 3.3v/3.0v: (2.7v, 3.6v)
+>> >> >> >> 1.8v: (1.7v, 1.95v)
+>> >> >> >> Original code use the specific value which may fail in regulator
+>> >> >> >> driver if it does NOT support the specific voltage.
+>> >> >> >>
+>> >> >> >> Signed-off-by: Jialing Fu <jlfu@marvell.com>
+>> >> >> >> Signed-off-by: Kevin Liu <kliu5@marvell.com>
+>> >> >> >
+>> >> >> >
+>> >> >> > Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> >> >> >
+>> >> >> > This patch restores sdhci devices to working state on Samsung
+>> >> >> > boards
+>> >> >> > (tested on GONI and UniversalC210) after merging "regulator: fix
+>> >> >> > voltage
+>> >> >> > check in regulator_is_supported_voltage()" patch to v3.7-rc6
+>> >> >> > (commit
+>> >> >> > f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have
+>> >> >> > it
+>> >> >> > merged before the final v3.7 is out.
+>> >> >> >
+>> >> >> Marek,
+>> >> >>
+>> >> >> thanks a lot for the verification!
+>> >> >> And your patch "mmc: sdhci: apply voltage range check only for
+>> >> >> non-fixed regulators" (commit
+>> >> >> d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
+>> >> >> mmc-next) can be reverted if this patch merged?
+>> >> >
+>> >> >
+>> >> > Yes, it can be replaced with it, although there is still an issue
+>> >> > that
+>> >> > need
+>> >> > to be resolved somehow. Right now SDHCI driver fails to initialize if
+>> >> > support
+>> >> > for dummy regulator is enabled.
+>> >> >
+>> >> Then I think the dummy issue can be resolved with your patch merged
+>> >> and if you can just update your patch from
+>> >>       "regulator_count_voltages(host->vmmc) > 1"
+>> >> to
+>> >>       "regulator_count_voltages(host->vmmc) > 0"
+>> >> to let fix regulator work.
+>> >
+>> >
+>> > regulator_count_voltages() returns 1 for both fixed regulators and for
+>> > virtual dummy regulator, so the above change makes no sense.
+>>
+>> I think regulator_count_voltage should return -EINVAL for dummy
+>> regulator since n_voltages is not defined for dummy regulator:
+>> int regulator_count_voltages(struct regulator *regulator)
+>> {
+>>          struct regulator_dev    *rdev = regulator->rdev;
+>>
+>>          return rdev->desc->n_voltages ? : -EINVAL;
+>> }
+>> can you double check this?
+>
+>
+> Err, right. I looked at the wrong SDHCI device :/ I have 3 of them on my
+> board - one with fixed regulator, one with 'real' and one without (with
+> virtual dummy regulator). I've applied my earlier patch and noticed that
+> it cured sdhci driver with dummy regulator, so I concluded that it did
+> the right job. Sorry for the confusion.
+>
+No problem, thanks for the check.
 
-This patch was tested against 3.7.0-rc6 with third party hardware IPsec.
+>> > However I was so focused on fixing the 2.8V supply case that I missed
+>> > the
+>> > fact that my "mmc: sdhci: apply voltage range check only for non-fixed
+>> > regulators" patch also fixed the dummy regulator case.
+>> >
+>> > The conclusion is that applying both patches should finally fix the
+>> > regulator issues with for the Samsung boards (2.8V supply for eMMC) and
+>> > 'dummy-regulators' cases.
+>> >
+>>
+>> After thinking again, I think we don't need the check for
+>> regulator_count_voltages.
+>> In fact, dummy regulator should NOT be used for the sd/mmc power
+>> supply. We should use controllable or fixed regulator. If dummy
+>> regulator is used, then it means we won't control it and we don't know
+>> its voltage. It's not reasonable for sd/mmc power supply. If dummy
+>> regulator is used, I think it's ok to return error and disable all
+>> voltage support caps.
+>
+>
+> The problem with dummy regulator is the fact that it can be enabled only
+> globally for all devices in the system. I think that the best solution
+> would be to introduce regulator_can_change_voltage() as Mark suggested.
+> I will post patches soon.
+>
+I think both controllable and fixed regulator should check the voltage
+range (fixed regulator also need to check its voltage whether resides
+in the valid range). But regulator_can_change_voltage will return
+false for both fixed and dummy regulator while return true for
+controllable regulator.
 
-Signed-off-by: Tom St Denis <tstdenis@elliptictech.com>
----
- crypto/Kconfig               |    8 ++
- crypto/Makefile              |    1 +
- crypto/cmac.c                |  313 ++++++++++++++++++++++++++++++++++++++++++
- crypto/testmgr.c             |    9 ++
- crypto/testmgr.h             |   40 ++++++
- include/uapi/linux/pfkeyv2.h |    1 +
- net/xfrm/xfrm_algo.c         |   17 +++
- 7 files changed, 389 insertions(+)
- create mode 100644 crypto/cmac.c
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 6563366..1c6a83e 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -301,6 +301,14 @@ config CRYPTO_XCBC
- 		http://csrc.nist.gov/encryption/modes/proposedmodes/
- 		 xcbc-mac/xcbc-mac-spec.pdf
- 
-+config CRYPTO_CMAC
-+	tristate "CMAC support"
-+	depends on EXPERIMENTAL
-+	select CRYPTO_HASH
-+	select CRYPTO_MANAGER
-+	help
-+	  NIST CMAC cipher based MAC
-+
- config CRYPTO_VMAC
- 	tristate "VMAC support"
- 	depends on EXPERIMENTAL
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 8cf61ff..5989cbb 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_CRYPTO_USER) += crypto_user.o
- obj-$(CONFIG_CRYPTO_HMAC) += hmac.o
- obj-$(CONFIG_CRYPTO_VMAC) += vmac.o
- obj-$(CONFIG_CRYPTO_XCBC) += xcbc.o
-+obj-$(CONFIG_CRYPTO_CMAC) += cmac.o
- obj-$(CONFIG_CRYPTO_NULL) += crypto_null.o
- obj-$(CONFIG_CRYPTO_MD4) += md4.o
- obj-$(CONFIG_CRYPTO_MD5) += md5.o
-diff --git a/crypto/cmac.c b/crypto/cmac.c
-new file mode 100644
-index 0000000..ac81f52
---- /dev/null
-+++ b/crypto/cmac.c
-@@ -0,0 +1,313 @@
-+/*
-+ * Copyright (C)2006 USAGI/WIDE Project
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * Author:
-+ *	 Tom St Denis <tstdenis@elliptictech.com>
-+ *
-+ * Derived from the XCBC code of:
-+ *	 Kazunori Miyazawa <miyazawa@linux-ipv6.org>
-+ */
-+
-+#include <crypto/internal/hash.h>
-+#include <linux/err.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+
-+/*
-+ * +------------------------
-+ * | <parent tfm>
-+ * +------------------------
-+ * | cmac_tfm_ctx
-+ * +------------------------
-+ * | consts (block size * 2)
-+ * +------------------------
-+ */
-+struct cmac_tfm_ctx {
-+	struct crypto_cipher *child;
-+	u8 ctx[];
-+};
-+
-+/*
-+ * +------------------------
-+ * | <shash desc>
-+ * +------------------------
-+ * | cmac_desc_ctx
-+ * +------------------------
-+ * | odds (block size)
-+ * +------------------------
-+ * | prev (block size)
-+ * +------------------------
-+ */
-+struct cmac_desc_ctx {
-+	unsigned int len;
-+	u8 ctx[];
-+};
-+
-+static int crypto_cmac_digest_setkey(struct crypto_shash *parent,
-+					  const u8 *inkey, unsigned int keylen)
-+{
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *ctx = crypto_shash_ctx(parent);
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *consts = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	int x, y, err = 0;
-+	u8 msb, mask;
-+
-+	switch (bs) {
-+		case 16:
-+			mask = 0x87;
-+			break;
-+		case 8:
-+			mask = 0x1B;
-+			break;
-+		default:
-+			return -EINVAL; // only support 64/128 bit block ciphers
-+	}
-+
-+	if ((err = crypto_cipher_setkey(ctx->child, inkey, keylen))) {
-+		return err;
-+	}
-+
-+	// encrypt the zero block
-+	memset(consts, 0, bs);
-+	crypto_cipher_encrypt_one(ctx->child, consts, consts);
-+
-+	for (x = 0; x < 2; x++) {
-+		 /* if msb(L * u^(x+1)) = 0 then just shift, otherwise shift and xor constant mask */
-+		 msb = consts[x*bs + 0] >> 7;
-+
-+		 /* shift left */
-+		 for (y = 0; y < (bs - 1); y++) {
-+			  consts[x*bs + y] = ((consts[x*bs + y] << 1) | (consts[x*bs + y+1] >> 7)) & 255;
-+		 }
-+		 consts[x*bs + bs - 1] = (consts[x*bs + bs - 1] << 1) ^ (msb ? mask : 0) & 255;
-+
-+		 /* copy up as require */
-+		 if (x == 0) {
-+			 memcpy(&consts[(x+1)*bs], &consts[x*bs], bs);
-+		 }
-+	}
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_init(struct shash_desc *pdesc)
-+{
-+	unsigned long alignmask = crypto_shash_alignmask(pdesc->tfm);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	int bs = crypto_shash_blocksize(pdesc->tfm);
-+	u8 *prev = PTR_ALIGN(&ctx->ctx[0], alignmask + 1) + bs;
-+
-+	ctx->len = 0;
-+	memset(prev, 0, bs);
-+
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_update(struct shash_desc *pdesc, const u8 *p,
-+					  unsigned int len)
-+{
-+	struct crypto_shash *parent = pdesc->tfm;
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *tctx = crypto_shash_ctx(parent);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	struct crypto_cipher *tfm = tctx->child;
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *odds = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	u8 *prev = odds + bs;
-+
-+	/* checking the data can fill the block */
-+	if ((ctx->len + len) <= bs) {
-+		memcpy(odds + ctx->len, p, len);
-+		ctx->len += len;
-+		return 0;
-+	}
-+
-+	/* filling odds with new data and encrypting it */
-+	memcpy(odds + ctx->len, p, bs - ctx->len);
-+	len -= bs - ctx->len;
-+	p += bs - ctx->len;
-+
-+	crypto_xor(prev, odds, bs);
-+	crypto_cipher_encrypt_one(tfm, prev, prev);
-+
-+	/* clearing the length */
-+	ctx->len = 0;
-+
-+	/* encrypting the rest of data */
-+	while (len > bs) {
-+		crypto_xor(prev, p, bs);
-+		crypto_cipher_encrypt_one(tfm, prev, prev);
-+		p += bs;
-+		len -= bs;
-+	}
-+
-+	/* keeping the surplus of blocksize */
-+	if (len) {
-+		memcpy(odds, p, len);
-+		ctx->len = len;
-+	}
-+
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_final(struct shash_desc *pdesc, u8 *out)
-+{
-+	struct crypto_shash *parent = pdesc->tfm;
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *tctx = crypto_shash_ctx(parent);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	struct crypto_cipher *tfm = tctx->child;
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *consts = PTR_ALIGN(&tctx->ctx[0], alignmask + 1);
-+	u8 *odds = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	u8 *prev = odds + bs;
-+	unsigned int offset = 0;
-+
-+	if (ctx->len != bs) {
-+		unsigned int rlen;
-+		u8 *p = odds + ctx->len;
-+
-+		*p = 0x80;
-+		p++;
-+
-+		rlen = bs - ctx->len -1;
-+		if (rlen)
-+			memset(p, 0, rlen);
-+
-+		offset += bs;
-+	}
-+
-+	crypto_xor(prev, odds, bs);
-+	crypto_xor(prev, consts + offset, bs);
-+
-+	crypto_cipher_encrypt_one(tfm, out, prev);
-+
-+	return 0;
-+}
-+
-+static int cmac_init_tfm(struct crypto_tfm *tfm)
-+{
-+	struct crypto_cipher *cipher;
-+	struct crypto_instance *inst = (void *)tfm->__crt_alg;
-+	struct crypto_spawn *spawn = crypto_instance_ctx(inst);
-+	struct cmac_tfm_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	cipher = crypto_spawn_cipher(spawn);
-+	if (IS_ERR(cipher))
-+		return PTR_ERR(cipher);
-+
-+	ctx->child = cipher;
-+
-+	return 0;
-+};
-+
-+static void cmac_exit_tfm(struct crypto_tfm *tfm)
-+{
-+	struct cmac_tfm_ctx *ctx = crypto_tfm_ctx(tfm);
-+	crypto_free_cipher(ctx->child);
-+}
-+
-+static int cmac_create(struct crypto_template *tmpl, struct rtattr **tb)
-+{
-+	struct shash_instance *inst;
-+	struct crypto_alg *alg;
-+	unsigned long alignmask;
-+	int err;
-+
-+	err = crypto_check_attr_type(tb, CRYPTO_ALG_TYPE_SHASH);
-+	if (err)
-+		return err;
-+
-+	alg = crypto_get_attr_alg(tb, CRYPTO_ALG_TYPE_CIPHER,
-+				  CRYPTO_ALG_TYPE_MASK);
-+	if (IS_ERR(alg))
-+		return PTR_ERR(alg);
-+
-+	switch(alg->cra_blocksize) {
-+	case 16:
-+		break;
-+	default:
-+		goto out_put_alg;
-+	}
-+
-+	inst = shash_alloc_instance("cmac", alg);
-+	err = PTR_ERR(inst);
-+	if (IS_ERR(inst))
-+		goto out_put_alg;
-+
-+	err = crypto_init_spawn(shash_instance_ctx(inst), alg,
-+				shash_crypto_instance(inst),
-+				CRYPTO_ALG_TYPE_MASK);
-+	if (err)
-+		goto out_free_inst;
-+
-+	alignmask = alg->cra_alignmask | 3;
-+	inst->alg.base.cra_alignmask = alignmask;
-+	inst->alg.base.cra_priority = alg->cra_priority;
-+	inst->alg.base.cra_blocksize = alg->cra_blocksize;
-+
-+	inst->alg.digestsize = alg->cra_blocksize;
-+	inst->alg.descsize = ALIGN(sizeof(struct cmac_desc_ctx),
-+					crypto_tfm_ctx_alignment()) +
-+				  (alignmask &
-+					~(crypto_tfm_ctx_alignment() - 1)) +
-+				  alg->cra_blocksize * 2;
-+
-+	inst->alg.base.cra_ctxsize = ALIGN(sizeof(struct cmac_tfm_ctx),
-+						alignmask + 1) +
-+					  alg->cra_blocksize * 2;
-+	inst->alg.base.cra_init = cmac_init_tfm;
-+	inst->alg.base.cra_exit = cmac_exit_tfm;
-+
-+	inst->alg.init = crypto_cmac_digest_init;
-+	inst->alg.update = crypto_cmac_digest_update;
-+	inst->alg.final = crypto_cmac_digest_final;
-+	inst->alg.setkey = crypto_cmac_digest_setkey;
-+
-+	err = shash_register_instance(tmpl, inst);
-+	if (err) {
-+out_free_inst:
-+		shash_free_instance(shash_crypto_instance(inst));
-+	}
-+
-+out_put_alg:
-+	crypto_mod_put(alg);
-+	return err;
-+}
-+
-+static struct crypto_template crypto_cmac_tmpl = {
-+	.name = "cmac",
-+	.create = cmac_create,
-+	.free = shash_free_instance,
-+	.module = THIS_MODULE,
-+};
-+
-+static int __init crypto_cmac_module_init(void)
-+{
-+	return crypto_register_template(&crypto_cmac_tmpl);
-+}
-+
-+static void __exit crypto_cmac_module_exit(void)
-+{
-+	crypto_unregister_template(&crypto_cmac_tmpl);
-+}
-+
-+module_init(crypto_cmac_module_init);
-+module_exit(crypto_cmac_module_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("CMAC keyed hash algorithm");
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 941d75c..46f7463 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -3139,6 +3139,15 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "cmac(aes)",
-+		.test = alg_test_hash,
-+		.suite = {
-+			.hash = {
-+				.vecs = aes_cmac128_tv_template,
-+				.count = CMAC_AES_TEST_VECTORS
-+			}
-+		}
-+	}, {
- 		.alg = "xcbc(aes)",
- 		.test = alg_test_hash,
- 		.suite = {
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index 76d7f6c..8af6cc9 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -1639,6 +1639,46 @@ static struct hash_testvec hmac_sha256_tv_template[] = {
- 	},
- };
- 
-+#define CMAC_AES_TEST_VECTORS 4
-+
-+static struct hash_testvec aes_cmac128_tv_template[] = {
-+   {
-+      .key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c",
-+      .plaintext = zeroed_string,
-+      .digest = "\xbb\x1d\x69\x29\xe9\x59\x37\x28\x7f\xa3\x7d\x12\x9b\x75\x67\x46",
-+      .psize   = 0,
-+      .ksize   = 16,
-+   },
-+
-+   {
-+      .key       = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c",
-+      .plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a",
-+      .digest    = "\x07\x0a\x16\xb4\x6b\x4d\x41\x44\xf7\x9b\xdd\x9d\xd0\x4a\x28\x7c"
-+      .psize   = 16,
-+      .ksize   = 16,
-+   },
-+   {
-+      .key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c",
-+      .plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17"
-+                   "\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf"
-+                   "\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11",
-+      .digest    = "\xdf\xa6\x67\x47de\x9a\xe6\x30\x30\xca\x32\x61\x14\x97\xc8\x27",
-+      .psize   = 40,
-+      .ksize   = 16,
-+   },
-+   {
-+      .key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c",
-+      .plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17"
-+                   "\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf"
-+                   "\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a"
-+                   "\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b"
-+                   "\xe6\x6c\x37\x10",
-+      .digest    = "\x51\xf0\xbe\xbf\x7e\x3b\x9d\x92\xfc\x49\x74\x17\x79\x36\x3c\xfe",
-+      .psize   = 64,
-+      .ksize   = 16,
-+   },
-+}
-+
- #define XCBC_AES_TEST_VECTORS 6
- 
- static struct hash_testvec aes_xcbc128_tv_template[] = {
-diff --git a/include/uapi/linux/pfkeyv2.h b/include/uapi/linux/pfkeyv2.h
-index 0b80c80..d61898e 100644
---- a/include/uapi/linux/pfkeyv2.h
-+++ b/include/uapi/linux/pfkeyv2.h
-@@ -296,6 +296,7 @@ struct sadb_x_kmaddress {
- #define SADB_X_AALG_SHA2_512HMAC	7
- #define SADB_X_AALG_RIPEMD160HMAC	8
- #define SADB_X_AALG_AES_XCBC_MAC	9
-+#define SADB_X_AALG_AES_CMAC_MAC	10
- #define SADB_X_AALG_NULL		251	/* kame */
- #define SADB_AALG_MAX			251
- 
-diff --git a/net/xfrm/xfrm_algo.c b/net/xfrm/xfrm_algo.c
-index 4ce2d93..bd6f227 100644
---- a/net/xfrm/xfrm_algo.c
-+++ b/net/xfrm/xfrm_algo.c
-@@ -265,6 +265,23 @@ static struct xfrm_algo_desc aalg_list[] = {
- 	}
- },
- {
-+	.name = "cmac(aes)",
-+
-+	.uinfo = {
-+		.auth = {
-+			.icv_truncbits = 96,
-+			.icv_fullbits = 128,
-+		}
-+	},
-+
-+	.desc = {
-+		.sadb_alg_id = SADB_X_AALG_AES_CMAC_MAC,
-+		.sadb_alg_ivlen = 0,
-+		.sadb_alg_minbits = 128,
-+		.sadb_alg_maxbits = 128
-+	}
-+},
-+{
- 	.name = "xcbc(aes)",
- 
- 	.uinfo = {
--- 
-1.7.10.4
+Thanks
+Kevin
