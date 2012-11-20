@@ -1,230 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab2KTJ3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:29:42 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:54995 "EHLO ogre.sisk.pl"
+	id S1752773Ab2KTJaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:30:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37835 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2KTJ3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:29:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: [Update 2][PATCH 2/3] ACPI / driver core: Introduce struct acpi_dev_node and related macros
-Date: Tue, 20 Nov 2012 10:34:04 +0100
-Message-ID: <2800515.q4oG7o9rEp@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121120091007.GN17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <6570191.KCDMiILtRE@vostro.rjw.lan> <20121120091007.GN17774@intel.com>
+	id S1752441Ab2KTJaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:30:03 -0500
+Message-ID: <50AB4D96.7050509@suse.cz>
+Date: Tue, 20 Nov 2012 10:29:58 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Yacine Belkadi <yacine.belkadi.1@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] scripts/kernel-doc: check that non-void fcts describe
+ their return value
+References: <1349040737-1659-1-git-send-email-yacine.belkadi.1@gmail.com> <1349040737-1659-2-git-send-email-yacine.belkadi.1@gmail.com>
+In-Reply-To: <1349040737-1659-2-git-send-email-yacine.belkadi.1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 20, 2012 11:10:07 AM Mika Westerberg wrote:
-> On Tue, Nov 20, 2012 at 01:59:23AM +0100, Rafael J. Wysocki wrote:
-> > Index: linux/include/linux/device.h
-> > ===================================================================
-> > --- linux.orig/include/linux/device.h
-> > +++ linux/include/linux/device.h
-> > @@ -578,6 +578,12 @@ struct device_dma_parameters {
-> >  	unsigned long segment_boundary_mask;
-> >  };
-> >  
-> > +struct acpi_dev_node {
-> > +#ifdef CONFIG_ACPI
-> > +	void	*handle;
-> > +#endif
-> > +};
-> > +
-> >  /**
-> >   * struct device - The basic device structure
-> >   * @parent:	The device's "parent" device, the device to which it is attached.
-> > @@ -683,7 +689,7 @@ struct device {
-> >  	struct dev_archdata	archdata;
-> >  
-> >  	struct device_node	*of_node; /* associated device tree node */
-> > -	void			*acpi_handle; /* associated ACPI device node */
-> > +	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
+On 30.9.2012 23:32, Yacine Belkadi wrote:
+> If a function has a return value, but its kernel-doc comment doesn't contain a
+> "Return" section, then emit the following warning:
 > 
-> Please update the kerneldoc comment as well.
+>    Warning(file.h:129): No description found for return value of 'fct'
+> 
+> Note: This check emits a lot of warnings at the moment, because many functions
+> don't have a 'Return' doc section. So until the number of warnings goes
+> sufficiently down, the check is only performed in verbose mode.
+> 
+> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
 
-Right, thanks for the reminder. :-)
-
-Updated patch is appended.
+Randy, are you fine merging this to kbuild.git?
 
 Thanks,
-Rafael
+Michal
 
 
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / driver core: Introduce struct acpi_dev_node and related macros
+> ---
+>  scripts/kernel-doc |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+> index 8fd107a..7f82aa8 100755
+> --- a/scripts/kernel-doc
+> +++ b/scripts/kernel-doc
+> @@ -130,6 +130,8 @@ use strict;
+>  # should document the "Context:" of the function, e.g. whether the functions
+>  # can be called form interrupts. Unlike other sections you can end it with an
+>  # empty line.
+> +# A non-void function should have a "Return:" section describing the return
+> +# value.
+>  # Example-sections should contain the string EXAMPLE so that they are marked
+>  # appropriately in DocBook.
+>  #
+> @@ -298,6 +300,7 @@ my $section_default = "Description";	# default section
+>  my $section_intro = "Introduction";
+>  my $section = $section_default;
+>  my $section_context = "Context";
+> +my $section_return = "Return";
+>  
+>  my $undescribed = "-- undescribed --";
+>  
+> @@ -1767,6 +1770,28 @@ sub check_sections($$$$$$) {
+>  }
+>  
+>  ##
+> +# Checks the section describing the return value of a function.
+> +sub check_return_section {
+> +        my $file = shift;
+> +        my $declaration_name = shift;
+> +        my $return_type = shift;
+> +
+> +        # Ignore an empty return type (It's a macro)
+> +        # Ignore functions with a "void" return type. (But don't ignore "void *")
+> +        if (($return_type eq "") || ($return_type =~ /void\s*\w*\s*$/)) {
+> +                return;
+> +        }
+> +
+> +        if (!defined($sections{$section_return}) ||
+> +            $sections{$section_return} eq "") {
+> +                print STDERR "Warning(${file}:$.): " .
+> +                "No description found for return value of " .
+> +                "'$declaration_name'\n";
+> +                ++$warnings;
+> +        }
+> +}
+> +
+> +##
+>  # takes a function prototype and the name of the current file being
+>  # processed and spits out all the details stored in the global
+>  # arrays/hashes.
+> @@ -1837,6 +1862,15 @@ sub dump_function($$) {
+>  	my $prms = join " ", @parameterlist;
+>  	check_sections($file, $declaration_name, "function", $sectcheck, $prms, "");
+>  
+> +        # This check emits a lot of warnings at the moment, because many
+> +        # functions don't have a 'Return' doc section. So until the number
+> +        # of warnings goes sufficiently down, the check is only performed in
+> +        # verbose mode.
+> +        # TODO: always perform the check.
+> +        if ($verbose) {
+> +                check_return_section($file, $declaration_name, $return_type);
+> +        }
+> +
+>      output_declaration($declaration_name,
+>  		       'function',
+>  		       {'function' => $declaration_name,
+> 
 
-To avoid adding an ACPI handle pointer to struct device on
-architectures that don't use ACPI, or generally when CONFIG_ACPI is
-not set, in which cases that pointer is useless, define struct
-acpi_dev_node that will contain the handle pointer if CONFIG_ACPI is
-set and will be empty otherwise and use it to represent the ACPI
-device node field in struct device.
-
-In addition to that define macros for reading and setting the ACPI
-handle of a device that don't generate code when CONFIG_ACPI is
-unset.  Modify the ACPI subsystem to use those macros instead of
-referring to the given device's ACPI handle directly.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/glue.c     |   16 ++++++++--------
- drivers/acpi/scan.c     |    4 ++--
- include/acpi/acpi_bus.h |    2 +-
- include/linux/device.h  |   18 ++++++++++++++++--
- 4 files changed, 27 insertions(+), 13 deletions(-)
-
-Index: linux/include/linux/device.h
-===================================================================
---- linux.orig/include/linux/device.h
-+++ linux/include/linux/device.h
-@@ -578,6 +578,12 @@ struct device_dma_parameters {
- 	unsigned long segment_boundary_mask;
- };
- 
-+struct acpi_dev_node {
-+#ifdef CONFIG_ACPI
-+	void	*handle;
-+#endif
-+};
-+
- /**
-  * struct device - The basic device structure
-  * @parent:	The device's "parent" device, the device to which it is attached.
-@@ -618,7 +624,7 @@ struct device_dma_parameters {
-  * @dma_mem:	Internal for coherent mem override.
-  * @archdata:	For arch-specific additions.
-  * @of_node:	Associated device tree node.
-- * @acpi_handle: Associated ACPI device node's namespace handle.
-+ * @acpi_node:	Associated ACPI device node.
-  * @devt:	For creating the sysfs "dev".
-  * @id:		device instance
-  * @devres_lock: Spinlock to protect the resource of the device.
-@@ -683,7 +689,7 @@ struct device {
- 	struct dev_archdata	archdata;
- 
- 	struct device_node	*of_node; /* associated device tree node */
--	void			*acpi_handle; /* associated ACPI device node */
-+	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
- 
- 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
- 	u32			id;	/* device instance */
-@@ -704,6 +710,14 @@ static inline struct device *kobj_to_dev
- 	return container_of(kobj, struct device, kobj);
- }
- 
-+#ifdef CONFIG_ACPI
-+#define ACPI_HANDLE(dev)	((dev)->acpi_node.handle)
-+#define ACPI_HANDLE_SET(dev, _handle_)	(dev)->acpi_node.handle = (_handle_)
-+#else
-+#define ACPI_HANDLE(dev)	(NULL)
-+#define ACPI_HANDLE_SET(dev, _handle_)	do { } while (0)
-+#endif
-+
- /* Get the wakeup routines, which depend on struct device */
- #include <linux/pm_wakeup.h>
- 
-Index: linux/include/acpi/acpi_bus.h
-===================================================================
---- linux.orig/include/acpi/acpi_bus.h
-+++ linux/include/acpi/acpi_bus.h
-@@ -411,7 +411,7 @@ acpi_handle acpi_get_child(acpi_handle,
- int acpi_is_root_bridge(acpi_handle);
- acpi_handle acpi_get_pci_rootbridge_handle(unsigned int, unsigned int);
- struct acpi_pci_root *acpi_pci_find_root(acpi_handle handle);
--#define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)((dev)->acpi_handle))
-+#define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
- 
- int acpi_enable_wakeup_device_power(struct acpi_device *dev, int state);
- int acpi_disable_wakeup_device_power(struct acpi_device *dev);
-Index: linux/drivers/acpi/glue.c
-===================================================================
---- linux.orig/drivers/acpi/glue.c
-+++ linux/drivers/acpi/glue.c
-@@ -134,12 +134,12 @@ static int acpi_bind_one(struct device *
- 	char physical_node_name[sizeof(PHYSICAL_NODE_STRING) + 2];
- 	int retval = -EINVAL;
- 
--	if (dev->acpi_handle) {
-+	if (ACPI_HANDLE(dev)) {
- 		if (handle) {
- 			dev_warn(dev, "ACPI handle is already set\n");
- 			return -EINVAL;
- 		} else {
--			handle = dev->acpi_handle;
-+			handle = ACPI_HANDLE(dev);
- 		}
- 	}
- 	if (!handle)
-@@ -181,8 +181,8 @@ static int acpi_bind_one(struct device *
- 
- 	mutex_unlock(&acpi_dev->physical_node_lock);
- 
--	if (!dev->acpi_handle)
--		dev->acpi_handle = handle;
-+	if (!ACPI_HANDLE(dev))
-+		ACPI_HANDLE_SET(dev, acpi_dev->handle);
- 
- 	if (!physical_node->node_id)
- 		strcpy(physical_node_name, PHYSICAL_NODE_STRING);
-@@ -200,7 +200,7 @@ static int acpi_bind_one(struct device *
- 	return 0;
- 
-  err:
--	dev->acpi_handle = NULL;
-+	ACPI_HANDLE_SET(dev, NULL);
- 	put_device(dev);
- 	return retval;
- 
-@@ -217,10 +217,10 @@ static int acpi_unbind_one(struct device
- 	acpi_status status;
- 	struct list_head *node, *next;
- 
--	if (!dev->acpi_handle)
-+	if (!ACPI_HANDLE(dev))
- 		return 0;
- 
--	status = acpi_bus_get_device(dev->acpi_handle, &acpi_dev);
-+	status = acpi_bus_get_device(ACPI_HANDLE(dev), &acpi_dev);
- 	if (ACPI_FAILURE(status))
- 		goto err;
- 
-@@ -246,7 +246,7 @@ static int acpi_unbind_one(struct device
- 
- 		sysfs_remove_link(&acpi_dev->dev.kobj, physical_node_name);
- 		sysfs_remove_link(&dev->kobj, "firmware_node");
--		dev->acpi_handle = NULL;
-+		ACPI_HANDLE_SET(dev, NULL);
- 		/* acpi_bind_one increase refcnt by one */
- 		put_device(dev);
- 		kfree(entry);
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -443,8 +443,8 @@ const struct acpi_device_id *acpi_match_
- {
- 	struct acpi_device *adev;
- 
--	if (!ids || !dev->acpi_handle
--	    || ACPI_FAILURE(acpi_bus_get_device(dev->acpi_handle, &adev)))
-+	if (!ids || !ACPI_HANDLE(dev)
-+	    || ACPI_FAILURE(acpi_bus_get_device(ACPI_HANDLE(dev), &adev)))
- 		return NULL;
- 
- 	return __acpi_match_device(adev, ids);
 
