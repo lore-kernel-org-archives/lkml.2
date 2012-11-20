@@ -1,488 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab2KTWxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:53:04 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:31321
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753430Ab2KTWxB (ORCPT
+	id S1753708Ab2KTW5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:57:16 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:29005 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2KTW5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:53:01 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(z551biz98dI1432Ic8kzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-Message-ID: <50AC09C5.3030402@freescale.com>
-Date: Tue, 20 Nov 2012 16:52:53 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Firefox/16.0 SeaMonkey/2.13.1
-MIME-Version: 1.0
-To: Varun Sethi <Varun.Sethi@freescale.com>
-CC: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <scottwood@freescale.com>
-Subject: Re: [PATCH 4/4 v5] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com> <1353419697-31269-5-git-send-email-Varun.Sethi@freescale.com>
-In-Reply-To: <1353419697-31269-5-git-send-email-Varun.Sethi@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Tue, 20 Nov 2012 17:57:14 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-d8-50ac0ac8e4e8
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Olof Johansson'" <olof@lixom.net>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: linux-samsung-soc@vger.kernel.org, "'Olof Johansson'" <olofj@chromium.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Shawn Guo'" <shawn.guo@linaro.org>,
+        "'Rob Herring'" <rob.herring@calxeda.com>,
+        "'Josh Cartwright'" <josh.cartwright@ni.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Arun Kumar K'" <arun.kk@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1353432158-22999-1-git-send-email-dianders@chromium.org>
+ <1353432158-22999-2-git-send-email-dianders@chromium.org>
+ <CAOesGMiGZHAw0zOZFZcYJ9YngbcMsTJrzhG+DQ5sP9Sq+CyzDQ@mail.gmail.com>
+In-reply-to: <CAOesGMiGZHAw0zOZFZcYJ9YngbcMsTJrzhG+DQ5sP9Sq+CyzDQ@mail.gmail.com>
+Subject: RE: [PATCH 2/2] ARM: dts: snow: Add board dts file for Snow board (ARM
+ Chromebook)
+Date: Wed, 21 Nov 2012 07:57:11 +0900
+Message-id: <0d5301cdc772$605a4420$210ecc60$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3HTwExOaL9MfUpTZykk07DvrvdLwAIpD/A
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zQ90TXGsCDC7O47O4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mpof7OZseART8Xe9b8ZGxibuboYOTgkBEwk5s337GLk
+	BDLFJC7cW8/WxcjFISSwjFHi4ac97DA1h1vFIOKLGCWe3LsHVfSXUeLfud8sIN1sAhoSh98/
+	YwexRQT8JDZ0bmABKWIW2M8sMWHCc6iOE4wSn57tZAQZyykQLPF8hh9Ig7BArMSHy3+ZQWwW
+	AVWJG9N/soHYvAK2Eg9/vYeyBSV+TL4HtoxZQEti/c7jTBC2vMTmNW+ZIS5Vl3j0VxfiBiOJ
+	fT8nsEOUiEjse/GOEWK8gMS3yYdYIMplJTYdYAa5TEJgFbvEvGs3WCEhISlxcMUNlgmMErOQ
+	bJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZIjEntYFzZYHGIUYCD
+	UYmHd+Pa1QFCrIllxZW5hxglOJiVRHj/bwQK8aYkVlalFuXHF5XmpBYfYvQBunwis5Rocj4w
+	/vNK4g2NjU3MTExNzC1NzU1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYKy8eCpVbqX+
+	/IsbeMtifM12NZy4qKhhdk8i8GC28HtmH3PbfwtVvZRma7ZMfuBiv/Vj15a5ukd/1P35brfG
+	d/U2/skdQVodPmZT3v2YMcnn/Yc7xhPDuPYvPL+7OXP2lxfMNw37J6Sl+87be/fein/qE+Ly
+	Z97hfrHzwv2TydabP4X6rZ2VkV6ixFKckWioxVxUnAgAP1vFtd4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd0TXGsCDKZPYre4vGsOm8WM8/uY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMaH+zmbHgEU/F
+	3vW/GRsYm7m6GDk4JARMJA63inUxcgKZYhIX7q1n62Lk4hASWMQo8eTePSjnL6PEv3O/WUCq
+	2AQ0JA6/f8YOYosI+Els6NzAAlLELLCfWWLChOdQHScYJT4928kIsoJTIFji+Qw/kAZhgViJ
+	D5f/MoPYLAKqEjem/2QDsXkFbCUe/noPZQtK/Jh8D2wZs4CWxPqdx5kgbHmJzWveMkNcrS7x
+	6K8uxA1GEvt+TmCHKBGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFec
+	mFtcmpeul5yfu4kRHMPPpHYwrmywOMQowMGoxMO7ce3qACHWxLLiytxDjBIczEoivP83AoV4
+	UxIrq1KL8uOLSnNSiw8x+gA9OpFZSjQ5H5he8kriDY1NzIwsjcwsjEzMzXEIK4nzNnukBAgJ
+	pCeWpGanphakFsGMY+LglGpgvJDhmPMqQjFn607VM7MeS2690S79cbtMQuhKPdbHT360Tqh0
+	OmGw8dDZjXLnePMmcrPpW4qUrz+fyqlYmRv4ZeGfD045Rysv3/Itc7eLXNItd3au5/8fwj+W
+	TDC6nDxjGydTxOQL6dmFbN3aLEsSgjV22FXfqAted7qo6xPbqWlrVm54d6fPSomlOCPRUIu5
+	qDgRAO8Pm6EOAwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Varun Sethi wrote:
+Olof Johansson wrote:
+> 
+> On Tue, Nov 20, 2012 at 9:22 AM, Doug Anderson <dianders@chromium.org>
+> wrote:
+> > This dts file is based on the Snow dts file in the Chromium OS kernel
+> > tree with the following changes:
+> > * Some details have been updated to match the exynos5250-smdk5250.dts
+> >   file from linux-next (as of
+> >   c11068538994430547722dc9fb515a0ceefd5cb9).
+> > * This file doesn't include references to hardware whose upstream
+> >   support isn't quite there yet.  That includes most i2c devices.
+> >   Note that most i2c busses have been included with no devices.
+> >
+> > The Snow dts file is mostly just an include of the "cros5250" dts file
+> > which describes a class of similar boards.  Support for other boards
+> > has not yet been send upstream.
+> >
+> > With this file and a change to use UART3 for serial output I can:
+> > * Boot to a command line using either SD or EMMC as a root filesystem
+> > * See the power button and lid switch using evtest.
+> >
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> 
+> Acked-by: Olof Johansson <olof@lixom.net>
+> 
+> Kukjin, since your pull requests came in today, can you ack this and
+> I'll just apply it on top of your branches?
+> 
+Hi Olof, yeah, I sent pull-request but there are some patches for dt and
+exynos5440 stuff in my tree not sent yet. If you're ok, let me take this
+with your ack.
 
+Note, I will try to send out remained Samsung stuff before release -rc7 ;-)
 
-> diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
-> new file mode 100644
-> index 0000000..6d32fb5
-> --- /dev/null
-> +++ b/drivers/iommu/fsl_pamu.h
-> @@ -0,0 +1,398 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + *
-> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
-> + *
-> + */
-> +
-> +#ifndef __FSL_PAMU_H
-> +#define __FSL_PAMU_H
-> +
-> +/* Bit Field macros
-> + * 	v = bit field variable; m = mask, m##_SHIFT = shift, x = value to load
-> + */
-> +#define set_bf(v, m, x)		(v = ((v) & ~(m)) | (((x) << (m##_SHIFT)) & (m)))
-> +#define get_bf(v, m)		(((v) & (m)) >> (m##_SHIFT))
-> +
-> +/* PAMU CCSR space */
-> +#define PAMU_PGC 0x00000000     /* Allows all peripheral accesses */
-> +#define PAMU_PE 0x40000000      /* enable PAMU                    */
-> +
-> +/* PAMU_OFFSET to the next pamu space in ccsr */
-> +#define PAMU_OFFSET 0x1000
-> +
-> +#define PAMU_MMAP_REGS_BASE 0
-> +
-> +struct pamu_mmap_regs {
-> +	u32 ppbah;
-> +	u32 ppbal;
-> +	u32 pplah;
-> +	u32 pplal;
-> +	u32 spbah;
-> +	u32 spbal;
-> +	u32 splah;
-> +	u32 splal;
-> +	u32 obah;
-> +	u32 obal;
-> +	u32 olah;
-> +	u32 olal;
-> +};
-> +
-> +/* PAMU Error Registers */
-> +#define PAMU_POES1 0x0040
-> +#define PAMU_POES2 0x0044
-> +#define PAMU_POEAH 0x0048
-> +#define PAMU_POEAL 0x004C
-> +#define PAMU_AVS1  0x0050
-> +#define PAMU_AVS1_AV    0x1
-> +#define PAMU_AVS1_OTV   0x6
-> +#define PAMU_AVS1_APV   0x78
-> +#define PAMU_AVS1_WAV   0x380
-> +#define PAMU_AVS1_LAV   0x1c00
-> +#define PAMU_AVS1_GCV   0x2000
-> +#define PAMU_AVS1_PDV   0x4000
-> +#define PAMU_AV_MASK    (PAMU_AVS1_AV | PAMU_AVS1_OTV | PAMU_AVS1_APV | PAMU_AVS1_WAV \
-> +			| PAMU_AVS1_LAV | PAMU_AVS1_GCV | PAMU_AVS1_PDV)
-> +#define PAMU_AVS1_LIODN_SHIFT 16
-> +#define PAMU_LAV_LIODN_NOT_IN_PPAACT 0x400
+Thanks.
 
-I think you can move most of macros in this .h file into one of the .c files.
-
-> diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-> new file mode 100644
-> index 0000000..d473447
-> --- /dev/null
-> +++ b/drivers/iommu/fsl_pamu_domain.c
-
-The code in this file is generally hard to read because you
-
-1) have very few comments
-2) you have a lot of expressions that span several lines, like this one:
-
-		if ((iova >= geom_attr->aperture_start &&
-			iova < geom_attr->aperture_end - 1 &&
-			size <= geom_size) &&
-			!align_check) {
-
-Try adding a few more comments (e.g. each function should be commented)
-and maybe try to break up a few of these lines.
-
-> @@ -0,0 +1,978 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + *
-> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
-> + * Author: Varun Sethi <varun.sethi@freescale.com>
-> + *
-> + */
-> +
-> +#define pr_fmt(fmt)    "fsl-pamu-domain: %s: " fmt, __func__
-
-You don't use this macro.
-
-> +
-> +#include <linux/init.h>
-> +#include <linux/iommu.h>
-> +#include <linux/notifier.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/mm.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/device.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/bootmem.h>
-> +#include <linux/err.h>
-> +#include <asm/io.h>
-> +#include <asm/bitops.h>
-> +
-> +#include "fsl_pamu_domain.h"
-> +
-> +/* This bitmap advertises the page sizes supported by PAMU hardware
-> + * to the IOMMU API.
-> + */
-> +#define FSL_PAMU_PGSIZES	(~0xFFFUL)
-> +
-> +/* global spinlock that needs to be held while
-> + * configuring PAMU.
-> + */
-> +static DEFINE_SPINLOCK(iommu_lock);
-> +
-> +static struct kmem_cache *fsl_pamu_domain_cache;
-> +static struct kmem_cache *iommu_devinfo_cache;
-> +static DEFINE_SPINLOCK(device_domain_lock);
-> +
-> +int __init iommu_init_mempool(void)
-> +{
-> +
-> +	fsl_pamu_domain_cache = kmem_cache_create("fsl_pamu_domain",
-> +					 sizeof(struct fsl_dma_domain),
-> +					 0,
-> +					 SLAB_HWCACHE_ALIGN,
-> +
-> +					 NULL);
-> +	if (!fsl_pamu_domain_cache) {
-> +		pr_err("Couldn't create fsl iommu_domain cache\n");
-
-ALL of these pr_xxx functions (in the entire file) need to have a
-"fsl-pamu-domain:" prefix.  Maybe that's why you created pr_fmt(), but you
-forgot to use it.
-
-The above message should look like this:
-
-	pr_err("fsl-pamu-domain: could not create iommu domain cache\n");
-
-> +		return -ENOMEM;
-> +	}
-> +
-> +	iommu_devinfo_cache = kmem_cache_create("iommu_devinfo",
-> +					 sizeof(struct device_domain_info),
-> +					 0,
-> +					 SLAB_HWCACHE_ALIGN,
-> +					 NULL);
-> +	if (!iommu_devinfo_cache) {
-> +		pr_err("Couldn't create devinfo cache\n");
-> +		kmem_cache_destroy(fsl_pamu_domain_cache);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +static int reconfig_win(int liodn, struct fsl_dma_domain *domain)
-> +{
-> +	int ret;
-> +
-> +	spin_lock(&iommu_lock);
-> +	ret = pamu_config_ppaace(liodn, domain->mapped_iova,
-> +				 domain->mapped_size,
-> +				 ~(u32)0,
-> +				 domain->paddr >> PAMU_PAGE_SHIFT,
-> +				 domain->snoop_id, domain->stash_id,
-> +				 0, domain->prot);
-> +	spin_unlock(&iommu_lock);
-> +	if (ret) {
-> +		pr_err("PAMU PAACE configuration failed for liodn %d\n",
-> +			 liodn);
-> +	}
-> +	return ret;
-> +}
-> +
-> +static void update_domain_subwin(struct fsl_dma_domain *dma_domain,
-> +				unsigned long iova, size_t size,
-> +				phys_addr_t paddr, int prot, int status)
-> +{
-> +	struct iommu_domain *domain = dma_domain->iommu_domain;
-> +	u32 subwin_cnt = dma_domain->subwin_cnt;
-> +	dma_addr_t geom_size = dma_domain->geom_size;
-> +	u32 subwin_size;
-> +	u32 mapped_subwin;
-> +	u32 mapped_subwin_cnt;
-> +	struct dma_subwindow *sub_win_ptr;
-> +	int i;
-> +
-> +	subwin_size = geom_size >> ilog2(subwin_cnt);
-> +	mapped_subwin = (iova - domain->geometry.aperture_start)
-> +				 >> ilog2(subwin_size);
-> +	sub_win_ptr = &dma_domain->sub_win_arr[mapped_subwin];
-> +	mapped_subwin_cnt = (size < subwin_size) ? 1 :
-> +				size >> ilog2(subwin_size);
-> +	for (i = 0; i < mapped_subwin_cnt; i++) {
-> +		if (status) {
-> +			sub_win_ptr[i].paddr = paddr;
-> +			sub_win_ptr[i].size = (size < subwin_size) ?
-> +						 size : subwin_size;
-> +			paddr += subwin_size;
-> +			sub_win_ptr[i].iova = iova;
-> +			iova += subwin_size;
-> +		}
-> +		sub_win_ptr[i].valid = status;
-> +		sub_win_ptr[i].prot = prot;
-> +	}
-> +
-> +	dma_domain->mapped_subwin = mapped_subwin;
-> +	dma_domain->mapped_subwin_cnt =  mapped_subwin_cnt;
-> +}
-> +
-> +static int reconfig_subwin(int liodn, struct fsl_dma_domain *dma_domain)
-> +{
-> +	u32 subwin_cnt = dma_domain->subwin_cnt;
-> +	int ret = 0;
-> +	u32 mapped_subwin;
-> +	u32 mapped_subwin_cnt;
-> +	struct dma_subwindow *sub_win_ptr;
-> +	unsigned long rpn;
-> +	int i;
-> +
-> +	mapped_subwin = dma_domain->mapped_subwin;
-> +	mapped_subwin_cnt = dma_domain->mapped_subwin_cnt;
-> +	sub_win_ptr = &dma_domain->sub_win_arr[mapped_subwin];
-> +
-> +	for (i = 0; i < mapped_subwin_cnt; i++) {
-> +		rpn = sub_win_ptr[i].paddr >> PAMU_PAGE_SHIFT,
-> +	
-> +		spin_lock(&iommu_lock);
-> +		ret = pamu_config_spaace(liodn, subwin_cnt, mapped_subwin,
-> +					 sub_win_ptr[i].size,
-> +					 ~(u32)0, 
-> +					 rpn, dma_domain->snoop_id,
-> +					 dma_domain->stash_id, 
-> +					 (mapped_subwin == 0 &&
-> +					 !dma_domain->enabled) ?
-> +					 0 : sub_win_ptr[i].valid,
-
-Break out this expression into another variable.  This code is illegible.
-
-	int enabled = 0;
-	
-	for (...
-		if (mapped_subwin || dma_domain->enabled)
-			enabled = sub_win_ptr[i].valid;
-
-> +					 sub_win_ptr[i].prot);
-> +		spin_unlock(&iommu_lock);
-> +		if (ret) {
-> +			pr_err("PAMU SPAACE configuration failed for liodn %d\n",liodn);
-> +			return ret;
-> +		}
-> +		mapped_subwin++;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static phys_addr_t get_phys_addr(struct fsl_dma_domain *dma_domain, unsigned long iova)
-> +{
-> +	u32 subwin_cnt = dma_domain->subwin_cnt;
-> +
-> +	if (subwin_cnt) {
-> +		int i;
-> +		struct dma_subwindow *sub_win_ptr = 
-> +					&dma_domain->sub_win_arr[0];
-> +
-> +		for (i = 0; i < subwin_cnt; i++) {
-> +			if (sub_win_ptr[i].valid &&
-> +			    iova >= sub_win_ptr[i].iova &&
-> +			    iova < (sub_win_ptr[i].iova +
-> +			    sub_win_ptr[i].size - 1))
-> +				return (sub_win_ptr[i].paddr + (iova &
-> +					(sub_win_ptr[i].size - 1)));
-> +		}
-> +	} else {
-> +		return (dma_domain->paddr + (iova & (dma_domain->mapped_size - 1)));
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int map_liodn_subwins(int liodn, struct fsl_dma_domain *dma_domain, u32 subwin_cnt)
-> +{
-> +	struct dma_subwindow *sub_win_ptr = 
-> +				&dma_domain->sub_win_arr[0];
-> +	int i, ret;
-> +	unsigned long rpn;
-> +
-> +	for (i = 0; i < subwin_cnt; i++) {
-> +		if (sub_win_ptr[i].valid) {
-> +			rpn = sub_win_ptr[i].paddr >>
-> +				 PAMU_PAGE_SHIFT,
-> +			spin_lock(&iommu_lock);
-> +			ret = pamu_config_spaace(liodn, subwin_cnt, i,
-> +						 sub_win_ptr[i].size,
-> +						 ~(u32)0,
-> +						 rpn,
-> +						 dma_domain->snoop_id,
-> +						 dma_domain->stash_id,
-> +						 (i > 0) ? 1 : 0,
-> +						 sub_win_ptr[i].prot);
-> +			spin_unlock(&iommu_lock);
-> +			if (ret) {
-> +				pr_err("PAMU SPAACE configuration failed for liodn %d\n",
-> +					 liodn);
-> +				return ret;
-> +			}
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int map_liodn_win(int liodn, struct fsl_dma_domain *dma_domain)
-> +{
-> +	unsigned long rpn;
-> +	int ret;
-> +
-> +	rpn = dma_domain->paddr >> PAMU_PAGE_SHIFT;
-> +	spin_lock(&iommu_lock);
-> +	ret = pamu_config_ppaace(liodn, dma_domain->mapped_iova,
-> +				 dma_domain->mapped_size,
-> +				 ~(u32)0,
-> +				 rpn,
-> +				dma_domain->snoop_id, dma_domain->stash_id,
-> +				0, dma_domain->prot);
-
-Indentation problem
-
-> +	spin_unlock(&iommu_lock);
-> +	if (ret)
-> +		pr_err("PAMU PAACE configuration failed for liodn %d\n",
-> +			liodn);
-> +
-> +	return ret;
-> +}
-> +
-> +static int map_liodn(int liodn, struct fsl_dma_domain *dma_domain)
-> +{
-> +	u32 subwin_cnt = dma_domain->subwin_cnt;
-> +
-> +	if (subwin_cnt)
-> +		return map_liodn_subwins(liodn, dma_domain, subwin_cnt);
-> +	else
-> +		return map_liodn_win(liodn, dma_domain);
-> +
-> +}
-> +
-> +static int update_liodn(int liodn, struct fsl_dma_domain *dma_domain)
-> +{
-> +	int ret;
-> +
-> +	if (dma_domain->subwin_cnt) {
-> +		ret = reconfig_subwin(liodn, dma_domain);
-> +		if (ret)
-> +			pr_err("Subwindow reconfiguration failed for liodn %d\n", liodn);
-> +	} else {
-> +		ret = reconfig_win(liodn, dma_domain);
-> +		if (ret)
-> +			pr_err("Window reconfiguration failed for liodn %d\n", liodn);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int update_liodn_stash(int liodn, struct fsl_dma_domain *dma_domain,
-> +				 u32 val)
-> +{
-> +	int ret = 0, i;
-> +
-> +	spin_lock(&iommu_lock);
-> +	if (!dma_domain->subwin_cnt) {
-> +		ret = pamu_update_paace_stash(liodn, 0, val);
-> +		if (ret) {
-> +			pr_err("Failed to update PAACE field for liodn %d\n ", liodn);
-> +			spin_unlock(&iommu_lock);
-> +			return ret;
-> +		}
-> +	} else {
-> +		for (i = 0; i < dma_domain->subwin_cnt; i++) {
-> +			ret = pamu_update_paace_stash(liodn, i, val);
-> +			if (ret) {
-> +				pr_err("Failed to update SPAACE %d field for liodn %d\n ", i, liodn);
-> +				spin_unlock(&iommu_lock);
-> +				return ret;
-> +			}
-> +		}
-> +	}
-> +	spin_unlock(&iommu_lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int configure_liodn(int liodn, struct device *dev,
-> +			   struct fsl_dma_domain *dma_domain,
-> +			   struct iommu_domain_geometry *geom_attr,
-> +			   u32 subwin_cnt)
-> +{
-> +	phys_addr_t window_addr, window_size;
-> +	phys_addr_t subwin_size;
-> +	int ret = 0, i;
-> +	u32 omi_index = ~(u32)0;
-> +
-> +	/* Configure the omi_index at the geometry setup time.
-> +	 * This is a static value which depends on the type of
-> +	 * device and would not change thereafter.
-> +	 */
-
-	/*
-	 * multi-line comments
-	 * look like this
-	 */
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
