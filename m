@@ -1,105 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2KTBjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:39:33 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36324 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab2KTBjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:39:31 -0500
+	id S1753531Ab2KTBj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:39:59 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21186 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831Ab2KTBj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 20:39:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
+   d="scan'208";a="219949501"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: anish singh <anish198519851985@gmail.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
+        "lockwood@android.com" <lockwood@android.com>,
+        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "Anton Vorontsov (cbouatmailru@gmail.com)" <cbouatmailru@gmail.com>,
+        "Anton Vorontsov (anton.vorontsov@linaro.org)" 
+	<anton.vorontsov@linaro.org>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] extcon : callback function to read cable property
+Thread-Topic: [PATCH] extcon : callback function to read cable property
+Thread-Index: AQHNpqL6iLZgSIxMH0GKmzwm7ve2K5eyQk0AgAEKtWCAAHd6AIAJUHGggCHhgICAAoy5YIAAyB8AgAgrt0CAAK9KgIAHC3AA
+Date: Tue, 20 Nov 2012 01:39:51 +0000
+Message-ID: <20ADAB092842284E95860F279283C56444A584@BGSMSX101.gar.corp.intel.com>
+References: <1349864628-21479-1-git-send-email-jenny.tc@intel.com>
+	<1349880328.22926.2.camel@anish-Inspiron-N5050>
+	<20ADAB092842284E95860F279283C56439BC4A@BGSMSX101.gar.corp.intel.com>
+	<1349963260.8329.1.camel@anish-Inspiron-N5050>
+	<20ADAB092842284E95860F279283C5643BA10D@BGSMSX101.gar.corp.intel.com>
+	<509B0A0F.5000406@samsung.com>
+	<20ADAB092842284E95860F279283C5644017F6@BGSMSX101.gar.corp.intel.com>
+	<1352521082.1526.230.camel@anish-Inspiron-N5050>
+	<20ADAB092842284E95860F279283C56442034B@BGSMSX101.gar.corp.intel.com>
+ <CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
+In-Reply-To: <CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
-References: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
-Date: Tue, 20 Nov 2012 10:39:30 +0900
-X-Google-Sender-Auth: mCLsKdqqqCEd1szNLbOfZvpmyZ8
-Message-ID: <CAH9JG2UYsQ6VFMO4COyEr9fBzCL03+37bXTN=AgjKbD7NjR1MA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu core
-From: Kyungmin Park <kmpark@infradead.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>,
-        "jonghwa3.lee" <jonghwa3.lee@samsung.com>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAK1e1ZU018909
 
-On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> [0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
->
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
->  1 files changed, 12 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/thermal/exynos_thermal.c
-> b/drivers/thermal/exynos_thermal.c
-> index 6dd29e4..129e827 100644
-> --- a/drivers/thermal/exynos_thermal.c
-> +++ b/drivers/thermal/exynos_thermal.c
-> @@ -52,9 +52,12 @@
->
->  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
->  #define EXYNOS_TMU_GAIN_SHIFT          8
-> +#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
->  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
-> -#define EXYNOS_TMU_CORE_ON             3
-> -#define EXYNOS_TMU_CORE_OFF            2
-> +#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
-> EXYNOS_TMU_REF_VOLTAGE_SHIFT)
-> +#define EXYNOS_TMU_CORE_ON             BIT(0)
-> +#define EXYNOS_TMU_CORE_ON_SHIFT       0
-> +#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
-> EXYNOS_TMU_CORE_ON_SHIFT)
->  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
->
->  /* Exynos4210 specific registers */
-> @@ -85,7 +88,9 @@
->  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
->  #define EXYNOS_MUX_ADDR_VALUE          6
->  #define EXYNOS_MUX_ADDR_SHIFT          20
-> +#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
->  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
-> +#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 << EXYNOS_TMU_TRIP_MODE_SHIFT)
->
->  #define EFUSE_MIN_VALUE 40
->  #define EFUSE_MAX_VALUE 100
-> @@ -650,10 +655,14 @@ static void exynos_tmu_control(struct platform_device
-> *pdev, bool on)
->         mutex_lock(&data->lock);
->         clk_enable(data->clk);
->
-> -       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-> +       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
-> +       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
-> +               EXYNOS_TMU_CORE_ON_MASK);
-> +       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
->                 pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
->
->         if (data->soc == SOC_ARCH_EXYNOS) {
-> +               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
->                 con |= pdata->noise_cancel_mode <<
-> EXYNOS_TMU_TRIP_MODE_SHIFT;
->                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
->         }
-> @@ -665,7 +674,6 @@ static void exynos_tmu_control(struct platform_device
-> *pdev, bool on)
->                         pdata->trigger_level1_en << 4 |
->                         pdata->trigger_level0_en;
->         } else {
-> -               con |= EXYNOS_TMU_CORE_OFF;
->                 interrupt_en = 0; /* Disable all interrupts */
->         }
->         writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> >> > > I think that the role of extcon subsystem notify changed
+> >> > > state(attached/detached) of cable to notifiee, but if you want to
+> >> > > add property feature of cable, you should solve ambiguous issues.
+> >> > >
+> >> > > First,
+> >> > > This patch only support the properties of charger cable but,
+> >> > > never support property of other cable. The following structure
+> >> > > depend on only charger cable. We can check it the following structure:
+> >> > >   struct extcon_chrg_cbl_props {
+> >> > >           enum extcon_chrgr_cbl_stat cable_state;
+> >> > >           unsigned long mA;
+> >> > >   };
+> >> > >
+> >> > > I think that the patch have to support all of cables for property
+> feature.
+> >> >
+> >> > My suggestion is to have a structure like this
+> >> >
+> >> > struct  extcon_cablel_props {
+> >> >     unsigned int cable_state;
+> >> >             unsigned int data;
+> >> Why can't it be float/long/double??
+> >> > }
+> >> > Not all cables will have more than two states. If any cable has
+> >> > more than two states, the above structure makes it flexible to
+> >> > represent additional state and the data associated
+> >> >
+> >> > >
+> >> > > Second,
+> >> > > Certainly, you should define common properties of all cables and
+> >> > > specific properties of each cable. The properties of charger
+> >> > > cable should never be defined only.
+> >> IMHO the extcon doesn't know anything about the cable except the
+> >> state which is currently it is in and which also is set by the
+> >> provider.I am unable to understand why should extcon provide more
+> >> than what it knows?It should just limit itself to broadcasting the
+> >> cable state and exploiting it for any other information would only lead to
+> more un-necessary code.
+> >> It should be same as IIO subsystem where the consumer and provider
+> >> knows before hand what information they are going to share and with
+> >> what precision and IIO core is just a way to do that.It doesn't know
+> >> anything beyond what is given by the provider.
+> >> Same is the case with driver core where individual driver sets it's
+> >> own private data and the driver core just gives that private data
+> >> back to the driver as and when it needs but parsing the private data
+> >> in the right way is up to the individual driver.
+> >>
+> >> I fail to understand why is not the case here.
+> >
+> > The requirement is different from the IIO case. I am trying to extend
+> > the Power Supply class to support charging in a generic way
+> (https://lkml.org/lkml/2012/10/18/219).
+> > The extcon consumer in this case is not a device driver. It's part of power
+> supply class driver itself.
+> > I am open to any solution to get the cable properties dynamically. Do
+> > you find a better but generic mechanism for this?
+> >
+> > I am trying to extend  extcon just because I couldn‚Äôt find any other
+> > subsystem which gives cable notifications. IMHO, it's good if we can
+> > avoid consumer and provider driver level dependencies just by
+> > extending extcon. This will ensure that the same driver will work on any
+> platform as long as it's having the dependency only on extcon.
+> > We shouldn't put any driver level dependency between extcon consumer
+> and provider.
+> > When we do like that, the extcon consumer is expecting the similar
+> > implementation for the provider on all platforms. This may not be
+> > possible
+> Is there anything wrong in assuming similar implementation for all the
+> providers?I think the providers know what it can provide and this may vary
+> quite a lot.Or can we make a generic provider driver which will encompass all
+> the randomness in the various provider drivers?This generic driver will get all
+> the properties and since it will be generice anyone can use it to know what
+> properties to expect.This will keep the extcon design intact.
+
+Maintainer??
+
+> 
+> > and does not seems to  be a scalable solution. IMHO, the extcon should
+> > provide a mechanism to retrieve the cable properties. Consumer drivers
+> > can use this API to get the cable properties without knowing the
+> > provider driver implementation. This will  make the extcon drivers more
+> scalable and reusable across multiple platforms.
+> >
+> >> >
+> >> > Hope above structure would be enough to represent the common cable
+> >> > state and it's data. If a cable has more than two states, then
+> >> > extcon_update_state can be used to notify the consumer 1)Provider
+> >> > can just toggle the "state" argument to notify the consumer that
+> >> > cable state is changed OR
+> >> > 2) Add one more argument  like  extcon_update_state(struct
+> >> > extcon_dev *edev, u32 mask, u32 state1, u32 sate2)
+> >> This will cause other drivers to change such as arizona.
+> >> > If the state2 is set, then consumers can use get_cable_properties()
+> >> > to query the cable properties. State2 need to be used only if the
+> >> > cable need to represent more than two state
+> >> >
+> >> > >
+> >> > > Third,
+> >> > > If we finish to decide the properties for all cables, I'd like to
+> >> > > see a example
+> >> Why do we think that state and property is the only thing which the
+> >> consumer want to know?I am sure there would be some more properties
+> >> which would be of some interest to consumers and there is quite a
+> >> possibility that in future we might get a patch for that also.So
+> >> instead of that limiting it to just state is a good idea.
+> >> > > code.
+> >> >
+> >> > Agreed. If we  agree on the above structure, I can modify the
+> >> > charging subsystem patch to use the same structure.
+> >> > (https://lkml.org/lkml/2012/10/18/219). This would give a reference
+> >> > for the
+> >> new feature.
+> >> >
+> >> > >
+> >> > > You explained following changed state of USB according to Host
+> >> > > state on other patch.
+> >> > > ---------------------------
+> >> > > For USB2.0
+> >> > > 1) CONNECT (100mA)->UPDATE(500mA)->DISCONNECT(0mA)
+> >> > > 2) CONNECT (100mA)->UPDATE(500mA)->HOST
+> >> SUSPEND(2.5mA/500mA)-
+> >> > > >DISCONNECT(0mA)
+> >> > > 3) CONNECT (100mA)->UPDATE(500mA)->HOST
+> >> SUSPEND(2.5mA/500mA)-
+> >> > > >HOST RESUME(500mA)->DISCONNECT(0mA)
+> >> > >
+> >> > > For USB 3.0
+> >> > > 4) CONNECT (150mA)->UPDATE(900mA)->DISCONNECT(0mA)
+> >> > > 5) CONNECT (150mA)->UPDATE(900mA)-> HOST
+> >> SUSPEND(2.5mA/900mA)-
+> >> > > >DISCONNECT(0mA)
+> >> > > 6) CONNECT (100mA)->UPDATE(900mA)->HOST
+> >> SUSPEND(2.5mA/900mA)-
+> >> > > >HOST RESUME(900mA)->DISCONNECT(0mA)
+> >> > > ---------------------------
+> >> > >
+> >> > > I have a question. Can the provider device driver(e.g.,
+> >> > > extcon-max77693.c/
+> >> > > extcon-max8997.c) detect the changed state of host? I'd like to
+> >> > > see the example device driver that the provider device driver
+> >> > > detect changed state of host.
+> >> > > Could you provide example device driver?
+> >> >
+> >> > Good question. The OTG drivers are capable of identifying the
+> >> > SUSPEND
+> >> event.
+> >> > System cannot setup SDP (USB host) charging with maximum charging
+> >> > current - 500mA (USB2.0/ 900mA(USB 3)) without enumerating the USB.
+> >> > The USB enumeration can be done only with a USB/OTG driver. IMHO
+> >> > the above extcon drivers (extcon-max77693.c/ extcon-max8997.c) are
+> >> > not capable of doing the USB enumeration and identifying the charge
+> >> > current. They can just identify the charger type -
+> SDP/DCP/CDP/ACA/AC.
+> >> > The intelligence for USB enumeration should be inside USB/OTG driver.
+> >> >
+> >>
+> >
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
