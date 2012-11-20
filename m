@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2KTQBn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:01:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48650 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab2KTQBm (ORCPT
+	id S1752725Ab2KTQD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:03:26 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47112 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab2KTQDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:01:42 -0500
+	Tue, 20 Nov 2012 11:03:25 -0500
+Message-ID: <50ABA9B7.7020702@gmail.com>
+Date: Wed, 21 Nov 2012 00:03:03 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
-References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
-Date: Wed, 21 Nov 2012 00:01:40 +0800
-Message-ID: <CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
-Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
-From: Ming Lei <tom.leiming@gmail.com>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: maciej.rutecki@gmail.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 0/5] fix up inaccurate zone->present_pages
+References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <201211192236.32152.maciej.rutecki@gmail.com>
+In-Reply-To: <201211192236.32152.maciej.rutecki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 10:45 PM, Solomon Peachy <pizza@shaftnet.org> wrote:
-> When compiling the firmware loader, the builtin firmware functions were
-> erroneously compiled as they were wrapped with CONFIG_FW_LOADER instead
-> of CONFIG_FIRMWARE_IN_KERNEL.  This is normally harmless, except when
-> there was actually no firmware to compile into the kernel, causing the
-> build to fail with a linking error:
->
-> drivers/built-in.o: In function `release_firmware':
-> (.text+0x192e2): undefined reference to `__end_builtin_fw'
-> drivers/built-in.o: In function `release_firmware':
-> (.text+0x19304): undefined reference to `__end_builtin_fw'
-> drivers/built-in.o: In function `_request_firmware':
-> firmware_class.c:(.text+0x1986c): undefined reference to `__end_builtin_fw'
-> firmware_class.c:(.text+0x19886): undefined reference to `__end_builtin_fw'
-> firmware_class.c:(.text+0x19a98): undefined reference to `__end_builtin_fw'
-> drivers/built-in.o: In function `release_firmware':
-> (.text+0x192dc): undefined reference to `__start_builtin_fw'
-> drivers/built-in.o: In function `_request_firmware':
-> firmware_class.c:(.text+0x19860): undefined reference to `__start_builtin_fw'
-> firmware_class.c:(.text+0x19a8a): undefined reference to `__start_builtin_fw'
+Thanks, Maciej!
 
-I have tried to reproduce the compile failure but not succeed, could you share
-your .config?
+On 11/20/2012 05:36 AM, Maciej Rutecki wrote:
+> On niedziela, 18 listopada 2012 o 17:07:25 Jiang Liu wrote:
+>> The commit 7f1290f2f2a4 ("mm: fix-up zone present pages") tries to
+>> resolve an issue caused by inaccurate zone->present_pages, but that
+>> fix is incomplete and causes regresions with HIGHMEM. And it has been
+>> reverted by commit
+>> 5576646 revert "mm: fix-up zone present pages"
+>>
+>> This is a following-up patchset for the issue above. It introduces a
+>> new field named "managed_pages" to struct zone, which counts pages
+>> managed by the buddy system from the zone. And zone->present_pages
+>> is used to count pages existing in the zone, which is
+>> 	spanned_pages - absent_pages.
+>>
+>> But that way, zone->present_pages will be kept in consistence with
+>> pgdat->node_present_pages, which is sum of zone->present_pages.
+>>
+>> This patchset has only been tested on x86_64 with nobootmem.c. So need
+>> help to test this patchset on machines:
+>> 1) use bootmem.c
+>> 2) have highmem
+>>
+>> This patchset applies to "f4a75d2e Linux 3.7-rc6" from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>>
+>> Any comments and helps are welcomed!
+>>
+>> Jiang Liu (5):
+>>   mm: introduce new field "managed_pages" to struct zone
+>>   mm: replace zone->present_pages with zone->managed_pages if
+>>     appreciated
+>>   mm: set zone->present_pages to number of existing pages in the zone
+>>   mm: provide more accurate estimation of pages occupied by memmap
+>>   mm: increase totalram_pages when free pages allocated by bootmem
+>>     allocator
+>>
+>>  include/linux/mmzone.h |    1 +
+>>  mm/bootmem.c           |   14 ++++++++
+>>  mm/memory_hotplug.c    |    6 ++++
+>>  mm/mempolicy.c         |    2 +-
+>>  mm/nobootmem.c         |   15 ++++++++
+>>  mm/page_alloc.c        |   89
+>> +++++++++++++++++++++++++++++++----------------- mm/vmscan.c            | 
+>>  16 ++++-----
+>>  mm/vmstat.c            |    8 +++--
+>>  8 files changed, 108 insertions(+), 43 deletions(-)
+> Tested in 32 bit linux with HIGHMEM. Seems be OK.
+> 
+> Regards
+> 
 
->
-> This trivial patch fixes this oversight.
->
-> Signed-off-by: Solomon Peachy <pizza@shaftnet.org>
-> CC: stable@vger.kernel.org
-> ---
->  drivers/base/firmware_class.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 8945f4e..3474e7f 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -38,7 +38,7 @@ MODULE_LICENSE("GPL");
->
->  /* Builtin firmware support */
->
-> -#ifdef CONFIG_FW_LOADER
-> +#ifdef CONFIG_FIRMWARE_IN_KERNEL
-
-This might not be correct when EXTRA_FIRMWARE is set and
-CONFIG_FIRMWARE_IN_KERNEL is unset.
-
-Thanks,
--- 
-Ming Lei
