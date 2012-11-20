@@ -1,126 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2KTKUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:20:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40968 "EHLO mx2.suse.de"
+	id S1753023Ab2KTKYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:24:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41112 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab2KTKUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:20:16 -0500
-Date: Tue, 20 Nov 2012 10:20:10 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120102010.GP8218@suse.de>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
+	id S1752922Ab2KTKYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:24:23 -0500
+Date: Tue, 20 Nov 2012 11:24:20 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
+        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, djwong+kernel@djwong.org
+Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct
+ I/O requests
+Message-ID: <20121120102420.GD1408@quack.suse.cz>
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+ <20121120075114.25270.40680.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121120071704.GA14199@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121120075114.25270.40680.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Ingo, stop doing this kind of crap.
-> > 
-> > Let's make it clear: if the NUMA patches continue to regress 
-> > performance for reasonable loads (and that very much includes 
-> > "no THP") then they won't be merged.
-> > 
-> > You seem to be in total denial. Every time Mel sends out 
-> > results that show that your patches MAKE PERFORMANCE WORSE you 
-> > blame Mel, or blame the load, and never seem to admit that 
-> > performance got worse.
+On Mon 19-11-12 23:51:14, Darrick J. Wong wrote:
+> If a file is opened with O_SYNC|O_DIRECT, the drive cache does not get
+> flushed after the write completion for AIOs.  This patch attempts to fix
+> that problem by marking an I/O as requiring a cache flush in endio
+> processing, and then issuing the cache flush after any unwritten extent
+> conversion is done.
 > 
-> No doubt numa/core should not regress with THP off or on and 
-> I'll fix that.
+> From: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> [darrick.wong@oracle.com: Rework patch to use per-mount workqueues]
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> ---
+>  fs/xfs/xfs_aops.c  |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  fs/xfs/xfs_aops.h  |    1 +
+>  fs/xfs/xfs_mount.h |    1 +
+>  fs/xfs/xfs_super.c |    8 ++++++++
+>  4 files changed, 61 insertions(+), 1 deletion(-)
 > 
-> As a background, here's how SPECjbb gets slower on mainline 
-> (v3.7-rc6) if you boot Mel's kernel config and turn THP forcibly
-> off:
 > 
->   (avg: 502395 ops/sec)
->   (avg: 505902 ops/sec)
->   (avg: 509271 ops/sec)
-> 
->   # echo never > /sys/kernel/mm/transparent_hugepage/enabled
-> 
->   (avg: 376989 ops/sec)
->   (avg: 379463 ops/sec)
->   (avg: 378131 ops/sec)
-> 
-> A ~30% slowdown.
-> 
-> [ How do I know? I asked for Mel's kernel config days ago and
->   actually booted Mel's very config in the past few days, 
->   spending hours on testing it on 4 separate NUMA systems, 
->   trying to find Mel's regression. In the past Mel was a 
->   reliable tester so I blindly trusted his results. Was that 
->   some weird sort of denial on my part? :-) ]
-> 
-> Every time a regression is reported I take it seriously - and 
-> there were performance regression reports against numa/core not 
-> just from Mel and I'm sure there will be more in the future. For 
-> example I'm taking David Rijentje's fresh performance regression 
-> report seriously as well.
-> 
-> What I have some problem with is Mel sending me his kernel 
-> config as the thing he tested, and which config included:
-> 
->   CONFIG_TRANSPARENT_HUGEPAGE=y
->   CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
-> 
-> but he apparently went and explicitly disabled THP on top of 
-> that - which was just a weird choice of 'negative test tuning' 
-> to keep unreported.
+> diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+> index e57e2da..9cebbb7 100644
+> --- a/fs/xfs/xfs_aops.c
+> +++ b/fs/xfs/xfs_aops.c
+> @@ -173,6 +173,24 @@ xfs_setfilesize(
+>  }
+>  
+>  /*
+> + * In the case of synchronous, AIO, O_DIRECT writes, we need to flush
+> + * the disk cache when the I/O is complete.
+> + */
+> +STATIC bool
+> +xfs_ioend_needs_cache_flush(
+> +	struct xfs_ioend	*ioend)
+> +{
+> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
+> +	struct xfs_mount *mp = ip->i_mount;
+> +
+> +	if (!(mp->m_flags & XFS_MOUNT_BARRIER))
+> +		return false;
+> +
+> +	return IS_SYNC(ioend->io_inode) ||
+> +	       (ioend->io_iocb->ki_filp->f_flags & O_DSYNC);
+> +}
+  I'm not really a XFS developer but calling things "...cache_flush" when
+you actually mean fsync is IMHO misleading.
 
-I've already apologised for this omission and I'll apologise again if
-necessary. The whole point of implementing MM Tests was to mitigate exactly
-this sort of situation where the testing conditions are suspicious so the
-configuration file and scripts can be rechecked. I was assuming the lack
-of THP usage was due to the JVM using shared memory because a few years ago
-the JVM I was using at the time did this if configured for hugepage usage.
-Assumptions made a complete ass out of me here. When I did the recheck of
-what the JVM was actually doing and reexamined the configuration, I saw
-the mistake and admitted it immediately.
+> +
+> +/*
+>   * Schedule IO completion handling on the final put of an ioend.
+>   *
+>   * If there is no work to do we might as well call it a day and free the
+> @@ -189,11 +207,30 @@ xfs_finish_ioend(
+>  			queue_work(mp->m_unwritten_workqueue, &ioend->io_work);
+>  		else if (ioend->io_append_trans)
+>  			queue_work(mp->m_data_workqueue, &ioend->io_work);
+> +		else if (ioend->io_needs_fsync)
+> +			queue_work(mp->m_aio_blkdev_flush_wq, &ioend->io_work);
+>  		else
+>  			xfs_destroy_ioend(ioend);
+>  	}
+>  }
+>  
+> +STATIC int
+> +xfs_ioend_force_cache_flush(
+> +	xfs_ioend_t	*ioend)
+> +{
+> +	struct xfs_inode *ip = XFS_I(ioend->io_inode);
+> +	struct xfs_mount *mp = ip->i_mount;
+> +	int		err = 0;
+> +	int		datasync;
+> +
+> +	datasync = !IS_SYNC(ioend->io_inode) &&
+> +		!(ioend->io_iocb->ki_filp->f_flags & __O_SYNC);
+> +	err = do_xfs_file_fsync(ip, mp, datasync);
+> +	xfs_destroy_ioend(ioend);
+> +	/* do_xfs_file_fsync returns -errno. our caller expects positive. */
+> +	return -err;
+> +}
+> +
+>  /*
+>   * IO write completion.
+>   */
+> @@ -250,12 +287,22 @@ xfs_end_io(
+>  		error = xfs_setfilesize(ioend);
+>  		if (error)
+>  			ioend->io_error = -error;
+> +	} else if (ioend->io_needs_fsync) {
+> +		error = xfs_ioend_force_cache_flush(ioend);
+> +		if (error && ioend->io_result > 0)
+> +			ioend->io_error = -error;
+> +		ioend->io_needs_fsync = 0;
+>  	} else {
+>  		ASSERT(!xfs_ioend_is_append(ioend));
+>  	}
+>  
+>  done:
+> -	xfs_destroy_ioend(ioend);
+> +	/* the honoring of O_SYNC has to be done last */
+> +	if (ioend->io_needs_fsync) {
+> +		atomic_inc(&ioend->io_remaining);
+> +		xfs_finish_ioend(ioend);
+> +	} else
+> +		xfs_destroy_ioend(ioend);
+>  }
+  Umm, I don't quite get why you do things the way you do in xfs_end_io().
+Why don't you handle fsync there always but offload it instead to workqueue
+again in some cases? Is it so that it gets processed in the right workqueue
+or why?
 
-I want to be absolutely clear that it was unintentional to disable THP like
-this which is why I did not report it. I did not deliberately hide such
-information because that would be completely unacceptable. The root of the
-mistake is actually from a few years ago where tests would be configured
-to run with base pages, huge pages and transparent hugepages -- similar to
-how we might currently test vanilla kernel, hard bindings and automatic
-migration. Because of their history, some mmtest scripts support running
-with multiple page sizes and I neglected to properly identify this and
-retrofit a "default hugepage" configuration.
-
-I've also been already clear that this was done for *all* the specjbb
-tests. It was still a mistake but it was evenly applied.
-
-I've added two extra configuration files to run specjbb single and multi
-JVMs with THP enabled. It takes about 1.5 to 2 hours to complete a single
-test which means a full battery of tests for autonuma, vanilla kernel and
-schednuma will take a little over 24 hours (4 specjbb tests, autobench and
-a few basic performance tests like kernbench, hackbench etc). They will
-not be running back-to-back as the machine is not dedicated to this. I'll
-report when they're done.
-
+								Honza
 -- 
-Mel Gorman
-SUSE Labs
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
