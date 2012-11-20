@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2KTOsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:48:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43970 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab2KTOso (ORCPT
+	id S1753239Ab2KTOtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:49:43 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:23884 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab2KTOtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:48:44 -0500
-Message-ID: <50AB9832.90709@ti.com>
-Date: Tue, 20 Nov 2012 16:48:18 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigF62DFAACA269378853BB95CC"
+	Tue, 20 Nov 2012 09:49:42 -0500
+Message-id: <50AB987F.30002@samsung.com>
+Date: Tue, 20 Nov 2012 15:49:35 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
+MIME-version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
+ approaches low water mark
+References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+ <20121120000137.GC447@bbox>
+In-reply-to: <20121120000137.GC447@bbox>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigF62DFAACA269378853BB95CC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+On 11/20/2012 1:01 AM, Minchan Kim wrote:
+> Hi Marek,
+>
+> On Mon, Nov 12, 2012 at 09:59:42AM +0100, Marek Szyprowski wrote:
+> > It has been observed that system tends to keep a lot of CMA free pages
+> > even in very high memory pressure use cases. The CMA fallback for movable
+>
+> CMA free pages are just fallback for movable pages so if user requires many
+> user pages, it ends up consuming cma free pages after out of movable pages.
+> What do you mean that system tend to keep free pages even in very
+> high memory pressure?
+> > pages is used very rarely, only when system is completely pruned from
+> > MOVABLE pages, what usually means that the out-of-memory even will be
+> > triggered very soon. To avoid such situation and make better use of CMA
+>
+> Why does OOM is triggered very soon if movable pages are burned out while
+> there are many cma pages?
+>
+> It seems I can't understand your point quitely.
+> Please make your problem clear for silly me to understand clearly.
 
-On 2012-11-17 12:55, Alexandre Courbot wrote:
+Right now running out of 'plain' movable pages is the only possibility to
+get movable pages allocated from CMA. On the other hand running out of
+'plain' movable pages is very deadly for the system, as movable pageblocks
+are also the main fallbacks for reclaimable and non-movable pages.
 
-A few questions after looking at the documentation:
+Then, once we run out of movable pages and kernel needs non-mobable or
+reclaimable page (what happens quite often), it usually triggers OOM to
+satisfy the memory needs. Such OOM is very strange, especially on a system
+with dozen of megabytes of CMA memory, having most of them free at the OOM
+event. By high memory pressure I mean the high memory usage.
 
-> +Example
-> +-------
-> +Here are example sequences declared within a backlight device that use=
- all the
-> +supported resources types:
-> +
-> +	backlight {
-> +		compatible =3D "pwm-backlight";
-> +		...
-> +
-> +		/* resources used by the power sequences */
-> +		pwms =3D <&pwm 2 5000000>;
-> +		pwm-names =3D "backlight";
-> +		power-supply =3D <&backlight_reg>;
-> +
-> +		power-sequences {
-> +			power-on {
-> +				step0 {
-> +					type =3D "regulator";
-> +					id =3D "power";
-> +					enable;
-> +				};
-> +				step1 {
-> +					type =3D "delay";
-> +					delay =3D <10000>;
-> +				};
-> +				step2 {
-> +					type =3D "pwm";
-> +					id =3D "backlight";
-> +					enable;
-> +				};
-> +				step3 {
-> +					type =3D "gpio";
-> +					gpio =3D <&gpio 28 0>;
-> +					value =3D <1>;
-> +				};
-> +			};
+This patch introduces a heuristics which let kernel to consume free CMA
+pages before it runs out of 'plain' movable pages, what is usually enough to
+keep some spare movable pages for emergency cases before the reclaim occurs.
 
-I guess there's a reason, but the above looks a bit inconsistent. For
-gpio you define the gpio resource inside the step. For power and pwm the
-resource is defined before the steps. Why wouldn't "pwm =3D <&pwm 2
-5000000>;" work in step2?
-
-> +When a power sequence is run, its steps is executed one after the othe=
-r until
-> +one step fails or the end of the sequence is reached.
-
-The document doesn't give any hint of what the driver should do if
-running the power sequence fails. Run the "opposite" power sequence?
-Will that work for all resources? I'm mainly thinking of a case where
-each enable of the resource should be matched by a disable, i.e. you
-can't call disable if no enable was called.
-
- Tomi
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
-
---------------enigF62DFAACA269378853BB95CC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJQq5gyAAoJEPo9qoy8lh71Q4wP/ishGG4j6CsP9aN9+MiI8HCA
-N1SS7vzaR8ozlor2yF2GuRmtQKHOavOV2k/GRoVB2ewdsJSpcuijyHELfXC+M4re
-vxdkhawlkWKn+xC8pNBMoWrhUZFKeo9/Xk7dTpxXaweKTvGzmIPHSiAZn62jvV7C
-ZEIafQqkOAtEVKI7GrDAXqSObNyUgA2ASP9VLAu6nRq3PpoYRqQtrRP1lGP9naCp
-xkYUYDoXzAAyjIw0nnyMDLtgex0KEpA10vTMknMbFOhB34cSATI13saZdhtEnLOl
-G9qo3m7eYAYfg5cngFINB80pJ5pv7frZwwsJZ2miUDOykw/PJpSk2RpQA1CxjqBC
-4yJkPPY7gbQQXh5G64BxoIuNEI4zVlJVfAzyTuurqJ0gRhmwdSz8AbRObAeT2Mbw
-YiDmk6xV8v+LP6nJzSAeOtV0+CJwz3BaCJMqfANkNsUoK/J5Ikr5I00KhPB4lCdM
-pPYVOHEh7fi9KcZnnJBH5vjEFZnP9x5ukLZbc/vdfukvQSg/yvL6NwZPoE5ZY56i
-Ojgy71IZ8K0HmJekmr0Ejlp7PLXl0XP2qZfDSX7FHey+ogCh7FKRcmEIgaun5ffw
-Ddm3t1QWZq1j/8Ht8Uy08BOOyrp48L7sHjrAUx38H9m7eTQKznJD0gPwqcfBwZju
-n4XHo9Z32v3RbP8Ht1EF
-=4xsL
------END PGP SIGNATURE-----
-
---------------enigF62DFAACA269378853BB95CC--
