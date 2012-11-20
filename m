@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab2KTPRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:17:17 -0500
+	id S1753744Ab2KTPTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:19:10 -0500
 Received: from router-fw.net-space.pl ([89.174.63.77]:60204 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab2KTPRM (ORCPT
+	with ESMTP id S1753544Ab2KTPRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:17:12 -0500
+	Tue, 20 Nov 2012 10:17:17 -0500
 X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 10:17:12 EST
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
@@ -15,60 +15,137 @@ To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
         linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org,
         xen-devel@lists.xensource.com
-Subject: [PATCH v2 00/11] xen: Initial kexec/kdump implementation
-Date: Tue, 20 Nov 2012 16:04:42 +0100
-Message-Id: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+Cc: Daniel Kiper <daniel.kiper@oracle.com>
+Subject: [PATCH v2 04/11] x86/xen: Introduce architecture dependent data for kexec/kdump
+Date: Tue, 20 Nov 2012 16:04:46 +0100
+Message-Id: <1353423893-23125-5-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.5.6.5
-X-Bogosity: No, spamicity=0.475885
+In-Reply-To: <1353423893-23125-4-git-send-email-daniel.kiper@oracle.com>
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-3-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-4-git-send-email-daniel.kiper@oracle.com>
+X-Bogosity: No, spamicity=0.006028
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce architecture dependent constants, structures and
+functions required by Xen kexec/kdump implementation.
 
-Hi,
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ arch/x86/include/asm/xen/hypercall.h |    6 +++
+ arch/x86/include/asm/xen/kexec.h     |   83 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 89 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/kexec.h
 
-This set of patches contains initial kexec/kdump implementation for Xen v2
-(previous version were posted to few people by mistake; sorry for that).
-Currently only dom0 is supported, however, almost all infrustructure
-required for domU support is ready.
+diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+index c20d1ce..e76a1b8 100644
+--- a/arch/x86/include/asm/xen/hypercall.h
++++ b/arch/x86/include/asm/xen/hypercall.h
+@@ -459,6 +459,12 @@ HYPERVISOR_hvm_op(int op, void *arg)
+ }
+ 
+ static inline int
++HYPERVISOR_kexec_op(unsigned long op, void *args)
++{
++	return _hypercall2(int, kexec_op, op, args);
++}
++
++static inline int
+ HYPERVISOR_tmem_op(
+ 	struct tmem_op *op)
+ {
+diff --git a/arch/x86/include/asm/xen/kexec.h b/arch/x86/include/asm/xen/kexec.h
+new file mode 100644
+index 0000000..3349031
+--- /dev/null
++++ b/arch/x86/include/asm/xen/kexec.h
+@@ -0,0 +1,83 @@
++/*
++ * Copyright (c) 2011 Daniel Kiper
++ * Copyright (c) 2012 Daniel Kiper, Oracle Corporation
++ *
++ * kexec/kdump implementation for Xen was written by Daniel Kiper.
++ * Initial work on it was sponsored by Google under Google Summer
++ * of Code 2011 program and Citrix. Konrad Rzeszutek Wilk from Oracle
++ * was the mentor for this project.
++ *
++ * Some ideas are taken from:
++ *   - native kexec/kdump implementation,
++ *   - kexec/kdump implementation for Xen Linux Kernel Ver. 2.6.18,
++ *   - PV-GRUB.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _ASM_X86_XEN_KEXEC_H
++#define _ASM_X86_XEN_KEXEC_H
++
++#include <linux/init.h>
++
++#define KEXEC_XEN_NO_PAGES	17
++
++#define XK_MA_CONTROL_PAGE	0
++#define XK_VA_CONTROL_PAGE	1
++#define XK_MA_PGD_PAGE		2
++#define XK_VA_PGD_PAGE		3
++#define XK_MA_PUD0_PAGE		4
++#define XK_VA_PUD0_PAGE		5
++#define XK_MA_PUD1_PAGE		6
++#define XK_VA_PUD1_PAGE		7
++#define XK_MA_PMD0_PAGE		8
++#define XK_VA_PMD0_PAGE		9
++#define XK_MA_PMD1_PAGE		10
++#define XK_VA_PMD1_PAGE		11
++#define XK_MA_PTE0_PAGE		12
++#define XK_VA_PTE0_PAGE		13
++#define XK_MA_PTE1_PAGE		14
++#define XK_VA_PTE1_PAGE		15
++#define XK_MA_TABLE_PAGE	16
++
++#ifndef __ASSEMBLY__
++struct xen_kexec_image {
++	unsigned long page_list[KEXEC_XEN_NO_PAGES];
++	unsigned long indirection_page;
++	unsigned long start_address;
++};
++
++struct xen_kexec_load {
++	int type;
++	struct xen_kexec_image image;
++};
++
++extern unsigned int xen_kexec_control_code_size;
++
++extern void __init xen_init_kexec_ops(void);
++
++#ifdef CONFIG_X86_32
++extern void xen_relocate_kernel(unsigned long indirection_page,
++				unsigned long *page_list,
++				unsigned long start_address,
++				unsigned int has_pae,
++				unsigned int preserve_context);
++#else
++extern void xen_relocate_kernel(unsigned long indirection_page,
++				unsigned long *page_list,
++				unsigned long start_address,
++				unsigned int preserve_context);
++#endif
++#endif
++#endif /* _ASM_X86_XEN_KEXEC_H */
+-- 
+1.5.6.5
 
-Jan Beulich suggested to merge Xen x86 assembler code with baremetal x86 code.
-This could simplify and reduce a bit size of kernel code. However, this solution
-requires some changes in baremetal x86 code. The most important thing which should
-be changed in that case is format of page_list array. Xen kexec hypercall requires
-to alternate physical addresses with virtual ones. This and other required things
-have not done in that version because I am not sure that solution will be accepted
-by kexec/kdump maintainers. I hope that this email spark discussion about that topic.
-
-Daniel
-
- arch/x86/include/asm/kexec.h         |   10 +-
- arch/x86/include/asm/xen/hypercall.h |    6 +
- arch/x86/include/asm/xen/kexec.h     |   83 +++++++++
- arch/x86/kernel/machine_kexec_64.c   |   12 +-
- arch/x86/kernel/vmlinux.lds.S        |    7 +-
- arch/x86/xen/Makefile                |    3 +
- arch/x86/xen/enlighten.c             |   12 ++
- arch/x86/xen/kexec.c                 |  150 ++++++++++++++++
- arch/x86/xen/machine_kexec_32.c      |  245 ++++++++++++++++++++++++++
- arch/x86/xen/machine_kexec_64.c      |  301 +++++++++++++++++++++++++++++++
- arch/x86/xen/relocate_kernel_32.S    |  323 ++++++++++++++++++++++++++++++++++
- arch/x86/xen/relocate_kernel_64.S    |  309 ++++++++++++++++++++++++++++++++
- drivers/xen/sys-hypervisor.c         |   42 +++++-
- include/linux/kexec.h                |   18 ++
- include/xen/interface/xen.h          |   33 ++++
- kernel/kexec.c                       |  125 ++++++++++----
- 16 files changed, 1636 insertions(+), 43 deletions(-)
-
-Daniel Kiper (11):
-      kexec: introduce kexec_ops struct
-      x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
-      xen: Introduce architecture independent data for kexec/kdump
-      x86/xen: Introduce architecture dependent data for kexec/kdump
-      x86/xen: Register resources required by kexec-tools
-      x86/xen: Add i386 kexec/kdump implementation
-      x86/xen: Add x86_64 kexec/kdump implementation
-      x86/xen: Add kexec/kdump makefile rules
-      x86/xen/enlighten: Add init and crash kexec/kdump hooks
-      drivers/xen: Export vmcoreinfo through sysfs
-      x86: Add Xen kexec control code size check to linker script
