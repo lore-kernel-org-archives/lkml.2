@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab2KTHGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:06:43 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62851 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2KTHGl (ORCPT
+	id S1752418Ab2KTHGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:06:52 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:49167 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab2KTHGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:06:41 -0500
+	Tue, 20 Nov 2012 02:06:48 -0500
 From: Tejun Heo <tj@kernel.org>
 To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
         ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
 Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/7] netcls_cgroup: move config inheritance to ->css_online() and remove .broken_hierarchy marking
-Date: Mon, 19 Nov 2012 23:06:24 -0800
-Message-Id: <1353395190-4530-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
+Date: Mon, 19 Nov 2012 23:06:27 -0800
+Message-Id: <1353395190-4530-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353395190-4530-1-git-send-email-tj@kernel.org>
 References: <1353395190-4530-1-git-send-email-tj@kernel.org>
@@ -23,67 +23,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It turns out that we'll have to live with attributes which are
-inherited at cgroup creation time but not affected by further updates
-to the parent afterwards - such attributes are already in wide use
-e.g. for cpuset.
+netprio kept track of the highest prioidx allocated and resized
+priomaps accordingly when necessary.  This makes it necessary to keep
+track of prioidx allocation and may end up resizing on every new
+prioidx.
 
-So, there's nothing to do for netcls_cgroup for hierarchy support.
-Its current behavior - inherit only during creation - is good enough.
+Update extend_netdev_table() such that it takes @target_idx which the
+priomap should be able to accomodate.  If the priomap is large enough,
+nothing happens; otherwise, the size is doubled until @target_idx can
+be accomodated.
 
-Move config inheriting from ->css_alloc() to ->css_online() for
-consistency, which doesn't change behavior at all, and remove
-.broken_hierarchy marking.
+This makes max_prioidx and write_update_netdev_table() unnecessary.
+write_priomap() now calls extend_netdev_table() directly.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 ---
- net/sched/cls_cgroup.c | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ net/core/netprio_cgroup.c | 56 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 23 deletions(-)
 
-diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
-index 8cdc18e..31f06b6 100644
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -41,11 +41,15 @@ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
- 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
- 	if (!cs)
- 		return ERR_PTR(-ENOMEM);
-+	return &cs->css;
-+}
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 92cc54c..569d83d 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -27,11 +27,11 @@
  
-+static int cgrp_css_online(struct cgroup *cgrp)
-+{
- 	if (cgrp->parent)
--		cs->classid = cgrp_cls_state(cgrp->parent)->classid;
--
--	return &cs->css;
-+		cgrp_cls_state(cgrp)->classid =
-+			cgrp_cls_state(cgrp->parent)->classid;
-+	return 0;
+ #include <linux/fdtable.h>
+ 
++#define PRIOMAP_MIN_SZ		128
+ #define PRIOIDX_SZ 128
+ 
+ static unsigned long prioidx_map[PRIOIDX_SZ];
+ static DEFINE_SPINLOCK(prioidx_map_lock);
+-static atomic_t max_prioidx = ATOMIC_INIT(0);
+ 
+ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
+ {
+@@ -51,8 +51,6 @@ static int get_prioidx(u32 *prio)
+ 		return -ENOSPC;
+ 	}
+ 	set_bit(prioidx, prioidx_map);
+-	if (atomic_read(&max_prioidx) < prioidx)
+-		atomic_set(&max_prioidx, prioidx);
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+ 	*prio = prioidx;
+ 	return 0;
+@@ -67,15 +65,40 @@ static void put_prioidx(u32 idx)
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
  }
  
- static void cgrp_css_free(struct cgroup *cgrp)
-@@ -76,19 +80,11 @@ static struct cftype ss_files[] = {
- struct cgroup_subsys net_cls_subsys = {
- 	.name		= "net_cls",
- 	.css_alloc	= cgrp_css_alloc,
-+	.css_online	= cgrp_css_online,
- 	.css_free	= cgrp_css_free,
- 	.subsys_id	= net_cls_subsys_id,
- 	.base_cftypes	= ss_files,
- 	.module		= THIS_MODULE,
--
--	/*
--	 * While net_cls cgroup has the rudimentary hierarchy support of
--	 * inheriting the parent's classid on cgroup creation, it doesn't
--	 * properly propagates config changes in ancestors to their
--	 * descendents.  A child should follow the parent's configuration
--	 * but be allowed to override it.  Fix it and remove the following.
--	 */
--	.broken_hierarchy = true,
- };
+-static int extend_netdev_table(struct net_device *dev, u32 new_len)
++/*
++ * Extend @dev->priomap so that it's large enough to accomodate
++ * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
++ * return.  Must be called under rtnl lock.
++ */
++static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+ {
+-	size_t new_size = sizeof(struct netprio_map) +
+-			   ((sizeof(u32) * new_len));
+-	struct netprio_map *new = kzalloc(new_size, GFP_KERNEL);
+-	struct netprio_map *old;
++	struct netprio_map *old, *new;
++	size_t new_sz, new_len;
  
- struct cls_cgroup_head {
++	/* is the existing priomap large enough? */
+ 	old = rtnl_dereference(dev->priomap);
++	if (old && old->priomap_len > target_idx)
++		return 0;
++
++	/*
++	 * Determine the new size.  Let's keep it power-of-two.  We start
++	 * from PRIOMAP_MIN_SZ and double it until it's large enough to
++	 * accommodate @target_idx.
++	 */
++	new_sz = PRIOMAP_MIN_SZ;
++	while (true) {
++		new_len = (new_sz - offsetof(struct netprio_map, priomap)) /
++			sizeof(new->priomap[0]);
++		if (new_len > target_idx)
++			break;
++		new_sz *= 2;
++		/* overflowed? */
++		if (WARN_ON(new_sz < PRIOMAP_MIN_SZ))
++			return -ENOSPC;
++	}
+ 
++	/* allocate & copy */
++	new = kzalloc(new_sz, GFP_KERNEL);
+ 	if (!new) {
+ 		pr_warn("Unable to alloc new priomap!\n");
+ 		return -ENOMEM;
+@@ -87,26 +110,13 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ 
+ 	new->priomap_len = new_len;
+ 
++	/* install the new priomap */
+ 	rcu_assign_pointer(dev->priomap, new);
+ 	if (old)
+ 		kfree_rcu(old, rcu);
+ 	return 0;
+ }
+ 
+-static int write_update_netdev_table(struct net_device *dev)
+-{
+-	int ret = 0;
+-	u32 max_len;
+-	struct netprio_map *map;
+-
+-	max_len = atomic_read(&max_prioidx) + 1;
+-	map = rtnl_dereference(dev->priomap);
+-	if (!map || map->priomap_len < max_len)
+-		ret = extend_netdev_table(dev, max_len);
+-
+-	return ret;
+-}
+-
+ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+@@ -191,7 +201,7 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 
+ 	rtnl_lock();
+ 
+-	ret = write_update_netdev_table(dev);
++	ret = extend_netdev_table(dev, prioidx);
+ 	if (ret)
+ 		goto out_unlock;
+ 
 -- 
 1.7.11.7
 
