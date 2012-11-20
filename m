@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab2KTHoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:44:54 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36599 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2KTHow (ORCPT
+	id S1751857Ab2KTHru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:47:50 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42859 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2KTHrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:44:52 -0500
-Date: Tue, 20 Nov 2012 08:44:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120074445.GA14539@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+	Tue, 20 Nov 2012 02:47:49 -0500
+Date: Mon, 19 Nov 2012 23:47:44 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH 3/3] input:stmpe-ts:Initialize the phys field for input
+ device
+Message-ID: <20121120074744.GA28115@core.coreip.homeip.net>
+References: <3d6f34ca5960203a5efb761f4d56b4e10ee24827.1352474824.git.viresh.kumar@linaro.org>
+ <94587f7ddc4cf5503a1824df4c1fb53e553881b7.1352474824.git.viresh.kumar@linaro.org>
+ <CAKohpo=NyLCzu+1urTFTusigR7X9+jZy_z=ndgjyu4dOSOnAeg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+In-Reply-To: <CAKohpo=NyLCzu+1urTFTusigR7X9+jZy_z=ndgjyu4dOSOnAeg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Rientjes <rientjes@google.com> wrote:
-
-> On Tue, 20 Nov 2012, Ingo Molnar wrote:
+On Tue, Nov 20, 2012 at 12:28:08PM +0530, Viresh Kumar wrote:
+> On 9 November 2012 20:57, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> >
+> > Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> > ---
+> >  drivers/input/touchscreen/stmpe-ts.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchscreen/stmpe-ts.c
+> > index 66b932e..9896095 100644
+> > --- a/drivers/input/touchscreen/stmpe-ts.c
+> > +++ b/drivers/input/touchscreen/stmpe-ts.c
+> > @@ -317,6 +317,7 @@ static int __devinit stmpe_input_probe(struct platform_device *pdev)
+> >                 return ret;
+> >
+> >         idev->name = STMPE_TS_NAME;
+> > +       idev->phys = STMPE_TS_NAME"/input0";
+> >         idev->id.bustype = BUS_I2C;
+> >         idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+> >         idev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 > 
-> > > > numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into 
-> > > > sched/core") had an average throughput of 136918.34 
-> > > > SPECjbb2005 bops, which is a 6.3% regression.
-> > > 
-> > > perftop during the run on numa/core at 01aa90068b12 ("sched: 
-> > > Use the best-buddy 'ideal cpu' in balancing decisions"):
-> > > 
-> > >     15.99%  [kernel]  [k] page_fault                         
-> > >      4.05%  [kernel]  [k] getnstimeofday                     
-> > >      3.96%  [kernel]  [k] _raw_spin_lock                     
-> > >      3.20%  [kernel]  [k] rcu_check_callbacks                
-> > >      2.93%  [kernel]  [k] generic_smp_call_function_interrupt
-> > >      2.90%  [kernel]  [k] __do_page_fault                    
-> > >      2.82%  [kernel]  [k] ktime_get                          
-> > 
-> > Thanks for testing, that's very interesting - could you tell me 
-> > more about exactly what kind of hardware this is? I'll try to 
-> > find a similar system and reproduce the performance regression.
-> > 
-> 
-> This happened to be an Opteron (but not 83xx series), 2.4Ghz.  
+> Missed this one too?
 
-Ok - roughly which family/model from /proc/cpuinfo?
+Nope, it's commit b8d52e2b9f7eb43075e6ef4e23f5e51e70548f11
 
-> Your benchmarks were different in the number of cores but also 
-> in the amount of memory, do you think numa/core would regress 
-> because this is 32GB and not 64GB?
+Thanks.
 
-I'd not expect much sensitivity to RAM size.
-
-> > (A wild guess would be an older 4x Opteron system, 83xx 
-> > series or so?)
-> 
-> Just curious, how you would guess that? [...]
-
-I'm testing numa/core on many systems and the performance 
-figures seemed to roughly map to that range.
-
-> [...]  Is there something about Opteron 83xx that make 
-> numa/core regress?
-
-Not that I knew of - but apparently there is! I'll try to find a 
-system that matches yours as closely as possible and have a 
-look.
-
-> > Also, the profile looks weird to me. Here is how perf top looks 
-> > like on my system during a similarly configured, "healthy" 
-> > SPECjbb run:
-> > 
-> >  91.29%  perf-6687.map            [.] 0x00007fffed1e8f21
-> >   4.81%  libjvm.so                [.] 0x00000000007004a0
-> >   0.93%  [vdso]                   [.] 0x00007ffff7ffe60c
-> >   0.72%  [kernel]                 [k] do_raw_spin_lock
-> >   0.36%  [kernel]                 [k] generic_smp_call_function_interrupt
-> >   0.10%  [kernel]                 [k] format_decode
-> >   0.07%  [kernel]                 [k] rcu_check_callbacks
-> >   0.07%  [kernel]                 [k] apic_timer_interrupt
-> >   0.07%  [kernel]                 [k] call_function_interrupt
-> >   0.06%  libc-2.15.so             [.] __strcmp_sse42
-> >   0.06%  [kernel]                 [k] irqtime_account_irq
-> >   0.06%  perf                     [.] 0x000000000004bb7c
-> >   0.05%  [kernel]                 [k] x86_pmu_disable_all
-> >   0.04%  libc-2.15.so             [.] __memcpy_ssse3
-> >   0.04%  [kernel]                 [k] ktime_get
-> >   0.04%  [kernel]                 [k] account_group_user_time
-> >   0.03%  [kernel]                 [k] vbin_printf
-> > 
-> > and that is what SPECjbb does: it spends 97% of its time in Java 
-> > code - yet there's no Java overhead visible in your profile - 
-> > how is that possible? Could you try a newer perf on that box:
-> > 
-> 
-> It's perf top -U, the benchmark itself was unchanged so I 
-> didn't think it was interesting to gather the user symbols.  
-> If that would be helpful, let me know!
-
-Yeah, regular perf top output would be very helpful to get a 
-general sense of proportion. Thanks!
-
-	Ingo
+-- 
+Dmitry
