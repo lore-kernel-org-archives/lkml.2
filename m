@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2KTMGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 07:06:55 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44605 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab2KTMGw (ORCPT
+	id S1753257Ab2KTMHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 07:07:03 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35947 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab2KTMG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 07:06:52 -0500
+	Tue, 20 Nov 2012 07:06:59 -0500
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org
@@ -16,64 +16,281 @@ Cc: Rickard Andersson <rickard.andersson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
         Fabio Baltieri <fabio.baltieri@linaro.org>
 Subject: [PATCH v3] cpufreq: ondemand: handle SW coordinated CPUs
-Date: Tue, 20 Nov 2012 13:06:15 +0100
-Message-Id: <1353413176-21723-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Tue, 20 Nov 2012 13:06:16 +0100
+Message-Id: <1353413176-21723-2-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1353413176-21723-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1353413176-21723-1-git-send-email-fabio.baltieri@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Rickard Andersson <rickard.andersson@stericsson.com>
 
-this patch fixes an issue with the ondemand governor, which currently
-does not handle properly software coordinated CPUs - i.e. CPUs groups
-with a common clock and a single governor, as in the u8500:
+This patch fixes a bug that occurred when we had load on a secondary CPU
+and the primary CPU was sleeping. Only one sampling timer was spawned
+and it was spawned as a deferred timer on the primary CPU, so when a
+secondary CPU had a change in load this was not detected by the ondemand
+governor.
 
-root@genericarmv7a:~# cpufreq-info -d
-DB8500
-root@genericarmv7a:~# cpufreq-info -a
-0 1
+This patch make sure that deferred timers are run on all CPUs in the
+case of software controlled CPUs that run on the same frequency.
 
-In this case, with a non-patched kernel, if a process is loading only
-the secondary CPU while the first one is idle, the ondemand governor may
-take a long time before firing up the load sampling routine
-(dbs_check_cpu()), leaving both cores running at minimum frequency even
-if one of them is fully loaded.
-
-The problem can be reproduced with standard utils, as in:
-
-root@genericarmv7a:~# cpufreq-info --cpu 1 -f
-200000
-root@genericarmv7a:~# taskset 2 yes > /dev/null &
-root@genericarmv7a:~# sleep 3
-root@genericarmv7a:~# cpufreq-info --cpu 1 -f
-200000
-
-while there is no other process loading the other core - here I'm using
-a minimal oe-core image.
-
-To fix the problem, this patch modifies the governor to use an
-individual deferrable work for each CPU, instead that just one for the
-main one.
-
-This patch has been tested on an U8500 system (dual cortex-A9) and on a
-standard x86_64 dual-core laptop.
-
-The patch is based on the original one by Rickard Andersson, developed
-for ST-Ericsson and posted some months ago on the list, hence I'm
-tagging as "v3" to avoid confusion.
-
-Regards,
-Fabio
-
+Signed-off-by: Rickard Andersson <rickard.andersson@stericsson.com>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
-
-Rickard Andersson (1):
-  cpufreq: ondemand: handle SW coordinated CPUs
-
  drivers/cpufreq/cpufreq_ondemand.c | 141 ++++++++++++++++++++++++++++++++-----
  1 file changed, 122 insertions(+), 19 deletions(-)
 
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 396322f..430f614 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -93,6 +93,7 @@ struct cpu_dbs_info_s {
+ 	 * when user is changing the governor or limits.
+ 	 */
+ 	struct mutex timer_mutex;
++	ktime_t time_stamp;
+ };
+ static DEFINE_PER_CPU(struct cpu_dbs_info_s, od_cpu_dbs_info);
+ 
+@@ -285,7 +286,7 @@ static void update_sampling_rate(unsigned int new_rate)
+ 		policy = cpufreq_cpu_get(cpu);
+ 		if (!policy)
+ 			continue;
+-		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
++		dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
+ 		cpufreq_cpu_put(policy);
+ 
+ 		mutex_lock(&dbs_info->timer_mutex);
+@@ -305,7 +306,7 @@ static void update_sampling_rate(unsigned int new_rate)
+ 			cancel_delayed_work_sync(&dbs_info->work);
+ 			mutex_lock(&dbs_info->timer_mutex);
+ 
+-			schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
++			schedule_delayed_work_on(cpu, &dbs_info->work,
+ 						 usecs_to_jiffies(new_rate));
+ 
+ 		}
+@@ -449,6 +450,16 @@ static struct attribute_group dbs_attr_group = {
+ 
+ /************************** sysfs end ************************/
+ 
++static bool dbs_sw_coordinated_cpus(struct cpu_dbs_info_s *dbs_info)
++{
++	struct cpufreq_policy *policy = dbs_info->cur_policy;
++
++	if (cpumask_weight(policy->cpus) > 1)
++		return true;
++	else
++		return false;
++}
++
+ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
+ {
+ 	if (dbs_tuners_ins.powersave_bias)
+@@ -598,20 +609,41 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 
+ static void do_dbs_timer(struct work_struct *work)
+ {
++	struct delayed_work *dw = to_delayed_work(work);
+ 	struct cpu_dbs_info_s *dbs_info =
+ 		container_of(work, struct cpu_dbs_info_s, work.work);
+-	unsigned int cpu = dbs_info->cpu;
+-	int sample_type = dbs_info->sample_type;
+-
++	int sample_type;
+ 	int delay;
++	bool sample = true;
++
++	if (dbs_sw_coordinated_cpus(dbs_info)) {
++		ktime_t time_now;
++		s64 delta_us;
++
++		/* use leader CPU's dbs_info */
++		dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info->cpu);
++		mutex_lock(&dbs_info->timer_mutex);
+ 
+-	mutex_lock(&dbs_info->timer_mutex);
++		time_now = ktime_get();
++		delta_us = ktime_us_delta(time_now, dbs_info->time_stamp);
++
++		/* Do nothing if we recently have sampled */
++		if (delta_us < (s64)(dbs_tuners_ins.sampling_rate / 2))
++			sample = false;
++		else
++			dbs_info->time_stamp = time_now;
++	} else {
++		mutex_lock(&dbs_info->timer_mutex);
++	}
++
++	sample_type = dbs_info->sample_type;
+ 
+ 	/* Common NORMAL_SAMPLE setup */
+ 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
+ 	if (!dbs_tuners_ins.powersave_bias ||
+ 	    sample_type == DBS_NORMAL_SAMPLE) {
+-		dbs_check_cpu(dbs_info);
++		if (sample)
++			dbs_check_cpu(dbs_info);
+ 		if (dbs_info->freq_lo) {
+ 			/* Setup timer for SUB_SAMPLE */
+ 			dbs_info->sample_type = DBS_SUB_SAMPLE;
+@@ -627,32 +659,41 @@ static void do_dbs_timer(struct work_struct *work)
+ 				delay -= jiffies % delay;
+ 		}
+ 	} else {
+-		__cpufreq_driver_target(dbs_info->cur_policy,
+-			dbs_info->freq_lo, CPUFREQ_RELATION_H);
++		if (sample)
++			__cpufreq_driver_target(dbs_info->cur_policy,
++						dbs_info->freq_lo,
++						CPUFREQ_RELATION_H);
+ 		delay = dbs_info->freq_lo_jiffies;
+ 	}
+-	schedule_delayed_work_on(cpu, &dbs_info->work, delay);
++	schedule_delayed_work_on(smp_processor_id(), dw, delay);
+ 	mutex_unlock(&dbs_info->timer_mutex);
+ }
+ 
+-static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
++static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info, int cpu)
+ {
+ 	/* We want all CPUs to do sampling nearly on same jiffy */
+ 	int delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate);
++	struct cpu_dbs_info_s *dbs_info_local = &per_cpu(od_cpu_dbs_info, cpu);
+ 
+ 	if (num_online_cpus() > 1)
+ 		delay -= jiffies % delay;
+ 
++	cancel_delayed_work_sync(&dbs_info_local->work);
+ 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
+-	INIT_DEFERRABLE_WORK(&dbs_info->work, do_dbs_timer);
+-	schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work, delay);
++	schedule_delayed_work_on(cpu, &dbs_info_local->work, delay);
+ }
+ 
+-static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
++static inline void dbs_timer_exit(int cpu)
+ {
++	struct cpu_dbs_info_s *dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
+ 	cancel_delayed_work_sync(&dbs_info->work);
+ }
+ 
++static void dbs_timer_exit_per_cpu(struct work_struct *dummy)
++{
++	dbs_timer_exit(smp_processor_id());
++}
++
+ /*
+  * Not all CPUs want IO time to be accounted as busy; this dependson how
+  * efficient idling at a higher frequency/voltage is.
+@@ -676,6 +717,43 @@ static int should_io_be_busy(void)
+ 	return 0;
+ }
+ 
++static int __cpuinit cpu_callback(struct notifier_block *nfb,
++				  unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++	struct device *cpu_dev;
++	struct cpu_dbs_info_s *dbs_info;
++
++	dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
++
++	/* use leader CPU's dbs_info */
++	if (dbs_sw_coordinated_cpus(dbs_info))
++		dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info->cpu);
++
++	cpu_dev = get_cpu_device(cpu);
++	if (cpu_dev) {
++		switch (action) {
++		case CPU_ONLINE:
++		case CPU_ONLINE_FROZEN:
++			dbs_timer_init(dbs_info, cpu);
++			break;
++		case CPU_DOWN_PREPARE:
++		case CPU_DOWN_PREPARE_FROZEN:
++			dbs_timer_exit(cpu);
++			break;
++		case CPU_DOWN_FAILED:
++		case CPU_DOWN_FAILED_FROZEN:
++			dbs_timer_init(dbs_info, cpu);
++			break;
++		}
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __refdata ondemand_cpu_notifier = {
++	.notifier_call = cpu_callback,
++};
++
+ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 				   unsigned int event)
+ {
+@@ -704,9 +782,13 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 			if (dbs_tuners_ins.ignore_nice)
+ 				j_dbs_info->prev_cpu_nice =
+ 						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
++
++			mutex_init(&j_dbs_info->timer_mutex);
++			INIT_DEFERRABLE_WORK(&j_dbs_info->work, do_dbs_timer);
++
++			j_dbs_info->rate_mult = 1;
+ 		}
+ 		this_dbs_info->cpu = cpu;
+-		this_dbs_info->rate_mult = 1;
+ 		ondemand_powersave_bias_init_cpu(cpu);
+ 		/*
+ 		 * Start the timerschedule work, when this governor
+@@ -736,21 +818,42 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		}
+ 		mutex_unlock(&dbs_mutex);
+ 
+-		mutex_init(&this_dbs_info->timer_mutex);
+-		dbs_timer_init(this_dbs_info);
++		/* If SW coordinated CPUs then register notifier */
++		if (dbs_sw_coordinated_cpus(this_dbs_info)) {
++			register_hotcpu_notifier(&ondemand_cpu_notifier);
++
++			/* Initiate timer time stamp */
++			this_dbs_info->time_stamp = ktime_get();
++
++			for_each_cpu(j, policy->cpus) {
++				struct cpu_dbs_info_s *j_dbs_info;
++
++				j_dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
++				dbs_timer_init(j_dbs_info, j);
++			}
++		} else {
++			dbs_timer_init(this_dbs_info, cpu);
++		}
+ 		break;
+ 
+ 	case CPUFREQ_GOV_STOP:
+-		dbs_timer_exit(this_dbs_info);
++		dbs_timer_exit(cpu);
+ 
+ 		mutex_lock(&dbs_mutex);
+ 		mutex_destroy(&this_dbs_info->timer_mutex);
+ 		dbs_enable--;
+ 		mutex_unlock(&dbs_mutex);
+-		if (!dbs_enable)
++		if (!dbs_enable) {
+ 			sysfs_remove_group(cpufreq_global_kobject,
+ 					   &dbs_attr_group);
+ 
++			if (dbs_sw_coordinated_cpus(this_dbs_info)) {
++				/* Make sure all pending timers/works are
++				 * stopped. */
++				schedule_on_each_cpu(dbs_timer_exit_per_cpu);
++				unregister_hotcpu_notifier(&ondemand_cpu_notifier);
++			}
++		}
+ 		break;
+ 
+ 	case CPUFREQ_GOV_LIMITS:
 -- 
 1.7.12.1
 
