@@ -1,316 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab2KTHlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:41:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50538 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab2KTHlw (ORCPT
+	id S1751807Ab2KTHor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:44:47 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:65069 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab2KTHoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:41:52 -0500
-Subject: [PATCH 1/9] vfs: Handle O_SYNC AIO DIO in generic code properly
-To: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
-        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Date: Mon, 19 Nov 2012 23:41:23 -0800
-Message-ID: <20121120074123.24645.41965.stgit@blackbox.djwong.org>
-In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 20 Nov 2012 02:44:46 -0500
+Message-id: <50AB34E2.1010206@samsung.com>
+Date: Tue, 20 Nov 2012 08:44:34 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
+MIME-version: 1.0
+To: Kevin Liu <keyuan.liu@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
+        Philip Rakity <prakity@nvidia.com>
+Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+ <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+In-reply-to: <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide VFS helpers for handling O_SYNC AIO DIO writes.  Filesystems wanting to
-use the helpers have to pass DIO_SYNC_WRITES to __blockdev_direct_IO.  If the
-filesystem doesn't provide its own direct IO end_io handler, the generic code
-will take care of issuing the flush.  Otherwise, the filesystem's custom end_io
-handler is passed struct dio_sync_io_work pointer as 'private' argument, and it
-must call generic_dio_end_io() to finish the AIO DIO.  The generic code then
-takes care to call generic_write_sync() from a workqueue context when AIO DIO
-is complete.
+Hello,
 
-Since all filesystems using blockdev_direct_IO() need O_SYNC aio dio handling
-and the generic suffices for them, make blockdev_direct_IO() pass the new
-DIO_SYNC_WRITES flag.
+On 11/14/2012 8:11 AM, Kevin Liu wrote:
+> > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
+> > Sent: Tuesday, November 13, 2012 10:14 PM
+> > To: Marek Szyprowski
+> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org; Kyungmin Park; Mark Brown; Liam Girdwood; Philip Rakity
+> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for non-fixed regulators
+> >
+> > Hi,
+> >
+> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> >>> > Fixed regulators cannot change their voltage, so disable all voltage
+> >>> > range checking for them, otherwise the driver fails to operate with
+> >>> > fixed regulators. Up to now it worked only by luck, because
+> >>> > regulator_is_supported_voltage() function returned incorrect values.
+> >>> > Commit "regulator: fix voltage check in regulator_is_supported_voltage()"
+> >>> > fixed that function and now additional check is needed for fixed
+> >>> > regulators.
+> >>> >
+> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >>> > ---
+> >>> >  drivers/mmc/host/sdhci.c |    2 +-
+> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>> >
+> >>> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> >>> > index c7851c0..6f6534e 100644
+> >>> > --- a/drivers/mmc/host/sdhci.c
+> >>> > +++ b/drivers/mmc/host/sdhci.c
+> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
+> >>> >            regulator_enable(host->vmmc);
+> >>> >
+> >>> >  #ifdef CONFIG_REGULATOR
+> >>> > -  if (host->vmmc) {
+> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
+> >>> >            ret = regulator_is_supported_voltage(host->vmmc, 3300000,
+> >>> >                    3300000);
+> >>> >            if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
+> >>>
+> >>> Thanks for the longer explanation.  I'm still missing something, though;
+> >>> what's wrong with running the check as it was with the new regulator code?
+> >>> (I haven't tried it yet.)
+> >>>
+> >>> #ifdef CONFIG_REGULATOR
+> >>>          if (host->vmmc) {
+> >>>                  ret = regulator_is_supported_voltage(host->vmmc, 3300000,
+> >>>                          3300000);
+> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
+> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
+> >>>                  ret = regulator_is_supported_voltage(host->vmmc, 3000000,
+> >>>                          3000000);
+> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
+> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
+> >>>                  ret = regulator_is_supported_voltage(host->vmmc, 1800000,
+> >>>                          1800000);
+> >>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
+> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
+> >>>          }
+> >>> #endif /* CONFIG_REGULATOR */
+> >>>
+> >>> The point is to remove unsupported voltages, so if someone sets up a
+> >>> fixed regulator at 3300000, all of the other caps are disabled.  Why
+> >>> wouldn't that work without this change, and how are we supposed to
+> >>> remove those caps on a fixed regulator after your patchset?
+> >>>
+> >>> Thanks, sorry if I'm missing something obvious,
+> >>
+> >> On our boards eMMC is connected to fixed 2.8V regulator, what results in
+> >> clearing all available voltages and fail. The same situation is when one
+> >> enable dummy regulator and try to use sdhci with it. My patch fixes this
+> >> and restores sdhci to working state as it was before (before fixing
+> >> regulator regulator_is_supported_voltage() function and earlier when
+> >> MMC_BROKEN_VOLATGE capability was used).
+> >
+> > I see.  Sounds like a separate bug -- Philip (or anyone else), any
+> > idea how we should be treating eMMCs with a fixed voltage here?
+> >
+>
+> I think we should check the voltage range rather than the voltage
+> point accoring to the spec.
+> Otherwise some valid voltage like 2.8v will be discarded by mistake.
+> My below old patch aim to fix this issue.
+> How do you think?
+>
+> -----Original Message-----
+> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
+> Sent: Friday, September 28, 2012 3:56 PM
+> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
+> ulf.hansson@linaro.org; Zhangfei Gao
+> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing Fu
+> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
+> range according to spec
+>
+> From: Kevin Liu <kliu5@marvell.com>
+>
+> For regulator vmmc/vmmcq, use voltage range as below
+> 3.3v/3.0v: (2.7v, 3.6v)
+> 1.8v: (1.7v, 1.95v)
+> Original code use the specific value which may fail in regulator
+> driver if it does NOT support the specific voltage.
+>
+> Signed-off-by: Jialing Fu <jlfu@marvell.com>
+> Signed-off-by: Kevin Liu <kliu5@marvell.com>
 
-From: Jan Kara <jack@suse.cz>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-[darrick.wong@oracle.com: Minor style and changelog fixes]
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- fs/direct-io.c     |  126 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/super.c         |    2 +
- include/linux/fs.h |   14 +++++-
- 3 files changed, 137 insertions(+), 5 deletions(-)
+Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
+This patch restores sdhci devices to working state on Samsung boards
+(tested on GONI and UniversalC210) after merging "regulator: fix voltage
+check in regulator_is_supported_voltage()" patch to v3.7-rc6 (commit
+f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have it
+merged before the final v3.7 is out.
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..b7391d4 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -37,6 +37,7 @@
- #include <linux/uio.h>
- #include <linux/atomic.h>
- #include <linux/prefetch.h>
-+#include <asm/cmpxchg.h>
- 
- /*
-  * How many user pages to map in one call to get_user_pages().  This determines
-@@ -112,6 +113,15 @@ struct dio_submit {
- 	unsigned tail;			/* last valid page + 1 */
- };
- 
-+/* state needed for final sync and completion of O_SYNC AIO DIO */
-+struct dio_sync_io_work {
-+	struct kiocb *iocb;
-+	loff_t offset;
-+	ssize_t len;
-+	int ret;
-+	struct work_struct work;
-+};
-+
- /* dio_state communicated between submission path and end_io */
- struct dio {
- 	int flags;			/* doesn't change */
-@@ -134,6 +144,7 @@ struct dio {
- 	/* AIO related stuff */
- 	struct kiocb *iocb;		/* kiocb */
- 	ssize_t result;                 /* IO result */
-+	struct dio_sync_io_work *sync_work;	/* work used for O_SYNC AIO */
- 
- 	/*
- 	 * pages[] (and any fields placed after it) are not zeroed out at
-@@ -217,6 +228,45 @@ static inline struct page *dio_get_page(struct dio *dio,
- }
- 
- /**
-+ * generic_dio_end_io() - generic dio ->end_io handler
-+ * @iocb: iocb of finishing DIO
-+ * @offset: the byte offset in the file of the completed operation
-+ * @bytes: length of the completed operation
-+ * @work: work to queue for O_SYNC AIO DIO, NULL otherwise
-+ * @ret: error code if IO failed
-+ * @is_async: is this AIO?
-+ *
-+ * This is generic callback to be called when direct IO is finished. It
-+ * handles update of number of outstanding DIOs for an inode, completion
-+ * of async iocb and queueing of work if we need to call fsync() because
-+ * io was O_SYNC.
-+ */
-+void generic_dio_end_io(struct kiocb *iocb, loff_t offset, ssize_t bytes,
-+			struct dio_sync_io_work *work, int ret, bool is_async)
-+{
-+	struct inode *inode = iocb->ki_filp->f_dentry->d_inode;
-+
-+	if (!is_async) {
-+		inode_dio_done(inode);
-+		return;
-+	}
-+
-+	/*
-+	* If we need to sync file, we offload completion to workqueue
-+	*/
-+	if (work) {
-+		work->ret = ret;
-+		work->offset = offset;
-+		work->len = bytes;
-+		queue_work(inode->i_sb->s_dio_flush_wq, &work->work);
-+	} else {
-+		aio_complete(iocb, ret, 0);
-+		inode_dio_done(inode);
-+	}
-+}
-+EXPORT_SYMBOL(generic_dio_end_io);
-+
-+/**
-  * dio_complete() - called when all DIO BIO I/O has been completed
-  * @offset: the byte offset in the file of the completed operation
-  *
-@@ -258,12 +308,23 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret, bool is
- 		ret = transferred;
- 
- 	if (dio->end_io && dio->result) {
-+		void *private;
-+
-+		if (dio->sync_work)
-+			private = dio->sync_work;
-+		else
-+			private = dio->private;
-+
- 		dio->end_io(dio->iocb, offset, transferred,
--			    dio->private, ret, is_async);
-+			    private, ret, is_async);
- 	} else {
--		if (is_async)
--			aio_complete(dio->iocb, ret, 0);
--		inode_dio_done(dio->inode);
-+		/* No IO submitted? Skip syncing... */
-+		if (!dio->result && dio->sync_work) {
-+			kfree(dio->sync_work);
-+			dio->sync_work = NULL;
-+		}
-+		generic_dio_end_io(dio->iocb, offset, transferred,
-+				   dio->sync_work, ret, is_async);
- 	}
- 
- 	return ret;
-@@ -1020,6 +1081,41 @@ static inline int drop_refcount(struct dio *dio)
- }
- 
- /*
-+ * Work performed from workqueue when AIO DIO is finished.
-+ */
-+static void dio_aio_sync_work(struct work_struct *work)
-+{
-+	struct dio_sync_io_work *sync_work =
-+			container_of(work, struct dio_sync_io_work, work);
-+	struct kiocb *iocb = sync_work->iocb;
-+	struct inode *inode = iocb->ki_filp->f_path.dentry->d_inode;
-+	int err, ret = sync_work->ret;
-+
-+	err = generic_write_sync(iocb->ki_filp, sync_work->offset,
-+				 sync_work->len);
-+	if (err < 0 && ret > 0)
-+		ret = err;
-+	aio_complete(iocb, ret, 0);
-+	inode_dio_done(inode);
-+}
-+
-+static noinline int dio_create_flush_wq(struct super_block *sb)
-+{
-+	struct workqueue_struct *wq =
-+				alloc_workqueue("dio-sync", WQ_UNBOUND, 1);
-+
-+	if (!wq)
-+		return -ENOMEM;
-+	/*
-+	 * Atomically put workqueue in place. Release our one in case someone
-+	 * else won the race and attached workqueue to superblock.
-+	 */
-+	if (cmpxchg(&sb->s_dio_flush_wq, NULL, wq))
-+		destroy_workqueue(wq);
-+	return 0;
-+}
-+
-+/*
-  * This is a library function for use by filesystem drivers.
-  *
-  * The locking rules are governed by the flags parameter:
-@@ -1112,6 +1208,26 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	memset(dio, 0, offsetof(struct dio, pages));
- 
- 	dio->flags = flags;
-+	if (flags & DIO_SYNC_WRITES && rw & WRITE &&
-+	    ((iocb->ki_filp->f_flags & O_DSYNC) || IS_SYNC(inode))) {
-+		/* The first O_SYNC AIO DIO for this FS? Create workqueue... */
-+		if (!inode->i_sb->s_dio_flush_wq) {
-+			retval = dio_create_flush_wq(inode->i_sb);
-+			if (retval) {
-+				kmem_cache_free(dio_cache, dio);
-+				goto out;
-+			}
-+		}
-+		dio->sync_work = kmalloc(sizeof(struct dio_sync_io_work),
-+					 GFP_KERNEL);
-+		if (!dio->sync_work) {
-+			retval = -ENOMEM;
-+			kmem_cache_free(dio_cache, dio);
-+			goto out;
-+		}
-+		INIT_WORK(&dio->sync_work->work, dio_aio_sync_work);
-+		dio->sync_work->iocb = iocb;
-+	}
- 	if (dio->flags & DIO_LOCKING) {
- 		if (rw == READ) {
- 			struct address_space *mapping =
-@@ -1124,6 +1240,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 							      end - 1);
- 			if (retval) {
- 				mutex_unlock(&inode->i_mutex);
-+				kfree(dio->sync_work);
- 				kmem_cache_free(dio_cache, dio);
- 				goto out;
- 			}
-@@ -1271,6 +1388,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	if (drop_refcount(dio) == 0) {
- 		retval = dio_complete(dio, offset, retval, false);
-+		kfree(dio->sync_work);
- 		kmem_cache_free(dio_cache, dio);
- 	} else
- 		BUG_ON(retval != -EIOCBQUEUED);
-diff --git a/fs/super.c b/fs/super.c
-index 12f1237..7478202 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -244,6 +244,8 @@ static inline void destroy_super(struct super_block *s)
- #ifdef CONFIG_SMP
- 	free_percpu(s->s_files);
- #endif
-+	if (s->s_dio_flush_wq)
-+		destroy_workqueue(s->s_dio_flush_wq);
- 	destroy_sb_writers(s);
- 	security_sb_free(s);
- 	WARN_ON(!list_empty(&s->s_mounts));
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b33cfc9..40dd206 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -44,6 +44,7 @@ struct vm_area_struct;
- struct vfsmount;
- struct cred;
- struct swap_info_struct;
-+struct workqueue_struct;
- 
- extern void __init inode_init(void);
- extern void __init inode_init_early(void);
-@@ -1321,6 +1322,9 @@ struct super_block {
- 
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
-+
-+	/* Pending fsync calls for completed AIO DIO with O_SYNC */
-+	struct workqueue_struct *s_dio_flush_wq;
- };
- 
- /* superblock cache pruning functions */
-@@ -2433,8 +2437,13 @@ enum {
- 
- 	/* filesystem does not support filling holes */
- 	DIO_SKIP_HOLES	= 0x02,
-+
-+	/* need generic handling of O_SYNC aio writes */
-+	DIO_SYNC_WRITES	= 0x04,
- };
- 
-+struct dio_sync_io_work;
-+
- void dio_end_io(struct bio *bio, int error);
- 
- ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-@@ -2448,12 +2457,15 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- {
- 	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
- 				    offset, nr_segs, get_block, NULL, NULL,
--				    DIO_LOCKING | DIO_SKIP_HOLES);
-+				    DIO_LOCKING | DIO_SKIP_HOLES |
-+				    DIO_SYNC_WRITES);
- }
- #endif
- 
- void inode_dio_wait(struct inode *inode);
- void inode_dio_done(struct inode *inode);
-+void generic_dio_end_io(struct kiocb *iocb, loff_t offset, ssize_t bytes,
-+			struct dio_sync_io_work *work, int ret, bool is_async);
- 
- extern const struct file_operations generic_ro_fops;
- 
+> ---
+>   drivers/mmc/host/sdhci.c |   16 +++++++---------
+>   1 files changed, 7 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 3aef580..36afd47 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1628,7 +1628,7 @@ static int
+> sdhci_do_3_3v_signal_voltage_switch(struct sdhci_host *host,
+>   	sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
+>
+>   	if (host->vqmmc) {
+> -		ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
+> +		ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
+>   		if (ret) {
+>   			pr_warning("%s: Switching to 3.3V signalling voltage "
+>   				   " failed\n", mmc_hostname(host->mmc));
+> @@ -1672,7 +1672,7 @@ static int
+> sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
+>   		 */
+>   		if (host->vqmmc)
+>   			ret = regulator_set_voltage(host->vqmmc,
+> -				1800000, 1800000);
+> +				1700000, 1950000);
+>   		else
+>   			ret = 0;
+>
+> @@ -2856,7 +2856,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>   		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+>   		host->vqmmc = NULL;
+>   	}
+> -	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
+> +	else if (regulator_is_supported_voltage(host->vqmmc, 1700000, 1950000))
+>   		regulator_enable(host->vqmmc);
+>   	else
+>   		caps[1] &= ~(SDHCI_SUPPORT_SDR104 | SDHCI_SUPPORT_SDR50 |
+> @@ -2927,16 +2927,14 @@ int sdhci_add_host(struct sdhci_host *host)
+>
+>   #ifdef CONFIG_REGULATOR
+>   	if (host->vmmc) {
+> -		ret = regulator_is_supported_voltage(host->vmmc, 3300000,
+> -			3300000);
+> +		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
+> +			3600000);
+>   		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_330))
+>   			caps[0] &= ~SDHCI_CAN_VDD_330;
+> -		ret = regulator_is_supported_voltage(host->vmmc, 3000000,
+> -			3000000);
+>   		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_300))
+>   			caps[0] &= ~SDHCI_CAN_VDD_300;
+> -		ret = regulator_is_supported_voltage(host->vmmc, 1800000,
+> -			1800000);
+> +		ret = regulator_is_supported_voltage(host->vmmc, 1700000,
+> +			1950000);
+>   		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_180))
+>   			caps[0] &= ~SDHCI_CAN_VDD_180;
+>   	}
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
