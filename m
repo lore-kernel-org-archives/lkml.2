@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2KTTd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:33:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38580 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab2KTTd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:33:26 -0500
-Date: Tue, 20 Nov 2012 11:33:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-Id: <20121120113325.dde266ed.akpm@linux-foundation.org>
-In-Reply-To: <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
-	<1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753241Ab2KTTnI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:43:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab2KTTnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 14:43:06 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
+        tytso@mit.edu, bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, djwong+kernel@djwong.org
+Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct I/O requests
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+	<20121120075114.25270.40680.stgit@blackbox.djwong.org>
+	<20121120112038.GC2591@dastard>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 20 Nov 2012 14:42:48 -0500
+In-Reply-To: <20121120112038.GC2591@dastard> (Dave Chinner's message of "Tue,
+	20 Nov 2012 22:20:38 +1100")
+Message-ID: <x49wqxghxhj.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012 15:31:45 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+Dave Chinner <david@fromorbit.com> writes:
 
-> dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
-> regardless the flags provided by the caller. This causes excessive
-> pruning of emergency memory pools without any good reason. Additionaly,
-> on ARM architecture any driver which is using dmapools will sooner or
-> later  trigger the following error: 
-> "ERROR: 256 KiB atomic DMA coherent pool is too small!
-> Please increase it with coherent_pool= kernel parameter!".
-> Increasing the coherent pool size usually doesn't help much and only
-> delays such error, because all GFP_ATOMIC DMA allocations are always
-> served from the special, very limited memory pool.
-> 
+> And requeuing work from one workqueue to the next is something that
+> we can avoid.  We know at IO submission time (i.e.
+> xfs_vm_direct_io)) whether an fsync completion is going to be needed
+> during Io completion.  The ioend->io_needs_fsync flag can be set
+> then, and the first pass through xfs_finish_ioend() can queue it to
+> the correct workqueue.  i.e. it only needs to be queued if it's not
+> already an unwritten or append ioend and it needs an fsync.
+>
+> As it is, all the data completion workqueues run the same completion
+> function so all you need to do is handle the fsync case at the end
+> of the existing processing - it's not an else case. i.e the end of
+> xfs_end_io() becomes:
+>
+> 	if (ioend->io_needs_fsync) {
+> 		error = xfs_ioend_fsync(ioend);
+> 		if (error)
+> 			ioend->io_error = -error;
+> 		goto done;
+> 	}
+> done:
+> 	xfs_destroy_ioend(ioend);
 
-Is this problem serious enough to justify merging the patch into 3.7? 
-And into -stable kernels?
+Works for me, that makes things simpler.
 
+> As it is, this code is going to change before these changes go in -
+> there's a nasty regression in the DIO code that I found this
+> afternoon that requires reworking this IO completion logic to
+> avoid. The patch will appear on the list soon....
+
+I'm not on the xfs list, so if you haven't already sent it, mind Cc-ing
+me?
+
+>> --- a/fs/xfs/xfs_mount.h
+>> +++ b/fs/xfs/xfs_mount.h
+>> @@ -209,6 +209,7 @@ typedef struct xfs_mount {
+>>  	struct workqueue_struct	*m_data_workqueue;
+>>  	struct workqueue_struct	*m_unwritten_workqueue;
+>>  	struct workqueue_struct	*m_cil_workqueue;
+>> +	struct workqueue_struct *m_aio_blkdev_flush_wq;
+>
+> 	struct workqueue_struct *m_aio_fsync_wq;
+
+For the record, m_aio_blkdev_flush_wq is the name you chose previously.
+;-)
+
+Thanks for the review!
+
+Cheers,
+Jeff
