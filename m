@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2KTWXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 17:23:20 -0500
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:48646 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2KTWXR (ORCPT
+	id S1753055Ab2KTWZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 17:25:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39407 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2KTWZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 17:23:17 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: exynos: dt: add all i2c busses to auxdata
-Date: Tue, 20 Nov 2012 14:22:35 -0800
-Message-Id: <1353450155-1663-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 20 Nov 2012 17:25:52 -0500
+Date: Tue, 20 Nov 2012 14:25:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rob Landley <rob@landley.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PART4 Patch v2 1/2] numa: add CONFIG_MOVABLE_NODE for
+ movable-dedicated node
+Message-Id: <20121120142550.5c126194.akpm@linux-foundation.org>
+In-Reply-To: <1353067090-19468-2-git-send-email-wency@cn.fujitsu.com>
+References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>
+	<1353067090-19468-2-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olof Johansson <olof@lixom.net>
+On Fri, 16 Nov 2012 19:58:09 +0800
+Wen Congyang <wency@cn.fujitsu.com> wrote:
 
-Needed to match device ids for clocks, etc.
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> 
+> All are prepared, we can actually introduce N_MEMORY.
+> add CONFIG_MOVABLE_NODE make we can use it for movable-dedicated node
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+This description is far too short on details.
 
----
- arch/arm/mach-exynos/mach-exynos5-dt.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+I grabbed this from the [0/n] email:
 
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index ed37273..e1491f7 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -52,6 +52,16 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
- 				"s3c2440-i2c.1", NULL),
- 	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(2),
- 				"s3c2440-i2c.2", NULL),
-+	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(3),
-+				"s3c2440-i2c.3", NULL),
-+	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(4),
-+				"s3c2440-i2c.4", NULL),
-+	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(5),
-+				"s3c2440-i2c.5", NULL),
-+	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(6),
-+				"s3c2440-i2c.6", NULL),
-+	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(7),
-+				"s3c2440-i2c.7", NULL),
- 	OF_DEV_AUXDATA("samsung,s3c2440-hdmiphy-i2c", EXYNOS5_PA_IIC(8),
- 				"s3c2440-hdmiphy-i2c", NULL),
- 	OF_DEV_AUXDATA("samsung,exynos5250-dw-mshc", EXYNOS5_PA_DWMCI0,
--- 
-1.7.7.3
+: We need a node which only contains movable memory.  This feature is very
+: important for node hotplug.  If a node has normal/highmem, the memory may
+: be used by the kernel and can't be offlined.  If the node only contains
+: movable memory, we can offline the memory and the node.
+
+which helps a bit, but it's still pretty thin.
+
+Why is this option made configurable?  Why not enable it unconditionally?
+
+Please send a patch which adds the Kconfig help text for
+CONFIG_MOVABLE_NODE.  Let's make that text nice and detailed.
+
+The name MOVABLE_NODE is not a good one.  It means "a node which is
+movable", whereas the concept is actually "a node whcih contains only
+movable memory".  I suppose we could change it to something like
+CONFIG_MOVABLE_MEMORY_ONLY_NODE or similar.  But I suppose that
+CONFIG_MOVABLE_NODE is good enough, as long as it is well-described in
+associated comments or help text.  This is not the case at present.
+
+> +#ifdef CONFIG_MOVABLE_NODE
+> +	N_MEMORY,		/* The node has memory(regular, high, movable) */
+> +#else
+
+I think the comment should be "The node has only movable memory"?
+
 
