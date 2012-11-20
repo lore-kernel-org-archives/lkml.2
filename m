@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab2KTIRY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:17:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22115 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab2KTIRW (ORCPT
+	id S1752621Ab2KTIRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:17:40 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:49559 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2KTIRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:17:22 -0500
-Subject: [PATCH 6/9] gfs2: Use generic handlers of O_SYNC AIO DIO
-To: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
-        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Date: Mon, 19 Nov 2012 23:51:14 -0800
-Message-ID: <20121120075114.25270.60746.stgit@blackbox.djwong.org>
-In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 20 Nov 2012 03:17:23 -0500
+Date: Tue, 20 Nov 2012 09:17:11 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Josh Cartwright <josh.cartwright@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 2/2] ARM: tegra: move timer.c to drivers/clocksource/
+Message-ID: <20121120091711.2609af06@skate>
+In-Reply-To: <20121120005036.GA6280@kryptos>
+References: <1353371237-2482-1-git-send-email-swarren@wwwdotorg.org>
+	<1353371237-2482-2-git-send-email-swarren@wwwdotorg.org>
+	<20121120005036.GA6280@kryptos>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-file.
+Josh,
 
-From: Jan Kara <jack@suse.cz>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- fs/gfs2/aops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Mon, 19 Nov 2012 18:50:36 -0600, Josh Cartwright wrote:
 
+> I had suggested this with Thomas Petazzoni's consolidated irq_chip patch
+> as well:
+> 
+> It seems like it would be a bit cleaner/easier to maintain if we relied
+> on the linker to stitch together a clksrc_of_match table, based on what
+> clocksources are being built into the image.  With that approach, at
+> least, a public initialization header wouldn't have to be exposed, and
+> this central table wouldn't have to be maintained (as more clocksrcs are
+> added, I forsee [admittedly trivial] merge conflicts).
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 01c4975..8b1d0f7 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -1022,7 +1022,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
- 
- 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
- 				  offset, nr_segs, gfs2_get_block_direct,
--				  NULL, NULL, 0);
-+				  NULL, NULL, DIO_SYNC_WRITES);
- out:
- 	gfs2_glock_dq(&gh);
- 	gfs2_holder_uninit(&gh);
+... and I indeed have a new version of my irqchip patches that indeed
+use the linker to merge together the of_device_id entries!
 
+Best regards,
 
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
