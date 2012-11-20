@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2KTA5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:57:37 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64952 "EHLO
+	id S1753873Ab2KTA5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:57:40 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64958 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab2KTA5f (ORCPT
+	with ESMTP id S1753825Ab2KTA5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:57:35 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-c3-50aad57d446d
+	Mon, 19 Nov 2012 19:57:38 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-cd-50aad57fcfc6
 From: Jonghwan Choi <jhbird.choi@samsung.com>
 To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>,
         "'open list'" <linux-kernel@vger.kernel.org>
 Cc: "'Amit Daniel Kachhap'" <amit.kachhap@linaro.org>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Zhang Rui'" <rui.zhang@intel.com>
+        "'Zhang Rui'" <rui.zhang@intel.com>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
 References: 
 In-reply-to: 
-Subject: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu core
-Date: Tue, 20 Nov 2012 09:57:29 +0900
-Message-id: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
+Subject: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+Date: Tue, 20 Nov 2012 09:57:35 +0900
+Message-id: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac22X7ZVF4M1NdAyQSSqkck9CTHe3QA04GwQA+GV/4A=
+Thread-index: Ac22X7ZVF4M1NdAyQSSqkck9CTHe3QAAAg6wADTi5aAD4ZQRQA==
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI926q6sCDCbUWlzeNYfNgdHj8ya5
-	AMYoLpuU1JzMstQifbsEroztG18yFpwVrbi25S5rA+NCgS5GTg4JAROJM2tnM0LYYhIX7q1n
-	62Lk4hASWMYo8eXHdzaYomeLfzBCJKYzSkz5/YgJwpnHJHFx9QdWkCo2AV2JY+u3gNkiAtES
-	fxr3MIMUMQs0MUocbZ3H3sXIAdTBLbG6OQikhlOAR2Ldn05mEFtYwEvi+J9FYNtYBFQl2s98
-	ArN5Bewkrm64zgphC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZpDxEgLqEo/+6kKcYCWx7tpK
-	qHIRiX0v3jFCjBeQ+Db5EAtEuazEpgPMED8uY5dYco8bwpaUOLjiBssERolZSBbPQrJ4FpLF
-	s5BsWMDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjJK6kdjCubLA4xCjAwajEw/swYVWA
-	EGtiWXFl7iFGCQ5mJRHepnKgEG9KYmVValF+fFFpTmrxIUYfoMMnMkuJJucDYz6vJN7Q2NjE
-	zMTUxNzS1NwUh7CSOG+zR0qAkEB6YklqdmpqQWoRzDgmDk6pBsaszRuN+9fwSYp/PBO98lT4
-	JctjUw2/THzSKe14vnJ25telCzJ2Knww+LPm5x/3sizz8qKTPafLlkroMgs0BwXafBTfybh3
-	z47q2Sqr/sQmm+mvfzPtkei7ORV3/tR+bW9oSVo5+1HM23nfvk2Z+k331R/jGov1Hu8Xl3hm
-	eFadCJcrOMx+ZMMMJZbijERDLeai4kQABk6rPNgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jQd3aq6sCDNYcs7S4vGsOmwOjx+dN
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI936q6sCDP59ELe4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ7V8eMhfME6p4+le6gfEVTxcjJ4eEgInEmWMr2SFsMYkL99az
+	dTFycQgJLGOUeHJwDStM0dErG1khEtMZJWbd/8gE4cxjkni2bSIbSBWbgK7EsfVbwDpEBKIl
+	/jTuYQYpYhZoYpRonL8IyOEA6uCWWN0cBFLDKcAjse5PJzOILSzgKDFz3SEWEJtFQFVi7703
+	YHN4BewkHk/ZyQZhC0r8mHwPrIZZQEti/c7jTBC2vMTmNW/BxksIqEs8+qsLYooIOEn8WqgD
+	USEise/FO0aI6QIS3yaDbAKplpXYdADsSAmBZewSO872skD8KylxcMUNlglAnyJZPAvJ4llI
+	Fs9CsmIBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjJC4ktrBuLLB4hCjAAejEg/vw4RV
+	AUKsiWXFlbmHGCU4mJVEeJvKgUK8KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4z5vJJ4Q2Nj
+	EzMTUxNzS1NzUxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoYndIeWM1kn8pyU+vQ1Xl3
+	E04K/InNEDtbMTW60u71lk3tL8ymJ/uskPq/5tmJ0pMrlzDHbfD+/2ob49tdnql8PmWbJwcE
+	/JHJPigpUNIi0PUuZfFDY/FzXBkd55o5pXi4t7VwPSiUDLMPqVp/TlGdYVJSz4NZ7mKRu9U4
+	3t8tET7y3a+sK32tEktxRqKhFnNRcSIA2DR8ztgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jQd36q6sCDGZuEra4vGsOmwOjx+dN
 	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGds3vmQsOCtacW3LXdYG
-	xoUCXYycHBICJhLPFv9ghLDFJC7cW8/WxcjFISQwnVFiyu9HTBDOPCaJi6s/sIJUsQnoShxb
-	vwXMFhGIlvjTuIcZpIhZoIlR4mjrPPYuRg6gDm6J1c1BIDWcAjwS6/50MoPYwgJeEsf/LGID
-	sVkEVCXaz3wCs3kF7CSubrjOCmELSvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmkPESAuoSj/7q
-	QpxgJbHu2kqochGJfS/eMU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWl
-	eel6yfm5mxjBkftMagfjygaLQ4wCHIxKPLwPE1YFCLEmlhVX5h5ilOBgVhLhbSoHCvGmJFZW
-	pRblxxeV5qQWH2L0AXp0IrOUaHI+MKnklcQbGpuYGVkamVkYmZib4xBWEudt9kgJEBJITyxJ
-	zU5NLUgtghnHxMEp1cAYaSGVzatiFXf24qIDvXtz5Te+tOkpr3K8dKxmq8eyBWXV/yRcLRqe
-	7ZnsfeWFf6bQjr3zNOr+TLpg47n7+OuNsypbeaICbzZxZmt5KJyQ/pTs+HJ+gU7SnVtN0oXi
-	KZ0RTv9uLLG+0br1eer/x/c2vnDvLIzIXMIZabn4Lpfh9/rCjSuzVAqUWIozEg21mIuKEwGw
-	0TdGCQMAAA==
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGe1fHjIXzBOqePpXuoHx
+	FU8XIyeHhICJxNErG1khbDGJC/fWs3UxcnEICUxnlJh1/yMThDOPSeLZtolsIFVsAroSx9Zv
+	AesQEYiW+NO4hxmkiFmgiVGicf4iIIcDqINbYnVzEEgNpwCPxLo/ncwgtrCAo8TMdYdYQGwW
+	AVWJvffegM3hFbCTeDxlJxuELSjxY/I9sBpmAS2J9TuPM0HY8hKb17wFGy8hoC7x6K8uiCki
+	4CTxa6EORIWIxL4X7xgnMArNQjJoFpJBs5AMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4Kh9JrWDcWWDxSFGAQ5GJR7ehwmrAoRYE8uKK3MPMUpwMCuJ8DaVA4V4UxIrq1KL
+	8uOLSnNSiw8x+gD9OZFZSjQ5H5hQ8kriDY1NzIwsjcwsjEzMzXEIK4nzNnukBAgJpCeWpGan
+	phakFsGMY+LglGpgFL4QY1AiJ+j1bcf6mycmLZ1fXpYTLDZX6x6r0y3udTnaZv2eH/ycX205
+	MHO35/M7mrqfmT4/Mrq/5JGS/mOflh07yu1vXA7lur5taXp27pYdSz9t+fPv3Urzoys3zV+s
+	ZOZuFRcZ9ntqRv6x99Fyqx+ruK/9F7t6wkynFVN6YvJPurkozv22wluJpTgj0VCLuag4EQCz
+	GOzRBwMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
+TMU urgently sends active-high signal (thermal trip) to PMU,
+and thermal tripping by hardware logic i.e PMU is performed.
+Thermal tripping means that PMU cut off the whole power of SoC
+by controlling external voltage regulator.
 
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/thermal/exynos_thermal.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/thermal/exynos_thermal.c
 b/drivers/thermal/exynos_thermal.c
-index 6dd29e4..129e827 100644
+index 129e827..569478d 100644
 --- a/drivers/thermal/exynos_thermal.c
 +++ b/drivers/thermal/exynos_thermal.c
-@@ -52,9 +52,12 @@
-
- #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
- #define EXYNOS_TMU_GAIN_SHIFT          8
-+#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
- #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
--#define EXYNOS_TMU_CORE_ON             3
--#define EXYNOS_TMU_CORE_OFF            2
-+#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
-EXYNOS_TMU_REF_VOLTAGE_SHIFT)
-+#define EXYNOS_TMU_CORE_ON             BIT(0)
-+#define EXYNOS_TMU_CORE_ON_SHIFT       0
-+#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+@@ -58,6 +58,7 @@
+ #define EXYNOS_TMU_CORE_ON             BIT(0)
+ #define EXYNOS_TMU_CORE_ON_SHIFT       0
+ #define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
 EXYNOS_TMU_CORE_ON_SHIFT)
++#define EXYNOS_TMU_TRIP_EN             BIT(12)
  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
 
  /* Exynos4210 specific registers */
-@@ -85,7 +88,9 @@
- #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
- #define EXYNOS_MUX_ADDR_VALUE          6
- #define EXYNOS_MUX_ADDR_SHIFT          20
-+#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
- #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
-+#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 << EXYNOS_TMU_TRIP_MODE_SHIFT)
+@@ -631,6 +632,12 @@ static int exynos_tmu_initialize(struct platform_device
+*pdev)
+                        goto out;
+                }
+                rising_threshold |= (threshold_code << 16);
++               threshold_code = temp_to_code(data,
+pdata->trigger_levels[3]);
++               if (threshold_code < 0) {
++                       ret = threshold_code;
++                       goto out;
++               }
++               rising_threshold |= (threshold_code << 24);
 
- #define EFUSE_MIN_VALUE 40
- #define EFUSE_MAX_VALUE 100
-@@ -650,10 +655,14 @@ static void exynos_tmu_control(struct platform_device
+                writel(rising_threshold,
+                                data->base + EXYNOS_THD_TEMP_RISE);
+@@ -665,6 +672,8 @@ static void exynos_tmu_control(struct platform_device
 *pdev, bool on)
-        mutex_lock(&data->lock);
-        clk_enable(data->clk);
-
--       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-+       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
-+       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
-+               EXYNOS_TMU_CORE_ON_MASK);
-+       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-                pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-
-        if (data->soc == SOC_ARCH_EXYNOS) {
-+               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+                con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
                 con |= pdata->noise_cancel_mode <<
 EXYNOS_TMU_TRIP_MODE_SHIFT;
                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
++               if (pdata->trigger_levels[3])
++                       con |= EXYNOS_TMU_TRIP_EN;
         }
-@@ -665,7 +674,6 @@ static void exynos_tmu_control(struct platform_device
-*pdev, bool on)
-                        pdata->trigger_level1_en << 4 |
-                        pdata->trigger_level0_en;
-        } else {
--               con |= EXYNOS_TMU_CORE_OFF;
-                interrupt_en = 0; /* Disable all interrupts */
-        }
-        writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+
+        if (on) {
+@@ -770,6 +779,7 @@ static struct exynos_tmu_platform_data const
+exynos_default_tmu_data = {
+        .trigger_levels[0] = 85,
+        .trigger_levels[1] = 103,
+        .trigger_levels[2] = 110,
++       .trigger_levels[3] = 120,
+        .trigger_level0_en = 1,
+        .trigger_level1_en = 1,
+        .trigger_level2_en = 1,
 --
 1.7.4.1
 
