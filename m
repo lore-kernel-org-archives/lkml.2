@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2KTFbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 00:31:19 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43220 "EHLO
+	id S1751189Ab2KTFof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 00:44:35 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33807 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2KTFbR (ORCPT
+	with ESMTP id S1750759Ab2KTFoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 00:31:17 -0500
-Date: Mon, 19 Nov 2012 21:31:12 -0800
+	Tue, 20 Nov 2012 00:44:34 -0500
+Date: Mon, 19 Nov 2012 21:44:28 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
-        john.r.fastabend@intel.com, nhorman@tuxdriver.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] cgroup: add cgroup->id
-Message-ID: <20121120053112.GE25790@mtj.dyndns.org>
-References: <1353093624-22608-1-git-send-email-tj@kernel.org>
- <1353093624-22608-2-git-send-email-tj@kernel.org>
- <50AB086E.70901@jp.fujitsu.com>
+To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
+Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy
+ support
+Message-ID: <20121120054428.GF25790@mtj.dyndns.org>
+References: <1353123062-23193-1-git-send-email-tj@kernel.org>
+ <20121119192142.GM15971@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50AB086E.70901@jp.fujitsu.com>
+In-Reply-To: <20121119192142.GM15971@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kamezawa.
+Hello, guys.
 
-On Tue, Nov 20, 2012 at 01:34:54PM +0900, Kamezawa Hiroyuki wrote:
-> I'm sorry if I misunderstand ... current usage of css-id in memory/swap cgroup
-> is for recording information of memory cgroup which may be destroyed. In some case,
-> a memcg's cgroup is freed but a struct memcgroup and its css are available, swap_cgroup
-> may contain id ot if.
-> This patch puts cgroup's id at diput(), so, the id used in swap_cgroup can be
-> reused while it's in use. Right ?
+On Mon, Nov 19, 2012 at 11:21:42AM -0800, Tejun Heo wrote:
+> On Fri, Nov 16, 2012 at 07:30:59PM -0800, Tejun Heo wrote:
+> > Hello, guys.
+> > 
+> > This patchset implements proper hierarchy support for netcls_cgroup.
+> > Pretty simliar to the netprio one[3].  Simpler as each cgroup has
+> > single config value instead of array of them.
+> 
+> Applied to cgroup/for-3.8.
 
-CSSes hold onto cgroups, so if memcg is around, its cgroup doesn't go
-away, so the right thing to do would be holding onto CSS whlie there
-are remaining references, which IMHO is the way it should have been
-implemented from the beginning.  The only reason memcg currently has
-its own refcnt nested inside css refcnt is because cgroup used to
-require css refs to be completely drained for cgroup_rmdir() to
-proceed.  Now that that weirdity is gone, we should go back to sane
-css based reference counting, right?
+I'm kinda having a second thought about this and reverted it for the
+time being.  The problem is that there are other configurations which
+are only inherited while creating a new child cgroup without
+propagating new configuration afterwards -
+e.g. cpuset.memory_spread_*, and given that cpuset has been around for
+quite some time and has been one of the popular controllers, I don't
+think we can change the behavior at this point.
+
+It looks like we'll have to have some mixture of both behaviors.
+Anything resource limit related should affect its descendants while
+other per-cgroup attributes don't, with the distinction between the
+two muddy at times.
+
+So, if we're gonna have to do that anyway, I can't find a strong
+rationale for changing net_cls's behavior of not propagating on
+ancestor update, and net_prio should match net_cls's behavior -
+ie. inherit on cgroup creation but then operate separately.
+
+I'll prep a new patchset to update netprio accordingly.
 
 Thanks.
 
