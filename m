@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2KTIix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:38:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49210 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab2KTIiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:38:51 -0500
-Date: Tue, 20 Nov 2012 00:38:36 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
-        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
-Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH v1 0/9] fs: fix up AIO+DIO+O_SYNC to actually do the sync
- part
-Message-ID: <20121120083836.GA11842@blackbox.djwong.org>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752585Ab2KTIlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:41:42 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:41063 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779Ab2KTIll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 03:41:41 -0500
+Date: Tue, 20 Nov 2012 09:41:35 +0100
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: introduce tables for readable/writeable/volatile/precious checks
+Message-ID: <20121120084135.GC10665@mail.gnudd.com>
+References: <1353331913-24941-1-git-send-email-ciminaghi@gnudd.com> <20121120060509.GB10560@opensource.wolfsonmicro.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20121120060509.GB10560@opensource.wolfsonmicro.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for the garbage emails.  The corporate email server lost its mind,
-and I'm well on my way to losing mine.... <grumble> <shakes fist>
+On Tue, Nov 20, 2012 at 03:05:11PM +0900, Mark Brown wrote:
+> On Mon, Nov 19, 2012 at 02:31:53PM +0100, Davide Ciminaghi wrote:
+> > Many of the regmap enabled drivers implementing one or more of the
+> > readable, writeable, volatile and precious methods use the same code
+> > pattern:
+> > 
+> > 	return ((reg >= X && reg <= Y) || (reg >= W && reg <= Z) || ...)
+> > 
+> > Switch to a data driven approach, using tables to describe
+> > readable/writeable/volatile and precious registers ranges instead.
+> > The table based check can still be overridden by passing the usual function
+> > pointers via struct regmap_config.
+> 
+> Sorry, the code looks good but I just realised we already have a feature
+> called ranges - the paged window support also calls the regions it uses
+> ranges.  Can I suggest access_table or similar instead?  Sorry about
+> that - I should've realised.
 
-They at least were so garbled that they're not attached to this thread.
+ok no problem, I'll change the name and resend.
 
---D
+Thanks and regards
+Davide
 
-> Hi everybody,
-> 
-> On March 29th, Jeff Moyer posted to lkml a patchset with this note:
-> 
-> > Currently, AIO+DIO+O_SYNC writes are not actually sync'd (for xfs), or they
-> > are sync'd before the I/O is actually issued (everybody else).  The following
-> > patch series fixes this in two parts.  First, for the file systems that use
-> > the generic routines, Jan has provided some generic infrastructure to perform
-> > the syncs after the I/O is completed.  Second, for those file systems which
-> > require some endio processing of their own for O_DIRECT writes (xfs and
-> > ext4), [Jeff] implemented file system specific syncing.  This passes the
-> > updated xfs-tests 113 test [Jeff] posted earlier, as well as all of the tests
-> > in the aio group.  [Jeff] tested ext3, ext4, xfs, and btrfs only.
-> 
-> Since the original post a few months ago, this patchset doesn't seem to have
-> made any progress.  An internal testing team here discovered that the issue
-> also affects O_SYNC+AIO+DIO writes to block devices.  Worse yet, since the
-> flushes were being issued (and waited upon) directly in the io_submit call
-> graph, the io_submit calls themselves would take a very long time to complete.
-> Therefore, I added another patch to move the flush to the io_end processing.
-> 
-> The blockdev patch was written by me.  The ext4 patch had to be updated to
-> accomodate a rework of the ext4 endio code that landed since March.  Everything
-> else has been passed through from Jeff's March 30th resend, with few changes.
-> 
-> This patchset has been tested (albeit lightly) against 3.7-rc6 on x64, with
-> ext4, xfs, btrfs, vfat, jfs, hfsplus, ext2, ext3, and raw block devices.
-> 
-> Comments and questions are, as always, welcome.
-> 
-> --D
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
