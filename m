@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab2KTOu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:50:29 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59183 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab2KTOu2 (ORCPT
+	id S1753338Ab2KTOwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:52:53 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60725 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2KTOww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:50:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121120144742.GG7955@dm>
-References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
-	<20121120142906.GD7955@dm>
-	<1353422629.11235.10.camel@joe-AO722>
-	<20121120144742.GG7955@dm>
-Date: Tue, 20 Nov 2012 16:50:27 +0200
-X-Google-Sender-Auth: MdCALoFepm75oZ-VbW51NTKhkLk
-Message-ID: <CAE7jHC8LsxPaQHqy5-H4-wZp6q+_0s7arnPa3jG7R9x=tf_Oww@mail.gmail.com>
-Subject: Re: [PATCH v4] checkpatch: debugfs_remove() can take NULL
-From: Constantine Shulyupin <const@makelinux.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Nov 2012 09:52:52 -0500
+Date: Tue, 20 Nov 2012 14:58:04 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Adam Jackson <ajax@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arthur Taylor <art@ified.ca>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] vt: Drop K_OFF for VC_MUTE
+Message-ID: <20121120145804.74c74400@pyramind.ukuu.org.uk>
+In-Reply-To: <1353090754-30233-1-git-send-email-ajax@redhat.com>
+References: <1353090754-30233-1-git-send-email-ajax@redhat.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Tue, 2012-11-20 at 14:29 +0000, Andy Whitcroft wrote:
->> Perhaps just
->>                               WARN("NEEDLESS_IF",
->
-> I would cirtainly be happy with that, I was trying to avoid changing the
-> capacity for the existing NEEDLESS_KFREE.  If compatibility there isn't
-> an issue then that makes life even simpler.
->
-> -apw
+> Drop the K_OFF handling and replace it with a new "mute" ioctl pair.
+> Anybody using K_OFF would already need to be prepared to handle it
+> throwing -EINVAL for old kernel compatibility, so userspace will degrade
+> gracefully.
 
-Right.
+Interesting theory. It may degrade but it'll degrade to a state worse
+than current.
+
+I don't see why K_OFF needs to go away. If the mute ioctl handling also
+affects mute mode too then it should just work.
+
+Alan
