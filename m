@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab2KTPz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:55:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15399 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab2KTPz5 (ORCPT
+	id S1752918Ab2KTP5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:57:46 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35776 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751803Ab2KTP5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:55:57 -0500
-X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Wu0uEauASpgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=gAuBvx7K2IcA:10 a=Mg2bPhSwYpk1OuVmy0UA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353426955.6276.24.camel@gandalf.local.home>
-Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
-Date: Tue, 20 Nov 2012 10:55:55 -0500
-In-Reply-To: <20121120154824.GA17534@redhat.com>
-References: <20121109182943.GA2789@redhat.com>
-	 <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com>
-	 <1353349500.6276.9.camel@gandalf.local.home>
-	 <20121120154824.GA17534@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 10:57:45 -0500
+Date: Tue, 20 Nov 2012 15:57:17 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Maynard Johnson <maynardj@us.ibm.com>,
+        "jgq516@gmail.com" <jgq516@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] ARM: oprofile: add A5/A7/A15 entries in op_perf_name
+Message-ID: <20121120155717.GD26475@mudshark.cambridge.arm.com>
+References: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
+ <20121105113102.GF3351@mudshark.cambridge.arm.com>
+ <20121120121747.GJ2504@rric.localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120121747.GJ2504@rric.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 16:48 +0100, Oleg Nesterov wrote:
-
-> > But here, there's no prejudice between tasks. All tasks will now hit the
-> > breakpoint regardless of if it is being traced or not.
->   ^^^^^^^^^^
+On Tue, Nov 20, 2012 at 12:17:47PM +0000, Robert Richter wrote:
+> Will,
 > 
-> This is hardware breakpoint, it is per-task.
+> On 05.11.12 11:31:03, Will Deacon wrote:
+> > > diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> > > index 99c63d4b..ec10db1 100644
+> > > --- a/arch/arm/oprofile/common.c
+> > > +++ b/arch/arm/oprofile/common.c
+> > > @@ -37,8 +37,11 @@ static struct op_perf_name {
+> > >  	{ "xscale1",		"arm/xscale2"	},
+> > >  	{ "v6",			"arm/armv6"	},
+> > >  	{ "v6mpcore",		"arm/mpcore"	},
+> > > +	{ "ARMv7 Cortex-A5",	"arm/armv7-ca5"	},
+> > > +	{ "ARMv7 Cortex-A7",	"arm/armv7-ca7"	},
+> > >  	{ "ARMv7 Cortex-A8",	"arm/armv7"	},
+> > >  	{ "ARMv7 Cortex-A9",	"arm/armv7-ca9"	},
+> > > +	{ "ARMv7 Cortex-A15",	"arm/armv7-ca15" },
+> > >  };
+> 
+> > I'd rather not go down this route now that we have the operf tool as part of
+> > oprofile, which can use the perf syscall directly and doesn't need this
+> > string translation.
+> 
+> since this is just an update of cpu detection I would be willing to
+> include this into kernel code anyway.
 
-I forgot that hw breakpoints are swapped out at context switch (as Amnon
-informed me). 
+Perhaps, but one day we might like to remove this compatibility layer as
+tools move over to the perf system call, so adding new CPUs here is actively
+going against that.
 
-OK, that makes a big difference.
+> We could further move the cpu detection to userspace if perf_event
+> exists. We let the kernel enable oprofile with cpu_type="unknown".
+> User space then could either bind mount the file (user could do this
+> manually) or we implement to write to cpu_type. Doing so oprofile
+> could use in-kernel perf_events if it exists always as fallback.
 
-Thanks,
+Not sure I follow you... operf already does the CPU detection from
+userspace, so I guess that code could simply be re-used. What does the bind
+mount involve?
 
--- Steve
+Cheers,
 
-
+Will
