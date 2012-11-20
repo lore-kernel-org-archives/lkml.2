@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2KTDtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 22:49:11 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:14150 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab2KTDtJ (ORCPT
+	id S1751635Ab2KTEX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 23:23:56 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59553 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab2KTEXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 22:49:09 -0500
-Message-ID: <50AAFD0D.2010003@huawei.com>
-Date: Tue, 20 Nov 2012 11:46:21 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 19 Nov 2012 23:23:54 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50AB05B4.4000303@jp.fujitsu.com>
+Date: Tue, 20 Nov 2012 13:23:16 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-CC: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v1 0/5] fix up inaccurate zone->present_pages
-References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <50AAE72E.3090101@gmail.com> <50AAEE61.2090504@huawei.com> <50AAF6F3.8010203@gmail.com>
-In-Reply-To: <50AAF6F3.8010203@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, memcg: avoid unnecessary function call when memcg
+ is disabled
+References: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-20 11:20, Jaegeuk Hanse wrote:
-> On 11/20/2012 10:43 AM, Jiang Liu wrote:
->> On 2012-11-20 10:13, Jaegeuk Hanse wrote:
->>> On 11/19/2012 12:07 AM, Jiang Liu wrote:
->> Hi Jaegeuk,
->>     Thanks for review this patch set.
->>     Currently x86/x86_64/Sparc have been converted to use nobootmem.c,
->> and other Arches still use bootmem.c. So need to test it on other Arches,
->> such as ARM etc. Yesterday we have tested it patchset on an Itanium platform,
->> so bootmem.c should work as expected too.
-> 
-> Hi Jiang,
-> 
-> If there are any codes changed in x86/x86_64  to meet nobootmem.c logic? I mean if remove
-> config NO_BOOTMEM
->        def_bool y
-> in arch/x86/Kconfig, whether x86/x86_64 can take advantage of bootmem.c or not.
-There are code change in x86/x86_64 arch directory to convert from bootmem.c
-to nobootmem.c, so you can't simply comment out NO_BOOTMEM Kconfig item.
-There are differences in APIs for bootmem.c and nobootmem.c.
-For example, free_low_memory_core_early() is only provided by nobootmem.c
-and init_bootmem_node() is only provided by bootmem.c.
-Thanks!
+(2012/11/20 10:44), David Rientjes wrote:
+> While profiling numa/core v16 with cgroup_disable=memory on the command
+> line, I noticed mem_cgroup_count_vm_event() still showed up as high as
+> 0.60% in perftop.
+>
+> This occurs because the function is called extremely often even when memcg
+> is disabled.
+>
+> To fix this, inline the check for mem_cgroup_disabled() so we avoid the
+> unnecessary function call if memcg is disabled.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+
+Acked-By: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
 
