@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab2KTJxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:53:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39400 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab2KTJxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:53:31 -0500
-Date: Tue, 20 Nov 2012 10:53:28 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: fix extended colors ncurses support
-Message-ID: <20121120095328.GA28431@sepie.suse.cz>
-References: <1349713102-3301-1-git-send-email-krzysiek@podlesie.net>
+	id S1752637Ab2KTJyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:54:22 -0500
+Received: from relay01.smp.mweb.co.za ([196.28.80.21]:59317 "EHLO
+	relay01.smp.mweb.co.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab2KTJyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:54:21 -0500
+X-Greylist: delayed 5863 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 04:54:21 EST
+Message-ID: <44ac088a999db2466885811b8c150342.squirrel@webmail.mweb.net>
+Date: Tue, 20 Nov 2012 10:16:11 +0200 (SAST)
+Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY,
+      UPGRADE NOW !!!
+From: "Webmail Account Upgrade" <cyrilwides@mweb.co.za>
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349713102-3301-1-git-send-email-krzysiek@podlesie.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 06:18:22PM +0200, Krzysztof Mazur wrote:
-> The ncurses library allows for extended colors. The support for extended
-> colors support depends on wide-character support. ncurses headers
-> enable extended colors (NCURSES_EXT_COLORS) only when wide-character
-> support is enabled (NCURSES_WIDECHAR).
-> 
-> The "make menuconfig" uses wide-character ncursesw library, which can be
-> compiled with wide-character support, but does not define NCURSES_WIDECHAR
-> and it's using headers without wide-character (and extended colors) support.
-> 
-> This fixes problems with colors on systems with enabled extended colors
-> (like PLD Linux). Without this patch "make menuconfig" is hard to use.
-> 
-> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+ Your webmail account is corrupted by virus, you are to advise to upgrade.
+ You need to upgrade your email limit quota to 10GB within the next 48
+hours. Use the below web link to upgrade your valid email account:
+
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDcwdURxMkJCS25LSE5IREtLTXB3bkE6MQ
+
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
 
 
-Applied to kbuild.git#kconfig, thanks.
-
-Michal
