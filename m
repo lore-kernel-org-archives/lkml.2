@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab2KTJ6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:58:01 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:14933 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab2KTJ57 convert rfc822-to-8bit (ORCPT
+	id S1752943Ab2KTJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:58:06 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47050 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab2KTJ6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:57:59 -0500
-X-IronPort-AV: E=Sophos;i="4.83,285,1352044800"; 
-   d="scan'208";a="6238865"
-Message-ID: <50AB53B8.1030309@cn.fujitsu.com>
-Date: Tue, 20 Nov 2012 17:56:08 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 20 Nov 2012 04:58:01 -0500
+Date: Tue, 20 Nov 2012 01:57:57 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+Message-ID: <20121120095757.GB11732@core.coreip.homeip.net>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+ <20121120093242.GK3290@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 0/2] x86: clear vmcss on all cpus when doing kdump
- if necessary
-References: <50A3645F.60302@cn.fujitsu.com> <50A611AA.6030903@cn.fujitsu.com> <20121120003258.GA1292@amt.cnet>
-In-Reply-To: <20121120003258.GA1292@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 17:57:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 17:57:42
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120093242.GK3290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年11月20日 08:32, Marcelo Tosatti 写道:
-> On Fri, Nov 16, 2012 at 06:12:58PM +0800, zhangyanfei wrote:
->> Hello Marcelo,
->>
->> Any thoughts?
+On Tue, Nov 20, 2012 at 09:32:42AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Nov 20, 2012 at 01:22:17AM -0800, Dmitry Torokhov wrote:
+> > We'll need to invoke clk_unprepare() via a pointer in our devm_*
+> > conversion so let's uninline the pair.
 > 
-> I thought a function call was OK, but its better to have all code in
-> vmx.c. Please have an atomic notifier in kexec.c (registered by KVM
-> module via atomic_notifier_chain_register etc).
-> 
-> Other than that, which is largely cosmetic, it looks fine.
-> Sorry for not expressing this earlier.
-> 
-> 
+> NAK.  This breaks non-common clock using implementations.
 
-Hmm, Thanks. I will resend a new patch set.
+As Viresh mentioned I provided stubs for case when we do not have
+CONFIG_HAVE_CLK, so I am not sure how I'll break these platforms, but I
+am certainly open for suggestions.
+ 
+> 
+> Why do you need to call this function via a pointer?  That sounds absurd.
 
-Thanks
-Zhang
+devres framework takes and stores a pointer to a "destructor" which will
+be used later.
+
+Thanks.
+
+-- 
+Dmitry
