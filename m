@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2KTJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:53:09 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56933 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab2KTJxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:53:06 -0500
-Message-ID: <50AB52F7.9000301@ti.com>
-Date: Tue, 20 Nov 2012 10:52:55 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
+	id S1752791Ab2KTJx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:53:28 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:64292 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab2KTJx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:53:26 -0500
+Date: Tue, 20 Nov 2012 01:53:21 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [RFC/PATCH 0/3] CLK: add more devm_* APIs
+Message-ID: <20121120095321.GA11732@core.coreip.homeip.net>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <20121120093445.GL3290@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Constantine Shulyupin <const@MakeLinux.com>
-CC: <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix compilation error in cm_common.c
-References: <1353403553-13525-1-git-send-email-const@MakeLinux.com>
-In-Reply-To: <1353403553-13525-1-git-send-email-const@MakeLinux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120093445.GL3290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 10:25 AM, Constantine Shulyupin wrote:
-> From: Constantine Shulyupin <const@MakeLinux.com>
+On Tue, Nov 20, 2012 at 09:34:45AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Nov 20, 2012 at 01:22:16AM -0800, Dmitry Torokhov wrote:
+> > Hi,
+> > 
+> > When looking at recent driver conversions to managed resources (devm_*) there
+> > is no devm_clk_prepare() and similar functions, which forces mixing of 2
+> > resource management styles (managed/classic) in the same driver, which is not
+> > great.
+> > 
+> > This patch series adds more devm_* managed APIs to the CLK subsystem so that
+> > driver conversions can be "pure".
 > 
-> Added required linux/errno.h
-> 
-> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+> So, how do you ensure the correct ordering between clk_unprepare() and
+> clk_put(), or even clk_disable() and clk_unprepare() ?  I see nothing
+> here which makes any guarantees as to the ordering of those operations
+> upon cleanup.
 
-This supposed to be already fixed:
-https://patchwork.kernel.org/patch/1728521/
+devm_* calls form a stack so if you have
 
-> ---
->  arch/arm/mach-omap2/cm_common.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/mach-omap2/cm_common.c b/arch/arm/mach-omap2/cm_common.c
-> index 3246cef..3fafc27 100644
-> --- a/arch/arm/mach-omap2/cm_common.c
-> +++ b/arch/arm/mach-omap2/cm_common.c
-> @@ -13,6 +13,7 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/init.h>
-> +#include <linux/errno.h>
->  
->  #include "cm2xxx.h"
->  #include "cm3xxx.h"
-> 
+static void xxx_probe()
+{
+	input = devm_input_allocate_device();
 
+	devm_request_irq();
+	...
+	devm_clk_prepare()
+	...
+	devm_clk_enable()
+	... 
+	input_register_device();
+	return 0;
+}
+
+and
+
+static int xxx_remove()
+{
+	return 0;
+}
+
+then upon remove we'll execute:
+
+	input_unregister_device();
+	devm_clk_disable();
+	devm_clk_unprepare();
+	devm_free_irq();
+	input_free_device();
+
+Thanks.
 
 -- 
-Péter
+Dmitry
