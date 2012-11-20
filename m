@@ -1,160 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2KTJlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:41:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39745 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab2KTJlj (ORCPT
+	id S1752251Ab2KTJnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:43:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56133 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2KTJnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:41:39 -0500
-Date: Tue, 20 Nov 2012 10:41:32 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [patch] x86/vsyscall: Add Kconfig option to use native vsyscalls,
- switch to it
-Message-ID: <20121120094132.GA15156@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com>
- <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
- <20121120090637.GA14873@gmail.com>
+	Tue, 20 Nov 2012 04:43:04 -0500
+Date: Tue, 20 Nov 2012 10:42:59 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Laxman Dewangan <ldewangan@nvidia.com>
+cc: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: max8973: add regulator driver support
+In-Reply-To: <50AAE2BF.2000909@nvidia.com>
+Message-ID: <Pine.LNX.4.64.1211201027190.21420@axis700.grange>
+References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
+ <Pine.LNX.4.64.1211190900110.11024@axis700.grange> <50AAE2BF.2000909@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120090637.GA14873@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:mIMt4dXckF8XvfnpN27piR9JACTquQor5OV+mBbYtmo
+ PlYHnT97R+lwwLHJo82bjbULLV2QZUKqlBzqXF7ZhHhdHIdZRg
+ /OnJBG5oI1q1LsUccERn+RHyosDxzWUt/Irun9wXATMw5QZkrd
+ vexGEwS1gWN6ee3SsDZCUefL9vkXy3k6UaNo5GFKaFun7LsXWn
+ nebCfLqKY0nebag3H1mXkXiJIYzh+jXW7JDRxzWQZrRamvRrgu
+ BYeECqyUsnn/vHzzgojFU0skKU0veBCJk/9MfvGDJOVZho+ONk
+ rrA3CySwdtZYJ0j+yvhRUiNJyzS12VAodZ3SJBl73mt3pb8OoD
+ BZIBSS9kvEX+fA4EUBzTZ4pbVziv9X0zZxz0OpKEPjOR0wB4Tw
+ Bt0iQlNssVk+A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Laxman
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+On Tue, 20 Nov 2012, Laxman Dewangan wrote:
 
-> >      0.10%  [kernel]          [k] __do_page_fault                                       
-> >      0.08%  [kernel]          [k] handle_mm_fault                                       
-> >      0.08%  libjvm.so         [.] os::javaTimeMillis()                                  
-> >      0.08%  [kernel]          [k] emulate_vsyscall                                      
+> On Monday 19 November 2012 04:22 PM, Guennadi Liakhovetski wrote:
+> > 
+> > Hi Laxman
+> > 
+> > drivers in the tree. Well, I came to two conclusions so far: (1) The
+> > current regulator API is not very well suitable for such regulators. I
+> > would imagine, one would need two methods: for setting the "normal" and
+> > the DVS voltage. Instead of this drivers are trying to be smart at
+> > guessing, which voltage the user is trying to set now... (2) Drivers do
+> > this in different ways and at least out of the 2 drivers I looked at both
+> > have bugs and different ones at that. I'll send a separate email,
+> > describing what I found suspicious in them.
+> > 
+> > Of course, all the above was just my DVS-newbie impression, which can very
+> > well be absolutely wrong.
+> > 
 > 
-> Oh, finally a clue: you seem to have vsyscall emulation 
-> overhead!
+> If there is multipel VOUT register for single vout then these registers are
+> generally selected by the input pin of device.
+> In a given system, you can connect the gpios pin to this input pins to select
+> the proper VOUT register.
+> The register update through i2c consume more time and changing the gpio state
+> is comparatively less.
+> So if you have let say 4 voltages 1.10, 1.11, 1.12, 1.13 and having 4 VOUT
+> register. Then program these vout val to vout reg like 1.10 to vout_reg0, 1.11
+> to vout_reg1 etc.
+> Now for changing voltage between these will just require to change the gpio
+> pin state, not the register update and so it will be faster. You can achive
+> the voltage change by gpio pin state change.
+
+Right, that's also how I understood it, thanks for confirming.
+
+> Now if your DVS have more volatge scaling then you can use the LRU mechanism
+> to use the vout register for this new value.
+
+Well, as I commented to Mark, you certainly can do that, but it might or 
+might not work very well. But we can keep it if it works well for you and, 
+probably, it will also work for most other users. I just find the way you 
+interface the generic LRU for arbitrary many elements and your specific 
+2-element case not very cleanly. In your case the LRU selection can only 
+return 0 or 1, anything else would be a bug. So, why don't you just 
+BUG_ON() / WARN_ON() / dev_err() if returned index > 1 instead of taking 
+the lowest bit?
+
+> > > +     max->dev =&client->dev;
+> > > +     max->desc.name = id->name;
+> > > +     max->desc.id = 0;
+> > Don't you have to be able to process multiple such devices?
 > 
-> Vsyscall emulation is fundamentally page fault driven - which 
-> might explain why you are seeing page fault overhead. It might 
-> also interact with other sources of faults - such as 
-> numa/core's working set probing ...
+> Not really require as device have only one output. The different devices will
+> have different registrations and so does not matter here.
+
+Right, I thought it had to be unique.
+
+> > > +     max->enable_external_control = pdata->enable_ext_control;
+> > > +     max->dvs_gpio = pdata->dvs_gpio;
+> > > +     max->curr_gpio_val = pdata->dvs_def_state;
+> > > +     max->curr_vout_reg = MAX8973_VOUT + pdata->dvs_def_state;
+> > > +     max->lru_index[0] = max->curr_vout_reg;
+> > Here you actually need an offset within your register address space, so,
+> > should be
+> > 
+> > +       max->lru_index[0] = pdata->dvs_def_state;
 > 
-> Many JVMs try to be smart with the vsyscall. As a test, does 
-> the vsyscall=native boot option change the results/behavior in 
-> any way?
+> 
+> Yaah, seems some issue if vout_base is not zero. But really dont require here
+> as MAX8973_VOUT is 0 in this case.
 
-As a blind shot into the dark, does the attached patch help?
+I think cleanly differentiating between register addresses, offsets and 
+indices is important.
 
-If that's the root cause then it should measurably help mainline 
-SPECjbb performance as well. It could turn numa/core from a 
-regression into a win on your system.
-
-Thanks,
-
-	Ingo
-
------------------>
-Subject: x86/vsyscall: Add Kconfig option to use native vsyscalls, switch to it
-From: Ingo Molnar <mingo@kernel.org>
-
-Apparently there's still plenty of systems out there triggering
-the vsyscall emulation page faults - causing hard to track down
-performance regressions on page fault intense workloads...
-
-Some people seem to have run into that with threading-intense
-Java workloads.
-
-So until there's a better solution to this, add a Kconfig switch
-to make the vsyscall mode configurable and turn native vsyscall
-support back on by default.
-
-Distributions whose libraries and applications use the vDSO and never
-access the vsyscall page can change the config option to off.
-
-Note, I don't think we want to expose the "none" option via a Kconfig
-switch - it breaks the ABI. So it's "native" versus "emulate", with
-"none" being available as a kernel boot option, for the super paranoid.
-
-For more background, see these upstream commits:
-
-  3ae36655b97a x86-64: Rework vsyscall emulation and add vsyscall= parameter
-  5cec93c216db x86-64: Emulate legacy vsyscalls
-
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Thanks
+Guennadi
 ---
- arch/x86/Kconfig              |   21 +++++++++++++++++++++
- arch/x86/kernel/vsyscall_64.c |    8 +++++++-
- 2 files changed, 28 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/Kconfig
-===================================================================
---- linux.orig/arch/x86/Kconfig
-+++ linux/arch/x86/Kconfig
-@@ -2234,6 +2234,27 @@ config X86_X32
- 	  elf32_x86_64 support enabled to compile a kernel with this
- 	  option set.
- 
-+config X86_VSYSCALL_COMPAT
-+	bool "vsyscall compatibility"
-+	default y
-+	help
-+	  vsyscalls, as global executable pages, can be a security hole
-+	  escallation helper by exposing an easy shell code target with
-+	  a predictable address.
-+
-+	  Many versions of glibc rely on the vsyscall page though, so it
-+	  cannot be eliminated unconditionally. If you disable this
-+	  option these systems will still work but might incur the overhead
-+	  of vsyscall emulation page faults.
-+
-+	  The vsyscall=none, vsyscall=emulate, vsyscall=native kernel boot
-+	  option can be used to override this mode as well.
-+
-+	  Keeping this option enabled leaves the vsyscall page enabled,
-+	  i.e. vsyscall=native. Disabling this option means vsyscall=emulate.
-+
-+	  If unsure, say Y.
-+
- config COMPAT
- 	def_bool y
- 	depends on IA32_EMULATION || X86_X32
-Index: linux/arch/x86/kernel/vsyscall_64.c
-===================================================================
---- linux.orig/arch/x86/kernel/vsyscall_64.c
-+++ linux/arch/x86/kernel/vsyscall_64.c
-@@ -56,7 +56,13 @@
- DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
--static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
-+static enum { EMULATE, NATIVE, NONE } vsyscall_mode =
-+#ifdef CONFIG_X86_VSYSCALL_COMPAT
-+	NATIVE
-+#else
-+	EMULATE
-+#endif
-+;
- 
- static int __init vsyscall_setup(char *str)
- {
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
