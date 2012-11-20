@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2KTQIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:08:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42244 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab2KTQIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:08:50 -0500
-Date: Tue, 20 Nov 2012 16:08:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/2] ARM: ux500: Move board specific GPIO info out to
- subordinate DTS files
-Message-ID: <20121120160846.GC28265@gmail.com>
-References: <1352985288-29518-1-git-send-email-lee.jones@linaro.org>
- <1352985288-29518-2-git-send-email-lee.jones@linaro.org>
+	id S1753333Ab2KTQJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:09:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab2KTQJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 11:09:06 -0500
+Date: Tue, 20 Nov 2012 11:08:45 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Vladimir Kondratiev <vkondrat@qti.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+Message-ID: <20121120160845.GB31176@redhat.com>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com>
+ <1353249531.15959.10.camel@joe-AO722>
+ <1380367.3QOKJVXxFC@lx-vladimir>
+ <2748656.Zh8WY0OSmS@lx-vladimir>
+ <1353263740.28214.2.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1352985288-29518-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1353263740.28214.2.camel@joe-AO722>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Lee Jones wrote:
-
-> GPIO numbers for the newly created gpio-regulator will differ from
-> board to board. Therefore it's not sensible to leave this information
-> in the top level DTSI file. Let's move them out to the DTS files
-> where they can correctly vary.
+On Sun, Nov 18, 2012 at 10:35:40AM -0800, Joe Perches wrote:
+> On Sun, 2012-11-18 at 19:01 +0200, Vladimir Kondratiev wrote:
+> > In case this option wins, patch follows. There is no need for
+> > 2-nd one to fix existing drivers.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/boot/dts/dbx5x0.dtsi    |    2 --
->  arch/arm/boot/dts/hrefprev60.dts |    7 +++++++
->  2 files changed, 7 insertions(+), 2 deletions(-)
+> Thanks Vladimir.
 > 
-> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> index d8ba489..9f55363 100644
-> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> @@ -638,8 +638,6 @@
->  			regulator-name = "mmci-reg";
->  			regulator-type = "voltage";
->  
-> -			gpios = <&tc3589x_gpio 18 0x4>;
-> -			gpio-enable = <&tc3589x_gpio 17 0x4>;
->  			states = <1800000 0x1
->  				  2900000 0x0>;
->  
-> diff --git a/arch/arm/boot/dts/hrefprev60.dts b/arch/arm/boot/dts/hrefprev60.dts
-> index b398946..eec29c4 100644
-> --- a/arch/arm/boot/dts/hrefprev60.dts
-> +++ b/arch/arm/boot/dts/hrefprev60.dts
-> @@ -37,5 +37,12 @@
->  				reset-gpio = <&tc3589x_gpio 13 0x4>;
->  			};
->  		};
-> +
-> +		vmmci: regulator-gpio {
-> +			gpios = <&tc3589x_gpio 18 0x4>;
-> +			gpio-enable = <&tc3589x_gpio 17 0x4>;
-> +
-> +			status = "okay";
-> +		};
->  	};
->  };
-> -- 
-> 1.7.9.5
+> 
 
-Prod for Linus.
+Yes, thanks. I've pulled in this patch, and posted a dynamic debug tree
+at: git clone git://github.com/jibaron/ddebug.git
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I will push the collected set of patches to Greg.
+
+I also added a couple of patches there to convert dynamic debug to use
+'jump labels', which shows good results.
+
+Thanks,
+
+-Jason
