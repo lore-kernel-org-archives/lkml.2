@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab2KTUvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:51:36 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:49597 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab2KTUvf (ORCPT
+	id S1753200Ab2KTUxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:53:23 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:27820 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab2KTUxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:51:35 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgJdAM3sq1BV5h1yPGdsb2JhbABEilq4ABcDAQEBAR8ZDSeCHgEBBAE6HCMQCANGFCUKGi6HbAqvFpA+FJA1YQOVfYV7g06JaQ
-X-IronPort-AV: E=Sophos;i="4.83,288,1352070000"; 
-   d="scan'208";a="155623317"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 20 Nov 2012 21:51:47 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 14/14] HID: hid-multitouch: forwards MSC_TIMESTAMP
-Message-ID: <20121120205147.GA4658@polaris.bitmath.org>
-References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352908766-4492-15-git-send-email-benjamin.tissoires@gmail.com>
- <20121114195852.GA14840@polaris.bitmath.org>
- <50A40CB3.8070105@gmail.com>
- <20121116200926.GA652@polaris.bitmath.org>
- <CAN+gG=F=bHdJF0=0LHGuVQ+ObHvWKJnL0GYcAEWBeD+Z-yyGSA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=F=bHdJF0=0LHGuVQ+ObHvWKJnL0GYcAEWBeD+Z-yyGSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Nov 2012 15:53:22 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v6 0/5] ACPI: hotplug messages improvement
+Date: Tue, 20 Nov 2012 13:44:49 -0700
+Message-Id: <1353444294-25575-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+This patchset improves logging messages for ACPI CPU, Memory, 
+Container and Dock hotplug notify handlers.  The patchset 
+introduces a set of new macro interfaces, acpi_handle_<level>(),
+and uses them to update the notify handlers.
 
-> > In addition, it would make perfect sense to extend the validity of the
-> > hardware time with the event time for longer intervals. The relative
-> > error only makes a difference on milisecond intervals.
-> >
-> > A patch that seamlessly extends the validity of the hardware time,
-> > ideally using the event time, seems like a viable solution.
-> 
-> Just to be sure:
-> When I receive scan_time, I increment timestamp with the device value.
-> When not, I find out the number of counter wrap I missed with the
-> kernel timer (jiffies) to get the actual device time.
-> 
-> Is that ok for you?
+acpi_handle_<level>() appends "ACPI" prefix and ACPI object path
+to the messages, which has similar usage model as dev_<level>().
+This improves diagnosis of hotplug operations since an error
+message in a log file identifies an object that caused an issue.
 
-If the device has no scan time, then no scan time is reported, of
-course.  If the scan time delta _and_ the actual time delta are both
-below logical_max (say), then increase the counter with the scan time
-delta. Else, if the actual time delta is below 2^31, increase the
-counter with the actual time delta. Else set the counter to zero.
+The patchset is based on the linux-next branch of linux-pm.git
+tree.
 
-This ought to give us the sought-after accuracy for small times, the
-sought-after extension for intermediate times, and a clear definition
-of unknown time.
+v6:
+ - Changed the interface name to acpi_handle_<level>(), and
+   declared them in include/linux/acpi.h.
+ - Added __printf(3,4) to acpi_handle_printk() prototype.
+ - Documented the interfaces acquire the global namespace mutex
+   and may not be called from interrupt context.
 
-Cheers,
-Henrik
+v5:
+ - Added update for ACPI Dock hotplug error messages.
+ - Added error status / ID info to the messages where needed.
+
+v4:
+ - Changed to use dev_<level>() where it is appropriate.
+
+v3:
+ - Changed acpi_pr_debug() to NOP when !DEBUG and !DYNAMIC_DEBUG.
+   DYNAMIC_DEBUG will be supported later when necessary.
+ - Added const to a path variable in acpi_printk().
+ - Added more descriptions to the change log of patch 1/4.
+
+v2:
+ - Set buffer.pointer to NULL in acpi_printk().
+ - Added acpi_pr_debug().
+
+---
+Toshi Kani (5):
+ ACPI: Add acpi_handle_<level>() interfaces
+ ACPI: Update CPU hotplug error messages
+ ACPI: Update Memory hotplug error messages
+ ACPI: Update Container hotplug error messages
+ ACPI: Update Dock hotplug error messages
+
+---
+ drivers/acpi/acpi_memhotplug.c  | 24 ++++++++++++-----------
+ drivers/acpi/container.c        | 10 ++--------
+ drivers/acpi/dock.c             | 30 ++++++++++++++--------------
+ drivers/acpi/processor_driver.c | 39 +++++++++++++++++++++++--------------
+ drivers/acpi/utils.c            | 37 +++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h            | 43 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 133 insertions(+), 50 deletions(-)
