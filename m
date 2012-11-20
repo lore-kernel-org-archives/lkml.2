@@ -1,35 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab2KTKSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:18:39 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:34280 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab2KTKSh (ORCPT
+	id S1752949Ab2KTKTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:19:40 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:19342 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752041Ab2KTKTi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:18:37 -0500
+	Tue, 20 Nov 2012 05:19:38 -0500
+Message-Id: <201211201013.qAK9ugCJ057035@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-In-Reply-To: <1353403339-11679-3-git-send-email-dmitry.torokhov@gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
-	<1353403339-11679-3-git-send-email-dmitry.torokhov@gmail.com>
-Date: Tue, 20 Nov 2012 15:48:37 +0530
-Message-ID: <CAKohpo=doVLTRj7WqPmYOxrscZbHjm1+dUSiZoHAcHUHdthLeg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] CLK: uninline clk_prepare_enable() and clk_disable_unprepare()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY, UPGRADE NOW !!!
+To: Recipients <myburghp@mweb.co.za>
+From: "Webmail System Administrator" <myburghp@mweb.co.za>
+Date: Tue, 20 Nov 2012 11:12:15 +0100
+Reply-To: cyrilwides@mweb.co.za
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> We'll need to invoke clk_disable_unprepare() via a pointer in our devm_*
-> conversion so let's uninline the pair.
->
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+ Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
-This one matches its expectations :)
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
