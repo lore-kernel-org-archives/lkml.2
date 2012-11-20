@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab2KTLkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 06:40:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44202 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752883Ab2KTLkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 06:40:07 -0500
-Date: Tue, 20 Nov 2012 11:40:01 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120114001.GR8218@suse.de>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <20121120104053.GA15302@gmail.com>
+	id S1753143Ab2KTLqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 06:46:24 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:33988 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753100Ab2KTLqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 06:46:23 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] gpiolib: let gpiochip_add_pin_range() specify offset
+Date: Tue, 20 Nov 2012 12:45:53 +0100
+Message-ID: <1353411953-27423-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121120104053.GA15302@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 11:40:53AM +0100, Ingo Molnar wrote:
-> 
-> btw., mind sending me a fuller/longer profile than the one 
-> you've sent before? In particular does your system have any 
-> vsyscall emulation page fault overhead?
-> 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-I can't, the results for specjbb got trashed after I moved to 3.7-rc6 and
-the old run was incomplete :( I'll have to re-run for profiles. I generally
-do not run with profiling enabled because it can distort results very badly.
+Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
+it is not always enough to specify all the pins of a gpio_chip
+from offset zero to be added to a pin map range, since the
+mapping from GPIO to pin controller may not be linear at all,
+but need to be broken into a few consecutive sub-ranges or
+1-pin entries for complicated cases. The ranges may also be
+sparse.
 
-I went back and re-examined anything else that could distort the results. I
-have monitoring other than profiles enabled and the heaviest monitor by
-far is reading smaps every 10 seconds to see how processes are currently
-distributed between nodes and what CPU they are running on. The intention
-was to be able to examine after the fact if the individual java processes
-were ending up on the same nodes and scheduled properly.
+This alters the signature of the function to accept offsets
+into both the GPIO-chip local pinspace and the pin controller
+local pinspace.
 
-However, this would impact the peak performance and affect contention on
-mmap_sem every 10 seconds as it's possible for the PTE scanner and smaps
-reader to contend. Care is taken to only read smaps once per process. So
-for each JVM instance, it would read smaps once even though it would
-examine where every thread is running. This minimises the distortion.
-top is also updating every 10 seconds which will also contend on locks.
-The other monitors are relatively harmless and are reading files like
-/proc/vmstat, each numastat file every 10 seconds. As before, all tests
-had these monitors enabled so they would all have suffered evenly.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/gpiolib.c     | 18 ++++++++++++++++--
+ include/asm-generic/gpio.h |  6 ++++--
+ include/linux/gpio.h       |  3 ++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
-Normally when I'm looking at a series I run both with and without monitors. I
-report without monitors and use monitors to help debug and problems that
-are identified. Unfortunately, time pressure is not allowing me to do that
-this time.
-
-> If yes, does the patch below change anything for you?
-> 
-
-I'll check it.
-
-Thanks.
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index c5f6500..0b08d27 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1187,8 +1187,18 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
+ 
+ #ifdef CONFIG_PINCTRL
+ 
++/**
++ * gpiochip_add_pin_range() - add a range for GPIO <-> pin mapping
++ * @chip: the gpiochip to add the range for
++ * @pinctrl_name: the dev_name() of the pin controller to map to
++ * @offset: the start offset in the current gpio_chip number space
++ * @pin_base: the start offset in the pin controller number space
++ * @npins: the number of pins from the offset of each pin space (GPIO and
++ *	pin controller) to accumulate in this range
++ */
+ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+-			   unsigned int pin_base, unsigned int npins)
++			   unsigned int offset, unsigned int pin_base,
++			   unsigned int npins)
+ {
+ 	struct gpio_pin_range *pin_range;
+ 
+@@ -1200,7 +1210,7 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+ 	}
+ 
+ 	pin_range->range.name = chip->label;
+-	pin_range->range.base = chip->base;
++	pin_range->range.base = chip->base + offset;
+ 	pin_range->range.pin_base = pin_base;
+ 	pin_range->range.npins = npins;
+ 	pin_range->pctldev = find_pinctrl_and_add_gpio_range(pinctl_name,
+@@ -1212,6 +1222,10 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+ }
+ EXPORT_SYMBOL_GPL(gpiochip_add_pin_range);
+ 
++/**
++ * gpiochip_remove_pin_ranges() - remove all the GPIO <-> pin mappings
++ * @chip: the chip to remove all the mappings for
++ */
+ void gpiochip_remove_pin_ranges(struct gpio_chip *chip)
+ {
+ 	struct gpio_pin_range *pin_range, *tmp;
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 2b84fc3..ec58fdb 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -283,14 +283,16 @@ struct gpio_pin_range {
+ };
+ 
+ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+-			   unsigned int pin_base, unsigned int npins);
++			   unsigned int offset, unsigned int pin_base,
++			   unsigned int npins);
+ void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
+ 
+ #else
+ 
+ static inline int
+ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+-		       unsigned int pin_base, unsigned int npins)
++		       unsigned int offset, unsigned int pin_base,
++		       unsigned int npins)
+ {
+ 	return 0;
+ }
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 7ba2762..99861c6 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -233,7 +233,8 @@ static inline int irq_to_gpio(unsigned irq)
+ 
+ static inline int
+ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+-		       unsigned int pin_base, unsigned int npins)
++		       unsigned int offset, unsigned int pin_base,
++		       unsigned int npins)
+ {
+ 	WARN_ON(1);
+ 	return -EINVAL;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.11.3
+
