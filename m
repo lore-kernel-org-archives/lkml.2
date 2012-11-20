@@ -1,58 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2KTURT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:17:19 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33636 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab2KTURS (ORCPT
+	id S1752803Ab2KTUSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:18:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38880 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2KTUST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:17:18 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 2/2] staging/rtl8187se: Fix spacing coding style in r8185b_init.c
-Date: Wed, 21 Nov 2012 05:17:13 +0900
-Message-Id: <1353442633-26897-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353442597-26859-1-git-send-email-yamanetoshi@gmail.com>
-References: <1353442597-26859-1-git-send-email-yamanetoshi@gmail.com>
+	Tue, 20 Nov 2012 15:18:19 -0500
+Date: Tue, 20 Nov 2012 12:18:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Mel Gorman <mgorman@suse.de>, Zdenek Kabelac <zkabelac@redhat.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>, <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jirislaby@gmail.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
+Message-Id: <20121120121817.cf80b8ad.akpm@linux-foundation.org>
+In-Reply-To: <50AB4ADB.6090506@parallels.com>
+References: <20121012135726.GY29125@suse.de>
+	<507BDD45.1070705@suse.cz>
+	<20121015110937.GE29125@suse.de>
+	<5093A3F4.8090108@redhat.com>
+	<5093A631.5020209@suse.cz>
+	<509422C3.1000803@suse.cz>
+	<509C84ED.8090605@linux.vnet.ibm.com>
+	<509CB9D1.6060704@redhat.com>
+	<20121109090635.GG8218@suse.de>
+	<509F6C2A.9060502@redhat.com>
+	<20121112113731.GS8218@suse.de>
+	<50AB4ADB.6090506@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following errors and warnings fixed.
-- ERROR: space prohibited after that open parenthesis '('
-- ERROR: space prohibited before that close parenthesis ')'
-- ERROR: space required before the open parenthesis '('
-- WARNING: braces {} are not necessary for any arm of this statement
+On Tue, 20 Nov 2012 13:18:19 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/rtl8187se/r8185b_init.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> On 11/12/2012 03:37 PM, Mel Gorman wrote:
+> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> > index 02c1c971..d0a7967 100644
+> > --- a/include/linux/gfp.h
+> > +++ b/include/linux/gfp.h
+> > @@ -31,6 +31,7 @@ struct vm_area_struct;
+> >  #define ___GFP_THISNODE		0x40000u
+> >  #define ___GFP_RECLAIMABLE	0x80000u
+> >  #define ___GFP_NOTRACK		0x200000u
+> > +#define ___GFP_NO_KSWAPD	0x400000u
+> >  #define ___GFP_OTHER_NODE	0x800000u
+> >  #define ___GFP_WRITE		0x1000000u
+> 
+> Keep in mind that this bit has been reused in -mm.
+> If this patch needs to be reverted, we'll need to first change
+> the definition of __GFP_KMEMCG (and __GFP_BITS_SHIFT as a result), or it
+> would break things.
 
-diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 28611c2..f1db9e4 100644
---- a/drivers/staging/rtl8187se/r8185b_init.c
-+++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -1056,13 +1056,13 @@ void ActSetWirelessMode8185(struct net_device *dev, u8 btWirelessMode)
- 	ieee->mode = (WIRELESS_MODE)btWirelessMode;
+I presently have
+
+/* Plain integer GFP bitmasks. Do not use this directly. */
+#define ___GFP_DMA		0x01u
+#define ___GFP_HIGHMEM		0x02u
+#define ___GFP_DMA32		0x04u
+#define ___GFP_MOVABLE		0x08u
+#define ___GFP_WAIT		0x10u
+#define ___GFP_HIGH		0x20u
+#define ___GFP_IO		0x40u
+#define ___GFP_FS		0x80u
+#define ___GFP_COLD		0x100u
+#define ___GFP_NOWARN		0x200u
+#define ___GFP_REPEAT		0x400u
+#define ___GFP_NOFAIL		0x800u
+#define ___GFP_NORETRY		0x1000u
+#define ___GFP_MEMALLOC		0x2000u
+#define ___GFP_COMP		0x4000u
+#define ___GFP_ZERO		0x8000u
+#define ___GFP_NOMEMALLOC	0x10000u
+#define ___GFP_HARDWALL		0x20000u
+#define ___GFP_THISNODE		0x40000u
+#define ___GFP_RECLAIMABLE	0x80000u
+#define ___GFP_KMEMCG		0x100000u
+#define ___GFP_NOTRACK		0x200000u
+#define ___GFP_NO_KSWAPD	0x400000u
+#define ___GFP_OTHER_NODE	0x800000u
+#define ___GFP_WRITE		0x1000000u
+
+and
+
+#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
+#define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+
+Which I think is OK?
+
+I'd forgotten about __GFP_BITS_SHIFT.  Should we do this?
+
+--- a/include/linux/gfp.h~a
++++ a/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
++/* If the above are modified, __GFP_BITS_SHIFT may need updating */
  
- 	/* 3. Change related setting. */
--	if( ieee->mode == WIRELESS_MODE_A ) {
-+	if (ieee->mode == WIRELESS_MODE_A)
- 		DMESG("WIRELESS_MODE_A\n");
--	} else if( ieee->mode == WIRELESS_MODE_B ) {
-+	else if (ieee->mode == WIRELESS_MODE_B)
- 		DMESG("WIRELESS_MODE_B\n");
--	} else if( ieee->mode == WIRELESS_MODE_G ) {
-+	else if (ieee->mode == WIRELESS_MODE_G)
- 		DMESG("WIRELESS_MODE_G\n");
--	}
-+
- 	ActUpdateChannelAccessSetting( dev, ieee->mode, &priv->ChannelAccessSetting);
- }
- 
--- 
-1.7.9.5
+ /*
+  * GFP bitmasks..
+_
 
