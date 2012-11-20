@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2KTPN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:13:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51467 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab2KTPN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:13:27 -0500
-Date: Tue, 20 Nov 2012 07:13:22 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Daniel Wagner <wagi@monom.org>
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
-        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
-Message-ID: <20121120151322.GR15971@htj.dyndns.org>
-References: <1353400211-5182-1-git-send-email-tj@kernel.org>
- <1353400211-5182-5-git-send-email-tj@kernel.org>
- <50AB435E.8060901@monom.org>
- <20121120143832.GO15971@htj.dyndns.org>
- <50AB9D22.5030000@monom.org>
+	id S1753146Ab2KTPON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:14:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab2KTPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 10:14:12 -0500
+Date: Tue, 20 Nov 2012 12:13:44 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 1/3] perf session: Add perf_session__delete_env
+Message-ID: <20121120151344.GA14928@infradead.org>
+References: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50AB9D22.5030000@monom.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em Tue, Nov 20, 2012 at 05:31:15PM +0800, Feng Tang escreveu:
+> +static void perf_session__delete_env(struct perf_session *self)
+> +{
+> +	struct perf_session_env *env = &self->header.env;
+> +
+> +	free(env->hostname);
+> +	free(env->os_release);
+> +	free(env->version);
+> +	free(env->arch);
+> +	free(env->cpu_desc);
+> +	free(env->cpuid);
+> +
+> +	free(env->cmdline);
+> +	free(env->sibling_cores);
+> +	free(env->sibling_threads);
+> +	free(env->numa_nodes);
+> +	free(env->pmu_mappings);
+> +}
 
-On Tue, Nov 20, 2012 at 04:09:22PM +0100, Daniel Wagner wrote:
-> Thanks for the explanation. I was pondering if the new size in power
-> of two could be a bit too excessive and the allocation step could be
-> linear, e.g. stick at 4096. target_id will increase linear,
-> therefore linear increase might also be enough, no?
+The object being deleted is a perf_session_env, so please make it
+perf_session_env__delete(struct perf_session_env *env), and avoid using
+'self'.
 
-Well, power-of-two resizing tends to behave relatively well under most
-cases and slab allocations are binned by power-of-two sizes, so
-linearly growing it doesn't really buy anything.
-
-Thanks.
-
--- 
-tejun
+- Arnaldo
