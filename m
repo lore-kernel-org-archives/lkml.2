@@ -1,128 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab2KTXBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 18:01:39 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40568 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab2KTXBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 18:01:38 -0500
+	id S1753755Ab2KTXKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 18:10:55 -0500
+Received: from mga03.intel.com ([143.182.124.21]:24286 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329Ab2KTXKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 18:10:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,288,1352102400"; 
+   d="scan'208";a="220376525"
+Message-ID: <50AC0DFA.3000103@linux.intel.com>
+Date: Tue, 20 Nov 2012 15:10:50 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20121120094132.GA15156@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com> <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com> <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
- <20121120090637.GA14873@gmail.com> <20121120094132.GA15156@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Nov 2012 15:01:13 -0800
-Message-ID: <CALCETrVVQXbHvWaT9HLHgk6cbMT9EHGrsGJptVS+66OMDmnGYA@mail.gmail.com>
-Subject: Re: [patch] x86/vsyscall: Add Kconfig option to use native vsyscalls,
- switch to it
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pi futex oops in __lock_acquire
+References: <20121018015312.GA29865@redhat.com> <507F9944.50505@kernel.dk> <20121019052136.GA30852@redhat.com> <1350650972.30157.34.camel@twins> <20121023195026.GA2872@redhat.com> <20121024202411.GA20597@redhat.com> <5088C397.3000501@linux.intel.com> <20121120164637.GA19893@redhat.com>
+In-Reply-To: <20121120164637.GA19893@redhat.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 1:41 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Ingo Molnar <mingo@kernel.org> wrote:
->
->> >      0.10%  [kernel]          [k] __do_page_fault
->> >      0.08%  [kernel]          [k] handle_mm_fault
->> >      0.08%  libjvm.so         [.] os::javaTimeMillis()
->> >      0.08%  [kernel]          [k] emulate_vsyscall
->>
->> Oh, finally a clue: you seem to have vsyscall emulation
->> overhead!
->>
->> Vsyscall emulation is fundamentally page fault driven - which
->> might explain why you are seeing page fault overhead. It might
->> also interact with other sources of faults - such as
->> numa/core's working set probing ...
->>
->> Many JVMs try to be smart with the vsyscall. As a test, does
->> the vsyscall=native boot option change the results/behavior in
->> any way?
->
-> As a blind shot into the dark, does the attached patch help?
->
-> If that's the root cause then it should measurably help mainline
-> SPECjbb performance as well. It could turn numa/core from a
-> regression into a win on your system.
->
-> Thanks,
->
->         Ingo
->
-> ----------------->
-> Subject: x86/vsyscall: Add Kconfig option to use native vsyscalls, switch to it
-> From: Ingo Molnar <mingo@kernel.org>
->
-> Apparently there's still plenty of systems out there triggering
-> the vsyscall emulation page faults - causing hard to track down
-> performance regressions on page fault intense workloads...
->
-> Some people seem to have run into that with threading-intense
-> Java workloads.
->
-> So until there's a better solution to this, add a Kconfig switch
-> to make the vsyscall mode configurable and turn native vsyscall
-> support back on by default.
->
-
-I'm not sure the default should be changed.  Presumably only a
-smallish minority of users are affected, and all of their code still
-*works* -- it's just a little bit slower.
-
->
-> +config X86_VSYSCALL_COMPAT
-> +       bool "vsyscall compatibility"
-> +       default y
-> +       help
-
-This is IMO misleading.  Perhaps the option should be
-X86_VSYSCALL_EMULATION.  A description like "compatibility" makes
-turning it on sound like a no-brainer.
-
-Perhaps the vsyscall emulation code should be tweaked to warn if it's
-getting called more than, say, 1k times per second.  The kernel could
-log something like "Detected large numbers of emulated vsyscalls.
-Consider upgading, setting vsyscall=native, or adjusting
-CONFIG_X86_WHATEVER."
 
 
-> +         vsyscalls, as global executable pages, can be a security hole
-> +         escallation helper by exposing an easy shell code target with
+On 11/20/2012 08:46 AM, Dave Jones wrote:
+> On Wed, Oct 24, 2012 at 09:44:07PM -0700, Darren Hart wrote:
+>  
+>  > > I've been able to trigger this for the last week or so.
+>  > > Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
+>  > > pi-futex code hasn't changed since the last time it found something..
+>  > > 
+>  > >  > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+>  > >  > IP: [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  > >  > PGD 8e72c067 PUD 34f07067 PMD 0 
+>  > >  > Oops: 0000 [#1] PREEMPT SMP 
+>  > >  > CPU 7 
+>  > >  > Pid: 27513, comm: trinity-child0 Not tainted 3.7.0-rc2+ #43
+>  > >  > RIP: 0010:[<ffffffff810e185e>]  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  > >  > RSP: 0018:ffff8800803f7b28  EFLAGS: 00010046
+>  > >  > RAX: 0000000000000086 RBX: 0000000000000000 RCX: 0000000000000000
+>  > >  > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+>  > >  > RBP: ffff8800803f7c18 R08: 0000000000000002 R09: 0000000000000000
+>  > >  > R10: 0000000000000000 R11: 2222222222222222 R12: 0000000000000002
+>  > >  > R13: ffff880051dd8000 R14: 0000000000000002 R15: 0000000000000018
+>  > >  > FS:  00007f9fc6ccb740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
+>  > >  > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  > >  > CR2: 0000000000000018 CR3: 000000008e6fb000 CR4: 00000000001407e0
+>  > >  > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  > >  > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  > >  > Process trinity-child0 (pid: 27513, threadinfo ffff8800803f6000, task ffff880051dd8000)
+>  > >  > Stack:
+>  > >  >  ffff8800803f7b48 ffffffff816c5c59 ffff8800803f7b48 ffff88014840ebc0
+>  > >  >  ffff8800803f7b68 ffffffff816c18e3 ffff8800803f7d10 0000000000000001
+>  > >  >  ffff8800803f7ba8 ffffffff810a1e62 ffff8800803f7d10 0000000000000282
+>  > >  > Call Trace:
+>  > >  >  [<ffffffff816c5c59>] ? sub_preempt_count+0x79/0xd0
+>  > >  >  [<ffffffff816c18e3>] ? _raw_spin_unlock_irqrestore+0x73/0xa0
+>  > >  >  [<ffffffff810a1e62>] ? hrtimer_try_to_cancel+0x52/0x210
+>  > >  >  [<ffffffff810eb9e5>] ? debug_rt_mutex_free_waiter+0x15/0x180
+>  > >  >  [<ffffffff816c0107>] ? rt_mutex_slowlock+0x127/0x1b0
+>  > >  >  [<ffffffff810b7039>] ? local_clock+0x89/0xa0
+>  > >  >  [<ffffffff810e3ac2>] lock_acquire+0xa2/0x220
+>  > >  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+>  > >  >  [<ffffffff816c09e0>] _raw_spin_lock+0x40/0x80
+>  > >  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+>  > >  >  [<ffffffff810e812c>] futex_lock_pi.isra.18+0x1cc/0x390
+>  > >  >  [<ffffffff810a1980>] ? update_rmtp+0x70/0x70
+>  > >  >  [<ffffffff810e99e4>] do_futex+0x394/0xa50
+>  > >  >  [<ffffffff8119ec43>] ? might_fault+0x53/0xb0
+>  > >  >  [<ffffffff810ea12d>] sys_futex+0x8d/0x190
+>  > >  >  [<ffffffff816ca288>] tracesys+0xe1/0xe6
+>  > >  > Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 22 fe f3 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d c0 81 06 82 44 0f 44 e2 83 fb 01 
+>  > >  > RIP  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  > >  >  RSP <ffff8800803f7b28>
+>  > >  > CR2: 0000000000000018
+>  > > 
+>  > > It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
+>  > > 
+>  > > Darren, any idea how this could happen ?
+>  > 
+>  > I'm digging. Can you get trinity to provide the arguments it used that
+>  > trigger the crash?u That might help hone in on the exact path.
+> 
+> Still seeing this on rc6. It happens very quickly when I run with "-c futex"
+> I just pushed out all the pending trinity changes I was running with, but
+> I don't think they would have been responsible.
+> 
+> 	Dave
+> 
 
-escalation?
+OK, so some instrumentation yields:
 
-> +         a predictable address.
-> +
-> +         Many versions of glibc rely on the vsyscall page though, so it
-> +         cannot be eliminated unconditionally. If you disable this
-> +         option these systems will still work but might incur the overhead
-> +         of vsyscall emulation page faults.
-> +
-> +         The vsyscall=none, vsyscall=emulate, vsyscall=native kernel boot
-> +         option can be used to override this mode as well.
-> +
-> +         Keeping this option enabled leaves the vsyscall page enabled,
-> +         i.e. vsyscall=native. Disabling this option means vsyscall=emulate.
-> +
-> +         If unsure, say Y.
-> +
+[ 1320.762028] futex_lock_pi: timed lock
+[ 1320.762488] futex_lock_pi: hb=ffffffff81e89e28,
+hb->lock=ffffffff81e89e28, &q=ffff880181fa5cd8, q.lock_ptr=ffffffff81e89e28
+[ 1320.763647] q.lock_ptr=ffffffff81e89e28
+[ 1320.764132] fixup_owner: uaddr=00007f05465ac000, q=ffff880181fa5cd8,
+locked=0
+[ 1323.066371] futex_lock_pi: hb=ffffffff81e89e28,
+hb->lock=ffffffff81e89e28, &q=ffff880181fc5cd8, q.lock_ptr=          (null)
+[ 1323.069032] ------------[ cut here ]------------
+[ 1323.069817] kernel BUG at kernel/futex.c:2052!
 
---Andy
+So somewhere between blocking on the lock and waking, q.lock_ptr is
+getting set to NULL. The only legitimate place this happens in is
+wake_futex, and I see some wake_futex calls after the futex_lock_pi
+calls with the same uaddr in the trinity log. We are supposed to be
+protected by the q lock_ptr here and wake_futex aborts any wakes of q's
+with a pi_state or rt_waiter.... but .... there appears to be a window
+in there. I say a window because I see a similar failure where the
+instrumentation doesn't catch the lock_ptr as NULL and fails at a later
+point on the same lock. Nice nasty parallel locking race. Digging in.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
