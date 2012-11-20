@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab2KTKn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:43:56 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48867 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2KTKnz (ORCPT
+	id S1752153Ab2KTKqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:46:33 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:52445 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2KTKqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:43:55 -0500
-Message-ID: <50AB5EDC.20009@in.ibm.com>
-Date: Tue, 20 Nov 2012 16:13:40 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 20 Nov 2012 05:46:32 -0500
 MIME-Version: 1.0
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] perf/powerpc: Use uapi/unistd.h to fix build error
-References: <20121107191818.GA16211@us.ibm.com>
-In-Reply-To: <20121107191818.GA16211@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112010-6102-0000-0000-00000298C477
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00192924; UDB=6.00043717; UTC=2012-11-20
- 10:40:23
+In-Reply-To: <1353112043-11800-1-git-send-email-wfp5p@virginia.edu>
+References: <1353112043-11800-1-git-send-email-wfp5p@virginia.edu>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 20 Nov 2012 10:46:11 +0000
+X-Google-Sender-Auth: FtHtk1YQYwAkRD0bGuSO1FCjn1Y
+Message-ID: <CACxGe6ss3HsnGgNn=aOJsd0-6q-dRumPvkKdqjKWCFja9QDgtQ@mail.gmail.com>
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+To: Bill Pemberton <wfp5p@virginia.edu>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2012 12:48 AM, Sukadev Bhattiprolu wrote:
+On Sat, Nov 17, 2012 at 12:19 AM, Bill Pemberton <wfp5p@virginia.edu> wrote:
+> CONFIG_HOTPLUG is no longer an optional setting.  In order to remove
+> it as on option code paths that check CONFIG_HOTPLUG will removed
+> along with the attributes __devexit_p, __devexit, __devinitconst, and
+> __devinitdata.
 >
->  From b8beef080260c1625c8f801105504a82005295e5 Mon Sep 17 00:00:00 2001
-> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> Date: Wed, 31 Oct 2012 11:21:28 -0700
-> Subject: [PATCH 1/4] perf/powerpc: Use uapi/unistd.h to fix build error
+> I'll save the list from the mailbomb of this huge patchset.  The
+> patches themselves are going to Greg KH for the driver core tree.
 >
-> Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
 >
-> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Without this patch, I couldn't build perf on powerpc, with 3.7.0-rc2
+> Bill Pemberton (493):
+[...]
+>  2942 files changed, 11645 insertions(+), 12116 deletions(-)
 
-Tested-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+So, I've got no problem with the reason for the change and I don't
+even think you need my ack for the bits that I maintain (though you
+have it if you want it). However, this looks like it is going to be
+/painful/. First of all it will touch a huge number of files in the
+tree. Yes the change is trivial, but it will require manual fixups on
+a lot of patches.
 
-Thanks
-Suzuki
-> ---
->   tools/perf/perf.h |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 054182e..f4952da 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -26,7 +26,7 @@ void get_term_dimensions(struct winsize *ws);
->   #endif
->
->   #ifdef __powerpc__
-> -#include "../../arch/powerpc/include/asm/unistd.h"
-> +#include "../../arch/powerpc/include/uapi/asm/unistd.h"
->   #define rmb()		asm volatile ("sync" ::: "memory")
->   #define cpu_relax()	asm volatile ("" ::: "memory");
->   #define CPUINFO_PROC	"cpu"
->
+It also means that any in-flight patches (on mailing list, in
+linux-next, whatever) that use __devinit will get broken by this
+series.
 
+Second; this is nearly 500 commits for effectively 1 change. I do not
+want to wade through bisect after this goes through. I'm assuming this
+whole thing was generated by a script. Does it really need to be split
+out so aggressively? For example, I really don't need one patch to
+remove __devinit, another to remove __devexit and another still to
+remove __devexit_p all applied against each of my subsystems.
+
+Personally, I'd rather see this change be performed far less
+aggressively. Yes, remove CONFIG_HOTPLUG, but leave the __devinit*
+macros as unconditional empty no-ops. There are only 24 patches
+associated with CONFIG_HOTPLUG and that one is actually dangerous to
+drivers when it goes away. It is safe to leave the __devinit macros
+lie fallow for a bit. Change check-patch to warn against new users of
+the macros, but don't do a full tree clean yet.
+
+Even if you do clean them right away, there still needs to be no-op
+versions of __devinit* for a while to avoid pain on in-flight changes.
+I'd also like to see the changes to each subsystem squashed together.
+That at least will cut down the number of individual commits by a
+factor of 4.
+
+Greg, what is your plan for merging this series? I assume you wouldn't
+drop it dead in the middle of the merge window.
+
+g.
