@@ -1,114 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab2KTHHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:07:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab2KTHHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:07:31 -0500
-Date: Tue, 20 Nov 2012 08:07:28 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, memcg: avoid unnecessary function call when memcg is
- disabled
-Message-ID: <20121120070728.GA7754@dhcp22.suse.cz>
-References: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211191741060.24618@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752552Ab2KTHHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:07:54 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:49167 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2KTHGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 02:06:51 -0500
+From: Tejun Heo <tj@kernel.org>
+To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
+Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/7] netprio_cgroup: use cgroup->id instead of cgroup_netprio_state->prioidx
+Date: Mon, 19 Nov 2012 23:06:28 -0800
+Message-Id: <1353395190-4530-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353395190-4530-1-git-send-email-tj@kernel.org>
+References: <1353395190-4530-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-11-12 17:44:34, David Rientjes wrote:
-> While profiling numa/core v16 with cgroup_disable=memory on the command 
-> line, I noticed mem_cgroup_count_vm_event() still showed up as high as 
-> 0.60% in perftop.
-> 
-> This occurs because the function is called extremely often even when memcg 
-> is disabled.
-> 
-> To fix this, inline the check for mem_cgroup_disabled() so we avoid the 
-> unnecessary function call if memcg is disabled.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+With priomap expansion no longer depending on knowing max id
+allocated, netprio_cgroup can use cgroup->id insted of cs->prioidx.
+Drop prioidx alloc/free logic and convert all uses to cgroup->id.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+* In cgrp_css_alloc(), parent->id test is moved above @cs allocation
+  to simplify error path.
 
-Thanks!
+* In cgrp_css_free(), @cs assignment is made initialization.
 
-> ---
->  include/linux/memcontrol.h |    9 ++++++++-
->  mm/memcontrol.c            |    9 ++++-----
->  2 files changed, 12 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -181,7 +181,14 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  						gfp_t gfp_mask,
->  						unsigned long *total_scanned);
->  
-> -void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
-> +void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
-> +static inline void mem_cgroup_count_vm_event(struct mm_struct *mm,
-> +					     enum vm_event_item idx)
-> +{
-> +	if (mem_cgroup_disabled() || !mm)
-> +		return;
-> +	__mem_cgroup_count_vm_event(mm, idx);
-> +}
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  void mem_cgroup_split_huge_fixup(struct page *head);
->  #endif
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -59,6 +59,8 @@
->  #include <trace/events/vmscan.h>
->  
->  struct cgroup_subsys mem_cgroup_subsys __read_mostly;
-> +EXPORT_SYMBOL(mem_cgroup_subsys);
-> +
->  #define MEM_CGROUP_RECLAIM_RETRIES	5
->  static struct mem_cgroup *root_mem_cgroup __read_mostly;
->  
-> @@ -1015,13 +1017,10 @@ void mem_cgroup_iter_break(struct mem_cgroup *root,
->  	     iter != NULL;				\
->  	     iter = mem_cgroup_iter(NULL, iter, NULL))
->  
-> -void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
-> +void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
->  {
->  	struct mem_cgroup *memcg;
->  
-> -	if (!mm)
-> -		return;
-> -
->  	rcu_read_lock();
->  	memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
->  	if (unlikely(!memcg))
-> @@ -1040,7 +1039,7 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
->  out:
->  	rcu_read_unlock();
->  }
-> -EXPORT_SYMBOL(mem_cgroup_count_vm_event);
-> +EXPORT_SYMBOL(__mem_cgroup_count_vm_event);
->  
->  /**
->   * mem_cgroup_zone_lruvec - get the lru list vector for a zone and memcg
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+---
+ include/net/netprio_cgroup.h | 11 +++-----
+ net/core/netprio_cgroup.c    | 65 ++++++++------------------------------------
+ 2 files changed, 15 insertions(+), 61 deletions(-)
 
+diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
+index 2760f4f..1d04b6f 100644
+--- a/include/net/netprio_cgroup.h
++++ b/include/net/netprio_cgroup.h
+@@ -27,7 +27,6 @@ struct netprio_map {
+ 
+ struct cgroup_netprio_state {
+ 	struct cgroup_subsys_state css;
+-	u32 prioidx;
+ };
+ 
+ extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
+@@ -36,13 +35,12 @@ extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
+ 
+ static inline u32 task_netprioidx(struct task_struct *p)
+ {
+-	struct cgroup_netprio_state *state;
++	struct cgroup_subsys_state *css;
+ 	u32 idx;
+ 
+ 	rcu_read_lock();
+-	state = container_of(task_subsys_state(p, net_prio_subsys_id),
+-			     struct cgroup_netprio_state, css);
+-	idx = state->prioidx;
++	css = task_subsys_state(p, net_prio_subsys_id);
++	idx = css->cgroup->id;
+ 	rcu_read_unlock();
+ 	return idx;
+ }
+@@ -57,8 +55,7 @@ static inline u32 task_netprioidx(struct task_struct *p)
+ 	rcu_read_lock();
+ 	css = task_subsys_state(p, net_prio_subsys_id);
+ 	if (css)
+-		idx = container_of(css,
+-				   struct cgroup_netprio_state, css)->prioidx;
++		idx = css->cgroup->id;
+ 	rcu_read_unlock();
+ 	return idx;
+ }
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 569d83d..9409cdf 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -28,10 +28,6 @@
+ #include <linux/fdtable.h>
+ 
+ #define PRIOMAP_MIN_SZ		128
+-#define PRIOIDX_SZ 128
+-
+-static unsigned long prioidx_map[PRIOIDX_SZ];
+-static DEFINE_SPINLOCK(prioidx_map_lock);
+ 
+ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
+ {
+@@ -39,32 +35,6 @@ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgr
+ 			    struct cgroup_netprio_state, css);
+ }
+ 
+-static int get_prioidx(u32 *prio)
+-{
+-	unsigned long flags;
+-	u32 prioidx;
+-
+-	spin_lock_irqsave(&prioidx_map_lock, flags);
+-	prioidx = find_first_zero_bit(prioidx_map, sizeof(unsigned long) * PRIOIDX_SZ);
+-	if (prioidx == sizeof(unsigned long) * PRIOIDX_SZ) {
+-		spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-		return -ENOSPC;
+-	}
+-	set_bit(prioidx, prioidx_map);
+-	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-	*prio = prioidx;
+-	return 0;
+-}
+-
+-static void put_prioidx(u32 idx)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&prioidx_map_lock, flags);
+-	clear_bit(idx, prioidx_map);
+-	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-}
+-
+ /*
+  * Extend @dev->priomap so that it's large enough to accomodate
+  * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
+@@ -120,62 +90,50 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+-	int ret = -EINVAL;
++
++	if (cgrp->parent && cgrp->parent->id)
++		return ERR_PTR(-EINVAL);
+ 
+ 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+ 	if (!cs)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+-		goto out;
+-
+-	ret = get_prioidx(&cs->prioidx);
+-	if (ret < 0) {
+-		pr_warn("No space in priority index array\n");
+-		goto out;
+-	}
+-
+ 	return &cs->css;
+-out:
+-	kfree(cs);
+-	return ERR_PTR(ret);
+ }
+ 
+ static void cgrp_css_free(struct cgroup *cgrp)
+ {
+-	struct cgroup_netprio_state *cs;
++	struct cgroup_netprio_state *cs = cgrp_netprio_state(cgrp);
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
+ 
+-	cs = cgrp_netprio_state(cgrp);
+ 	rtnl_lock();
+ 	for_each_netdev(&init_net, dev) {
+ 		map = rtnl_dereference(dev->priomap);
+-		if (map && cs->prioidx < map->priomap_len)
+-			map->priomap[cs->prioidx] = 0;
++		if (map && cgrp->id < map->priomap_len)
++			map->priomap[cgrp->id] = 0;
+ 	}
+ 	rtnl_unlock();
+-	put_prioidx(cs->prioidx);
+ 	kfree(cs);
+ }
+ 
+ static u64 read_prioidx(struct cgroup *cgrp, struct cftype *cft)
+ {
+-	return (u64)cgrp_netprio_state(cgrp)->prioidx;
++	return cgrp->id;
+ }
+ 
+ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ 			struct cgroup_map_cb *cb)
+ {
+ 	struct net_device *dev;
+-	u32 prioidx = cgrp_netprio_state(cont)->prioidx;
++	u32 id = cont->id;
+ 	u32 priority;
+ 	struct netprio_map *map;
+ 
+ 	rcu_read_lock();
+ 	for_each_netdev_rcu(&init_net, dev) {
+ 		map = rcu_dereference(dev->priomap);
+-		priority = (map && prioidx < map->priomap_len) ? map->priomap[prioidx] : 0;
++		priority = (map && id < map->priomap_len) ? map->priomap[id] : 0;
+ 		cb->fill(cb, dev->name, priority);
+ 	}
+ 	rcu_read_unlock();
+@@ -185,7 +143,6 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 			 const char *buffer)
+ {
+-	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
+ 	char devname[IFNAMSIZ + 1];
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
+@@ -201,13 +158,13 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 
+ 	rtnl_lock();
+ 
+-	ret = extend_netdev_table(dev, prioidx);
++	ret = extend_netdev_table(dev, cgrp->id);
+ 	if (ret)
+ 		goto out_unlock;
+ 
+ 	map = rtnl_dereference(dev->priomap);
+ 	if (map)
+-		map->priomap[prioidx] = prio;
++		map->priomap[cgrp->id] = prio;
+ out_unlock:
+ 	rtnl_unlock();
+ 	dev_put(dev);
 -- 
-Michal Hocko
-SUSE Labs
+1.7.11.7
+
