@@ -1,118 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2KTJaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:30:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37835 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab2KTJaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:30:03 -0500
-Message-ID: <50AB4D96.7050509@suse.cz>
-Date: Tue, 20 Nov 2012 10:29:58 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752681Ab2KTJbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:31:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:59815 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752073Ab2KTJbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:31:32 -0500
+X-IronPort-AV: E=Sophos;i="4.83,285,1352044800"; 
+   d="scan'208";a="6238566"
+Message-ID: <50AB4F6D.3050002@cn.fujitsu.com>
+Date: Tue, 20 Nov 2012 17:37:49 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Yacine Belkadi <yacine.belkadi.1@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] scripts/kernel-doc: check that non-void fcts describe
- their return value
-References: <1349040737-1659-1-git-send-email-yacine.belkadi.1@gmail.com> <1349040737-1659-2-git-send-email-yacine.belkadi.1@gmail.com>
-In-Reply-To: <1349040737-1659-2-git-send-email-yacine.belkadi.1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
+ SPARSEMEM_VMEMMAP
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB21A4.8050709@gmail.com> <50AB2967.5010302@cn.fujitsu.com> <50AB2A1A.6040606@gmail.com>
+In-Reply-To: <50AB2A1A.6040606@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/20 17:31:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/20 17:31:16,
+	Serialize complete at 2012/11/20 17:31:16
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.9.2012 23:32, Yacine Belkadi wrote:
-> If a function has a return value, but its kernel-doc comment doesn't contain a
-> "Return" section, then emit the following warning:
+At 11/20/2012 02:58 PM, Jaegeuk Hanse Wrote:
+> On 11/20/2012 02:55 PM, Wen Congyang wrote:
+>> At 11/20/2012 02:22 PM, Jaegeuk Hanse Wrote:
+>>> On 11/01/2012 05:44 PM, Wen Congyang wrote:
+>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>
+>>>> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
+>>>> even if
+>>>> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>>>>
+>>>> So the patch add unregister_memory_section() into __remove_section().
+>>> Hi Yasuaki,
+>>>
+>>> In order to review this patch, I should dig sparse memory codes in
+>>> advance. But I have some confuse of codes. Why need encode/decode mem
+>>> map instead of set mem_map to ms->section_mem_map directly?
+>> The memmap is aligned, and the low bits are zero. We store some
+>> information
+>> in these bits. So we need to encode/decode memmap here.
 > 
->    Warning(file.h:129): No description found for return value of 'fct'
+> Hi Congyang,
 > 
-> Note: This check emits a lot of warnings at the moment, because many functions
-> don't have a 'Return' doc section. So until the number of warnings goes
-> sufficiently down, the check is only performed in verbose mode.
+> Thanks for you reponse. But I mean why return (unsigned long)(mem_map -
+> (section_nr_to_pfn(pnum))); in function sparse_encode_mem_map, and then
+> return ((struct page *)coded_mem_map) + section_nr_to_pfn(pnum); in
+> funtion sparse_decode_mem_map instead of just store mem_map in
+> ms->section_mep_map directly.
+
+I don't know why. I try to find the reason, but I don't find any
+place to use the pfn stored in the mem_map except in the decode
+function. Maybe the designer doesn't want us to access the mem_map
+directly.
+
+Thanks
+Wen Congyang
+
 > 
-> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-
-Randy, are you fine merging this to kbuild.git?
-
-Thanks,
-Michal
-
-
-> ---
->  scripts/kernel-doc |   34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
+> Regards,
+> Jaegeuk
 > 
-> diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-> index 8fd107a..7f82aa8 100755
-> --- a/scripts/kernel-doc
-> +++ b/scripts/kernel-doc
-> @@ -130,6 +130,8 @@ use strict;
->  # should document the "Context:" of the function, e.g. whether the functions
->  # can be called form interrupts. Unlike other sections you can end it with an
->  # empty line.
-> +# A non-void function should have a "Return:" section describing the return
-> +# value.
->  # Example-sections should contain the string EXAMPLE so that they are marked
->  # appropriately in DocBook.
->  #
-> @@ -298,6 +300,7 @@ my $section_default = "Description";	# default section
->  my $section_intro = "Introduction";
->  my $section = $section_default;
->  my $section_context = "Context";
-> +my $section_return = "Return";
->  
->  my $undescribed = "-- undescribed --";
->  
-> @@ -1767,6 +1770,28 @@ sub check_sections($$$$$$) {
->  }
->  
->  ##
-> +# Checks the section describing the return value of a function.
-> +sub check_return_section {
-> +        my $file = shift;
-> +        my $declaration_name = shift;
-> +        my $return_type = shift;
-> +
-> +        # Ignore an empty return type (It's a macro)
-> +        # Ignore functions with a "void" return type. (But don't ignore "void *")
-> +        if (($return_type eq "") || ($return_type =~ /void\s*\w*\s*$/)) {
-> +                return;
-> +        }
-> +
-> +        if (!defined($sections{$section_return}) ||
-> +            $sections{$section_return} eq "") {
-> +                print STDERR "Warning(${file}:$.): " .
-> +                "No description found for return value of " .
-> +                "'$declaration_name'\n";
-> +                ++$warnings;
-> +        }
-> +}
-> +
-> +##
->  # takes a function prototype and the name of the current file being
->  # processed and spits out all the details stored in the global
->  # arrays/hashes.
-> @@ -1837,6 +1862,15 @@ sub dump_function($$) {
->  	my $prms = join " ", @parameterlist;
->  	check_sections($file, $declaration_name, "function", $sectcheck, $prms, "");
->  
-> +        # This check emits a lot of warnings at the moment, because many
-> +        # functions don't have a 'Return' doc section. So until the number
-> +        # of warnings goes sufficiently down, the check is only performed in
-> +        # verbose mode.
-> +        # TODO: always perform the check.
-> +        if ($verbose) {
-> +                check_return_section($file, $declaration_name, $return_type);
-> +        }
-> +
->      output_declaration($declaration_name,
->  		       'function',
->  		       {'function' => $declaration_name,
+>>
+>> Thanks
+>> Wen Congyang
+>>
+>>> Regards,
+>>> Jaegeuk
+>>>
+>>>> CC: David Rientjes <rientjes@google.com>
+>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>> CC: Len Brown <len.brown@intel.com>
+>>>> CC: Christoph Lameter <cl@linux.com>
+>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>> ---
+>>>>    mm/memory_hotplug.c | 13 ++++++++-----
+>>>>    1 file changed, 8 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>>> index ca07433..66a79a7 100644
+>>>> --- a/mm/memory_hotplug.c
+>>>> +++ b/mm/memory_hotplug.c
+>>>> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
+>>>> struct zone *zone,
+>>>>    #ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>>>    static int __remove_section(struct zone *zone, struct mem_section
+>>>> *ms)
+>>>>    {
+>>>> -    /*
+>>>> -     * XXX: Freeing memmap with vmemmap is not implement yet.
+>>>> -     *      This should be removed later.
+>>>> -     */
+>>>> -    return -EBUSY;
+>>>> +    int ret = -EINVAL;
+>>>> +
+>>>> +    if (!valid_section(ms))
+>>>> +        return ret;
+>>>> +
+>>>> +    ret = unregister_memory_section(ms);
+>>>> +
+>>>> +    return ret;
+>>>>    }
+>>>>    #else
+>>>>    static int __remove_section(struct zone *zone, struct mem_section
+>>>> *ms)
+>>>
 > 
-
+> 
 
