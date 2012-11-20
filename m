@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2KTBRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:17:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18764 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab2KTBRH (ORCPT
+	id S1753685Ab2KTBSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:18:22 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:57569 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab2KTBSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:17:07 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=yHbJst7BUucA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=eYYPdsDFe-UA:10 a=rWYUxwV3Lchv5pqS5qgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353374226.6276.16.camel@gandalf.local.home>
-Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in
- the presence of nohz cpusets
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Date: Mon, 19 Nov 2012 20:17:06 -0500
-In-Reply-To: <CABVzNXqVdgTr1GNN6_yj-CZTDLPtP=Ok7r5TaDbRt2jpxHB-5Q@mail.gmail.com>
-References: <4FDD7AA8.6080601@gmail.com>
-	 <CAFTL4hy4SedXQ1Bc6o_1BHZ-7a8tbbvpUcFwp50hDbgNnv79zQ@mail.gmail.com>
-	 <CABVzNXqVdgTr1GNN6_yj-CZTDLPtP=Ok7r5TaDbRt2jpxHB-5Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Mon, 19 Nov 2012 20:18:20 -0500
+Message-ID: <50AADA51.7020101@ozlabs.ru>
+Date: Tue, 20 Nov 2012 12:18:09 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: added DSCR support to ptrace
+References: <1350281910-5238-1-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1350281910-5238-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-19 at 17:27 -0700, Hakan Akkan wrote:
+Ping?
 
-> >
-> > I suggest to rather define a tunable timekeeping duty CPU affinity in
-> > a cpumask file at /sys/devices/system/cpu/timekeeping and a toggle at
-> > /sys/devices/system/cpu/cpuX/timekeeping (like the online file). This
-> > way the user can decide whether adaptive nohz CPU can handle
-> > timekeeping or this must be forced to other CPUs in order to enforce
-> > isolation.
-> 
-> Well, users want tickless CPUs because they don't want timekeeping
-> (or any other kernel activity for that matter) to run in there. So, I believe
-> having that "timekeeping affinity" stay in the regular CPUs is good enough.
-> Please let me know how users could utilize these control files to do anything
-> other than keeping the timekeeping out of adaptive nohz CPUs.
+On 15/10/12 17:18, Alexey Kardashevskiy wrote:
+> The DSCR (aka Data Stream Control Register) is supported on some
+> server PowerPC chips and allow some control over the prefetch
+> of data streams.
+>
+> The kernel already supports DSCR value per thread but there is also
+> a need in a ability to change it from an external process for
+> the specific pid.
+>
+> The patch adds new register index PT_DSCR (index=44) which can be
+> set/get by:
+>    ptrace(PTRACE_POKEUSER, traced_process, PT_DSCR << 3, dscr);
+>    dscr = ptrace(PTRACE_PEEKUSER, traced_process, PT_DSCR << 3, NULL);
+>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>   arch/powerpc/include/asm/ptrace.h |    3 ++-
+>   arch/powerpc/kernel/ptrace.c      |   16 ++++++++++++++++
+>   2 files changed, 18 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
+> index 84cc784..946c556 100644
+> --- a/arch/powerpc/include/asm/ptrace.h
+> +++ b/arch/powerpc/include/asm/ptrace.h
+> @@ -276,7 +276,8 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
+>   #define PT_DAR	41
+>   #define PT_DSISR 42
+>   #define PT_RESULT 43
+> -#define PT_REGS_COUNT 44
+> +#define PT_DSCR 44
+> +#define PT_REGS_COUNT 45
+>
+>   #define PT_FPR0	48	/* each FP reg occupies 2 slots in this space */
+>
+> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+> index 8d8e028..4798acf 100644
+> --- a/arch/powerpc/kernel/ptrace.c
+> +++ b/arch/powerpc/kernel/ptrace.c
+> @@ -179,6 +179,17 @@ static int set_user_msr(struct task_struct *task, unsigned long msr)
+>   	return 0;
+>   }
+>
+> +static unsigned long get_user_dscr(struct task_struct *task)
+> +{
+> +	return task->thread.dscr;
+> +}
+> +
+> +static int set_user_dscr(struct task_struct *task, unsigned long dscr)
+> +{
+> +	task->thread.dscr = dscr;
+> +	return 0;
+> +}
+> +
+>   /*
+>    * We prevent mucking around with the reserved area of trap
+>    * which are used internally by the kernel.
+> @@ -200,6 +211,9 @@ unsigned long ptrace_get_reg(struct task_struct *task, int regno)
+>   	if (regno == PT_MSR)
+>   		return get_user_msr(task);
+>
+> +	if (regno == PT_DSCR)
+> +		return get_user_dscr(task);
+> +
+>   	if (regno < (sizeof(struct pt_regs) / sizeof(unsigned long)))
+>   		return ((unsigned long *)task->thread.regs)[regno];
+>
+> @@ -218,6 +232,8 @@ int ptrace_put_reg(struct task_struct *task, int regno, unsigned long data)
+>   		return set_user_msr(task, data);
+>   	if (regno == PT_TRAP)
+>   		return set_user_trap(task, data);
+> +	if (regno == PT_DSCR)
+> +		return set_user_dscr(task, data);
+>
+>   	if (regno <= PT_MAX_PUT_REG) {
+>   		((unsigned long *)task->thread.regs)[regno] = data;
+>
 
-I agree. If we already have some /sys cpumask that denotes which CPUs
-will be adaptive NO_HZ (or simply isolated) then just keep the tick from
-ever going on those CPUs. If all but one CPU is set for nohz, and that
-one CPU goes idle, it should still be the one doing the tick.
 
--- Steve
-
-
+-- 
+Alexey
