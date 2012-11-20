@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2KTVUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:20:31 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:28637 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab2KTVUa (ORCPT
+	id S1753582Ab2KTV0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:26:46 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57575 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753270Ab2KTV0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:20:30 -0500
-Message-ID: <1353445931.10939.100.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v6 1/5] ACPI: Add acpi_handle_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com
-Date: Tue, 20 Nov 2012 14:12:11 -0700
-In-Reply-To: <1353445837.17819.20.camel@joe-AO722>
-References: <1353444294-25575-1-git-send-email-toshi.kani@hp.com>
-	 <1353444294-25575-2-git-send-email-toshi.kani@hp.com>
-	 <1353445837.17819.20.camel@joe-AO722>
+	Tue, 20 Nov 2012 16:26:44 -0500
+Message-ID: <1353446800.13269.2.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: [GIT PULL] EFI changes for v3.7 - part 2
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Date: Tue, 20 Nov 2012 21:26:40 +0000
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -27,46 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 13:10 -0800, Joe Perches wrote:
-> On Tue, 2012-11-20 at 13:44 -0700, Toshi Kani wrote:
-> > This interface acquires the global namespace
-> > mutex and may not be called from interrupt context.
-> []
-> > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> []
-> > +/**
-> > + * acpi_handle_printk: Print message with ACPI prefix and object path
-> > + *
-> > + * This function is called through acpi_handle_<level> macros and prints
-> > + * a message with ACPI prefix and object path.  This function acquires
-> > + * the global namespace mutex and may not be called from interrupt context.
-> > + */
-> > +void
-> > +acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> > +{
-> []
-> > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> > +	if (ret == AE_OK)
-> > +		path = buffer.pointer;
-> > +	else
-> > +		path = "<n/a>";
-> 
-> Perhaps:
-> 	if (in_interrupt() ||
-> 	    acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer) != AE_OK)
-> 		path = "<n/a>";
-> 	else
-> 		path = buffer.pointer;
-> 
-> so that any interrupt context still works, just
-> not printing the correct acpi_get_name;
+Hi guys,
 
-Hi Joe,
+The following changes since commit 226f69a4b7ed1da248d653aa1535bad61ba5fa49:
 
-Good idea.  I will update the patch as you suggested.
+  Merge tag 'please-pull-tangchen' of git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras into x86/urgent (2012-11-13 19:01:01 +0100)
 
-Thanks,
--Toshi
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.7-v2
+
+for you to fetch changes up to 0f905a43ce955b638139bd84486194770a6a2c08:
+
+  x86, efi: Fix processor-specific memcpy() build error (2012-11-20 20:52:07 +0000)
+
+----------------------------------------------------------------
+EFI updates for v3.7 - part 2
+
+  * Fix the i386 EFI boot stub build for 3DNow memcpy configs.
+
+  * Delete an unused 'long' in header.S that was part of the initial
+    EFI boot stub commit, but is no long referenced.
+
+----------------------------------------------------------------
+Cesar Eduardo Barros (1):
+      x86: remove dummy long from EFI stub
+
+Matt Fleming (1):
+      x86, efi: Fix processor-specific memcpy() build error
+
+ arch/x86/boot/compressed/eboot.c | 2 ++
+ arch/x86/boot/header.S           | 3 ---
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
