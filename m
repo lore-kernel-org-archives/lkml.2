@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2KTNNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:13:17 -0500
-Received: from 8bytes.org ([85.214.48.195]:58308 "EHLO mail.8bytes.org"
+	id S1753655Ab2KTNNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:13:22 -0500
+Received: from 8bytes.org ([85.214.48.195]:58502 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753375Ab2KTNNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:13:09 -0500
+	id S1753375Ab2KTNNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:13:20 -0500
 From: Joerg Roedel <joro@8bytes.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,150 +15,115 @@ Cc: x86@kernel.org, iommu@lists.linux-foundation.org,
         Yinghai Lu <yinghai@kernel.org>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 05/19] x86, hpet: Introduce x86_msi_ops.setup_hpet_msi
-Date: Tue, 20 Nov 2012 14:12:42 +0100
-Message-Id: <1353417176-18945-6-git-send-email-joro@8bytes.org>
+Subject: [PATCH 16/19] x86, irq: Introduce setup_remapped_irq()
+Date: Tue, 20 Nov 2012 14:12:53 +0100
+Message-Id: <1353417176-18945-17-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353417176-18945-1-git-send-email-joro@8bytes.org>
 References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
 X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Nov 20 14:13:08 2012
-X-DSPAM-Confidence: 0.9996
+X-DSPAM-Processed: Tue Nov 20 14:13:19 2012
+X-DSPAM-Confidence: 0.9995
 X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50ab81e422973327212871
+X-DSPAM-Signature: 50ab81ef22971007957311
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function pointer can be overwritten by the IRQ
-remapping code. The irq_remapping_enabled check can be
-removed from default_setup_hpet_msi.
+This function does irq-remapping specific interrupt setup
+like modifying the chip defaults.
 
 Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/include/asm/hpet.h     |    5 +++--
- arch/x86/include/asm/x86_init.h |    1 +
- arch/x86/kernel/apic/io_apic.c  |    7 +------
- arch/x86/kernel/hpet.c          |    2 +-
- arch/x86/kernel/x86_init.c      |   10 ++++++----
- drivers/iommu/irq_remapping.c   |    3 ++-
- 6 files changed, 14 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |    9 +++++++++
+ arch/x86/kernel/apic/io_apic.c       |   13 +++----------
+ drivers/iommu/irq_remapping.c        |    9 +++++++++
+ 3 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
-index 434e210..b18df57 100644
---- a/arch/x86/include/asm/hpet.h
-+++ b/arch/x86/include/asm/hpet.h
-@@ -80,9 +80,9 @@ extern void hpet_msi_write(struct hpet_dev *hdev, struct msi_msg *msg);
- extern void hpet_msi_read(struct hpet_dev *hdev, struct msi_msg *msg);
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index 562db68..b30fca1 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -44,6 +44,9 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 				     struct msi_msg *msg, u8 hpet_id);
+ extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
+ extern void panic_if_irq_remap(const char *msg);
++extern bool setup_remapped_irq(int irq,
++			       struct irq_cfg *cfg,
++			       struct irq_chip *chip);
  
- #ifdef CONFIG_PCI_MSI
--extern int arch_setup_hpet_msi(unsigned int irq, unsigned int id);
-+extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
- #else
--static inline int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
-+static inline int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ static inline bool irq_remapped(struct irq_cfg *cfg)
  {
- 	return -EINVAL;
+@@ -93,6 +96,12 @@ static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ {
  }
-@@ -111,6 +111,7 @@ extern void hpet_unregister_irq_handler(rtc_irq_handler handler);
- static inline int hpet_enable(void) { return 0; }
- static inline int is_hpet_enabled(void) { return 0; }
- #define hpet_readl(a) 0
-+#define default_setup_hpet_msi	NULL
  
- #endif
- #endif /* _ASM_X86_HPET_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 8ff79f7..1ee10ca 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -187,6 +187,7 @@ struct x86_msi_ops {
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
- 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
-+	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
- };
++static inline bool setup_remapped_irq(int irq,
++				      struct irq_cfg *cfg,
++				      struct irq_chip *chip)
++{
++	return false;
++}
+ #endif /* CONFIG_IRQ_REMAP */
  
- struct x86_io_apic_ops {
+ #endif /* __X86_IRQ_REMAPPING_H */
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index edaaad9..ca01f42a 100644
+index 73f1bf2..391c0b9 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3310,17 +3310,12 @@ static struct irq_chip hpet_msi_type = {
- 	.irq_retrigger = ioapic_retrigger_irq,
- };
- 
--int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
-+int default_setup_hpet_msi(unsigned int irq, unsigned int id)
- {
- 	struct irq_chip *chip = &hpet_msi_type;
- 	struct msi_msg msg;
- 	int ret;
- 
--	if (irq_remapping_enabled) {
--		if (!setup_hpet_msi_remapped(irq, id))
--			return -1;
--	}
--
- 	ret = msi_compose_msg(NULL, irq, &msg, id);
- 	if (ret < 0)
- 		return ret;
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 1460a5d..22d4fe5 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -478,7 +478,7 @@ static int hpet_msi_next_event(unsigned long delta,
- 
- static int hpet_setup_msi_irq(unsigned int irq)
- {
--	if (arch_setup_hpet_msi(irq, hpet_blockid)) {
-+	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
- 		destroy_irq(irq);
- 		return -EINVAL;
+@@ -1292,11 +1292,8 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
+ 		fasteoi = false;
  	}
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index ee4af8b..0357eee 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -19,6 +19,7 @@
- #include <asm/time.h>
- #include <asm/irq.h>
- #include <asm/io_apic.h>
-+#include <asm/hpet.h>
- #include <asm/pat.h>
- #include <asm/tsc.h>
- #include <asm/iommu.h>
-@@ -111,10 +112,11 @@ struct x86_platform_ops x86_platform = {
  
- EXPORT_SYMBOL_GPL(x86_platform);
- struct x86_msi_ops x86_msi = {
--	.setup_msi_irqs = native_setup_msi_irqs,
--	.teardown_msi_irq = native_teardown_msi_irq,
--	.teardown_msi_irqs = default_teardown_msi_irqs,
--	.restore_msi_irqs = default_restore_msi_irqs,
-+	.setup_msi_irqs		= native_setup_msi_irqs,
-+	.teardown_msi_irq	= native_teardown_msi_irq,
-+	.teardown_msi_irqs	= default_teardown_msi_irqs,
-+	.restore_msi_irqs	= default_restore_msi_irqs,
-+	.setup_hpet_msi		= default_setup_hpet_msi,
- };
+-	if (irq_remapped(cfg)) {
+-		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-		irq_remap_modify_chip_defaults(chip);
++	if (setup_remapped_irq(irq, cfg, chip))
+ 		fasteoi = trigger != 0;
+-	}
  
- struct x86_io_apic_ops x86_io_apic_ops = {
+ 	hdl = fasteoi ? handle_fasteoi_irq : handle_edge_irq;
+ 	irq_set_chip_and_handler_name(irq, chip, hdl,
+@@ -3106,10 +3103,7 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ 	irq_set_msi_desc(irq, msidesc);
+ 	write_msi_msg(irq, &msg);
+ 
+-	if (irq_remapped(irq_get_chip_data(irq))) {
+-		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-		irq_remap_modify_chip_defaults(chip);
+-	}
++	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 
+@@ -3247,8 +3241,7 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ 
+ 	hpet_msi_write(irq_get_handler_data(irq), &msg);
+ 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-	if (irq_remapped(irq_get_chip_data(irq)))
+-		irq_remap_modify_chip_defaults(chip);
++	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 	return 0;
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index db3dcaf..0baad3b 100644
+index 5053482..30884ee 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -36,7 +36,8 @@ static void irq_remapping_disable_io_apic(void)
- 
- static void __init irq_remapping_modify_x86_ops(void)
- {
--	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
-+	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
-+	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+@@ -300,3 +300,12 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ 	chip->irq_eoi = ir_ack_apic_level;
+ 	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
  }
- 
- static __init int setup_nointremap(char *str)
++
++bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
++{
++	if (!irq_remapped(cfg))
++		return false;
++	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
++	irq_remap_modify_chip_defaults(chip);
++	return true;
++}
 -- 
 1.7.9.5
 
