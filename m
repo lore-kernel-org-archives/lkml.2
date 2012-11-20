@@ -1,47 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab2KTJ7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:59:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786Ab2KTJ7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:59:04 -0500
-Message-ID: <50AB5462.9030401@suse.cz>
-Date: Tue, 20 Nov 2012 10:58:58 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752367Ab2KTKCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:02:11 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:35040 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751698Ab2KTKCJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:02:09 -0500
+Message-Id: <201211201001.qAK9xTOO057854@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, linux-kernel@vger.kernel.org,
-        cocci@systeme.lip6.fr
-Subject: Re: [PATCH] Coccicheck: Improvement for online checking with 'make
- C=[12]'
-References: <1350031730-20822-1-git-send-email-nicolas.palix@imag.fr>
-In-Reply-To: <1350031730-20822-1-git-send-email-nicolas.palix@imag.fr>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Warning! Your mailbox is almost full.
+To: Recipients <fxzhang@dicp.ac.cn>
+From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
+Date: Tue, 20 Nov 2012 04:01:16 -0600
+Reply-To: fxzhang@dicp.ac.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
 
-sorry for the delay.
+click link below:
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
 
-On 12.10.2012 10:48, Nicolas Palix wrote:
-> +    # The ignore_unknown_options flag requires Coccinelle >= 0.2.3
-> +    FLAGS="-ignore_unknown_options -very_quiet"
-> +    if [ "$KBUILD_EXTMOD" = "" ] ; then
-> +        OPTIONS="-dir $srctree $*"
-
-Why is -Iinclude not needed in this case?
-
-
-> +    else
-> +        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include $*"
-> +    fi
-
-The main Makefile exports the $LINUXINCLUDE variable, which contains all
-the needed -I options. It would be cleaner to use that instead.
-
-Michal
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
