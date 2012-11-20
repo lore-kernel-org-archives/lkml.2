@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab2KTTLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:11:17 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4705 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2KTTLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:11:15 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <1353438635.10779.10.camel@lb-tlvb-eilong.il.broadcom.com>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Andy Whitcroft" <apw@canonical.com>
-cc: "Joe Perches" <joe@perches.com>, "David Rientjes" <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 20 Nov 2012 21:10:35 +0200
-In-Reply-To: <20121120163607.GB17797@dm>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120115239.GA7955@dm>
- <1353421624.6559.9.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120144329.GE7955@dm>
- <1353424027.6559.15.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120154443.GK7955@dm>
- <1353427570.6559.21.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120161417.GA17797@dm> <20121120163607.GB17797@dm>
-Organization: Broadcom
-X-Mailer: Evolution 3.2.3-0ubuntu6
+	id S1752245Ab2KTTRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:17:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52973 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab2KTTRt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 14:17:49 -0500
+Date: Tue, 20 Nov 2012 19:17:39 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Constantine Shulyupin <const@makelinux.com>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2] checkpatch: consolidate if (foo) bar(foo) checks and add
+ debugfs_remove
+Message-ID: <20121120191739.GG17797@dm>
+References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
+ <20121120142906.GD7955@dm>
+ <1353422629.11235.10.camel@joe-AO722>
+ <20121120144742.GG7955@dm>
+ <CAE7jHC8LsxPaQHqy5-H4-wZp6q+_0s7arnPa3jG7R9x=tf_Oww@mail.gmail.com>
+ <1353423503.11235.12.camel@joe-AO722>
+ <20121120153751.GJ7955@dm>
+ <1353426677.11235.15.camel@joe-AO722>
+ <20121120163956.GD17797@dm>
+ <1353436648.17387.3.camel@joe-AO722>
 MIME-Version: 1.0
-X-WSS-ID: 7CB50AD41QK6483230-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353436648.17387.3.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 18:36 +0200, Andy Whitcroft wrote:
-> On Tue, Nov 20, 2012 at 04:14:17PM +0000, Andy Whitcroft wrote:
-> > On Tue, Nov 20, 2012 at 06:06:10PM +0200, Eilon Greenstein wrote:
-> > > I'm only testing the nextline if the current line is newly added. If I
-> > > got it right, when a line is newly added, the next line can be:
-> > > a. another new line
-> > > b. existing line (provided for context)
-> > > c. Does not exist since this is the end of the file (I missed this one
-> > > originally)
-> > > 
-> > > It cannot just jump to the next hunk and it cannot be a deleted line,
-> > > right?
-> 
-> Oh and in theory at least it could be a - line, though diff never
-> generates things in that order.
-> 
+Consolidate the if (foo) bar(foo) detectors into a single check.  Add
+debugfs_remove and family.
 
-Andy - I could not find any other perl warnings. In the current
-suggestion, only $line and $prevline are being accessed unconditionally
-and $rawlines[$linenr] is accessed only after checking it exists - so it
-seems safe.
+Based on a patch by Constantine Shulyupin <const@MakeLinux.com>.
 
-About the logic - true, if diff will show deleted lines after newly
-added lines, some new double line segments will be missed. However, it
-seems like few other things will break if diff will start acting out
-like that. The suggestion you posted earlier will miss those as well,
-and starting to check for this weird case (of deleted lines after the
-added lines) does not seem right.
-
-So this patch seems safe, it does not generate false positives and it
-does catch all the cases we can currently generate with diff - can you
-please consider applying it to checkpatch?
-
-I'm posting it again below for easier reference, please let me know if
-you would like me to send it in a clean email separately.
-
-Thanks,
-Eilon
-
->From 403038375a9c09046631f674d14c221758a0de61 Mon Sep 17 00:00:00 2001
-From: Eilon Greenstein <eilong@broadcom.com>
-Date: Tue, 20 Nov 2012 21:05:30 +0200
-Subject: [PATCH] checkpatch: add double empty line check
-
-Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
- scripts/checkpatch.pl |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ scripts/checkpatch.pl |   20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 21a9f5d..c0c610c 100755
+index ae01b90..a1e2471 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -3579,6 +3579,19 @@ sub process {
- 			WARN("EXPORTED_WORLD_WRITABLE",
- 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+@@ -3239,20 +3239,12 @@ sub process {
+ 				$herecurr);
  		}
-+
-+# check for double empty lines
-+		if ($line =~ /^\+\s*$/) {
-+			my $nextline = "";
-+			if (defined($rawlines[$linenr])) {
-+				$nextline = $rawlines[$linenr];
-+			}
-+			if ($nextline =~ /^\s*$/ ||
-+			    $prevline =~ /^\+?\s*$/ && $nextline !~ /^\+\s*$/) {
-+				CHK("DOUBLE_EMPTY_LINE",
-+				    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-+			}
-+		}
- 	}
  
- 	# If we have no input at all, then there is nothing to report on
+-# check for needless kfree() checks
+-		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+-			my $expr = $1;
+-			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
+-				WARN("NEEDLESS_KFREE",
+-				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
+-			}
+-		}
+-# check for needless usb_free_urb() checks
+-		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+-			my $expr = $1;
+-			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
+-				WARN("NEEDLESS_USB_FREE_URB",
+-				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
++# check for needless "if (<foo>) fn(<foo>)" uses
++		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
++			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
++			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
++				WARN('NEEDLESS_IF',
++				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
+ 		}
+ 
 -- 
-1.7.9.5
-
-
-
-
-
+1.7.10.4
 
