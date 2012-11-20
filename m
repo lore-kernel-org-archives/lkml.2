@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2KTE4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 23:56:16 -0500
-Received: from us-mx3.synaptics.com ([12.239.217.85]:62364 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab2KTE4O (ORCPT
+	id S1751064Ab2KTFLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 00:11:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46345 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab2KTFLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 23:56:14 -0500
-Message-ID: <50AB0D6C.9040003@synaptics.com>
-Date: Mon, 19 Nov 2012 20:56:12 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 20 Nov 2012 00:11:37 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>
+CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH v3 00/10] Support for AM33xx PWM Subsystem
+Date: Tue, 20 Nov 2012 10:33:41 +0530
+Message-ID: <1353387831-31538-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com> <1353124734-16803-3-git-send-email-cheiny@synaptics.com> <20121117215415.GA5624@kroah.com>
-In-Reply-To: <20121117215415.GA5624@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2012 01:54 PM, Greg Kroah-Hartman wrote:
-> On Fri, Nov 16, 2012 at 07:58:50PM -0800, Christopher Heiny wrote:
->> +static void release_rmidev_device(struct device *dev)
->> +{
->> +	device_unregister(dev);
->> +}
->
-> You just leaked memory here, right?
->
-> Also, you already unregistered the device, otherwise this function would
-> have never been called, so you just ended up in a loop?
+In AM33xx PWM sub modules like ECAP, EHRPWM & EQEP are  integrated to
+PWM subsystem. All these submodules shares the resources (clock) & has
+a clock gating register in PWM Subsystem. This patch series creates a
+parent PWM Subsystem driver to handle access synchronization of shared
+resources & clock gating from PWM Subsystem configuration space.
+Also Device tree nodes populated to support parent child relation
+between PWMSS, ECAP & EHRPWM submodules.
+In addition EHRPWM module requires explicit clock gating from control
+module & is handled by patch #2 & 8.
 
-Roger.  We'll fix that.
+Patch #4 & 6 submitted is a second revision as suggested by  Thierry
+for handling clock gating with a global function . This requires config
+space handling done independent from driver and is done at parent driver.
+So the parent<->child relation adopted to handle
+1. pm runtime synchronization
+2. PWM subsystem common config space clock gating for PWM submodules.
 
+Patches supports
+- Driver support for parent child relation handled patch #1
+- Optional EHRPWM tb clock in patch #2
+- Parent child in HWMOD handled at patch #3
+- Device tree binding support handled in patch #4, 6 &8
+- pinctrl support in patch #5 & 7.
+- DT node populated in patch #9 & 10.
 
-> Have you ever tried removing a device?  Are you sure it's working
-> properly?
+This patch series based on linux-next/20121115 and tested on AM33xx.
+It depends on [1]
 
-Hmmmm.  If it leads to the loop you mention above, then the test I'm 
-using must not be doing what I thought it was.  I'll fix that, too.
+1. https://lkml.org/lkml/2012/11/19/338
+pwm: Device tree support for PWM polarity
 
+Philip, Avinash (10):
+  PWMSS: Add PWM Subsystem driver for parent<->child relationship
+  ARM: am33xx: clk: Add optional clock for EHRPWM
+  ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM
+    subsystem
+  pwm: pwm-tiecap: Add device-tree binding support for APWM driver
+  pwm: pwm-tiecap: pinctrl support
+  pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
+  pwm: pwm-tiehrpwm: pinctrl support
+  pwm: pwm-tiehrpwm: Adding TBCLK gating support.
+  ARM: dts: AM33XX: Add PWMSS device tree nodes
+  ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
 
->> +EXPORT_SYMBOL(rmi_register_phys_device);
->
-> Just curious, but why not EXPORT_SYMBOL_GPL() on all of these new
-> symbols you are creating?
+ .../devicetree/bindings/pwm/pwm-tiecap.txt         |   23 ++
+ .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |   23 ++
+ .../devicetree/bindings/pwm/pwm-tipwmss.txt        |   32 ++
+ arch/arm/boot/dts/am335x-evm.dts                   |   21 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   84 ++++
+ arch/arm/mach-omap2/clock33xx_data.c               |   37 ++
+ arch/arm/mach-omap2/control.h                      |    8 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c         |  419 +++++++++++++-------
+ drivers/pwm/Kconfig                                |   11 +
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-tiecap.c                           |   50 +++-
+ drivers/pwm/pwm-tiehrpwm.c                         |   65 +++-
+ drivers/pwm/pwm-tipwmss.c                          |  143 +++++++
+ drivers/pwm/tipwmss.h                              |   39 ++
+ 14 files changed, 811 insertions(+), 145 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiehrpwm.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt
+ create mode 100644 drivers/pwm/pwm-tipwmss.c
+ create mode 100644 drivers/pwm/tipwmss.h
 
-We'll change that.
-
-				Thanks very much!
-						Chris
