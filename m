@@ -1,210 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab2KTVyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:54:43 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53266 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab2KTVyl (ORCPT
+	id S1752929Ab2KTV4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:56:45 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:58786 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab2KTV4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:54:41 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-pm@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-In-Reply-To: <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-Date: Tue, 20 Nov 2012 21:54:29 +0000
-Message-Id: <20121120215429.B621F3E1821@localhost>
+	Tue, 20 Nov 2012 16:56:43 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V3 1/3] arm: dma mapping: Export dma ops functions
+Date: Tue, 20 Nov 2012 22:56:25 +0100
+Message-Id: <1353448587-2937-2-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353448587-2937-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1353448587-2937-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Nov 2012 19:55:45 +0900, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Some device drivers (e.g. panel or backlights) need to follow precise
-> sequences for powering on and off, involving GPIOs, regulators, PWMs
-> and other power-related resources, with a defined powering order and
-> delays to respect between steps. These sequences are device-specific,
-> and do not belong to a particular driver - therefore they have been
-> performed by board-specific hook functions so far.
+Expose the DMA operations functions. Until now only the dma_ops
+structs in a whole or some dma operation were exposed. This patch
+exposes all the dma coherents operations. They can be reused when an
+architecture or a driver need to create its own set of dma_operation.
 
-I must be honest, this series really makes me nervous...
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/include/asm/dma-mapping.h |   48 ++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/dma-mapping.c          |   25 ++++---------------
+ 2 files changed, 53 insertions(+), 20 deletions(-)
 
-> With the advent of the device tree and of ARM kernels that are not
-> board-tied, we cannot rely on these board-specific hooks anymore but
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 2300484..b12d7c0 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -112,6 +112,54 @@ static inline void dma_free_noncoherent(struct device *dev, size_t size,
+ extern int dma_supported(struct device *dev, u64 mask);
+ 
+ /**
++ * arm_dma_map_page - map a portion of a page for streaming DMA
++ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
++ * @page: page that buffer resides in
++ * @offset: offset into page for start of buffer
++ * @size: size of buffer to map
++ * @dir: DMA transfer direction
++ *
++ * Ensure that any data held in the cache is appropriately discarded
++ * or written back.
++ *
++ * The device owns this memory once this call has completed.  The CPU
++ * can regain ownership by calling dma_unmap_page().
++ */
++extern dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
++				    unsigned long offset, size_t size,
++				    enum dma_data_direction dir,
++				    struct dma_attrs *attrs);
++
++/**
++ * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
++ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
++ * @handle: DMA address of buffer
++ * @size: size of buffer (same as passed to dma_map_page)
++ * @dir: DMA transfer direction (same as passed to dma_map_page)
++ *
++ * Unmap a page streaming mode DMA translation.  The handle and size
++ * must match what was provided in the previous dma_map_page() call.
++ * All other usages are undefined.
++ *
++ * After this call, reads by the CPU to the buffer are guaranteed to see
++ * whatever the device wrote there.
++ */
++extern void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
++				size_t size, enum dma_data_direction dir,
++				struct dma_attrs *attrs);
++
++extern void arm_dma_sync_single_for_cpu(struct device *dev,
++					dma_addr_t handle, size_t size,
++					enum dma_data_direction dir);
++
++extern void arm_dma_sync_single_for_device(struct device *dev,
++					dma_addr_t handle, size_t size,
++					enum dma_data_direction dir);
++
++extern int arm_dma_set_mask(struct device *dev, u64 dma_mask);
++
++
++/**
+  * arm_dma_alloc - allocate consistent memory for DMA
+  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+  * @size: required memory size
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 58bc3e4..dbb67ce 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -56,20 +56,13 @@ static void __dma_page_dev_to_cpu(struct page *, unsigned long,
+ 		size_t, enum dma_data_direction);
+ 
+ /**
+- * arm_dma_map_page - map a portion of a page for streaming DMA
+- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+- * @page: page that buffer resides in
+- * @offset: offset into page for start of buffer
+- * @size: size of buffer to map
+- * @dir: DMA transfer direction
+- *
+  * Ensure that any data held in the cache is appropriately discarded
+  * or written back.
+  *
+  * The device owns this memory once this call has completed.  The CPU
+  * can regain ownership by calling dma_unmap_page().
+  */
+-static dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
++dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
+ 	     unsigned long offset, size_t size, enum dma_data_direction dir,
+ 	     struct dma_attrs *attrs)
+ {
+@@ -86,12 +79,6 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
+ }
+ 
+ /**
+- * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
+- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+- * @handle: DMA address of buffer
+- * @size: size of buffer (same as passed to dma_map_page)
+- * @dir: DMA transfer direction (same as passed to dma_map_page)
+- *
+  * Unmap a page streaming mode DMA translation.  The handle and size
+  * must match what was provided in the previous dma_map_page() call.
+  * All other usages are undefined.
+@@ -99,7 +86,7 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
+  * After this call, reads by the CPU to the buffer are guaranteed to see
+  * whatever the device wrote there.
+  */
+-static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
++void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
+ 		size_t size, enum dma_data_direction dir,
+ 		struct dma_attrs *attrs)
+ {
+@@ -108,7 +95,7 @@ static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
+ 				      handle & ~PAGE_MASK, size, dir);
+ }
+ 
+-static void arm_dma_sync_single_for_cpu(struct device *dev,
++void arm_dma_sync_single_for_cpu(struct device *dev,
+ 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+ {
+ 	unsigned int offset = handle & (PAGE_SIZE - 1);
+@@ -116,7 +103,7 @@ static void arm_dma_sync_single_for_cpu(struct device *dev,
+ 	__dma_page_dev_to_cpu(page, offset, size, dir);
+ }
+ 
+-static void arm_dma_sync_single_for_device(struct device *dev,
++void arm_dma_sync_single_for_device(struct device *dev,
+ 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+ {
+ 	unsigned int offset = handle & (PAGE_SIZE - 1);
+@@ -124,8 +111,6 @@ static void arm_dma_sync_single_for_device(struct device *dev,
+ 	__dma_page_cpu_to_dev(page, offset, size, dir);
+ }
+ 
+-static int arm_dma_set_mask(struct device *dev, u64 dma_mask);
+-
+ struct dma_map_ops arm_dma_ops = {
+ 	.alloc			= arm_dma_alloc,
+ 	.free			= arm_dma_free,
+@@ -971,7 +956,7 @@ int dma_supported(struct device *dev, u64 mask)
+ }
+ EXPORT_SYMBOL(dma_supported);
+ 
+-static int arm_dma_set_mask(struct device *dev, u64 dma_mask)
++int arm_dma_set_mask(struct device *dev, u64 dma_mask)
+ {
+ 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
+ 		return -EIO;
+-- 
+1.7.9.5
 
-This isn't strictly true. It is still perfectly fine to have board
-specific code when necessary. However, there is strong encouragement to
-enable that code in device drivers as much as possible and new board
-files need to have very strong justification.
-
-> need a way to implement these sequences in a portable manner. This patch
-> introduces a simple interpreter that can execute such power sequences
-> encoded either as platform data or within the device tree. It also
-> introduces first support for regulator, GPIO and PWM resources.
-
-This is where I start getting nervous. Up to now I've strongly resisted
-adding any kind of interpreted code to the device tree. The model is to
-identify hardware, but require the driver to know how to control it. (as
-compared to ACPI which is entirely designed around executable
-bytecode).
-
-While the power sequences described here certainly cannot be confused
-with a Turing complete bytecode, it is a step in that direction. Plus,
-there will always be that new use case that needs just a "little new
-feature" to make this work for that too. Without thinking about how to
-handle that ahead of time is just asking for something to turn into a
-maintenance nightmare. It's just as important to specify what the limits
-of this approach are and when to punt to real driver code to handle a
-device.
-
-> +Power Sequences Steps
-> +---------------------
-> +Steps of a sequence describe an action to be performed on a resource. They
-> +always include a "type" property which indicates what kind of resource this
-> +step works on. Depending on the resource type, additional properties are defined
-> +to control the action to be performed.
-> +
-> +"delay" type required properties:
-> +  - delay: delay to wait (in microseconds)
-> +
-> +"regulator" type required properties:
-> +  - id: name of the regulator to use.
-> +  - enable / disable: one of these two empty properties must be present to
-> +                      enable or disable the resource
-> +
-> +"pwm" type required properties:
-> +  - id: name of the PWM to use.
-> +  - enable / disable: one of these two empty properties must be present to
-> +                      enable or disable the resource
-> +
-> +"gpio" type required properties:
-> +  - gpio: phandle of the GPIO to use.
-> +  - value: value this GPIO should take. Must be 0 or 1.
-> +
-> +Example
-> +-------
-> +Here are example sequences declared within a backlight device that use all the
-> +supported resources types:
-> +
-> +	backlight {
-> +		compatible = "pwm-backlight";
-> +		...
-> +
-> +		/* resources used by the power sequences */
-> +		pwms = <&pwm 2 5000000>;
-> +		pwm-names = "backlight";
-> +		power-supply = <&backlight_reg>;
-> +
-> +		power-sequences {
-> +			power-on {
-> +				step0 {
-> +					type = "regulator";
-> +					id = "power";
-> +					enable;
-> +				};
-> +				step1 {
-> +					type = "delay";
-> +					delay = <10000>;
-> +				};
-> +				step2 {
-> +					type = "pwm";
-> +					id = "backlight";
-> +					enable;
-> +				};
-> +				step3 {
-> +					type = "gpio";
-> +					gpio = <&gpio 28 0>;
-> +					value = <1>;
-> +				};
-> +			};
-> +
-> +			power-off {
-> +				step0 {
-> +					type = "gpio";
-> +					gpio = <&gpio 28 0>;
-> +					value = <0>;
-> +				};
-> +				step1 {
-> +					type = "pwm";
-> +					id = "backlight";
-> +					disable;
-> +				};
-> +				step2 {
-> +					type = "delay";
-> +					delay = <10000>;
-> +				};
-> +				step3 {
-> +					type = "regulator";
-> +					id = "power";
-> +					disable;
-> +				};
-> +			};
-> +		};
-> +	};
-
-I think this will get very verbose in a hurry. Already this simple
-example is 45 lines long. Using the device tree structure to encode the
-language doesn't look like a very good fit. Not to mention that the
-order of operations is entirely based on the node name. Want to insert
-an operation between step0 and step1? Need to rename step1, step2, and
-step3 to do so.
-
-This implementation also isn't very consistent. The gpio is referenced
-with a phandle in step3/step0, but the regulator and pwm are referenced
-by id.
-
-As an alternative, what about something like the following?
-
-	backlight {
-		compatible = "pwm-backlight";
-		...
-
-		/* resources used by the power sequences */
-		pwms = <&pwm 2 5000000>;
-		pwm-names = "backlight";
-		regulators = <&backlight_reg>;
-		gpios = <&gpio 28 0>;
-
-		power-on-sequence = "r0e;d10000m;p0e;g0s";
-		power-off-sequence = "g0c;p0d;d10000m;r0d";
-	};
-
-I'm thinking about the scripts as trivial-to-parse ascii strings that
-have a very simple set of commands. The commands use resources already
-defined in the node. ie. 'g0' refers to the first entry in the gpios
-property. 'r0' for the regulator, 'p0' for the pwms, 'd' means delay. By
-no means take this as the format to use, it is just an example off the
-top of my head, but it is already way easier to work with than putting
-each command into a node.
-
-The trick is still to define a syntax that doesn't fall apart when it
-needs to be extended. I would also like to get opinions on whether or
-not conditionals or loops should be supported (ie. loop waiting for a
-status to change). If they should then we need to be a lot more careful
-about the design (and due to my aforementioned nervousness, somebody may
-need to get me therapy).
-
-(Mitch, I'll let you make the argument for using Forth here. To be
-honest, I'm not keen on defining any kind of new language, however
-simple, but neither am I keen to pull in Forth).
-
-> +Platform Data Format
-> +--------------------
-> +All relevant data structures for declaring power sequences are located in
-> +include/linux/power_seq.h.
-
-Hmm... If sequences are switched to a string instead, then platform_data
-should also use it. The power sequence data structures can be created at
-runtime by parsing the string.
-
-g.
