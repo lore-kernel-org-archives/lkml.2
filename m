@@ -1,156 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab2KTIbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:31:39 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46901 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab2KTIae (ORCPT
+	id S1752842Ab2KTIci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:32:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42552 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752514Ab2KTIch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:30:34 -0500
-From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
-Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
-Date: Tue, 20 Nov 2012 00:30:08 -0800
-Message-Id: <1353400211-5182-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353400211-5182-1-git-send-email-tj@kernel.org>
-References: <1353400211-5182-1-git-send-email-tj@kernel.org>
+	Tue, 20 Nov 2012 03:32:37 -0500
+Date: Tue, 20 Nov 2012 17:32:29 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8973: add regulator driver support
+Message-ID: <20121120083227.GW10560@opensource.wolfsonmicro.com>
+References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com>
+ <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
+ <20121120004356.GC4483@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1211200840590.21420@axis700.grange>
+ <20121120080805.GU10560@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1211200921190.21420@axis700.grange>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L0mHLbha4YKvhGtu"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211200921190.21420@axis700.grange>
+X-Cookie: Avoid gunfire in the bathroom tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netprio kept track of the highest prioidx allocated and resized
-priomaps accordingly when necessary.  This makes it necessary to keep
-track of prioidx allocation and may end up resizing on every new
-prioidx.
 
-Update extend_netdev_table() such that it takes @target_idx which the
-priomap should be able to accomodate.  If the priomap is large enough,
-nothing happens; otherwise, the size is doubled until @target_idx can
-be accomodated.
+--L0mHLbha4YKvhGtu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This makes max_prioidx and write_update_netdev_table() unnecessary.
-write_priomap() now calls extend_netdev_table() directly.
+On Tue, Nov 20, 2012 at 09:23:41AM +0100, Guennadi Liakhovetski wrote:
+> On Tue, 20 Nov 2012, Mark Brown wrote:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
----
- net/core/netprio_cgroup.c | 56 ++++++++++++++++++++++++++++-------------------
- 1 file changed, 33 insertions(+), 23 deletions(-)
+> > Modern devices tend to use multiple GPIOs for this control for a jolly
+> > good reason.  If you've only got two levels then the wm831x algorithm is
+> > probably the most sensible.
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 92cc54c..569d83d 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -27,11 +27,11 @@
- 
- #include <linux/fdtable.h>
- 
-+#define PRIOMAP_MIN_SZ		128
- #define PRIOIDX_SZ 128
- 
- static unsigned long prioidx_map[PRIOIDX_SZ];
- static DEFINE_SPINLOCK(prioidx_map_lock);
--static atomic_t max_prioidx = ATOMIC_INIT(0);
- 
- static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
- {
-@@ -51,8 +51,6 @@ static int get_prioidx(u32 *prio)
- 		return -ENOSPC;
- 	}
- 	set_bit(prioidx, prioidx_map);
--	if (atomic_read(&max_prioidx) < prioidx)
--		atomic_set(&max_prioidx, prioidx);
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- 	*prio = prioidx;
- 	return 0;
-@@ -67,15 +65,40 @@ static void put_prioidx(u32 idx)
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- }
- 
--static int extend_netdev_table(struct net_device *dev, u32 new_len)
-+/*
-+ * Extend @dev->priomap so that it's large enough to accomodate
-+ * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
-+ * return.  Must be called under rtnl lock.
-+ */
-+static int extend_netdev_table(struct net_device *dev, u32 target_idx)
- {
--	size_t new_size = sizeof(struct netprio_map) +
--			   ((sizeof(u32) * new_len));
--	struct netprio_map *new = kzalloc(new_size, GFP_KERNEL);
--	struct netprio_map *old;
-+	struct netprio_map *old, *new;
-+	size_t new_sz, new_len;
- 
-+	/* is the existing priomap large enough? */
- 	old = rtnl_dereference(dev->priomap);
-+	if (old && old->priomap_len > target_idx)
-+		return 0;
-+
-+	/*
-+	 * Determine the new size.  Let's keep it power-of-two.  We start
-+	 * from PRIOMAP_MIN_SZ and double it until it's large enough to
-+	 * accommodate @target_idx.
-+	 */
-+	new_sz = PRIOMAP_MIN_SZ;
-+	while (true) {
-+		new_len = (new_sz - offsetof(struct netprio_map, priomap)) /
-+			sizeof(new->priomap[0]);
-+		if (new_len > target_idx)
-+			break;
-+		new_sz *= 2;
-+		/* overflowed? */
-+		if (WARN_ON(new_sz < PRIOMAP_MIN_SZ))
-+			return -ENOSPC;
-+	}
- 
-+	/* allocate & copy */
-+	new = kzalloc(new_sz, GFP_KERNEL);
- 	if (!new) {
- 		pr_warn("Unable to alloc new priomap!\n");
- 		return -ENOMEM;
-@@ -87,26 +110,13 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
- 
- 	new->priomap_len = new_len;
- 
-+	/* install the new priomap */
- 	rcu_assign_pointer(dev->priomap, new);
- 	if (old)
- 		kfree_rcu(old, rcu);
- 	return 0;
- }
- 
--static int write_update_netdev_table(struct net_device *dev)
--{
--	int ret = 0;
--	u32 max_len;
--	struct netprio_map *map;
--
--	max_len = atomic_read(&max_prioidx) + 1;
--	map = rtnl_dereference(dev->priomap);
--	if (!map || map->priomap_len < max_len)
--		ret = extend_netdev_table(dev, max_len);
--
--	return ret;
--}
--
- static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs;
-@@ -191,7 +201,7 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 
- 	rtnl_lock();
- 
--	ret = write_update_netdev_table(dev);
-+	ret = extend_netdev_table(dev, prioidx);
- 	if (ret)
- 		goto out_unlock;
- 
--- 
-1.7.11.7
+> Ok, I see, but other my comments still hold.
 
+Not sure what those were?
+
+--L0mHLbha4YKvhGtu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQq0ASAAoJELSic+t+oim9eXsQAIG1KZH4u3OF0k9PVByJydea
+GFJnJXhKnV2fNMecRSvMlOSu9NkTdY8GdlY+cZ8rO/QsEnvfZ29BltKbnmurGR2K
+SxoTrPmw+HWp3vFdn6bJ7MTtF3d1AtnWNFVbcE56pXAZA18VCwRtb7jlU0wsJ5nk
+Vv/2pzWw1xPYBp4bU+8ATO+QiLExzflAO3kQlGoXGoz2D4BUpW3AhCI7H5WoPLUM
+fVNQZH/aeJ5X1U4cOMC+bjdVBIQ6cksF4Hni+QT3il4tXtv1ZggUN0CulseKD7tA
+kSuLEHb92cFI4+fiYj9JximVDZ2brbasXt/CfGwgmluNsSEzv62Dde3gRFVL2QeB
+R8+xpJrG5nTIGwEYVZUHQnoGgpPgqE0CKPfg7tX/GlTpLwBA9Iyq9ZclAGSzRRPM
+LRJEUk0T3DxVHxr1mD63+hkz+V8ccMf+BrxtntC8v+hG8P0SV2lOgG+1txW2MoRj
+VszoVGIUjn/omhEoQ5pWRGe2m4n1zPSMFtC35SD4XMpTgyOJ/9CummQ+kaQdl714
+a2pNi+JXNbpkcX2c8F8isY0pQPfWUJumx1bhHs7pTNobH4Dei2APA2V2/DIgYvmP
+v9tqe7sHnO8kvQzGHjQvosWSIye00S8wUChR7Pqj9ObYt+Ydiv74/Jd0lBrQIvo8
+8FfkCtFBHulyGODpx1Bz
+=Xf6u
+-----END PGP SIGNATURE-----
+
+--L0mHLbha4YKvhGtu--
