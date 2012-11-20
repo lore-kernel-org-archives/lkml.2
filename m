@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2KTHhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:37:10 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:65035 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2KTHhE (ORCPT
+	id S1752321Ab2KTHiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:38:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55576 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab2KTHiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:37:04 -0500
-Date: Mon, 19 Nov 2012 23:37:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-In-Reply-To: <20121120071704.GA14199@gmail.com>
-Message-ID: <alpine.DEB.2.00.1211192329090.14460@chino.kir.corp.google.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com> <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com> <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 20 Nov 2012 02:38:05 -0500
+Date: Tue, 20 Nov 2012 08:37:54 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mark Zhang <markz@nvidia.com>
+Cc: airlied@linux.ie, swarren@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2] drm: Add NVIDIA Tegra30 support
+Message-ID: <20121120073753.GA26616@avionic-0098.adnet.avionic-design.de>
+References: <1353396376-24121-1-git-send-email-markz@nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
+Content-Disposition: inline
+In-Reply-To: <1353396376-24121-1-git-send-email-markz@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:QQrLJLmyibyeetw/GI63oP+VfKkDhR6fWHtuTm0jkgF
+ lIuwWG13RvhjDCk/Li0oYWWelU6HT4q0ra+xq0f3T/IQEaLFae
+ R2MtVQOG85x0yqyb+JpVlCzoEo65doRRhoMexB9snwjhymUc1l
+ 48TLKrN4up9qI1aFBfUrhsqgY6266i4L0pSAiv9Iv/Tm1w9tYO
+ 5smJ9+sbpatC0NoSh1LLWXmYRm+2I5Uz2tMAh114QebFvpmDXJ
+ CfJzUZjc9vdhJw33QVh2rwYwb4ZbqJS9BKptTDzR38owcDw5I/
+ FZG5vrx4tvF1TxBxcQYpxE44KZaPirozvMKUE7JETmjwkTLu85
+ IvVs2yvePGNk91GHZ1H1jngCSM6IFUTv09gLYIf+8qgPXYlFFr
+ B/nBgH0L4u59wsZIv1S6yEbGeNjDX7sD0g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Ingo Molnar wrote:
 
-> No doubt numa/core should not regress with THP off or on and 
-> I'll fix that.
-> 
-> As a background, here's how SPECjbb gets slower on mainline 
-> (v3.7-rc6) if you boot Mel's kernel config and turn THP forcibly
-> off:
-> 
->   (avg: 502395 ops/sec)
->   (avg: 505902 ops/sec)
->   (avg: 509271 ops/sec)
-> 
->   # echo never > /sys/kernel/mm/transparent_hugepage/enabled
-> 
->   (avg: 376989 ops/sec)
->   (avg: 379463 ops/sec)
->   (avg: 378131 ops/sec)
-> 
-> A ~30% slowdown.
-> 
-> [ How do I know? I asked for Mel's kernel config days ago and
->   actually booted Mel's very config in the past few days, 
->   spending hours on testing it on 4 separate NUMA systems, 
->   trying to find Mel's regression. In the past Mel was a 
->   reliable tester so I blindly trusted his results. Was that 
->   some weird sort of denial on my part? :-) ]
-> 
+--W/nzBZO5zC0uMSeA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I confirm that numa/core regresses significantly more without thp than the 
-6.3% regression I reported with thp in terms of throughput on the same 
-system.  numa/core at 01aa90068b12 ("sched: Use the best-buddy 'ideal cpu' 
-in balancing decisions") had 99389.49 SPECjbb2005 bops whereas 
-ec05a2311c35 ("Merge branch 'sched/urgent' into sched/core") had 122246.90 
-SPECjbb2005 bops, a 23.0% regression.
+On Tue, Nov 20, 2012 at 03:26:16PM +0800, Mark Zhang wrote:
+> This patch is based on Thierry's drm patch for Tegra20:
+> - [PATCH v2 0/6] Device tree updates for host1x support
+> - [PATCH v3 0/2] NVIDIA Tegra DRM driver
+>=20
+> It adds the support for NVIDIA Tegra30.
+>=20
+> Signed-off-by: Mark Zhang <markz@nvidia.com>
 
-perf top -U for >=0.70% at 01aa90068b12 ("sched: Use the best-buddy 'ideal 
-cpu' in balancing decisions"):
+Hi Mark,
 
-    16.34%  [kernel]  [k] page_fault               
-    12.15%  [kernel]  [k] down_read_trylock        
-     9.21%  [kernel]  [k] up_read                  
-     7.58%  [kernel]  [k] handle_pte_fault         
-     6.10%  [kernel]  [k] handle_mm_fault          
-     4.35%  [kernel]  [k] retint_swapgs            
-     3.99%  [kernel]  [k] find_vma                 
-     3.95%  [kernel]  [k] __do_page_fault          
-     3.81%  [kernel]  [k] mpol_misplaced           
-     3.41%  [kernel]  [k] get_vma_policy           
-     2.68%  [kernel]  [k] task_numa_fault          
-     1.82%  [kernel]  [k] pte_numa                 
-     1.65%  [kernel]  [k] do_page_fault            
-     1.46%  [kernel]  [k] _raw_spin_lock           
-     1.28%  [kernel]  [k] do_wp_page               
-     1.26%  [kernel]  [k] vm_normal_page           
-     1.25%  [kernel]  [k] unlock_page              
-     1.01%  [kernel]  [k] change_protection        
-     0.80%  [kernel]  [k] getnstimeofday           
-     0.79%  [kernel]  [k] ktime_get                
-     0.76%  [kernel]  [k] __wake_up_bit            
-     0.74%  [kernel]  [k] rcu_check_callbacks      
+I already carry an equivalent patch in both my tegra/next and
+tegra/drm/for-3.8 branches, thanks.
 
-and at ec05a2311c35 ("Merge branch 'sched/urgent' into sched/core"):
+Thierry
 
-    22.01%  [kernel]  [k] page_fault                            
-     6.54%  [kernel]  [k] rcu_check_callbacks                   
-     5.04%  [kernel]  [k] getnstimeofday                        
-     4.12%  [kernel]  [k] ktime_get                             
-     3.55%  [kernel]  [k] read_tsc                              
-     3.37%  [kernel]  [k] task_tick_fair                        
-     2.61%  [kernel]  [k] emulate_vsyscall                      
-     2.22%  [kernel]  [k] __do_page_fault                       
-     1.78%  [kernel]  [k] run_timer_softirq                     
-     1.71%  [kernel]  [k] write_ok_or_segv                      
-     1.55%  [kernel]  [k] copy_user_generic_string              
-     1.48%  [kernel]  [k] __bad_area_nosemaphore                
-     1.27%  [kernel]  [k] retint_swapgs                         
-     1.26%  [kernel]  [k] spurious_fault                        
-     1.15%  [kernel]  [k] update_rq_clock                       
-     1.12%  [kernel]  [k] update_cfs_shares                     
-     1.09%  [kernel]  [k] _raw_spin_lock                        
-     1.08%  [kernel]  [k] update_curr                           
-     1.07%  [kernel]  [k] error_entry                           
-     1.05%  [kernel]  [k] x86_pmu_disable_all                   
-     0.88%  [kernel]  [k] sys_gettimeofday                      
-     0.88%  [kernel]  [k] __do_softirq                          
-     0.87%  [kernel]  [k] _raw_spin_lock_irq                    
-     0.84%  [kernel]  [k] hrtimer_forward                       
-     0.81%  [kernel]  [k] ktime_get_update_offsets              
-     0.79%  [kernel]  [k] __update_cpu_load                     
-     0.77%  [kernel]  [k] acct_update_integrals                 
-     0.77%  [kernel]  [k] hrtimer_interrupt                     
-     0.75%  [kernel]  [k] perf_adjust_freq_unthr_context.part.81
-     0.73%  [kernel]  [k] do_gettimeofday                       
-     0.73%  [kernel]  [k] apic_timer_interrupt                  
-     0.72%  [kernel]  [k] timerqueue_add                        
-     0.70%  [kernel]  [k] tick_sched_timer
+--W/nzBZO5zC0uMSeA
+Content-Type: application/pgp-signature
 
-This is in comparison to my earlier perftop results which were with thp 
-enabled.  Keep in mind that this system has a NUMA configuration of
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-$ cat /sys/devices/system/node/node*/distance 
-10 20 20 30
-20 10 20 20
-20 20 10 20
-30 20 20 10
+iQIcBAEBAgAGBQJQqzNRAAoJEN0jrNd/PrOhWI8QAJOqTUmSAVnqWkZd8bp5DHNW
+Cztc8pu9GTEGZY6EF5SJM9Oj2x5e03SoF+G2JNKIEvS4P70xsU9sfCNYUkQrmtqH
+L4ndO1cU/V4bI1rkbpE3ht/c90L2YBt8N1smSq79ywoGTiifxcLy1ybXKQwLerHB
+m1uVFh1oB2cOuFvpjNmy/6KoGMAgjKD6Nyybq5swAXcHO7pdBXbxAMXqlUmLZHWb
+a/qBG44u+4+BT8l8FOCxEX7iXG9Un5TzjdA45pXrgEEuMAgAgvXjzycBw0r3al14
+7W5vnCQeiRWplESMhRM6h3uRQnJyVlLrZePA9GVon4MJMWzTPUTKHjXPos9gEoVi
+OBnK6nJhbWpOlCTo6i3gqAphrzLhui+FkzdYH/cfMxppj+kVT46mBrgGYVO0lmzd
+9/CP7FHi50qIGHecPhktsQWff+El0RVWCwU744kq0FYQnOJPuuzxx2xSS1PB0YvB
+Y6OBb5levIe7hZe4G91kulvhv5aUfkIosj03wYzIwy3yws8qz2R5mV0RpnJkbsin
+33hZ3jqSvlc2eIk9dzzjNSLyXSOaVqfuYFgiy34dzh334OhFvdKS/wiSe/MchCdq
+gzMHSp6nB9PZtj7w9bPQyX3QYbmt7Ik6Pz256YwGnV7N8EouKCGltnk8+eZN28Av
+B4L8NH+NvMdlsciuaYmp
+=phrC
+-----END PGP SIGNATURE-----
 
-so perhaps you would have better luck reproducing the problem using the 
-new ability to fake the distance in between nodes that Peter introduced in 
-94c0dd3278dd ("x86/numa: Allow specifying node_distance() for numa=fake") 
-with numa=fake=4:10,20,20,30,20,10,20,20,20,20,10,20,30,20,20,10 ?
+--W/nzBZO5zC0uMSeA--
