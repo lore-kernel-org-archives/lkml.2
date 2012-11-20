@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2KTITb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:19:31 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:16759 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2KTITa (ORCPT
+	id S1752703Ab2KTITj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:19:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23102 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab2KTITh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:19:30 -0500
-Subject: [PATCH 7/9] ocfs2: Use generic handlers of O_SYNC AIO DIO
+	Tue, 20 Nov 2012 03:19:37 -0500
+Subject: [PATCH 8/9] filemap: don't call generic_write_sync for -EIOCBQUEUED
 To: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
         bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz
 From: "Darrick J. Wong" <darrick.wong@oracle.com>
 Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org,
         linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
         xfs@oss.sgi.com
-Date: Mon, 19 Nov 2012 23:51:14 -0800
-Message-ID: <20121120075114.25270.83181.stgit@blackbox.djwong.org>
+Date: Mon, 19 Nov 2012 23:51:15 -0800
+Message-ID: <20121120075114.25270.24389.stgit@blackbox.djwong.org>
 In-Reply-To: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
 References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-file.
+Hi,
 
-From: Jan Kara <jack@suse.cz>
-Signed-off-by: Jan Kara <jack@suse.cz>
+As it stands, generic_file_aio_write will call into generic_write_sync
+when -EIOCBQUEUED is returned from __generic_file_aio_write.  EIOCBQUEUED
+indicates that an I/O was submitted but NOT completed.  Thus, we will
+flush the disk cache, potentially before the write(s) even make it to
+the disk!  Up until now, this has been the best we could do, as file
+systems didn't bother to flush the disk cache after an O_SYNC AIO+DIO
+write.  After applying the prior two patches to xfs and ext4, at least
+the major two file systems do the right thing.  So, let's go ahead and
+fix this backwards logic.
+
+From: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- fs/ocfs2/aops.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ mm/filemap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 6577432..60457cc 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -593,9 +593,7 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
- 	level = ocfs2_iocb_rw_locked_level(iocb);
- 	ocfs2_rw_unlock(inode, level);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..8e14c10 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2532,7 +2532,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
  
--	if (is_async)
--		aio_complete(iocb, ret, 0);
--	inode_dio_done(inode);
-+	generic_dio_end_io(iocb, offset, bytes, private, ret, is_async);
- }
+-	if (ret > 0 || ret == -EIOCBQUEUED) {
++	if (ret > 0) {
+ 		ssize_t err;
  
- /*
-@@ -642,7 +640,7 @@ static ssize_t ocfs2_direct_IO(int rw,
- 	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
- 				    iov, offset, nr_segs,
- 				    ocfs2_direct_IO_get_blocks,
--				    ocfs2_dio_end_io, NULL, 0);
-+				    ocfs2_dio_end_io, NULL, DIO_SYNC_WRITES);
- }
- 
- static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
+ 		err = generic_write_sync(file, pos, ret);
 
 
