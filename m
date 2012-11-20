@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2KTByP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:54:15 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6074 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab2KTByO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:54:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 19 Nov 2012 17:54:12 -0800
-Message-ID: <50AAE2BF.2000909@nvidia.com>
-Date: Tue, 20 Nov 2012 07:24:07 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753025Ab2KTB6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:58:54 -0500
+Received: from void.printf.net ([89.145.121.20]:47215 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab2KTB6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 20:58:52 -0500
+From: Chris Ball <cjb@laptop.org>
+To: <wei_wang@realsil.com.cn>
+Cc: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <arnd@arndb.de>, <oakad@yahoo.com>,
+        <bp@alien8.de>
+Subject: Re: [PATCH 1/2] mmc: Configure SD_CFG2 register in sd_rw_multi
+References: <cover.1353373737.git.wei_wang@realsil.com.cn>
+	<d26d1ae11c300cd96ed01a72cc099fe6d813d7c2.1353373737.git.wei_wang@realsil.com.cn>
+Date: Mon, 19 Nov 2012 20:58:38 -0500
+In-Reply-To: <d26d1ae11c300cd96ed01a72cc099fe6d813d7c2.1353373737.git.wei_wang@realsil.com.cn>
+	(wei wang's message of "Tue, 20 Nov 2012 09:12:29 +0800")
+Message-ID: <87txslf31t.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: max8973: add regulator driver support
-References: <1353288509-26703-1-git-send-email-ldewangan@nvidia.com> <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1211190900110.11024@axis700.grange>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 November 2012 04:22 PM, Guennadi Liakhovetski wrote:
+Hi,
+
+On Mon, Nov 19 2012, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 >
-> Hi Laxman
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+> ---
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |    1 +
+>  1 file changed, 1 insertion(+)
 >
-> drivers in the tree. Well, I came to two conclusions so far: (1) The
-> current regulator API is not very well suitable for such regulators. I
-> would imagine, one would need two methods: for setting the "normal" and
-> the DVS voltage. Instead of this drivers are trying to be smart at
-> guessing, which voltage the user is trying to set now... (2) Drivers do
-> this in different ways and at least out of the 2 drivers I looked at both
-> have bugs and different ones at that. I'll send a separate email,
-> describing what I found suspicious in them.
->
-> Of course, all the above was just my DVS-newbie impression, which can very
-> well be absolutely wrong.
->
+> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> index 0e934bf..067dd46 100644
+> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> @@ -405,6 +405,7 @@ static int sd_rw_multi(struct realtek_pci_sdmmc *host, struct mmc_request *mrq)
+>  	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_DATA_SOURCE,
+>  			0x01, RING_BUFFER);
+>  
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_CFG2, 0xFF, cfg2);
+>  	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_TRANSFER, 0xFF,
+>  			trans_mode | SD_TRANSFER_START);
+>  	rtsx_pci_add_cmd(pcr, CHECK_REG_CMD, SD_TRANSFER,
 
-If there is multipel VOUT register for single vout then these registers 
-are generally selected by the input pin of device.
-In a given system, you can connect the gpios pin to this input pins to 
-select the proper VOUT register.
-The register update through i2c consume more time and changing the gpio 
-state is comparatively less.
-So if you have let say 4 voltages 1.10, 1.11, 1.12, 1.13 and having 4 
-VOUT register. Then program these vout val to vout reg like 1.10 to 
-vout_reg0, 1.11 to vout_reg1 etc.
-Now for changing voltage between these will just require to change the 
-gpio pin state, not the register update and so it will be faster. You 
-can achive the voltage change by gpio pin state change.
+Please write commit messages -- if this fixes a bug, what's the nature
+of the bug that it fixes?  Thanks,
 
-Now if your DVS have more volatge scaling then you can use the LRU 
-mechanism to use the vout register for this new value.
-
-
-
->> +     max->dev =&client->dev;
->> +     max->desc.name = id->name;
->> +     max->desc.id = 0;
-> Don't you have to be able to process multiple such devices?
-
-Not really require as device have only one output. The different devices 
-will have different registrations and so does not matter here.
-
-
-
-
->> +     max->enable_external_control = pdata->enable_ext_control;
->> +     max->dvs_gpio = pdata->dvs_gpio;
->> +     max->curr_gpio_val = pdata->dvs_def_state;
->> +     max->curr_vout_reg = MAX8973_VOUT + pdata->dvs_def_state;
->> +     max->lru_index[0] = max->curr_vout_reg;
-> Here you actually need an offset within your register address space, so,
-> should be
->
-> +       max->lru_index[0] = pdata->dvs_def_state;
-
-
-Yaah, seems some issue if vout_base is not zero. But really dont require 
-here as MAX8973_VOUT is 0 in this case.
-
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
