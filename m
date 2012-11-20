@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab2KTUxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:53:33 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:21098 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab2KTUxb (ORCPT
+	id S1753550Ab2KTUxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:53:40 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:13238 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab2KTUxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:53:31 -0500
+	Tue, 20 Nov 2012 15:53:39 -0500
 From: Toshi Kani <toshi.kani@hp.com>
 To: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
         isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v6 1/5] ACPI: Add acpi_handle_<level>() interfaces
-Date: Tue, 20 Nov 2012 13:44:50 -0700
-Message-Id: <1353444294-25575-2-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v6 3/5] ACPI: Update Memory hotplug error messages
+Date: Tue, 20 Nov 2012 13:44:52 -0700
+Message-Id: <1353444294-25575-4-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353444294-25575-1-git-send-email-toshi.kani@hp.com>
 References: <1353444294-25575-1-git-send-email-toshi.kani@hp.com>
@@ -22,152 +22,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces acpi_handle_<level>(), where <level> is
-a kernel message level such as err/warn/info, to support improved
-logging messages for ACPI, esp. hot-plug operations.
-acpi_handle_<level>() appends "ACPI" prefix and ACPI object path
-to the messages.  This improves diagnosis of hotplug operations
-since an error message in a log file identifies an object that
-caused an issue.  This interface acquires the global namespace
-mutex and may not be called from interrupt context.
-
-acpi_handle_<level>() takes acpi_handle as an argument, which is
-passed to ACPI hotplug notify handlers from the ACPICA.  Therefore,
-it is always available unlike other kernel objects, such as device.
-
-For example:
-  acpi_handle_err(handle, "Device don't exist, dropping EJECT\n");
-logs an error message like this at KERN_ERR.
-  ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
-
-ACPI hot-plug drivers can use acpi_handle_<level>() when they need
-to identify a target ACPI object path in their messages, such as
-error cases.  The usage model is similar to dev_<level>().
-acpi_handle_<level>() can be used when a device is not created or
-is invalid during hot-plug operations.  ACPI object path is also
-consistent on the platform, unlike device name that gets incremented
-over hotplug operations.
-
-ACPI drivers should use dev_<level>() when a device object is valid.
-Device name provides more user friendly information, and avoids
-acquiring the global ACPI namespace mutex.  ACPI drivers also
-continue to use pr_<level>() when they do not need to specify device
-information, such as boot-up messages.
-
-Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
-are not associated with the kernel message level.
+Updated Memory hotplug error messages with acpi_handle_<level>(),
+dev_<level>() and pr_<level>().  Added missing "\n".
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 ---
- drivers/acpi/utils.c | 37 +++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h | 43 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+)
+ drivers/acpi/acpi_memhotplug.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 462f7e3..c1f1072 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -28,6 +28,7 @@
- #include <linux/slab.h>
- #include <linux/init.h>
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index e0f7425..eb30e5a 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -31,6 +31,7 @@
  #include <linux/types.h>
+ #include <linux/memory_hotplug.h>
+ #include <linux/slab.h>
 +#include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
  #include <acpi/acpi_drivers.h>
  
-@@ -457,3 +458,39 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
- #endif
- }
- EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-+
-+/**
-+ * acpi_handle_printk: Print message with ACPI prefix and object path
-+ *
-+ * This function is called through acpi_handle_<level> macros and prints
-+ * a message with ACPI prefix and object path.  This function acquires
-+ * the global namespace mutex and may not be called from interrupt context.
-+ */
-+void
-+acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	struct acpi_buffer buffer = {
-+		.length = ACPI_ALLOCATE_BUFFER,
-+		.pointer = NULL
-+	};
-+	const char *path;
-+	acpi_status ret;
-+
-+	va_start(args, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-+	if (ret == AE_OK)
-+		path = buffer.pointer;
-+	else
-+		path = "<n/a>";
-+
-+	printk("%sACPI: %s: %pV", level, path, &vaf);
-+
-+	va_end(args);
-+	kfree(buffer.pointer);
-+}
-+EXPORT_SYMBOL(acpi_handle_printk);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 0bb2070..e96753e 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -517,4 +517,47 @@ static inline int acpi_dev_pm_attach(struct device *dev) { return -ENODEV; }
- static inline void acpi_dev_pm_detach(struct device *dev) {}
- #endif
+ #define ACPI_MEMORY_DEVICE_CLASS		"memory"
+@@ -175,7 +176,7 @@ acpi_memory_get_device(acpi_handle handle,
+ 	/* Get the parent device */
+ 	result = acpi_bus_get_device(phandle, &pdevice);
+ 	if (result) {
+-		printk(KERN_WARNING PREFIX "Cannot get acpi bus device");
++		acpi_handle_warn(phandle, "Cannot get acpi bus device\n");
+ 		return -EINVAL;
+ 	}
  
-+#ifdef CONFIG_ACPI
-+__printf(3, 4)
-+void acpi_handle_printk(const char *level, acpi_handle handle,
-+			const char *fmt, ...);
-+#else	/* !CONFIG_ACPI */
-+static inline __printf(3, 4) void
-+acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
-+#endif	/* !CONFIG_ACPI */
-+
-+/*
-+ * acpi_handle_<level>: Print message with ACPI prefix and object path
-+ * 
-+ * These interfaces acquire the global namespace mutex and may not be
-+ * called from interrupt context.
-+ */
-+#define acpi_handle_emerg(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_alert(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_crit(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_err(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_warn(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_notice(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
-+#define acpi_handle_info(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
-+
-+/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
-+#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-+#define acpi_handle_debug(handle, fmt, ...)				\
-+	acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
-+#else
-+#define acpi_handle_debug(handle, fmt, ...)				\
-+({									\
-+	if (0)								\
-+		acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__); \
-+	0;								\
-+})
-+#endif
-+
- #endif	/*_LINUX_ACPI_H*/
+@@ -185,14 +186,14 @@ acpi_memory_get_device(acpi_handle handle,
+ 	 */
+ 	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
+ 	if (result) {
+-		printk(KERN_WARNING PREFIX "Cannot add acpi bus");
++		acpi_handle_warn(handle, "Cannot add acpi bus\n");
+ 		return -EINVAL;
+ 	}
+ 
+       end:
+ 	*mem_device = acpi_driver_data(device);
+ 	if (!(*mem_device)) {
+-		printk(KERN_ERR "\n driver data not found");
++		dev_err(&device->dev, "driver data not found\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -229,7 +230,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ 	/* Get the range from the _CRS */
+ 	result = acpi_memory_get_device_resources(mem_device);
+ 	if (result) {
+-		printk(KERN_ERR PREFIX "get_device_resources failed\n");
++		dev_err(&mem_device->device->dev,
++			"get_device_resources failed\n");
+ 		mem_device->state = MEMORY_INVALID_STATE;
+ 		return result;
+ 	}
+@@ -276,7 +278,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ 		num_enabled++;
+ 	}
+ 	if (!num_enabled) {
+-		printk(KERN_ERR PREFIX "add_memory failed\n");
++		dev_err(&mem_device->device->dev, "add_memory failed\n");
+ 		mem_device->state = MEMORY_INVALID_STATE;
+ 		return -EINVAL;
+ 	}
+@@ -336,7 +338,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 					  "\nReceived DEVICE CHECK notification for device\n"));
+ 		if (acpi_memory_get_device(handle, &mem_device)) {
+-			printk(KERN_ERR PREFIX "Cannot find driver data\n");
++			acpi_handle_err(handle, "Cannot find driver data\n");
+ 			break;
+ 		}
+ 
+@@ -344,7 +346,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 			break;
+ 
+ 		if (acpi_memory_enable_device(mem_device)) {
+-			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
++			acpi_handle_err(handle,"Cannot enable memory device\n");
+ 			break;
+ 		}
+ 
+@@ -356,12 +358,12 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 				  "\nReceived EJECT REQUEST notification for device\n"));
+ 
+ 		if (acpi_bus_get_device(handle, &device)) {
+-			printk(KERN_ERR PREFIX "Device doesn't exist\n");
++			acpi_handle_err(handle, "Device doesn't exist\n");
+ 			break;
+ 		}
+ 		mem_device = acpi_driver_data(device);
+ 		if (!mem_device) {
+-			printk(KERN_ERR PREFIX "Driver Data is NULL\n");
++			acpi_handle_err(handle, "Driver Data is NULL\n");
+ 			break;
+ 		}
+ 
+@@ -429,13 +431,13 @@ static int acpi_memory_device_add(struct acpi_device *device)
+ 	/* Set the device state */
+ 	mem_device->state = MEMORY_POWER_ON_STATE;
+ 
+-	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
++	pr_debug("%s\n", acpi_device_name(device));
+ 
+ 	if (!acpi_memory_check_device(mem_device)) {
+ 		/* call add_memory func */
+ 		result = acpi_memory_enable_device(mem_device);
+ 		if (result) {
+-			printk(KERN_ERR PREFIX
++			dev_err(&device->dev,
+ 				"Error in acpi_memory_enable_device\n");
+ 			acpi_memory_device_free(mem_device);
+ 		}
 -- 
 1.7.11.7
 
