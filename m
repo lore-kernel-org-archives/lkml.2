@@ -1,111 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab2KTGtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:49:22 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:19623 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab2KTGtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:49:20 -0500
-X-IronPort-AV: E=Sophos;i="4.83,284,1352044800"; 
-   d="scan'208";a="6236720"
-Message-ID: <50AB2967.5010302@cn.fujitsu.com>
-Date: Tue, 20 Nov 2012 14:55:35 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752023Ab2KTGx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:53:57 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54542 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab2KTGxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 01:53:55 -0500
 MIME-Version: 1.0
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
- SPARSEMEM_VMEMMAP
-References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB21A4.8050709@gmail.com>
-In-Reply-To: <50AB21A4.8050709@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 14:49:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/20 14:49:02,
-	Serialize complete at 2012/11/20 14:49:02
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAGXu5j+B=kx6847EUn6tppNwNk=YHbBwekqr6V22+gh2Lfea0g@mail.gmail.com>
+References: <20121119233459.GA9524@www.outflux.net>
+	<20121120034515.GA5212@sergelap>
+	<CAGXu5j+B=kx6847EUn6tppNwNk=YHbBwekqr6V22+gh2Lfea0g@mail.gmail.com>
+Date: Mon, 19 Nov 2012 22:53:54 -0800
+X-Google-Sender-Auth: mmdMhetd0HlYpCbpEim2s52OXPk
+Message-ID: <CAGXu5jLUZTfEfK7t8P68WiZ4pzHN=C8L=Gd6bWBe3p7tKhzFEA@mail.gmail.com>
+Subject: Re: [PATCH] Yama: remove locking from delete path
+From: Kees Cook <keescook@chromium.org>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        John Johansen <john.johansen@canonical.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/20/2012 02:22 PM, Jaegeuk Hanse Wrote:
-> On 11/01/2012 05:44 PM, Wen Congyang wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Mon, Nov 19, 2012 at 10:14 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Nov 19, 2012 at 7:45 PM, Serge Hallyn
+> <serge.hallyn@canonical.com> wrote:
+>> Quoting Kees Cook (keescook@chromium.org):
+>>> Instead of locking the list during a delete, mark entries as invalid
+>>> and trigger a workqueue to clean them up. This lets us easily handle
+>>> task_free from interrupt context.
+>>>
+>>> Cc: Sasha Levin <sasha.levin@oracle.com>
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>> ---
+>>>  security/yama/yama_lsm.c |   43 ++++++++++++++++++++++++++++++++++++-------
+>>>  1 file changed, 36 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+>>> index 17da6ca..1cba901 100644
+>>> --- a/security/yama/yama_lsm.c
+>>> +++ b/security/yama/yama_lsm.c
+>>> @@ -17,6 +17,7 @@
+>>>  #include <linux/ptrace.h>
+>>>  #include <linux/prctl.h>
+>>>  #include <linux/ratelimit.h>
+>>> +#include <linux/workqueue.h>
+>>>
+>>>  #define YAMA_SCOPE_DISABLED  0
+>>>  #define YAMA_SCOPE_RELATIONAL        1
+>>> @@ -29,6 +30,7 @@ static int ptrace_scope = YAMA_SCOPE_RELATIONAL;
+>>>  struct ptrace_relation {
+>>>       struct task_struct *tracer;
+>>>       struct task_struct *tracee;
+>>> +     bool invalid;
+>>>       struct list_head node;
+>>>       struct rcu_head rcu;
+>>>  };
+>>> @@ -36,6 +38,27 @@ struct ptrace_relation {
+>>>  static LIST_HEAD(ptracer_relations);
+>>>  static DEFINE_SPINLOCK(ptracer_relations_lock);
+>>>
+>>> +static void yama_relation_cleanup(struct work_struct *work);
+>>> +static DECLARE_WORK(yama_relation_work, yama_relation_cleanup);
+>>> +
+>>> +/**
+>>> + * yama_relation_cleanup - remove invalid entries from the relation list
+>>> + *
+>>> + */
+>>> +static void yama_relation_cleanup(struct work_struct *work)
+>>> +{
+>>> +     struct ptrace_relation *relation;
+>>> +
+>>> +     spin_lock(&ptracer_relations_lock);
+>>> +     list_for_each_entry_rcu(relation, &ptracer_relations, node) {
+>>> +             if (relation->invalid) {
+>>> +                     list_del_rcu(&relation->node);
+>>> +                     kfree_rcu(relation, rcu);
+>>> +             }
+>>> +     }
+>>> +     spin_unlock(&ptracer_relations_lock);
+>>> +}
+>>> +
+>>>  /**
+>>>   * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
+>>>   * @tracer: the task_struct of the process doing the ptrace
+>>> @@ -57,9 +80,12 @@ static int yama_ptracer_add(struct task_struct *tracer,
+>>>
+>>>       added->tracee = tracee;
+>>>       added->tracer = tracer;
+>>> +     added->invalid = false;
+>>>
+>>> -     spin_lock_bh(&ptracer_relations_lock);
+>>> +     spin_lock(&ptracer_relations_lock);
+>>>       list_for_each_entry_rcu(relation, &ptracer_relations, node) {
+>>> +             if (relation->invalid)
+>>> +                     continue;
+>>>               if (relation->tracee == tracee) {
+>>>                       list_replace_rcu(&relation->node, &added->node);
+>>>                       kfree_rcu(relation, rcu);
+>>> @@ -70,7 +96,7 @@ static int yama_ptracer_add(struct task_struct *tracer,
+>>>       list_add_rcu(&added->node, &ptracer_relations);
+>>>
+>>>  out:
+>>> -     spin_unlock_bh(&ptracer_relations_lock);
+>>> +     spin_unlock(&ptracer_relations_lock);
+>>>       return 0;
+>>>  }
+>>>
+>>> @@ -84,15 +110,15 @@ static void yama_ptracer_del(struct task_struct *tracer,
+>>>  {
+>>>       struct ptrace_relation *relation;
+>>>
+>>> -     spin_lock_bh(&ptracer_relations_lock);
 >>
->> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
->> even if
->> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>> I don't understand - is there a patch I don't have sitting around
+>> which puts the calls to yama_ptracer_del() under rcu_read_lock()?
+>> If not, I don't see how it's safe to walk the list here and risk
+>> racing against another yama_relation_cleanup() run.
 >>
->> So the patch add unregister_memory_section() into __remove_section().
-> 
-> Hi Yasuaki,
-> 
-> In order to review this patch, I should dig sparse memory codes in
-> advance. But I have some confuse of codes. Why need encode/decode mem
-> map instead of set mem_map to ms->section_mem_map directly?
+>> I'm probably missing something really cool about the locking,
+>> but it doesn't look right to me.  I would think you'd want to
+>> do the loop under rcu_read_lock(), set a boolean if one is
+>> changed, and call schedule_work() once at the end if the boolean
+>> is set.
+>
+> Unless I'm mistaken and my lockdep tests are wrong,
+> list_for_each_entry_rcu runs under rcu_read_lock().
 
-The memmap is aligned, and the low bits are zero. We store some information
-in these bits. So we need to encode/decode memmap here.
+Ew, yeah, no, the examples I was looking at are missing
+rcu_read_lock(). That's sad. Anyway, I'll fix this up here and in the
+other patch.
 
-Thanks
-Wen Congyang
+> I could optimize it to only run schedule_work() once all the marking
+> is done at the end of the loop.
 
-> 
-> Regards,
-> Jaegeuk
-> 
+And I'll do this.
+
+-Kees
+
+>
+> -Kees
+>
 >>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>   mm/memory_hotplug.c | 13 ++++++++-----
->>   1 file changed, 8 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index ca07433..66a79a7 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
->> struct zone *zone,
->>   #ifdef CONFIG_SPARSEMEM_VMEMMAP
->>   static int __remove_section(struct zone *zone, struct mem_section *ms)
->>   {
->> -    /*
->> -     * XXX: Freeing memmap with vmemmap is not implement yet.
->> -     *      This should be removed later.
->> -     */
->> -    return -EBUSY;
->> +    int ret = -EINVAL;
->> +
->> +    if (!valid_section(ms))
->> +        return ret;
->> +
->> +    ret = unregister_memory_section(ms);
->> +
->> +    return ret;
->>   }
->>   #else
->>   static int __remove_section(struct zone *zone, struct mem_section *ms)
-> 
-> 
+>>>       list_for_each_entry_rcu(relation, &ptracer_relations, node) {
+>>> +             if (relation->invalid)
+>>> +                     continue;
+>>>               if (relation->tracee == tracee ||
+>>>                   (tracer && relation->tracer == tracer)) {
+>>> -                     list_del_rcu(&relation->node);
+>>> -                     kfree_rcu(relation, rcu);
+>>> +                     relation->invalid = true;
+>>> +                     schedule_work(&yama_relation_work);
+>>>               }
+>>>       }
+>>> -     spin_unlock_bh(&ptracer_relations_lock);
+>>>  }
+>>>
+>>>  /**
+>>> @@ -219,12 +245,15 @@ static int ptracer_exception_found(struct task_struct *tracer,
+>>>       rcu_read_lock();
+>>>       if (!thread_group_leader(tracee))
+>>>               tracee = rcu_dereference(tracee->group_leader);
+>>> -     list_for_each_entry_rcu(relation, &ptracer_relations, node)
+>>> +     list_for_each_entry_rcu(relation, &ptracer_relations, node) {
+>>> +             if (relation->invalid)
+>>> +                     continue;
+>>>               if (relation->tracee == tracee) {
+>>>                       parent = relation->tracer;
+>>>                       found = true;
+>>>                       break;
+>>>               }
+>>> +     }
+>>>
+>>>       if (found && (parent == NULL || task_is_descendant(parent, tracer)))
+>>>               rc = 1;
+>>> --
+>>> 1.7.9.5
+>>>
+>>>
+>>> --
+>>> Kees Cook
+>>> Chrome OS Security
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
+
+
+-- 
+Kees Cook
+Chrome OS Security
