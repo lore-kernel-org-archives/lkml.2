@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2KTGeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:34:14 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:29716 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2KTGeL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:34:11 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] AER-QEMU: Bring down the guest when KVM detects a PCI
- device error
-Thread-Topic: [PATCH 4/4] AER-QEMU: Bring down the guest when KVM detects a
- PCI device error
-Thread-Index: AQHNxujVrBWDP9Tva0O+0tzk61ameQ==
-Date: Tue, 20 Nov 2012 06:32:38 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C90146FD06@G4W3208.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.14]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751919Ab2KTGfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:35:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:59124 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041Ab2KTGfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 01:35:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,282,1352102400"; 
+   d="scan'208";a="251708144"
+Subject: [PATCH] DMA interrupt mask value should not be hard coded
+From: chao bi <chao.bi@intel.com>
+To: djbw@fb.com, vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, jun.d.chen@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Nov 2012 14:45:59 +0800
+Message-ID: <1353393959.4445.82.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- When KVM_RUN ioctl returns with an exit reason requesting a shutdown
-of the guest due to a PCI device error detected by AER, shutdown the
-guest immediately.
 
-Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+In intel_mid_dma.c, when setup DMA controller, its interrupt
+mask value is hard coded, it's not needed because this value
+has already been initiated and set value according to DMA
+channels which are used.
+
+cc: Chen Jun <jun.d.chen@intel.com>
+Signed-off-by: channing <chao.bi@intel.com>
 ---
- kvm-all.c                 | 6 ++++++
- linux-headers/linux/kvm.h | 1 +
- 2 files changed, 7 insertions(+)
+ drivers/dma/intel_mid_dma.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/kvm-all.c b/kvm-all.c
-index b6d0483..aaff44c 100644
---- a/kvm-all.c
-+++ b/kvm-all.c
-@@ -1592,6 +1592,12 @@ int kvm_cpu_exec(CPUArchState *env)
-             qemu_system_reset_request();
-             ret = EXCP_INTERRUPT;
-             break;
-+        case KVM_EXIT_AER_SHUTDOWN:
-+            fprintf(stderr, "KVM: PCI device assigned to guest encountered "
-+                               "an uncorrectable error. Stopping guest\n");
-+            qemu_system_shutdown_request();
-+            ret = EXCP_INTERRUPT;
-+            break;
-         case KVM_EXIT_UNKNOWN:
-             fprintf(stderr, "KVM: unknown exit, hardware reason %" PRIx64 "\n",
-                     (uint64_t)run->hw.hardware_exit_reason);
-diff --git a/linux-headers/linux/kvm.h b/linux-headers/linux/kvm.h
-index 81d2feb..64906ef 100644
---- a/linux-headers/linux/kvm.h
-+++ b/linux-headers/linux/kvm.h
-@@ -167,6 +167,7 @@ struct kvm_pit_config {
- #define KVM_EXIT_OSI              18
- #define KVM_EXIT_PAPR_HCALL	  19
- #define KVM_EXIT_S390_UCONTROL	  20
-+#define KVM_EXIT_AER_SHUTDOWN     21
- 
- /* For KVM_EXIT_INTERNAL_ERROR */
- #define KVM_INTERNAL_ERROR_EMULATION 1
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index 02b21d7..11a1a48 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -1161,7 +1161,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
+ 		if (0 != err)
+ 			goto err_irq;
+ 	} else {
+-		dma->intr_mask = 0x03;
+ 		pr_debug("MDMA:Requesting irq for DMAC2\n");
+ 		err = request_irq(pdev->irq, intel_mid_dma_interrupt2,
+ 			IRQF_SHARED, "INTEL_MID_DMAC2", dma);
 -- 
-1.7.11.3
+1.7.1
+
+
 
