@@ -1,126 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab2KTOI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:08:58 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:34925 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab2KTOI5 (ORCPT
+	id S1753288Ab2KTOKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:10:51 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:13730 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab2KTOKt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:08:57 -0500
+	Tue, 20 Nov 2012 09:10:49 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/4] AER-KVM: Error containment of PCI pass-thru devices
+ assigned to KVM guests
+Thread-Topic: [PATCH 0/4] AER-KVM: Error containment of PCI pass-thru
+ devices assigned to KVM guests
+Thread-Index: AQHNxui4h6c7cMTORE+3hu06XL5uJpfyu40AgAACbHA=
+Date: Tue, 20 Nov 2012 14:09:46 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C90147066B@G4W3208.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C90146F4DA@G4W3208.americas.hpqcorp.net>
+ <20121120134104.GI27378@stefanha-thinkpad.redhat.com>
+In-Reply-To: <20121120134104.GI27378@stefanha-thinkpad.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 20 Nov 2012 19:38:57 +0530
-Message-ID: <CAKohpom4Dd=ubVL8shGSOvCCUBYqRRPOViS6V0_7SrOzADb95A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] dw_dmac: store direction in the custom channel structure
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2012 19:08, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Currently the direction value is come from the generic slave configuration
 
-s/is come/comes
 
-> structure and explicitly as a preparation function parameter. The first one is
-> kinda obsoleted. Thus, we have to store the value passed to the preparation
-> function somewhere in our structures to be able to use it later. The best
-> candidate to provide the storage is a custom channel structure. Until now we
-> still keep and check the direction field of the slave config structure as well.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/dma/dw_dmac.c      |   10 ++++++++--
->  drivers/dma/dw_dmac_regs.h |    2 ++
->  2 files changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 5e2c4dc..58c6d3c 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -178,9 +178,9 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
->                 cfghi = dws->cfg_hi;
->                 cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
->         } else {
-> -               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
-> +               if (dwc->direction == DMA_MEM_TO_DEV)
->                         cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
-> -               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
-> +               else if (dwc->direction == DMA_DEV_TO_MEM)
->                         cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
->         }
+> -----Original Message-----
+> From: Stefan Hajnoczi [mailto:stefanha@gmail.com]
+> Sent: Tuesday, November 20, 2012 5:41 AM
+> To: Pandarathil, Vijaymohan R
+> Cc: kvm@vger.kernel.org; linux-pci@vger.kernel.org; qemu-devel@nongnu.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/4] AER-KVM: Error containment of PCI pass-thru
+> devices assigned to KVM guests
+> 
+> On Tue, Nov 20, 2012 at 06:31:48AM +0000, Pandarathil, Vijaymohan R wrote:
+> > Add support for error containment when a PCI pass-thru device assigned to
+> a KVM
+> > guest encounters an error. This is for PCIe devices/drivers that support
+> AER
+> > functionality. When the OS is notified of an error in a device either
+> > through the firmware first approach or through an interrupt handled by
+> the AER
+> > root port driver, concerned subsystems are notified by invoking callbacks
+> > registered by these subsystems. The device is also marked as tainted till
+> the
+> > corresponding driver recovery routines are successful.
+> >
+> > KVM module registers for a notification of such errors. In the KVM
+> callback
+> > routine, a global counter is incremented to keep track of the error
+> > notification. Before each CPU enters guest mode to execute guest code,
+> > appropriate checks are done to see if the impacted device belongs to the
+> guest
+> > or not. If the device belongs to the guest, qemu hypervisor for the guest
+> is
+> > informed and the guest is immediately brought down, thus preventing or
+> > minimizing chances of any bad data being written out by the guest driver
+> > after the device has encountered an error.
+> 
+> I'm surprised that the hypervisor would shut down the guest when PCIe
+> AER kicks in for a pass-through device.  Shouldn't we pass the AER event
+> into the guest and deal with it there?
 
-I have a doubt here. This routine is called both for memcpy and slave transfers.
-Earlier if (dws), code was used to check slave/non-slave transfer but with your
-earlier patch, for if (!dws) case too, there can be slave transfers
-based on direction.
+Agreed. That would be the ideal behavior and is planned in a future patch.
+Lack of control over the capabilities/type of the OS/drivers running in 
+the guest is also a concern in passing along the event to the guest.
 
-Consider a situation. A channel is used for slave transfers and have
-direction set
-to DMA_DEV_TO_MEM. Now, channel is freed and used for memcpy. Now the
-direction value is retained as we haven't updated it. So, is this a
-potential bug?
+My understanding is that in the current implementation of Linux/KVM, these 
+errors are not handled at all and can potentially cause a guest hang or 
+crash or even data corruption depending on the implementation of the guest
+driver for the device. As a first step, these patches make the behavior 
+better by doing error containment with a predictable behavior when such
+errors occur. 
 
-> @@ -807,6 +807,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
->         if (unlikely(!dws || !sg_len))
->                 return NULL;
->
-> +       dwc->direction = direction;
-> +
->         prev = first = NULL;
->
->         switch (direction) {
-> @@ -983,6 +985,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
->                 return -EINVAL;
->
->         memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
-> +       dwc->direction = sconfig->direction;
->
->         convert_burst(&dwc->dma_sconfig.src_maxburst);
->         convert_burst(&dwc->dma_sconfig.dst_maxburst);
-> @@ -1339,6 +1342,8 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
->         if (unlikely(!is_slave_xfer(direction)))
->                 goto out_err;
->
-> +       dwc->direction = direction;
-> +
->         if (direction == DMA_MEM_TO_DEV)
->                 reg_width = __ffs(sconfig->dst_addr_width);
->         else
-> @@ -1713,6 +1718,7 @@ static int __devinit dw_probe(struct platform_device *pdev)
->                 channel_clear_bit(dw, CH_EN, dwc->mask);
->
->                 dwc->dw = dw;
-> +               dwc->direction = DMA_TRANS_NONE;
->
->                 /* hardware configuration */
->                 if (autocfg) {
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index 8881e9b..362aba1 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -9,6 +9,7 @@
->   * published by the Free Software Foundation.
->   */
->
-> +#include <linux/dmaengine.h>
->  #include <linux/dw_dmac.h>
->
->  #define DW_DMA_MAX_NR_CHANNELS 8
-> @@ -188,6 +189,7 @@ struct dw_dma_chan {
->         void __iomem            *ch_regs;
->         u8                      mask;
->         u8                      priority;
-> +       enum dma_transfer_direction direction;
->         bool                    paused;
->         bool                    initialized;
-
-better align it with tabs and update earlier ones too with extra tabs.
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+> The equivalent to this policy on physical hardware would be that the CPU
+> is reset or the machine is powered down on AER.  That doesn't sound
+> right.
+> 
+> Stefan
