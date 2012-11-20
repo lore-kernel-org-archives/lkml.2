@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab2KTKrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:47:03 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:59898 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab2KTKrB (ORCPT
+	id S1752608Ab2KTKrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:47:42 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17738 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751798Ab2KTKrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:47:01 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, jlee@suse.com
-Subject: [PATCH] sign-file: fix the perl warning message when extracting ASN.1
-Date: Tue, 20 Nov 2012 18:46:18 +0800
-Message-Id: <1353408378-17496-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Tue, 20 Nov 2012 05:47:41 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtkJAOVeq1B5LbWp/2dsb2JhbABFhTe3H4YBgQmCHgEBBScTHCMQCAMVAy4UJQMhE4gMsA+QVhSMHYQUYQOVe4lJhnuDAw
+Date: Tue, 20 Nov 2012 21:47:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, jmoyer@redhat.com, bpm@sgi.com,
+        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/9] xfs: factor out everything but the
+ filemap_write_and_wait from xfs_file_fsync
+Message-ID: <20121120104737.GB2591@dastard>
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+ <20121120074138.24645.36708.stgit@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120074138.24645.36708.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have the following warning message when running modules install for sign ko files:
+On Mon, Nov 19, 2012 at 11:41:38PM -0800, Darrick J. Wong wrote:
+> Hi,
+> 
+> Fsyncing is tricky business, so factor out the bits of the xfs_file_fsync
+> function that can be used from the I/O post-processing path.
+> 
+> From: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>  fs/xfs/xfs_file.c  |   44 +++++++++++++++++++++++++++++---------------
+>  fs/xfs/xfs_inode.h |    1 +
+>  2 files changed, 30 insertions(+), 15 deletions(-)
+> 
+> 
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index aa473fa..507f446 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -152,25 +152,18 @@ xfs_dir_fsync(
+>  	return _xfs_log_force_lsn(mp, lsn, XFS_LOG_SYNC, NULL);
+>  }
+>  
+> -STATIC int
+> -xfs_file_fsync(
+> -	struct file		*file,
+> -	loff_t			start,
+> -	loff_t			end,
+> +/*
+> + * Returns 0 on success, -errno on failure.
+> + */
+> +int
+> +do_xfs_file_fsync(
+> +	struct xfs_inode	*ip,
+> +	struct xfs_mount	*mp,
+>  	int			datasync)
 
-# make modules_install
-...
-  INSTALL drivers/input/touchscreen/pcap_ts.ko
-Found = in conditional, should be == at scripts/sign-file line 164.
-Found = in conditional, should be == at scripts/sign-file line 161.
-Found = in conditional, should be == at scripts/sign-file line 159.
+xfs_do_file_fsync()
 
-This patch change replace '=' by '==' in elsif conditions for avoid the above warning messages.
+And being an internal XFS function, it should return a positive
+error number.
 
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- scripts/sign-file |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+....
 
-diff --git a/scripts/sign-file b/scripts/sign-file
-index 87ca59d..974a20b 100755
---- a/scripts/sign-file
-+++ b/scripts/sign-file
-@@ -156,12 +156,12 @@ sub asn1_extract($$@)
- 
- 	if ($l == 0x1) {
- 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
--	} elsif ($l = 0x2) {
-+	} elsif ($l == 0x2) {
- 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
--	} elsif ($l = 0x3) {
-+	} elsif ($l == 0x3) {
- 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
- 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
--	} elsif ($l = 0x4) {
-+	} elsif ($l == 0x4) {
- 	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
- 	} else {
- 	    die $x509, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
+> +{
+> +	struct inode		*inode = file->f_mapping->host;
+> +	struct xfs_inode	*ip = XFS_I(inode);
+> +	struct xfs_mount	*mp = ip->i_mount;
+> +	int			error = 0;
+> +
+> +	trace_xfs_file_fsync(ip);
+> +
+> +	error = filemap_write_and_wait_range(inode->i_mapping, start, end);
+> +	if (error)
+> +		return error;
+> +
+> +	return do_xfs_file_fsync(ip, mp, datasync);
+
+And be negated here.
+
+> +}
+> +
+>  STATIC ssize_t
+>  xfs_file_aio_read(
+>  	struct kiocb		*iocb,
+> diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
+> index 94b32f9..d5bf105 100644
+> --- a/fs/xfs/xfs_inode.h
+> +++ b/fs/xfs/xfs_inode.h
+> @@ -546,6 +546,7 @@ do { \
+>  	iput(VFS_I(ip)); \
+>  } while (0)
+>  
+> +int	do_xfs_file_fsync(struct xfs_inode *, struct xfs_mount *, int);
+>  #endif /* __KERNEL__ */
+
+This should probably go in fs/xfs/xfs_vnodeops.h (like the only
+other non-static function (xfs_zero_eof) in fs/xfs/xfs_file.c is.
+
+Cheers,
+
+Dave.
 -- 
-1.6.0.2
-
+Dave Chinner
+david@fromorbit.com
