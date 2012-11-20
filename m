@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2KTQHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 11:07:47 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36076 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2KTQHp (ORCPT
+	id S1753248Ab2KTQIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 11:08:23 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42244 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2KTQIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 11:07:45 -0500
+	Tue, 20 Nov 2012 11:08:22 -0500
+Date: Tue, 20 Nov 2012 16:08:16 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 1/2] ARM: ux500: Disable the MMCI gpio-regulator by
+ default
+Message-ID: <20121120160816.GB28265@gmail.com>
+References: <1352985288-29518-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <201211202124.FIA41997.SFtOOOLMQFVFHJ@I-love.SAKURA.ne.jp>
-References: <20121119233459.GA9524@www.outflux.net>
-	<201211202124.FIA41997.SFtOOOLMQFVFHJ@I-love.SAKURA.ne.jp>
-Date: Tue, 20 Nov 2012 08:07:44 -0800
-X-Google-Sender-Auth: 91QdI6yaF7BrpAxoVNk06U_G9tw
-Message-ID: <CAGXu5jLOcQnmfxu7yYUVtUsTbLWrL+7uVi=fPqAKmfbb=CGEAw@mail.gmail.com>
-Subject: Re: [PATCH] Yama: remove locking from delete path
-From: Kees Cook <keescook@chromium.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: linux-kernel@vger.kernel.org, james.l.morris@oracle.com,
-        john.johansen@canonical.com, serge.hallyn@ubuntu.com,
-        eparis@redhat.com, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352985288-29518-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 4:24 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Kees Cook wrote:
->> Instead of locking the list during a delete, mark entries as invalid
->> and trigger a workqueue to clean them up. This lets us easily handle
->> task_free from interrupt context.
->
->> @@ -57,9 +80,12 @@ static int yama_ptracer_add(struct task_struct *tracer,
->>
->>       added->tracee = tracee;
->>       added->tracer = tracer;
->> +     added->invalid = false;
->>
->> -     spin_lock_bh(&ptracer_relations_lock);
->> +     spin_lock(&ptracer_relations_lock);
->
-> Can't you use
->         spin_lock_irqsave(&ptracer_relations_lock, flags);
->         spin_unlock_irqrestore(&ptracer_relations_lock, flags);
-> instead of adding ->invalid ?
+On Thu, 15 Nov 2012, Lee Jones wrote:
 
-The _bh was sufficient originally, but looking at Sasha's deadlock, it
-seems like I should get rid of locking entirely on this path. What do
-you think of this report:
-https://lkml.org/lkml/2012/10/17/600
+> Not all supported boards will require a MMCI gpio-regulator,
+> therefore it's a good idea to only enable the node when and if
+> it is required. Let's disable it by default.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/dbx5x0.dtsi |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+> index 7ce45fc..d8ba489 100644
+> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> @@ -642,6 +642,8 @@
+>  			gpio-enable = <&tc3589x_gpio 17 0x4>;
+>  			states = <1800000 0x1
+>  				  2900000 0x0>;
+> +
+> +			status = "disabled";
+>  		};
+>  	};
+>  };
+> -- 
+> 1.7.9.5
+> 
 
-I'm concerned that blocking interrupts would be an even more expensive
-solution, since every task_free() is forced to block interrupts
-briefly. Most systems will have either an empty relations list, or a
-very short one, so it seemed better to avoid any locking at all on the
-task_free() path. Now the locking contention would be moved to being
-between the workqueue and any add calls.
-
--Kees
-
--Kees
+Prod for Linus.
 
 -- 
-Kees Cook
-Chrome OS Security
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
