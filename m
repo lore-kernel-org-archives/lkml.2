@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab2KTUCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:02:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32744 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab2KTUC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:02:29 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 2/9] ext4: honor the O_SYNC flag for aysnchronous direct I/O requests
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-	<20121120074131.24645.38489.stgit@blackbox.djwong.org>
-	<20121120100751.GB1408@quack.suse.cz>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 20 Nov 2012 15:02:15 -0500
-In-Reply-To: <20121120100751.GB1408@quack.suse.cz> (Jan Kara's message of
-	"Tue, 20 Nov 2012 11:07:51 +0100")
-Message-ID: <x49sj84hwl4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752318Ab2KTUIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:08:18 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45806 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab2KTUIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 15:08:16 -0500
+Date: Tue, 20 Nov 2012 14:10:26 -0600
+From: Josh Cartwright <josh.cartwright@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 1/2] clocksource: add common of_clksrc_init() function
+Message-ID: <20121120201026.GF6280@kryptos>
+References: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+On Tue, Nov 20, 2012 at 12:20:05PM -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> It is desirable to move all clocksource drivers to drivers/clocksource,
+> yet each requires its own initialization function. We'd rather not
+> pollute <linux/> with a header for each function. Instead, create a
+> single of_clksrc_init() function which will determine which clocksource
+> driver to initialize based on device tree.
+> 
+> Inspired by a similar patch for drivers/irqchip by Thomas Petazzoni.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v3: Use a linker section to replace manually maintained table.
+> v2: New patch.
+> 
+[..]
+> --- /dev/null
+> +++ b/drivers/clocksource/clksrc-of.c
+> @@ -0,0 +1,41 @@
+> +/*
+> + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/of.h>
+> +
+> +extern struct of_device_id *__start_clksrc_of_match_tables[];
+> +extern struct of_device_id *__stop_clksrc_of_match_tables[];
+> +
+> +void __init clocksource_of_init(void)
+> +{
+> +	struct of_device_id **table;
+> +	struct of_device_id **stop;
+> +	struct device_node *np;
+> +	const struct of_device_id *match;
+> +	void (*init_func)(void);
+> +
+> +	table = __start_clksrc_of_match_tables;
+> +	stop = __stop_clksrc_of_match_tables;
+> +
+> +	for ( ; table < stop; table++) {
+> +		for_each_matching_node(np, *table) {
+> +			match = of_match_node(*table, np);
+> +			init_func = match->data;
+> +			init_func();
 
->> @@ -1279,6 +1280,9 @@ struct ext4_sb_info {
->>  	/* workqueue for dio unwritten */
->>  	struct workqueue_struct *dio_unwritten_wq;
->>  
->> +	/* workqueue for aio+dio+o_sync disk cache flushing */
->> +	struct workqueue_struct *aio_dio_flush_wq;
->> +
->   Umm, I'm not completely decided whether we really need a separate
-> workqueue. But it doesn't cost too much so I guess it makes some sense -
-> fsync() is rather heavy so syncing won't starve extent conversion...
+Hmm.  Am I crazy, or does this for_each_matching_node()/of_match_node()
+pattern end up walking the match table twice, unnecessarily?
 
-I'm assuming you'd like me to convert the names from flush to fsync,
-yes?
+I'm wondering if we can come up with a for_each_matching_node_id() macro
+that also provides a pointer to the matching of_device_id...
 
->> +
->> +	/*
->> +	 * If we are running in nojournal mode, just flush the disk
->> +	 * cache and return.
->> +	 */
->> +	if (!journal)
->> +		return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_NOIO, NULL);
->   And this is wrong as well - you need to do work similar to what
-> ext4_sync_file() does. Actually it would be *much* better if these two
-> sites used the same helper function. Which also poses an interesting
-> question about locking - do we need i_mutex or not? Forcing a transaction
-> commit is definitely OK without it, similarly as grabbing transaction ids
-> from inode or ext4_should_journal_data() test. __sync_inode() call seems
-> to be OK without i_mutex as well so I believe we can just get rid of it
-> (getting i_mutex from the workqueue is a locking nightmare we don't want to
-> return to).
-
-Just to be clear, are you saying you would like me to remove the
-mutex_lock/unlock pair from ext4_sync_file?  (I had already factored out
-the common code between this new code path and the fsync path in my tree.)
-
->> @@ -149,8 +209,11 @@ void ext4_add_complete_io(ext4_io_end_t *io_end)
->>  	struct workqueue_struct *wq;
->>  	unsigned long flags;
->>  
->> -	BUG_ON(!(io_end->flag & EXT4_IO_END_UNWRITTEN));
->> -	wq = EXT4_SB(io_end->inode->i_sb)->dio_unwritten_wq;
->> +	BUG_ON(!ext4_io_end_deferred(io_end));
->> +	if (io_end->flag & EXT4_IO_END_UNWRITTEN)
->> +		wq = EXT4_SB(io_end->inode->i_sb)->dio_unwritten_wq;
->> +	else
->> +		wq = EXT4_SB(io_end->inode->i_sb)->aio_dio_flush_wq;
->   Umm, I'd prefer if we used aio_dio_flush_wq when EXT4_IO_END_NEEDS_SYNC
-> is set. That way slow syncing works will be always offloaded to a separate
-> workqueue.
-
-OK.
-
-Thanks!
-Jeff
+   Josh
