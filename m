@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab2KTHWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 02:22:24 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39528 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751426Ab2KTHWX (ORCPT
+	id S1752278Ab2KTH0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 02:26:46 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16206 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab2KTH0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 02:22:23 -0500
-Message-ID: <50AB26D2.5090602@vmware.com>
-Date: Tue, 20 Nov 2012 07:44:34 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 20 Nov 2012 02:26:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 19 Nov 2012 23:26:35 -0800
+From: Mark Zhang <markz@nvidia.com>
+To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
+        <swarren@nvidia.com>
+CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Mark Zhang <markz@nvidia.com>
+Subject: [PATCH V2] drm: Add NVIDIA Tegra30 support
+Date: Tue, 20 Nov 2012 15:26:16 +0800
+Message-ID: <1353396376-24121-1-git-send-email-markz@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drm/ttm, drm/vmwgfx: Use RCU locking for object lookups
- v3
-References: <1352201511-6383-1-git-send-email-thellstrom@vmware.com> <1352201511-6383-4-git-send-email-thellstrom@vmware.com> <CAPM=9txb2aQ6zXYKdxDiuL0jOBA9epM_kBT8zeOOcUDN42gQ_w@mail.gmail.com>
-In-Reply-To: <CAPM=9txb2aQ6zXYKdxDiuL0jOBA9epM_kBT8zeOOcUDN42gQ_w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 07:19 AM, Dave Airlie wrote:
-> On Tue, Nov 6, 2012 at 9:31 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
->> The mostly used lookup+get put+potential_destroy path of TTM objects
->> is converted to use RCU locks. This will substantially decrease the amount
->> of locked bus cycles during normal operation.
->> Since we use kfree_rcu to free the objects, no rcu synchronization is needed
->> at module unload time.
-> As this is the first use of RCU in a drm driver from what I can see,
-> let me remind that the
-> RCU patent agreement AFAIK only covers GPL works.
->
-> So non-GPL or other OSes porting this code should take not of this.
->
-> Dave.
+This patch is based on Thierry's drm patch for Tegra20:
+- [PATCH v2 0/6] Device tree updates for host1x support
+- [PATCH v3 0/2] NVIDIA Tegra DRM driver
 
- From VMware's side this won't be a problem, since other VMware kernel 
-modules (VMCI IIRC) use RCU.
+It adds the support for NVIDIA Tegra30.
 
-In any case I have a new version of the "vmwgfx optimization" patch 
-series that mostly add documentation and
-annotation (by  using a drm_ht_xxx_rcu) interface for hashtab, after an 
-internal review by Dmitry Torkov. I see you've already
-applied the original patch series. Do you want me to send out the new 
-one or rebase it against current drm-next?
+Signed-off-by: Mark Zhang <markz@nvidia.com>
+---
+ drivers/gpu/drm/tegra/dc.c     |    1 +
+ drivers/gpu/drm/tegra/host1x.c |    3 +++
+ 2 files changed, 4 insertions(+)
 
-Thanks,
-Thomas
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 53b9852..37bd759 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -818,6 +818,7 @@ static int tegra_dc_remove(struct platform_device *pdev)
+ }
+ 
+ static struct of_device_id tegra_dc_of_match[] = {
++	{ .compatible = "nvidia,tegra30-dc", },
+ 	{ .compatible = "nvidia,tegra20-dc", },
+ 	{ },
+ };
+diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/drm/tegra/host1x.c
+index 1f728cd..28c28ac 100644
+--- a/drivers/gpu/drm/tegra/host1x.c
++++ b/drivers/gpu/drm/tegra/host1x.c
+@@ -66,6 +66,8 @@ static int host1x_remove_drm_client(struct host1x *host1x,
+ static int host1x_parse_dt(struct host1x *host1x)
+ {
+ 	static const char * const compat[] = {
++		"nvidia,tegra30-dc",
++		"nvidia,tegra30-hdmi",
+ 		"nvidia,tegra20-dc",
+ 		"nvidia,tegra20-hdmi",
+ 	};
+@@ -268,6 +270,7 @@ int host1x_unregister_client(struct host1x *host1x,
+ }
+ 
+ static struct of_device_id tegra_host1x_of_match[] = {
++	{ .compatible = "nvidia,tegra30-host1x", },
+ 	{ .compatible = "nvidia,tegra20-host1x", },
+ 	{ },
+ };
+-- 
+1.7.9.5
 
