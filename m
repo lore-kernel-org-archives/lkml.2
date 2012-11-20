@@ -1,241 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2KTNMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:12:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29569 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710Ab2KTNMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:12:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,285,1352102400"; 
-   d="scan'208";a="249964568"
-Date: Tue, 20 Nov 2012 15:15:25 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, broonie@opensource.wolfsonmicro.com,
-        khali@linux-fr.org, ben-linux@fluff.org, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121120131525.GU17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
- <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
- <1353407384-26880-3-git-send-email-mika.westerberg@linux.intel.com>
- <12657869.yQS4p6Y8j3@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12657869.yQS4p6Y8j3@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753440Ab2KTNMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:12:55 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:64318 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2KTNMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 08:12:53 -0500
+Message-id: <50AB81C8.4090300@samsung.com>
+Date: Tue, 20 Nov 2012 14:12:40 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
+MIME-version: 1.0
+To: Kevin Liu <keyuan.liu@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
+        Philip Rakity <prakity@nvidia.com>
+Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+ <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+ <50AB34E2.1010206@samsung.com>
+ <CADz5_gKdUq8bjuMr1=yo65ysHzLNvKnrfVuSpLk-Q6ek-TWpNA@mail.gmail.com>
+ <50AB587F.3040405@samsung.com>
+ <CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
+In-reply-to: <CADz5_gJ1hV3n-4BPgBNT9LDp2-E=vNNzMGx=_9PmzT0RJ9+TsA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 02:05:26PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, November 20, 2012 12:29:43 PM Mika Westerberg wrote:
-> > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> > configure the SPI slave devices behind the SPI controller. This patch adds
-> > support for this to the SPI core.
-> > 
-> > In addition we bind ACPI nodes to SPI devices. This makes it possible for
-> > the slave drivers to get the ACPI handle for further configuration.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/spi/spi.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 114 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> > index 84c2861..3ae5351 100644
-> > --- a/drivers/spi/spi.c
-> > +++ b/drivers/spi/spi.c
-> > @@ -35,6 +35,8 @@
-> >  #include <linux/sched.h>
-> >  #include <linux/delay.h>
-> >  #include <linux/kthread.h>
-> > +#include <linux/ioport.h>
-> > +#include <linux/acpi.h>
-> >  
-> >  static void spidev_release(struct device *dev)
-> >  {
-> > @@ -93,6 +95,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
-> >  	if (of_driver_match_device(dev, drv))
-> >  		return 1;
-> >  
-> > +	/* Then try ACPI */
-> > +	if (acpi_driver_match_device(dev, drv))
-> > +		return 1;
-> > +
-> >  	if (sdrv->id_table)
-> >  		return !!spi_match_id(sdrv->id_table, spi);
-> >  
-> > @@ -888,6 +894,112 @@ static void of_register_spi_devices(struct spi_master *master)
-> >  static void of_register_spi_devices(struct spi_master *master) { }
-> >  #endif
-> >  
-> > +#ifdef CONFIG_ACPI
-> > +static int acpi_spi_add_resource(struct acpi_resource *ares, void *data)
-> > +{
-> > +	struct acpi_resource_spi_serialbus *sb;
-> > +	struct spi_device *spi = data;
-> > +	struct resource r;
-> > +
-> > +	switch (ares->type) {
-> > +	case ACPI_RESOURCE_TYPE_IRQ:
-> > +	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> 
-> It is not necessary to check the resource type for IRQ resources here,
-> because acpi_dev_resource_interrupt() will do it for you anyway. :-)
-> 
-> So, I would first check if the resource type is ACPI_RESOURCE_TYPE_SERIAL_BUS
-> (and populate the spi_device fields if so) and then do something like this:
-> 
-> if (acpi_dev_resource_interrupt(ares, 0, &r)) {
-> 	if (spi->irq < 0)
-> 		spi->irq = r.start;
-> 
-> 	return 1;
-> }
-> 
-> We don't even need to memset(), because we're not going to use that resource
-> object going forward.
+Hello,
 
-But doesn't acpi_dev_resource_interrupt() do acpi_register_gsi() and all
-that stuff? And we were supposed to avoid that.
+On 11/20/2012 12:36 PM, Kevin Liu wrote:
+> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+> > On 11/20/2012 9:59 AM, Kevin Liu wrote:
+> >> 2012/11/20 Marek Szyprowski <m.szyprowski@samsung.com>:
+> >> > On 11/14/2012 8:11 AM, Kevin Liu wrote:
+> >> >>
+> >> >> > From: linux-mmc-owner@vger.kernel.org
+> >> >> > [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
+> >> >> > Sent: Tuesday, November 13, 2012 10:14 PM
+> >> >> > To: Marek Szyprowski
+> >> >> > Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org; Kyungmin
+> >> >> > Park; Mark Brown; Liam Girdwood; Philip Rakity
+> >> >> > Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only
+> >> >> > for non-fixed regulators
+> >> >> > On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> >> >> >>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> >> >> >>> > Fixed regulators cannot change their voltage, so disable all
+> >> >> >>> > voltage
+> >> >> >>> > range checking for them, otherwise the driver fails to operate
+> >> >> >>> > with
+> >> >> >>> > fixed regulators. Up to now it worked only by luck, because
+> >> >> >>> > regulator_is_supported_voltage() function returned incorrect
+> >> >> >>> > values.
+> >> >> >>> > Commit "regulator: fix voltage check in
+> >> >> >>> > regulator_is_supported_voltage()"
+> >> >> >>> > fixed that function and now additional check is needed for fixed
+> >> >> >>> > regulators.
+> >> >> >>> >
+> >> >> >>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> >> >>> > ---
+> >> >> >>> >  drivers/mmc/host/sdhci.c |    2 +-
+> >> >> >>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> >> >>> >
+> >> >> >>> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> >> >> >>> > index c7851c0..6f6534e 100644
+> >> >> >>> > --- a/drivers/mmc/host/sdhci.c
+> >> >> >>> > +++ b/drivers/mmc/host/sdhci.c
+> >> >> >>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
+> >> >> >>> >            regulator_enable(host->vmmc);
+> >> >> >>> >
+> >> >> >>> >  #ifdef CONFIG_REGULATOR
+> >> >> >>> > -  if (host->vmmc) {
+> >> >> >>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
+> >> >> >>> >            ret = regulator_is_supported_voltage(host->vmmc,
+> >> >> >>> > 3300000,
+> >> >> >>> >                    3300000);
+> >> >> >>> >            if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
+> >> >> >>>
+> >> >> >>> Thanks for the longer explanation.  I'm still missing something,
+> >> >> >>> though;
+> >> >> >>> what's wrong with running the check as it was with the new
+> >> >> >>> regulator
+> >> >> >>> code?
+> >> >> >>> (I haven't tried it yet.)
+> >> >> >>>
+> >> >> >>> #ifdef CONFIG_REGULATOR
+> >> >> >>>          if (host->vmmc) {
+> >> >> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
+> >> >> >>> 3300000,
+> >> >> >>>                          3300000);
+> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+> >> >> >>> SDHCI_CAN_VDD_330)))
+> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
+> >> >> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
+> >> >> >>> 3000000,
+> >> >> >>>                          3000000);
+> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+> >> >> >>> SDHCI_CAN_VDD_300)))
+> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
+> >> >> >>>                  ret = regulator_is_supported_voltage(host->vmmc,
+> >> >> >>> 1800000,
+> >> >> >>>                          1800000);
+> >> >> >>>                  if ((ret <= 0) || (!(caps[0] &
+> >> >> >>> SDHCI_CAN_VDD_180)))
+> >> >> >>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
+> >> >> >>>          }
+> >> >> >>> #endif /* CONFIG_REGULATOR */
+> >> >> >>>
+> >> >> >>> The point is to remove unsupported voltages, so if someone sets up
+> >> >> >>> a
+> >> >> >>> fixed regulator at 3300000, all of the other caps are disabled.
+> >> >> >>> Why
+> >> >> >>> wouldn't that work without this change, and how are we supposed to
+> >> >> >>> remove those caps on a fixed regulator after your patchset?
+> >> >> >>>
+> >> >> >>> Thanks, sorry if I'm missing something obvious,
+> >> >> >>
+> >> >> >> On our boards eMMC is connected to fixed 2.8V regulator, what
+> >> >> >> results
+> >> >> >> in
+> >> >> >> clearing all available voltages and fail. The same situation is when
+> >> >> >> one
+> >> >> >> enable dummy regulator and try to use sdhci with it. My patch fixes
+> >> >> >> this
+> >> >> >> and restores sdhci to working state as it was before (before fixing
+> >> >> >> regulator regulator_is_supported_voltage() function and earlier when
+> >> >> >> MMC_BROKEN_VOLATGE capability was used).
+> >> >> >
+> >> >> > I see.  Sounds like a separate bug -- Philip (or anyone else), any
+> >> >> > idea how we should be treating eMMCs with a fixed voltage here?
+> >> >> >
+> >> >>
+> >> >> I think we should check the voltage range rather than the voltage
+> >> >> point accoring to the spec.
+> >> >> Otherwise some valid voltage like 2.8v will be discarded by mistake.
+> >> >> My below old patch aim to fix this issue.
+> >> >> How do you think?
+> >> >>
+> >> >> -----Original Message-----
+> >> >> From: Kevin Liu [mailto:keyuan.liu@gmail.com]
+> >> >> Sent: Friday, September 28, 2012 3:56 PM
+> >> >> To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
+> >> >> ulf.hansson@linaro.org; Zhangfei Gao
+> >> >> Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing Fu
+> >> >> Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
+> >> >> range according to spec
+> >> >>
+> >> >> From: Kevin Liu <kliu5@marvell.com>
+> >> >>
+> >> >> For regulator vmmc/vmmcq, use voltage range as below
+> >> >> 3.3v/3.0v: (2.7v, 3.6v)
+> >> >> 1.8v: (1.7v, 1.95v)
+> >> >> Original code use the specific value which may fail in regulator
+> >> >> driver if it does NOT support the specific voltage.
+> >> >>
+> >> >> Signed-off-by: Jialing Fu <jlfu@marvell.com>
+> >> >> Signed-off-by: Kevin Liu <kliu5@marvell.com>
+> >> >
+> >> >
+> >> > Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> >
+> >> > This patch restores sdhci devices to working state on Samsung boards
+> >> > (tested on GONI and UniversalC210) after merging "regulator: fix voltage
+> >> > check in regulator_is_supported_voltage()" patch to v3.7-rc6 (commit
+> >> > f0f98b19e23d4426ca185e3d4ca80e6aff5ef51b). Would be great to have it
+> >> > merged before the final v3.7 is out.
+> >> >
+> >> Marek,
+> >>
+> >> thanks a lot for the verification!
+> >> And your patch "mmc: sdhci: apply voltage range check only for
+> >> non-fixed regulators" (commit
+> >> d5b5205f2d480a47863dda0772d2d9dc47c2b51b, which has been merged in
+> >> mmc-next) can be reverted if this patch merged?
+> >
+> >
+> > Yes, it can be replaced with it, although there is still an issue that need
+> > to be resolved somehow. Right now SDHCI driver fails to initialize if
+> > support
+> > for dummy regulator is enabled.
+> >
+> Then I think the dummy issue can be resolved with your patch merged
+> and if you can just update your patch from
+>       "regulator_count_voltages(host->vmmc) > 1"
+> to
+>       "regulator_count_voltages(host->vmmc) > 0"
+> to let fix regulator work.
 
-> 
-> > +		/* Only use the first interrupt resource and skip the rest */
-> > +		memset(&r, 0, sizeof(r));
-> > +		if (spi->irq < 0 && acpi_dev_resource_interrupt(ares, 0, &r))
-> > +			spi->irq = r.start;
-> > +		return 1;
-> > +
-> > +	case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-> > +		sb = &ares->data.spi_serial_bus;
-> > +		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
-> > +			spi->chip_select = sb->device_selection;
-> > +			spi->max_speed_hz = sb->connection_speed;
-> > +
-> > +			if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-> > +				spi->mode |= SPI_CPHA;
-> > +			if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-> > +				spi->mode |= SPI_CPOL;
-> > +			if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-> > +				spi->mode |= SPI_CS_HIGH;
-> > +
-> > +			return 1;
-> > +		}
-> > +		return 0;
-> > +	}
-> > +
-> > +	return 0;
-> 
-> We're not interested in any resources except for the above, so I think we
-> can just always return 1 from this function, or am I missing anything?
+regulator_count_voltages() returns 1 for both fixed regulators and for
+virtual dummy regulator, so the above change makes no sense.
 
-Right you are, we can return 1 always. I'll update this.
+However I was so focused on fixing the 2.8V supply case that I missed the
+fact that my "mmc: sdhci: apply voltage range check only for non-fixed
+regulators" patch also fixed the dummy regulator case.
 
-> > +}
-> > +
-> > +static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
-> > +				       void *data, void **return_value)
-> > +{
-> > +	struct spi_master *master = data;
-> > +	struct list_head resource_list;
-> > +	struct acpi_device *adev;
-> > +	struct spi_device *spi;
-> > +	int ret;
-> > +
-> > +	if (acpi_bus_get_device(handle, &adev))
-> > +		return AE_OK;
-> > +	if (acpi_bus_get_status(adev) || !adev->status.present)
-> > +		return AE_OK;
-> > +
-> > +	spi = spi_alloc_device(master);
-> > +	if (!spi) {
-> > +		dev_err(&master->dev, "failed to allocate SPI device for %s\n",
-> > +			dev_name(&adev->dev));
-> > +		return AE_NO_MEMORY;
-> > +	}
-> > +
-> > +	ACPI_HANDLE_SET(&spi->dev, handle);
-> > +	spi->irq = -1;
-> > +
-> > +	INIT_LIST_HEAD(&resource_list);
-> > +	ret = acpi_dev_get_resources(adev, &resource_list,
-> > +				     acpi_spi_add_resource, spi);
-> 
-> acpi_dev_free_resource_list(&resource_list); can be done here (the list
-> is going to be empty anyway if acpi_spi_add_resource() always returns 1)
-> and then you won't need the fail_put_dev label.
+The conclusion is that applying both patches should finally fix the
+regulator issues with for the Samsung boards (2.8V supply for eMMC) and
+'dummy-regulators' cases.
 
-OK, but there are still two cases below where we need to do
-spi_dev_put(spi). Or do you mean that for each case I just call that
-directly instead of goto fail_put_dev?
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-> > +	if (ret < 0)
-> > +		goto fail_put_dev;
-> > +
-> > +	acpi_dev_free_resource_list(&resource_list);
-> > +
-> > +	if (!spi->max_speed_hz)
-> > +		goto fail_put_dev;
-> > +
-> > +	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
-> > +	if (spi_add_device(spi)) {
-> > +		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
-> > +			dev_name(&adev->dev));
-> > +		goto fail_put_dev;
-> > +	}
-> > +
-> > +	return AE_OK;
-> > +
-> > +fail_put_dev:
-> > +	spi_dev_put(spi);
-> > +
-> > +	return AE_OK;
-> > +}
-> > +
-> > +static void acpi_register_spi_devices(struct spi_master *master)
-> > +{
-> > +	acpi_status status;
-> > +	acpi_handle handle;
-> > +
-> > +	handle = ACPI_HANDLE(&master->dev);
-> > +	if (!handle)
-> > +		return;
-> > +
-> > +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-> > +				     acpi_spi_add_device, NULL,
-> > +				     master, NULL);
-> > +	if (ACPI_FAILURE(status))
-> > +		dev_warn(&master->dev, "failed to enumerate SPI slaves\n");
-> > +}
-> > +#else
-> > +static inline void acpi_register_spi_devices(struct spi_master *master) {}
-> > +#endif /* CONFIG_ACPI */
-> > +
-> >  static void spi_master_release(struct device *dev)
-> >  {
-> >  	struct spi_master *master;
-> > @@ -1023,8 +1135,9 @@ int spi_register_master(struct spi_master *master)
-> >  		spi_match_master_to_boardinfo(master, &bi->board_info);
-> >  	mutex_unlock(&board_lock);
-> >  
-> > -	/* Register devices from the device tree */
-> > +	/* Register devices from the device tree and ACPI */
-> >  	of_register_spi_devices(master);
-> > +	acpi_register_spi_devices(master);
-> >  done:
-> >  	return status;
-> >  }
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+
