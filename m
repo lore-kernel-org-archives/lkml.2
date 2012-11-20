@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab2KTPh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:37:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51519 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2KTPh4 (ORCPT
+	id S1752364Ab2KTPir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:38:47 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56220 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2KTPiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:37:56 -0500
-Date: Tue, 20 Nov 2012 15:37:51 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Constantine Shulyupin <const@makelinux.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: [PATCH] checkpatch: consolidate if (foo) bar(foo) checks and add
- debugfs_remove
-Message-ID: <20121120153751.GJ7955@dm>
-References: <1353190818-10070-1-git-send-email-const@MakeLinux.com>
- <20121120142906.GD7955@dm>
- <1353422629.11235.10.camel@joe-AO722>
- <20121120144742.GG7955@dm>
- <CAE7jHC8LsxPaQHqy5-H4-wZp6q+_0s7arnPa3jG7R9x=tf_Oww@mail.gmail.com>
- <1353423503.11235.12.camel@joe-AO722>
+	Tue, 20 Nov 2012 10:38:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353423503.11235.12.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121116200616.GK8218@suse.de>
+References: <20121015110937.GE29125@suse.de>
+	<5093A3F4.8090108@redhat.com>
+	<5093A631.5020209@suse.cz>
+	<509422C3.1000803@suse.cz>
+	<509C84ED.8090605@linux.vnet.ibm.com>
+	<509CB9D1.6060704@redhat.com>
+	<20121109090635.GG8218@suse.de>
+	<509F6C2A.9060502@redhat.com>
+	<20121112113731.GS8218@suse.de>
+	<CA+5PVA75XDJjo45YQ7+8chJp9OEhZxgPMBUpHmnq1ihYFfpOaw@mail.gmail.com>
+	<20121116200616.GK8218@suse.de>
+Date: Tue, 20 Nov 2012 10:38:45 -0500
+Message-ID: <CA+5PVA7__=JcjLAhs5cpVK-WaZbF5bQhp5WojBJsdEt9SnG3cw@mail.gmail.com>
+Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Zdenek Kabelac <zkabelac@redhat.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>, Valdis.Kletnieks@vt.edu,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Thorsten Leemhuis <fedora@leemhuis.info>, bruno@wolff.to
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidate the if (foo) bar(foo) detectors into a single check.  Add
-debugfs_remove and family.
+On Fri, Nov 16, 2012 at 3:06 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Fri, Nov 16, 2012 at 02:14:47PM -0500, Josh Boyer wrote:
+>> On Mon, Nov 12, 2012 at 6:37 AM, Mel Gorman <mgorman@suse.de> wrote:
+>> > With "mm: vmscan: scale number of pages reclaimed by reclaim/compaction
+>> > based on failures" reverted, Zdenek Kabelac reported the following
+>> >
+>> >         Hmm,  so it's just took longer to hit the problem and observe
+>> >         kswapd0 spinning on my CPU again - it's not as endless like before -
+>> >         but still it easily eats minutes - it helps to  turn off  Firefox
+>> >         or TB  (memory hungry apps) so kswapd0 stops soon - and restart
+>> >         those apps again.  (And I still have like >1GB of cached memory)
+>> >
+>> >         kswapd0         R  running task        0    30      2 0x00000000
+>> >          ffff8801331efae8 0000000000000082 0000000000000018 0000000000000246
+>> >          ffff880135b9a340 ffff8801331effd8 ffff8801331effd8 ffff8801331effd8
+>> >          ffff880055dfa340 ffff880135b9a340 00000000331efad8 ffff8801331ee000
+>> >         Call Trace:
+>> >          [<ffffffff81555bf2>] preempt_schedule+0x42/0x60
+>> >          [<ffffffff81557a95>] _raw_spin_unlock+0x55/0x60
+>> >          [<ffffffff81192971>] put_super+0x31/0x40
+>> >          [<ffffffff81192a42>] drop_super+0x22/0x30
+>> >          [<ffffffff81193b89>] prune_super+0x149/0x1b0
+>> >          [<ffffffff81141e2a>] shrink_slab+0xba/0x510
+>> >
+>> > The sysrq+m indicates the system has no swap so it'll never reclaim
+>> > anonymous pages as part of reclaim/compaction. That is one part of the
+>> > problem but not the root cause as file-backed pages could also be reclaimed.
+>> >
+>> > The likely underlying problem is that kswapd is woken up or kept awake
+>> > for each THP allocation request in the page allocator slow path.
+>> >
+>> > If compaction fails for the requesting process then compaction will be
+>> > deferred for a time and direct reclaim is avoided. However, if there
+>> > are a storm of THP requests that are simply rejected, it will still
+>> > be the the case that kswapd is awake for a prolonged period of time
+>> > as pgdat->kswapd_max_order is updated each time. This is noticed by
+>> > the main kswapd() loop and it will not call kswapd_try_to_sleep().
+>> > Instead it will loopp, shrinking a small number of pages and calling
+>> > shrink_slab() on each iteration.
+>> >
+>> > The temptation is to supply a patch that checks if kswapd was woken for
+>> > THP and if so ignore pgdat->kswapd_max_order but it'll be a hack and not
+>> > backed up by proper testing. As 3.7 is very close to release and this is
+>> > not a bug we should release with, a safer path is to revert "mm: remove
+>> > __GFP_NO_KSWAPD" for now and revisit it with the view to ironing out the
+>> > balance_pgdat() logic in general.
+>> >
+>> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+>>
+>> Does anyone know if this is queued to go into 3.7 somewhere?  I looked
+>> a bit and can't find it in a tree.  We have a few reports of Fedora
+>> rawhide users hitting this.
+>>
+>
+> No, because I was waiting to hear if a) it worked and preferably if the
+> alternative "less safe" option worked. This close to release it might be
+> better to just go with the safe option.
 
-Based on a patch by Constantine Shulyupin <const@MakeLinux.com>.
+We've been tracking it in https://bugzilla.redhat.com/show_bug.cgi?id=866988
+and people say this revert patch doesn't seem to make the issue go away
+fully.  Thorsten has created another kernel with the other patch applied
+for testing.
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |   20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+At least I think that is the latest status from the bug.  Hopefully the
+commenters will chime in.
 
-This is a fully merged version as the fix patch was bigger than the
-whole merged patch and this is much clearer as to purpose.  Hope that
-makes sense.
-	
--apw
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index ae01b90..e83a137 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3239,20 +3239,16 @@ sub process {
- 				$herecurr);
- 		}
- 
-+# check for needless "if (<foo>) fn(<foo>)" uses
-+		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
-+			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
-+
- # check for needless kfree() checks
--		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
--			my $expr = $1;
--			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
--				WARN("NEEDLESS_KFREE",
--				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
--			}
--		}
- # check for needless usb_free_urb() checks
--		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
--			my $expr = $1;
--			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
--				WARN("NEEDLESS_USB_FREE_URB",
--				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
-+# check for needless debugfs_remove() and debugfs_remove_recursive*() checks
-+			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
-+				WARN('NEEDLESS_IF',
-+				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
- 			}
- 		}
- 
--- 
-1.7.10.4
-
+josh
