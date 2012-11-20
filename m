@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2KTPzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:55:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58104 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab2KTPzm (ORCPT
+	id S1753032Ab2KTPz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:55:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15399 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab2KTPz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:55:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet.Gupta1@synopsys.com
-Subject: Re: [PATCH 1/2] asm-generic: uaccess: allow arch to over-ride __get_user_fn()
-Date: Tue, 20 Nov 2012 15:55:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1353422297-29079-1-git-send-email-vgupta@synopsys.com> <1353422297-29079-2-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1353422297-29079-2-git-send-email-vgupta@synopsys.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Tue, 20 Nov 2012 10:55:57 -0500
+X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Wu0uEauASpgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=gAuBvx7K2IcA:10 a=Mg2bPhSwYpk1OuVmy0UA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353426955.6276.24.camel@gandalf.local.home>
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
+Date: Tue, 20 Nov 2012 10:55:55 -0500
+In-Reply-To: <20121120154824.GA17534@redhat.com>
+References: <20121109182943.GA2789@redhat.com>
+	 <20121109183026.GA2719@redhat.com> <20121119174728.GA11365@redhat.com>
+	 <1353349500.6276.9.camel@gandalf.local.home>
+	 <20121120154824.GA17534@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211201555.37272.arnd@arndb.de>
-X-Provags-ID: V02:K0:1mynl1au71q21dFg+4xhP7ozQ2GD/Tq9uDOFwA4MWJB
- D86eCboGAzJEtHUEMfEfVNeQ1T3f4rW9TM0SS8ss+dd0X8wzp7
- NoV89aH8TJm4xeTwrWetsBXSmaMp7qcUfwwqzSi+TXAeqEX8Fj
- rvasRUdmsOhT/+BrgL84u0CW8cByc5dLV5zGa4ioAADMcpFPRm
- h0Z6IboqZ2TmI/GlHDqB9ySiGdkP76lZPdykDbjakoHQOADcxb
- 12S8E0XXFYpXYgXokgclXIRG/rKDuP0RgTsmEDqq+qbxL5NI4u
- Sml5HVzFrG+vmD9Z11XZ5BlzIOlkuwEyepeJylibO9cob6Ijme
- xMvXeGnYcHxEwM1kd0q0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 November 2012, Vineet.Gupta1@synopsys.com wrote:
-> +#ifndef __get_user_fn
->  static inline int __get_user_fn(size_t size, const void __user *ptr, void *x)
->  {
->         size = __copy_from_user(x, ptr, size);
->         return size ? -EFAULT : size;
->  }
->  
-> +#define __get_user_fn(sz, u, k)        __get_user_fn(sz, u, k)
-> +
-> +#endif
+On Tue, 2012-11-20 at 16:48 +0100, Oleg Nesterov wrote:
 
-This is ok as well. The idea with the asm-generic __copy_from_user()
-implementation is to separate out the cases where you have just
-a few bytes and handle them efficiently inline. If you don't want
-to do that for some reason, overriding __get_user_fn works
-as well. The resulting object code should be the same.
+> > But here, there's no prejudice between tasks. All tasks will now hit the
+> > breakpoint regardless of if it is being traced or not.
+>   ^^^^^^^^^^
+> 
+> This is hardware breakpoint, it is per-task.
 
-	Arnd
+I forgot that hw breakpoints are swapped out at context switch (as Amnon
+informed me). 
+
+OK, that makes a big difference.
+
+Thanks,
+
+-- Steve
+
+
