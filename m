@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2KTJyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:54:22 -0500
-Received: from relay01.smp.mweb.co.za ([196.28.80.21]:59317 "EHLO
-	relay01.smp.mweb.co.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2KTJyV (ORCPT
+	id S1752480Ab2KTJ4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:56:30 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59612 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab2KTJ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:54:21 -0500
-X-Greylist: delayed 5863 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Nov 2012 04:54:21 EST
-Message-ID: <44ac088a999db2466885811b8c150342.squirrel@webmail.mweb.net>
-Date: Tue, 20 Nov 2012 10:16:11 +0200 (SAST)
-Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY,
-      UPGRADE NOW !!!
-From: "Webmail Account Upgrade" <cyrilwides@mweb.co.za>
-User-Agent: SquirrelMail/1.4.15
+	Tue, 20 Nov 2012 04:56:28 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v3 0/3] pwm: Drivers for twl4030/6030 PWMs and LEDs
+Date: Tue, 20 Nov 2012 10:56:19 +0100
+Message-ID: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Your webmail account is corrupted by virus, you are to advise to upgrade.
- You need to upgrade your email limit quota to 10GB within the next 48
-hours. Use the below web link to upgrade your valid email account:
+Hello,
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDcwdURxMkJCS25LSE5IREtLTXB3bkE6MQ
+Changes since v2:
+- New PWM cycle calculation for twl-pwm driver and twl4030's pwm-twl-led with
+  comment to document the expected behaviour.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Changes cince v1:
+- The turn on/off sequence has been corrected for twl4030 PWMs as suggested by
+  Grazvydas Ignotas
+- Comment section added to the new drivers to describe what they are controlling
 
+The series has been tested (with additional, pending patches):
+Zoom2 for twl4030 PWM0 (keypad light), PWM1 (LCD backlight)
+BeagleBoard for twl4030 LEDB (PWMB - pmu_stat led)
+OMAP4 Blaze (SDP4430) for twl6030 PWM1 (keypad light), PWM2 (LCD backlight) and
+LED (charging indication led).
+
+Intro mail from v1:
+
+The currently available pwm-twl6030.c driver only supports TWL6030's Charging
+indication LED.
+Remove this driver and add two new ones which implements support for all PWM
+driven outputs:
+pwm-twl driver supports twl4030 (PWM 0/1) and twl6030 (PWM 1/2) instances
+pwm-twl-led driver supports twl4030 (PWM driven LED A/B ports) and twl6030's
+Charging indication LED (PWM driven).
+
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  pwm: Remove pwm-twl6030 driver
+  pwm: New driver to support PWMs on TWL4030/6030 series of PMICs
+  pwm: New driver to support PWM driven LEDs on TWL4030/6030 series of
+    PMICs
+
+ drivers/pwm/Kconfig       |  19 ++-
+ drivers/pwm/Makefile      |   3 +-
+ drivers/pwm/pwm-twl-led.c | 303 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/pwm-twl.c     | 330 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/pwm-twl6030.c | 184 --------------------------
+ 5 files changed, 650 insertions(+), 189 deletions(-)
+ create mode 100644 drivers/pwm/pwm-twl-led.c
+ create mode 100644 drivers/pwm/pwm-twl.c
+ delete mode 100644 drivers/pwm/pwm-twl6030.c
+
+-- 
+1.8.0
 
