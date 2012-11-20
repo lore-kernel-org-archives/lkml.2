@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab2KTGAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:00:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57698 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab2KTGAU (ORCPT
+	id S1751484Ab2KTGFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:05:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36223 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834Ab2KTGFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:00:20 -0500
-Date: Tue, 20 Nov 2012 07:00:14 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121120060014.GA14065@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+	Tue, 20 Nov 2012 01:05:20 -0500
+Date: Tue, 20 Nov 2012 15:05:11 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: introduce tables for
+ readable/writeable/volatile/precious checks
+Message-ID: <20121120060509.GB10560@opensource.wolfsonmicro.com>
+References: <1353331913-24941-1-git-send-email-ciminaghi@gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+In-Reply-To: <1353331913-24941-1-git-send-email-ciminaghi@gnudd.com>
+X-Cookie: Avoid gunfire in the bathroom tonight.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Rientjes <rientjes@google.com> wrote:
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > numa/core at ec05a2311c35 ("Merge branch 'sched/urgent' into 
-> > sched/core") had an average throughput of 136918.34 
-> > SPECjbb2005 bops, which is a 6.3% regression.
-> 
-> perftop during the run on numa/core at 01aa90068b12 ("sched: 
-> Use the best-buddy 'ideal cpu' in balancing decisions"):
-> 
->     15.99%  [kernel]  [k] page_fault                         
->      4.05%  [kernel]  [k] getnstimeofday                     
->      3.96%  [kernel]  [k] _raw_spin_lock                     
->      3.20%  [kernel]  [k] rcu_check_callbacks                
->      2.93%  [kernel]  [k] generic_smp_call_function_interrupt
->      2.90%  [kernel]  [k] __do_page_fault                    
->      2.82%  [kernel]  [k] ktime_get                          
+On Mon, Nov 19, 2012 at 02:31:53PM +0100, Davide Ciminaghi wrote:
+> Many of the regmap enabled drivers implementing one or more of the
+> readable, writeable, volatile and precious methods use the same code
+> pattern:
+>=20
+> 	return ((reg >=3D X && reg <=3D Y) || (reg >=3D W && reg <=3D Z) || ...)
+>=20
+> Switch to a data driven approach, using tables to describe
+> readable/writeable/volatile and precious registers ranges instead.
+> The table based check can still be overridden by passing the usual functi=
+on
+> pointers via struct regmap_config.
 
-Thanks for testing, that's very interesting - could you tell me 
-more about exactly what kind of hardware this is? I'll try to 
-find a similar system and reproduce the performance regression.
+Sorry, the code looks good but I just realised we already have a feature
+called ranges - the paged window support also calls the regions it uses
+ranges.  Can I suggest access_table or similar instead?  Sorry about
+that - I should've realised.
 
-(A wild guess would be an older 4x Opteron system, 83xx series 
-or so?)
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Also, the profile looks weird to me. Here is how perf top looks 
-like on my system during a similarly configured, "healthy" 
-SPECjbb run:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- 91.29%  perf-6687.map            [.] 0x00007fffed1e8f21
-  4.81%  libjvm.so                [.] 0x00000000007004a0
-  0.93%  [vdso]                   [.] 0x00007ffff7ffe60c
-  0.72%  [kernel]                 [k] do_raw_spin_lock
-  0.36%  [kernel]                 [k] generic_smp_call_function_interrupt
-  0.10%  [kernel]                 [k] format_decode
-  0.07%  [kernel]                 [k] rcu_check_callbacks
-  0.07%  [kernel]                 [k] apic_timer_interrupt
-  0.07%  [kernel]                 [k] call_function_interrupt
-  0.06%  libc-2.15.so             [.] __strcmp_sse42
-  0.06%  [kernel]                 [k] irqtime_account_irq
-  0.06%  perf                     [.] 0x000000000004bb7c
-  0.05%  [kernel]                 [k] x86_pmu_disable_all
-  0.04%  libc-2.15.so             [.] __memcpy_ssse3
-  0.04%  [kernel]                 [k] ktime_get
-  0.04%  [kernel]                 [k] account_group_user_time
-  0.03%  [kernel]                 [k] vbin_printf
+iQIcBAEBAgAGBQJQqx1rAAoJELSic+t+oim9PNEP/i21jOTC70YD5ahZUilvKT2w
++aGXOqj0jenEln7vKoWjGmz8rHgY4e/9ZlHXojiGLmJDWqI9bn3y1XLKL6dmtgE0
+XQh8XxkKfLqtvTLZYEBqJc5Jy/JpzMBh9NOAFbITz8OfjiE346tO8ZS7qQ+NmCdd
+vyneSrD3e5XnDne1hqZFxMz5xgT8/J9GAnlFzEWwtuW5TvUUjBO28/hxiKBi5ZOJ
+na3oQ/fSCP3hTNiBmdvV58eHpicCSTdsDw+FJvqz5It9o6o1w4WirDYLmpxUeLU+
+X9iQhCWFvNWj9C8uDrbl2XFahwWOn9L/4lO3oHt4zfEi70Ojd9Df77jgmrg2T5DS
+xbYjxeNcK5PLYFANmwplA0o5qqhucDK3LY171mZJ/EBfpvhR3RQCgcnStblUjJVs
+0gq8EuBnkxjR+1Uq060gAYigp4iRBg60iq2Wi0ZGaZT6M4I8E18GX0nCYsm7iuJh
+GabIctNvhHo5iKyLg76y2wQWUMNsEP7Zy3rKZHCxNfepdfuwACPIgSbwFuGhzFMG
+wCbcXo5qeZMNEYi/Pf3PZ7RNH9xBS3FkoNkjHYvzxwY+f6RWfz7mcNGSrDO2WeSO
+k1WDFHvUs6c3IPujHBFTRM/vNsruq+l7dLkIDlYA1gN6Zq0FJqdixssxOoIMOJCi
+aH0z3aWgwHXNG2OHNSZo
+=dvLX
+-----END PGP SIGNATURE-----
 
-and that is what SPECjbb does: it spends 97% of its time in Java 
-code - yet there's no Java overhead visible in your profile - 
-how is that possible? Could you try a newer perf on that box:
-
-  cd tools/perf/
-  make -j install
-
-to make sure perf picks up the Java symbols as well (or at least 
-includes them as a summary, as in the profile above). Note that 
-no page fault overhead is visible in my profile.
-
-Thanks,
-
-	Ingo
+--K8nIJk4ghYZn606h--
