@@ -1,30 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2KTKZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:25:29 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:52442 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751798Ab2KTKZ2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:25:28 -0500
-Message-Id: <201211201025.qAKAMnOw075855@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753084Ab2KTKZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:25:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41188 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab2KTKZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:25:51 -0500
+Date: Tue, 20 Nov 2012 11:25:50 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] kbuild: Remove reference to uninitialised variable
+Message-ID: <20121120102550.GB31243@sepie.suse.cz>
+References: <20121015124912.GA32257@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Warning! Your mailbox is almost full.
-To: Recipients <fxzhang@dicp.ac.cn>
-From: "Webmail Account Upgrade" <fxzhang@dicp.ac.cn>
-Date: Tue, 20 Nov 2012 04:24:43 -0600
-Reply-To: fxzhang@dicp.ac.cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121015124912.GA32257@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account:
+On Mon, Oct 15, 2012 at 01:49:12PM +0100, Charles Keepax wrote:
+> Verbose output variable is unnecessary because the command's echo is
+> already surpressed. Additionally because the block defines skip-makefile
+> the variable Q is not defined within the makefile, which can cause
+> problems if Q is defined in the users environment.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-click link below:
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHM3ZlU1WTJpYi1IbDdINTV3WU84Ync6MQ
+Applied to kbuild.git#kbuild, thanks.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Michal
