@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2KTUpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:45:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43768 "EHLO mail.zytor.com"
+	id S1753059Ab2KTUsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:48:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144Ab2KTUpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:45:20 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQVrjRvQYNDdJFcyDFrr88B6v-86Zdq5a15kdHN_byDG3g@mail.gmail.com>
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org> <1353222571-31544-4-git-send-email-yinghai@kernel.org> <50AAB5E8.5070807@zytor.com> <CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com> <50AABD15.1050809@zytor.com> <CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com> <41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com> <CAE9FiQVAxkS6AH6zDJAjuyiJtR2xztRG+raCk4L6yvKuskzBkg@mail.gmail.com> <CAE9FiQVrjRvQYNDdJFcyDFrr88B6v-86Zdq5a15kdHN_byDG3g@mail.gmail.com>
+	id S1752464Ab2KTUsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 15:48:08 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
+        tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 9/9] blkdev: Fix up AIO+DIO+O_SYNC to do the sync part correctly
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+	<20121120075115.25270.62451.stgit@blackbox.djwong.org>
+	<20121120101559.GC1408@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 20 Nov 2012 15:47:54 -0500
+In-Reply-To: <20121120101559.GC1408@quack.suse.cz> (Jan Kara's message of
+	"Tue, 20 Nov 2012 11:15:59 +0100")
+Message-ID: <x49obishuh1.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 20 Nov 2012 12:44:47 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Message-ID: <23b6f8fe-37cd-4cbb-9c90-511dab4e5b5b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't see any point in three flags here.  Let's stick to one flag; then it fits in the existing boot_flags field.
+Jan Kara <jack@suse.cz> writes:
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon 19-11-12 23:51:15, Darrick J. Wong wrote:
+>> When performing O_SYNC+AIO+DIO writes to block devices, use the DIO_SYNC_WRITES
+>> flag so that flushes are issued /after/ the write completes, not before.
+>> 
+>> Note, however, that for block devices, the DIO setup code ensures that a flush
+>> wq is attached to the superblock of the bdevfs filesystem, not the filesystem
+>> that the device node happens to reside in.  This means that unlike regular
+>> files, iocb->ki_filp->f_mapping->host->i_sb != inode->i_sb.  Therefore, adjust
+>> Jeff's earlier patch to keep the pointer use consistent and avoid a NULL deref.
+>> 
+>> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+>> ---
+>>  fs/block_dev.c |    5 +++--
+>>  fs/direct-io.c |    3 ++-
+>>  2 files changed, 5 insertions(+), 3 deletions(-)
+>> 
+>> 
+>> diff --git a/fs/block_dev.c b/fs/block_dev.c
+>> index 1a1e5e3..05ff33a 100644
+>> --- a/fs/block_dev.c
+>> +++ b/fs/block_dev.c
+>> @@ -235,7 +235,8 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+>>  	struct inode *inode = file->f_mapping->host;
+>>  
+>>  	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov, offset,
+>> -				    nr_segs, blkdev_get_blocks, NULL, NULL, 0);
+>> +				    nr_segs, blkdev_get_blocks, NULL, NULL,
+>> +				    DIO_SYNC_WRITES);
+>>  }
+>>  
+>>  int __sync_blockdev(struct block_device *bdev, int wait)
+>> @@ -1631,7 +1632,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>>  	percpu_down_read(&bdev->bd_block_size_semaphore);
+>>  
+>>  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+>> -	if (ret > 0 || ret == -EIOCBQUEUED) {
+>> +	if (ret > 0) {
+>>  		ssize_t err;
+>>  
+>>  		err = generic_write_sync(file, pos, ret);
+>> diff --git a/fs/direct-io.c b/fs/direct-io.c
+>> index b7391d4..c626c43 100644
+>> --- a/fs/direct-io.c
+>> +++ b/fs/direct-io.c
+>> @@ -258,7 +258,8 @@ void generic_dio_end_io(struct kiocb *iocb, loff_t offset, ssize_t bytes,
+>>  		work->ret = ret;
+>>  		work->offset = offset;
+>>  		work->len = bytes;
+>> -		queue_work(inode->i_sb->s_dio_flush_wq, &work->work);
+>> +		queue_work(iocb->ki_filp->f_mapping->host->i_sb->s_dio_flush_wq,
+>> +			   &work->work);
+>   This should be folded into the original patch introducing the
+> s_dio_flush_wq. And please add a comment before this line saying that block
+> devices need a dereference exactly like this... Otherwise the patch looks
+> good so you can add:
+>   Reviewed-by: Jan Kara <jack@suse.cz>
 
->On Mon, Nov 19, 2012 at 4:39 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Mon, Nov 19, 2012 at 3:55 PM, H. Peter Anvin <hpa@zytor.com>
->wrote:
->>> We probably should add a flag for those, but that is more of a
->boot_flag...
->>
->> kernel_cap_bits:
->> RAMDISK_ABOVE_4G  = (1<<0)
->> KERNEL_ABOVE_4G =(1<<2)
->> CMD_LINE_ABOVE 4G = (1<<1)
->>                 .long   (RAMDISK_ABOVE_4G | CMD_LINE_ABOVE_4G |
->KERNEL_ABOVE_4G)
->
->more complete version:
->
->kernel_cap_bits:
->RAMDISK_ABOVE_4G  = (1<<0)
->KERNEL_ABOVE_4G =(1<<1)
->BOOT_PARAMS_ABOVE_4G=(1<<2)
->CMD_LINE_ABOVE 4G = (1<<3)
->                .long   (RAMDISK_ABOVE_4G | BOOT_PARAMS_ABOVE_4G |
->CMD_LINE_ABOVE_4G | KERNEL_ABOVE_4G)
+When you say, "This," do you mean that one change, or the whole patch?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Cheers,
+Jeff
