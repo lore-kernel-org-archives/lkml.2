@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2KTAjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:39:40 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49926 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab2KTAjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:39:39 -0500
+	id S1753345Ab2KTAlw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:41:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33066 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753049Ab2KTAlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 19:41:51 -0500
+Message-ID: <50AAD1AC.7090209@redhat.com>
+Date: Mon, 19 Nov 2012 19:41:16 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com>
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
-	<1353222571-31544-4-git-send-email-yinghai@kernel.org>
-	<50AAB5E8.5070807@zytor.com>
-	<CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
-	<50AABD15.1050809@zytor.com>
-	<CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com>
-	<41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com>
-Date: Mon, 19 Nov 2012 16:39:37 -0800
-X-Google-Sender-Auth: XeIfC7cUDqMtHNqf1Zsx-wYUs8M
-Message-ID: <CAE9FiQVAxkS6AH6zDJAjuyiJtR2xztRG+raCk4L6yvKuskzBkg@mail.gmail.com>
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com> <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com> <20121119230034.GO8218@suse.de>
+In-Reply-To: <20121119230034.GO8218@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 3:55 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> We probably should add a flag for those, but that is more of a boot_flag...
+On 11/19/2012 06:00 PM, Mel Gorman wrote:
+> On Mon, Nov 19, 2012 at 11:36:04PM +0100, Ingo Molnar wrote:
+>>
+>> * Mel Gorman <mgorman@suse.de> wrote:
+>>
+>>> Ok.
+>>>
+>>> In response to one of your later questions, I found that I had
+>>> in fact disabled THP without properly reporting it. [...]
+>>
+>> Hugepages is a must for most forms of NUMA/HPC.
+>
+> Requiring huge pages to avoid a regression is a mistake.
 
-kernel_cap_bits:
-RAMDISK_ABOVE_4G  = (1<<0)
-KERNEL_ABOVE_4G =(1<<2)
-CMD_LINE_ABOVE 4G = (1<<1)
-                .long   (RAMDISK_ABOVE_4G | CMD_LINE_ABOVE_4G | KERNEL_ABOVE_4G)
+Not all architectures support THP.  Not all workloads will end up
+using THP effectively.
+
+Mel, would you have numa/core profiles from !THP runs, so we can
+find out the cause of the regression?
+
+-- 
+All rights reversed
