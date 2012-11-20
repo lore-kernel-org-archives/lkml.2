@@ -1,107 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab2KTJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:27:36 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51113 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab2KTJ1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:27:33 -0500
-Date: Tue, 20 Nov 2012 01:24:19 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        anish singh <anish198519851985@gmail.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
-        "lockwood@android.com" <lockwood@android.com>,
-        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Re: [PATCH] extcon : callback function to read cable property
-Message-ID: <20121120092419.GA27280@lizard>
-References: <509B0A0F.5000406@samsung.com>
- <20ADAB092842284E95860F279283C5644017F6@BGSMSX101.gar.corp.intel.com>
- <1352521082.1526.230.camel@anish-Inspiron-N5050>
- <20ADAB092842284E95860F279283C56442034B@BGSMSX101.gar.corp.intel.com>
- <CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
- <20ADAB092842284E95860F279283C56444A584@BGSMSX101.gar.corp.intel.com>
- <50AAEB15.6000703@samsung.com>
- <20ADAB092842284E95860F279283C56444A6A1@BGSMSX101.gar.corp.intel.com>
- <50AB1ECA.5020005@samsung.com>
- <20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
+	id S1752477Ab2KTJ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:29:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:42452 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab2KTJ3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:29:19 -0500
+X-IronPort-AV: E=Sophos;i="4.83,285,1352044800"; 
+   d="scan'208";a="6238545"
+Message-ID: <50AB4EE6.1080609@cn.fujitsu.com>
+Date: Tue, 20 Nov 2012 17:35:34 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 11/12] memory-hotplug: remove sysfs file of node
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com> <50AA0537.1000501@jp.fujitsu.com>
+In-Reply-To: <50AA0537.1000501@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/20 17:28:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/20 17:29:02,
+	Serialize complete at 2012/11/20 17:29:02
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 09:14:41AM +0000, Tc, Jenny wrote:
-[...]
-> > For example,
-> > Firstly, the power_supply charging framework check state of charger cable
-> > whether attached or detached cable. Second, when power_supply charging
-> > framework receive the changed state of host system from 'Host system
-> > notifier', change charging current of charger cable.
+At 11/19/2012 06:08 PM, Yasuaki Ishimatsu Wrote:
+> Hi Wen,
 > 
-> Not just SUSPEND, but we need to handle RESUME , UPDATE etc.  Also this doesn’t help us to
-> define a standard interface for the charger cable state/properties. IMHO it's not right
-> to provide different interfaces for different cables. This doesn't help us to standardize
-> the charger cable interface.
+> This patch cannot be applied, if I apply latest acpi framework's patch-set:
 > 
-> This thread has been running for a quite long time. Unfortunately we couldn't make an
-> agreement on the final solution. I would like to recap the overall requirement and
-> would like to propose alternate solutions. The requirements is  to
-> "Provide a generic interface for charger cable states and charger cable properties"
+> https://lkml.org/lkml/2012/11/15/21
 > 
-> Even though extcon subsystem handles charger cable states, it's not enough to handle
-> all kind of charger cable states. It can handle just 2 states CONNECT/DISCONNECT.
-> But there are scenarios where we need to handle more than 2 states
-> (eg. USB SUSPEND/RESUME/UPDATE etc). Also extcon doesn't have any mechanism to
-> read cable properties in a generic way.  Extcon charger-cable consumer driver
-> implementations (eg charger-manager), defines charger cable properties statically (current in mA)
-> inside the consumer driver. This is not enough, since the charger cable properties may change dynamically
+> Because acpi_memory_disable_device() is gone by the patch-set.
+
+The patchset is not for pm tree, so I don't apply the patchset in pm tree
+before generating this patchset.
+
+Thanks
+Wen Congyang
+
 > 
-> In existing form extcon cannot support different charger cable states and their 
-> properties in a generic way. Also we couldn't find a final solution on how to modify the
-> extcon to support these requirements. From the whole discussion what I conclude is
->  * extcon is not designed to support cable properties
+> I updated the patch and attached it on the mail.
+> 
+> 2012/11/01 18:44, Wen Congyang wrote:
+>> This patch introduces a new function try_offline_node() to
+>> remove sysfs file of node when all memory sections of this
+>> node are removed. If some memory sections of this node are
+>> not removed, this function does nothing.
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>   drivers/acpi/acpi_memhotplug.c |  8 +++++-
+>>   include/linux/memory_hotplug.h |  2 +-
+>>   mm/memory_hotplug.c            | 58 ++++++++++++++++++++++++++++++++++++++++--
+>>   3 files changed, 64 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+>> index 24c807f..0780f99 100644
+>> --- a/drivers/acpi/acpi_memhotplug.c
+>> +++ b/drivers/acpi/acpi_memhotplug.c
+>> @@ -310,7 +310,9 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>   {
+>>   	int result;
+>>   	struct acpi_memory_info *info, *n;
+>> +	int node;
+>>   
+>> +	node = acpi_get_node(mem_device->device->handle);
+>>   
+>>   	/*
+>>   	 * Ask the VM to offline this memory range.
+>> @@ -318,7 +320,11 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>   	 */
+>>   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>>   		if (info->enabled) {
+>> -			result = remove_memory(info->start_addr, info->length);
+>> +			if (node < 0)
+>> +				node = memory_add_physaddr_to_nid(
+>> +					info->start_addr);
+>> +			result = remove_memory(node, info->start_addr,
+>> +				info->length);
+>>   			if (result)
+>>   				return result;
+>>   		}
+>> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+>> index d4c4402..7b4cfe6 100644
+>> --- a/include/linux/memory_hotplug.h
+>> +++ b/include/linux/memory_hotplug.h
+>> @@ -231,7 +231,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
+>>   extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+>>   extern int offline_memory_block(struct memory_block *mem);
+>>   extern bool is_memblock_offlined(struct memory_block *mem);
+>> -extern int remove_memory(u64 start, u64 size);
+>> +extern int remove_memory(int node, u64 start, u64 size);
+>>   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>>   								int nr_pages);
+>>   extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index 7bcced0..d965da3 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -29,6 +29,7 @@
+>>   #include <linux/suspend.h>
+>>   #include <linux/mm_inline.h>
+>>   #include <linux/firmware-map.h>
+>> +#include <linux/stop_machine.h>
+>>   
+>>   #include <asm/tlbflush.h>
+>>   
+>> @@ -1299,7 +1300,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+>>   	return ret;
+>>   }
+>>   
+>> -int __ref remove_memory(u64 start, u64 size)
+>> +static int check_cpu_on_node(void *data)
+>> +{
+>> +	struct pglist_data *pgdat = data;
+>> +	int cpu;
+>> +
+>> +	for_each_present_cpu(cpu) {
+>> +		if (cpu_to_node(cpu) == pgdat->node_id)
+>> +			/*
+>> +			 * the cpu on this node isn't removed, and we can't
+>> +			 * offline this node.
+>> +			 */
+>> +			return -EBUSY;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* offline the node if all memory sections of this node are removed */
+>> +static void try_offline_node(int nid)
+>> +{
+>> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+>> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+>> +	unsigned long pfn;
+>> +
+>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>> +		unsigned long section_nr = pfn_to_section_nr(pfn);
+>> +
+>> +		if (!present_section_nr(section_nr))
+>> +			continue;
+>> +
+>> +		if (pfn_to_nid(pfn) != nid)
+>> +			continue;
+>> +
+>> +		/*
+>> +		 * some memory sections of this node are not removed, and we
+>> +		 * can't offline node now.
+>> +		 */
+>> +		return;
+>> +	}
+>> +
+>> +	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
+>> +		return;
+>> +
+>> +	/*
+>> +	 * all memory/cpu of this node are removed, we can offline this
+>> +	 * node now.
+>> +	 */
+>> +	node_set_offline(nid);
+>> +	unregister_one_node(nid);
+>> +}
+>> +
+>> +int __ref remove_memory(int nid, u64 start, u64 size)
+>>   {
+>>   	unsigned long start_pfn, end_pfn;
+>>   	int ret = 0;
+>> @@ -1346,6 +1398,8 @@ repeat:
+>>   
+>>   	arch_remove_memory(start, size);
+>>   
+>> +	try_offline_node(nid);
+>> +
+>>   	unlock_memory_hotplug();
+>>   
+>>   	return 0;
+>> @@ -1355,7 +1409,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+>>   {
+>>   	return -EINVAL;
+>>   }
+>> -int remove_memory(u64 start, u64 size)
+>> +int remove_memory(int nid, u64 start, u64 size)
+>>   {
+>>   	return -EINVAL;
+>>   }
+>>
+> 
+> ---
+> This patch introduces a new function try_offline_node() to
+> remove sysfs file of node when all memory sections of this
+> node are removed. If some memory sections of this node are
+> not removed, this function does nothing.
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |    9 +++++-
+>  include/linux/memory_hotplug.h |    2 -
+>  mm/memory_hotplug.c            |   58 +++++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 65 insertions(+), 4 deletions(-)
+> 
+> Index: linux-3.7-rc6/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-3.7-rc6.orig/drivers/acpi/acpi_memhotplug.c	2012-11-19 16:16:55.161912688 +0900
+> +++ linux-3.7-rc6/drivers/acpi/acpi_memhotplug.c	2012-11-19 16:17:05.346912109 +0900
+> @@ -295,6 +295,9 @@ static int acpi_memory_remove_memory(str
+>  {
+>  	int result = 0;
+>  	struct acpi_memory_info *info, *n;
+> +	int node;
+> +
+> +	node = acpi_get_node(mem_device->device->handle);
+>  
+>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>  		if (info->failed)
+> @@ -308,7 +311,11 @@ static int acpi_memory_remove_memory(str
+>  			 */
+>  			return -EBUSY;
+>  
+> -		result = remove_memory(info->start_addr, info->length);
+> +		if (node < 0)
+> +			node = memory_add_physaddr_to_nid(
+> +				info->start_addr);
+> +		result = remove_memory(node, info->start_addr,
+> +			info->length);
+>  		if (result)
+>  			return result;
+>  
+> Index: linux-3.7-rc6/include/linux/memory_hotplug.h
+> ===================================================================
+> --- linux-3.7-rc6.orig/include/linux/memory_hotplug.h	2012-11-19 16:16:55.167912687 +0900
+> +++ linux-3.7-rc6/include/linux/memory_hotplug.h	2012-11-19 16:17:05.348912109 +0900
+> @@ -242,7 +242,7 @@ extern int arch_add_memory(int nid, u64 
+>  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+>  extern int offline_memory_block(struct memory_block *mem);
+>  extern bool is_memblock_offlined(struct memory_block *mem);
+> -extern int remove_memory(u64 start, u64 size);
+> +extern int remove_memory(int node, u64 start, u64 size);
+>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>  								int nr_pages);
+>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> Index: linux-3.7-rc6/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-3.7-rc6.orig/mm/memory_hotplug.c	2012-11-19 16:16:55.164912687 +0900
+> +++ linux-3.7-rc6/mm/memory_hotplug.c	2012-11-19 16:17:05.356912108 +0900
+> @@ -29,6 +29,7 @@
+>  #include <linux/suspend.h>
+>  #include <linux/mm_inline.h>
+>  #include <linux/firmware-map.h>
+> +#include <linux/stop_machine.h>
+>  
+>  #include <asm/tlbflush.h>
+>  
+> @@ -1652,7 +1653,58 @@ static int is_memblock_offlined_cb(struc
+>  	return ret;
+>  }
+>  
+> -int __ref remove_memory(u64 start, u64 size)
+> +static int check_cpu_on_node(void *data)
+> +{
+> +	struct pglist_data *pgdat = data;
+> +	int cpu;
+> +
+> +	for_each_present_cpu(cpu) {
+> +		if (cpu_to_node(cpu) == pgdat->node_id)
+> +			/*
+> +			 * the cpu on this node isn't removed, and we can't
+> +			 * offline this node.
+> +			 */
+> +			return -EBUSY;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* offline the node if all memory sections of this node are removed */
+> +static void try_offline_node(int nid)
+> +{
+> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+> +	unsigned long pfn;
+> +
+> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+> +		unsigned long section_nr = pfn_to_section_nr(pfn);
+> +
+> +		if (!present_section_nr(section_nr))
+> +			continue;
+> +
+> +		if (pfn_to_nid(pfn) != nid)
+> +			continue;
+> +
+> +		/*
+> +		 * some memory sections of this node are not removed, and we
+> +		 * can't offline node now.
+> +		 */
+> +		return;
+> +	}
+> +
+> +	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
+> +		return;
+> +
+> +	/*
+> +	 * all memory/cpu of this node are removed, we can offline this
+> +	 * node now.
+> +	 */
+> +	node_set_offline(nid);
+> +	unregister_one_node(nid);
+> +}
+> +
+> +int __ref remove_memory(int nid, u64 start, u64 size)
+>  {
+>  	unsigned long start_pfn, end_pfn;
+>  	int ret = 0;
+> @@ -1699,6 +1751,8 @@ repeat:
+>  
+>  	arch_remove_memory(start, size);
+>  
+> +	try_offline_node(nid);
+> +
+>  	unlock_memory_hotplug();
+>  
+>  	return 0;
+> @@ -1708,7 +1762,7 @@ int offline_pages(unsigned long start_pf
+>  {
+>  	return -EINVAL;
+>  }
+> -int remove_memory(u64 start, u64 size)
+> +int remove_memory(int nid, u64 start, u64 size)
+>  {
+>  	return -EINVAL;
+>  }
+> 
+> 
 
-The idea of using union seemed good to me, what happened to it?
-
-I mean, MyungJoo Ham wrote:
-
-| We may have:
-|        enum extcon_cable_type {
-|                EXTCON_CT_REGULATOR,
-|                EXTCON_CT_PSY,
-|                EXTCON_CT_CHARGER_CB,
-|                ...
-|        };
-| and have the following included at struct extcon_cable:
-|        union {
-|                struct regulator *reg;
-|                struct power_supply *psy;
-|                struct charger_cable *charger_cb;
-|                ...
-|        } cable data;
-|        enum extcon_cable_type cable_type;
-
-This sounds good to me...
-
->  * extcon is not designed to support any cable state other than CONNECT/DISCONNECT
-
-Dunno for this one. Can we get these additional states via "properties" as
-described above?
-
-Thanks,
-Anton.
