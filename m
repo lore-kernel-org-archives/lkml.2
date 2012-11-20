@@ -1,187 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2KTIrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:47:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22782 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2KTIrs (ORCPT
+	id S1752932Ab2KTIsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:48:09 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44146 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab2KTIsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:47:48 -0500
-Message-ID: <50AB447E.3010904@oracle.com>
-Date: Tue, 20 Nov 2012 16:51:10 +0800
-From: "zheng.li" <zheng.x.li@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Tue, 20 Nov 2012 03:48:03 -0500
+Date: Tue, 20 Nov 2012 00:47:58 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH 2/3] Input: spear-keyboard: Add clk_{un}prepare() support
+Message-ID: <20121120084758.GA29199@core.coreip.homeip.net>
+References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
+ <27d9eea3815593df228c85958096bc14d7985e7e.1352381962.git.viresh.kumar@linaro.org>
+ <CAKohpomky4s0OBYtQhDTZc9OeSo6w_mN9uAqUXpukqR1icvKPA@mail.gmail.com>
+ <CAKohpoknJqMzro4gbTH+Rh=T2Bc9ZOVmDbYZsqC4Fjq2Sqsszg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: rlb mode of bond should not alter ARP originating
- via bridge
-References: <1352972861-17577-1-git-send-email-zheng.x.li@oracle.com> <30871.1353373354@death.nxdomain>
-In-Reply-To: <30871.1353373354@death.nxdomain>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpoknJqMzro4gbTH+Rh=T2Bc9ZOVmDbYZsqC4Fjq2Sqsszg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After i applied my prior patch to the latest kernel and tested ,i change
-the patch as this. The prior patch is running ok on 2.6.32,but after
-2.6.32 it runs no effect ,it still cause domu(which arp through bridge
-via bonding) network intermittently unreachable. I found the reason is
-that the alb_monitor of bonding(after 2.6.32) send unicast arp reply
-which using rlb_client_info's assigned slave's MAC,so cause peer host
-update arp cache of domu with wrong MAC to cause domu unreachable again.
-The rlb_client_info is created when rlb_arp_xmit sending ARP request.
-rlb_client_info contain local IP with assigned
-slave,it will cause all local ip's ARP use slave's mac by
-rlb_update_client function.
+On Tue, Nov 20, 2012 at 01:26:29PM +0530, Viresh Kumar wrote:
+> On 12 November 2012 11:27, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > On 8 November 2012 19:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> >> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> >>
+> >> clk_{un}prepare is mandatory for platforms using common clock framework. Because
+> >> for SPEAr we don't do anything in clk_{un}prepare() calls, just call them ones
+> >> in probe/remove.
+> >>
+> >> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >
+> > Missed applying this one ?
+> 
+> This one you missed :)
 
-Bug reproduced rate: 100%.
+No, not really, it just does not work well with devm_* patches that got
+applied: on removal you unprepare clock as the very first operation and
+then devm_* does the rest which is wrong order.
 
-So i change the patch also affect the ARP request to don't through rlb
-to no create rlb_client_info. Applied the new patch on the latest
-version,it runs ok.
+I am looking at adding dem_* for clocks.
 
-So,the patch should affect ARP request and reply to work well.
+Thanks.
 
-bond_alb_monitor -> rlb_update_rx_clients --> rlb_update_client
-
-rlb_update_client(struct rlb_client_info *client_info)
-{
-   for (i = 0; i < RLB_ARP_BURST_SIZE; i++) {
-		struct sk_buff *skb;
-
-		skb = arp_create(ARPOP_REPLY, ETH_P_ARP,
-                                //peer host's IP
-				 client_info->ip_dst,
-				 client_info->slave->dev,
-                                //Domu 's IP
-				 client_info->ip_src,
-                          //peer host's MAC which be set in rlb_arp_recv
-				 client_info->mac_dst,
-//use slave's MAC to send unicast arp reply to peer ,so cause peer host
-//update MAC of domu with wrong mac address.
-				 client_info->slave->dev->dev_addr,
-				 client_info->mac_dst);
-.......
-}
-
-Thanks
-Zheng Li
-
-
-> Zheng Li <zheng.x.li@oracle.com> wrote:
-> 
->> ARP traffic passing through a bridge and out via the bond (when the bond is a 
->> port of the bridge) should not have its source MAC address adjusted by the 
->> receive load balance code in rlb_arp_xmit.
-> 
-> 	This patch differs from prior versions in that it does more than
-> what's described here; it also disables the receive load balance logic
-> for any ARPs (request or reply) that are passing through the bond (not
-> of local origin).  For ARP replies, that's mostly harmless, as the ARPs
-> passing through will simply always be sent from one particular slave
-> (the active slave) instead of being balanced.
-> 
-> 	For ARP requests, though, they are already always sent via the
-> active slave, but there is also some logic in rlb_arp_xmit to limit the
-> side effects from the broadcast ARP, in particular this part:
-> 
-> 		/* The ARP reply packets must be delayed so that
-> 		 * they can cancel out the influence of the ARP request.
-> 		 */
-> 		bond->alb_info.rlb_update_delay_counter = RLB_UPDATE_DELAY;
-> 
-> 		/* arp requests are broadcast and are sent on the primary
-> 		 * the arp request will collapse all clients on the subnet to
-> 		 * the primary slave. We must register these clients to be
-> 		 * updated with their assigned mac.
-> 		 */
-> 		rlb_req_update_subnet_clients(bond, arp->ip_src);
-> 
-> 	that arranges for clients to be given ARP updates for their
-> slave assignments (which may change to the active slave, due to the ARP
-> broadcast being sent via the active slave).
-> 
-> 	I think the ARP reply side of this is fine (and is what is
-> described in teh changelog), but the ARP request behavior change is new
-> with this version.
-> 
-> 	Since prior versions of the patch didn't cause this code to be
-> skipped, is this change intentional?
-> 
-> 	Did you check to see if the above logic is necessary for ARP
-> requests passing through via a bridge to prevent peers from "stacking"
-> (in terms of load balance assignment) on the active slave due to bridged
-> ARP traffic?
-> 
-> 	-J
-> 
->> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->> Cc: Jay Vosburgh <fubar@us.ibm.com>
->> Cc: Andy Gospodarek <andy@greyhouse.net>
->> Cc: "David S. Miller" <davem@davemloft.net>
->>
->> ---
->> drivers/net/bonding/bond_alb.c |    6 ++++++
->> drivers/net/bonding/bonding.h  |   13 +++++++++++++
->> 2 files changed, 19 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->> index e15cc11..75f6f0d 100644
->> --- a/drivers/net/bonding/bond_alb.c
->> +++ b/drivers/net/bonding/bond_alb.c
->> @@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
->> 	struct arp_pkt *arp = arp_pkt(skb);
->> 	struct slave *tx_slave = NULL;
->>
->> +	/* Only modify ARP's MAC if it originates locally;
->> +	 * don't change ARPs arriving via a bridge.
->> +	 */
->> +	if (!bond_slave_has_mac(bond, arp->mac_src))
->> +		return NULL;
->> +
->> 	if (arp->op_code == htons(ARPOP_REPLY)) {
->> 		/* the arp must be sent on the selected
->> 		* rx channel
->> diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
->> index f8af2fc..6dded56 100644
->> --- a/drivers/net/bonding/bonding.h
->> +++ b/drivers/net/bonding/bonding.h
->> @@ -22,6 +22,7 @@
->> #include <linux/in6.h>
->> #include <linux/netpoll.h>
->> #include <linux/inetdevice.h>
->> +#include <linux/etherdevice.h>
->> #include "bond_3ad.h"
->> #include "bond_alb.h"
->>
->> @@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
->> }
->> #endif
->>
->> +static inline struct slave *bond_slave_has_mac(struct bonding *bond,
->> +					       const u8 *mac)
->> +{
->> +	int i = 0;
->> +	struct slave *tmp;
->> +
->> +	bond_for_each_slave(bond, tmp, i)
->> +		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
->> +			return tmp;
->> +
->> +	return NULL;
->> +}
->>
->> /* exported from bond_main.c */
->> extern int bond_net_id;
->> -- 
->> 1.7.6.5
-> 
-> ---
-> 	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-> 
-
-
+-- 
+Dmitry
