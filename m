@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab2KTPJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 10:09:26 -0500
-Received: from hotel311.server4you.de ([85.25.146.15]:51636 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2KTPJZ (ORCPT
+	id S1753072Ab2KTPKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 10:10:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:10086 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312Ab2KTPKn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 10:09:25 -0500
-Message-ID: <50AB9D22.5030000@monom.org>
-Date: Tue, 20 Nov 2012 16:09:22 +0100
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: serge.hallyn@canonical.com, ebiederm@xmission.com, nhorman@tuxdriver.com,
-        tgraf@suug.ch, davem@davemloft.net, lizefan@huawei.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/7] netprio_cgroup: reimplement priomap expansion
-References: <1353400211-5182-1-git-send-email-tj@kernel.org> <1353400211-5182-5-git-send-email-tj@kernel.org> <50AB435E.8060901@monom.org> <20121120143832.GO15971@htj.dyndns.org>
-In-Reply-To: <20121120143832.GO15971@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 10:10:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,286,1352102400"; 
+   d="scan'208";a="170579798"
+Message-ID: <1353424232.20110.18.camel@smile>
+Subject: Re: [PATCH 1/2] dw_dmac: store direction in the custom channel
+ structure
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 20 Nov 2012 17:10:32 +0200
+In-Reply-To: <CAKohpom4Dd=ubVL8shGSOvCCUBYqRRPOViS6V0_7SrOzADb95A@mail.gmail.com>
+References: <1353418726-7879-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAKohpom4Dd=ubVL8shGSOvCCUBYqRRPOViS6V0_7SrOzADb95A@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.11.2012 15:38, Tejun Heo wrote:
-> Hello, Daniel.
->
-> On Tue, Nov 20, 2012 at 09:46:22AM +0100, Daniel Wagner wrote:
->> struct netprio_map {
->> 	struct rcu_head rcu;
->> 	struct netprio_aux *aux;	/* auxiliary config array */
->> 	u32 priomap_len;
->> 	u32 priomap[];
->> };
->>
->> Is there a specific reason why aux and priomap is handled
->> differently? Couldn't you just use same approach for both variables,
->> e.g. re/allocating only them here and leave the allocation struct
->> netprio_map in cgrp_css_alloc()?
->
-> ->aux is no longer added, so the consistency issue doesn't exist
-> anymore.
+On Tue, 2012-11-20 at 19:38 +0530, Viresh Kumar wrote: 
+> On 20 November 2012 19:08, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > Currently the direction value is come from the generic slave configuration
+> 
+> s/is come/comes
+> 
+> > structure and explicitly as a preparation function parameter. The first one is
+> > kinda obsoleted. Thus, we have to store the value passed to the preparation
+> > function somewhere in our structures to be able to use it later. The best
+> > candidate to provide the storage is a custom channel structure. Until now we
+> > still keep and check the direction field of the slave config structure as well.
+> >
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > ---
+> >  drivers/dma/dw_dmac.c      |   10 ++++++++--
+> >  drivers/dma/dw_dmac_regs.h |    2 ++
+> >  2 files changed, 10 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> > index 5e2c4dc..58c6d3c 100644
+> > --- a/drivers/dma/dw_dmac.c
+> > +++ b/drivers/dma/dw_dmac.c
+> > @@ -178,9 +178,9 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+> >                 cfghi = dws->cfg_hi;
+> >                 cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+> >         } else {
+> > -               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
+> > +               if (dwc->direction == DMA_MEM_TO_DEV)
+> >                         cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
+> > -               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
+> > +               else if (dwc->direction == DMA_DEV_TO_MEM)
+> >                         cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+> >         }
+> 
+> I have a doubt here. This routine is called both for memcpy and slave transfers.
+> Earlier if (dws), code was used to check slave/non-slave transfer but with your
+> earlier patch, for if (!dws) case too, there can be slave transfers
+> based on direction.
+> 
+> Consider a situation. A channel is used for slave transfers and have
+> direction set
+> to DMA_DEV_TO_MEM. Now, channel is freed and used for memcpy. Now the
+> direction value is retained as we haven't updated it. So, is this a
+> potential bug?
 
-Right, I got confused looking at v1 and v2.
+Yeah, good point. I think we have to set direction in all possible entry
+points (prep functions only?). It means at least we need to update
+memcpy prep as well.
 
-> The reason why they were handled differently before (or
-> rather why I didn't change priomap[] to be allocated separately) was
-> that pointer chasing tends to be more expensive than offsetting.  I
-> don't know how much effect it would have in this case but things
-> sitting in packet in/out paths can be very hot so didn't wanna disturb
-> it.
+I'll update patch tomorrow.
 
-I see.
-
->> Also the algorithm to figure out the size of the array might be a
->> bit too aggressive in my opinion. So you always start at
->> PRIOMAP_MIN_SIZE and then try to double the size until target_idx
->> fits. Wouldn't it make sense to start to look for the new size
->> beginning at old->priomap_len and then do the power-of-two increase?
->
-> The only downside of always starting from PRIOMAP_MIN_SIZE is
-> iterating several more times in the sizing loop which isn't really
-> anything to worry about.  The loop is structured that way because I
-> wanted to keep the size of the whole thing power-of-two.  Due to the
-> fields before priomap[], if we size priomap_len power-of-two, we'll
-> always end up with something slightly over power-of-two, which is
-> usually the worst size to allocate.
-
-Thanks for the explanation. I was pondering if the new size in power of 
-two could be a bit too excessive and the allocation step could be 
-linear, e.g. stick at 4096. target_id will increase linear, therefore 
-linear increase might also be enough, no?
-
-cheers,
-daniel
-
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
