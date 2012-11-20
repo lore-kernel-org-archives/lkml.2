@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2KTOBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 09:01:00 -0500
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:46422
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263Ab2KTOA7 (ORCPT
+	id S1752421Ab2KTOEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 09:04:50 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:38117 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751816Ab2KTOEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 09:00:59 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzd799hzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <scottwood@freescale.com>, <timur@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required by fsl PAMU driver.
-Date: Tue, 20 Nov 2012 19:24:56 +0530
-Message-ID: <1353419697-31269-4-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
-References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
+	Tue, 20 Nov 2012 09:04:49 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3/7] pinctrl: make range registration defer properly
+Date: Tue, 20 Nov 2012 15:04:31 +0100
+Message-ID: <1353420271-18029-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added the following domain attributes required by FSL PAMU driver:
-1. Subwindows field added to the iommu domain geometry attribute.
-2. Added new iommu stash attribute, which allows setting of the
-   LIODN specific stash id parameter through IOMMU API.
-3. Added an attribute for enabling/disabling DMA to a particular
-   memory window.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+This makes the pinctrl_find_and_add_gpio_range() return
+-EPROBE_DEFER if the range hosting pin controller cannot be
+located. We may assume that the common case for why adding a
+range fails is that the targe pin controller device has not
+probed yet.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-changes in v5:
-- Updated description of the subwindows field.
-changes in v4:
-- Updated comment explaining subwindows(as mentioned by Scott).
-change in v3:
--renamed the stash attribute targets
- include/linux/iommu.h |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ drivers/pinctrl/core.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index f3b99e1..7ca1cda 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -44,6 +44,41 @@ struct iommu_domain_geometry {
- 	dma_addr_t aperture_start; /* First address that can be mapped    */
- 	dma_addr_t aperture_end;   /* Last address that can be mapped     */
- 	bool force_aperture;       /* DMA only allowed in mappable range? */
-+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 15f5ac8..33af811 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -350,8 +350,13 @@ struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
+ {
+ 	struct pinctrl_dev *pctldev = get_pinctrl_dev_from_devname(devname);
+ 
 +	/*
-+	 * A geometry mapping can be created in one of the following ways
-+	 * for an IOMMU:
-+	 * 1. A single contiguous window
-+	 * 2. Through arbritary paging throughout the aperture.
-+	 * 3. Using multiple subwindows
-+	 *
-+	 * In absence of arbritary paging, subwindows allow for supporting
-+	 * physically discontiguous mappings.
-+	 *
-+	 * This attribute indicates number of DMA subwindows supported by
-+	 * the geometry. If there is a single window that maps the entire
-+	 * geometry, attribute must be set to "1". A value of "0" implies
-+	 * that this mechanism is not used at all(normal paging is used).
-+	 * Value other than* "0" or "1" indicates the actual number of
-+	 * subwindows.
++	 * If we can't find this device, let's assume that is because
++	 * it has not probed yet, so the driver trying to register this
++	 * range need to defer probing.
 +	 */
-+	u32 subwindows;
-+};
-+
-+/* cache stash targets */
-+#define IOMMU_ATTR_CACHE_L1 1
-+#define IOMMU_ATTR_CACHE_L2 2
-+#define IOMMU_ATTR_CACHE_L3 3
-+
-+/* This attribute corresponds to IOMMUs capable of generating
-+ * a stash transaction. A stash transaction is typically a
-+ * hardware initiated prefetch of data from memory to cache.
-+ * This attribute allows configuring stashig specific parameters
-+ * in the IOMMU hardware.
-+ */
-+struct iommu_stash_attribute {
-+	u32 	cpu;	/* cpu number */
-+	u32 	cache;	/* cache to stash to: L1,L2,L3 */
- };
+ 	if (!pctldev)
+-		return NULL;
++		return ERR_PTR(-EPROBE_DEFER);
  
- struct iommu_domain {
-@@ -60,6 +95,14 @@ struct iommu_domain {
- enum iommu_attr {
- 	DOMAIN_ATTR_MAX,
- 	DOMAIN_ATTR_GEOMETRY,
-+	/* Set the IOMMU hardware stashing
-+	 * parameters.
-+	 */
-+	DOMAIN_ATTR_STASH,
-+	/* Explicity enable/disable DMA for a
-+         * particular memory window.
-+         */
-+	DOMAIN_ATTR_ENABLE,
- };
- 
- #ifdef CONFIG_IOMMU_API
+ 	pinctrl_add_gpio_range(pctldev, range);
+ 	return pctldev;
 -- 
-1.7.4.1
-
+1.7.11.3
 
