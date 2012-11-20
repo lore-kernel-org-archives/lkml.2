@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab2KTBGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 20:06:18 -0500
+	id S1754016Ab2KTBGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 20:06:23 -0500
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:54992 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab2KTBGO (ORCPT
+	with ESMTP id S1753989Ab2KTBGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 20:06:14 -0500
+	Mon, 19 Nov 2012 20:06:20 -0500
 From: Omar Ramirez Luna <omar.luna@linaro.org>
 To: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>
 Cc: Russell King <linux@arm.linux.org.uk>, Ohad Ben-Cohen <ohad@wizery.com>,
@@ -16,9 +16,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Ohad Ben-Cohen <ohad@wizery.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v5 3/5] iommu/omap: migrate to hwmod framework
-Date: Mon, 19 Nov 2012 19:05:50 -0600
-Message-Id: <1353373552-16039-4-git-send-email-omar.luna@linaro.org>
+Subject: [PATCH v5 5/5] ARM: OMAP4: hwmod data: ipu and dsp to use parent clocks instead of leaf clocks
+Date: Mon, 19 Nov 2012 19:05:52 -0600
+Message-Id: <1353373552-16039-6-git-send-email-omar.luna@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1353373552-16039-1-git-send-email-omar.luna@linaro.org>
 References: <1353373552-16039-1-git-send-email-omar.luna@linaro.org>
@@ -26,366 +26,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use hwmod data and device attributes to build and register an
-omap device for iommu driver.
+This prevents hwmod _enable_clocks...omap2_dflt_clk_enable path
+from enabling modulemode inside CLKCTRL using its clk->enable_reg
+field. Instead is left to _omap4_enable_module though soc_ops, as
+the one in charge of this setting.
 
- - Update the naming convention in isp module.
- - Remove unneeded check for number of resources, as this is now
-   handled by omap_device and prevents driver from loading.
- - Now unused, remove platform device and resource data, handling
-   of sysconfig register for softreset purposes, use default
-   latency structure.
- - Use hwmod API for reset handling.
+According to comments received[1] for related patches the idea is
+to get rid of leaf clocks in future. So remove these two while at it.
+
+[1] http://lkml.org/lkml/2012/8/20/226
 
 Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
 ---
- arch/arm/mach-omap2/devices.c            |    2 +-
- arch/arm/mach-omap2/omap-iommu.c         |  168 +++++++-----------------------
- drivers/iommu/omap-iommu.c               |   23 +++-
- drivers/iommu/omap-iommu2.c              |   19 ----
- include/linux/platform_data/iommu-omap.h |    8 ++-
- 5 files changed, 64 insertions(+), 156 deletions(-)
+ arch/arm/mach-omap2/clock44xx_data.c       |   22 ----------------------
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    4 ++--
+ 2 files changed, 2 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-index 1002ff8..28d73c0 100644
---- a/arch/arm/mach-omap2/devices.c
-+++ b/arch/arm/mach-omap2/devices.c
-@@ -213,7 +213,7 @@ static struct platform_device omap3isp_device = {
+diff --git a/arch/arm/mach-omap2/clock44xx_data.c b/arch/arm/mach-omap2/clock44xx_data.c
+index 6efc30c..067c486 100644
+--- a/arch/arm/mach-omap2/clock44xx_data.c
++++ b/arch/arm/mach-omap2/clock44xx_data.c
+@@ -1316,16 +1316,6 @@ static struct clk dmic_fck = {
+ 	.clkdm_name	= "abe_clkdm",
  };
  
- static struct omap_iommu_arch_data omap3_isp_iommu = {
--	.name = "isp",
-+	.name = "mmu_isp",
+-static struct clk dsp_fck = {
+-	.name		= "dsp_fck",
+-	.ops		= &clkops_omap2_dflt,
+-	.enable_reg	= OMAP4430_CM_TESLA_TESLA_CLKCTRL,
+-	.enable_bit	= OMAP4430_MODULEMODE_HWCTRL,
+-	.clkdm_name	= "tesla_clkdm",
+-	.parent		= &dpll_iva_m4x2_ck,
+-	.recalc		= &followparent_recalc,
+-};
+-
+ static struct clk dss_sys_clk = {
+ 	.name		= "dss_sys_clk",
+ 	.ops		= &clkops_omap2_dflt,
+@@ -1696,16 +1686,6 @@ static struct clk i2c4_fck = {
+ 	.recalc		= &followparent_recalc,
  };
  
- int omap3_init_camera(struct isp_platform_data *pdata)
-diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
-index a6a4ff8..02726a6 100644
---- a/arch/arm/mach-omap2/omap-iommu.c
-+++ b/arch/arm/mach-omap2/omap-iommu.c
-@@ -12,153 +12,61 @@
- 
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
- 
- #include <linux/platform_data/iommu-omap.h>
-+#include <plat/omap_hwmod.h>
-+#include <plat/omap_device.h>
- 
--#include "soc.h"
--#include "common.h"
--
--struct iommu_device {
--	resource_size_t base;
--	int irq;
--	struct iommu_platform_data pdata;
--	struct resource res[2];
+-static struct clk ipu_fck = {
+-	.name		= "ipu_fck",
+-	.ops		= &clkops_omap2_dflt,
+-	.enable_reg	= OMAP4430_CM_DUCATI_DUCATI_CLKCTRL,
+-	.enable_bit	= OMAP4430_MODULEMODE_HWCTRL,
+-	.clkdm_name	= "ducati_clkdm",
+-	.parent		= &ducati_clk_mux_ck,
+-	.recalc		= &followparent_recalc,
 -};
--static struct iommu_device *devices;
--static int num_iommu_devices;
 -
--#ifdef CONFIG_ARCH_OMAP3
--static struct iommu_device omap3_devices[] = {
--	{
--		.base = 0x480bd400,
--		.irq = 24 + OMAP_INTC_START,
--		.pdata = {
--			.name = "isp",
--			.nr_tlb_entries = 8,
--			.clk_name = "cam_ick",
--			.da_start = 0x0,
--			.da_end = 0xFFFFF000,
--		},
--	},
--#if defined(CONFIG_OMAP_IOMMU_IVA2)
--	{
--		.base = 0x5d000000,
--		.irq = 28 + OMAP_INTC_START,
--		.pdata = {
--			.name = "iva2",
--			.nr_tlb_entries = 32,
--			.clk_name = "iva2_ck",
--			.da_start = 0x11000000,
--			.da_end = 0xFFFFF000,
--		},
--	},
--#endif
--};
--#define NR_OMAP3_IOMMU_DEVICES ARRAY_SIZE(omap3_devices)
--static struct platform_device *omap3_iommu_pdev[NR_OMAP3_IOMMU_DEVICES];
--#else
--#define omap3_devices		NULL
--#define NR_OMAP3_IOMMU_DEVICES	0
--#define omap3_iommu_pdev	NULL
--#endif
--
--#ifdef CONFIG_ARCH_OMAP4
--static struct iommu_device omap4_devices[] = {
--	{
--		.base = OMAP4_MMU1_BASE,
--		.irq = 100 + OMAP44XX_IRQ_GIC_START,
--		.pdata = {
--			.name = "ducati",
--			.nr_tlb_entries = 32,
--			.clk_name = "ipu_fck",
--			.da_start = 0x0,
--			.da_end = 0xFFFFF000,
--		},
--	},
--	{
--		.base = OMAP4_MMU2_BASE,
--		.irq = 28 + OMAP44XX_IRQ_GIC_START,
--		.pdata = {
--			.name = "tesla",
--			.nr_tlb_entries = 32,
--			.clk_name = "dsp_fck",
--			.da_start = 0x0,
--			.da_end = 0xFFFFF000,
--		},
--	},
--};
--#define NR_OMAP4_IOMMU_DEVICES ARRAY_SIZE(omap4_devices)
--static struct platform_device *omap4_iommu_pdev[NR_OMAP4_IOMMU_DEVICES];
--#else
--#define omap4_devices		NULL
--#define NR_OMAP4_IOMMU_DEVICES	0
--#define omap4_iommu_pdev	NULL
--#endif
--
--static struct platform_device **omap_iommu_pdev;
--
--static int __init omap_iommu_init(void)
-+static int __init omap_iommu_dev_init(struct omap_hwmod *oh, void *unused)
- {
--	int i, err;
--	struct resource res[] = {
--		{ .flags = IORESOURCE_MEM },
--		{ .flags = IORESOURCE_IRQ },
--	};
-+	struct platform_device *pdev;
-+	struct iommu_platform_data *pdata;
-+	struct omap_mmu_dev_attr *a = (struct omap_mmu_dev_attr *)oh->dev_attr;
-+	static int i;
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	pdata->name = oh->name;
-+	pdata->clk_name = oh->main_clk;
-+	pdata->nr_tlb_entries = a->nr_tlb_entries;
-+	pdata->da_start = a->da_start;
-+	pdata->da_end = a->da_end;
-+
-+	if (oh->rst_lines_cnt == 1) {
-+		pdata->reset_name = oh->rst_lines->name;
-+		pdata->assert_reset = omap_device_assert_hardreset;
-+		pdata->deassert_reset = omap_device_deassert_hardreset;
-+	}
- 
--	if (cpu_is_omap34xx()) {
--		devices = omap3_devices;
--		omap_iommu_pdev = omap3_iommu_pdev;
--		num_iommu_devices = NR_OMAP3_IOMMU_DEVICES;
--	} else if (cpu_is_omap44xx()) {
--		devices = omap4_devices;
--		omap_iommu_pdev = omap4_iommu_pdev;
--		num_iommu_devices = NR_OMAP4_IOMMU_DEVICES;
--	} else
--		return -ENODEV;
-+	pdev = omap_device_build("omap-iommu", i, oh, pdata, sizeof(*pdata),
-+				NULL, 0, 0);
- 
--	for (i = 0; i < num_iommu_devices; i++) {
--		struct platform_device *pdev;
--		const struct iommu_device *d = &devices[i];
-+	kfree(pdata);
- 
--		pdev = platform_device_alloc("omap-iommu", i);
--		if (!pdev) {
--			err = -ENOMEM;
--			goto err_out;
--		}
-+	if (IS_ERR(pdev)) {
-+		pr_err("%s: device build err: %ld\n", __func__, PTR_ERR(pdev));
-+		return PTR_ERR(pdev);
-+	}
- 
--		res[0].start = d->base;
--		res[0].end = d->base + MMU_REG_SIZE - 1;
--		res[1].start = res[1].end = d->irq;
-+	i++;
- 
--		err = platform_device_add_resources(pdev, res,
--						    ARRAY_SIZE(res));
--		if (err)
--			goto err_out;
--		err = platform_device_add_data(pdev, &d->pdata,
--					       sizeof(d->pdata));
--		if (err)
--			goto err_out;
--		err = platform_device_add(pdev);
--		if (err)
--			goto err_out;
--		omap_iommu_pdev[i] = pdev;
--	}
- 	return 0;
-+}
- 
--err_out:
--	while (i--)
--		platform_device_put(omap_iommu_pdev[i]);
--	return err;
-+static int __init omap_iommu_init(void)
-+{
-+	return omap_hwmod_for_each_by_class("mmu", omap_iommu_dev_init, NULL);
- }
- /* must be ready before omap3isp is probed */
- subsys_initcall(omap_iommu_init);
- 
- static void __exit omap_iommu_exit(void)
- {
--	int i;
--
--	for (i = 0; i < num_iommu_devices; i++)
--		platform_device_unregister(omap_iommu_pdev[i]);
-+	/* Do nothing */
- }
- module_exit(omap_iommu_exit);
- 
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index f8082da..af9b4f3 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -143,13 +143,23 @@ EXPORT_SYMBOL_GPL(omap_iommu_arch_version);
- static int iommu_enable(struct omap_iommu *obj)
- {
- 	int err;
-+	struct platform_device *pdev = to_platform_device(obj->dev);
-+	struct iommu_platform_data *pdata = pdev->dev.platform_data;
- 
--	if (!obj)
-+	if (!obj || !pdata)
- 		return -EINVAL;
- 
- 	if (!arch_iommu)
- 		return -ENODEV;
- 
-+	if (pdata->deassert_reset) {
-+		err = pdata->deassert_reset(pdev, pdata->reset_name);
-+		if (err) {
-+			dev_err(obj->dev, "deassert_reset failed: %d\n", err);
-+			return err;
-+		}
-+	}
-+
- 	clk_enable(obj->clk);
- 
- 	err = arch_iommu->enable(obj);
-@@ -159,12 +169,18 @@ static int iommu_enable(struct omap_iommu *obj)
- 
- static void iommu_disable(struct omap_iommu *obj)
- {
--	if (!obj)
-+	struct platform_device *pdev = to_platform_device(obj->dev);
-+	struct iommu_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (!obj || !pdata)
- 		return;
- 
- 	arch_iommu->disable(obj);
- 
- 	clk_disable(obj->clk);
-+
-+	if (pdata->assert_reset)
-+		pdata->assert_reset(pdev, pdata->reset_name);
- }
- 
- /*
-@@ -926,9 +942,6 @@ static int __devinit omap_iommu_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct iommu_platform_data *pdata = pdev->dev.platform_data;
- 
--	if (pdev->num_resources != 2)
--		return -EINVAL;
--
- 	obj = kzalloc(sizeof(*obj) + MMU_REG_SIZE, GFP_KERNEL);
- 	if (!obj)
- 		return -ENOMEM;
-diff --git a/drivers/iommu/omap-iommu2.c b/drivers/iommu/omap-iommu2.c
-index c020202..4a3a1c7 100644
---- a/drivers/iommu/omap-iommu2.c
-+++ b/drivers/iommu/omap-iommu2.c
-@@ -35,12 +35,8 @@
- #define MMU_SYS_IDLE_SMART	(2 << MMU_SYS_IDLE_SHIFT)
- #define MMU_SYS_IDLE_MASK	(3 << MMU_SYS_IDLE_SHIFT)
- 
--#define MMU_SYS_SOFTRESET	(1 << 1)
- #define MMU_SYS_AUTOIDLE	1
- 
--/* SYSSTATUS */
--#define MMU_SYS_RESETDONE	1
--
- /* IRQSTATUS & IRQENABLE */
- #define MMU_IRQ_MULTIHITFAULT	(1 << 4)
- #define MMU_IRQ_TABLEWALKFAULT	(1 << 3)
-@@ -97,7 +93,6 @@ static void __iommu_set_twl(struct omap_iommu *obj, bool on)
- static int omap2_iommu_enable(struct omap_iommu *obj)
- {
- 	u32 l, pa;
--	unsigned long timeout;
- 
- 	if (!obj->iopgd || !IS_ALIGNED((u32)obj->iopgd,  SZ_16K))
- 		return -EINVAL;
-@@ -106,20 +101,6 @@ static int omap2_iommu_enable(struct omap_iommu *obj)
- 	if (!IS_ALIGNED(pa, SZ_16K))
- 		return -EINVAL;
- 
--	iommu_write_reg(obj, MMU_SYS_SOFTRESET, MMU_SYSCONFIG);
--
--	timeout = jiffies + msecs_to_jiffies(20);
--	do {
--		l = iommu_read_reg(obj, MMU_SYSSTATUS);
--		if (l & MMU_SYS_RESETDONE)
--			break;
--	} while (!time_after(jiffies, timeout));
--
--	if (!(l & MMU_SYS_RESETDONE)) {
--		dev_err(obj->dev, "can't take mmu out of reset\n");
--		return -ENODEV;
--	}
--
- 	l = iommu_read_reg(obj, MMU_REVISION);
- 	dev_info(obj->dev, "%s: version %d.%d\n", obj->name,
- 		 (l >> 4) & 0xf, l & 0xf);
-diff --git a/include/linux/platform_data/iommu-omap.h b/include/linux/platform_data/iommu-omap.h
-index c677b9f..ef2060d 100644
---- a/include/linux/platform_data/iommu-omap.h
-+++ b/include/linux/platform_data/iommu-omap.h
-@@ -10,6 +10,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/platform_device.h>
-+
- #define MMU_REG_SIZE		256
- 
- /**
-@@ -43,7 +45,11 @@ struct omap_mmu_dev_attr {
- struct iommu_platform_data {
- 	const char *name;
- 	const char *clk_name;
--	const int nr_tlb_entries;
-+	const char *reset_name;
-+	int nr_tlb_entries;
- 	u32 da_start;
- 	u32 da_end;
-+
-+	int (*assert_reset)(struct platform_device *pdev, const char *name);
-+	int (*deassert_reset)(struct platform_device *pdev, const char *name);
- };
+ static struct clk iss_ctrlclk = {
+ 	.name		= "iss_ctrlclk",
+ 	.ops		= &clkops_omap2_dflt,
+@@ -3151,7 +3131,6 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"div_ts_ck",			&div_ts_ck,	CK_446X),
+ 	CLK(NULL,	"dmic_sync_mux_ck",		&dmic_sync_mux_ck,	CK_443X),
+ 	CLK(NULL,	"dmic_fck",			&dmic_fck,	CK_443X),
+-	CLK(NULL,	"dsp_fck",			&dsp_fck,	CK_443X),
+ 	CLK(NULL,	"dss_sys_clk",			&dss_sys_clk,	CK_443X),
+ 	CLK(NULL,	"dss_tv_clk",			&dss_tv_clk,	CK_443X),
+ 	CLK(NULL,	"dss_48mhz_clk",		&dss_48mhz_clk,	CK_443X),
+@@ -3183,7 +3162,6 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"i2c2_fck",			&i2c2_fck,	CK_443X),
+ 	CLK(NULL,	"i2c3_fck",			&i2c3_fck,	CK_443X),
+ 	CLK(NULL,	"i2c4_fck",			&i2c4_fck,	CK_443X),
+-	CLK(NULL,	"ipu_fck",			&ipu_fck,	CK_443X),
+ 	CLK(NULL,	"iss_ctrlclk",			&iss_ctrlclk,	CK_443X),
+ 	CLK(NULL,	"iss_fck",			&iss_fck,	CK_443X),
+ 	CLK(NULL,	"iva_fck",			&iva_fck,	CK_443X),
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index aab5c12..1f61093 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -650,7 +650,7 @@ static struct omap_hwmod omap44xx_dsp_hwmod = {
+ 	.mpu_irqs	= omap44xx_dsp_irqs,
+ 	.rst_lines	= omap44xx_dsp_resets,
+ 	.rst_lines_cnt	= ARRAY_SIZE(omap44xx_dsp_resets),
+-	.main_clk	= "dsp_fck",
++	.main_clk	= "dpll_iva_m4x2_ck",
+ 	.prcm = {
+ 		.omap4 = {
+ 			.clkctrl_offs = OMAP4_CM_TESLA_TESLA_CLKCTRL_OFFSET,
+@@ -1677,7 +1677,7 @@ static struct omap_hwmod omap44xx_ipu_hwmod = {
+ 	.mpu_irqs	= omap44xx_ipu_irqs,
+ 	.rst_lines	= omap44xx_ipu_resets,
+ 	.rst_lines_cnt	= ARRAY_SIZE(omap44xx_ipu_resets),
+-	.main_clk	= "ipu_fck",
++	.main_clk	= "ducati_clk_mux_ck",
+ 	.prcm = {
+ 		.omap4 = {
+ 			.clkctrl_offs = OMAP4_CM_DUCATI_DUCATI_CLKCTRL_OFFSET,
 -- 
 1.7.4.1
 
