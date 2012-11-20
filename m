@@ -1,99 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab2KTUId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 15:08:33 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:27736 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752503Ab2KTUIa (ORCPT
+	id S1752544Ab2KTUK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 15:10:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43604 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2KTUK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 15:08:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmcJADLiq1B5LbLL/2dsb2JhbABFvFeGAhdzgh4BAQUnExwjEAgDDgouFCUDIROIDAy/bRSMIYQUYQOVfYlJhnmDAw
-Date: Wed, 21 Nov 2012 07:08:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, djwong+kernel@djwong.org
-Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct
- I/O requests
-Message-ID: <20121120200827.GE2591@dastard>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
- <20121120075114.25270.40680.stgit@blackbox.djwong.org>
- <20121120112038.GC2591@dastard>
- <x49wqxghxhj.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49wqxghxhj.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Nov 2012 15:10:27 -0500
+Date: Tue, 20 Nov 2012 15:10:25 -0500 (EST)
+Message-Id: <20121120.151025.110295017516927341.davem@davemloft.net>
+To: jon.mason@intel.com
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, netdev@vger.kernel.org,
+        dave.jiang@intel.com, nab@linux-iscsi.org
+Subject: Re: [PATCH v6 0/2] PCI-Express Non-Transparent Bridge Support 
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1353119233-32752-1-git-send-email-jon.mason@intel.com>
+References: <1353119233-32752-1-git-send-email-jon.mason@intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 02:42:48PM -0500, Jeff Moyer wrote:
-> Dave Chinner <david@fromorbit.com> writes:
+From: Jon Mason <jon.mason@intel.com>
+Date: Fri, 16 Nov 2012 19:27:11 -0700
+
+> I am submitting version 6 of the PCI-Express Non-Transparent Bridge
+> patches for inclusion in 3.8 via Greg KH's char-misc-next tree.  All
+> outstanding issues have been addressed.
 > 
-> > And requeuing work from one workqueue to the next is something that
-> > we can avoid.  We know at IO submission time (i.e.
-> > xfs_vm_direct_io)) whether an fsync completion is going to be needed
-> > during Io completion.  The ioend->io_needs_fsync flag can be set
-> > then, and the first pass through xfs_finish_ioend() can queue it to
-> > the correct workqueue.  i.e. it only needs to be queued if it's not
-> > already an unwritten or append ioend and it needs an fsync.
-> >
-> > As it is, all the data completion workqueues run the same completion
-> > function so all you need to do is handle the fsync case at the end
-> > of the existing processing - it's not an else case. i.e the end of
-> > xfs_end_io() becomes:
-> >
-> > 	if (ioend->io_needs_fsync) {
-> > 		error = xfs_ioend_fsync(ioend);
-> > 		if (error)
-> > 			ioend->io_error = -error;
-> > 		goto done;
-> > 	}
-> > done:
-> > 	xfs_destroy_ioend(ioend);
-> 
-> Works for me, that makes things simpler.
-> 
-> > As it is, this code is going to change before these changes go in -
-> > there's a nasty regression in the DIO code that I found this
-> > afternoon that requires reworking this IO completion logic to
-> > avoid. The patch will appear on the list soon....
-> 
-> I'm not on the xfs list, so if you haven't already sent it, mind Cc-ing
-> me?
+> Version 6 corrects Greg KH's issues, most notably the improper usage of
+> the Linux device model.
+> http://thread.gmane.org/gmane.linux.kernel.pci/18599
 
-http://oss.sgi.com/archives/xfs/2012-11/msg00493.html
+For the networking bits:
 
-First cut is here, but it will change a bit as review goes on...
-
-> >> --- a/fs/xfs/xfs_mount.h
-> >> +++ b/fs/xfs/xfs_mount.h
-> >> @@ -209,6 +209,7 @@ typedef struct xfs_mount {
-> >>  	struct workqueue_struct	*m_data_workqueue;
-> >>  	struct workqueue_struct	*m_unwritten_workqueue;
-> >>  	struct workqueue_struct	*m_cil_workqueue;
-> >> +	struct workqueue_struct *m_aio_blkdev_flush_wq;
-> >
-> > 	struct workqueue_struct *m_aio_fsync_wq;
-> 
-> For the record, m_aio_blkdev_flush_wq is the name you chose previously.
-> ;-)
-
-<cue Led Zeppelin>
-
-It's been a long time since I read that patch....
-
-:)
-
-Cheers,
-
-Dave....
--- 
-Dave Chinner
-david@fromorbit.com
+Acked-by: David S. Miller <davem@davemloft.net>
