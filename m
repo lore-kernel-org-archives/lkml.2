@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2KTVuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 16:50:00 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53196 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab2KTVt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 16:49:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121120211312.57f1b63d@pyramind.ukuu.org.uk>
-References: <20121120204238.GA19554@www.outflux.net>
-	<20121120211312.57f1b63d@pyramind.ukuu.org.uk>
-Date: Tue, 20 Nov 2012 13:49:58 -0800
-X-Google-Sender-Auth: g6tbdS32FtZfyHse3AfmSSKFEbY
-Message-ID: <CAGXu5jJv58UGwsWM=+ZSnaNpymh6Sm6xSjc0JuT+QoZ9U2++rw@mail.gmail.com>
-Subject: Re: [PATCH v2] devtmpfs: mount with noexec and nosuid
+	id S1752685Ab2KTVvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 16:51:05 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:50608 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab2KTVvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 16:51:04 -0500
+Date: Tue, 20 Nov 2012 13:50:59 -0800
 From: Kees Cook <keescook@chromium.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ellyjones@chromium.org, Kay Sievers <kay@vrfy.org>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, ellyjones@chromium.org,
+        Kay Sievers <kay@vrfy.org>, Roland Eggner <edvx1@systemanalysen.net>
+Subject: [PATCH v3] devtmpfs: mount with noexec and nosuid
+Message-ID: <20121120215059.GA1859@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 1:13 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 20 Nov 2012 12:42:38 -0800
-> Kees Cook <keescook@chromium.org> wrote:
->
->> Since devtmpfs is writable, make the default noexec,nosuid as well. This
->> protects from the case of a privileged process having an arbitrary file
->> write flaw and an argumentless arbitrary execution (i.e. it would lack
->> the ability to run "mount -o remount,exec,suid /dev").
->
-> Ok this looks crap on two levels.
->
-> 1. Why not just have your userspace mount -o remount the file system this
-> way already in early boot. (and if you trojanned boot that early then any
-> supposed security gain is already lost)
+Since devtmpfs is writable, make the default noexec,nosuid as well. This
+protects from the case of a privileged process having an arbitrary file
+write flaw and an argumentless arbitrary execution (i.e. it would lack
+the ability to run "mount -o remount,exec,suid /dev").
 
-That's certainly possible, but I am hoping to avoid adding any extra
-boot time. The kernel is responsible for this mount, so its flags
-should be configurable, resulting in no time penalty anywhere.
+Rather than relying on userspace "mount -o remount,noexec,nosuid /dev",
+accomplish this from the kernel. This means no additional exec during
+(potentially time-sensitive) boot is needed. The kernel is responsible
+for this mount, so the mount flags should be configurable.
 
-> 2. If you want to do this right then you need to work out what you are
-> trying to prevent. Your devtmpfs can force file permissions on the
-> underlying device nodes by having its own operation handling for chmod.
->
-> At that point you can force permissions on anything that you want to
-> avoid floating around that filesystem with other rights, while not
-> touching it on device or directory nodes where the meaning is different.
->
-> In its current form however it appears to be a kernel implementation of
-> "mount is too hard".
+Cc: ellyjones@chromium.org
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Roland Eggner <edvx1@systemanalysen.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 
-This change also stops mmap() with PROT_EXEC which a chmod handler
-wouldn't be able to do. The noexec and nosuid mount options were
-designed for this sort of thing, so I think that's where it should be
-handled.
+---
+v3:
+- use a single define for the mount flags, suggested by Greg K.H.
+v2:
+- use CONFIG_DEVTMPFS_SAFE to wrap the logic.
+---
+ drivers/base/Kconfig    |   12 ++++++++++++
+ drivers/base/devtmpfs.c |   11 +++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
--Kees
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index b34b5cd..a37fcf2 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -56,6 +56,18 @@ config DEVTMPFS_MOUNT
+ 	  rescue mode with init=/bin/sh, even when the /dev directory
+ 	  on the rootfs is completely empty.
+ 
++config DEVTMPFS_SAFE
++	bool "Use nosuid,noexec mount options on devtmpfs"
++	depends on DEVTMPFS
++	help
++	  This instructs the kernel to include the MS_NOEXEC and
++	  MS_NOSUID mount flags when mounting devtmpfs. This prevents
++	  certain kinds of code-execution attacks on embedded platforms.
++
++	  Notice: If enabled, things like /dev/mem cannot be mmapped
++	  with the PROT_EXEC flag. This can break, for example, non-KMS
++	  video drivers.
++
+ config STANDALONE
+ 	bool "Select only drivers that don't need compile-time external firmware" if EXPERIMENTAL
+ 	default y
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 147d1a4..e44ca1d 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -25,6 +25,12 @@
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
+ 
++#ifdef CONFIG_DEVTMPFS_SAFE
++# define DEVTMPFS_MFLAGS	(MS_SILENT | MS_NOEXEC | MS_NOSUID)
++#else
++# define DEVTMPFS_MFLAGS	MS_SILENT
++#endif
++
+ static struct task_struct *thread;
+ 
+ #if defined CONFIG_DEVTMPFS_MOUNT
+@@ -347,7 +353,8 @@ int devtmpfs_mount(const char *mntdir)
+ 	if (!thread)
+ 		return 0;
+ 
+-	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
++	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs",
++			DEVTMPFS_MFLAGS, NULL);
+ 	if (err)
+ 		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
+ 	else
+@@ -372,7 +379,7 @@ static int devtmpfsd(void *p)
+ 	*err = sys_unshare(CLONE_NEWNS);
+ 	if (*err)
+ 		goto out;
+-	*err = sys_mount("devtmpfs", "/", "devtmpfs", MS_SILENT, options);
++	*err = sys_mount("devtmpfs", "/", "devtmpfs", DEVTMPFS_MFLAGS, options);
+ 	if (*err)
+ 		goto out;
+ 	sys_chdir("/.."); /* will traverse into overmounted root */
+-- 
+1.7.9.5
+
 
 -- 
 Kees Cook
