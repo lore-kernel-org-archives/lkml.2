@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab2KTEtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 23:49:31 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40691 "EHLO
+	id S1752023Ab2KTEtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 23:49:41 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40704 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751428Ab2KTEta (ORCPT
+	by vger.kernel.org with ESMTP id S1751944Ab2KTEti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 23:49:30 -0500
+	Mon, 19 Nov 2012 23:49:38 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/5] mfd: arizona: Sync regcache after reset
-Date: Tue, 20 Nov 2012 13:46:21 +0900
-Message-Id: <1353386781-10468-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/5] mfd: wm5110: Disable control interface error report for WM5110 rev B
+Date: Tue, 20 Nov 2012 13:46:18 +0900
+Message-Id: <1353386781-10468-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353386781-10468-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20121120044544.GF4483@opensource.wolfsonmicro.com>
@@ -23,43 +22,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+It can misreport.
 
-In the absence of a physical reset line the chip is reset by writing the
-first register, which is done after the register patch has been applied.
-This patch synchronises the register cache after the reset to preserve
-any register changes that had been applied.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mfd/arizona-irq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 202bf55..ad1ca49 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -415,11 +415,19 @@ int __devinit arizona_dev_init(struct arizona *arizona)
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index ef0f2d0..b1b0091 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -178,6 +178,7 @@ int arizona_irq_init(struct arizona *arizona)
  
- 	/* If we have a /RESET GPIO we'll already be reset */
- 	if (!arizona->pdata.reset) {
-+		regcache_mark_dirty(arizona->regmap);
-+
- 		ret = regmap_write(arizona->regmap, ARIZONA_SOFTWARE_RESET, 0);
- 		if (ret != 0) {
- 			dev_err(dev, "Failed to reset device: %d\n", ret);
- 			goto err_reset;
- 		}
-+
-+		ret = regcache_sync(arizona->regmap);
-+		if (ret != 0) {
-+			dev_err(dev, "Failed to sync device: %d\n", ret);
-+			goto err_ldoena;
-+		}
- 	}
- 
- 	ret = arizona_wait_for_boot(arizona);
+ 		switch (arizona->rev) {
+ 		case 0:
++		case 1:
+ 			ctrlif_error = false;
+ 			break;
+ 		default:
 -- 
 1.7.10.4
 
