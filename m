@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2KTTnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:43:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab2KTTnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:43:06 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, djwong+kernel@djwong.org
-Subject: Re: [PATCH 4/9] xfs: honor the O_SYNC flag for aysnchronous direct I/O requests
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-	<20121120075114.25270.40680.stgit@blackbox.djwong.org>
-	<20121120112038.GC2591@dastard>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 20 Nov 2012 14:42:48 -0500
-In-Reply-To: <20121120112038.GC2591@dastard> (Dave Chinner's message of "Tue,
-	20 Nov 2012 22:20:38 +1100")
-Message-ID: <x49wqxghxhj.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752697Ab2KTTnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:43:22 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:16211 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab2KTTnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 14:43:20 -0500
+From: Tom Mingarelli <thomas.mingarelli@hp.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Don Dutile <ddutile@redhat.com>
+Cc: Linda Knippers <linda.knippers@hp.com>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuah.khan@hp.com>,
+        Tom Mingarelli <thomas.mingarelli@hp.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Message-Id: <20120917082234.22091.84161.sendpatchset@RHEL63BL460c>
+Subject: [PATCH v4] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+Date: Tue, 20 Nov 2012 19:43:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+This patch is to prevent non-USB devices that have RMRRs associated with them from
+being placed into the SI Domain during init. This fixes the issue where the RMRR info
+for devices being placed in and out of the SI Domain gets lost.
 
-> And requeuing work from one workqueue to the next is something that
-> we can avoid.  We know at IO submission time (i.e.
-> xfs_vm_direct_io)) whether an fsync completion is going to be needed
-> during Io completion.  The ioend->io_needs_fsync flag can be set
-> then, and the first pass through xfs_finish_ioend() can queue it to
-> the correct workqueue.  i.e. it only needs to be queued if it's not
-> already an unwritten or append ioend and it needs an fsync.
->
-> As it is, all the data completion workqueues run the same completion
-> function so all you need to do is handle the fsync case at the end
-> of the existing processing - it's not an else case. i.e the end of
-> xfs_end_io() becomes:
->
-> 	if (ioend->io_needs_fsync) {
-> 		error = xfs_ioend_fsync(ioend);
-> 		if (error)
-> 			ioend->io_error = -error;
-> 		goto done;
-> 	}
-> done:
-> 	xfs_destroy_ioend(ioend);
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Shuah Khan <shuah.khan@hp.com>
+---
+PATCH v1: https://lkml.org/lkml/2012/6/15/204
+PATCH v2: https://lkml.org/lkml/2012/9/18/354
+PATCH v3: https://lkml.org/lkml/2012/10/16/375
 
-Works for me, that makes things simpler.
+ drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
-> As it is, this code is going to change before these changes go in -
-> there's a nasty regression in the DIO code that I found this
-> afternoon that requires reworking this IO completion logic to
-> avoid. The patch will appear on the list soon....
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index d4a4cd4..8c064df 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2320,8 +2320,39 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+ 	return 0;
+ }
+ 
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
++
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Return TRUE if this RMRR contains the device that
++			 * is passed in.
++			 */
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * We want to prevent any device associated with an RMRR from
++	 * getting placed into the SI Domain. This is done because
++	 * problems exist when devices are moved in and out of domains
++	 * and their respective RMRR info is lost. We exempt USB devices
++	 * from this process due to their usage of RMRRs that are known
++	 * to not be needed after BIOS hand-off to OS.
++	 */
++	if (device_has_rmrr(pdev) &&
++	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
+ 
+-- 
+1.7.1
 
-I'm not on the xfs list, so if you haven't already sent it, mind Cc-ing
-me?
-
->> --- a/fs/xfs/xfs_mount.h
->> +++ b/fs/xfs/xfs_mount.h
->> @@ -209,6 +209,7 @@ typedef struct xfs_mount {
->>  	struct workqueue_struct	*m_data_workqueue;
->>  	struct workqueue_struct	*m_unwritten_workqueue;
->>  	struct workqueue_struct	*m_cil_workqueue;
->> +	struct workqueue_struct *m_aio_blkdev_flush_wq;
->
-> 	struct workqueue_struct *m_aio_fsync_wq;
-
-For the record, m_aio_blkdev_flush_wq is the name you chose previously.
-;-)
-
-Thanks for the review!
-
-Cheers,
-Jeff
