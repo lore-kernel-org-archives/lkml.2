@@ -1,182 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2KTTUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 14:20:33 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56914 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab2KTTUR (ORCPT
+	id S1753674Ab2KTTUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 14:20:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49411 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab2KTTUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 14:20:17 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Josh Cartwright <josh.cartwright@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 2/2] ARM: tegra: move timer.c to drivers/clocksource/
-Date: Tue, 20 Nov 2012 12:20:06 -0700
-Message-Id: <1353439206-1654-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
-References: <1353439206-1654-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Tue, 20 Nov 2012 14:20:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQVAxkS6AH6zDJAjuyiJtR2xztRG+raCk4L6yvKuskzBkg@mail.gmail.com>
+References: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
+	<1353222571-31544-4-git-send-email-yinghai@kernel.org>
+	<50AAB5E8.5070807@zytor.com>
+	<CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
+	<50AABD15.1050809@zytor.com>
+	<CAE9FiQVMsBS-c+H7+q3hi5hdvcZ8_AYqm5RV_dOVbV9L1UnxTA@mail.gmail.com>
+	<41603b4d-cd34-4c6e-9e1f-ac78816b5097@email.android.com>
+	<CAE9FiQVAxkS6AH6zDJAjuyiJtR2xztRG+raCk4L6yvKuskzBkg@mail.gmail.com>
+Date: Tue, 20 Nov 2012 11:20:37 -0800
+X-Google-Sender-Auth: nprN7aiDZlFijXXN80e4-xDNt3A
+Message-ID: <CAE9FiQVrjRvQYNDdJFcyDFrr88B6v-86Zdq5a15kdHN_byDG3g@mail.gmail.com>
+Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Mon, Nov 19, 2012 at 4:39 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Nov 19, 2012 at 3:55 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> We probably should add a flag for those, but that is more of a boot_flag...
+>
+> kernel_cap_bits:
+> RAMDISK_ABOVE_4G  = (1<<0)
+> KERNEL_ABOVE_4G =(1<<2)
+> CMD_LINE_ABOVE 4G = (1<<1)
+>                 .long   (RAMDISK_ABOVE_4G | CMD_LINE_ABOVE_4G | KERNEL_ABOVE_4G)
 
-Move arch/arm/mach-tegra/timer.c to drivers/clocksource/tegra20_timer.c
-so that the code is co-located with other clocksource drivers, and to
-reduce the size of the mach-tegra directory.
+more complete version:
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v3: Rework using CLKSRC_OF_MATCH_TABLE() for registration, rather than a
-    manually maintained table in clksrc-of.c.
-v2: Rebase on ARM sys_timer rework, and addition of clocksource_of_init().
----
- arch/arm/Kconfig                                           |    1 +
- arch/arm/mach-tegra/Makefile                               |    1 -
- arch/arm/mach-tegra/board-dt-tegra20.c                     |    3 ++-
- arch/arm/mach-tegra/board-dt-tegra30.c                     |    3 ++-
- arch/arm/mach-tegra/board.h                                |    1 -
- drivers/clocksource/Makefile                               |    1 +
- .../timer.c => drivers/clocksource/tegra20_timer.c         |   12 +++++++-----
- 7 files changed, 13 insertions(+), 9 deletions(-)
- rename arch/arm/mach-tegra/timer.c => drivers/clocksource/tegra20_timer.c (96%)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 14f8160..9eb54f6 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -633,6 +633,7 @@ config ARCH_TEGRA
- 	select ARCH_HAS_CPUFREQ
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_MMIO
-+	select CLKSRC_OF
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_GPIO
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 6f224f7..6ab3ed5 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -2,7 +2,6 @@ obj-y                                   += common.o
- obj-y                                   += io.o
- obj-y                                   += irq.o
- obj-y                                   += clock.o
--obj-y                                   += timer.o
- obj-y					+= fuse.o
- obj-y					+= pmc.o
- obj-y					+= flowctrl.o
-diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
-index 794a7bf..0bee85a 100644
---- a/arch/arm/mach-tegra/board-dt-tegra20.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra20.c
-@@ -15,6 +15,7 @@
-  *
-  */
- 
-+#include <linux/clocksource.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
-@@ -194,7 +195,7 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
- 	.init_early	= tegra20_init_early,
- 	.init_irq	= tegra_dt_init_irq,
- 	.handle_irq	= gic_handle_irq,
--	.init_time	= tegra_init_timer,
-+	.init_time	= clocksource_of_init,
- 	.init_machine	= tegra_dt_init,
- 	.init_late	= tegra_dt_init_late,
- 	.restart	= tegra_assert_system_reset,
-diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
-index 08d3b19..a2b6cf1 100644
---- a/arch/arm/mach-tegra/board-dt-tegra30.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-@@ -23,6 +23,7 @@
-  *
-  */
- 
-+#include <linux/clocksource.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -104,7 +105,7 @@ DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
- 	.init_early	= tegra30_init_early,
- 	.init_irq	= tegra_dt_init_irq,
- 	.handle_irq	= gic_handle_irq,
--	.init_time	= tegra_init_timer,
-+	.init_time	= clocksource_of_init,
- 	.init_machine	= tegra30_dt_init,
- 	.init_late	= tegra_init_late,
- 	.restart	= tegra_assert_system_reset,
-diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
-index 744cdd2..da8f5a3 100644
---- a/arch/arm/mach-tegra/board.h
-+++ b/arch/arm/mach-tegra/board.h
-@@ -55,5 +55,4 @@ static inline int harmony_pcie_init(void) { return 0; }
- 
- void __init tegra_paz00_wifikill_init(void);
- 
--extern void tegra_init_timer(void);
- #endif
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 29017a3..ecf37f3 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -16,5 +16,6 @@ obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
- obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
- obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
- obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
-+obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
- 
- obj-$(CONFIG_CLKSRC_ARM_GENERIC)	+= arm_generic.o
-diff --git a/arch/arm/mach-tegra/timer.c b/drivers/clocksource/tegra20_timer.c
-similarity index 96%
-rename from arch/arm/mach-tegra/timer.c
-rename to drivers/clocksource/tegra20_timer.c
-index b0036e5..13636a4 100644
---- a/arch/arm/mach-tegra/timer.c
-+++ b/drivers/clocksource/tegra20_timer.c
-@@ -1,6 +1,4 @@
- /*
-- * arch/arch/mach-tegra/timer.c
-- *
-  * Copyright (C) 2010 Google, Inc.
-  *
-  * Author:
-@@ -33,8 +31,6 @@
- #include <asm/smp_twd.h>
- #include <asm/sched_clock.h>
- 
--#include "board.h"
--
- #define RTC_SECONDS            0x08
- #define RTC_SHADOW_SECONDS     0x0c
- #define RTC_MILLISECONDS       0x10
-@@ -168,7 +164,7 @@ static const struct of_device_id rtc_match[] __initconst = {
- 	{}
- };
- 
--void __init tegra_init_timer(void)
-+static void __init tegra20_init_timer(void)
- {
- 	struct device_node *np;
- 	struct clk *clk;
-@@ -286,3 +282,9 @@ void tegra_timer_resume(void)
- 	timer_writel(usec_config, TIMERUS_USEC_CFG);
- }
- #endif
-+
-+static const struct of_device_id tegra20_timer_match[] __initconst = {
-+	{ .compatible = "nvidia,tegra20-timer", .data = tegra20_init_timer },
-+	{}
-+};
-+CLKSRC_OF_MATCH_TABLE(tegra20, tegra20_timer_match);
--- 
-1.7.10.4
-
+kernel_cap_bits:
+RAMDISK_ABOVE_4G  = (1<<0)
+KERNEL_ABOVE_4G =(1<<1)
+BOOT_PARAMS_ABOVE_4G=(1<<2)
+CMD_LINE_ABOVE 4G = (1<<3)
+                .long   (RAMDISK_ABOVE_4G | BOOT_PARAMS_ABOVE_4G |
+CMD_LINE_ABOVE_4G | KERNEL_ABOVE_4G)
