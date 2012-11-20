@@ -1,140 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab2KTI1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 03:27:40 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:48839 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751513Ab2KTI1j (ORCPT
+	id S1752360Ab2KTI2C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 03:28:02 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39362 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751901Ab2KTI2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 03:27:39 -0500
-From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>
-Date: Tue, 20 Nov 2012 09:26:40 +0100
-Subject: RE: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Topic: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Index: Ac3CtGwi/JQ7RVPiRR6VpEzITQov5AEQ3ToQ
-Message-ID: <35286B1AE75A7C47BFF0870081A31B4B3A990A7BE0@SAFEX1MAIL4.st.com>
-References: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
- <20121114220647.GA533@ennui.austin.ibm.com>
-In-Reply-To: <20121114220647.GA533@ennui.austin.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 20 Nov 2012 03:28:00 -0500
+Date: Tue, 20 Nov 2012 17:27:44 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: DVS regulator drivers
+Message-ID: <20121120082741.GV10560@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.64.1211191213380.11024@axis700.grange>
+ <20121120010547.GD4483@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1211200856380.21420@axis700.grange>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b3OyYALfe3DXUU4J"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211200856380.21420@axis700.grange>
+X-Cookie: Avoid gunfire in the bathroom tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAK8RjHP020492
 
-Hello,
 
-Does anyone can say me when the driver will be integrated on linux kernel and where can we get it  from the linux source code?
+--b3OyYALfe3DXUU4J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+On Tue, Nov 20, 2012 at 09:17:46AM +0100, Guennadi Liakhovetski wrote:
+> On Tue, 20 Nov 2012, Mark Brown wrote:
 
-Mathias Leblanc
+> > Please don't invent terminology or repurpose existing terminology like
+> > this, it's just confusing - obvious essentially all regulators covered
+> > by the regulator API support voltage scaling which is the usual meaning
+> > of DVS.
 
------Original Message-----
-From: Kent Yoder [mailto:key@linux.vnet.ibm.com] 
-Sent: 14 November, 2012 23:07
-To: Mathias LEBLANC
-Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; Debora Velarde; linux-kernel@vger.kernel.org; Jean-Luc BLANC
-Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+> Right, sorry, a more precise term would be a "pin-selectable DVS," right?
 
-Hi Mathias,
+Yup.
 
-On Wed, Nov 14, 2012 at 03:31:42PM +0100, Mathias Leblanc wrote:
->  * STMicroelectronics version 1.2.0, Copyright (C) 2010
->  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
->  * This is free software, and you are welcome to redistribute it
->  * under certain conditions.
-> 
-> This is the driver for TPM chip from ST Microelectronics.
-> 
-> If you have a TPM security chip from STMicroelectronics working with 
-> an I2C, in menuconfig or .config choose the tpm driver on device --> 
-> tpm and activate the protocol of your choice before compiling the 
-> kernel.
-> The driver will be accessible from within Linux.
-> 
-> Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
+> > Can you be more specific about your concern here?  The above code does
+> > exactly what the comment says, it will set the selector it just picked.
 
-  Getting some build errors here:
+> Your patch fixes exactly the problem, that I was pointing at, thanks.
 
-drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‚Äò__check_interrupts‚Äô:
-drivers/char/tpm/tpm_stm_st33_i2c.c:615:1: warning: return from incompatible pointer type [enabled by default]
-drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‚Äò__check_power_mgt‚Äô:
-drivers/char/tpm/tpm_stm_st33_i2c.c:619:1: warning: return from incompatible pointer type [enabled by default]
-drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‚Äòtpm_st33_i2c_probe‚Äô:
-drivers/char/tpm/tpm_stm_st33_i2c.c:725:3: warning: suggest parentheses around arithmetic in operand of ‚Äò|‚Äô [-Wparentheses]
-drivers/char/tpm/tpm_stm_st33_i2c.c: In function
-‚Äòtpm_st33_i2c_pm_suspend‚Äô:
-drivers/char/tpm/tpm_stm_st33_i2c.c:826:3: error: too many arguments to function ‚Äòtpm_pm_suspend‚Äô
-In file included from drivers/char/tpm/tpm_stm_st33_i2c.h:55:0,
-                 from drivers/char/tpm/tpm_stm_st33_i2c.c:35:
-		 drivers/char/tpm/tpm.h:326:12: note: declared here
-		 drivers/char/tpm/tpm_stm_st33_i2c.c: In function
-		 ‚Äòtpm_st33_i2c_pm_resume‚Äô:
-		 drivers/char/tpm/tpm_stm_st33_i2c.c:855:3: error:
-		 implicit declaration of function
-		 ‚Äòtpm_continue_selftest‚Äô
-		 [-Werror=implicit-function-declaration]
+Oh, right.  It sounded like you also had some concern with on_vsel which
+I couldn't figure out.
 
-[cut]
-> +/*
-> + * _wait_for_interrupt_serirq_timeout
-> + * @param: tpm, the chip description
-> + * @param: timeout, the timeout of the interrupt
-> + * @return: the status of the interruption.
-> + */
-> +static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
-> +						unsigned long timeout)
-> +{
-> +	int status;
-> +	struct i2c_client *client;
-> +	struct st33zp24_platform_data *pin_infos;
-> +
-> +	client = (struct i2c_client *) chip->vendor.iobase;
-> +	pin_infos = client->dev.platform_data;
-> +
-> +	status = wait_for_completion_interruptible_timeout(
-> +					&pin_infos->irq_detection,
-> +						timeout);
+> > You did spot one bug (I think due to bitrot) which I just fixed but in
+> > general I've just TLDRed this as it's a bit unclear what you're trying
+> > to say here, can you be a bit more concise here?  I'm not sure if
+> > there's a general point or if it's specific code issues?
 
-  status should be a long here.
+> Sorry, let's try again. Just to bring back the "too long and a bit unclea=
+r=20
+> part:"
 
-[cut]
-> +
-> +	if (client == NULL) {
-> +		pr_info("client is NULL. exiting.\n");
-> +		err = -ENODEV;
-> +		goto end;
-> +	}
-> +
-> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-> +		pr_info("client not i2c capable\n");
-> +		err = -ENODEV;
-> +		goto end;
-> +	}
-> +
-> +	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
-> +	if (!chip) {
-> +		pr_info("fail chip\n");
+It was the mail as a whole - I spent less time on lp872x since I don't
+have any access to the hardware either.
 
-  Please use dev_info() in place of pr_info().
+> where dvs is platform data, i.e., all parameters are constant. So,=20
+> lp872x_set_dvs() never switches anything, and in fact it could just have=
+=20
+> been called just once from initialisation to set the GPIO. This also=20
+> means, that only one context - either SEL_V1 or SEL_V2 is used.
 
-Thanks,
-Kent
+I think you're right there.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--b3OyYALfe3DXUU4J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQqz6jAAoJELSic+t+oim9O1sP/3KyLWGtw6TfYOXUlYvfZIYr
+5fXyTCOGeQD5vMQJObNYsGLOzGwozl8a4ZstVSGOulZnU0M3dfzhmVRevMdT/8CP
+OcI4rInUvopD+oSk83/KKwTF/h3GpqnbWGuomOotqFNbckX9VHgAieuDBYGEtyL4
+VPpJ79FXPEf7PwXSoaGEVE/cmbKBc0DI9uqZfSKUNkRIcnuY0RneF1iW9miXaHOO
+AZIveU5A3KHM3sqVjr/CitBGp6h0bljCMWs5bi5cnsZI3DGQK1xh8XAddVvVs0Xk
+LhNzmPtV0btTDF2hnGEJh1xTVPdqc9p8nNbFuugz4dzIopxQbjC3fhySfOPVz6iK
+XwSxoKeyurBWpSiPP8Hy2nIE/Fi3098Smv+L8dgWjotsTR93EgKi/tivXdoBMscP
+xvLs+x3MrwQdUwjTeT1H7qKxRN6HDe2WuhLxpGjaYr1jIawQCnm+Lfw9M86DyfCA
+U7oVh7NwW6I0TVV/8K4vgp9YCTZFjwmXWe+kB679bnOCGp5wU1hz/6yqXoSj1uc5
+s/PPgH/k6YikaoQj0ZezeANogKdi5sXOJRdICpD4mKen6WWKkx/LyHroZiV9OfCp
+cic3g9UaVNxdTuAVIrupS420qcPcPgey1yu/2mOlacK5gS4SDmCgy8ppWdiHjv+d
+h0DGPAUaEaUWvObRiKeQ
+=Wm1N
+-----END PGP SIGNATURE-----
+
+--b3OyYALfe3DXUU4J--
