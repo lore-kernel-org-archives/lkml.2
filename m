@@ -1,190 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab2KTKN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 05:13:57 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38781 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab2KTKNz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 05:13:55 -0500
+	id S1752891Ab2KTKQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 05:16:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40701 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab2KTKQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 05:16:02 -0500
+Date: Tue, 20 Nov 2012 11:15:59 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
+        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 9/9] blkdev: Fix up AIO+DIO+O_SYNC to do the sync part
+ correctly
+Message-ID: <20121120101559.GC1408@quack.suse.cz>
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+ <20121120075115.25270.62451.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
-In-Reply-To: <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
-	<1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
-Date: Tue, 20 Nov 2012 15:43:55 +0530
-Message-ID: <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120075115.25270.62451.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> We'll need to invoke clk_unprepare() via a pointer in our devm_*
-> conversion so let's uninline the pair.
-
-Sorry, but you aren't doing this :(
-This routine is already uninlined as it is in clk.c
-
-Instead you are just moving clk_prepare(), etc calls within
-#ifdef CONFIG_HAVE_CLK
-#else
-#endif
-
-I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
-earlier. Can they exist without CONFIG_HAVE_CLK
-
-@Mike: ?
-
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+On Mon 19-11-12 23:51:15, Darrick J. Wong wrote:
+> When performing O_SYNC+AIO+DIO writes to block devices, use the DIO_SYNC_WRITES
+> flag so that flushes are issued /after/ the write completes, not before.
+> 
+> Note, however, that for block devices, the DIO setup code ensures that a flush
+> wq is attached to the superblock of the bdevfs filesystem, not the filesystem
+> that the device node happens to reside in.  This means that unlike regular
+> files, iocb->ki_filp->f_mapping->host->i_sb != inode->i_sb.  Therefore, adjust
+> Jeff's earlier patch to keep the pointer use consistent and avoid a NULL deref.
+> 
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 > ---
->  drivers/clk/clk.c   |  4 ++++
->  include/linux/clk.h | 68 +++++++++++++++++++++++++----------------------------
->  2 files changed, 36 insertions(+), 36 deletions(-)
->
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 56e4495e..1b642f2 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -374,6 +374,7 @@ struct clk *__clk_lookup(const char *name)
->
->  void __clk_unprepare(struct clk *clk)
->  {
-> +#ifdef CONFIG_HAVE_CLK_PREPARE
-
-clk.c is compiled if COMMON_CLK is selected. And COMMON_CLK has following:
-	select HAVE_CLK_PREPARE
-
-So, these checks you added don't have a meaning.
-
->         if (!clk)
->                 return;
->
-> @@ -389,6 +390,7 @@ void __clk_unprepare(struct clk *clk)
->                 clk->ops->unprepare(clk->hw);
->
->         __clk_unprepare(clk->parent);
-> +#endif
+>  fs/block_dev.c |    5 +++--
+>  fs/direct-io.c |    3 ++-
+>  2 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> 
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index 1a1e5e3..05ff33a 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -235,7 +235,8 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+>  	struct inode *inode = file->f_mapping->host;
+>  
+>  	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov, offset,
+> -				    nr_segs, blkdev_get_blocks, NULL, NULL, 0);
+> +				    nr_segs, blkdev_get_blocks, NULL, NULL,
+> +				    DIO_SYNC_WRITES);
 >  }
->
->  /**
-> @@ -412,6 +414,7 @@ EXPORT_SYMBOL_GPL(clk_unprepare);
->
->  int __clk_prepare(struct clk *clk)
->  {
-> +#ifdef CONFIG_HAVE_CLK_PREPARE
+>  
+>  int __sync_blockdev(struct block_device *bdev, int wait)
+> @@ -1631,7 +1632,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  	percpu_down_read(&bdev->bd_block_size_semaphore);
+>  
+>  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+> -	if (ret > 0 || ret == -EIOCBQUEUED) {
+> +	if (ret > 0) {
+>  		ssize_t err;
+>  
+>  		err = generic_write_sync(file, pos, ret);
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index b7391d4..c626c43 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -258,7 +258,8 @@ void generic_dio_end_io(struct kiocb *iocb, loff_t offset, ssize_t bytes,
+>  		work->ret = ret;
+>  		work->offset = offset;
+>  		work->len = bytes;
+> -		queue_work(inode->i_sb->s_dio_flush_wq, &work->work);
+> +		queue_work(iocb->ki_filp->f_mapping->host->i_sb->s_dio_flush_wq,
+> +			   &work->work);
+  This should be folded into the original patch introducing the
+s_dio_flush_wq. And please add a comment before this line saying that block
+devices need a dereference exactly like this... Otherwise the patch looks
+good so you can add:
+  Reviewed-by: Jan Kara <jack@suse.cz>
 
-ditto.
-
->         int ret = 0;
->
->         if (!clk)
-> @@ -432,6 +435,7 @@ int __clk_prepare(struct clk *clk)
->         }
->
->         clk->prepare_count++;
-> +#endif
->
->         return 0;
->  }
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index b3ac22d..f8204c3 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -84,42 +84,6 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
->
->  #endif
->
-> -/**
-> - * clk_prepare - prepare a clock source
-> - * @clk: clock source
-> - *
-> - * This prepares the clock source for use.
-> - *
-> - * Must not be called from within atomic context.
-> - */
-> -#ifdef CONFIG_HAVE_CLK_PREPARE
-> -int clk_prepare(struct clk *clk);
-> -#else
-> -static inline int clk_prepare(struct clk *clk)
-> -{
-> -       might_sleep();
-> -       return 0;
-> -}
-> -#endif
-> -
-> -/**
-> - * clk_unprepare - undo preparation of a clock source
-> - * @clk: clock source
-> - *
-> - * This undoes a previously prepared clock.  The caller must balance
-> - * the number of prepare and unprepare calls.
-> - *
-> - * Must not be called from within atomic context.
-> - */
-> -#ifdef CONFIG_HAVE_CLK_PREPARE
-> -void clk_unprepare(struct clk *clk);
-> -#else
-> -static inline void clk_unprepare(struct clk *clk)
-> -{
-> -       might_sleep();
-> -}
-> -#endif
-> -
->  #ifdef CONFIG_HAVE_CLK
->  /**
->   * clk_get - lookup and obtain a reference to a clock producer.
-> @@ -159,6 +123,27 @@ struct clk *clk_get(struct device *dev, const char *id);
->  struct clk *devm_clk_get(struct device *dev, const char *id);
->
->  /**
-> + * clk_prepare - prepare a clock source
-> + * @clk: clock source
-> + *
-> + * This prepares the clock source for use.
-> + *
-> + * Must not be called from within atomic context.
-> + */
-> +int clk_prepare(struct clk *clk);
-> +
-> +/**
-> + * clk_unprepare - undo preparation of a clock source
-> + * @clk: clock source
-> + *
-> + * This undoes a previously prepared clock.  The caller must balance
-> + * the number of prepare and unprepare calls.
-> + *
-> + * Must not be called from within atomic context.
-> + */
-> +void clk_unprepare(struct clk *clk);
-> +
-> +/**
->   * clk_enable - inform the system when the clock source should be running.
->   * @clk: clock source
->   *
-> @@ -292,6 +277,17 @@ static inline void clk_put(struct clk *clk) {}
->
->  static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
->
-> +static inline int clk_prepare(struct clk *clk)
-> +{
-> +       might_sleep();
-> +       return 0;
-> +}
-> +
-> +static inline void clk_unprepare(struct clk *clk)
-> +{
-> +       might_sleep();
-> +}
-> +
->  static inline int clk_enable(struct clk *clk)
->  {
->         return 0;
-> --
-> 1.7.11.7
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
