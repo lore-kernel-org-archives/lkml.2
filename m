@@ -1,107 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab2KTJcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 04:32:17 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40312 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab2KTJcL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 04:32:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121120092419.GA27280@lizard>
-References: <509B0A0F.5000406@samsung.com>
-	<20ADAB092842284E95860F279283C5644017F6@BGSMSX101.gar.corp.intel.com>
-	<1352521082.1526.230.camel@anish-Inspiron-N5050>
-	<20ADAB092842284E95860F279283C56442034B@BGSMSX101.gar.corp.intel.com>
-	<CAK7N6vpEbVrM-w+zLytf8BWmwt5j68py4Q64HEy9maCW2OMDjg@mail.gmail.com>
-	<20ADAB092842284E95860F279283C56444A584@BGSMSX101.gar.corp.intel.com>
-	<50AAEB15.6000703@samsung.com>
-	<20ADAB092842284E95860F279283C56444A6A1@BGSMSX101.gar.corp.intel.com>
-	<50AB1ECA.5020005@samsung.com>
-	<20ADAB092842284E95860F279283C56444C915@BGSMSX101.gar.corp.intel.com>
-	<20121120092419.GA27280@lizard>
-Date: Tue, 20 Nov 2012 01:32:10 -0800
-Message-ID: <CAK7N6vpg2U5h+uxMG4=E__K77Ta9Rfb=zzvsyD4kSsT+513M3Q@mail.gmail.com>
-Subject: Re: [PATCH] extcon : callback function to read cable property
-From: anish singh <anish198519851985@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "Tc, Jenny" <jenny.tc@intel.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
-        "lockwood@android.com" <lockwood@android.com>,
-        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752862Ab2KTJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 04:32:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25592 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752441Ab2KTJcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 04:32:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,284,1352102400"; 
+   d="scan'208";a="222064189"
+From: Feng Tang <feng.tang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH 2/3] perf hists browser: Add option for runtime switching perf data file
+Date: Tue, 20 Nov 2012 17:31:16 +0800
+Message-Id: <1353403877-10730-2-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
+References: <1353403877-10730-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 1:24 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> On Tue, Nov 20, 2012 at 09:14:41AM +0000, Tc, Jenny wrote:
-> [...]
->> > For example,
->> > Firstly, the power_supply charging framework check state of charger cable
->> > whether attached or detached cable. Second, when power_supply charging
->> > framework receive the changed state of host system from 'Host system
->> > notifier', change charging current of charger cable.
->>
->> Not just SUSPEND, but we need to handle RESUME , UPDATE etc.  Also this doesn’t help us to
->> define a standard interface for the charger cable state/properties. IMHO it's not right
->> to provide different interfaces for different cables. This doesn't help us to standardize
->> the charger cable interface.
->>
->> This thread has been running for a quite long time. Unfortunately we couldn't make an
->> agreement on the final solution. I would like to recap the overall requirement and
->> would like to propose alternate solutions. The requirements is  to
->> "Provide a generic interface for charger cable states and charger cable properties"
->>
->> Even though extcon subsystem handles charger cable states, it's not enough to handle
->> all kind of charger cable states. It can handle just 2 states CONNECT/DISCONNECT.
->> But there are scenarios where we need to handle more than 2 states
->> (eg. USB SUSPEND/RESUME/UPDATE etc). Also extcon doesn't have any mechanism to
->> read cable properties in a generic way.  Extcon charger-cable consumer driver
->> implementations (eg charger-manager), defines charger cable properties statically (current in mA)
->> inside the consumer driver. This is not enough, since the charger cable properties may change dynamically
->>
->> In existing form extcon cannot support different charger cable states and their
->> properties in a generic way. Also we couldn't find a final solution on how to modify the
->> extcon to support these requirements. From the whole discussion what I conclude is
->>  * extcon is not designed to support cable properties
->
-> The idea of using union seemed good to me, what happened to it?
->
-> I mean, MyungJoo Ham wrote:
->
-> | We may have:
-> |        enum extcon_cable_type {
-> |                EXTCON_CT_REGULATOR,
-> |                EXTCON_CT_PSY,
-> |                EXTCON_CT_CHARGER_CB,
-> |                ...
-> |        };
-> | and have the following included at struct extcon_cable:
-> |        union {
-> |                struct regulator *reg;
-> |                struct power_supply *psy;
-> |                struct charger_cable *charger_cb;
-> |                ...
-> |        } cable data;
-> |        enum extcon_cable_type cable_type;
->
-> This sounds good to me...
-+1 for this idea.
->
->>  * extcon is not designed to support any cable state other than CONNECT/DISCONNECT
->
-> Dunno for this one. Can we get these additional states via "properties" as
-> described above?
->
-> Thanks,
-> Anton.
+Based on perf report/top/scripts browser integration idea from acme.
+
+This will enable user to runtime switch the data file, when this option
+is selected, it will popup all the legal data files in current working
+directory, and the filename selected by user is saved in the global
+variable "input_name", and a new key 'K_SWITCH_INPUT_DATA' will be
+passed back to the built-in command which will perform the switch.
+
+This initial version only enables it for 'perf report'.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ tools/perf/ui/browsers/hists.c |  113 +++++++++++++++++++++++++++++++++++++++-
+ tools/perf/ui/keysyms.h        |    1 +
+ 2 files changed, 113 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index ccc4bd1..c64254b 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1135,6 +1135,97 @@ static inline bool is_report_browser(void *timer)
+ 	return timer == NULL;
+ }
+ 
++/*
++ * Only runtime switching of perf data file will make "input_name" point
++ * to a malloced buffer. So add "is_input_name_malloced" flag to decide
++ * whether we need to call free() for current "input_name" during the switch.
++ */
++static bool is_input_name_malloced = false;
++
++static int switch_data_file(void)
++{
++	char *pwd, *options[32], *abs_path[32], *tmp;
++	DIR *pwd_dir;
++	int nr_options = 0, choice = -1, ret = -1;
++
++	struct dirent *dent;
++
++	pwd = getenv("PWD");
++	if (!pwd)
++		return ret;
++
++	pwd_dir = opendir(pwd);
++	if (!pwd_dir)
++		return ret;
++
++	memset(options, 0, sizeof(options));
++	memset(options, 0, sizeof(abs_path));
++
++	while ((dent = readdir(pwd_dir))) {
++		char path[PATH_MAX];
++		u64 magic;
++		char *name = dent->d_name;
++		FILE *file;
++
++		if (!(dent->d_type == DT_REG))
++			continue;
++
++		snprintf(path, PATH_MAX, "%s/%s", pwd, name);
++
++		file = fopen(path, "r");
++		if (!file)
++			continue;
++
++		if (fread(&magic, 1, 8, file) < 8)
++			goto close_file_and_continue;
++
++		if (is_perf_magic(magic)) {
++			options[nr_options] = strdup(name);
++			if (!options[nr_options])
++				goto close_file_and_continue;
++
++			abs_path[nr_options] = strdup(path);
++			if (!abs_path[nr_options]) {
++				free(options[nr_options]);
++				ui__warning("Can't search all data files due to memory shortage.\n");
++				fclose(file);
++				break;
++			}
++
++			nr_options++;
++		}
++
++close_file_and_continue:
++		fclose(file);
++		if (nr_options >= 32) {
++			ui__warning("Too many perf data files in PWD!\n"
++				    "Only the first 32 files will be listed.\n");
++			break;
++		}
++	}
++	closedir(pwd_dir);
++
++	if (nr_options) {
++		choice = ui__popup_menu(nr_options, options);
++		if (choice < nr_options && choice >= 0) {
++			tmp = strdup(abs_path[choice]);
++			if (tmp) {
++				if (is_input_name_malloced)
++					free((void *)input_name);
++				input_name = tmp;
++				is_input_name_malloced = true;
++				ret = 0;
++			} else
++				ui__warning("Data switch failed due to memory shortage!\n");
++		}
++	}
++
++	free_popup_options(options, nr_options);
++	free_popup_options(abs_path, nr_options);
++	return ret;
++}
++
++
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+@@ -1169,7 +1260,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		int choice = 0,
+ 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+ 		    annotate_f = -2, annotate_t = -2, browse_map = -2;
+-		int scripts_comm = -2, scripts_symbol = -2, scripts_all = -2;
++		int scripts_comm = -2, scripts_symbol = -2,
++		    scripts_all = -2, switch_data = -2;
+ 
+ 		nr_options = 0;
+ 
+@@ -1226,6 +1318,10 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			if (is_report_browser(hbt))
+ 				goto do_scripts;
+ 			continue;
++		case 's':
++			if (is_report_browser(hbt))
++				goto do_data_switch;
++			continue;
+ 		case K_F1:
+ 		case 'h':
+ 		case '?':
+@@ -1245,6 +1341,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					"d             Zoom into current DSO\n"
+ 					"t             Zoom into current Thread\n"
+ 					"r             Run available scripts('perf report' only)\n"
++					"s             Switch to another data file in PWD ('perf report' only)\n"
+ 					"P             Print histograms to perf.hist.N\n"
+ 					"V             Verbose (DSO names in callchains, etc)\n"
+ 					"/             Filter symbol by name");
+@@ -1352,6 +1449,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		if (asprintf(&options[nr_options], "Run scripts for all samples") > 0)
+ 			scripts_all = nr_options++;
+ 
++		if (is_report_browser(hbt) && asprintf(&options[nr_options],
++				"Switch to another data file in PWD") > 0)
++			switch_data = nr_options++;
+ add_exit_option:
+ 		options[nr_options++] = (char *)"Exit";
+ retry_popup_menu:
+@@ -1462,6 +1562,16 @@ do_scripts:
+ 
+ 			script_browse(script_opt);
+ 		}
++		/* Switch to another data file */
++		else if (choice == switch_data) {
++do_data_switch:
++			if (!switch_data_file()) {
++				key = K_SWITCH_INPUT_DATA;
++				break;
++			} else
++				ui__warning("Won't switch the data files due to\n"
++					"no valid data file get selected!\n");
++		}
+ 	}
+ out_free_stack:
+ 	pstack__delete(fstack);
+@@ -1578,6 +1688,7 @@ browse_hists:
+ 						"Do you really want to exit?"))
+ 					continue;
+ 				/* Fall thru */
++			case K_SWITCH_INPUT_DATA:
+ 			case 'q':
+ 			case CTRL('c'):
+ 				goto out;
+diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
+index 809eca5..65092d5 100644
+--- a/tools/perf/ui/keysyms.h
++++ b/tools/perf/ui/keysyms.h
+@@ -23,5 +23,6 @@
+ #define K_TIMER	 -1
+ #define K_ERROR	 -2
+ #define K_RESIZE -3
++#define K_SWITCH_INPUT_DATA -4
+ 
+ #endif /* _PERF_KEYSYMS_H_ */
+-- 
+1.7.9.5
+
