@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2KTN6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 08:58:49 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59331 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab2KTN6r (ORCPT
+	id S1753326Ab2KTN7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 08:59:53 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:45026
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752263Ab2KTN7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 08:58:47 -0500
-Date: Tue, 20 Nov 2012 14:59:01 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, arnd@arndb.de
-Subject: Re: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-Message-ID: <20121120135901.GA9227@elf.ucw.cz>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
- <20121120134737.GB8111@elf.ucw.cz>
+	Tue, 20 Nov 2012 08:59:51 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizd799hzz1de0h1202h1d1ah1d2ahzzz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <scottwood@freescale.com>, <timur@freescale.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API implementation.
+Date: Tue, 20 Nov 2012 19:24:53 +0530
+Message-ID: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120134737.GB8111@elf.ucw.cz>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2012-11-20 14:47:37, Pavel Machek wrote:
-> Hi!
-> 
-> >     https://raw.github.com/vineetgarc/publish/master/ELCE-2012-ARC-Linux.pdf
-> > 
-> > All comments/criticisms are welcome !
-> 
-> Huh. arch/arc is very similar to arch/arm. So similar that it took me
-> 10 minutes to figure out. I guess theres no alternate name arc could
-> use?
+This patchset provides the Freescale PAMU (Peripheral Access Management Unit) driver
+and the corresponding IOMMU API implementation. PAMU is the IOMMU present on Freescale
+QorIQ platforms. PAMU can authorize memory access, remap the memory address, and remap 
+the I/O transaction type.
 
-Hmm... "Advanced Risc"... :-(.
+This set consists of the following patches:
+1. Addition of new field in the device (powerpc) archdata structure for storing iommu domain information
+   pointer. This pointer is stored when the device is attached to a particular iommu domain.
+2. Add PAMU bypass enable register to the ccsr_guts structure.
+3. Addition of domain attributes required by the PAMU driver IOMMU API.
+4. PAMU driver and IOMMU API implementation.
 
-Ok, plus there's already computing standard called "arc".
+This patch set is based on the next branch of the iommu git tree maintained by Joerg.
 
-https://www.linux-mips.org/wiki/ARC
 
-What about calling the architecture "sarc" or "syarc" ?
+Varun Sethi (4):
+  store iommu domain pointer in device archdata structure.
+  Add PAMU bypass enable register to ccsr_guts structure.
+  Add attributes for fsl PAMU driver.
+  FSL PAMU driver.
 
-									Pavel
+ arch/powerpc/include/asm/device.h   |    4 +
+ arch/powerpc/include/asm/fsl_guts.h |    4 +-
+ drivers/iommu/Kconfig               |    8 +
+ drivers/iommu/Makefile              |    1 +
+ drivers/iommu/fsl_pamu.c            | 1152 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/fsl_pamu.h            |  398 ++++++++++++++
+ drivers/iommu/fsl_pamu_domain.c     |  978 +++++++++++++++++++++++++++++++++
+ drivers/iommu/fsl_pamu_domain.h     |  102 ++++
+ include/linux/iommu.h               |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 2680 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/iommu/fsl_pamu.c
+ create mode 100644 drivers/iommu/fsl_pamu.h
+ create mode 100644 drivers/iommu/fsl_pamu_domain.c
+ create mode 100644 drivers/iommu/fsl_pamu_domain.h
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.4.1
+
+
