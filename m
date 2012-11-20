@@ -1,52 +1,888 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab2KTGgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 01:36:06 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37347 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2KTGgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 01:36:04 -0500
-Date: Tue, 20 Nov 2012 10:35:59 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
-Message-ID: <20121120063559.GA31306@moon>
-References: <20121114151937.344922058@openvz.org>
- <20121114152239.936025193@openvz.org>
- <20121116155603.2118394c.akpm@linux-foundation.org>
- <20121117071039.GA22855@moon>
- <20121117083437.GC22855@moon>
- <20121119164938.7f19f3d9.akpm@linux-foundation.org>
+	id S1751868Ab2KTGiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 01:38:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17740 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab2KTGiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 01:38:13 -0500
+Message-ID: <50AB25AC.2070606@redhat.com>
+Date: Tue, 20 Nov 2012 14:39:40 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121119164938.7f19f3d9.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
+References: <1353315222-27685-1-git-send-email-asias@redhat.com> <20121119202641.GB12283@redhat.com>
+In-Reply-To: <20121119202641.GB12283@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 04:49:38PM -0800, Andrew Morton wrote:
+On 11/20/2012 04:26 AM, Michael S. Tsirkin wrote:
+> On Mon, Nov 19, 2012 at 04:53:42PM +0800, Asias He wrote:
+>> vhost-blk is an in-kernel virito-blk device accelerator.
+>>
+>> Due to lack of proper in-kernel AIO interface, this version converts
+>> guest's I/O request to bio and use submit_bio() to submit I/O directly.
+>> So this version any supports raw block device as guest's disk image,
+>> e.g. /dev/sda, /dev/ram0. We can add file based image support to
+>> vhost-blk once we have in-kernel AIO interface. There are some work in
+>> progress for in-kernel AIO interface from Dave Kleikamp and Zach Brown:
+>>
+>>    http://marc.info/?l=linux-fsdevel&m=133312234313122
+>>
+>> Performance evaluation:
+>> -----------------------------
+>> 1) LKVM
+>> Fio with libaio ioengine on Fusion IO device using kvm tool
+>> IOPS(k)    Before       After   Improvement
+>> seq-read   107          121     +13.0%
+>> seq-write  130          179     +37.6%
+>> rnd-read   102          122     +19.6%
+>> rnd-write  125          159     +27.0%
+>>
+>> 2) QEMU
+>> Fio with libaio ioengine on Fusion IO device using QEMU
+>> IOPS(k)    Before       After   Improvement
+>> seq-read   76           123     +61.8%
+>> seq-write  139          173     +24.4%
+>> rnd-read   73           120     +64.3%
+>> rnd-write  75           156     +108.0%
 > 
-> Where *is* this pseudo-file, anyway?  The changelog doesn't tell us
-> where it lies in the filesystem.
-> 
-> I know!  I'll search the documentation!  /proc/sys/fs/epoll/..., yes?
-> 
-> btw, Documentation/sysctl/fs.txt is missing documentation for
-> max_user_instances and max_queued_events.  Perhaps you can fix that
-> when providing the documentation changes for your patch :)
+> Could you compare with dataplane qemu as well please?
 
-Sure, I'll provide the docs patch on top. Thanks!
 
-	Cyrill
+Well, I will try to collect it.
+
+> 
+>>
+>> Userspace bits:
+>> -----------------------------
+>> 1) LKVM
+>> The latest vhost-blk userspace bits for kvm tool can be found here:
+>> git@github.com:asias/linux-kvm.git blk.vhost-blk
+>>
+>> 2) QEMU
+>> The latest vhost-blk userspace prototype for QEMU can be found here:
+>> git@github.com:asias/qemu.git blk.vhost-blk
+>>
+>> Changes in v5:
+>> - Do not assume the buffer layout
+>> - Fix wakeup race
+>>
+>> Changes in v4:
+>> - Mark req->status as userspace pointer
+>> - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
+>> - Add if (need_resched()) schedule() in blk thread
+>> - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
+>> - Use vq_err() instead of pr_warn()
+>> - Fail un Unsupported request
+>> - Add flush in vhost_blk_set_features()
+>>
+>> Changes in v3:
+>> - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
+>> - Check file passed by user is a raw block device file
+>>
+>> Signed-off-by: Asias He <asias@redhat.com>
+> 
+> Since there are files shared by this and vhost net
+> it's easiest for me to merge this all through the
+> vhost tree.
+> 
+> Jens, could you ack this and the bio usage in this driver
+> please?
+> 
+>> ---
+>>  drivers/vhost/Kconfig     |   1 +
+>>  drivers/vhost/Kconfig.blk |  10 +
+>>  drivers/vhost/Makefile    |   2 +
+>>  drivers/vhost/blk.c       | 697 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/vhost/blk.h       |   8 +
+>>  5 files changed, 718 insertions(+)
+>>  create mode 100644 drivers/vhost/Kconfig.blk
+>>  create mode 100644 drivers/vhost/blk.c
+>>  create mode 100644 drivers/vhost/blk.h
+>>
+>> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+>> index 202bba6..acd8038 100644
+>> --- a/drivers/vhost/Kconfig
+>> +++ b/drivers/vhost/Kconfig
+>> @@ -11,4 +11,5 @@ config VHOST_NET
+>>  
+>>  if STAGING
+>>  source "drivers/vhost/Kconfig.tcm"
+>> +source "drivers/vhost/Kconfig.blk"
+>>  endif
+>> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
+>> new file mode 100644
+>> index 0000000..ff8ab76
+>> --- /dev/null
+>> +++ b/drivers/vhost/Kconfig.blk
+>> @@ -0,0 +1,10 @@
+>> +config VHOST_BLK
+>> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
+>> +	depends on BLOCK &&  EXPERIMENTAL && m
+>> +	---help---
+>> +	  This kernel module can be loaded in host kernel to accelerate
+>> +	  guest block with virtio_blk. Not to be confused with virtio_blk
+>> +	  module itself which needs to be loaded in guest kernel.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module will
+>> +	  be called vhost_blk.
+>> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
+>> index a27b053..1a8a4a5 100644
+>> --- a/drivers/vhost/Makefile
+>> +++ b/drivers/vhost/Makefile
+>> @@ -2,3 +2,5 @@ obj-$(CONFIG_VHOST_NET) += vhost_net.o
+>>  vhost_net-y := vhost.o net.o
+>>  
+>>  obj-$(CONFIG_TCM_VHOST) += tcm_vhost.o
+>> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
+>> +vhost_blk-y := blk.o
+>> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
+>> new file mode 100644
+>> index 0000000..f0f118a
+>> --- /dev/null
+>> +++ b/drivers/vhost/blk.c
+>> @@ -0,0 +1,697 @@
+>> +/*
+>> + * Copyright (C) 2011 Taobao, Inc.
+>> + * Author: Liu Yuan <tailai.ly@taobao.com>
+>> + *
+>> + * Copyright (C) 2012 Red Hat, Inc.
+>> + * Author: Asias He <asias@redhat.com>
+>> + *
+>> + * This work is licensed under the terms of the GNU GPL, version 2.
+>> + *
+>> + * virtio-blk server in host kernel.
+>> + */
+>> +
+>> +#include <linux/miscdevice.h>
+>> +#include <linux/module.h>
+>> +#include <linux/vhost.h>
+>> +#include <linux/virtio_blk.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/file.h>
+>> +#include <linux/kthread.h>
+>> +#include <linux/blkdev.h>
+>> +#include <linux/llist.h>
+>> +
+>> +#include "vhost.c"
+>> +#include "vhost.h"
+>> +#include "blk.h"
+>> +
+>> +static DEFINE_IDA(vhost_blk_index_ida);
+>> +
+>> +enum {
+>> +	VHOST_BLK_VQ_REQ = 0,
+>> +	VHOST_BLK_VQ_MAX = 1,
+>> +};
+>> +
+>> +struct req_page_list {
+>> +	struct page **pages;
+>> +	int pages_nr;
+>> +};
+>> +
+>> +struct vhost_blk_req {
+>> +	struct llist_node llnode;
+>> +	struct req_page_list *pl;
+>> +	struct vhost_blk *blk;
+>> +
+>> +	struct iovec *iov;
+>> +	int iov_nr;
+>> +
+>> +	struct bio **bio;
+>> +	atomic_t bio_nr;
+>> +
+>> +	struct iovec status[1];
+>> +
+>> +	sector_t sector;
+>> +	int write;
+>> +	u16 head;
+>> +	long len;
+>> +};
+>> +
+>> +struct vhost_blk {
+>> +	struct task_struct *host_kick;
+> 
+> Could you please add a comment here explaining why
+> is this better than using the builtin vhost thread?
+
+With separate thread model, the request submit and request completion
+can be handled in parallel. I have measured significant performance
+improvement with this model. In the long term, It would be nice if the
+vhost core can provide multiple thread support.
+
+>> +	struct iovec iov[UIO_MAXIOV];
+>> +	struct vhost_blk_req *reqs;
+>> +	struct vhost_virtqueue vq;
+>> +	struct llist_head llhead;
+>> +	struct vhost_dev dev;
+>> +	u16 reqs_nr;
+>> +	int index;
+>> +};
+>> +
+>> +static int move_iovec(struct iovec *from, struct iovec *to,
+>> +		      size_t len, int iov_count)
+>> +{
+>> +	int seg = 0;
+>> +	size_t size;
+>> +
+>> +	while (len && seg < iov_count) {
+>> +		if (from->iov_len == 0) {
+>> +			++from;
+>> +			continue;
+>> +		}
+>> +		size = min(from->iov_len, len);
+>> +		to->iov_base = from->iov_base;
+>> +		to->iov_len = size;
+>> +		from->iov_len -= size;
+>> +		from->iov_base += size;
+>> +		len -= size;
+>> +		++from;
+>> +		++to;
+>> +		++seg;
+>> +	}
+>> +	return seg;
+>> +}
+>> +
+>> +static inline int iov_num_pages(struct iovec *iov)
+>> +{
+>> +	return (PAGE_ALIGN((unsigned long)iov->iov_base + iov->iov_len) -
+>> +	       ((unsigned long)iov->iov_base & PAGE_MASK)) >> PAGE_SHIFT;
+>> +}
+>> +
+>> +static int vhost_blk_setup(struct vhost_blk *blk)
+>> +{
+>> +	blk->reqs_nr = blk->vq.num;
+>> +
+>> +	blk->reqs = kmalloc(sizeof(struct vhost_blk_req) * blk->reqs_nr,
+>> +			    GFP_KERNEL);
+>> +	if (!blk->reqs)
+>> +		return -ENOMEM;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static inline int vhost_blk_set_status(struct vhost_blk_req *req, u8 status)
+>> +{
+>> +	struct vhost_blk *blk = req->blk;
+>> +	int ret;
+>> +
+>> +	ret = memcpy_toiovecend(req->status, &status, 0, sizeof(status));
+>> +
+>> +	if (ret) {
+>> +		vq_err(&blk->vq, "Failed to write status\n");
+>> +		return -EFAULT;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void vhost_blk_enable_vq(struct vhost_blk *blk,
+>> +				struct vhost_virtqueue *vq)
+>> +{
+>> +	wake_up_process(blk->host_kick);
+>> +}
+>> +
+>> +static void vhost_blk_req_done(struct bio *bio, int err)
+>> +{
+>> +	struct vhost_blk_req *req = bio->bi_private;
+>> +	struct vhost_blk *blk = req->blk;
+>> +
+>> +	if (err)
+>> +		req->len = err;
+>> +
+>> +	if (atomic_dec_and_test(&req->bio_nr)) {
+>> +		llist_add(&req->llnode, &blk->llhead);
+>> +		wake_up_process(blk->host_kick);
+>> +	}
+>> +
+>> +	bio_put(bio);
+>> +}
+>> +
+>> +static void vhost_blk_req_umap(struct vhost_blk_req *req)
+>> +{
+>> +	struct req_page_list *pl;
+>> +	int i, j;
+>> +
+>> +
+>> +	if (!req->pl) {
+>> +		kfree(req->bio);
+>> +		return;
+>> +	}
+>> +
+>> +	for (i = 0; i < req->iov_nr; i++) {
+>> +		pl = &req->pl[i];
+>> +		for (j = 0; j < pl->pages_nr; j++) {
+>> +			if (!req->write)
+>> +				set_page_dirty_lock(pl->pages[j]);
+>> +			page_cache_release(pl->pages[j]);
+>> +		}
+>> +	}
+>> +
+>> +	kfree(req->pl);
+>> +}
+>> +
+>> +static int vhost_blk_bio_make(struct vhost_blk_req *req,
+>> +			      struct block_device *bdev)
+>> +{
+>> +	int pl_len, page_len, bio_len;
+>> +	int pages_nr_total, i, j, ret;
+>> +	struct iovec *iov = req->iov;
+>> +	int iov_nr = req->iov_nr;
+>> +	struct page **pages, *page;
+>> +	struct bio *bio = NULL;
+>> +	int bio_nr = 0;
+>> +	void *buf;
+>> +
+>> +	pages_nr_total = 0;
+>> +	for (i = 0; i < iov_nr; i++)
+>> +		pages_nr_total += iov_num_pages(&iov[i]);
+>> +
+>> +	if (unlikely(req->write == WRITE_FLUSH)) {
+>> +		req->pl = NULL;
+>> +		req->bio = kmalloc(sizeof(struct bio *), GFP_KERNEL);
+>> +		bio = bio_alloc(GFP_KERNEL, 1);
+>> +		if (!bio) {
+>> +			kfree(req->bio);
+>> +			return -ENOMEM;
+>> +		}
+>> +		bio->bi_sector  = req->sector;
+>> +		bio->bi_bdev    = bdev;
+>> +		bio->bi_private = req;
+>> +		bio->bi_end_io  = vhost_blk_req_done;
+>> +		req->bio[bio_nr++] = bio;
+>> +
+>> +		goto out;
+>> +	}
+>> +
+>> +	pl_len = iov_nr * sizeof(req->pl[0]);
+>> +	page_len = pages_nr_total * sizeof(struct page *);
+>> +	bio_len = pages_nr_total * sizeof(struct bio *);
+>> +
+>> +	buf = kmalloc(pl_len + page_len + bio_len, GFP_KERNEL);
+>> +	if (!buf)
+>> +		return -ENOMEM;
+>> +
+>> +	req->pl	= buf;
+>> +	pages = buf + pl_len;
+>> +	req->bio = buf + pl_len + page_len;
+>> +
+>> +	req->iov_nr = 0;
+>> +	for (i = 0; i < iov_nr; i++) {
+>> +		int pages_nr = iov_num_pages(&iov[i]);
+>> +		unsigned long iov_base, iov_len;
+>> +		struct req_page_list *pl;
+>> +
+>> +		iov_base = (unsigned long)iov[i].iov_base;
+>> +		iov_len  = (unsigned long)iov[i].iov_len;
+>> +
+>> +		/* TODO: Limit the total number of pages pinned */
+> 
+> What's the plan here? Is there some limit if e.g. aio is used?
+
+The problem is there is no easy way to find a proper limit number. May
+be 16 * vq size number of pages as you sugguested.
+
+With aio, we do not touch this code path at all.
+
+>> +		ret = get_user_pages_fast(iov_base, pages_nr,
+>> +					  !req->write, pages);
+>> +		if (ret != pages_nr)
+>> +			goto fail;
+>> +
+>> +		req->iov_nr++;
+>> +		pl = &req->pl[i];
+>> +		pl->pages_nr = pages_nr;
+>> +		pl->pages = pages;
+>> +
+>> +		for (j = 0; j < pages_nr; j++) {
+>> +			unsigned int off, len;
+>> +			page = pages[j];
+>> +			off = iov_base & ~PAGE_MASK;
+>> +			len = PAGE_SIZE - off;
+>> +			if (len > iov_len)
+>> +				len = iov_len;
+>> +
+>> +			while (!bio || bio_add_page(bio, page, len, off) <= 0) {
+>> +				bio = bio_alloc(GFP_KERNEL, pages_nr);
+>> +				if (!bio)
+>> +					goto fail;
+>> +				bio->bi_sector  = req->sector;
+>> +				bio->bi_bdev    = bdev;
+>> +				bio->bi_private = req;
+>> +				bio->bi_end_io  = vhost_blk_req_done;
+>> +				req->bio[bio_nr++] = bio;
+>> +			}
+>> +			req->sector	+= len >> 9;
+>> +			iov_base	+= len;
+>> +			iov_len		-= len;
+>> +		}
+>> +
+>> +		pages += pages_nr;
+>> +	}
+>> +out:
+>> +	atomic_set(&req->bio_nr, bio_nr);
+>> +	return 0;
+>> +
+>> +fail:
+>> +	for (i = 0; i < bio_nr; i++)
+>> +		bio_put(req->bio[i]);
+>> +	vhost_blk_req_umap(req);
+>> +	return -ENOMEM;
+>> +}
+>> +
+>> +static inline void vhost_blk_bio_send(struct vhost_blk_req *req)
+>> +{
+>> +	struct blk_plug plug;
+>> +	int i, bio_nr;
+>> +
+>> +	bio_nr = atomic_read(&req->bio_nr);
+>> +	blk_start_plug(&plug);
+>> +	for (i = 0; i < bio_nr; i++)
+>> +		submit_bio(req->write, req->bio[i]);
+>> +	blk_finish_plug(&plug);
+>> +}
+>> +
+>> +static int vhost_blk_req_submit(struct vhost_blk_req *req, struct file *file)
+>> +{
+>> +
+>> +	struct inode *inode = file->f_mapping->host;
+>> +	struct block_device *bdev = inode->i_bdev;
+>> +	int ret;
+>> +
+>> +	ret = vhost_blk_bio_make(req, bdev);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	vhost_blk_bio_send(req);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static int vhost_blk_req_done_thread(void *data)
+>> +{
+>> +	mm_segment_t oldfs = get_fs();
+>> +	struct vhost_blk *blk = data;
+>> +	struct vhost_virtqueue *vq;
+>> +	struct llist_node *llnode;
+>> +	struct vhost_blk_req *req;
+>> +	bool added;
+>> +	u8 status;
+>> +	int ret;
+>> +
+>> +	vq = &blk->vq;
+>> +	set_fs(USER_DS);
+>> +	use_mm(blk->dev.mm);
+>> +	for (;;) {
+>> +		set_current_state(TASK_INTERRUPTIBLE);
+>> +		llnode = llist_del_all(&blk->llhead);
+>> +		if (!llnode) {
+>> +			schedule();
+>> +			if (unlikely(kthread_should_stop()))
+>> +				break;
+>> +			continue;
+>> +		}
+>> +		set_current_state(TASK_RUNNING);
+>> +
+>> +		if (need_resched())
+>> +			schedule();
+>> +
+>> +		added = false;
+>> +		while (llnode) {
+>> +			req = llist_entry(llnode, struct vhost_blk_req, llnode);
+>> +			llnode = llist_next(llnode);
+>> +
+>> +			vhost_blk_req_umap(req);
+>> +
+>> +			status = req->len > 0 ?
+>> +				 VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR;
+>> +			ret = vhost_blk_set_status(req, status);
+>> +			if (unlikely(ret))
+>> +				continue;
+>> +			vhost_add_used(&blk->vq, req->head, req->len);
+>> +			added = true;
+>> +		}
+>> +		if (likely(added))
+>> +			vhost_signal(&blk->dev, &blk->vq);
+>> +	}
+>> +	unuse_mm(blk->dev.mm);
+>> +	set_fs(oldfs);
+>> +	return 0;
+>> +}
+>> +
+>> +static void vhost_blk_flush(struct vhost_blk *blk)
+>> +{
+>> +	vhost_poll_flush(&blk->vq.poll);
+>> +}
+>> +
+>> +static inline void vhost_blk_stop(struct vhost_blk *blk, struct file **file)
+>> +{
+>> +	struct vhost_virtqueue *vq = &blk->vq;
+>> +	struct file *f;
+>> +
+>> +	mutex_lock(&vq->mutex);
+>> +	f = rcu_dereference_protected(vq->private_data,
+>> +				      lockdep_is_held(&vq->mutex));
+>> +	rcu_assign_pointer(vq->private_data, NULL);
+>> +	mutex_unlock(&vq->mutex);
+>> +
+>> +	*file = f;
+>> +}
+>> +
+>> +/* Handle guest request */
+>> +static int vhost_blk_req_handle(struct vhost_virtqueue *vq,
+>> +				struct virtio_blk_outhdr *hdr,
+>> +				u16 head, u16 out, u16 in,
+>> +				struct file *file)
+>> +{
+>> +	struct vhost_blk *blk = container_of(vq->dev, struct vhost_blk, dev);
+>> +	unsigned char id[VIRTIO_BLK_ID_BYTES];
+>> +	struct vhost_blk_req *req;
+>> +	int ret, len;
+>> +	u8 status;
+>> +
+>> +	req		= &blk->reqs[head];
+>> +	req->head	= head;
+>> +	req->blk	= blk;
+>> +	req->sector	= hdr->sector;
+>> +	req->iov	= blk->iov;
+>> +
+>> +	req->len	= iov_length(vq->iov, out + in) - sizeof(status);
+>> +	req->iov_nr	= move_iovec(vq->iov, req->iov, req->len, out + in);
+>> +
+>> +	move_iovec(vq->iov, req->status, sizeof(status), out + in);
+>> +
+>> +	switch (hdr->type) {
+>> +	case VIRTIO_BLK_T_OUT:
+>> +		req->write = WRITE;
+>> +		ret = vhost_blk_req_submit(req, file);
+>> +		break;
+>> +	case VIRTIO_BLK_T_IN:
+>> +		req->write = READ;
+>> +		ret = vhost_blk_req_submit(req, file);
+>> +		break;
+>> +	case VIRTIO_BLK_T_FLUSH:
+>> +		req->write = WRITE_FLUSH;
+>> +		ret = vhost_blk_req_submit(req, file);
+>> +		break;
+>> +	case VIRTIO_BLK_T_GET_ID:
+>> +		ret = snprintf(id, VIRTIO_BLK_ID_BYTES,
+>> +			       "vhost-blk%d", blk->index);
+>> +		if (ret < 0)
+>> +			break;
+>> +		len = ret;
+>> +		ret = memcpy_toiovecend(req->iov, id, 0, len);
+>> +		status = ret < 0 ? VIRTIO_BLK_S_IOERR : VIRTIO_BLK_S_OK;
+>> +		ret = vhost_blk_set_status(req, status);
+>> +		if (ret)
+>> +			break;
+>> +		vhost_add_used_and_signal(&blk->dev, vq, head, len);
+>> +		break;
+>> +	default:
+>> +		vq_err(vq, "Unsupported request type %d\n", hdr->type);
+>> +		status = VIRTIO_BLK_S_UNSUPP;
+>> +		ret = vhost_blk_set_status(req, status);
+>> +		if (ret)
+>> +			break;
+>> +		vhost_add_used_and_signal(&blk->dev, vq, head, 0);
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +/* Guest kick us for IO request */
+>> +static void vhost_blk_handle_guest_kick(struct vhost_work *work)
+>> +{
+>> +	struct virtio_blk_outhdr hdr;
+>> +	struct vhost_virtqueue *vq;
+>> +	struct vhost_blk *blk;
+>> +	int in, out, ret;
+>> +	struct file *f;
+>> +	u16 head;
+>> +
+>> +	vq = container_of(work, struct vhost_virtqueue, poll.work);
+>> +	blk = container_of(vq->dev, struct vhost_blk, dev);
+>> +
+>> +	/* TODO: check that we are running from vhost_worker? */
+>> +	f = rcu_dereference_check(vq->private_data, 1);
+>> +	if (!f)
+>> +		return;
+>> +
+>> +	vhost_disable_notify(&blk->dev, vq);
+>> +	for (;;) {
+>> +		head = vhost_get_vq_desc(&blk->dev, vq, vq->iov,
+>> +					 ARRAY_SIZE(vq->iov),
+>> +					 &out, &in, NULL, NULL);
+>> +		if (unlikely(head < 0))
+>> +			break;
+>> +
+>> +		if (unlikely(head == vq->num)) {
+>> +			if (unlikely(vhost_enable_notify(&blk->dev, vq))) {
+>> +				vhost_disable_notify(&blk->dev, vq);
+>> +				continue;
+>> +			}
+>> +			break;
+>> +		}
+>> +		move_iovec(vq->iov, vq->hdr, sizeof(hdr), out);
+>> +		ret = memcpy_fromiovecend((unsigned char *)&hdr, vq->hdr, 0,
+>> +					   sizeof(hdr));
+>> +		if (ret < 0) {
+>> +			vq_err(vq, "Failed to get block header!\n");
+>> +			vhost_discard_vq_desc(vq, 1);
+>> +			break;
+>> +		}
+>> +
+>> +		if (vhost_blk_req_handle(vq, &hdr, head, out, in, f) < 0)
+>> +			break;
+>> +	}
+>> +}
+>> +
+>> +static int vhost_blk_open(struct inode *inode, struct file *file)
+>> +{
+>> +	struct vhost_blk *blk;
+>> +	int ret;
+>> +
+>> +	blk = kzalloc(sizeof(*blk), GFP_KERNEL);
+>> +	if (!blk) {
+>> +		ret = -ENOMEM;
+>> +		goto out;
+>> +	}
+>> +
+>> +	ret = ida_simple_get(&vhost_blk_index_ida, 0, 0, GFP_KERNEL);
+>> +	if (ret < 0)
+>> +		goto out_dev;
+>> +	blk->index = ret;
+>> +
+>> +	blk->vq.handle_kick = vhost_blk_handle_guest_kick;
+>> +
+>> +	ret = vhost_dev_init(&blk->dev, &blk->vq, VHOST_BLK_VQ_MAX);
+>> +	if (ret < 0)
+>> +		goto out_dev;
+>> +	file->private_data = blk;
+>> +
+>> +	blk->host_kick = kthread_create(vhost_blk_req_done_thread,
+>> +			 blk, "vhost-blk-%d", current->pid);
+>> +	if (IS_ERR(blk->host_kick)) {
+>> +		ret = PTR_ERR(blk->host_kick);
+>> +		goto out_dev;
+>> +	}
+>> +
+>> +	return ret;
+>> +out_dev:
+>> +	kfree(blk);
+>> +out:
+>> +	return ret;
+>> +}
+>> +
+>> +static int vhost_blk_release(struct inode *inode, struct file *f)
+>> +{
+>> +	struct vhost_blk *blk = f->private_data;
+>> +	struct file *file;
+>> +
+>> +	ida_simple_remove(&vhost_blk_index_ida, blk->index);
+>> +	vhost_blk_stop(blk, &file);
+>> +	vhost_blk_flush(blk);
+>> +	vhost_dev_cleanup(&blk->dev, false);
+>> +	if (file)
+>> +		fput(file);
+>> +	kthread_stop(blk->host_kick);
+>> +	kfree(blk->reqs);
+>> +	kfree(blk);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int vhost_blk_set_features(struct vhost_blk *blk, u64 features)
+>> +{
+>> +	mutex_lock(&blk->dev.mutex);
+>> +	blk->dev.acked_features = features;
+>> +	vhost_blk_flush(blk);
+>> +	mutex_unlock(&blk->dev.mutex);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static long vhost_blk_set_backend(struct vhost_blk *blk, unsigned index, int fd)
+>> +{
+>> +	struct vhost_virtqueue *vq = &blk->vq;
+>> +	struct file *file, *oldfile;
+>> +	struct inode *inode;
+>> +	int ret;
+>> +
+>> +	mutex_lock(&blk->dev.mutex);
+>> +	ret = vhost_dev_check_owner(&blk->dev);
+>> +	if (ret)
+>> +		goto out_dev;
+>> +
+>> +	if (index >= VHOST_BLK_VQ_MAX) {
+>> +		ret = -ENOBUFS;
+>> +		goto out_dev;
+>> +	}
+>> +
+>> +	mutex_lock(&vq->mutex);
+>> +
+>> +	if (!vhost_vq_access_ok(vq)) {
+>> +		ret = -EFAULT;
+>> +		goto out_vq;
+>> +	}
+>> +
+>> +	file = fget(fd);
+>> +	if (IS_ERR(file)) {
+>> +		ret = PTR_ERR(file);
+>> +		goto out_vq;
+>> +	}
+>> +
+>> +	/* Only raw block device is supported for now */
+>> +	inode = file->f_mapping->host;
+>> +	if (!S_ISBLK(inode->i_mode)) {
+>> +		ret = -EFAULT;
+>> +		goto out_file;
+>> +	}
+>> +
+>> +	oldfile = rcu_dereference_protected(vq->private_data,
+>> +			lockdep_is_held(&vq->mutex));
+>> +	if (file != oldfile) {
+>> +		rcu_assign_pointer(vq->private_data, file);
+>> +		vhost_blk_enable_vq(blk, vq);
+>> +
+>> +		ret = vhost_init_used(vq);
+>> +		if (ret)
+>> +			goto out_file;
+>> +	}
+>> +
+>> +	mutex_unlock(&vq->mutex);
+>> +
+>> +	if (oldfile) {
+>> +		vhost_blk_flush(blk);
+>> +		fput(oldfile);
+>> +	}
+>> +
+>> +	mutex_unlock(&blk->dev.mutex);
+>> +	return 0;
+>> +
+>> +out_file:
+>> +	fput(file);
+>> +out_vq:
+>> +	mutex_unlock(&vq->mutex);
+>> +out_dev:
+>> +	mutex_unlock(&blk->dev.mutex);
+>> +	return ret;
+>> +}
+>> +
+>> +static long vhost_blk_reset_owner(struct vhost_blk *blk)
+>> +{
+>> +	struct file *file = NULL;
+>> +	int err;
+>> +
+>> +	mutex_lock(&blk->dev.mutex);
+>> +	err = vhost_dev_check_owner(&blk->dev);
+>> +	if (err)
+>> +		goto done;
+>> +	vhost_blk_stop(blk, &file);
+>> +	vhost_blk_flush(blk);
+>> +	err = vhost_dev_reset_owner(&blk->dev);
+>> +done:
+>> +	mutex_unlock(&blk->dev.mutex);
+>> +	if (file)
+>> +		fput(file);
+>> +	return err;
+>> +}
+>> +
+>> +static long vhost_blk_ioctl(struct file *f, unsigned int ioctl,
+>> +			    unsigned long arg)
+>> +{
+>> +	struct vhost_blk *blk = f->private_data;
+>> +	void __user *argp = (void __user *)arg;
+>> +	struct vhost_vring_file backend;
+>> +	u64 __user *featurep = argp;
+>> +	u64 features;
+>> +	int ret;
+>> +
+>> +	switch (ioctl) {
+>> +	case VHOST_BLK_SET_BACKEND:
+>> +		if (copy_from_user(&backend, argp, sizeof(backend)))
+>> +			return -EFAULT;
+>> +		return vhost_blk_set_backend(blk, backend.index, backend.fd);
+>> +	case VHOST_GET_FEATURES:
+>> +		features = VHOST_BLK_FEATURES;
+>> +		if (copy_to_user(featurep, &features, sizeof(features)))
+>> +			return -EFAULT;
+>> +		return 0;
+>> +	case VHOST_SET_FEATURES:
+>> +		if (copy_from_user(&features, featurep, sizeof(features)))
+>> +			return -EFAULT;
+>> +		if (features & ~VHOST_BLK_FEATURES)
+>> +			return -EOPNOTSUPP;
+>> +		return vhost_blk_set_features(blk, features);
+>> +	case VHOST_RESET_OWNER:
+>> +		return vhost_blk_reset_owner(blk);
+>> +	default:
+>> +		mutex_lock(&blk->dev.mutex);
+>> +		ret = vhost_dev_ioctl(&blk->dev, ioctl, arg);
+>> +		if (!ret && ioctl == VHOST_SET_VRING_NUM)
+>> +			ret = vhost_blk_setup(blk);
+>> +		vhost_blk_flush(blk);
+>> +		mutex_unlock(&blk->dev.mutex);
+>> +		return ret;
+>> +	}
+>> +}
+>> +
+>> +static const struct file_operations vhost_blk_fops = {
+>> +	.owner          = THIS_MODULE,
+>> +	.open           = vhost_blk_open,
+>> +	.release        = vhost_blk_release,
+>> +	.llseek		= noop_llseek,
+>> +	.unlocked_ioctl = vhost_blk_ioctl,
+>> +};
+>> +
+>> +static struct miscdevice vhost_blk_misc = {
+>> +	MISC_DYNAMIC_MINOR,
+>> +	"vhost-blk",
+>> +	&vhost_blk_fops,
+>> +};
+>> +
+>> +static int vhost_blk_init(void)
+>> +{
+>> +	return misc_register(&vhost_blk_misc);
+>> +}
+>> +
+>> +static void vhost_blk_exit(void)
+>> +{
+>> +	misc_deregister(&vhost_blk_misc);
+>> +}
+>> +
+>> +module_init(vhost_blk_init);
+>> +module_exit(vhost_blk_exit);
+>> +
+>> +MODULE_LICENSE("GPL v2");
+>> +MODULE_AUTHOR("Asias He");
+>> +MODULE_DESCRIPTION("Host kernel accelerator for virtio_blk");
+>> diff --git a/drivers/vhost/blk.h b/drivers/vhost/blk.h
+>> new file mode 100644
+>> index 0000000..2f674f0
+>> --- /dev/null
+>> +++ b/drivers/vhost/blk.h
+>> @@ -0,0 +1,8 @@
+>> +#include <linux/vhost.h>
+>> +
+>> +enum {
+>> +	VHOST_BLK_FEATURES = (1ULL << VIRTIO_RING_F_INDIRECT_DESC) |
+>> +			     (1ULL << VIRTIO_RING_F_EVENT_IDX),
+>> +};
+>> +/* VHOST_BLK specific defines */
+>> +#define VHOST_BLK_SET_BACKEND _IOW(VHOST_VIRTIO, 0x50, struct vhost_vring_file)
+>> -- 
+>> 1.7.11.7
+
+
+-- 
+Asias
