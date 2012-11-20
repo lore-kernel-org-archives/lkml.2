@@ -1,216 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2KTA2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 19:28:11 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:57976 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab2KTA2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 19:28:08 -0500
+	id S1753225Ab2KTAdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 19:33:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752837Ab2KTAdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 19:33:19 -0500
+Date: Mon, 19 Nov 2012 22:32:58 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] x86: clear vmcss on all cpus when doing kdump if
+ necessary
+Message-ID: <20121120003258.GA1292@amt.cnet>
+References: <50A3645F.60302@cn.fujitsu.com>
+ <50A611AA.6030903@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hy4SedXQ1Bc6o_1BHZ-7a8tbbvpUcFwp50hDbgNnv79zQ@mail.gmail.com>
-References: <4FDD7AA8.6080601@gmail.com> <CAFTL4hy4SedXQ1Bc6o_1BHZ-7a8tbbvpUcFwp50hDbgNnv79zQ@mail.gmail.com>
-From: Hakan Akkan <hakanakkan@gmail.com>
-Date: Mon, 19 Nov 2012 17:27:47 -0700
-Message-ID: <CABVzNXqVdgTr1GNN6_yj-CZTDLPtP=Ok7r5TaDbRt2jpxHB-5Q@mail.gmail.com>
-Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
- presence of nohz cpusets
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50A611AA.6030903@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 7:46 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
-> Hi Hakan,
->
-> As I start to focus on timekeeing for full dynticks, I'm looking at
-> your patch. Sorry I haven't yet replied with a serious review until
-> now. But here is it, finally:
->
-> 2012/6/17 Hakan Akkan <hakanakkan@gmail.com>:
-> > An adaptive nohz (AHZ) CPU may not do do_timer() for a while
-> > despite being non-idle. When all other CPUs are idle, AHZ
-> > CPUs might be using stale jiffies values. To prevent this
-> > always keep a CPU with ticks if there is one or more AHZ
-> > CPUs.
-> >
-> > The patch changes can_stop_{idle,adaptive}_tick functions
-> > and prevents either the last CPU who did the do_timer() duty
-> > or the AHZ CPU itself from stopping its sched timer if there
-> > is one or more AHZ CPUs in the system. This means AHZ CPUs
-> > might keep the ticks running for short periods until a
-> > non-AHZ CPU takes the charge away in
-> > tick_do_timer_check_handler() function. When a non-AHZ CPU
-> > takes the charge, it never gives it away so that AHZ CPUs
-> > can run tickless.
-> >
-> > Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
-> > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  include/linux/cpuset.h   |    3 ++-
-> >  kernel/cpuset.c          |    5 +++++
-> >  kernel/time/tick-sched.c |   31 ++++++++++++++++++++++++++++++-
-> >  3 files changed, 37 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> > index ccbc2fd..19aa448 100644
-> > --- a/include/linux/cpuset.h
-> > +++ b/include/linux/cpuset.h
-> > @@ -266,11 +266,12 @@ static inline bool cpuset_adaptive_nohz(void)
-> >
-> >  extern void cpuset_exit_nohz_interrupt(void *unused);
-> >  extern void cpuset_nohz_flush_cputimes(void);
-> > +extern bool nohz_cpu_exist(void);
-> >  #else
-> >  static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
-> >  static inline bool cpuset_adaptive_nohz(void) { return false; }
-> >  static inline void cpuset_nohz_flush_cputimes(void) { }
-> > -
-> > +static inline bool nohz_cpu_exist(void) { return false; }
-> >  #endif /* CONFIG_CPUSETS_NO_HZ */
-> >
-> >  #endif /* _LINUX_CPUSET_H */
-> > diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> > index 858217b..ccbaac9 100644
-> > --- a/kernel/cpuset.c
-> > +++ b/kernel/cpuset.c
-> > @@ -1231,6 +1231,11 @@ DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
-> >
-> >  static cpumask_t nohz_cpuset_mask;
-> >
-> > +inline bool nohz_cpu_exist(void)
-> > +{
-> > +       return !cpumask_empty(&nohz_cpuset_mask);
-> > +}
-> > +
-> >  static void flush_cputime_interrupt(void *unused)
-> >  {
-> >         trace_printk("IPI: flush cputime\n");
-> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> > index bdc8aeb..e60d541 100644
-> > --- a/kernel/time/tick-sched.c
-> > +++ b/kernel/time/tick-sched.c
-> > @@ -409,6 +409,25 @@ out:
-> >         return ret;
-> >  }
-> >
-> > +static inline bool must_take_timer_duty(int cpu)
-> > +{
-> > +       int handler = tick_do_timer_cpu;
-> > +       bool ret = false;
-> > +       bool tick_needed = nohz_cpu_exist();
->
-> Note this is racy because this fetches the value of the
-> nohz_cpuset_mask without locking.
-> We may "see" there is no nohz cpusets whereas we just set some of them
-> as nohz and they
-> could even have shut down their tick already.
+On Fri, Nov 16, 2012 at 06:12:58PM +0800, zhangyanfei wrote:
+> Hello Marcelo,
+> 
+> Any thoughts?
 
-Yes, this is racy indeed. Thanks for pointing out.
+I thought a function call was OK, but its better to have all code in
+vmx.c. Please have an atomic notifier in kexec.c (registered by KVM
+module via atomic_notifier_chain_register etc).
 
->
->
-> > +
-> > +       /*
-> > +        * A CPU will have to take the timer duty if there is an adaptive
-> > +        * nohz CPU in the system. The last handler == cpu check ensures
-> > +        * that the last cpu that did the do_timer() sticks with the duty.
-> > +        * A normal (non nohz) cpu will take the charge from a nohz cpu in
-> > +        * tick_do_timer_check_handler anyway.
-> > +        */
-> > +       if (tick_needed && (handler == TICK_DO_TIMER_NONE || handler == cpu))
-> > +               ret = true;
->
-> This check is also racy due to the lack of locking. The previous
-> handler may have set TICK_DO_TIMER_NONE and gone to sleep. We have no
-> guarantee that the CPU can see that new value. It could believe there
-> is still a handler. This needs at least cmpxchg() to make the test and
-> set atomic.
->
-> > +
-> > +       return ret;
-> > +}
-> > +
-> >  static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
-> >  {
-> >         /*
-> > @@ -421,6 +440,9 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
-> >         if (unlikely(!cpu_online(cpu))) {
-> >                 if (cpu == tick_do_timer_cpu)
-> >                         tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> > +       } else if (must_take_timer_duty(cpu)) {
-> > +               tick_do_timer_cpu = cpu;
-> > +               return false;
-> >         }
-> >
-> >         if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-> > @@ -512,6 +534,13 @@ void tick_nohz_idle_enter(void)
-> >  #ifdef CONFIG_CPUSETS_NO_HZ
-> >  static bool can_stop_adaptive_tick(void)
-> >  {
-> > +       int cpu = smp_processor_id();
-> > +
-> > +       if (must_take_timer_duty(cpu)) {
-> > +               tick_do_timer_cpu = cpu;
-> > +               return false;
->
-> One problem I see here is that you randomize the handler. It could be
-> an adaptive nohz CPU or an idle CPU. It's a problem if the user wants
-> CPU isolation.
+Other than that, which is largely cosmetic, it looks fine.
+Sorry for not expressing this earlier.
 
-Yes, an adaptive nohz CPU might be forced to take the duty if nobody else
-is doing it. However, as soon as a regular CPU notices this it takes the duty
-and never gives it up as long as there are nohz cpusets in the system.
 
->
-> I suggest to rather define a tunable timekeeping duty CPU affinity in
-> a cpumask file at /sys/devices/system/cpu/timekeeping and a toggle at
-> /sys/devices/system/cpu/cpuX/timekeeping (like the online file). This
-> way the user can decide whether adaptive nohz CPU can handle
-> timekeeping or this must be forced to other CPUs in order to enforce
-> isolation.
-
-Well, users want tickless CPUs because they don't want timekeeping
-(or any other kernel activity for that matter) to run in there. So, I believe
-having that "timekeeping affinity" stay in the regular CPUs is good enough.
-Please let me know how users could utilize these control files to do anything
-other than keeping the timekeeping out of adaptive nohz CPUs.
-
->
-> Concerning implementation details, a way to avoid locking while
-> ensuring there is always a CPU handling timekeeping is to define some
-> state machine through tick_do_timer_cpu values like the below
-> scenario:
->
-> * tick_do_timer_cpu = some CPU. In this case the timekeeping has a
-> running handler, everything is fine
->
-> * tick_do_timer_cpu = TICK_DO_TIMER_IDLE. The timekeeping handler
-> wants to go idle and stop its tick. He's going to keep its tick and
-> the timekeeping duty until some other CPU sees this value and sets
-> itself as the new handler. Then the previous handler can finally stop
-> its tick.
->
-> * tick_do_timer_cpu = TICK_DO_TIMER_NONE. There is no handler
-> currently. The next handler is the next CPU that will restart its
-> tick. This value is only possible if cpu_online_mask =
-> cpu_timekeeping_mask and there is no adaptive nohz running.
->
-> Does that look ok?
-
-Something like this together with a mechanism to prevent regular CPUs
-stopping the tick for being idle when adaptive nohz CPUs are doing their
-things is necessary. I'll rework the patch and resend soon.
-
->
-> If so, tell me if you want to rework this patch with these
-> suggestions. Or I can do it, either way.
->
-> Thanks.
-
-Thanks.
+> 于 2012年11月14日 17:29, zhangyanfei 写道:
+> > Currently, kdump just makes all the logical processors leave VMX operation by
+> > executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> > be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> > in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> > executing the VMXOFF instruction.
+> > 
+> > The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> > executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> > vmcore updated and non-corrupted.
+> > 
+> > Changelog from v3 to v4:
+> > 1. add a new percpu variable vmclear_skipped to skip
+> >    vmclear in kdump in some conditions.
+> > 
+> > Changelog from v2 to v3:
+> > 1. remove unnecessary conditions in function
+> >    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+> > 
+> > Changelog from v1 to v2:
+> > 1. remove the sysctl and clear VMCSs unconditionally.
+> > 
+> > Zhang Yanfei (2):
+> >   x86/kexec: VMCLEAR vmcss on all cpus if necessary
+> >   KVM: set/unset crash_clear_loaded_vmcss and vmclear_skipped in
+> >     kvm_intel module
+> > 
+> >  arch/x86/include/asm/kexec.h |    3 +++ 
+> >  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++++++++++++++
+> >  arch/x86/kvm/vmx.c           |   32 ++++++++++++++++++++++++++++++++
+> >  3 files changed, 67 insertions(+), 0 deletions(-)
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
