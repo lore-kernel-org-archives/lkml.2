@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2KUHhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:37:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48148 "EHLO
+	id S1753335Ab2KUHiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:38:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48158 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2KUHhc (ORCPT
+	with ESMTP id S1752755Ab2KUHiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:37:32 -0500
-Date: Tue, 20 Nov 2012 23:36:43 -0800
-From: tip-bot for Boris Ostrovsky <boris.ostrovsky@amd.com>
-Message-ID: <tip-36c46ca4f322a7bf89aad5462a3a1f61713edce7@git.kernel.org>
+	Wed, 21 Nov 2012 02:38:22 -0500
+Date: Tue, 20 Nov 2012 23:37:45 -0800
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stable@vger.kernel.org, boris.ostrovsky@amd.com,
-        herrmann.der.user@googlemail.com, tglx@linutronix.de,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@amd.com, herrmann.der.user@googlemail.com,
-        tglx@linutronix.de, stable@vger.kernel.org, hpa@linux.intel.com
-In-Reply-To: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
-References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <5093BA1F02000078000A600E@nat28.tlf.novell.com>
+References: <5093BA1F02000078000A600E@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, microcode, AMD:
-  Add support for family 16h processors
-Git-Commit-ID: 36c46ca4f322a7bf89aad5462a3a1f61713edce7
+Subject: [tip:x86/urgent] x86-64:
+  Fix ordering of CFI directives and recent ASM_CLAC additions
+Git-Commit-ID: ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,52 +30,103 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 20 Nov 2012 23:37:24 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 20 Nov 2012 23:38:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36c46ca4f322a7bf89aad5462a3a1f61713edce7
-Gitweb:     http://git.kernel.org/tip/36c46ca4f322a7bf89aad5462a3a1f61713edce7
-Author:     Boris Ostrovsky <boris.ostrovsky@amd.com>
-AuthorDate: Thu, 15 Nov 2012 13:41:50 -0500
+Commit-ID:  ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
+Gitweb:     http://git.kernel.org/tip/ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Fri, 2 Nov 2012 11:18:39 +0000
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 20 Nov 2012 22:23:28 -0800
+CommitDate: Tue, 20 Nov 2012 22:23:57 -0800
 
-x86, microcode, AMD: Add support for family 16h processors
+x86-64: Fix ordering of CFI directives and recent ASM_CLAC additions
 
-Add valid patch size for family 16h processors.
+While these got added in the right place everywhere else, entry_64.S
+is the odd one where they ended up before the initial CFI directive(s).
+In order to cover the full code ranges, the CFI directive must be
+first, though.
 
-[ hpa: promoting to urgent/stable since it is hw enabling and trivial ]
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Link: http://lkml.kernel.org/r/1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/5093BA1F02000078000A600E@nat28.tlf.novell.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
 ---
- arch/x86/kernel/microcode_amd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/entry_64.S | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index b3e67ba..efdec7c 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -190,6 +190,7 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
- #define F1XH_MPB_MAX_SIZE 2048
- #define F14H_MPB_MAX_SIZE 1824
- #define F15H_MPB_MAX_SIZE 4096
-+#define F16H_MPB_MAX_SIZE 3458
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b51b2c7..1328fe4 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -995,8 +995,8 @@ END(interrupt)
+ 	 */
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ common_interrupt:
+-	ASM_CLAC
+ 	XCPT_FRAME
++	ASM_CLAC
+ 	addq $-0x80,(%rsp)		/* Adjust vector to [-256,-1] range */
+ 	interrupt do_IRQ
+ 	/* 0(%rsp): old_rsp-ARGOFFSET */
+@@ -1135,8 +1135,8 @@ END(common_interrupt)
+  */
+ .macro apicinterrupt num sym do_sym
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	INTR_FRAME
++	ASM_CLAC
+ 	pushq_cfi $~(\num)
+ .Lcommon_\sym:
+ 	interrupt \do_sym
+@@ -1190,8 +1190,8 @@ apicinterrupt IRQ_WORK_VECTOR \
+  */
+ .macro zeroentry sym do_sym
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	INTR_FRAME
++	ASM_CLAC
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+ 	subq $ORIG_RAX-R15, %rsp
+@@ -1208,8 +1208,8 @@ END(\sym)
  
- 	switch (c->x86) {
- 	case 0x14:
-@@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
- 	case 0x15:
- 		max_size = F15H_MPB_MAX_SIZE;
- 		break;
-+	case 0x16:
-+		max_size = F16H_MPB_MAX_SIZE;
-+		break;
- 	default:
- 		max_size = F1XH_MPB_MAX_SIZE;
- 		break;
+ .macro paranoidzeroentry sym do_sym
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	INTR_FRAME
++	ASM_CLAC
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+ 	subq $ORIG_RAX-R15, %rsp
+@@ -1227,8 +1227,8 @@ END(\sym)
+ #define INIT_TSS_IST(x) PER_CPU_VAR(init_tss) + (TSS_ist + ((x) - 1) * 8)
+ .macro paranoidzeroentry_ist sym do_sym ist
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	INTR_FRAME
++	ASM_CLAC
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+ 	subq $ORIG_RAX-R15, %rsp
+@@ -1247,8 +1247,8 @@ END(\sym)
+ 
+ .macro errorentry sym do_sym
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	XCPT_FRAME
++	ASM_CLAC
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	subq $ORIG_RAX-R15, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+@@ -1266,8 +1266,8 @@ END(\sym)
+ 	/* error code is on the stack already */
+ .macro paranoiderrorentry sym do_sym
+ ENTRY(\sym)
+-	ASM_CLAC
+ 	XCPT_FRAME
++	ASM_CLAC
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	subq $ORIG_RAX-R15, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
