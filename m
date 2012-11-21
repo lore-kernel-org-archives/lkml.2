@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2KUQfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 11:35:45 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37638 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab2KUQfo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 11:35:44 -0500
+	id S1755310Ab2KUQiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 11:38:12 -0500
+Received: from v37049.1blu.de ([89.202.2.49]:54766 "EHLO v37049.1blu.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965Ab2KUQiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 11:38:11 -0500
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, patrik.r.jakobsson@gmail.com,
+        christian.gmeiner@gmail.com
+Subject: Re: SDVO on E6xx
+Date: Wed, 21 Nov 2012 17:38:08 +0100
+Message-ID: <20121121163808.426108@zweiblum.hodek.net>
+From: roman@hodek.net
+In-Reply-To: <20121121145027.4dce136d@pyramind.ukuu.org.uk>
+References: <20121121140442.782733@zweiblum.hodek.net>
 MIME-Version: 1.0
-In-Reply-To: <1352881898.9388.2.camel@joe-AO722>
-References: <1352789457-15244-1-git-send-email-acooks@gmail.com>
-	<1352881898.9388.2.camel@joe-AO722>
-Date: Thu, 22 Nov 2012 00:35:42 +0800
-Message-ID: <CAJtEV7aAe9bFtqCPdxQqr7FiErJ8G6-82Yog_bLXJL_3R_yNsA@mail.gmail.com>
-Subject: Re: [PATCH] boot_delay should only affect output
-From: Andrew Cooks <acooks@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+X-Mailer: RoMail 2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe
+Hi Alan,
 
-On Wed, Nov 14, 2012 at 4:31 PM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2012-11-13 at 14:50 +0800, Andrew Cooks wrote:
->> The boot_delay parameter affects all printk(), even if the log level
->>  prevents visible output from the call. It results in delays greater
->>  than the user intended without purpose.
->>
->> This patch changes the behaviour of boot_delay to only delay output.
+> There is an Intel driver with open kernel code and proprietary userspace for
+> the Imagination 3D engine (EMGD) although only for an out of maintenance
+> Fedora and for Meego and in both cases for ancient kernels.
+
+I knew about EMGD, but not that there's code available for parts of it.
+
+> The fully open driver is built by extracting the relevant information and
+> code from these releases.
+
+Ah, ok. Then I'll try to extract even a bit more ;-) Thanks very much for that
+hint!
+
+> If you unpack that it contains a tar ball which you can unpack which
+> contains the driver.
 >
-> Seems sensible.
+> emgd/pal/sdvo
 >
-> Couldn't that be done for printk_delay too?
->
+> looks kind of promising.
 
-This was only my second submitted patch, so I tried to keep things as
-simple as possible to get the process right.
+Got it now (it's common/drm/emgd_drm.tgz). 
 
-When printk_delay is called, the log message is written into a buffer
-regardless of log level. The log level may change before the logs are
-flushed to console/syslog, so delaying based on log level at the
-buffer input side is not ideal.
+I started to look around there, and emgd/display/pi/tnc/i2c_gmbus_tnc.c looks
+as a good source of infos. At least it mentions E6xx quite often, and it uses
+functions read/write_mmio_reg_tnc on TunnelCreek.
 
-I thought about moving the delay to the point where the buffer is
-cleared, but that seems like it would drastically increase the
-likelihood of dropping messages under load.
+>From there I got to an interesting comment:
 
-Dropping the message in vprintk_emit, before any delay or buffer
-management might also be an option, though I'm not sure if it's
-acceptable for printk to return 0.
+#ifdef CONFIG_TNC
+/* Based on display port determine which mmio base to use:
+ *       port_type == SDVO ==> use 0:3:0 device mmio
+ *       port_type == LVDS ==> use 0:2:0 device mmio
+ *       port_type == LPC  ==> use 0:31:0 device mmio
+ */
 
-a.
+Indeed, I have those additional PCI devices, and the BARs of 0:03.0 look much
+like those of 0:02.0. It has PCI ID 8086:8182 and class 0x0400
+(multimedia/video). And in BAR 0 at offset 0x5100 there are values that look
+more like GMBUS...
+(0:1f.0 exists, it declares itself as ISA bridge, and it has no BARs
+assigned.)
+
+Ok, I'll go down that road, poke around a bit there, and we'll see how far I
+can get!
+
+Roman
+
