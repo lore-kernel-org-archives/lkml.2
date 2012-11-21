@@ -1,144 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab2KUSXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:23:13 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35929 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab2KUSXM (ORCPT
+	id S1755551Ab2KUSXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:23:24 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54036 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2KUSXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:23:12 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] x86, smpboot: allow manual hotplug of CPUs
-Date: Wed, 21 Nov 2012 13:22:16 -0500
-Message-Id: <1353522136-14944-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 21 Nov 2012 13:23:13 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] of: use platform_device_add
+Date: Wed, 21 Nov 2012 18:15:59 +0000
+Message-Id: <1353521759-28263-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far CPU hotplug was ignored for mptable implementations which support it by
-having the hotpluggable CPUs marked as disabled during boot.
+This allows platform_device_add a chance to call insert_resource on all
+of the resources from OF. At a minimum this fills in proc/iomem and
+presumably makes resource tracking and conflict detection work better.
+However, it has the side effect of moving all OF generated platform
+devices from /sys/devices to /sys/devices/platform/. It /shouldn't/
+break userspace because userspace is not supposed to depend on the full
+path (because userspace always does what it is supposed to, right?).
 
-The current kernel code detects that behaviour and actually deals with it
-properly:
+It also has a backup call to of_device_add() when running on PowerPC to
+catch any devices that have overlapping regions. It will complain about
+them, but it will not fail to register the device.
 
-	[    0.000000] Intel MultiProcessor Specification v1.4
-	[    0.000000] MPTABLE: OEM ID: KVMCPU00
-	[    0.000000] MPTABLE: Product ID: 0.1
-	[    0.000000] MPTABLE: APIC at: 0xFEE00000
-	[    0.000000] Processor #0 (Bootup-CPU)
-	[    0.000000] Processor #1
-	[    0.000000] Processor #2
-	[    0.000000] IOAPIC[0]: apic_id 4, version 17, address 0xfec00000, GSI 0-23
-	[    0.000000] Processors: 3
-	[    0.000000] smpboot: Allowing 3 CPUs, 1 hotplug CPUs
-
-The problem begins when a user might actually want to online such CPU; there
-is no interface for him to tell the kernel that the CPU is now present and
-can be used.
-
-Luckily, the kernel provides a generic interface in the form of 'probe' and
-'release' sysfs files which are used on different architectures exactly for
-that - to probe and release CPUs. On x86 however this was unimplemented
-until now.
-
-This patch adds code into the x86 implementation of probe and release to allow
-adding and removing CPUs. This allows machines that use mptable to hotplug
-CPUs:
-
-	sh-4.2# cd /sys/devices/system/cpu/
-	sh-4.2# cat possible present online
-	0-3
-	0-2
-	0-2
-	sh-4.2# echo "3 0x14" > probe
-	sh-4.2# cat possible present online
-	0-3
-	0-3
-	0-2
-	sh-4.2# echo 1 > cpu3/online
-	[   29.854133] smpboot: Booting Node 0 Processor 3 APIC 0x3
-	[    0.001000] kvm-clock: cpu 3, msr 0:1bd929c1, secondary cpu clock
-	[   29.872438] KVM setup async PF for cpu 3
-	[   29.872790] kvm-stealtime: cpu 3, msr 1bd8d100
-	[   29.873276] microcode: CPU3 sig=0x206a7, pf=0x1, revision=0x1
-	sh-4.2# cat possible present online
-	0-3
-	0-3
-	0-3
-	sh-4.2# echo 0 > cpu3/online
-	[  116.146352] Unregister pv shared memory for cpu 3
-	[  116.160000] Cannot set affinity for irq 0
-	[  116.163068] smpboot: CPU 3 is now offline
-	sh-4.2# cat possible present online
-	0-3
-	0-3
-	0-2
-	sh-4.2# echo 3 > release
-	sh-4.2# cat possible present online
-	0-3
-	0-2
-	0-2
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/x86/kernel/smpboot.c | 39 +++++++++++++++++++++++++++++++++++++--
- 1 file changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 732bf5c..78b3197 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -97,8 +97,43 @@ void cpu_hotplug_driver_unlock(void)
- 	mutex_unlock(&x86_cpu_hotplug_driver_mutex);
- }
+Greg, do you mind taking a look at this? The reason the OF code hasn't been
+calling platform_device_add() directly to this point is:
+a) there are some trees with resource overlays
+b) I want the devices in /sys/devices not /sys/devices/platform.
+
+I could easily add exceptions to platform_device_add() for both those cases, but
+I don't like adding DT exceptions to the common code. However, I still need to
+support the platforms that unfortunately have overlapping resources. This patch
+does that by still calling the old path if platform_device_add() fails, but it
+isn't nice either because of_device_add() has to duplicate
+platform_device_add(). Blech. Plus the exception only applies for PowerPC.
+
+So, how do you feel about having a 'relaxed' mode for platform_device_add()
+which means it won't fail if resources overlap and maybe won't do the silly
+platform_bus parent thing. Thoughts?
+
+g.
+
+ drivers/of/platform.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index b80891b..3d7ba40 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -203,6 +203,7 @@ struct platform_device *of_platform_device_create_pdata(
+ 					struct device *parent)
+ {
+ 	struct platform_device *dev;
++	int rc;
  
--ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
--ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
-+ssize_t arch_cpu_probe(const char *buf, size_t count)
-+{
-+	int cpu, version, r;
-+
-+	r = sscanf(buf, "%d %x", &cpu, &version);
-+	if (r != 2)
-+		return -EINVAL;
-+
-+	if (!cpu_possible(cpu) || cpu_present(cpu))
-+		return -EINVAL;
-+
-+	arch_register_cpu(cpu);
-+	generic_processor_info(cpu, version);
-+
-+	return count;
-+}
-+
-+ssize_t arch_cpu_release(const char *buf, size_t count)
-+{
-+	int cpu, r;
-+
-+	r = kstrtoint(buf, 10, &cpu);
-+	if (r < 0)
-+		return r;
-+
-+	if (!cpu_present(cpu))
-+		return -EINVAL;
-+
-+	if (cpu_online(cpu))
-+		return -EBUSY;
-+
-+	arch_unregister_cpu(cpu);
-+	set_cpu_present(cpu, false);
-+
-+	return count;
-+}
-+
+ 	if (!of_device_is_available(np))
+ 		return NULL;
+@@ -214,16 +215,39 @@ struct platform_device *of_platform_device_create_pdata(
+ #if defined(CONFIG_MICROBLAZE)
+ 	dev->archdata.dma_mask = 0xffffffffUL;
  #endif
++	dev->name = dev_name(&dev->dev);
+ 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+-	dev->dev.bus = &platform_bus_type;
+ 	dev->dev.platform_data = platform_data;
++	dev->dev.id = PLATFORM_DEVID_NONE;
++	/* device_add will assume that this device is on the same node as
++	 * the parent. If there is no parent defined, set the node
++	 * explicitly */
++	if (!parent)
++		set_dev_node(&dev->dev, of_node_to_nid(np));
  
- /* Number of siblings per CPU package */
+ 	/* We do not fill the DMA ops for platform devices by default.
+ 	 * This is currently the responsibility of the platform code
+ 	 * to do such, possibly using a device notifier
+ 	 */
+ 
+-	if (of_device_add(dev) != 0) {
++	rc = platform_device_add(dev);
++#ifdef CONFIG_POWERPC
++	/*
++	 * This POWERPC block isn't pretty, but the commit that adds it is a
++	 * little risky. There are possibly some powerpc platforms that have
++	 * overlapping resources in the device tree. If so, then I want to find
++	 * them, but I don't want to break support in the process. So, if
++	 * platform_device_add() fails, then register the device anyway, but
++	 * complain about it. Hopefully we can find and fix and problem
++	 * platforms before removing this code.
++	 */
++	if (rc == -EBUSY) {
++		dev_warn(&dev->dev, "WARNING: resource overlap in DT node %s\n",
++			np->full_name);
++		rc = of_device_add(dev);
++	}
++#endif
++	if (rc) {
+ 		platform_device_put(dev);
+ 		return NULL;
+ 	}
 -- 
-1.8.0
+1.7.10.4
 
