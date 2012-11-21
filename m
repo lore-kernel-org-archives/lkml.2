@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab2KUK0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:26:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43954 "EHLO mx2.suse.de"
+	id S1754711Ab2KUK04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:26:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43915 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab2KUKWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:49 -0500
+	id S1754586Ab2KUKWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:45 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 32/46] mm: numa: Rate limit the amount of memory that is migrated between nodes
-Date: Wed, 21 Nov 2012 10:21:38 +0000
-Message-Id: <1353493312-8069-33-git-send-email-mgorman@suse.de>
+Subject: [PATCH 29/46] mm: numa: Migrate on reference policy
+Date: Wed, 21 Nov 2012 10:21:35 +0000
+Message-Id: <1353493312-8069-30-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,83 +28,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOTE: This is very heavily based on similar logic in autonuma. It should
-	be signed off by Andrea but because there was no standalone
-	patch and it's sufficiently different from what he did that
-	the signed-off is omitted. Will be added back if requested.
-
-If a large number of pages are misplaced then the memory bus can be
-saturated just migrating pages between nodes. This patch rate-limits
-the amount of memory that can be migrating between nodes.
+This is the simplest possible policy that still does something of note.
+When a pte_numa is faulted, it is moved immediately. Any replacement
+policy must at least do better than this and in all likelihood this
+policy regresses normal workloads.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- mm/migrate.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   38 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 4b876d2..cf0970f 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1461,12 +1461,21 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
- }
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 16fb4e6..0d11c3d 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -67,6 +67,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
+ #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
++#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
  
- /*
-+ * page migration rate limiting control.
-+ * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
-+ * window of time. Default here says do not migrate more than 1280M per second.
-+ */
-+static unsigned int migrate_interval_millisecs __read_mostly = 100;
-+static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 516491f..4c1c8d8 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -118,6 +118,26 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
+ 
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
 +
-+/*
-  * Attempt to migrate a misplaced page to the specified destination
-  * node. Caller is expected to have an elevated reference count on
-  * the page that will be dropped by this function before returning.
-  */
- int migrate_misplaced_page(struct page *page, int node)
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
++	int node;
++
++	if (!pol) {
++		node = numa_node_id();
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++
++		/* preferred_node_policy is not initialised early in boot */
++		if (!pol->mode)
++			pol = NULL;
++	}
++
++	return pol;
++}
++
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1598,7 +1618,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
  {
-+	pg_data_t *pgdat = NODE_DATA(node);
- 	int isolated = 0;
- 	LIST_HEAD(migratepages);
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
  
-@@ -1479,8 +1488,27 @@ int migrate_misplaced_page(struct page *page, int node)
- 		goto out;
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -2021,7 +2041,7 @@ retry_cpuset:
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
+ 
+@@ -2295,6 +2315,11 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 	default:
+ 		BUG();
  	}
- 
-+	/*
-+	 * Rate-limit the amount of data that is being migrated to a node.
-+	 * Optimal placement is no good if the memory bus is saturated and
-+	 * all the time is being spent migrating!
-+	 */
-+	spin_lock(&pgdat->balancenuma_migrate_lock);
-+	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window)) {
-+		pgdat->balancenuma_migrate_nr_pages = 0;
-+		pgdat->balancenuma_migrate_next_window = jiffies +
-+			msecs_to_jiffies(migrate_interval_millisecs);
-+	}
-+	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages) {
-+		spin_unlock(&pgdat->balancenuma_migrate_lock);
-+		put_page(page);
-+		goto out;
-+	}
-+	pgdat->balancenuma_migrate_nr_pages++;
-+	spin_unlock(&pgdat->balancenuma_migrate_lock);
 +
- 	/* Avoid migrating to a node that is nearly full */
--	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
-+	if (migrate_balanced_pgdat(pgdat, 1)) {
- 		int page_lru;
- 
- 		if (isolate_lru_page(page)) {
-@@ -1515,6 +1543,7 @@ int migrate_misplaced_page(struct page *page, int node)
- 			count_vm_numa_event(NUMA_PAGE_MIGRATE);
- 	}
- 	BUG_ON(!list_empty(&migratepages));
++	/* Migrate the page towards the node whose CPU is referencing it */
++	if (pol->flags & MPOL_F_MORON)
++		polnid = numa_node_id();
 +
+ 	if (curnid != polnid)
+ 		ret = polnid;
  out:
- 	return isolated;
- }
+@@ -2483,6 +2508,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF | MPOL_F_MORON,
++			.v = { .preferred_node = nid, },
++		};
++	}
++
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
 -- 
 1.7.9.2
 
