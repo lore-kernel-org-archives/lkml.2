@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2KUIFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:05:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44472 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab2KUIFj (ORCPT
+	id S1753035Ab2KUII6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:08:58 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46933 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab2KUII5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:05:39 -0500
-Date: Wed, 21 Nov 2012 00:05:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: The bug of iput() removal from flusher thread?
-Message-Id: <20121121000533.a0ab9eea.akpm@linux-foundation.org>
-In-Reply-To: <20121121014851.GH10507@quack.suse.cz>
-References: <8762541uyx.fsf@devron.myhome.or.jp>
-	<873906vumh.fsf@devron.myhome.or.jp>
-	<20121119145140.GA20532@quack.suse.cz>
-	<20121119194102.GB20532@quack.suse.cz>
-	<87a9udtiyk.fsf@devron.myhome.or.jp>
-	<20121119212448.GA29498@quack.suse.cz>
-	<876251tg3b.fsf@devron.myhome.or.jp>
-	<20121121011111.GE10507@quack.suse.cz>
-	<20121121014851.GH10507@quack.suse.cz>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 03:08:57 -0500
+Message-id: <50AC8C14.5050204@samsung.com>
+Date: Wed, 21 Nov 2012 09:08:52 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
+MIME-version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <20121120113325.dde266ed.akpm@linux-foundation.org>
+In-reply-to: <20121120113325.dde266ed.akpm@linux-foundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 02:48:51 +0100 Jan Kara <jack@suse.cz> wrote:
+Hello,
 
-> +/*
-> + * Add inode to LRU if needed (inode is unused and clean).
-> + *
-> + * Needs inode->i_lock held.
-> + */
-> +void inode_add_lru(struct inode *inode)
-> +{
-> +	if (!(inode->i_state & (I_DIRTY | I_FREEING | I_SYNC)) &&
-> +	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
-> +		inode_lru_list_add(inode);
-> +}
+On 11/20/2012 8:33 PM, Andrew Morton wrote:
+> On Tue, 20 Nov 2012 15:31:45 +0100
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+>
+> > dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+> > regardless the flags provided by the caller. This causes excessive
+> > pruning of emergency memory pools without any good reason. Additionaly,
+> > on ARM architecture any driver which is using dmapools will sooner or
+> > later  trigger the following error:
+> > "ERROR: 256 KiB atomic DMA coherent pool is too small!
+> > Please increase it with coherent_pool= kernel parameter!".
+> > Increasing the coherent pool size usually doesn't help much and only
+> > delays such error, because all GFP_ATOMIC DMA allocations are always
+> > served from the special, very limited memory pool.
+> >
+>
+> Is this problem serious enough to justify merging the patch into 3.7?
+> And into -stable kernels?
 
-Is i_lock sufficient to stabilise i_count?
+I wonder if it is a good idea to merge such change at the end of current
+-rc period. It changes the behavior of dma pool allocations and I bet there
+might be some drivers which don't care much about passed gfp flags, as for
+ages it simply worked for them, even if the allocations were done from
+atomic context. What do You think? Technically it is also not a pure bugfix,
+so imho it shouldn't be considered for -stable.
 
-<looks at the code a bit>
+On the other hand at least for ARM users of sata_mv driver (which is just
+an innocent client of dma pool, correctly passing GFP_KERNEL flag) it would
+solve the issues related to shortage of atomic pool for dma allocations what
+might justify pushing it to 3.7.
 
-Is evict_inodes() wrong to test i_count outside i_lock?
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-invalidate_inodes() looks better.
-
-can_unuse() must be called under i_lock, and is.  Apparently this
-requirement was sufficiently obvious to not meed documenting.
-
-prune_icache_sb() gets it right.
-
-iput() gets it right.
-
-So to answer my own question: yes, it is sufficient.  But a) the
-comment for inode.i_lock is out of date and b) evict_inodes() looks
-fishy.
 
