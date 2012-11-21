@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab2KUPBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:01:17 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:50643 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754981Ab2KUPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:01:15 -0500
-Message-ID: <1353510075.24807.24.camel@joe-AO722>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-From: Joe Perches <joe@perches.com>
-To: eilong@broadcom.com
-Cc: Andy Whitcroft <apw@canonical.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Wed, 21 Nov 2012 07:01:15 -0800
-In-Reply-To: <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
-	 <20121120115239.GA7955@dm> <1353448728.17819.33.camel@joe-AO722>
-	 <20121120231930.GA27492@localhost> <1353454874.17819.41.camel@joe-AO722>
-	 <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1755027Ab2KUPBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:01:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19087 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014Ab2KUPBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:01:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
+   d="asc'?scan'208";a="245362041"
+Message-ID: <1353510137.2701.6.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd_blkdev: Use a different name for
+ block_device_operations variable
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Wed, 21 Nov 2012 17:02:17 +0200
+In-Reply-To: <1352475395-11917-1-git-send-email-elezegarcia@gmail.com>
+References: <1352475395-11917-1-git-send-email-elezegarcia@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-bkYF5fBXMznKPCBKxCZ/"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-21 at 11:42 +0200, Eilon Greenstein wrote:
-> On Tue, 2012-11-20 at 15:41 -0800, Joe Perches wrote:
-> > On Tue, 2012-11-20 at 23:19 +0000, Andy Whitcroft wrote:
-> > > On Tue, Nov 20, 2012 at 01:58:48PM -0800, Joe Perches wrote:
-> > > 
-> > > > +# check for multiple blank lines, warn only on the second one in a block
-> > > > +		if ($rawline =~ /^.\s*$/ &&
-> > > > +		    $prevrawline =~ /^.\s*$/ &&
-> > > > +		    $linenr != $last_blank_linenr + 1) {
-> > > > +			CHK("DOUBLE_EMPTY_LINE",
-> > > > +			    "One blank line separating blocks is generally sufficient\n" . $herecurr);
-> > > > +			$last_blank_linenr = $linenr;
-> > > > +		}
-> > > > +
-> > > >  # check for line continuations in quoted strings with odd counts of "
-> > > >  		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
-> > > >  			WARN("LINE_CONTINUATIONS",
-> > > 
-> > > Pretty sure that will fail with combination which have removed lines.
-> > 
-> > Not as far as I can tell.
-> > Deleted lines followed by inserted lines seem
-> > to work OK.
-> > 
-> > This check is located after the test that ensures
-> > the current $line/$rawline is an insertion.
-> > 
-> 
-> But you do not look at the next line, so you will miss something like
-> that:
-> 
-> diff --git a/test.c b/test.c
-> index e3c46d4..e1c6ffc 100644
-> --- a/test.c
-> +++ b/test.c
-> @@ -15,7 +15,8 @@
->   * something
->   * something
->   * something
-> - * next line was already empty */
-> + * next line was already empty, but I'm adding another one now*/
-> +
 
-Hi Eilon.
+--=-bkYF5fBXMznKPCBKxCZ/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the test case.
+On Fri, 2012-11-09 at 12:36 -0300, Ezequiel Garcia wrote:
+> struct mtd_blktrans_ops is a type, and mtd_blktrans_ops is a variable.
+> To improve code clarity it's better to not use the same names,
+> so we just change the latter.
+>=20
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 
-That's true, but I'm OK with missing a few cases in the
-search for simplicity as long as there aren't significant
-false positives.
+Pushed to l2-mtd.git, thanks!
 
-For instance the next test
-# check for line continuations in quoted strings with odd counts of "
-		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
-			WARN("LINE_CONTINUATIONS",
+--=20
+Best Regards,
+Artem Bityutskiy
 
-That fails if the rawline is:
-	"\"" \
-Does it matter much?  Probably not.
-I suppose that test could be improved by using $line.
+--=-bkYF5fBXMznKPCBKxCZ/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-checkpatch isn't a perfect tool.  Given how it's constructed,
-I doubt it ever could be.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-No doubt you and Andy will find a better solution.
+iQIcBAABAgAGBQJQrOz5AAoJECmIfjd9wqK0lCcP/1eo59nE5zhZpdqBA0JtILFS
+0pFSqF638rxjEtX7RaQERW7vsweRuQlyf4pBd6URvebegr9DnvyN/3HzaofKRD5B
+hPHiAog0r4mRIFFZaF+kSy2DmmVV1x8nw0rPTGNy6QpNyVQy70BvD4T46UFLYDb3
+JuRQCUDqrjHPlpkuWxQ/ogJ0cN6iy+fFJIk3LgQf6MvVldco8czTnIt8T2007e10
+Gl1r68EHQROV9mvjRv8oEl/ec5CTATU/IQA0dp7An7BCkJS8/pDUJTa4vQY6QQgU
+NJwc5NXJgoTpNcU1T/OJ9RFuLo8mO5yZ4Xq+E2FPkiCJLuSLGU39ibOpiGCdhkSP
+E9XjqKqZrfY9z5mJk0sO52FbFls1KUbj5fc2VQfEmXc/U/4gTiri2KsvOeY3ouL9
+9OcSbTp3PtjBu4pD31pUtIiNIVNxn6UFm9Pf+DotPFsPwTuK59cEvBG8hG0A0CS2
+XJG05G7cRfuYmwFP0ueNH072+FAvbIpOh0cvpK0GgD7oy4us3MdkksWXi+P61j5C
+Bw2IWV175pFTZ4Khfo9Ff43ims0B+fXv43gXjDtp0i/czC55korc2Fz5Y57cpbMx
+QRCv8E3i8be205s1Bua4gUXGv+kP44bgIwoG0CaNBLJ23yPKrEtUYUj09P1t6Qgu
+lbZe3YdmdeBTf/Rzx8Wq
+=bprf
+-----END PGP SIGNATURE-----
 
+--=-bkYF5fBXMznKPCBKxCZ/--
 
