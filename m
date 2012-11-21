@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965144Ab2KVTR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:17:58 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:57954 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965122Ab2KVTRx (ORCPT
+	id S965157Ab2KVTSD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:18:03 -0500
+Received: from userp1050.oracle.com ([156.151.31.82]:44974 "EHLO
+	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965142Ab2KVTR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:17:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121145239.GA21860@kroah.com>
-References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca> <20121121145239.GA21860@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 22 Nov 2012 20:17:32 +0100
-Message-ID: <CAPXgP12fOANaeVQ=8ZMd1q-SdJo0xjsGoVTqs27oe44wXuSCdQ@mail.gmail.com>
-Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 22 Nov 2012 14:17:58 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH v4 07/31] iov_iter: add a shorten call
+Date: Wed, 21 Nov 2012 16:40:47 -0600
+Message-Id: <1353537671-26284-8-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 3:52 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Nov 21, 2012 at 02:44:31PM +0000, Grant Likely wrote:
->> The "platform_bus" (note: not platform_bus_type) only exists as an empty
->> directory to put platform devices into. However, it really doesn't make
->> sense to segregate all the platform devices into a sub directory when
->> typically they are memory mapped devices that doen't go through any
->> particular bus. Particularly on embedded type platforms the platform_bus
->> directory doesn't add anything.
->>
->> However, this will probably just end up breaking some userspace that
->> depends on the /sys/devices/platform/ path to be present (no matter how
->> much we protest that userspace must not depend on paths in sysfs). So
->> while I'm seriously proposing this change, it may just be unacceptable
->> ABI breakage
->
-> If the devices don't show up under platform/ where are they going to be
-> at now, virtual/ ?  That doesn't sound like a good plan, they should be
-> somewhere "useful".
+From: Zach Brown <zab@zabbo.net>
 
-Just a note to keep in mind: We usually need and want devices to have
-a bus or class. Devices without a "subsystem" are invisible to udev,
-and do not get proper coldplug support at bootup.
+The generic direct write path wants to shorten its memory vector.  It
+does this when it finds that it has to perform a partial write due to
+LIMIT_FSIZE.  .direct_IO() always performs IO on all of the referenced
+memory because it doesn't have an argument to specify the length of the
+IO.
 
-Kay
+We add an iov_iter operation for this so that the generic path can ask
+to shorten the memory vector without having to know what kind it is.
+We're happy to shorten the kernel copy of the iovec array, but we refuse
+to shorten the bio_vec array and return an error in this case.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ include/linux/fs.h |  5 +++++
+ mm/iov-iter.c      | 14 ++++++++++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0d7f42f..8b2f558 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -307,6 +307,7 @@ struct iov_iter_ops {
+ 	void (*ii_advance)(struct iov_iter *, size_t);
+ 	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
+ 	size_t (*ii_single_seg_count)(struct iov_iter *);
++	int (*ii_shorten)(struct iov_iter *, size_t);
+ };
+ 
+ static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
+@@ -341,6 +342,10 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
+ {
+ 	return i->ops->ii_single_seg_count(i);
+ }
++static inline int iov_iter_shorten(struct iov_iter *i, size_t count)
++{
++	return i->ops->ii_shorten(i, count);
++}
+ 
+ extern struct iov_iter_ops ii_bvec_ops;
+ 
+diff --git a/mm/iov-iter.c b/mm/iov-iter.c
+index c5d0a9e..fcced89 100644
+--- a/mm/iov-iter.c
++++ b/mm/iov-iter.c
+@@ -201,6 +201,11 @@ static size_t ii_bvec_single_seg_count(struct iov_iter *i)
+ 		return min(i->count, bvec->bv_len - i->iov_offset);
+ }
+ 
++static int ii_bvec_shorten(struct iov_iter *i, size_t count)
++{
++	return -EINVAL;
++}
++
+ struct iov_iter_ops ii_bvec_ops = {
+ 	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
+ 	.ii_copy_to_user = ii_bvec_copy_to_user,
+@@ -209,6 +214,7 @@ struct iov_iter_ops ii_bvec_ops = {
+ 	.ii_advance = ii_bvec_advance,
+ 	.ii_fault_in_readable = ii_bvec_fault_in_readable,
+ 	.ii_single_seg_count = ii_bvec_single_seg_count,
++	.ii_shorten = ii_bvec_shorten,
+ };
+ EXPORT_SYMBOL(ii_bvec_ops);
+ 
+@@ -358,6 +364,13 @@ static size_t ii_iovec_single_seg_count(struct iov_iter *i)
+ 		return min(i->count, iov->iov_len - i->iov_offset);
+ }
+ 
++static int ii_iovec_shorten(struct iov_iter *i, size_t count)
++{
++	struct iovec *iov = (struct iovec *)i->data;
++	i->nr_segs = iov_shorten(iov, i->nr_segs, count);
++	return 0;
++}
++
+ struct iov_iter_ops ii_iovec_ops = {
+ 	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
+ 	.ii_copy_to_user = ii_iovec_copy_to_user,
+@@ -366,5 +379,6 @@ struct iov_iter_ops ii_iovec_ops = {
+ 	.ii_advance = ii_iovec_advance,
+ 	.ii_fault_in_readable = ii_iovec_fault_in_readable,
+ 	.ii_single_seg_count = ii_iovec_single_seg_count,
++	.ii_shorten = ii_iovec_shorten,
+ };
+ EXPORT_SYMBOL(ii_iovec_ops);
+-- 
+1.8.0
+
