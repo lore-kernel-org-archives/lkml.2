@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2KUNDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:03:46 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:46549 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2KUNDn (ORCPT
+	id S1752813Ab2KUNFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:05:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22099 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab2KUNFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:03:43 -0500
+	Wed, 21 Nov 2012 08:05:51 -0500
+Date: Wed, 21 Nov 2012 16:05:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rgujare@ozmodevices.com>
+Cc: devel@driverdev.osuosl.org, sachin.kamat@linaro.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [V2 PATCH 1/3] staging: ozwpan: Remove redundant null check
+ before kfree in ozpd.c
+Message-ID: <20121121130527.GH11248@mwanda>
+References: <20121120163513.GC4990@kroah.com>
+ <1353501977-6585-2-git-send-email-rgujare@ozmodevices.com>
 MIME-Version: 1.0
-In-Reply-To: <20121119154940.GA6354@redhat.com>
-References: <1351159974-980-1-git-send-email-meltedpianoman@gmail.com>
-	<1353310211-3011-1-git-send-email-meltedpianoman@gmail.com>
-	<20121119151050.GA4270@redhat.com>
-	<CAMSQXEF9BGBVRRtuz88XFqVmPBdbWisepq4qjah3vM05_7hztw@mail.gmail.com>
-	<20121119154940.GA6354@redhat.com>
-Date: Wed, 21 Nov 2012 14:03:41 +0100
-Message-ID: <CAMSQXEGfQE_vcvk9MvP-aJD2jeF7vU+84yx_fEn==v2Jve9w0A@mail.gmail.com>
-Subject: Re: [REPOST-v2] sched: Prevent wakeup to enter critical section needlessly
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353501977-6585-2-git-send-email-rgujare@ozmodevices.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Nov 21, 2012 at 12:46:15PM +0000, Rupesh Gujare wrote:
+> Call kfree only if required else return from function.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
 
-2012/11/19 Oleg Nesterov <oleg@redhat.com>:
->
-> Because on a second thought I suspect this change is wrong.
->
-> Just for example, please look at kauditd_thread(). It does
->
->         set_current_state(TASK_INTERRUPTIBLE);
->
->         add_wait_queue(&kauditd_wait, &wait);
->
->         if (!CONDITION)         // <-- LOAD
->                 schedule();
->
-> And the last LOAD can leak into the critical section protected by
-> wait_queue_head_t->lock, and it can be reordered with list_add()
-> inside this critical section. In this case we can race with wake_up()
-> unless it takes the same lock.
->
-> Oleg.
->
+I'm not sure this is right.
 
-I agree that I should solve my problem using the waitqueue_active()
-function locally. I'll abandon this patch and fix it in the
-tty_ldisc.c.
+Signed-off-by is intended to have a legal meaning that you are
+signing off that you have permission to submit the patch.  You're
+not allowed to sign off on behalf of someone else.
 
-But we try to understand your fault scenario: How can the LOAD leak
-into the critical section? As far as we understand the spin_unlock()
-function also contains a memory barrier to prevent such a reordering
-from happening.
+If we apply this as is, then you get the author credit.  If you want
+to give Sachin author credit then make the first line of the email:
 
-Regards,
-Ivo
+From: Sachin Kamat <sachin.kamat@linaro.org>
+
+Also it's not a good idea to get too control freaky over this code
+which is all going to have to be replaced before this can graduate
+out of staging.  You're just going to discourage people from
+contributing if you redo all their patches.  Linaro people are the
+real deal and you should let them help.
+
+regards,
+dan carpenter
+
