@@ -1,48 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab2KUPrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:47:13 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4997 "EHLO mms1.broadcom.com"
+	id S1755241Ab2KUPrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:47:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2KUPrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:47:10 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <1353512749.32042.1.camel@lb-tlvb-eilong.il.broadcom.com>
-Subject: Re: [PATCH v2] checkpatch: add double empty line check
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Joe Perches" <joe@perches.com>
-cc: "Andy Whitcroft" <apw@canonical.com>,
-        "David Rientjes" <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Wed, 21 Nov 2012 17:45:49 +0200
-In-Reply-To: <1353510075.24807.24.camel@joe-AO722>
-References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
- <20121120115239.GA7955@dm> <1353448728.17819.33.camel@joe-AO722>
- <20121120231930.GA27492@localhost>
- <1353454874.17819.41.camel@joe-AO722>
- <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
- <1353510075.24807.24.camel@joe-AO722>
-Organization: Broadcom
-X-Mailer: Evolution 3.2.3-0ubuntu6
+	id S1755211Ab2KUPrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:47:46 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] UAPI: (Scripted) Disintegrate include/rdma
+To: dillowda@ornl.gov, roland@kernel.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Wed, 21 Nov 2012 15:47:40 +0000
+Message-ID: <20121121154740.9777.72384.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-X-WSS-ID: 7CB2288F1QK6983232-15-01
-Content-Type: text/plain;
- charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-21 at 07:01 -0800, Joe Perches wrote:
-> checkpatch isn't a perfect tool.  Given how it's constructed,
-> I doubt it ever could be.
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Dave Jones <davej@redhat.com>
+---
 
-Joe - I completely agree, this is why I'm not to concern about the
-potential miss in the version I suggested.
+ include/rdma/Kbuild               |    6 ------
+ include/rdma/rdma_netlink.h       |   36 +-----------------------------------
+ include/uapi/rdma/Kbuild          |    6 ++++++
+ include/uapi/rdma/ib_user_cm.h    |    0 
+ include/uapi/rdma/ib_user_mad.h   |    0 
+ include/uapi/rdma/ib_user_sa.h    |    0 
+ include/uapi/rdma/ib_user_verbs.h |    0 
+ include/uapi/rdma/rdma_netlink.h  |   37 +++++++++++++++++++++++++++++++++++++
+ include/uapi/rdma/rdma_user_cm.h  |    0 
+ 9 files changed, 44 insertions(+), 41 deletions(-)
+ rename include/{rdma/ib_user_cm.h => uapi/rdma/ib_user_cm.h} (100%)
+ rename include/{rdma/ib_user_mad.h => uapi/rdma/ib_user_mad.h} (100%)
+ rename include/{rdma/ib_user_sa.h => uapi/rdma/ib_user_sa.h} (100%)
+ rename include/{rdma/ib_user_verbs.h => uapi/rdma/ib_user_verbs.h} (100%)
+ create mode 100644 include/uapi/rdma/rdma_netlink.h
+ rename include/{rdma/rdma_user_cm.h => uapi/rdma/rdma_user_cm.h} (100%)
 
-Thanks,
-Eilon
-
-
+diff --git a/include/rdma/Kbuild b/include/rdma/Kbuild
+index ea56f76..e69de29 100644
+--- a/include/rdma/Kbuild
++++ b/include/rdma/Kbuild
+@@ -1,6 +0,0 @@
+-header-y += ib_user_cm.h
+-header-y += ib_user_mad.h
+-header-y += ib_user_sa.h
+-header-y += ib_user_verbs.h
+-header-y += rdma_netlink.h
+-header-y += rdma_user_cm.h
+diff --git a/include/rdma/rdma_netlink.h b/include/rdma/rdma_netlink.h
+index bd3d8b2..e38de79 100644
+--- a/include/rdma/rdma_netlink.h
++++ b/include/rdma/rdma_netlink.h
+@@ -1,41 +1,9 @@
+ #ifndef _RDMA_NETLINK_H
+ #define _RDMA_NETLINK_H
+ 
+-#include <linux/types.h>
+-
+-enum {
+-	RDMA_NL_RDMA_CM = 1
+-};
+-
+-#define RDMA_NL_GET_CLIENT(type) ((type & (((1 << 6) - 1) << 10)) >> 10)
+-#define RDMA_NL_GET_OP(type) (type & ((1 << 10) - 1))
+-#define RDMA_NL_GET_TYPE(client, op) ((client << 10) + op)
+-
+-enum {
+-	RDMA_NL_RDMA_CM_ID_STATS = 0,
+-	RDMA_NL_RDMA_CM_NUM_OPS
+-};
+-
+-enum {
+-	RDMA_NL_RDMA_CM_ATTR_SRC_ADDR = 1,
+-	RDMA_NL_RDMA_CM_ATTR_DST_ADDR,
+-	RDMA_NL_RDMA_CM_NUM_ATTR,
+-};
+-
+-struct rdma_cm_id_stats {
+-	__u32	qp_num;
+-	__u32	bound_dev_if;
+-	__u32	port_space;
+-	__s32	pid;
+-	__u8	cm_state;
+-	__u8	node_type;
+-	__u8	port_num;
+-	__u8	qp_type;
+-};
+-
+-#ifdef __KERNEL__
+ 
+ #include <linux/netlink.h>
++#include <uapi/rdma/rdma_netlink.h>
+ 
+ struct ibnl_client_cbs {
+ 	int (*dump)(struct sk_buff *skb, struct netlink_callback *nlcb);
+@@ -88,6 +56,4 @@ void *ibnl_put_msg(struct sk_buff *skb, struct nlmsghdr **nlh, int seq,
+ int ibnl_put_attr(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 		  int len, void *data, int type);
+ 
+-#endif /* __KERNEL__ */
+-
+ #endif /* _RDMA_NETLINK_H */
+diff --git a/include/uapi/rdma/Kbuild b/include/uapi/rdma/Kbuild
+index aafaa5a..687ae33 100644
+--- a/include/uapi/rdma/Kbuild
++++ b/include/uapi/rdma/Kbuild
+@@ -1 +1,7 @@
+ # UAPI Header export list
++header-y += ib_user_cm.h
++header-y += ib_user_mad.h
++header-y += ib_user_sa.h
++header-y += ib_user_verbs.h
++header-y += rdma_netlink.h
++header-y += rdma_user_cm.h
+diff --git a/include/rdma/ib_user_cm.h b/include/uapi/rdma/ib_user_cm.h
+similarity index 100%
+rename from include/rdma/ib_user_cm.h
+rename to include/uapi/rdma/ib_user_cm.h
+diff --git a/include/rdma/ib_user_mad.h b/include/uapi/rdma/ib_user_mad.h
+similarity index 100%
+rename from include/rdma/ib_user_mad.h
+rename to include/uapi/rdma/ib_user_mad.h
+diff --git a/include/rdma/ib_user_sa.h b/include/uapi/rdma/ib_user_sa.h
+similarity index 100%
+rename from include/rdma/ib_user_sa.h
+rename to include/uapi/rdma/ib_user_sa.h
+diff --git a/include/rdma/ib_user_verbs.h b/include/uapi/rdma/ib_user_verbs.h
+similarity index 100%
+rename from include/rdma/ib_user_verbs.h
+rename to include/uapi/rdma/ib_user_verbs.h
+diff --git a/include/uapi/rdma/rdma_netlink.h b/include/uapi/rdma/rdma_netlink.h
+new file mode 100644
+index 0000000..8297285
+--- /dev/null
++++ b/include/uapi/rdma/rdma_netlink.h
+@@ -0,0 +1,37 @@
++#ifndef _UAPI_RDMA_NETLINK_H
++#define _UAPI_RDMA_NETLINK_H
++
++#include <linux/types.h>
++
++enum {
++	RDMA_NL_RDMA_CM = 1
++};
++
++#define RDMA_NL_GET_CLIENT(type) ((type & (((1 << 6) - 1) << 10)) >> 10)
++#define RDMA_NL_GET_OP(type) (type & ((1 << 10) - 1))
++#define RDMA_NL_GET_TYPE(client, op) ((client << 10) + op)
++
++enum {
++	RDMA_NL_RDMA_CM_ID_STATS = 0,
++	RDMA_NL_RDMA_CM_NUM_OPS
++};
++
++enum {
++	RDMA_NL_RDMA_CM_ATTR_SRC_ADDR = 1,
++	RDMA_NL_RDMA_CM_ATTR_DST_ADDR,
++	RDMA_NL_RDMA_CM_NUM_ATTR,
++};
++
++struct rdma_cm_id_stats {
++	__u32	qp_num;
++	__u32	bound_dev_if;
++	__u32	port_space;
++	__s32	pid;
++	__u8	cm_state;
++	__u8	node_type;
++	__u8	port_num;
++	__u8	qp_type;
++};
++
++
++#endif /* _UAPI_RDMA_NETLINK_H */
+diff --git a/include/rdma/rdma_user_cm.h b/include/uapi/rdma/rdma_user_cm.h
+similarity index 100%
+rename from include/rdma/rdma_user_cm.h
+rename to include/uapi/rdma/rdma_user_cm.h
 
