@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2KUKW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:22:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43978 "EHLO mx2.suse.de"
+	id S1754709Ab2KUKZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:25:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44014 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484Ab2KUKWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:52 -0500
+	id S1754646Ab2KUKW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:56 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 34/46] sched: numa: Slowly increase the scanning period as NUMA faults are handled
-Date: Wed, 21 Nov 2012 10:21:40 +0000
-Message-Id: <1353493312-8069-35-git-send-email-mgorman@suse.de>
+Subject: [PATCH 36/46] mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
+Date: Wed, 21 Nov 2012 10:21:42 +0000
+Message-Id: <1353493312-8069-37-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,56 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the rate of scanning for an address space is controlled
-by the individual tasks. The next scan is simply determined by
-2*p->numa_scan_period.
+While it is desirable that all threads in a process run on its home
+node, this is not always possible or necessary. There may be more
+threads than exist within the node or the node might over-subscribed
+with unrelated processes.
 
-The 2*p->numa_scan_period is arbitrary and never changes. At this point
-there is still no proper policy that decides if a task or process is
-properly placed. It just scans and assumes the next NUMA fault will
-place it properly. As it is assumed that pages will get properly placed
-over time, increase the scan window each time a fault is incurred. This
-is a big assumption as noted in the comments.
-
-It should be noted that changing to p->numa_scan_period will increase
-system CPU usage because now the scanning rate has effectively doubled.
-If that is a problem then the min_rate should be made 200ms instead of
-restoring the 2* logic.
+This can cause a situation whereby a page gets migrated off its home
+node because the threads clearing pte_numa were running off-node. This
+patch uses page->last_nid to build a two-stage filter before pages get
+migrated to avoid problems with short or unlikely task<->node
+relationships.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 357057c..3c632448 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -812,6 +812,15 @@ void task_numa_fault(int node, int pages)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 4c1c8d8..fd20e28 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2317,9 +2317,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 	}
  
- 	/* FIXME: Allocate task-specific structure for placement policy here */
- 
-+	/*
-+	 * Assume that as faults occur that pages are getting properly placed
-+	 * and fewer NUMA hints are required. Note that this is a big
-+	 * assumption, it assumes processes reach a steady steady with no
-+	 * further phase changes.
-+	 */
-+	p->numa_scan_period = min(sysctl_balance_numa_scan_period_max,
-+				p->numa_scan_period + jiffies_to_msecs(2));
+ 	/* Migrate the page towards the node whose CPU is referencing it */
+-	if (pol->flags & MPOL_F_MORON)
++	if (pol->flags & MPOL_F_MORON) {
++		int last_nid;
 +
- 	task_numa_placement(p);
- }
+ 		polnid = numa_node_id();
  
-@@ -858,7 +867,7 @@ void task_numa_work(struct callback_head *work)
- 	if (p->numa_scan_period == 0)
- 		p->numa_scan_period = sysctl_balance_numa_scan_period_min;
- 
--	next_scan = now + 2*msecs_to_jiffies(p->numa_scan_period);
-+	next_scan = now + msecs_to_jiffies(p->numa_scan_period);
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
++		/*
++		 * Multi-stage node selection is used in conjunction
++		 * with a periodic migration fault to build a temporal
++		 * task<->page relation. By using a two-stage filter we
++		 * remove short/unlikely relations.
++		 *
++		 * Using P(p) ~ n_p / n_t as per frequentist
++		 * probability, we can equate a task's usage of a
++		 * particular page (n_p) per total usage of this
++		 * page (n_t) (in a given time-span) to a probability.
++		 *
++		 * Our periodic faults will sample this probability and
++		 * getting the same result twice in a row, given these
++		 * samples are fully independent, is then given by
++		 * P(n)^2, provided our sample period is sufficiently
++		 * short compared to the usage pattern.
++		 *
++		 * This quadric squishes small probabilities, making
++		 * it less likely we act on an unlikely task<->page
++		 * relation.
++		 */
++		last_nid = page_xchg_last_nid(page, polnid);
++		if (last_nid != polnid)
++			goto out;
++	}
++
+ 	if (curnid != polnid)
+ 		ret = polnid;
+ out:
 -- 
 1.7.9.2
 
