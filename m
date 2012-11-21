@@ -1,286 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2KVUgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:36:08 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53912 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2KVTPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:15:11 -0500
-Date: Thu, 22 Nov 2012 12:10:30 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/5] Input: bu21013_ts - Move GPIO init and exit
- functions into the driver
-Message-ID: <20121122121030.GG4328@gmail.com>
-References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
- <1352900837-20759-3-git-send-email-lee.jones@linaro.org>
+	id S1756781Ab2KVUgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:36:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39242 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756617Ab2KVTO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:14:59 -0500
+Date: Thu, 22 Nov 2012 00:30:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: Marcus Sundman <marcus@hibox.fi>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+Message-ID: <20121121233021.GA8730@quack.suse.cz>
+References: <508DB432.2030208@hibox.fi>
+ <20121101190119.GA27294@quack.suse.cz>
+ <50932DAC.7040702@hibox.fi>
+ <20121107161730.GB23654@quack.suse.cz>
+ <509C4339.2090506@hibox.fi>
+ <509D014B.2080709@hibox.fi>
+ <20121113135159.GA18651@quack.suse.cz>
+ <50A592BA.8050709@hibox.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352900837-20759-3-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50A592BA.8050709@hibox.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Author: Lee Jones <lee.jones@linaro.org>
-Date:   Fri Sep 28 10:29:07 2012 +0100
+On Fri 16-11-12 03:11:22, Marcus Sundman wrote:
+> On 13.11.2012 15:51, Jan Kara wrote:
+> >On Fri 09-11-12 15:12:43, Marcus Sundman wrote:
+> >>On 09.11.2012 01:41, Marcus Sundman wrote:
+> >>>On 07.11.2012 18:17, Jan Kara wrote:
+> >>>>On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
+> >>>>>Also, and this might be important, according to iotop there is
+> >>>>>almost no disk writing going on during the freeze. (Occasionally
+> >>>>>there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
+> >>>>>when an iotop running on nice -20 hasn't frozen completely, which it
+> >>>>>does during the more severe freezes.
+> >>>>   OK, it seems as if your machine has some problems with memory
+> >>>>allocations. Can you capture /proc/vmstat before the freeze and
+> >>>>after the
+> >>>>freeze and send them for comparison. Maybe it will show us what is the
+> >>>>system doing.
+> >>>t=01:06 http://sundman.iki.fi/vmstat.pre-freeze.txt
+> >>>t=01:08 http://sundman.iki.fi/vmstat.during-freeze.txt
+> >>>t=01:12 http://sundman.iki.fi/vmstat.post-freeze.txt
+> >>Here are some more vmstats:
+> >>http://sundman.iki.fi/vmstats.tar.gz
+> >>
+> >>They are from running this:
+> >>while true; do cat /proc/vmstat > "vmstat.$(date +%FT%X).txt"; sleep
+> >>10; done
+> >>
+> >>There were lots and lots of freezes for almost 20 mins from 14:37:45
+> >>onwards, pretty much constantly, but at 14:56:50 the freezes
+> >>suddenly stopped and everything went back to how it should be.
+> >   I was looking into the data but they didn't show anything problematic.
+> >The machine seems to be writing a lot but there's always some free memory,
+> >even direct reclaim isn't ever entered. Hum, actually you wrote iotop isn't
+> >showing much IO going on but vmstats show there is about 1 GB written
+> >during the freeze. It is not a huge amount given the time span but it
+> >certainly gives a few MB/s of write load.
+> 
+> I didn't watch iotop during this particular freeze. I'll try to keep
+> an eye on iotop in the future. Is there some particular options I
+> should run iotop with, or is a "nice -n -20 iotop -od3" fine?
+  I'm not really familiar with iotop :). Usually I use iostat...
 
-    Input: bu21013_ts - Move GPIO init and exit functions into the driver
-    
-    These GPIO init and exit functions have no place in platform data.
-    Instead they should be part of the driver. This patch moves them to
-    their rightful place, which subsequently elevates platform data of
-    yet more cruft.
-    
-    Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-    Cc: linux-input@vger.kernel.org
-    Acked-by: Arnd Bergmann <arnd@arndb.de>
-    Acked-by: Linus Walleij <linus.walleij@linaro.org>
-    Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >There's surprisingly high number of allocations going on but that may be
+> >due to the IO activity. So let's try something else: Can you switch to
+> >console and when the hang happens press Alt-Sysrq-w (or you can just do
+> >"echo w >/proc/sysrq-trigger" if the machine is live enough to do that).
+> >Then send me the output from dmesg.  Thanks!
+> 
+> Sure! Here are two:
+> http://sundman.iki.fi/dmesg-1.txt
+> http://sundman.iki.fi/dmesg-2.txt
+  Thanks for those and sorry for the delay (I was busy with other stuff).
+I had a look into those traces and I have to say I'm not much wiser. In the
+first dump there is just kswapd waiting for IO. In the second dump there
+are more processes waiting for IO (mostly for reads - nautilus,
+thunderbird, opera, ...) but nothing really surprising. So I'm lost what
+could cause the hangs you observe. Recalling you wrote even simple programs
+like top hang, maybe it is some CPU scheduling issue? Can you boot with
+noautogroup kernel option?
 
-diff --git a/arch/arm/mach-ux500/board-mop500-stuib.c b/arch/arm/mach-ux500/board-mop500-stuib.c
-index 564f57d..eb19a7e 100644
---- a/arch/arm/mach-ux500/board-mop500-stuib.c
-+++ b/arch/arm/mach-ux500/board-mop500-stuib.c
-@@ -77,9 +77,6 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
-  * BU21013 ROHM touchscreen interface on the STUIBs
-  */
- 
--/* tracks number of bu21013 devices being enabled */
--static int bu21013_devices;
--
- #define TOUCH_GPIO_PIN  84
- 
- #define TOUCH_XMAX	384
-@@ -88,73 +85,8 @@ static int bu21013_devices;
- #define PRCMU_CLOCK_OCR		0x1CC
- #define TSC_EXT_CLOCK_9_6MHZ	0x840000
- 
--/**
-- * bu21013_gpio_board_init : configures the touch panel.
-- * @reset_pin: reset pin number
-- * This function can be used to configures
-- * the voltage and reset the touch panel controller.
-- */
--static int bu21013_gpio_board_init(int reset_pin)
--{
--	int retval = 0;
--
--	bu21013_devices++;
--	if (bu21013_devices == 1) {
--		retval = gpio_request(reset_pin, "touchp_reset");
--		if (retval) {
--			printk(KERN_ERR "Unable to request gpio reset_pin");
--			return retval;
--		}
--		retval = gpio_direction_output(reset_pin, 1);
--		if (retval < 0) {
--			printk(KERN_ERR "%s: gpio direction failed\n",
--					__func__);
--			return retval;
--		}
--	}
--
--	return retval;
--}
--
--/**
-- * bu21013_gpio_board_exit : deconfigures the touch panel controller
-- * @reset_pin: reset pin number
-- * This function can be used to deconfigures the chip selection
-- * for touch panel controller.
-- */
--static int bu21013_gpio_board_exit(int reset_pin)
--{
--	int retval = 0;
--
--	if (bu21013_devices == 1) {
--		retval = gpio_direction_output(reset_pin, 0);
--		if (retval < 0) {
--			printk(KERN_ERR "%s: gpio direction failed\n",
--					__func__);
--			return retval;
--		}
--		gpio_set_value(reset_pin, 0);
--	}
--	bu21013_devices--;
--
--	return retval;
--}
--
--/**
-- * bu21013_read_pin_val : get the interrupt pin value
-- * This function can be used to get the interrupt pin value for touch panel
-- * controller.
-- */
--static int bu21013_read_pin_val(void)
--{
--	return gpio_get_value(TOUCH_GPIO_PIN);
--}
--
- static struct bu21013_platform_device tsc_plat_device = {
--	.cs_en = bu21013_gpio_board_init,
--	.cs_dis = bu21013_gpio_board_exit,
--	.irq_read_val = bu21013_read_pin_val,
--	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
-+	.touch_pin = TOUCH_GPIO_PIN,
- 	.touch_x_max = TOUCH_XMAX,
- 	.touch_y_max = TOUCH_YMAX,
- 	.ext_clk = false,
-diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
-index 2fae682..08ffb19 100644
---- a/drivers/input/touchscreen/bu21013_ts.c
-+++ b/drivers/input/touchscreen/bu21013_ts.c
-@@ -14,6 +14,7 @@
- #include <linux/slab.h>
- #include <linux/regulator/consumer.h>
- #include <linux/module.h>
-+#include <linux/gpio.h>
- 
- #define PEN_DOWN_INTR	0
- #define MAX_FINGERS	2
-@@ -262,7 +263,7 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
- 			return IRQ_NONE;
- 		}
- 
--		data->intr_pin = data->chip->irq_read_val();
-+		data->intr_pin = gpio_get_value(data->chip->touch_pin);
- 		if (data->intr_pin == PEN_DOWN_INTR)
- 			wait_event_timeout(data->wait, data->touch_stopped,
- 					   msecs_to_jiffies(2));
-@@ -272,6 +273,54 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
- }
- 
- /**
-+ * bu21013_gpio_board_init() - configures the touch panel
-+ * @reset_pin: reset pin number
-+ *
-+ * This function is used to configure the voltage and
-+ * reset the touch panel controller.
-+ */
-+static int bu21013_gpio_board_init(int reset_pin)
-+{
-+	int retval = 0;
-+
-+	retval = gpio_request(reset_pin, "touchp_reset");
-+	if (retval) {
-+		printk(KERN_ERR "Unable to request gpio reset_pin");
-+		return retval;
-+	}
-+	retval = gpio_direction_output(reset_pin, 1);
-+	if (retval < 0) {
-+		printk(KERN_ERR "%s: gpio direction failed\n",
-+		       __func__);
-+		return retval;
-+	}
-+
-+	return retval;
-+}
-+
-+/**
-+ * bu21013_gpio_board_exit() - deconfigures the touch panel controller
-+ * @reset_pin: reset pin number
-+ *
-+ * This function is used to deconfigure the chip selection
-+ * for touch panel controller.
-+ */
-+static int bu21013_gpio_board_exit(int reset_pin)
-+{
-+	int retval = 0;
-+
-+	retval = gpio_direction_output(reset_pin, 0);
-+	if (retval < 0) {
-+		printk(KERN_ERR "%s: gpio direction failed\n",
-+		       __func__);
-+		return retval;
-+	}
-+	gpio_set_value(reset_pin, 0);
-+
-+	return retval;
-+}
-+
-+/**
-  * bu21013_init_chip() - power on sequence for the bu21013 controller
-  * @data: device structure pointer
-  *
-@@ -449,6 +498,8 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
-+	pdata->irq = gpio_to_irq(pdata->touch_pin);
-+
- 	bu21013_data = kzalloc(sizeof(struct bu21013_ts_data), GFP_KERNEL);
- 	in_dev = input_allocate_device();
- 	if (!bu21013_data || !in_dev) {
-@@ -478,12 +529,10 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- 	init_waitqueue_head(&bu21013_data->wait);
- 
- 	/* configure the gpio pins */
--	if (pdata->cs_en) {
--		error = pdata->cs_en(pdata->cs_pin);
--		if (error < 0) {
--			dev_err(&client->dev, "chip init failed\n");
--			goto err_disable_regulator;
--		}
-+	error = bu21013_gpio_board_init(pdata->cs_pin);
-+	if (error < 0) {
-+		dev_err(&client->dev, "chip init failed\n");
-+		goto err_disable_regulator;
- 	}
- 
- 	/* configure the touch panel controller */
-@@ -531,7 +580,7 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- err_free_irq:
- 	bu21013_free_irq(bu21013_data);
- err_cs_disable:
--	pdata->cs_dis(pdata->cs_pin);
-+	bu21013_gpio_board_exit(pdata->cs_pin);
- err_disable_regulator:
- 	regulator_disable(bu21013_data->regulator);
- err_put_regulator:
-@@ -555,7 +604,7 @@ static int __devexit bu21013_remove(struct i2c_client *client)
- 
- 	bu21013_free_irq(bu21013_data);
- 
--	bu21013_data->chip->cs_dis(bu21013_data->chip->cs_pin);
-+	bu21013_gpio_board_exit(bu21013_data->chip->cs_pin);
- 
- 	input_unregister_device(bu21013_data->in_dev);
- 
-diff --git a/include/linux/input/bu21013.h b/include/linux/input/bu21013.h
-index 05e0328..01a2975 100644
---- a/include/linux/input/bu21013.h
-+++ b/include/linux/input/bu21013.h
-@@ -9,13 +9,11 @@
- 
- /**
-  * struct bu21013_platform_device - Handle the platform data
-- * @cs_en:	pointer to the cs enable function
-- * @cs_dis:	pointer to the cs disable function
-- * @irq_read_val:    pointer to read the pen irq value function
-  * @touch_x_max: touch x max
-  * @touch_y_max: touch y max
-  * @cs_pin: chip select pin
-  * @irq: irq pin
-+ * @touch_pin: touch gpio pin
-  * @ext_clk: external clock flag
-  * @x_flip: x flip flag
-  * @y_flip: y flip flag
-@@ -24,13 +22,11 @@
-  * This is used to handle the platform data
-  */
- struct bu21013_platform_device {
--	int (*cs_en)(int reset_pin);
--	int (*cs_dis)(int reset_pin);
--	int (*irq_read_val)(void);
- 	int touch_x_max;
- 	int touch_y_max;
- 	unsigned int cs_pin;
- 	unsigned int irq;
-+	unsigned int touch_pin;
- 	bool ext_clk;
- 	bool x_flip;
- 	bool y_flip;
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
