@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab2KUK3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:29:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43747 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab2KUKWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754503Ab2KUKWX (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 21 Nov 2012 05:22:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43713 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481Ab2KUKWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:19 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 16/46] mm: mempolicy: Make MPOL_LOCAL a real policy
-Date: Wed, 21 Nov 2012 10:21:22 +0000
-Message-Id: <1353493312-8069-17-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/46] mm: numa: Support NUMA hinting page faults from gup/gup_fast
+Date: Wed, 21 Nov 2012 10:21:19 +0000
+Message-Id: <1353493312-8069-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,74 +28,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Make MPOL_LOCAL a real and exposed policy such that applications that
-relied on the previous default behaviour can explicitly request it.
+Introduce FOLL_NUMA to tell follow_page to check
+pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe to do
+so because it always invokes handle_mm_fault and retries the
+follow_page later.
 
-Requested-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+KVM secondary MMU page faults will trigger the NUMA hinting page
+faults through gup_fast -> get_user_pages -> follow_page ->
+handle_mm_fault.
+
+Other follow_page callers like KSM should not use FOLL_NUMA, or they
+would fail to get the pages if they use follow_page instead of
+get_user_pages.
+
+[ This patch was picked up from the AutoNUMA tree. ]
+
+Originally-by: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+[ ported to this tree. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |    9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ include/linux/mm.h |    1 +
+ mm/memory.c        |   17 +++++++++++++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 23e62e0..3e835c9 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -20,6 +20,7 @@ enum {
- 	MPOL_PREFERRED,
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
-+	MPOL_LOCAL,
- 	MPOL_MAX,	/* always last member of enum */
- };
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1856c62..fa16152 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1572,6 +1572,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_MLOCK	0x40	/* mark page as mlocked */
+ #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
+ #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
++#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
  
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 66e90ec..54bd3e5 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 			     (flags & MPOL_F_RELATIVE_NODES)))
- 				return ERR_PTR(-EINVAL);
- 		}
-+	} else if (mode == MPOL_LOCAL) {
-+		if (!nodes_empty(*nodes))
-+			return ERR_PTR(-EINVAL);
-+		mode = MPOL_PREFERRED;
- 	} else if (nodes_empty(*nodes))
- 		return ERR_PTR(-EINVAL);
- 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
-@@ -2399,7 +2403,6 @@ void numa_default_policy(void)
-  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
-  * Used only for mpol_parse_str() and mpol_to_str()
-  */
--#define MPOL_LOCAL MPOL_MAX
- static const char * const policy_modes[] =
- {
- 	[MPOL_DEFAULT]    = "default",
-@@ -2452,12 +2455,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 	if (flags)
- 		*flags++ = '\0';	/* terminate mode string */
- 
--	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
-+	for (mode = 0; mode < MPOL_MAX; mode++) {
- 		if (!strcmp(str, policy_modes[mode])) {
- 			break;
- 		}
- 	}
--	if (mode > MPOL_LOCAL)
-+	if (mode >= MPOL_MAX)
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index 221fc9f..73834e7 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1517,6 +1517,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
  		goto out;
+ 	}
++	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
++		goto no_page_table;
+ 	if (pmd_trans_huge(*pmd)) {
+ 		if (flags & FOLL_SPLIT) {
+ 			split_huge_page_pmd(mm, pmd);
+@@ -1546,6 +1548,8 @@ split_fallthrough:
+ 	pte = *ptep;
+ 	if (!pte_present(pte))
+ 		goto no_page;
++	if ((flags & FOLL_NUMA) && pte_numa(pte))
++		goto no_page;
+ 	if ((flags & FOLL_WRITE) && !pte_write(pte))
+ 		goto unlock;
  
- 	switch (mode) {
+@@ -1697,6 +1701,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
+ 	vm_flags &= (gup_flags & FOLL_FORCE) ?
+ 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
++
++	/*
++	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
++	 * would be called on PROT_NONE ranges. We must never invoke
++	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
++	 * page faults would unprotect the PROT_NONE ranges if
++	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
++	 * bitflag. So to avoid that, don't set FOLL_NUMA if
++	 * FOLL_FORCE is set.
++	 */
++	if (!(gup_flags & FOLL_FORCE))
++		gup_flags |= FOLL_NUMA;
++
+ 	i = 0;
+ 
+ 	do {
 -- 
 1.7.9.2
 
