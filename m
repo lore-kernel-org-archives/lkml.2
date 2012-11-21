@@ -1,203 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab2KUHC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:02:59 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:38836 "EHLO quartz.orcorp.ca"
+	id S1752910Ab2KUHDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:03:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36038 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab2KUHC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:02:58 -0500
-Date: Wed, 21 Nov 2012 00:02:51 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: [PATCH v3] TPM: Provide a tpm_tis OF driver
-Message-ID: <20121121070251.GC19837@obsidianresearch.com>
-References: <20121002210453.GA12231@obsidianresearch.com>
- <20121010162428.GA5013@ennui.austin.ibm.com>
+	id S1751754Ab2KUHDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 02:03:02 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>
+Subject: RE: [PATCH v2 0/3] mtd: nand: OMAP: ELM error correction support
+ for BCH ecc
+Thread-Topic: [PATCH v2 0/3] mtd: nand: OMAP: ELM error correction support
+ for BCH ecc
+Thread-Index: AQHNtzjAYJXEaMIpjk+PG7tWZP2/spfqfEcAgAaEjeCAAudd0A==
+Date: Wed, 21 Nov 2012 07:01:25 +0000
+Deferred-Delivery: Wed, 21 Nov 2012 07:01:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9EC70D@DBDE01.ent.ti.com>
+References: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
+ <1352978534.2221.33.camel@sauron.fi.intel.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010162428.GA5013@ennui.austin.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAL73DnB027917
 
-This provides an open firwmare driver binding for tpm_tis. OF
-is useful on arches where PNP is not used.
+On Mon, Nov 19, 2012 at 18:13:56, Philip, Avinash wrote:
+> 
+> On Thu, Nov 15, 2012 at 16:52:14, Artem Bityutskiy wrote:
+> > On Wed, 2012-10-31 at 12:38 +0530, Philip, Avinash wrote:
+> > > Support to use ELM as BCH 4 & 8 bit error correction module. Also performance
+> > > enhancement by adding single shot read_page and write_page functions for the
+> > > nand flashes with page size less than 4 KB.
+> > > 
+> > > ELM module can be used to correct errors reported by BCH 4, 8 & 16 bit
+> > > ECC scheme. For now only 4 & 8 bit support is added.
+> > > 
+> > > BCH 4 & 8 bit error detection support is already available in mainline
+> > > kernel and works with software error correction.
+> > > 
+> > > This series is based on [1] and tested with RFC: OMAP GPMC bindings
+> > > patch series
+> > > 
+> > > 1. linux-next/20121030
+> > 
+> > Would you please re-send a version which cleanly applies to the
+> > l2-mtd.git tree? This series has many conflicts. Thanks!
+> 
+> Artem,
+> 
+> Omap nand driver is being changed considerably with Afzal's omap-gpmc cleanup
+> series for common arm zImage [2] and those changes move many
+> of the nand related code from platform folders to omap nand driver.
+> 
+> Omap-gpmc changes are present in Tony's " omap-for-v3.8/cleanup-headers-gpmc"
+> branch [3]and is present in linux-next also, but is not present in l2-mtd.
+> Tony has signed tag including omap-gpmc cleanup series,
+> "omap-for-v3.8/cleanup-headers-prepare-multiplatform-v3-signed" [4]
+> 
+> If this series is made over l2-mtd, and it would cause lot of conflict
+> with omap-gpmc cleanup series.
+> 
+> I am not sure how this dependency has to be handled for this series,
+> let me know whether you still want it to be made over l2-mtd?
 
-Allow the tpm_tis driver to be selected if PNP or OF are compiled in.
+Artem,
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/Kconfig   |    2 +-
- drivers/char/tpm/tpm_tis.c |   76 ++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 64 insertions(+), 14 deletions(-)
+Is it possible for you to give ack for these patches so that these patches
+can go in Tony's tree where Omap-gpmc changes are present?
 
-v3 changes
- - Rebase and retest on PPC against 3.7-rc6
- - Compile test on x86-64
- - Include of.h so that of_match_ptr works when CONFIG_OF=n
- - Drop the errant consts
+Thanks
+Avinash
+> 
+> 2. http://markmail.org/message/ev67wm7irgc2qc5d#query:+page:1+mid:wgjdv6fsfghnua5z+state:results
+> 3. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=shortlog;h=refs/heads/omap-for-v3.8/cleanup-headers-gpmc
+> 4. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=tag;h=refs/tags/omap-for-v3.8/cleanup-headers-prepare-multiplatform-v3-signed
+> 
+> 
+> Thanks
+> Avinash
+> 
+> > 
+> > git://git.infradead.org/users/dedekind/l2-mtd.git
+> > 
+> > -- 
+> > Best Regards,
+> > Artem Bityutskiy
+> > 
+> 
+> 
 
-Sorry for the long delay getting these fixes turned around.
-
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index 915875e..31faef6 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -26,7 +26,7 @@ if TCG_TPM
- 
- config TCG_TIS
- 	tristate "TPM Interface Specification 1.2 Interface"
--	depends on X86
-+	depends on X86 || OF
- 	---help---
- 	  If you have a TPM security chip that is compliant with the
- 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 6bdf267..1ebba01 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -27,6 +27,8 @@
- #include <linux/wait.h>
- #include <linux/acpi.h>
- #include <linux/freezer.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include "tpm.h"
- 
- enum tis_access {
-@@ -507,7 +509,7 @@ module_param(interrupts, bool, 0444);
- MODULE_PARM_DESC(interrupts, "Enable interrupts");
- 
- static int tpm_tis_init(struct device *dev, resource_size_t start,
--			resource_size_t len, unsigned int irq)
-+			resource_size_t len, int irq, int irq_autoprobe)
- {
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
-@@ -605,9 +607,12 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	iowrite32(intmask,
- 		  chip->vendor.iobase +
- 		  TPM_INT_ENABLE(chip->vendor.locality));
--	if (interrupts)
--		chip->vendor.irq = irq;
--	if (interrupts && !chip->vendor.irq) {
-+	if (!interrupts) {
-+		irq = 0;
-+		irq_autoprobe = 0;
-+	}
-+	chip->vendor.irq = irq;
-+	if (irq == 0 && irq_autoprobe) {
- 		irq_s =
- 		    ioread8(chip->vendor.iobase +
- 			    TPM_INT_VECTOR(chip->vendor.locality));
-@@ -740,13 +745,11 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 
- 	if (pnp_irq_valid(pnp_dev, 0))
- 		irq = pnp_irq(pnp_dev, 0);
--	else
--		interrupts = 0;
- 
- 	if (is_itpm(pnp_dev))
- 		itpm = 1;
- 
--	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
-+	return tpm_tis_init(&pnp_dev->dev, start, len, irq, 0);
- }
- 
- static int tpm_tis_pnp_suspend(struct pnp_dev *dev, pm_message_t msg)
-@@ -822,12 +825,52 @@ static int tpm_tis_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
- 
--static struct platform_driver tis_drv = {
-+#ifdef CONFIG_OF
-+static const struct of_device_id tis_of_platform_match[] __devinitdata = {
-+	{.compatible = "tcg,tpm_tis"},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tis_of_platform_match);
-+
-+static int __devinit tis_of_probe_one(struct platform_device *pdev)
-+{
-+	const struct resource *res;
-+	int irq;
-+
-+	if (!pdev->dev.of_node)
-+		return -ENODEV;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		irq = 0;
-+	return tpm_tis_init(&pdev->dev, res->start, res->end - res->start + 1,
-+			    irq, 0);
-+}
-+
-+static int __devexit tis_of_remove_one(struct platform_device *odev)
-+{
-+	struct tpm_chip *chip = dev_get_drvdata(&odev->dev);
-+	tpm_dev_vendor_release(chip);
-+	kfree(chip);
-+	return 0;
-+}
-+#endif
-+
-+static struct platform_driver tis_driver = {
- 	.driver = {
- 		.name = "tpm_tis",
- 		.owner		= THIS_MODULE,
- 		.pm		= &tpm_tis_pm,
-+		.of_match_table = of_match_ptr(tis_of_platform_match),
- 	},
-+#ifdef CONFIG_OF
-+	.probe = tis_of_probe_one,
-+	.remove = __devexit_p(tis_of_remove_one)
-+#endif
- };
- 
- static struct platform_device *pdev;
-@@ -843,15 +886,22 @@ static int __init init_tis(void)
- 		return pnp_register_driver(&tis_pnp_driver);
- #endif
- 
--	rc = platform_driver_register(&tis_drv);
-+	rc = platform_driver_register(&tis_driver);
- 	if (rc < 0)
- 		return rc;
--	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
-+	/* TIS_MEM_BASE is only going to work on x86.. */
-+#ifndef CONFIG_OF
-+	pdev = platform_device_register_simple("tpm_tis", -1, NULL, 0);
-+	if (IS_ERR(pdev)) {
-+		platform_driver_unregister(&tis_driver);
- 		return PTR_ERR(pdev);
--	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
-+	}
-+	rc = tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0, 1);
-+	if (rc != 0) {
- 		platform_device_unregister(pdev);
--		platform_driver_unregister(&tis_drv);
-+		platform_driver_unregister(&tis_driver);
- 	}
-+#endif
- 	return rc;
- }
- 
-@@ -883,7 +933,7 @@ static void __exit cleanup_tis(void)
- 	}
- #endif
- 	platform_device_unregister(pdev);
--	platform_driver_unregister(&tis_drv);
-+	platform_driver_unregister(&tis_driver);
- }
- 
- module_init(init_tis);
--- 
-1.7.4.1
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
