@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab2KUTbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:31:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51014 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768Ab2KUTbv (ORCPT
+	id S1755880Ab2KUTdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:33:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44880 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab2KUTdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:31:51 -0500
-Date: Wed, 21 Nov 2012 11:31:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 1/5] mm: introduce new field "managed_pages" to
- struct zone
-Message-Id: <20121121113149.92e1bcd8.akpm@linux-foundation.org>
-In-Reply-To: <50ACE708.5050009@gmail.com>
-References: <20121115112454.e582a033.akpm@linux-foundation.org>
-	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
-	<1353254850-27336-2-git-send-email-jiang.liu@huawei.com>
-	<20121119153832.437c7e59.akpm@linux-foundation.org>
-	<50AB9A0B.9090105@gmail.com>
-	<20121120113119.38d2a635.akpm@linux-foundation.org>
-	<50ACE708.5050009@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 14:33:03 -0500
+Date: Wed, 21 Nov 2012 11:32:41 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
+        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 7/9] ocfs2: Use generic handlers of O_SYNC AIO DIO
+Message-ID: <20121121193240.GL2822@localhost>
+Mail-Followup-To: "Darrick J. Wong" <darrick.wong@oracle.com>,
+	axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com,
+	jmoyer@redhat.com, bpm@sgi.com, viro@zeniv.linux.org.uk,
+	jack@suse.cz, linux-fsdevel@vger.kernel.org, hch@infradead.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	xfs@oss.sgi.com
+References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
+ <20121120075114.25270.83181.stgit@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120075114.25270.83181.stgit@blackbox.djwong.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 22:36:56 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
+On Mon, Nov 19, 2012 at 11:51:14PM -0800, Darrick J. Wong wrote:
+> Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
+> file.
+> 
+> From: Jan Kara <jack@suse.cz>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
 
-> > void mod_zone_managed_pages(struct zone *zone, signed long delta)
-> > {
-> > 	WARN_ON(system_state != SYSTEM_BOOTING &&
-> > 		!is_locked_memory_hotplug());
-> > 	zone->managed_pages += delta;
-> > }
-> This seems a little overhead because __free_pages_bootmem() is on the hot path
-> and will be called many times at boot time.
+> ---
+>  fs/ocfs2/aops.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> 
+> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+> index 6577432..60457cc 100644
+> --- a/fs/ocfs2/aops.c
+> +++ b/fs/ocfs2/aops.c
+> @@ -593,9 +593,7 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
+>  	level = ocfs2_iocb_rw_locked_level(iocb);
+>  	ocfs2_rw_unlock(inode, level);
+>  
+> -	if (is_async)
+> -		aio_complete(iocb, ret, 0);
+> -	inode_dio_done(inode);
+> +	generic_dio_end_io(iocb, offset, bytes, private, ret, is_async);
+>  }
+>  
+>  /*
+> @@ -642,7 +640,7 @@ static ssize_t ocfs2_direct_IO(int rw,
+>  	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
+>  				    iov, offset, nr_segs,
+>  				    ocfs2_direct_IO_get_blocks,
+> -				    ocfs2_dio_end_io, NULL, 0);
+> +				    ocfs2_dio_end_io, NULL, DIO_SYNC_WRITES);
+>  }
+>  
+>  static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Maybe, maybe not.  These things are measurable so let's not just guess.
+-- 
 
-But I'm not really recommending that we do this - there are all sorts
-of things we *could* check and warn about, but we don't.  Potential
-errors in this area don't seem terribly important.
+"Hell is oneself, hell is alone, the other figures in it, merely projections."
+        - T. S. Eliot
 
-
+			http://www.jlbec.org/
+			jlbec@evilplan.org
