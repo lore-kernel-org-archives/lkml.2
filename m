@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab2KUKAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:00:45 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10762 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab2KUKAk (ORCPT
+	id S1754330Ab2KUKAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:00:49 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:37302 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab2KUKAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:00:40 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 21 Nov 2012 02:00:34 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Date: Wed, 21 Nov 2012 19:00:32 +0900
-Message-ID: <4275468.QAmZy3xUK6@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50AC956D.7020303@ti.com>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1699753.ZQsWMHINxd@percival> <50AC956D.7020303@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 21 Nov 2012 05:00:46 -0500
+Date: Wed, 21 Nov 2012 11:00:22 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: Re: [RFC/PATCH 0/1] ubi: Add ubiblock driver
+Message-ID: <20121121110022.35db364f@skate>
+In-Reply-To: <CALF0-+WuaUn5b=2XrzqW7pvM=N1MfQf=sFwLFOrokTkHbOXh3w@mail.gmail.com>
+References: <CALF0-+WuaUn5b=2XrzqW7pvM=N1MfQf=sFwLFOrokTkHbOXh3w@mail.gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 November 2012 16:48:45 Tomi Valkeinen wrote:
-> If the power-off sequence disables a regulator that was supposed to be
-> enabled by the power-on sequence (but wasn't enabled because of an
-> error), the regulator_disable is still called when the driver runs the
-> power-off sequence, isn't it? Regulator enables and disables are ref
-> counted, and the enables should match the disables.
+Dear Ezequiel Garcia,
 
-And there collapses my theory.
+On Tue, 20 Nov 2012 19:39:38 -0300, Ezequiel Garcia wrote:
 
-> > Failures might be better handled if sequences have some "recovery policy"
-> > about what to do when they fail, as mentioned in the link above. As you
-> > pointed out, the driver might not always know enough about the resources
-> > involved to do the right thing.
+> * Read/write support
 > 
-> Yes, I think such recovery policy would be needed.
+> Yes, this implementation supports read/write access.
 
-Indeed, from your last paragraph this makes even more sense now.
+While I think the original ubiblk that was read-only made sense to
+allow the usage of read-only filesystems like squashfs, I am not sure a
+read/write ubiblock is useful.
 
-Oh, and I noticed I forgot to reply to this:
+Using a standard block read/write filesystem on top of ubiblock is going
+to cause damage to your flash. Even though UBI does wear-leveling, your
+standard block read/write filesystem will think it has 512 bytes block
+below him, and will do a crazy number of writes to small blocks. Even
+though you have a one LEB cache, it is going to be defeated quite
+strongly by the small random I/O of the read/write filesystem.
 
-> This I didn't understand. Doesn't "<&pwm 2 xyz>" point to a single
-> device, no matter where and how many times it's used?
+I am not sure letting people use read/write block filesystems on top of
+flashes, even through UBI, is a good idea.
 
-That's true - however when dereferencing the phandle, the underlying framework 
-will try to acquire the PWM, which will result in failure if the same resource 
-is referenced several times.
-
-One could compare the phandles to avoid this, but in your example you must 
-know that for PWMs the "xyz" part is not relevant for comparison.
-
-This makes referencing of resources by name much easier to implement and more 
-elegant with respect to frameworks leveraging.
-
-Alex.
-
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
