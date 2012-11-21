@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2KUHvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:51:14 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49395 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab2KUHvL (ORCPT
+	id S1753061Ab2KUHwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:52:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44239 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab2KUHwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:51:11 -0500
-Message-ID: <50AC87E7.5040700@gmail.com>
-Date: Wed, 21 Nov 2012 15:51:03 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Claudio Freire <klaussfreire@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: fadvise interferes with readahead
-References: <CAGTBQpaDR4+V5b1AwAVyuVLu5rkU=Wc1WeUdLu5ag=WOk5oJzQ@mail.gmail.com> <20121120080427.GA11019@localhost> <CAGTBQpayd-HyH8SWfUCavS7epybcQR5SAx+tr+wyB38__4b-2Q@mail.gmail.com> <20121120145807.GB19467@localhost>
-In-Reply-To: <20121120145807.GB19467@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 21 Nov 2012 02:52:30 -0500
+Date: Tue, 20 Nov 2012 23:52:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: glommer@parallels.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: kmem accounting netperf data
+Message-Id: <20121120235224.f4e9e1c6.akpm@linux-foundation.org>
+In-Reply-To: <xr937gplwkcn.fsf@gthelen.mtv.corp.google.com>
+References: <xr937gplwkcn.fsf@gthelen.mtv.corp.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 10:58 PM, Fengguang Wu wrote:
-> On Tue, Nov 20, 2012 at 10:34:11AM -0300, Claudio Freire wrote:
->> On Tue, Nov 20, 2012 at 5:04 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->>> Yes. The kernel readahead code by design will outperform simple
->>> fadvise in the case of clustered random reads. Imagine the access
->>> pattern 1, 3, 2, 6, 4, 9. fadvise will trigger 6 IOs literally. While
->>> kernel readahead will likely trigger 3 IOs for 1, 3, 2-9. Because on
->>> the page miss for 2, it will detect the existence of history page 1
->>> and do readahead properly. For hard disks, it's mainly the number of
->>> IOs that matters. So even if kernel readahead loses some opportunities
->>> to do async IO and possibly loads some extra pages that will never be
->>> used, it still manges to perform much better.
->>>
->>>> The fix would lay in fadvise, I think. It should update readahead
->>>> tracking structures. Alternatively, one could try to do it in
->>>> do_generic_file_read, updating readahead on !PageUptodate or even on
->>>> page cache hits. I really don't have the expertise or time to go
->>>> modifying, building and testing the supposedly quite simple patch that
->>>> would fix this. It's mostly about the testing, in fact. So if someone
->>>> can comment or try by themselves, I guess it would really benefit
->>>> those relying on fadvise to fix this behavior.
->>> One possible solution is to try the context readahead at fadvise time
->>> to check the existence of history pages and do readahead accordingly.
->>>
->>> However it will introduce *real interferences* between kernel
->>> readahead and user prefetching. The original scheme is, once user
->>> space starts its own informed prefetching, kernel readahead will
->>> automatically stand out of the way.
->> I understand that would seem like a reasonable design, but in this
->> particular case it doesn't seem to be. I propose that in most cases it
->> doesn't really work well as a design decision, to make fadvise work as
->> direct I/O. Precisely because fadvise is supposed to be a hint to let
->> the kernel make better decisions, and not a request to make the kernel
->> stop making decisions.
->>
->> Any interference so introduced wouldn't be any worse than the
->> interference introduced by readahead over reads. I agree, if fadvise
->> were to trigger readahead, it could be bad for applications that don't
->> read what they say the will.
-> Right.
->
->> But if cache hits were to simply update
->> readahead state, it would only mean that read calls behave the same
->> regardless of fadvise calls. I think that's worth pursuing.
-> Here you are describing an alternative solution that will somehow trap
-> into the readahead code even when, for example, the application is
-> accessing once and again an already cached file?  I'm afraid this will
-> add non-trivial overheads and is less attractive than the "readahead
-> on fadvise" solution.
+On Fri, 16 Nov 2012 09:03:52 -0800 Greg Thelen <gthelen@google.com> wrote:
 
-Hi Fengguang,
+> We ran some netperf comparisons measuring the overhead of enabling
+> CONFIG_MEMCG_KMEM with a kmem limit.  Short answer: no regression seen.
+> 
+> This is a multiple machine (client,server) netperf test.  Both client
+> and server machines were running the same kernel with the same
+> configuration.
+> 
+> A baseline run (with CONFIG_MEMCG_KMEM unset) was compared with a full
+> featured run (CONFIG_MEMCG_KMEM=y and a kmem limit large enough not to
+> put additional pressure on the workload).  We saw no noticeable
+> regression running:
+> - TCP_CRR efficiency, latency
+> - TCP_RR latency, rate
+> - TCP_STREAM efficiency, throughput
+> - UDP_RR efficiency, latency
+> The tests were run with a varying number of concurrent connections
+> (between 1 and 200).
+> 
+> The source came from one of Glauber's branches
+> (git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg
+> kmemcg-slab):
+>   commit 70506dcf756aaafd92f4a34752d6b8d8ff4ed360
+>   Author: Glauber Costa <glommer@parallels.com>
+>   Date:   Thu Aug 16 17:16:21 2012 +0400
+> 
+>       Add slab-specific documentation about the kmem controller
+> 
+> It's not the latest source, but I figured the data might still be
+> useful.
 
-Page cache sync readahead only triggered when cache miss, but if file 
-has already cached, how can readahead be trigged again if the 
-application is accessing once and again an already cached file.
+Let's cc the netdev guys, who will be pleased to hear that we didn't
+break their stuff for once ;)
 
-Regards,
-Jaegeuk
-
->
->> I ought to try to prepare a patch for this to illustrate my point. Not
->> sure I'll be able to though.
-> I'd be glad to materialize the readahead on fadvise proposal, if there
-> are no obvious negative examples/cases.
->
-> Thanks,
-> Fengguang
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+Thanks for testing - it was a concern.
