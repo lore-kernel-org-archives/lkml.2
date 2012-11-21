@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab2KUJpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:45:19 -0500
-Received: from servizi.voixit.com ([78.46.247.94]:48872 "EHLO
-	servizi.voixit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2KUJpQ (ORCPT
+	id S1754048Ab2KUJqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:46:21 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53174 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab2KUJqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:45:16 -0500
-Message-ID: <50ACA2AA.1020206@unimore.it>
-Date: Wed, 21 Nov 2012 10:45:14 +0100
-From: Paolo Valente <paolo.valente@unimore.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 21 Nov 2012 04:46:18 -0500
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: jhs@mojatatu.com, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH] pkt_sched: QFQ Plus: fair-queueing service at DRR cost
-References: <20121120174513.GA21618@paolo-ThinkPad-W520> <20121120.135409.1810847883436963918.davem@davemloft.net>
-In-Reply-To: <20121120.135409.1810847883436963918.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1353390792.3833.1.camel@rzhang1-mobl4>
+References: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
+	<CAH9JG2UYsQ6VFMO4COyEr9fBzCL03+37bXTN=AgjKbD7NjR1MA@mail.gmail.com>
+	<1353390792.3833.1.camel@rzhang1-mobl4>
+Date: Wed, 21 Nov 2012 15:16:17 +0530
+Message-ID: <CAK44p20ko1cqiVkYc4-4W9RN01kwfffnDf9-fNdPZt+oOF9igQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu core
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, dg77.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/11/2012 19:54, David Miller ha scritto:
-> From: Paolo Valente <paolo.valente@unimore.it>
-> Date: Tue, 20 Nov 2012 18:45:13 +0100
+On 20 November 2012 11:23, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Tue, 2012-11-20 at 10:39 +0900, Kyungmin Park wrote:
+>> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+>> > [0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
+>> >
+>> > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 >
->> -	struct sk_buff *skb;
->> +	struct sk_buff *skb = NULL;
+> Amit and Donggeun Kim,
 >
-> This is not really an improvement,
-Sorry for trying this silly short cut
-  now the compiler can think
-> that NULL is passed eventually into qdisc_bstats_update().
+> any comments on this patch?
 >
-> Please make the logic easier for the compiler to digest.
->
-> For example, restructure the top-level logic into something like:
->
-> 	skb = NULL;
-> 	if (!list_empty(&in_serv_agg->active))
-> 		skb = qfq_peek_skb(in_serv_agg, &cl, &len);
-> 	else
-> 		len = 0; /* no more active classes in the in-service agg */
->
-> 	if (len == 0 || in_serv_agg->budget < len) {
->   ...
-> 		/*
-> 		 * If we get here, there are other aggregates queued:
-> 		 * choose the new aggregate to serve.
-> 		 */
-> 		in_serv_agg = q->in_serv_agg = qfq_choose_next_agg(q);
-> 		skb = qfq_peek_skb(in_serv_agg, &cl, &len);
-> 	}
-> 	if (!skb)
-> 		return NULL;
->
-> That way it is clearer, to both humans and the compiler, what is
-> going on here.
->
-Got it. Actually, if the first qfq_peek_skb returns NULL, then the 
-example version that you are proposing apparently may behave in a 
-different way than the original one: in your proposal the scheduler 
-tries to switch to a new aggregate and may return a non-NULL value, 
-whereas the original version would immediately return NULL. I guess that 
-this slightly different behavior is fine as well, and I am preparing a 
-new patch that integrates these changes.
-> Thanks.
->
+> thanks,
+> rui
+Hi Riu,
 
+This patch is according to the suggestion I made earlier and looks fine.
+Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
--- 
------------------------------------------------------------
-| Paolo Valente              |                            |
-| Algogroup                  |                            |
-| Dip. Ing. Informazione     | tel:   +39 059 2056318     |
-| Via Vignolese 905/b        | fax:   +39 059 2056129     |
-| 41125 Modena - Italy       |                            |
-|     home:  http://algo.ing.unimo.it/people/paolo/       |
------------------------------------------------------------
+Thanks,
+Amit Daniel
+>
+>> > ---
+>> >  drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
+>> >  1 files changed, 12 insertions(+), 4 deletions(-)
+>> >
+>> > diff --git a/drivers/thermal/exynos_thermal.c
+>> > b/drivers/thermal/exynos_thermal.c
+>> > index 6dd29e4..129e827 100644
+>> > --- a/drivers/thermal/exynos_thermal.c
+>> > +++ b/drivers/thermal/exynos_thermal.c
+>> > @@ -52,9 +52,12 @@
+>> >
+>> >  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
+>> >  #define EXYNOS_TMU_GAIN_SHIFT          8
+>> > +#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
+>> >  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
+>> > -#define EXYNOS_TMU_CORE_ON             3
+>> > -#define EXYNOS_TMU_CORE_OFF            2
+>> > +#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
+>> > EXYNOS_TMU_REF_VOLTAGE_SHIFT)
+>> > +#define EXYNOS_TMU_CORE_ON             BIT(0)
+>> > +#define EXYNOS_TMU_CORE_ON_SHIFT       0
+>> > +#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+>> > EXYNOS_TMU_CORE_ON_SHIFT)
+>> >  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+>> >
+>> >  /* Exynos4210 specific registers */
+>> > @@ -85,7 +88,9 @@
+>> >  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
+>> >  #define EXYNOS_MUX_ADDR_VALUE          6
+>> >  #define EXYNOS_MUX_ADDR_SHIFT          20
+>> > +#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
+>> >  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
+>> > +#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 << EXYNOS_TMU_TRIP_MODE_SHIFT)
+>> >
+>> >  #define EFUSE_MIN_VALUE 40
+>> >  #define EFUSE_MAX_VALUE 100
+>> > @@ -650,10 +655,14 @@ static void exynos_tmu_control(struct platform_device
+>> > *pdev, bool on)
+>> >         mutex_lock(&data->lock);
+>> >         clk_enable(data->clk);
+>> >
+>> > -       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
+>> > +       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
+>> > +       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
+>> > +               EXYNOS_TMU_CORE_ON_MASK);
+>> > +       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
+>> >                 pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+>> >
+>> >         if (data->soc == SOC_ARCH_EXYNOS) {
+>> > +               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>> >                 con |= pdata->noise_cancel_mode <<
+>> > EXYNOS_TMU_TRIP_MODE_SHIFT;
+>> >                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>> >         }
+>> > @@ -665,7 +674,6 @@ static void exynos_tmu_control(struct platform_device
+>> > *pdev, bool on)
+>> >                         pdata->trigger_level1_en << 4 |
+>> >                         pdata->trigger_level0_en;
+>> >         } else {
+>> > -               con |= EXYNOS_TMU_CORE_OFF;
+>> >                 interrupt_en = 0; /* Disable all interrupts */
+>> >         }
+>> >         writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+>> > --
+>> > 1.7.4.1
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>
+>
