@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab2KUTRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:17:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50983 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab2KUTRN (ORCPT
+	id S1755786Ab2KUTSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:18:12 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55555 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab2KUTSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:17:13 -0500
-Date: Wed, 21 Nov 2012 11:17:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-Id: <20121121111711.fe915265.akpm@linux-foundation.org>
-In-Reply-To: <50AC9CC7.8010103@samsung.com>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
-	<1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
-	<20121120113325.dde266ed.akpm@linux-foundation.org>
-	<50AC8C14.5050204@samsung.com>
-	<20121121003643.97febbdb.akpm@linux-foundation.org>
-	<50AC9CC7.8010103@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 14:18:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <50AD0D85.5070906@zytor.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-9-git-send-email-yinghai@kernel.org>
+	<50AD0D85.5070906@zytor.com>
+Date: Wed, 21 Nov 2012 11:18:10 -0800
+X-Google-Sender-Auth: DNVFStpbkfNqJONb1rddH5o2kC4
+Message-ID: <CAE9FiQVVjAoXS3mqq-dnoggM0F+Kn1Kvefu0N6TNM1UXV-6w1Q@mail.gmail.com>
+Subject: Re: [PATCH v3 08/12] x86, boot: Don't check if cmd_line_ptr is
+ accessible in misc/decompressor()
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 10:20:07 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Wed, Nov 21, 2012 at 9:21 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/20/2012 11:16 PM, Yinghai Lu wrote:
+>>
+>> At that stage, it is already in 32bit protected mode or 64bit mode.
+>> so we do not need to check if ptr less 1M.
+>>
+>> When go from other boot loader (kexec) instead of boot/ code path.
+>>
+>> Move out accessible checking out __cmdline_find_option....
+>>
+>> So misc.c will parse cmdline and have debug print out.
+>
+>
+> Your description doesn't seem to match the code, and is incredibly confusing
+> to the reader.
+>
+> The reason why is because you leave out an essential piece of information:
+> cmdline.c is included both in 16-bit code and in the decompressor (32/64-bit
+> code), so you want to move the test out of the shared code.
 
-> Hello,
-> 
-> On 11/21/2012 9:36 AM, Andrew Morton wrote:
-> > On Wed, 21 Nov 2012 09:08:52 +0100 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> >
-> > > Hello,
-> > >
-> > > On 11/20/2012 8:33 PM, Andrew Morton wrote:
-> > > > On Tue, 20 Nov 2012 15:31:45 +0100
-> > > > Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > > >
-> > > > > dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
-> > > > > regardless the flags provided by the caller. This causes excessive
-> > > > > pruning of emergency memory pools without any good reason. Additionaly,
-> > > > > on ARM architecture any driver which is using dmapools will sooner or
-> > > > > later  trigger the following error:
-> > > > > "ERROR: 256 KiB atomic DMA coherent pool is too small!
-> > > > > Please increase it with coherent_pool= kernel parameter!".
-> > > > > Increasing the coherent pool size usually doesn't help much and only
-> > > > > delays such error, because all GFP_ATOMIC DMA allocations are always
-> > > > > served from the special, very limited memory pool.
-> > > > >
-> > > >
-> > > > Is this problem serious enough to justify merging the patch into 3.7?
-> > > > And into -stable kernels?
-> > >
-> > > I wonder if it is a good idea to merge such change at the end of current
-> > > -rc period.
-> >
-> > I'm not sure what you mean by this.
-> >
-> > But what we do sometimes if we think a patch needs a bit more
-> > real-world testing before backporting is to merge it into -rc1 in the
-> > normal merge window, and tag it for -stable backporting.  That way it
-> > gets a few weeks(?) testing in mainline before getting backported.
-> 
-> I just wondered that if it gets merged to v3.7-rc7 there won't be much time
-> for real-world testing before final v3.7 release. This patch is in
-> linux-next for over a week and I'm not aware of any issues, but -rc releases
-> gets much more attention and testing than linux-next tree.
-> 
-> If You think it's fine to put such change to v3.7-rc7 I will send a pull
-> request and tag it for stable asap.
-> 
+updated change log to:
 
-What I'm suggesting is that it be merged for 3.8-rc1 with a -stable
-tag, then it will be backported into 3.7.x later on.
+Subject: [PATCH] x86, boot: move checking of cmd_line_ptr out of common path
 
+cmdline.c::__cmdline_find_option... are shared between
+16-bit setup code and 32/64 bit decompressor code.
+
+for 32/64 only path via kexec, we should not check if ptr less 1M.
+as those cmdline could be put above 1M even 4G.
+
+Move out accessible checking out of __cmdline_find_option....
+So decompressor in misc.c can parse cmdline correctly.
