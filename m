@@ -1,132 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2KUHiX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:38:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48158 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab2KUHiW (ORCPT
+	id S1753437Ab2KUHit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:38:49 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:57618 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753182Ab2KUHis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:38:22 -0500
-Date: Tue, 20 Nov 2012 23:37:45 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <5093BA1F02000078000A600E@nat28.tlf.novell.com>
-References: <5093BA1F02000078000A600E@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64:
-  Fix ordering of CFI directives and recent ASM_CLAC additions
-Git-Commit-ID: ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 21 Nov 2012 02:38:48 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] gpiolib: fix bug and clarify OF use of ranges
+Date: Wed, 21 Nov 2012 08:37:45 +0100
+Message-ID: <1353483465-25961-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 20 Nov 2012 23:38:11 -0800 (PST)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
-Gitweb:     http://git.kernel.org/tip/ee4eb87be2c3f69c2c4d9f1c1d98e363a7ad18ab
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 2 Nov 2012 11:18:39 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 20 Nov 2012 22:23:57 -0800
+From: Linus Walleij <linus.walleij@linaro.org>
 
-x86-64: Fix ordering of CFI directives and recent ASM_CLAC additions
+In commit c905165f5946f56dca195871641bd4e488eca24a
+"gpiolib: let gpiochip_add_pin_range() specify offset"
+I forgot to update the OF use of the function
+gpiochip_add_pin_range().
 
-While these got added in the right place everywhere else, entry_64.S
-is the odd one where they ended up before the initial CFI directive(s).
-In order to cover the full code ranges, the CFI directive must be
-first, though.
+It turns out that this reveal a weakness in the
+OF range mappings: ranges cannot currently be sparse.
+So put in a comment so we can fix this later.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/5093BA1F02000078000A600E@nat28.tlf.novell.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/x86/kernel/entry_64.S | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/gpio/gpiolib-of.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b51b2c7..1328fe4 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -995,8 +995,8 @@ END(interrupt)
- 	 */
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- common_interrupt:
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	addq $-0x80,(%rsp)		/* Adjust vector to [-256,-1] range */
- 	interrupt do_IRQ
- 	/* 0(%rsp): old_rsp-ARGOFFSET */
-@@ -1135,8 +1135,8 @@ END(common_interrupt)
-  */
- .macro apicinterrupt num sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	pushq_cfi $~(\num)
- .Lcommon_\sym:
- 	interrupt \do_sym
-@@ -1190,8 +1190,8 @@ apicinterrupt IRQ_WORK_VECTOR \
-  */
- .macro zeroentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1208,8 +1208,8 @@ END(\sym)
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index a40cd84..d542a14 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -238,8 +238,20 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
+ 		if (!pctldev)
+ 			break;
  
- .macro paranoidzeroentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1227,8 +1227,8 @@ END(\sym)
- #define INIT_TSS_IST(x) PER_CPU_VAR(init_tss) + (TSS_ist + ((x) - 1) * 8)
- .macro paranoidzeroentry_ist sym do_sym ist
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1247,8 +1247,8 @@ END(\sym)
++		/*
++		 * This assumes that the n GPIO pins are consecutive in the
++		 * GPIO number space, and that the pins are also consecutive
++		 * in their local number space. Currently it is not possible
++		 * to add different ranges for one and the same GPIO chip,
++		 * as the code assumes that we have one consecutive range
++		 * on both, mapping 1-to-1.
++		 *
++		 * TODO: make the OF bindings handle multiple sparse ranges
++		 * on the same GPIO chip.
++		 */
+ 		ret = gpiochip_add_pin_range(chip,
+ 					     pinctrl_dev_get_name(pctldev),
++					     0, /* offset in gpiochip */
+ 					     pinspec.args[0],
+ 					     pinspec.args[1]);
  
- .macro errorentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	subq $ORIG_RAX-R15, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
-@@ -1266,8 +1266,8 @@ END(\sym)
- 	/* error code is on the stack already */
- .macro paranoiderrorentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	subq $ORIG_RAX-R15, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+-- 
+1.7.11.3
+
