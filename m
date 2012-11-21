@@ -1,160 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab2KUSWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:22:06 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64474 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab2KUSWE (ORCPT
+	id S1755532Ab2KUSXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:23:13 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35929 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab2KUSXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:22:04 -0500
-Date: Wed, 21 Nov 2012 19:21:58 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
-Message-ID: <20121121182158.GA29893@gmail.com>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
- <20121121165342.GH8218@suse.de>
- <20121121170306.GA28811@gmail.com>
- <20121121172011.GI8218@suse.de>
- <20121121173316.GA29311@gmail.com>
- <20121121180200.GK8218@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121180200.GK8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Nov 2012 13:23:12 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] x86, smpboot: allow manual hotplug of CPUs
+Date: Wed, 21 Nov 2012 13:22:16 -0500
+Message-Id: <1353522136-14944-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So far CPU hotplug was ignored for mptable implementations which support it by
+having the hotpluggable CPUs marked as disabled during boot.
 
-* Mel Gorman <mgorman@suse.de> wrote:
+The current kernel code detects that behaviour and actually deals with it
+properly:
 
-> On Wed, Nov 21, 2012 at 06:33:16PM +0100, Ingo Molnar wrote:
-> > 
-> > * Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > On Wed, Nov 21, 2012 at 06:03:06PM +0100, Ingo Molnar wrote:
-> > > > 
-> > > > * Mel Gorman <mgorman@suse.de> wrote:
-> > > > 
-> > > > > On Wed, Nov 21, 2012 at 10:21:06AM +0000, Mel Gorman wrote:
-> > > > > > 
-> > > > > > I am not including a benchmark report in this but will be posting one
-> > > > > > shortly in the "Latest numa/core release, v16" thread along with the latest
-> > > > > > schednuma figures I have available.
-> > > > > > 
-> > > > > 
-> > > > > Report is linked here https://lkml.org/lkml/2012/11/21/202
-> > > > > 
-> > > > > I ended up cancelling the remaining tests and restarted with
-> > > > > 
-> > > > > 1. schednuma + patches posted since so that works out as
-> > > > 
-> > > > Mel, I'd like to ask you to refer to our tree as numa/core or 
-> > > > 'numacore' in the future. Would such a courtesy to use the 
-> > > > current name of our tree be possible?
-> > > > 
-> > > 
-> > > Sure, no problem.
-> > 
-> > Thanks!
-> > 
-> > I ran a quick test with your 'balancenuma v4' tree and while 
-> > numa02 and numa01-THREAD-ALLOC performance is looking good, 
-> > numa01 performance does not look very good:
-> > 
-> >                     mainline    numa/core      balancenuma-v4
-> >      numa01:           340.3       139.4          276 secs
-> > 
-> > 97% slower than numa/core.
-> > 
-> 
-> It would be. numa01 is an adverse workload where all threads 
-> are hammering the same memory.  The two-stage filter in 
-> balancenuma restricts the amount of migration it does so it 
-> ends up in a situation where it cannot balance properly. [...]
+	[    0.000000] Intel MultiProcessor Specification v1.4
+	[    0.000000] MPTABLE: OEM ID: KVMCPU00
+	[    0.000000] MPTABLE: Product ID: 0.1
+	[    0.000000] MPTABLE: APIC at: 0xFEE00000
+	[    0.000000] Processor #0 (Bootup-CPU)
+	[    0.000000] Processor #1
+	[    0.000000] Processor #2
+	[    0.000000] IOAPIC[0]: apic_id 4, version 17, address 0xfec00000, GSI 0-23
+	[    0.000000] Processors: 3
+	[    0.000000] smpboot: Allowing 3 CPUs, 1 hotplug CPUs
 
-Do you mean this "balancenuma v4" patch attributed to you:
+The problem begins when a user might actually want to online such CPU; there
+is no interface for him to tell the kernel that the CPU is now present and
+can be used.
 
- Subject: mm: Numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
- From: Mel Gorman <mgorman@suse.de>
- Date: Wed, 21 Nov 2012 10:21:42 +0000
+Luckily, the kernel provides a generic interface in the form of 'probe' and
+'release' sysfs files which are used on different architectures exactly for
+that - to probe and release CPUs. On x86 however this was unimplemented
+until now.
 
- ...
+This patch adds code into the x86 implementation of probe and release to allow
+adding and removing CPUs. This allows machines that use mptable to hotplug
+CPUs:
 
- Signed-off-by: Mel Gorman <mgorman@suse.de>
+	sh-4.2# cd /sys/devices/system/cpu/
+	sh-4.2# cat possible present online
+	0-3
+	0-2
+	0-2
+	sh-4.2# echo "3 0x14" > probe
+	sh-4.2# cat possible present online
+	0-3
+	0-3
+	0-2
+	sh-4.2# echo 1 > cpu3/online
+	[   29.854133] smpboot: Booting Node 0 Processor 3 APIC 0x3
+	[    0.001000] kvm-clock: cpu 3, msr 0:1bd929c1, secondary cpu clock
+	[   29.872438] KVM setup async PF for cpu 3
+	[   29.872790] kvm-stealtime: cpu 3, msr 1bd8d100
+	[   29.873276] microcode: CPU3 sig=0x206a7, pf=0x1, revision=0x1
+	sh-4.2# cat possible present online
+	0-3
+	0-3
+	0-3
+	sh-4.2# echo 0 > cpu3/online
+	[  116.146352] Unregister pv shared memory for cpu 3
+	[  116.160000] Cannot set affinity for irq 0
+	[  116.163068] smpboot: CPU 3 is now offline
+	sh-4.2# cat possible present online
+	0-3
+	0-3
+	0-2
+	sh-4.2# echo 3 > release
+	sh-4.2# cat possible present online
+	0-3
+	0-2
+	0-2
 
-which has:
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ arch/x86/kernel/smpboot.c | 39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
-                /*
-                 * Multi-stage node selection is used in conjunction
-                 * with a periodic migration fault to build a temporal
-                 * task<->page relation. By using a two-stage filter we
-                 * remove short/unlikely relations.
-                 *
-                 * Using P(p) ~ n_p / n_t as per frequentist
-                 * probability, we can equate a task's usage of a
-                 * particular page (n_p) per total usage of this
-                 * page (n_t) (in a given time-span) to a probability.
-                 *
-                 * Our periodic faults will sample this probability and
-                 * getting the same result twice in a row, given these
-                 * samples are fully independent, is then given by
-                 * P(n)^2, provided our sample period is sufficiently
-                 * short compared to the usage pattern.
-                 *
-                 * This quadric squishes small probabilities, making
-                 * it less likely we act on an unlikely task<->page
-                 * relation.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 732bf5c..78b3197 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -97,8 +97,43 @@ void cpu_hotplug_driver_unlock(void)
+ 	mutex_unlock(&x86_cpu_hotplug_driver_mutex);
+ }
+ 
+-ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
+-ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
++ssize_t arch_cpu_probe(const char *buf, size_t count)
++{
++	int cpu, version, r;
++
++	r = sscanf(buf, "%d %x", &cpu, &version);
++	if (r != 2)
++		return -EINVAL;
++
++	if (!cpu_possible(cpu) || cpu_present(cpu))
++		return -EINVAL;
++
++	arch_register_cpu(cpu);
++	generic_processor_info(cpu, version);
++
++	return count;
++}
++
++ssize_t arch_cpu_release(const char *buf, size_t count)
++{
++	int cpu, r;
++
++	r = kstrtoint(buf, 10, &cpu);
++	if (r < 0)
++		return r;
++
++	if (!cpu_present(cpu))
++		return -EINVAL;
++
++	if (cpu_online(cpu))
++		return -EBUSY;
++
++	arch_unregister_cpu(cpu);
++	set_cpu_present(cpu, false);
++
++	return count;
++}
++
+ #endif
+ 
+ /* Number of siblings per CPU package */
+-- 
+1.8.0
 
-This looks very similar to the code and text that Peter wrote 
-for numa/core:
-
-/*
- * Multi-stage node selection is used in conjunction with a periodic
- * migration fault to build a temporal task<->page relation. By
- * using a two-stage filter we remove short/unlikely relations.
- *
- * Using P(p) ~ n_p / n_t as per frequentist probability, we can
- * equate a task's usage of a particular page (n_p) per total usage
- * of this page (n_t) (in a given time-span) to a probability.
- *
- * Our periodic faults will then sample this probability and getting
- * the same result twice in a row, given these samples are fully
- * independent, is then given by P(n)^2, provided our sample period
- * is sufficiently short compared to the usage pattern.
- *
- * This quadric squishes small probabilities, making it less likely
- * we act on an unlikely task<->page relation.
- *
- * Return the best node ID this page should be on, or -1 if it should
- * stay where it is.
- */
-
-see commit:
-
-  30f93abc6cb3 sched, numa, mm: Add the scanning page fault machinery
-
-?
-
-I think it's the very same concept - yours is taken from an 
-older sched/numa commit and attributed to yourself? [If so then 
-please fix the attribution.]
-
-We have the same filter in numa/core - because we wrote it (FYI, 
-I wrote bits of the last_cpu variant in numa/core), yet our 
-numa01 performance is much better than the one of balancenuma.
-
-Thanks,
-
-	Ingo
