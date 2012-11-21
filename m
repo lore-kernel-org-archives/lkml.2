@@ -1,34 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2KUN7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:59:12 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34382 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab2KUN7L (ORCPT
+	id S1754432Ab2KUOBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:01:15 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:36025 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2KUOBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:59:11 -0500
-Date: Wed, 21 Nov 2012 14:04:26 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] tty: don't dead while flushing workqueue
-Message-ID: <20121121140426.1860d093@pyramind.ukuu.org.uk>
-In-Reply-To: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
-References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 09:01:14 -0500
+X-Authority-Analysis: v=2.0 cv=OOOlLFmB c=1 sm=0 a=QKCpt3RAcCy1PgeoOVilzg==:17 a=2oGSFm5vdZwA:10 a=wom5GMh1gUkA:10 a=pTRqrO9sSn4A:10 a=649elMfuWG0A:10 a=svWV0_fRAAAA:8 a=erfvF8y-hRwA:10 a=B3vXKxRM_QVQcc3wN1gA:9 a=CjuIK1q_8ugA:10 a=nvSzoFeKqj5LNWBiyb8A:9 a=QKCpt3RAcCy1PgeoOVilzg==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 24.73.230.86
+Date: Wed, 21 Nov 2012 09:01:10 -0500
+From: Solomon Peachy <pizza@shaftnet.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
+Message-ID: <20121121140109.GA7549@shaftnet.org>
+References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
+ <CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
+ <20121120161011.GD18015@shaftnet.org>
+ <20121120163309.GB4990@kroah.com>
+ <20121120181203.GA7922@shaftnet.org>
+ <20121121093528.4fe11c26@tom-ThinkPad-T410>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
+Content-Disposition: inline
+In-Reply-To: <20121121093528.4fe11c26@tom-ThinkPad-T410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't see any problems in my testcase.
 
-This looks fine to me as by the time we call tty_ldisc_release we have
-already set TTY_CLOSING on both sides.
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Alan
+On Wed, Nov 21, 2012 at 09:35:28AM +0800, Ming Lei wrote:
+> Solomon, I can't duplicate the build failure with your .config on 3.7-rc5=
+-next.
+
+Okay, so it's since been fixed. =20
+
+> >  * The #ifdef wraps code that pertains solely to built-in firmware, (ie=
+=20
+> >    CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disab=
+led.
+> >  * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c=
+=20
+> >    when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
+>=20
+> Enabling CONFIG_EXTRA_FIRMWARE still can make one firmware built in kernel
+> even though CONFIG_FIRMWARE_IN_KERNEL isn't defined, so your patch will b=
+reak
+> this case.
+
+So... isn't the logical solution here to make CONFIG_EXTRA_FIRMARE=20
+depend on (or enable) CONFIG_FIRMWARE_IN_KERNEL?  After all, the two are=20
+apparently related.
+
+I can update my patch to include this, and rewrite the commit message so=20
+it's relevant to modern kernels, or I can just drop this and forget the=20
+whole affair.
+
+ - Solomon
+--=20
+Solomon Peachy        		       pizza at shaftnet dot org	=20
+Melbourne, FL                          ^^ (mail/jabber/gtalk) ^^
+Quidquid latine dictum sit, altum viditur.
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iD8DBQFQrN6lPuLgii2759ARApe3AJ9cJl4paeobB0MFhbonhHzmJbFn0gCgmqtM
+ywQ0QErlcOiG5VXyceulkwU=
+=57HQ
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
