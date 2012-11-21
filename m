@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab2KUAhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 19:37:31 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51083 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab2KUAh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 19:37:29 -0500
-From: Andrea Adami <andrea.adami@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] ARM: pxa: fix pxa25x gpio wakeup setting
-Date: Wed, 21 Nov 2012 01:37:25 +0100
-Message-Id: <1353458245-14142-1-git-send-email-andrea.adami@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1753921Ab2KUAke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 19:40:34 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:56762 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab2KUAkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 19:40:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Cyril Roelandt <tipecaml@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] acpi_system_write_wakeup_device(): fix error check for unsigned variable.
+Date: Wed, 21 Nov 2012 01:44:59 +0100
+Message-ID: <1732852.VDXGV3Ao2T@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1353117263-6957-1-git-send-email-tipecaml@gmail.com>
+References: <1353117263-6957-1-git-send-email-tipecaml@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Since 3.3 gpio wakeup is broken on pxa25x (tested on corgi and poodle).
-* Use gpio_set_wake like done for pxa27x with commit id
-* b95ace54a23e2f8ebb032744cebb17c9f43bf651
+On Saturday, November 17, 2012 02:54:23 AM Cyril Roelandt wrote:
+> The LEN variable is unsigned, therefore checking whether it is less than 0 is
+> useless.
+> 
+> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> ---
+>  drivers/acpi/proc.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
+> index 27adb09..37871a7 100644
+> --- a/drivers/acpi/proc.c
+> +++ b/drivers/acpi/proc.c
+> @@ -366,8 +366,6 @@ acpi_system_write_wakeup_device(struct file *file,
+>  
+>  	if (len > 4)
+>  		len = 4;
+> -	if (len < 0)
+> -		return -EFAULT;
 
-Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
----
- arch/arm/mach-pxa/pxa25x.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+I would prefer to check if count < 0 instead.
 
-diff --git a/arch/arm/mach-pxa/pxa25x.c b/arch/arm/mach-pxa/pxa25x.c
-index 3352b37..aeb913e 100644
---- a/arch/arm/mach-pxa/pxa25x.c
-+++ b/arch/arm/mach-pxa/pxa25x.c
-@@ -338,6 +338,10 @@ void __init pxa25x_map_io(void)
- 	pxa25x_get_clk_frequency_khz(1);
- }
- 
-+static struct pxa_gpio_platform_data pxa25x_gpio_info __initdata = {
-+	.gpio_set_wake = gpio_set_wake,
-+};
-+
- static struct platform_device *pxa25x_devices[] __initdata = {
- 	&pxa25x_device_udc,
- 	&pxa_device_pmu,
-@@ -370,6 +374,7 @@ static int __init pxa25x_init(void)
- 		register_syscore_ops(&pxa2xx_mfp_syscore_ops);
- 		register_syscore_ops(&pxa2xx_clock_syscore_ops);
- 
-+		pxa_register_device(&pxa_device_gpio, &pxa25x_gpio_info);
- 		ret = platform_add_devices(pxa25x_devices,
- 					   ARRAY_SIZE(pxa25x_devices));
- 		if (ret)
+>  
+>  	if (copy_from_user(strbuf, buffer, len))
+>  		return -EFAULT;
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.8.6
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
