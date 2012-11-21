@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2KUO6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:58:47 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45252 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab2KUO6q (ORCPT
+	id S1754972Ab2KUO7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:59:16 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:41507 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911Ab2KUO7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:58:46 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/7] gpio/em: convert to linear IRQ domain
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <damm@opensource.se>
-In-Reply-To: <1350415340-2825-1-git-send-email-linus.walleij@linaro.org>
-References: <1350415340-2825-1-git-send-email-linus.walleij@linaro.org>
-Date: Wed, 21 Nov 2012 14:58:42 +0000
-Message-Id: <20121121145842.5A45B3E0A47@localhost>
+	Wed, 21 Nov 2012 09:59:15 -0500
+Date: Wed, 21 Nov 2012 15:59:03 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Dove pinctrl fixes and DT enabling
+Message-ID: <20121121155903.17f3e9cf@skate>
+In-Reply-To: <CACRpkdYzQuv8sPk57CvqiwMmV0z007cGqVkGOENmr_aYAN14=Q@mail.gmail.com>
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<CACRpkdYAnNCFDCjA67r0h_CSHMifb1Z83YJfYGQV3abPB8uQZg@mail.gmail.com>
+	<50ACAAF5.2030002@gmail.com>
+	<CACRpkdYzQuv8sPk57CvqiwMmV0z007cGqVkGOENmr_aYAN14=Q@mail.gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012 21:22:20 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
-> The code in the em driver seems to want to try to do the job of
-> the linear IRQ domain (allocate descriptors and grab a virtual
-> range). So why not just use the linear IRQ domain?
-> 
-> Also fixed the FIXME to remove the domain after use.
+Linus,
 
-Applied, thanks.
+On Wed, 21 Nov 2012 15:45:42 +0100, Linus Walleij wrote:
 
-g.
+> > I am referring to patches for a pinctrl/mvebu subfolder. IIRC Thomas
+> > posted that patch a while ago. Jason is currently sorting things out
+> > for mvebu pull requests. I guess both can comment on your question,
+> > as I don't fully understand it.
+> 
+> So what I mean is that the patches creating pinctrl/mvebu is in the
+> pinctrl tree, so if patches in the MVEBU tree depend on these,
+> then it must have pulled in a branch from pinctrl or applied the
+> same patches in that tree too (which is OK *sometimes*).
 
-> 
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Magnus Damm <damm@opensource.se>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpio-em.c | 22 +++-------------------
->  1 file changed, 3 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-em.c b/drivers/gpio/gpio-em.c
-> index efb4c2d..aac5c75 100644
-> --- a/drivers/gpio/gpio-em.c
-> +++ b/drivers/gpio/gpio-em.c
-> @@ -35,7 +35,6 @@
->  struct em_gio_priv {
->  	void __iomem *base0;
->  	void __iomem *base1;
-> -	unsigned int irq_base;
->  	spinlock_t sense_lock;
->  	struct platform_device *pdev;
->  	struct gpio_chip gpio_chip;
-> @@ -239,33 +238,18 @@ static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
->  	struct platform_device *pdev = p->pdev;
->  	struct gpio_em_config *pdata = pdev->dev.platform_data;
->  
-> -	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
-> -				      pdata->number_of_pins, numa_node_id());
-> -	if (p->irq_base < 0) {
-> -		dev_err(&pdev->dev, "cannot get irq_desc\n");
-> -		return p->irq_base;
-> -	}
-> -	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
-> -		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
-> -
-> -	p->irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
-> +	p->irq_domain = irq_domain_add_linear(pdev->dev.of_node,
->  					      pdata->number_of_pins,
-> -					      p->irq_base, 0,
->  					      &em_gio_irq_domain_ops, p);
-> -	if (!p->irq_domain) {
-> -		irq_free_descs(p->irq_base, pdata->number_of_pins);
-> +	if (!p->irq_domain)
->  		return -ENXIO;
-> -	}
->  
->  	return 0;
->  }
->  
->  static void em_gio_irq_domain_cleanup(struct em_gio_priv *p)
->  {
-> -	struct gpio_em_config *pdata = p->pdev->dev.platform_data;
-> -
-> -	irq_free_descs(p->irq_base, pdata->number_of_pins);
-> -	/* FIXME: irq domain wants to be freed! */
-> +	irq_domain_remove(p->irq_domain);
->  }
->  
->  static int __devinit em_gio_probe(struct platform_device *pdev)
-> -- 
-> 1.7.11.7
-> 
+I know there has been some discussion between Arnd and Jason Cooper
+(who handles the pull requests for the overall mvebu effort) about this
+specific topic. I think the outcome of the discussion was that Jason
+would have to see how much the rest of the mvebu stuff depends on this
+pinctrl/mvebu change and will see with Arnd how to proceed. But it's
+certainly better if Jason gives you directly feedback about this.
 
+Thomas
 -- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
