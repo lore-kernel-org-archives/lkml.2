@@ -1,185 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab2KUCie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 21:38:34 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46899 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab2KUC0w (ORCPT
+	id S1753970Ab2KUClS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 21:41:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42425 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab2KUClQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 21:26:52 -0500
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: [PATCH 02/42] sh-pfc: Move private definitions and declarations to private header
-Date: Wed, 21 Nov 2012 03:27:03 +0100
-Message-Id: <1353464863-10281-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Tue, 20 Nov 2012 21:41:16 -0500
+Date: Tue, 20 Nov 2012 18:41:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH, v2] mm, numa: Turn 4K pte NUMA faults into effective
+ hugepage ones
+In-Reply-To: <20121120160918.GA18167@gmail.com>
+Message-ID: <alpine.DEB.2.00.1211201833080.2278@chino.kir.corp.google.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com> <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com> <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
+ <20121120071704.GA14199@gmail.com> <20121120152933.GA17996@gmail.com> <20121120160918.GA18167@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all private structure definitions and function declarations from
-include/linux/sh_pfc.h to drivers/sh/pfc/core.h.
+On Tue, 20 Nov 2012, Ingo Molnar wrote:
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/sh/pfc/core.c    |    2 ++
- drivers/sh/pfc/core.h    |   44 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/sh/pfc/gpio.c    |    2 ++
- drivers/sh/pfc/pinctrl.c |    2 ++
- include/linux/sh_pfc.h   |   29 -----------------------------
- 5 files changed, 50 insertions(+), 29 deletions(-)
- create mode 100644 drivers/sh/pfc/core.h
+> Reduce the 4K page fault count by looking around and processing
+> nearby pages if possible.
+> 
+> To keep the logic and cache overhead simple and straightforward
+> we do a couple of simplifications:
+> 
+>  - we only scan in the HPAGE_SIZE range of the faulting address
+>  - we only go as far as the vma allows us
+> 
+> Also simplify the do_numa_page() flow while at it and fix the
+> previous double faulting we incurred due to not properly fixing
+> up freshly migrated ptes.
+> 
+> Suggested-by: Mel Gorman <mgorman@suse.de>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-diff --git a/drivers/sh/pfc/core.c b/drivers/sh/pfc/core.c
-index ecbe51d..72421a4 100644
---- a/drivers/sh/pfc/core.c
-+++ b/drivers/sh/pfc/core.c
-@@ -21,6 +21,8 @@
- #include <linux/ioport.h>
- #include <linux/pinctrl/machine.h>
- 
-+#include "core.h"
-+
- static struct sh_pfc sh_pfc __read_mostly;
- 
- static void pfc_iounmap(struct sh_pfc *pfc)
-diff --git a/drivers/sh/pfc/core.h b/drivers/sh/pfc/core.h
-new file mode 100644
-index 0000000..b07ae25
---- /dev/null
-+++ b/drivers/sh/pfc/core.h
-@@ -0,0 +1,44 @@
-+/*
-+ * SuperH Pin Function Controller support.
-+ *
-+ * Copyright (C) 2012  Renesas Solutions Corp.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+#ifndef __SH_PFC_CORE_H__
-+#define __SH_PFC_CORE_H__
-+
-+#include <linux/compiler.h>
-+#include <linux/sh_pfc.h>
-+#include <linux/types.h>
-+
-+struct pfc_window {
-+	phys_addr_t phys;
-+	void __iomem *virt;
-+	unsigned long size;
-+};
-+
-+struct sh_pfc {
-+	struct sh_pfc_platform_data *pdata;
-+	spinlock_t lock;
-+
-+	struct pfc_window *window;
-+};
-+
-+int sh_pfc_register_gpiochip(struct sh_pfc *pfc);
-+
-+int sh_pfc_register_pinctrl(struct sh_pfc *pfc);
-+
-+int sh_pfc_read_bit(struct pinmux_data_reg *dr, unsigned long in_pos);
-+void sh_pfc_write_bit(struct pinmux_data_reg *dr, unsigned long in_pos,
-+		      unsigned long value);
-+int sh_pfc_get_data_reg(struct sh_pfc *pfc, unsigned gpio,
-+			struct pinmux_data_reg **drp, int *bitp);
-+int sh_pfc_gpio_to_enum(struct sh_pfc *pfc, unsigned gpio, int pos,
-+			pinmux_enum_t *enum_idp);
-+int sh_pfc_config_gpio(struct sh_pfc *pfc, unsigned gpio, int pinmux_type,
-+		       int cfg_mode);
-+
-+#endif /* __SH_PFC_CORE_H__ */
-diff --git a/drivers/sh/pfc/gpio.c b/drivers/sh/pfc/gpio.c
-index 9b7e45c..94c5489 100644
---- a/drivers/sh/pfc/gpio.c
-+++ b/drivers/sh/pfc/gpio.c
-@@ -19,6 +19,8 @@
- #include <linux/pinctrl/consumer.h>
- #include <linux/sh_pfc.h>
- 
-+#include "core.h"
-+
- struct sh_pfc_chip {
- 	struct sh_pfc		*pfc;
- 	struct gpio_chip	gpio_chip;
-diff --git a/drivers/sh/pfc/pinctrl.c b/drivers/sh/pfc/pinctrl.c
-index 447fb60..5efa36a 100644
---- a/drivers/sh/pfc/pinctrl.c
-+++ b/drivers/sh/pfc/pinctrl.c
-@@ -24,6 +24,8 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/pinconf-generic.h>
- 
-+#include "core.h"
-+
- struct sh_pfc_pinctrl {
- 	struct pinctrl_dev *pctl;
- 	struct sh_pfc *pfc;
-diff --git a/include/linux/sh_pfc.h b/include/linux/sh_pfc.h
-index 58587f9..f7f01b2 100644
---- a/include/linux/sh_pfc.h
-+++ b/include/linux/sh_pfc.h
-@@ -88,12 +88,6 @@ struct pinmux_range {
- 	pinmux_enum_t force;
- };
- 
--struct pfc_window {
--	phys_addr_t phys;
--	void __iomem *virt;
--	unsigned long size;
--};
--
- struct sh_pfc_platform_data {
- 	char *name;
- 	pinmux_enum_t reserved_id;
-@@ -123,35 +117,12 @@ struct sh_pfc_platform_data {
- 	unsigned long unlock_reg;
- };
- 
--struct sh_pfc {
--	struct sh_pfc_platform_data *pdata;
--	spinlock_t lock;
--
--	struct pfc_window *window;
--};
--
- /* XXX compat for now */
- #define pinmux_info sh_pfc_platform_data
- 
--/* drivers/sh/pfc/gpio.c */
--int sh_pfc_register_gpiochip(struct sh_pfc *pfc);
--
--/* drivers/sh/pfc/pinctrl.c */
--int sh_pfc_register_pinctrl(struct sh_pfc *pfc);
--
- /* drivers/sh/pfc/core.c */
- int register_sh_pfc(struct sh_pfc_platform_data *pfc);
- 
--int sh_pfc_read_bit(struct pinmux_data_reg *dr, unsigned long in_pos);
--void sh_pfc_write_bit(struct pinmux_data_reg *dr, unsigned long in_pos,
--		      unsigned long value);
--int sh_pfc_get_data_reg(struct sh_pfc *pfc, unsigned gpio,
--			struct pinmux_data_reg **drp, int *bitp);
--int sh_pfc_gpio_to_enum(struct sh_pfc *pfc, unsigned gpio, int pos,
--			pinmux_enum_t *enum_idp);
--int sh_pfc_config_gpio(struct sh_pfc *pfc, unsigned gpio, int pinmux_type,
--		       int cfg_mode);
--
- /* xxx */
- static inline int register_pinmux(struct pinmux_info *pip)
- {
--- 
-1.7.8.6
+Acked-by: David Rientjes <rientjes@google.com>
 
+Ok, this is significantly better, it almost cut the regression in half on 
+my system.  With THP enabled:
+
+   numa/core at ec05a2311c35:           136918.34 SPECjbb2005 bops
+   numa/core at 01aa90068b12:           128315.19 SPECjbb2005 bops (-6.3%)
+   numa/core at 01aa90068b12 + patch:   132523.06 SPECjbb2005 bops (-3.2%)
+
+Here's the newest perftop, which is radically different than before (not 
+nearly the number of newly-added numa/core functions in the biggest 
+consumers) but still incurs significant overhead from page faults.
+
+    92.18%  perf-6697.map     [.] 0x00007fe2c5afd079                               
+     1.20%  libjvm.so         [.] instanceKlass::oop_push_contents(PSPromotionManag
+     1.05%  libjvm.so         [.] PSPromotionManager::drain_stacks_depth(bool)     
+     0.78%  libjvm.so         [.] PSPromotionManager::copy_to_survivor_space(oopDes
+     0.59%  libjvm.so         [.] PSPromotionManager::claim_or_forward_internal_dep
+     0.49%  [kernel]          [k] page_fault                                               
+     0.27%  libjvm.so         [.] Copy::pd_disjoint_words(HeapWord*, HeapWord*, unsigned lo
+     0.27%  libc-2.3.6.so     [.] __gettimeofday                                           
+     0.19%  libjvm.so         [.] CardTableExtension::scavenge_contents_parallel(ObjectStar
+     0.16%  [kernel]          [k] getnstimeofday                                           
+     0.14%  [kernel]          [k] _raw_spin_lock                                           
+     0.13%  [kernel]          [k] generic_smp_call_function_interrupt                      
+     0.11%  [kernel]          [k] ktime_get                                                
+     0.11%  [kernel]          [k] rcu_check_callbacks                                      
+     0.10%  [kernel]          [k] read_tsc                                                 
+     0.09%  libjvm.so         [.] os::javaTimeMillis()                                     
+     0.09%  [kernel]          [k] clear_page_c                                             
+     0.08%  [kernel]          [k] flush_tlb_func                                           
+     0.08%  [kernel]          [k] ktime_get_update_offsets                                 
+     0.07%  [kernel]          [k] task_tick_fair                                           
+     0.06%  [kernel]          [k] emulate_vsyscall                                         
+     0.06%  libjvm.so         [.] oopDesc::size_given_klass(Klass*)                        
+     0.06%  [kernel]          [k] __do_page_fault                                          
+     0.04%  [kernel]          [k] __bad_area_nosemaphore                                   
+     0.04%  perf              [.] 0x000000000003310b                                       
+     0.04%  libjvm.so         [.] objArrayKlass::oop_push_contents(PSPromotionManager*, oop
+     0.04%  [kernel]          [k] run_timer_softirq                                        
+     0.04%  [kernel]          [k] copy_user_generic_string                                 
+     0.03%  [kernel]          [k] task_numa_fault                                          
+     0.03%  [kernel]          [k] smp_call_function_many                                   
+     0.03%  [kernel]          [k] retint_swapgs                                            
+     0.03%  [kernel]          [k] update_cfs_shares                                        
+     0.03%  [kernel]          [k] error_sti                                                
+     0.03%  [kernel]          [k] _raw_spin_lock_irq                                       
+     0.03%  [kernel]          [k] update_curr                                              
+     0.02%  [kernel]          [k] write_ok_or_segv                                         
+     0.02%  [kernel]          [k] call_function_interrupt                                  
+     0.02%  [kernel]          [k] __do_softirq                                             
+     0.02%  [kernel]          [k] acct_update_integrals                                    
+     0.02%  [kernel]          [k] x86_pmu_disable_all                                      
+     0.02%  [kernel]          [k] apic_timer_interrupt                                     
+     0.02%  [kernel]          [k] tick_sched_timer
