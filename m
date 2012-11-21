@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab2KUHR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:17:27 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42614 "EHLO
+	id S1752888Ab2KUHRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:17:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42615 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab2KUHQd (ORCPT
+	with ESMTP id S1752581Ab2KUHQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Nov 2012 02:16:33 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,9 +12,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 10/12] x86: use io_remap to access real_mode_data
-Date: Tue, 20 Nov 2012 23:16:08 -0800
-Message-Id: <1353482170-10160-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 09/12] x86, boot: update cmd_line_ptr to unsigned long
+Date: Tue, 20 Nov 2012 23:16:07 -0800
+Message-Id: <1353482170-10160-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
 References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
@@ -23,93 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When 64bit bootloader put real mode data above 4g, We can not
-access real mode data directly.
+boot/compressed/misc.c could be with 64 bit, and cmd_line_ptr could
+above 4g.
 
-because in arch/x86/kernel/head_64.S, only set ident mapping
-for 0-1g, and kernel code/data/bss.
-
-So need to move early_ioremap_init() calling from setup_arch
-to x86_64_start_kernel.
-
-Also use rsi/rdi instead of esi/edi.
+So change to unsigned long instead. that will be 64bit in 64bit,
+and 32bit in 32bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/head64.c  |   17 ++++++++++++++---
- arch/x86/kernel/head_64.S |    4 ++--
- arch/x86/kernel/setup.c   |    2 ++
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ arch/x86/boot/boot.h    |    8 ++++----
+ arch/x86/boot/cmdline.c |    4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 3ac6cad..735cd47 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -52,12 +52,21 @@ static void __init copy_bootdata(char *real_mode_data)
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 7fadf80..5b75319 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -285,11 +285,11 @@ struct biosregs {
+ void intcall(u8 int_no, const struct biosregs *ireg, struct biosregs *oreg);
+ 
+ /* cmdline.c */
+-int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize);
+-int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
++int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize);
++int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option);
+ static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
  {
- 	char * command_line;
- 	unsigned long cmd_line_ptr;
-+	char *p;
+-	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
  
--	memcpy(&boot_params, real_mode_data, sizeof boot_params);
-+	/*
-+	 * for 64bit bootload path, those data could be above 4G,
-+	 * and we do set ident mapping for them in head_64.S.
-+	 * So need to ioremap to access them.
-+	 */
-+	p = early_memremap((unsigned long)real_mode_data, sizeof(boot_params));
-+	memcpy(&boot_params, p, sizeof(boot_params));
-+	early_iounmap(p, sizeof(boot_params));
- 	cmd_line_ptr = get_cmd_line_ptr();
- 	if (cmd_line_ptr) {
--		command_line = __va(cmd_line_ptr);
-+		command_line = early_memremap(cmd_line_ptr, COMMAND_LINE_SIZE);
- 		memcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
-+		early_iounmap(command_line, COMMAND_LINE_SIZE);
- 	}
- }
+ 	if (cmd_line_ptr >= 0x100000)
+ 		return -1;      /* inaccessible */
+@@ -299,7 +299,7 @@ static inline int cmdline_find_option(const char *option, char *buffer, int bufs
  
-@@ -104,7 +113,9 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 
- void __init x86_64_start_reservations(char *real_mode_data)
+ static inline int cmdline_find_option_bool(const char *option)
  {
--	copy_bootdata(__va(real_mode_data));
-+	early_ioremap_init();
-+
-+	copy_bootdata(real_mode_data);
+-	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
  
- 	memblock_reserve(__pa_symbol(&_text),
- 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 32fa9d0..14c5de2 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -262,9 +262,9 @@ ENTRY(secondary_startup_64)
- 	movl	initial_gs+4(%rip),%edx
- 	wrmsr	
- 
--	/* esi is pointer to real mode structure with interesting info.
-+	/* rsi is pointer to real mode structure with interesting info.
- 	   pass it to C */
--	movl	%esi, %edi
-+	movq	%rsi, %rdi
- 	
- 	/* Finally jump to run C code and to be on real kernel address
- 	 * Since we are running on identity-mapped space we have to jump
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 194e151..573fa7d7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -718,7 +718,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	early_trap_init();
- 	early_cpu_init();
-+#ifdef CONFIG_X86_32
- 	early_ioremap_init();
-+#endif
- 
- 	setup_olpc_ofw_pgd();
- 
+ 	if (cmd_line_ptr >= 0x100000)
+ 		return -1;      /* inaccessible */
+diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
+index 768f00f..625d21b 100644
+--- a/arch/x86/boot/cmdline.c
++++ b/arch/x86/boot/cmdline.c
+@@ -27,7 +27,7 @@ static inline int myisspace(u8 c)
+  * Returns the length of the argument (regardless of if it was
+  * truncated to fit in the buffer), or -1 on not found.
+  */
+-int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize)
++int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize)
+ {
+ 	addr_t cptr;
+ 	char c;
+@@ -99,7 +99,7 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
+  * Returns the position of that option (starts counting with 1)
+  * or 0 on not found
+  */
+-int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
++int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option)
+ {
+ 	addr_t cptr;
+ 	char c;
 -- 
 1.7.7
 
