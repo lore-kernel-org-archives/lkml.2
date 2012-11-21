@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab2KVTPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:15:15 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45029 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756616Ab2KVTPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:15:06 -0500
-Message-ID: <50ADAA26.7080103@ilyx.ru>
-Date: Thu, 22 Nov 2012 08:29:26 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1756675Ab2KVTPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:15:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39246 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756624Ab2KVTPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:15:00 -0500
+Date: Wed, 21 Nov 2012 22:33:33 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, lucho@ionkov.net,
+        ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
+        viro@zeniv.linux.org.uk, martin.petersen@oracle.com, neilb@suse.de,
+        david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring
+ stable page writes
+Message-ID: <20121121213333.GF30250@quack.suse.cz>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020056.10225.15220.stgit@blackbox.djwong.org>
+ <20121121021543.GI10507@quack.suse.cz>
+ <20121121211319.GA32202@blackbox.djwong.org>
 MIME-Version: 1.0
-To: andrew mcgregor <andrew.mcgregor@alliedtelesis.co.nz>
-CC: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
-References: <50AD43DB.4030800@ilyx.ru> <20121121213037.154306da@pyramind.ukuu.org.uk> <50AD4A01.7060500@ilyx.ru> <50AE2CE30200003600026B9A@gwia.alliedtelesyn.co.nz>
-In-Reply-To: <50AE2CE30200003600026B9A@gwia.alliedtelesyn.co.nz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121211319.GA32202@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.11.2012 4:47, andrew mcgregor wrote:
->
->
->>>> On 11/22/2012 at 10:39 AM, in message <50AD4A01.7060500@ilyx.ru>, Ilya Zykov
-> <ilya@ilyx.ru> wrote:
->> On 22.11.2012 1:30, Alan Cox wrote:
->>>> Function reset_buffer_flags() also invoked during the
->>>> ioctl(...,TCFLSH,..). At the time of request we can have full buffers
->>>> and throttled driver too. If we don't unthrottle driver, we can get
->>>> forever throttled driver, because after request, we will have
->>>> empty buffers and throttled driver and there is no place to unthrottle
->> driver.
->>>> It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
->>>> and other side do ioctl(...,TCFLSH,..). Then there is no place to do
->> writers wake up.
->>>
->>>
->>> So instead of revertng it why not just fix it ? Just add an argument to
->>> the reset_buffer_flags function to indicate if unthrottling is permitted.
->>>
->>> Alan
->>>
->> Because in my opinion, unthrottling permitted always, except release
->> last filp (tty->count == 0)
->
-> Maybe so, but the patch was there in the first place to resolve an actual observed bug, where a driver would lock up.  So the behaviour needs preserved.
->
-> Andrew
->
+On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
+> On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
+> > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
+> > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
+> > > recommended fix is to use ext4, for now we'll just print a warning if the user
+> > > tries to mount in write mode.
+> > > 
+> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > > ---
+> > >  fs/ext3/super.c |    8 ++++++++
+> > >  1 file changed, 8 insertions(+)
+> > > 
+> > > 
+> > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> > > index 5366393..5b3725d 100644
+> > > --- a/fs/ext3/super.c
+> > > +++ b/fs/ext3/super.c
+> > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
+> > >  			"forcing read-only mode");
+> > >  		res = MS_RDONLY;
+> > >  	}
+> > > +	if (!read_only &&
+> > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
+> > > +		ext3_msg(sb, KERN_ERR,
+> > > +			"error: ext3 cannot safely write data to a disk "
+> > > +			"requiring stable pages writes; forcing read-only "
+> > > +			"mode.  Upgrading to ext4 is recommended.");
+> > > +		res = MS_RDONLY;
+> > > +	}
+> > >  	if (read_only)
+> > >  		return res;
+> > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
+> >   Why this? ext3 should be fixed by your change to
+> > filemap_page_mkwrite()... Or does testing show otherwise?
+> 
+> Yes, it's still broken even with this new set of changes.  Now that I think
+> about it a little more, I recall that writeback mode was actually fine, so this
+> is a little harsh.
+> 
+> Hm... looking at the ordered code a little more, it looks like
+> ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
+> to write mapped buffers back through the journal?  Taking it out seems to fix
+> ordered mode, though I have a suspicion that it might very well break ordered
+> mode too.
+  Oh, right. kjournald writing buffers directly (without setting
+PageWriteback) will break things. So please, change warning to:
 
-Maybe it was wrong driver, unfortunately, I didn't find full information 
-about this bug. As an example, if driver indirectly call 
-reset_buffer_flags() in driver's close() function it will be before 
-decrement last (tty->count).
+	/*
+	 * In data=ordered mode, kjournald writes buffers without setting
+	 * PageWriteback bit thus generic code does not properly wait for
+	 * writeback of those buffers to finish.
+	 */
+	if (!read_only &&
+	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
+	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
+		ext3_msg(sb, KERN_ERR,
+			"error: data=ordered mode does not support stable "
+			"page writes required by the disk; forcing read-only "
+			"mode. Upgrading to ext4 is recommended.");
+		res = MS_RDONLY;
+	}
 
+then you need a similar check in ext3_remount() so that filesystem cannot
+be remounted read-write.
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
