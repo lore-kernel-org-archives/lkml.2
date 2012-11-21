@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2KVSqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:46:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37697 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab2KVSqv (ORCPT
+	id S932113Ab2KVSrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:47:07 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36289 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755740Ab2KVSrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:46:51 -0500
-Date: Thu, 22 Nov 2012 11:28:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/5] Input: bu21013_ts - Move GPIO init and exit
- functions into the driver
-Message-ID: <20121122112836.GF4328@gmail.com>
-References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
- <1352900837-20759-3-git-send-email-lee.jones@linaro.org>
- <20121121184256.GD18950@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121121184256.GD18950@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Nov 2012 13:47:05 -0500
+Date: Wed, 21 Nov 2012 21:30:37 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+Message-ID: <20121121213037.154306da@pyramind.ukuu.org.uk>
+In-Reply-To: <50AD43DB.4030800@ilyx.ru>
+References: <50AD43DB.4030800@ilyx.ru>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012, Dmitry Torokhov wrote:
+> Function reset_buffer_flags() also invoked during the
+> ioctl(...,TCFLSH,..). At the time of request we can have full buffers
+> and throttled driver too. If we don't unthrottle driver, we can get
+> forever throttled driver, because after request, we will have
+> empty buffers and throttled driver and there is no place to unthrottle driver.
+> It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
+> and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
 
-> Hi Lee,
-> 
-> On Wed, Nov 14, 2012 at 01:47:14PM +0000, Lee Jones wrote:
-> > @@ -272,6 +276,60 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
-> >  }
-> >  
-> >  /**
-> > + * bu21013_gpio_board_init() - configures the touch panel
-> > + * @reset_pin: reset pin number
-> > + *
-> > + * This function is used to configure the voltage and
-> > + * reset the touch panel controller.
-> > + */
-> > +static int bu21013_gpio_board_init(int reset_pin)
-> > +{
-> > +	int retval = 0;
-> > +
-> > +	bu21013_devices++;
-> > +	if (bu21013_devices == 1) {
-> 
-> This does not make sense. If gpio is per-device now then we should
-> simply set it up and not count devices.
 
-No problem. I'll fixup.
+So instead of revertng it why not just fix it ? Just add an argument to
+the reset_buffer_flags function to indicate if unthrottling is permitted.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Alan
