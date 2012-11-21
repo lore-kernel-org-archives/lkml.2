@@ -1,64 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2KVSaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:30:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3207 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585Ab2KVSaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:30:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
-   d="scan'208";a="223035333"
-Date: Thu, 22 Nov 2012 11:06:40 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: chao bi <chao.bi@intel.com>
-Cc: richardx.r.gorby@intel.com, jun.d.chen@intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial:ifx6x60:Delete SPI timer when shut down port
-Message-ID: <20121122110640.3fd5ef9b@bob.linux.org.uk>
-In-Reply-To: <1353573787.22077.8.camel@bichao>
-References: <1353573787.22077.8.camel@bichao>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752857Ab2KVSau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:30:50 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:22356 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab2KVSao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:30:44 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH v4 06/31] iov_iter: add bvec support
+Date: Wed, 21 Nov 2012 16:40:46 -0600
+Message-Id: <1353537671-26284-7-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 16:43:07 +0800
-chao bi <chao.bi@intel.com> wrote:
+From: Zach Brown <zab@zabbo.net>
 
-> 
-> When shut down SPI port, it's possible that MRDY has been asserted
-> and a SPI timer was activated waiting for SRDY assert, in the case,
-> it needs to delete this timer.
-> 
-> Signed-off-by: Chen Jun <jun.d.chen@intel.com>
-> Signed-off-by: channing <chao.bi@intel.com>
-> ---
->  drivers/tty/serial/ifx6x60.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/ifx6x60.c
-> b/drivers/tty/serial/ifx6x60.c index 5b9bc19..467020b 100644
-> --- a/drivers/tty/serial/ifx6x60.c
-> +++ b/drivers/tty/serial/ifx6x60.c
-> @@ -552,7 +552,10 @@ static void ifx_port_shutdown(struct tty_port
-> *port) container_of(port, struct ifx_spi_device, tty_port);
->  
->  	mrdy_set_low(ifx_dev);
-> -	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
-> +	if (test_and_clear_bit(IFX_SPI_STATE_TIMER_PENDING,
-> +		&ifx_dev->flags)) {
-> +		del_timer(&ifx_dev->spi_timer);
-> +	}
+This adds a set of iov_iter_ops calls which work with memory which is
+specified by an array of bio_vec structs instead of an array of iovec
+structs.
 
-You don't actually need the test here as far as I can see. Providing a
-timer has been initialised (init_timer) then running del_timer is safe
-even if the timer is not currently queued or has completed.
+The big difference is that the pages referenced by the bio_vec elements
+are pinned.  They don't need to be faulted in and we can always use
+kmap_atomic() to map them one at a time.
 
-Alan
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ include/linux/fs.h |  17 ++++++++
+ mm/iov-iter.c      | 126 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 143 insertions(+)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 6cece28..0d7f42f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -342,6 +342,23 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
+ 	return i->ops->ii_single_seg_count(i);
+ }
+ 
++extern struct iov_iter_ops ii_bvec_ops;
++
++struct bio_vec;
++static inline void iov_iter_init_bvec(struct iov_iter *i,
++				      struct bio_vec *bvec,
++				      unsigned long nr_segs,
++				      size_t count, size_t written)
++{
++	i->ops = &ii_bvec_ops;
++	i->data = (unsigned long)bvec;
++	i->nr_segs = nr_segs;
++	i->iov_offset = 0;
++	i->count = count + written;
++
++	iov_iter_advance(i, written);
++}
++
+ extern struct iov_iter_ops ii_iovec_ops;
+ 
+ static inline void iov_iter_init(struct iov_iter *i,
+diff --git a/mm/iov-iter.c b/mm/iov-iter.c
+index bae1553..c5d0a9e 100644
+--- a/mm/iov-iter.c
++++ b/mm/iov-iter.c
+@@ -5,6 +5,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
++#include <linux/bio.h>
+ 
+ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
+ 				   size_t base, size_t bytes, int atomic)
+@@ -86,6 +87,131 @@ static size_t ii_iovec_copy_to_user(struct page *page,
+ 	return copied;
+ }
+ 
++/*
++ * As an easily verifiable first pass, we implement all the methods that
++ * copy data to and from bvec pages with one function.  We implement it
++ * all with kmap_atomic().
++ */
++static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
++				    unsigned long page_offset, size_t bytes,
++				    int topage)
++{
++	struct bio_vec *bvec = (struct bio_vec *)iter->data;
++	size_t bvec_offset = iter->iov_offset;
++	size_t remaining = bytes;
++	void *bvec_map;
++	void *page_map;
++	size_t copy;
++
++	page_map = kmap_atomic(page);
++
++	BUG_ON(bytes > iter->count);
++	while (remaining) {
++		BUG_ON(bvec->bv_len == 0);
++		BUG_ON(bvec_offset >= bvec->bv_len);
++		copy = min(remaining, bvec->bv_len - bvec_offset);
++		bvec_map = kmap_atomic(bvec->bv_page);
++		if (topage)
++			memcpy(page_map + page_offset,
++			       bvec_map + bvec->bv_offset + bvec_offset,
++			       copy);
++		else
++			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
++			       page_map + page_offset,
++			       copy);
++		kunmap_atomic(bvec_map);
++		remaining -= copy;
++		bvec_offset += copy;
++		page_offset += copy;
++		if (bvec_offset == bvec->bv_len) {
++			bvec_offset = 0;
++			bvec++;
++		}
++	}
++
++	kunmap_atomic(page_map);
++
++	return bytes;
++}
++
++static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
++					  unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
++}
++static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
++				   unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
++}
++static size_t ii_bvec_copy_from_user_atomic(struct page *page,
++					    struct iov_iter *i,
++					    unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
++}
++static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
++				     unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
++}
++
++/*
++ * bio_vecs have a stricter structure than iovecs that might have
++ * come from userspace.  There are no zero length bio_vec elements.
++ */
++static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
++{
++	struct bio_vec *bvec = (struct bio_vec *)i->data;
++	size_t offset = i->iov_offset;
++	size_t delta;
++
++	BUG_ON(i->count < bytes);
++	while (bytes) {
++		BUG_ON(bvec->bv_len == 0);
++		BUG_ON(bvec->bv_len <= offset);
++		delta = min(bytes, bvec->bv_len - offset);
++		offset += delta;
++		i->count -= delta;
++		bytes -= delta;
++		if (offset == bvec->bv_len) {
++			bvec++;
++			offset = 0;
++		}
++	}
++
++	i->data = (unsigned long)bvec;
++	i->iov_offset = offset;
++}
++
++/*
++ * pages pointed to by bio_vecs are always pinned.
++ */
++static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
++{
++	return 0;
++}
++
++static size_t ii_bvec_single_seg_count(struct iov_iter *i)
++{
++	const struct bio_vec *bvec = (struct bio_vec *)i->data;
++	if (i->nr_segs == 1)
++		return i->count;
++	else
++		return min(i->count, bvec->bv_len - i->iov_offset);
++}
++
++struct iov_iter_ops ii_bvec_ops = {
++	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
++	.ii_copy_to_user = ii_bvec_copy_to_user,
++	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
++	.ii_copy_from_user = ii_bvec_copy_from_user,
++	.ii_advance = ii_bvec_advance,
++	.ii_fault_in_readable = ii_bvec_fault_in_readable,
++	.ii_single_seg_count = ii_bvec_single_seg_count,
++};
++EXPORT_SYMBOL(ii_bvec_ops);
++
+ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+ 				     size_t base, size_t bytes, int atomic)
+ {
+-- 
+1.8.0
+
