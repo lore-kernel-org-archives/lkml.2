@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2KUClS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 21:41:18 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42425 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab2KUClQ (ORCPT
+	id S1753938Ab2KUCoL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 21:44:11 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34353 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751341Ab2KUCoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 21:41:16 -0500
-Date: Tue, 20 Nov 2012 18:41:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH, v2] mm, numa: Turn 4K pte NUMA faults into effective
- hugepage ones
-In-Reply-To: <20121120160918.GA18167@gmail.com>
-Message-ID: <alpine.DEB.2.00.1211201833080.2278@chino.kir.corp.google.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com> <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com> <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com> <20121120152933.GA17996@gmail.com> <20121120160918.GA18167@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 20 Nov 2012 21:44:09 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEIAPc+rFB5LbLL/2dsb2JhbABEvFSGABdzgh4BAQUnExwjEAgDDgouFCUDIROIDL9AFIwghGIDlX2QQoMD
+Date: Wed, 21 Nov 2012 13:44:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: The bug of iput() removal from flusher thread?
+Message-ID: <20121121024405.GN2591@dastard>
+References: <8762541uyx.fsf@devron.myhome.or.jp>
+ <873906vumh.fsf@devron.myhome.or.jp>
+ <20121119145140.GA20532@quack.suse.cz>
+ <20121119194102.GB20532@quack.suse.cz>
+ <87a9udtiyk.fsf@devron.myhome.or.jp>
+ <20121119212448.GA29498@quack.suse.cz>
+ <876251tg3b.fsf@devron.myhome.or.jp>
+ <20121121011111.GE10507@quack.suse.cz>
+ <20121121014851.GH10507@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121014851.GH10507@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Ingo Molnar wrote:
-
-> Reduce the 4K page fault count by looking around and processing
-> nearby pages if possible.
+On Wed, Nov 21, 2012 at 02:48:51AM +0100, Jan Kara wrote:
 > 
-> To keep the logic and cache overhead simple and straightforward
-> we do a couple of simplifications:
-> 
->  - we only scan in the HPAGE_SIZE range of the faulting address
->  - we only go as far as the vma allows us
-> 
-> Also simplify the do_numa_page() flow while at it and fix the
-> previous double faulting we incurred due to not properly fixing
-> up freshly migrated ptes.
-> 
-> Suggested-by: Mel Gorman <mgorman@suse.de>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 51ea267..3e3422f 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -228,6 +228,8 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
+>  static void inode_sync_complete(struct inode *inode)
+>  {
+>  	inode->i_state &= ~I_SYNC;
+> +	/* If inode is clean an unused, put it into LRU now... */
+> +	inode_add_lru(inode);
+>  	/* Waiters must see I_SYNC cleared before being woken up */
+>  	smp_mb();
+>  	wake_up_bit(&inode->i_state, __I_SYNC);
+> diff --git a/fs/inode.c b/fs/inode.c
+> index b03c719..8f6396f 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -408,6 +408,19 @@ static void inode_lru_list_add(struct inode *inode)
+>  	spin_unlock(&inode->i_sb->s_inode_lru_lock);
+>  }
+>  
+> +/*
+> + * Add inode to LRU if needed (inode is unused and clean).
+> + *
+> + * Needs inode->i_lock held.
+> + */
+> +void inode_add_lru(struct inode *inode)
+> +{
+> +	if (!(inode->i_state & (I_DIRTY | I_FREEING | I_SYNC)) &&
+> +	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
+> +		inode_lru_list_add(inode);
 
-Acked-by: David Rientjes <rientjes@google.com>
+Needs to avoid I_WILL_FREE as well. There's no point putting it on
+the LRU if we are writing from iput_final()....
 
-Ok, this is significantly better, it almost cut the regression in half on 
-my system.  With THP enabled:
+Otherwise looks OK.
 
-   numa/core at ec05a2311c35:           136918.34 SPECjbb2005 bops
-   numa/core at 01aa90068b12:           128315.19 SPECjbb2005 bops (-6.3%)
-   numa/core at 01aa90068b12 + patch:   132523.06 SPECjbb2005 bops (-3.2%)
+Cheers,
 
-Here's the newest perftop, which is radically different than before (not 
-nearly the number of newly-added numa/core functions in the biggest 
-consumers) but still incurs significant overhead from page faults.
-
-    92.18%  perf-6697.map     [.] 0x00007fe2c5afd079                               
-     1.20%  libjvm.so         [.] instanceKlass::oop_push_contents(PSPromotionManag
-     1.05%  libjvm.so         [.] PSPromotionManager::drain_stacks_depth(bool)     
-     0.78%  libjvm.so         [.] PSPromotionManager::copy_to_survivor_space(oopDes
-     0.59%  libjvm.so         [.] PSPromotionManager::claim_or_forward_internal_dep
-     0.49%  [kernel]          [k] page_fault                                               
-     0.27%  libjvm.so         [.] Copy::pd_disjoint_words(HeapWord*, HeapWord*, unsigned lo
-     0.27%  libc-2.3.6.so     [.] __gettimeofday                                           
-     0.19%  libjvm.so         [.] CardTableExtension::scavenge_contents_parallel(ObjectStar
-     0.16%  [kernel]          [k] getnstimeofday                                           
-     0.14%  [kernel]          [k] _raw_spin_lock                                           
-     0.13%  [kernel]          [k] generic_smp_call_function_interrupt                      
-     0.11%  [kernel]          [k] ktime_get                                                
-     0.11%  [kernel]          [k] rcu_check_callbacks                                      
-     0.10%  [kernel]          [k] read_tsc                                                 
-     0.09%  libjvm.so         [.] os::javaTimeMillis()                                     
-     0.09%  [kernel]          [k] clear_page_c                                             
-     0.08%  [kernel]          [k] flush_tlb_func                                           
-     0.08%  [kernel]          [k] ktime_get_update_offsets                                 
-     0.07%  [kernel]          [k] task_tick_fair                                           
-     0.06%  [kernel]          [k] emulate_vsyscall                                         
-     0.06%  libjvm.so         [.] oopDesc::size_given_klass(Klass*)                        
-     0.06%  [kernel]          [k] __do_page_fault                                          
-     0.04%  [kernel]          [k] __bad_area_nosemaphore                                   
-     0.04%  perf              [.] 0x000000000003310b                                       
-     0.04%  libjvm.so         [.] objArrayKlass::oop_push_contents(PSPromotionManager*, oop
-     0.04%  [kernel]          [k] run_timer_softirq                                        
-     0.04%  [kernel]          [k] copy_user_generic_string                                 
-     0.03%  [kernel]          [k] task_numa_fault                                          
-     0.03%  [kernel]          [k] smp_call_function_many                                   
-     0.03%  [kernel]          [k] retint_swapgs                                            
-     0.03%  [kernel]          [k] update_cfs_shares                                        
-     0.03%  [kernel]          [k] error_sti                                                
-     0.03%  [kernel]          [k] _raw_spin_lock_irq                                       
-     0.03%  [kernel]          [k] update_curr                                              
-     0.02%  [kernel]          [k] write_ok_or_segv                                         
-     0.02%  [kernel]          [k] call_function_interrupt                                  
-     0.02%  [kernel]          [k] __do_softirq                                             
-     0.02%  [kernel]          [k] acct_update_integrals                                    
-     0.02%  [kernel]          [k] x86_pmu_disable_all                                      
-     0.02%  [kernel]          [k] apic_timer_interrupt                                     
-     0.02%  [kernel]          [k] tick_sched_timer
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
