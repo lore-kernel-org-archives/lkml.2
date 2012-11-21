@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab2KUEPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:15:51 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37420 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752748Ab2KUEPu (ORCPT
+	id S1753988Ab2KUEXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:23:09 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:44539 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab2KUEXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:15:50 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnIIAB9VrFB5LbLL/2dsb2JhbABEvFSCEoNvF3OCHgEBBScTHCMQCAMOCi4UJQMhE4d7AwYItUMMiVUUjCCEYgOVfZBCgwM
-Date: Wed, 21 Nov 2012 14:59:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: trace filemap add and del
-Message-ID: <20121121035924.GO2591@dastard>
-References: <1352404450-30100-1-git-send-email-robert.jarzmik@free.fr>
- <20121120155735.905bbf9e.akpm@linux-foundation.org>
+	Tue, 20 Nov 2012 23:23:05 -0500
+Message-ID: <50AC571C.4030504@gmail.com>
+Date: Wed, 21 Nov 2012 12:22:52 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120155735.905bbf9e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
+ SPARSEMEM_VMEMMAP
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB669D.3060007@gmail.com> <50AC4505.1000007@cn.fujitsu.com>
+In-Reply-To: <50AC4505.1000007@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 03:57:35PM -0800, Andrew Morton wrote:
-> On Thu,  8 Nov 2012 20:54:10 +0100
-> Robert Jarzmik <robert.jarzmik@free.fr> wrote:
-.....
-> > +		__field(dev_t, s_dev)
-> 
-> Perhaps use super_block.s_id here
-> 
-> > +	),
-> > +
-> > +	TP_fast_assign(
-> > +		__entry->page = page;
-> > +		__entry->i_no = page->mapping->host->i_ino;
-> > +		__entry->pageofs = page->index;
-> > +		if (page->mapping->host->i_sb)
-> > +			__entry->s_dev = page->mapping->host->i_sb->s_dev;
-> > +		else
-> > +			__entry->s_dev = page->mapping->host->i_rdev;
-> 
-> and hence avoid all this stuff.
+On 11/21/2012 11:05 AM, Wen Congyang wrote:
+> At 11/20/2012 07:16 PM, Jaegeuk Hanse Wrote:
+>> On 11/01/2012 05:44 PM, Wen Congyang wrote:
+>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>
+>>> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
+>>> even if
+>>> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>>>
+>>> So the patch add unregister_memory_section() into __remove_section().
+>> Hi Yasuaki,
+>>
+>> I have a question about these sparse vmemmap memory related patches. Hot
+>> add memory need allocated vmemmap pages, but this time is allocated by
+>> buddy system. How can gurantee virtual address is continuous to the
+>> address allocated before? If not continuous, page_to_pfn and pfn_to_page
+>> can't work correctly.
+> vmemmap has its virtual address range:
+> ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+>
+> We allocate memory from buddy system to store struct page, and its virtual
+> address isn't in this range. So we should update the page table:
+>
+> kmalloc_section_memmap()
+>      sparse_mem_map_populate()
+>          pfn_to_page() // get the virtual address in the vmemmap range
+>          vmemmap_populate() // we update page table here
+>
+> When we use vmemmap, page_to_pfn() always returns address in the vmemmap
+> range, not the address that kmalloc() returns. So the virtual address
+> is continuous.
 
-We actually have an informal convention for formating filesystem
-trace events, and that is to use the device number....
+Hi Congyang,
 
-> 
-> > +	),
-> > +
-> > +	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
+Another question about memory hotplug. During hot remove memory, it will 
+also call memblock_remove to remove related memblock.
+memblock_remove()
+            __memblock_remove()
+                    memblock_isolate_range()
+                    memblock_remove_region()
 
-... and to prefix messages like:
+But memblock_isolate_range() only record fully contained regions, 
+regions which are partial overlapped just be splitted instead of record. 
+So these partial overlapped regions can't be removed. Where I miss?
 
-	TP_printk("dev %d:%d ino 0x%llx ....
-		  MAJOR(__entry->dev), MINOR(__entry->dev),
+Regards,
+Jaegeuk
 
-i.e. the start of the event message has all the identifying
-information where it is easy to grep for and get all the events for
-a specific dev/inode combination without even having to think about
-it.
+> Thanks
+> Wen Congyang
+>> Regards,
+>> Jaegeuk
+>>
+>>> CC: David Rientjes <rientjes@google.com>
+>>> CC: Jiang Liu <liuj97@gmail.com>
+>>> CC: Len Brown <len.brown@intel.com>
+>>> CC: Christoph Lameter <cl@linux.com>
+>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>> ---
+>>>    mm/memory_hotplug.c | 13 ++++++++-----
+>>>    1 file changed, 8 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>> index ca07433..66a79a7 100644
+>>> --- a/mm/memory_hotplug.c
+>>> +++ b/mm/memory_hotplug.c
+>>> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
+>>> struct zone *zone,
+>>>    #ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>>    static int __remove_section(struct zone *zone, struct mem_section *ms)
+>>>    {
+>>> -    /*
+>>> -     * XXX: Freeing memmap with vmemmap is not implement yet.
+>>> -     *      This should be removed later.
+>>> -     */
+>>> -    return -EBUSY;
+>>> +    int ret = -EINVAL;
+>>> +
+>>> +    if (!valid_section(ms))
+>>> +        return ret;
+>>> +
+>>> +    ret = unregister_memory_section(ms);
+>>> +
+>>> +    return ret;
+>>>    }
+>>>    #else
+>>>    static int __remove_section(struct zone *zone, struct mem_section *ms)
+>>
 
-XFS, ext3/4, jbd/jdb2 and gfs2 follow this convention, so we should
-keep propagating that pattern in the name of consistency, rather
-than having different trace formats for different parts of the
-VFS/FS layers...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
