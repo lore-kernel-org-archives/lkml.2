@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2KUK4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:56:36 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57120 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab2KUK4d (ORCPT
+	id S1754692Ab2KUK5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:57:40 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55727
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754526Ab2KUK5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:56:33 -0500
-Message-ID: <1353495386.2432.13.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH V4 1/4] [SCSI] drivers/scsi/ufs: Seggregate PCI Specific
- Code
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: vinayak holikatti <vinholikatti@gmail.com>
-Cc: Venkatraman S <svenkatr@ti.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com, Santosh Yaraganavi <santoshsy@gmail.com>
-Date: Wed, 21 Nov 2012 10:56:26 +0000
-In-Reply-To: <CAKVbJB8sZ4Y5QfF63wh19N61+0honqoXawnkPGY6qUkt2MCrsw@mail.gmail.com>
-References: <1350474822-7315-1-git-send-email-vinholikatti@gmail.com>
-	 <1350474822-7315-2-git-send-email-vinholikatti@gmail.com>
-	 <507FA52E.9050400@ti.com>
-	 <CAKVbJB_FpmbtcLr5G5sSphNOPnodZUd0sN8ha0C_RtCDtWUG=Q@mail.gmail.com>
-	 <1352841998.8317.1.camel@dabdike>
-	 <CAKVbJB8sZ4Y5QfF63wh19N61+0honqoXawnkPGY6qUkt2MCrsw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 05:57:39 -0500
+Date: Wed, 21 Nov 2012 05:57:32 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, rminnich@sandia.gov, viro@zeniv.linux.org.uk,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm: Only enforce stable page writes if the backing
+ device requires it
+Message-ID: <20121121105732.GB19050@infradead.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020041.10225.35875.stgit@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121020041.10225.35875.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-21 at 16:02 +0530, vinayak holikatti wrote:
-> On Wed, Nov 14, 2012 at 2:56 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > On Thu, 2012-10-18 at 17:37 +0530, vinayak holikatti wrote:
-> >> I am Vacation will look into it when i am back to work.
-> >> > This doesn't apply on 3.7-rc1. Am I missing any patches in between ?
-> >
-> > OK, so it doesn't apply for me either:
-> >
-> > patching file drivers/scsi/ufs/ufshcd.c
-> > Hunk #11 FAILED at 902.
-> > Hunk #15 succeeded at 1157 with fuzz 1 (offset 2 lines).
-> > Hunk #16 succeeded at 1271 (offset 2 lines).
-> > Hunk #17 succeeded at 1300 (offset 2 lines).
-> > Hunk #18 succeeded at 1364 (offset 2 lines).
-> > Hunk #19 succeeded at 1499 (offset 2 lines).
-> > Hunk #20 succeeded at 1542 (offset 2 lines).
-> > Hunk #21 succeeded at 1678 (offset 2 lines).
-> > Hunk #22 succeeded at 1706 (offset 2 lines).
-> > Hunk #23 succeeded at 1727 (offset 2 lines).
-> > Hunk #24 succeeded at 1775 (offset 2 lines).
-> > Hunk #25 succeeded at 1819 (offset 2 lines).
-> > Hunk #26 succeeded at 1872 (offset 2 lines).
-> > Hunk #27 succeeded at 1898 (offset 2 lines).
-> > Hunk #28 FAILED at 2011.
-> > 2 out of 28 hunks FAILED -- saving rejects to file
-> > drivers/scsi/ufs/ufshcd.c.rej
-> >
-> I have generated patches based on linux/kernel/git/jejb/scsi.git this
-> tree, Also i have
-> confirmed that patches get applied successfully on this git tree.
-> 
-> James,
-> Which tree are you refering to. Let me know, which tree i should use to
-> generate the patches.
+On Tue, Nov 20, 2012 at 06:00:41PM -0800, Darrick J. Wong wrote:
+> Create a helper function to check if a backing device requires stable page
+> writes and, if so, performs the necessary wait.  Then, make it so that all
+> points in the memory manager that handle making pages writable use the helper
+> function.  This should provide stable page write support to most filesystems,
+> while eliminating unnecessary waiting for devices that don't require the
+> feature.
 
-All patches for the merge window should be against the misc branch of
-the scsi.git tree.
+> +void wait_if_stable_page_write(struct page *page)
 
-James
+wait_for_stable_page() ?
 
+Also this really needs a kerneldoc comment describing the usage.
 
