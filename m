@@ -1,213 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab2KUFGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 00:06:19 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:33854 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2KUFGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 00:06:17 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-0a-50ac6148defc
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "'Joerg Roedel'" <joro@8bytes.org>, sw0312.kim@samsung.com,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        prathyush.k@samsung.com, rahul.sharma@samsung.com
-Subject: [PATCH v3 07/12] iommu/exynos: change rwlock to spinlock
-Date: Wed, 21 Nov 2012 14:06:15 +0900
-Message-id: <002e01cdc7a5$ef301750$cd9045f0$%cho@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3Hpe8P22nb1/mmSamK/GPzUcRKgQ==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zI12PxDUBBgfuCVlc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGW8nPiIqWCtWsXC3TcYGxh7FLoYOTkkBEwkls+YyAZh
-	i0lcuLceyObiEBJYxigx69pVRpiio1vnsEAkpjNK9F39wQjh/GOUePF/NxNIFZuAlsTqucfB
-	EiICvYwSF/q/MoE4zAI/GCUWv3nDDFIlLOAo0bVoL9hCFgFVic7tF8BsXgFbibU981ghbEGJ
-	H5PvsYDYzEBT1+88zgRhy0tsXvMWaA4H0E3qEo/+6oKERQT0JGZPb2SEKBGR2PfiHSPEeAGJ
-	b5MPsUCUy0psOsAMco6EwGR2iaN3ZkD9LClxcMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNo
-	akFyQXFSeq6hXnFibnFpXrpecn7uJkZI5EjtYFzZYHGIUYCDUYmHd+Pa1QFCrIllxZW5hxgl
-	OJiVRHgZ5NcECPGmJFZWpRblxxeV5qQWH2L0Abp8IrOUaHI+MKrzSuINjY1NzExMTcwtTc1N
-	cQgrifM2e6QECAmkJ5akZqemFqQWwYxj4uCUamCMKxcTW8Kx8JqCwvSXfwNLNs7sdDnqEPMu
-	vVXLWvnd22u77wg0LrnTPG3blT2VdiyVW09+vnkpf2P59aBoi6SA6s3THz3oPVWy6c7jyHST
-	JUZVMptPphmpPVoXfjH8/gxu13X3mpcv/Dj9yduj87aIn7KwlyuvinaLKZ7W63I11OvqxONs
-	YiXnlViKMxINtZiLihMBG4P2l8kCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQV2PxDUBBn8W8Vpc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvJz4iKlgrVrF
-	wt03GBsYexS6GDk5JARMJI5uncMCYYtJXLi3nq2LkYtDSGA6o0Tf1R+MEM4/RokX/3czgVSx
-	CWhJrJ57HCwhItDLKHGh/ysTiMMs8INRYvGbN8wgVcICjhJdi/aygdgsAqoSndsvgNm8ArYS
-	a3vmsULYghI/Jt8D280MNHX9zuNMELa8xOY1b4HmcADdpC7x6K8uSFhEQE9i9vRGRogSEYl9
-	L94xTmAUmIVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFx+Uxq
-	B+PKBotDjAIcjEo8vBvXrg4QYk0sK67MPcQowcGsJMLLIL8mQIg3JbGyKrUoP76oNCe1+BCj
-	D9CjE5mlRJPzgSkjryTe0NjEzMjSyMzCyMTcHIewkjhvs0dKgJBAemJJanZqakFqEcw4Jg5O
-	qQbGAE8GkdhtGelWc83XbWLP8jiq8WzrspNSrp7H7r+Xdt5/6Ayf6tZKT9FjP5q02QRLf1ub
-	Z9acsJqSFa084/HjgxtE8hR77W/9NZ/AKcD3722dzgyFDI3bO3Sqc5uLZSwVjnaciZp7g/WA
-	drd+GkuZ5FNL/j6/iNUnlv/bceBj+WKeBwaf3l5QYinOSDTUYi4qTgQAqCundvgCAAA=
-X-CFilter-Loop: Reflected
+	id S1752190Ab2KUFG2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 00:06:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3589 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab2KUFGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 00:06:22 -0500
+X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
+   d="scan'208";a="6243955"
+Message-ID: <50AC62C8.8020500@cn.fujitsu.com>
+Date: Wed, 21 Nov 2012 13:12:40 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
+ SPARSEMEM_VMEMMAP
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB669D.3060007@gmail.com> <50AC4505.1000007@cn.fujitsu.com> <50AC571C.4030504@gmail.com> <50AC5BC1.9050200@cn.fujitsu.com> <50AC608F.2020307@gmail.com>
+In-Reply-To: <50AC608F.2020307@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 13:06:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 13:06:03,
+	Serialize complete at 2012/11/21 13:06:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since acquiring read_lock is not more frequent than write_lock, it is
-not beneficial to use rwlock, this commit changes rwlock to spinlock.
+At 11/21/2012 01:03 PM, Jaegeuk Hanse Wrote:
+> On 11/21/2012 12:42 PM, Wen Congyang wrote:
+>> At 11/21/2012 12:22 PM, Jaegeuk Hanse Wrote:
+>>> On 11/21/2012 11:05 AM, Wen Congyang wrote:
+>>>> At 11/20/2012 07:16 PM, Jaegeuk Hanse Wrote:
+>>>>> On 11/01/2012 05:44 PM, Wen Congyang wrote:
+>>>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>>
+>>>>>> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
+>>>>>> even if
+>>>>>> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>>>>>>
+>>>>>> So the patch add unregister_memory_section() into __remove_section().
+>>>>> Hi Yasuaki,
+>>>>>
+>>>>> I have a question about these sparse vmemmap memory related
+>>>>> patches. Hot
+>>>>> add memory need allocated vmemmap pages, but this time is allocated by
+>>>>> buddy system. How can gurantee virtual address is continuous to the
+>>>>> address allocated before? If not continuous, page_to_pfn and
+>>>>> pfn_to_page
+>>>>> can't work correctly.
+>>>> vmemmap has its virtual address range:
+>>>> ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+>>>>
+>>>> We allocate memory from buddy system to store struct page, and its
+>>>> virtual
+>>>> address isn't in this range. So we should update the page table:
+>>>>
+>>>> kmalloc_section_memmap()
+>>>>       sparse_mem_map_populate()
+>>>>           pfn_to_page() // get the virtual address in the vmemmap range
+>>>>           vmemmap_populate() // we update page table here
+>>>>
+>>>> When we use vmemmap, page_to_pfn() always returns address in the
+>>>> vmemmap
+>>>> range, not the address that kmalloc() returns. So the virtual address
+>>>> is continuous.
+>>> Hi Congyang,
+>>>
+>>> Another question about memory hotplug. During hot remove memory, it will
+>>> also call memblock_remove to remove related memblock.
+>> IIRC, we don't touch memblock when hot-add/hot-remove memory. memblock is
+>> only used for bootmem allocator. I think it isn't used after booting.
+> 
+> In IBM pseries servers.
+> 
+> pseries_remove_memory()
+>     pseries_remove_memblock()
+>         memblock_remove()
+> 
+> Furthermore, memblock is set to record available memory ranges get from
+> e820 map(you can check it in memblock_x86_fill()) in x86 case, after
+> hot-remove memory, this range of memory can't be available, why not
+> remove them as pseries servers' codes do.
 
-Change-Id: Ia3365ccec0744e735b71f0389e5c56a0243bcd2c
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- drivers/iommu/exynos-iommu.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+Oh, it is powerpc, and I don't read this code. I will check it now.
 
-diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 0bb194e..e39ddac 100644
---- a/drivers/iommu/exynos-iommu.c
-+++ b/drivers/iommu/exynos-iommu.c
-@@ -184,7 +184,7 @@ struct sysmmu_drvdata {
- 	struct clk *clk;
- 	int activations;
- 	struct sysmmu_version ver;
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct iommu_domain *domain;
- 	sysmmu_fault_handler_t fault_handler;
- 	unsigned long pgtable;
-@@ -288,7 +288,7 @@ void exynos_sysmmu_set_prefbuf(struct device *dev,
- 	BUG_ON((base0 + size0) <= base0);
- 	BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
- 
--	read_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 	if (!is_sysmmu_active(data))
- 		goto finish;
- 
-@@ -318,7 +318,7 @@ void exynos_sysmmu_set_prefbuf(struct device *dev,
- 		}
- 	}
- finish:
--	read_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- }
- 
- static void __set_fault_handler(struct sysmmu_drvdata *data,
-@@ -326,9 +326,9 @@ static void __set_fault_handler(struct sysmmu_drvdata *data,
- {
- 	unsigned long flags;
- 
--	write_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 	data->fault_handler = handler;
--	write_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- }
- 
- void exynos_sysmmu_set_fault_handler(struct device *dev,
-@@ -376,7 +376,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 
- 	int i, ret = -ENOSYS;
- 
--	read_lock(&data->lock);
-+	spin_lock(&data->lock);
- 
- 	WARN_ON(!is_sysmmu_active(data));
- 
-@@ -420,7 +420,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 	if (itype != SYSMMU_FAULT_UNKNOWN)
- 		sysmmu_unblock(data->sfrbases[i]);
- 
--	read_unlock(&data->lock);
-+	spin_unlock(&data->lock);
- 
- 	return IRQ_HANDLED;
- }
-@@ -431,7 +431,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
- 	bool disabled = false;
- 	int i;
- 
--	write_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 
- 	if (!set_sysmmu_inactive(data))
- 		goto finish;
-@@ -446,7 +446,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
- 	data->pgtable = 0;
- 	data->domain = NULL;
- finish:
--	write_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- 
- 	if (disabled)
- 		dev_dbg(data->sysmmu, "Disabled\n");
-@@ -469,7 +469,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 	int i, ret = 0;
- 	unsigned long flags;
- 
--	write_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 
- 	if (!set_sysmmu_active(data)) {
- 		if (WARN_ON(pgtable != data->pgtable)) {
-@@ -506,7 +506,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 
- 	dev_dbg(data->sysmmu, "Enabled\n");
- finish:
--	write_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- 
- 	return ret;
- }
-@@ -553,7 +553,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
- 	unsigned long flags;
- 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
- 
--	read_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 
- 	if (is_sysmmu_active(data)) {
- 		int i;
-@@ -569,7 +569,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
- 			"Disabled. Skipping invalidating TLB.\n");
- 	}
- 
--	read_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- }
- 
- void exynos_sysmmu_tlb_invalidate(struct device *dev)
-@@ -577,7 +577,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 	unsigned long flags;
- 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
- 
--	read_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 
- 	if (is_sysmmu_active(data)) {
- 		int i;
-@@ -592,7 +592,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 			"Disabled. Skipping invalidating TLB.\n");
- 	}
- 
--	read_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- }
- 
- static int __init __sysmmu_init_clock(struct device *sysmmu,
-@@ -748,7 +748,7 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- 	ret = __sysmmu_setup(dev, data);
- 	if (!ret) {
- 		data->sysmmu = dev;
--		rwlock_init(&data->lock);
-+		spin_lock_init(&data->lock);
- 		INIT_LIST_HEAD(&data->node);
- 
- 		__set_fault_handler(data, &default_fault_handler);
--- 
-1.8.0
+Thanks for pointing it out.
 
+Wen Congyang
+
+> 
+>>> memblock_remove()
+>>>             __memblock_remove()memory-hotplug: unregister memory
+>>> section on SPARSEMEM_VMEMMAP
+>>>
+>>>                     memblock_isolate_range()
+>>>                     memblock_remove_region()
+>>>
+>>> But memblock_isolate_range() only record fully contained regions,
+>>> regions which are partial overlapped just be splitted instead of record.
+>>> So these partial overlapped regions can't be removed. Where I miss?
+>> No, memblock_isolate_range() can deal with partial overlapped region.
+>> =====================
+>>         if (rbase < base) {
+>>             /*
+>>              * @rgn intersects from below.  Split and continue
+>>              * to process the next region - the new top half.
+>>              */
+>>             rgn->base = base;
+>>             rgn->size -= base - rbase;
+>>             type->total_size -= base - rbase;
+>>             memblock_insert_region(type, i, rbase, base - rbase,
+>>                            memblock_get_region_node(rgn));
+>>         } else if (rend > end) {
+>>             /*
+>>              * @rgn intersects from above.  Split and redo the
+>>              * current region - the new bottom half.
+>>              */
+>>             rgn->base = end;
+>>             rgn->size -= end - rbase;
+>>             type->total_size -= end - rbase;
+>>             memblock_insert_region(type, i--, rbase, end - rbase,
+>>                            memblock_get_region_node(rgn));
+>> =====================
+>>
+>> If the region is partial overlapped region, we will split the old
+>> region into
+>> two regions. After doing this, it is full contained region now.
+> 
+> You are right, I misunderstand the codes.
+> 
+>>
+>> Thanks
+>> Wen Congyang
+>>
+>>> Regards,
+>>> Jaegeuk
+>>>
+>>>> Thanks
+>>>> Wen Congyang
+>>>>> Regards,
+>>>>> Jaegeuk
+>>>>>
+>>>>>> CC: David Rientjes <rientjes@google.com>
+>>>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>>>> CC: Len Brown <len.brown@intel.com>
+>>>>>> CC: Christoph Lameter <cl@linux.com>
+>>>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>> ---
+>>>>>>     mm/memory_hotplug.c | 13 ++++++++-----
+>>>>>>     1 file changed, 8 insertions(+), 5 deletions(-)
+>>>>>>
+>>>>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>>>>> index ca07433..66a79a7 100644
+>>>>>> --- a/mm/memory_hotplug.c
+>>>>>> +++ b/mm/memory_hotplug.c
+>>>>>> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
+>>>>>> struct zone *zone,
+>>>>>>     #ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>>>>>     static int __remove_section(struct zone *zone, struct mem_section
+>>>>>> *ms)
+>>>>>>     {
+>>>>>> -    /*
+>>>>>> -     * XXX: Freeing memmap with vmemmap is not implement yet.
+>>>>>> -     *      This should be removed later.
+>>>>>> -     */
+>>>>>> -    return -EBUSY;
+>>>>>> +    int ret = -EINVAL;
+>>>>>> +
+>>>>>> +    if (!valid_section(ms))
+>>>>>> +        return ret;
+>>>>>> +
+>>>>>> +    ret = unregister_memory_section(ms);
+>>>>>> +
+>>>>>> +    return ret;
+>>>>>>     }
+>>>>>>     #else
+>>>>>>     static int __remove_section(struct zone *zone, struct mem_section
+>>>>>> *ms)
+>>>
+> 
+> 
 
