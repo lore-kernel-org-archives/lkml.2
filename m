@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2KUOpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:45:17 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34444 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab2KUOpP (ORCPT
+	id S1754888Ab2KUOpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:45:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34330 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2KUOpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:45:15 -0500
-Date: Wed, 21 Nov 2012 14:50:27 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: roman@hodek.net
-Cc: linux-kernel@vger.kernel.org, patrik.r.jakobsson@gmail.com,
-        christian.gmeiner@gmail.com
-Subject: Re:
-Message-ID: <20121121145027.4dce136d@pyramind.ukuu.org.uk>
-In-Reply-To: <20121121140442.782733@zweiblum.hodek.net>
-References: <20121121140442.782733@zweiblum.hodek.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 09:45:17 -0500
+Date: Wed, 21 Nov 2012 06:46:24 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH 1/1] tty: vt: Remove redundant null check before kfree.
+Message-ID: <20121121144624.GA21766@kroah.com>
+References: <1353475147-28308-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353475147-28308-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Anyway, the small LVDS one works fine so far, at least when I hardcode the
-> panel resolution (there's no VBT etc. in BIOS yet). However, the SDVO one
-> stays black. No wonder, as there's no SDVO code in the Oaktrail part of the
-> driver.
-
-Indeed - the Oaktrail processors don't have SDVO support. E6xx happens
-to be very similar to Oaktrail so the LVDS works. No idea about HDMI.
-
-> So I tried to add this... and simply started with adding a call to
-> psb_intel_sdvo_init() in oaktrail_output_init(), to see what happens. The
-> result: it doesn't find anything :-( I could track problems down to the point
-> that the SDVO i2c registers seem to be the wrong ones.
+On Wed, Nov 21, 2012 at 10:49:07AM +0530, Sachin Kamat wrote:
+> kfree on a NULL pointer is a no-op.
 > 
-> At the known offsets for i2c regs (0x5100 and on) I see only 0xffffffff, so
-> probably these registers are not present or somewhere else on my platform.
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/tty/vt/consolemap.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> Does anybody of you have any infos on this? How can I get further?
-> Thanks for any help in advance!
+> diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+> index 2aaa0c2..248381b 100644
+> --- a/drivers/tty/vt/consolemap.c
+> +++ b/drivers/tty/vt/consolemap.c
+> @@ -410,10 +410,8 @@ static void con_release_unimap(struct uni_pagedir *p)
+>  		kfree(p->inverse_translations[i]);
+>  		p->inverse_translations[i] = NULL;
+>  	}
+> -	if (p->inverse_trans_unicode) {
+> -		kfree(p->inverse_trans_unicode);
+> -		p->inverse_trans_unicode = NULL;
+> -	}
+> +	kfree(p->inverse_trans_unicode);
+> +	p->inverse_trans_unicode = NULL;
 
-There is an Intel driver with open kernel code and proprietary userspace
-for the Imagination 3D engine (EMGD) although only for an out of
-maintenance Fedora and for Meego and in both cases for ancient kernels.
+kfree with NULL is a no-op, but the line after that just caused a kernel
+crash if it was NULL, so I can't accept this type of thing.
 
-The fully open driver is built by extracting the relevant information and
-code from these releases.
+Please be more careful.
 
-http://www.intel.com/p/en_US/embedded/hwsw/software/emgd#download
+What's with the patches@linaro.org email address?  What is that for?
 
+thanks,
 
-If you unpack that it contains a tar ball which you can unpack which
-contains the driver.
-
-emgd/pal/sdvo 
-
-looks kind of promising.
-
+greg k-h
