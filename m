@@ -1,366 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab2KUUQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 15:16:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51347 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab2KUUQA (ORCPT
+	id S1756308Ab2KUURP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 15:17:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55093 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756234Ab2KUURN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 15:16:00 -0500
-Date: Wed, 21 Nov 2012 12:15:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>,
-        Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Sonny Rao <sonnyrao@google.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH] mm: vmscan: Check for fatal signals iff the process was
- throttled
-Message-Id: <20121121121559.a1aa0593.akpm@linux-foundation.org>
-In-Reply-To: <20121121153824.GG8218@suse.de>
-References: <20121102083057.GG8218@suse.de>
-	<20121102223630.GA2070@barrios>
-	<20121105144614.GJ8218@suse.de>
-	<20121106002550.GA3530@barrios>
-	<20121106085822.GN8218@suse.de>
-	<20121106101719.GA2005@barrios>
-	<20121109095024.GI8218@suse.de>
-	<20121112133218.GA3156@barrios>
-	<20121112140631.GV8218@suse.de>
-	<20121113133109.GA5204@barrios>
-	<20121121153824.GG8218@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 15:17:13 -0500
+Date: Wed, 21 Nov 2012 12:16:39 -0800
+From: tip-bot for Darren Hart <dvhart@linux.intel.com>
+Message-ID: <tip-0e8f7a5954be13d0c8dcbca3204a9e962498c46e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jkacur@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
+        davej@redat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jkacur@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, davej@redat.com
+In-Reply-To: <3b25c8ba053760892871713ff6e81660433f6734.1353483196.git.dvhart@linux.intel.com>
+References: <3b25c8ba053760892871713ff6e81660433f6734.1353483196.git.dvhart@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] futex: Avoid wake_futex for a PI futex_q
+Git-Commit-ID: 0e8f7a5954be13d0c8dcbca3204a9e962498c46e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 12:16:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 15:38:24 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+Commit-ID:  0e8f7a5954be13d0c8dcbca3204a9e962498c46e
+Gitweb:     http://git.kernel.org/tip/0e8f7a5954be13d0c8dcbca3204a9e962498c46e
+Author:     Darren Hart <dvhart@linux.intel.com>
+AuthorDate: Tue, 20 Nov 2012 23:36:45 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 21 Nov 2012 21:05:34 +0100
 
-> commit 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
-> are low and swap is backed by network storage") introduced a check for
-> fatal signals after a process gets throttled for network storage. The
-> intention was that if a process was throttled and got killed that it
-> should not trigger the OOM killer. As pointed out by Minchan Kim and
-> David Rientjes, this check is in the wrong place and too broad. If a
-> system is in am OOM situation and a process is exiting, it can loop in
-> __alloc_pages_slowpath() and calling direct reclaim in a loop. As the
-> fatal signal is pending it returns 1 as if it is making forward progress
-> and can effectively deadlock.
-> 
-> This patch moves the fatal_signal_pending() check after throttling to
-> throttle_direct_reclaim() where it belongs. If the process is killed
-> while throttled, it will return immediately without direct reclaim
-> except now it will have TIF_MEMDIE set and will use the PFMEMALLOC
-> reserves.
-> 
-> Minchan pointed out that it may be better to direct reclaim before returning
-> to avoid using the reserves because there may be pages that can easily
-> reclaim that would avoid using the reserves. However, we do no such targetted
-> reclaim and there is no guarantee that suitable pages are available. As it
-> is expected that this throttling happens when swap-over-NFS is used there
-> is a possibility that the process will instead swap which may allocate
-> network buffers from the PFMEMALLOC reserves. Hence, in the swap-over-nfs
-> case where a process can be throtted and be killed it can use the reserves
-> to exit or it can potentially use reserves to swap a few pages and then
-> exit. This patch takes the option of using the reserves if necessary to
-> allow the process exit quickly.
-> 
-> If this patch passes review it should be considered a -stable candidate
-> for 3.6.
-> 
-> ...
->
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2207,9 +2207,12 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
->   * Throttle direct reclaimers if backing storage is backed by the network
->   * and the PFMEMALLOC reserve for the preferred node is getting dangerously
->   * depleted. kswapd will continue to make progress and wake the processes
-> - * when the low watermark is reached
-> + * when the low watermark is reached.
-> + *
-> + * Returns true if a fatal signal was delivered during throttling. If this
+futex: Avoid wake_futex for a PI futex_q
 
-s/delivered/received/imo
+Dave Jones reported a bug with futex_lock_pi() that his trinity test
+exposed. Sometime between queue_me() and taking the q.lock_ptr, the
+lock_ptr became NULL, resulting in a crash.
 
-> + * happens, the page allocator should not consider triggering the OOM killer.
->   */
-> -static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-> +static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  					nodemask_t *nodemask)
->  {
->  	struct zone *zone;
-> @@ -2224,13 +2227,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  	 * processes to block on log_wait_commit().
->  	 */
->  	if (current->flags & PF_KTHREAD)
-> -		return;
-> +		goto out;
+While futex_wake() is careful to not call wake_futex() on futex_q's with
+a pi_state or an rt_waiter (which are either waiting for a
+futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
+futex_requeue() do not perform the same test.
 
-hm, well, back in the old days some kernel threads were killable via
-signals.  They had to opt-in to it by diddling their signal masks and a
-few other things.  Too lazy to check if there are still any such sites.
+Update futex_wake_op() and futex_requeue() to test for q.pi_state and
+q.rt_waiter and abort with -EINVAL if detected. To ensure any future
+breakage is caught, add a WARN() to wake_futex() if the same condition
+is true.
 
+This fix has seen 3 hours of testing with "trinity -c futex" on an
+x86_64 VM with 4 CPUS.
 
-> +	/*
-> +	 * If a fatal signal is pending, this process should not throttle.
-> +	 * It should return quickly so it can exit and free its memory
-> +	 */
-> +	if (fatal_signal_pending(current))
-> +		goto out;
+Reported-by: Dave Jones <davej@redat.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/3b25c8ba053760892871713ff6e81660433f6734.1353483196.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-theresabug.  It should return "true" here.
-
->  
->  	/* Check if the pfmemalloc reserves are ok */
->  	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
->  	pgdat = zone->zone_pgdat;
->  	if (pfmemalloc_watermark_ok(pgdat))
-> -		return;
-> +		goto out;
->  
->  	/* Account for the throttling */
->  	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-> @@ -2246,12 +2256,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  	if (!(gfp_mask & __GFP_FS)) {
->  		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
->  			pfmemalloc_watermark_ok(pgdat), HZ);
-> -		return;
-> +
-> +		goto check_pending;
-
-And this can be just an "else".
-
->  	}
->  
->  	/* Throttle until kswapd wakes the process */
->  	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
->  		pfmemalloc_watermark_ok(pgdat));
-> +
-> +check_pending:
-> +	if (fatal_signal_pending(current))
-> +		return true;
-> +
-> +out:
-> +	return false;
->  }
->  
->  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
-> @@ -2273,13 +2291,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  		.gfp_mask = sc.gfp_mask,
->  	};
->  
-> -	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
-> -
->  	/*
-> -	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
-> -	 * that the page allocator does not consider triggering OOM
-> +	 * Do not enter reclaim if fatal signal was delivered while throttled.
-
-Again, "received" is clearer.
-
-> +	 * 1 is returned so that the page allocator does not OOM kill at this
-> +	 * point.
->  	 */
-> -	if (fatal_signal_pending(current))
-> +	if (throttle_direct_reclaim(gfp_mask, zonelist, nodemask))
->  		return 1;
->  
->  	trace_mm_vmscan_direct_reclaim_begin(order,
-
-So I end up with the below patch, which yields
-
-static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-					nodemask_t *nodemask)
-{
-	struct zone *zone;
-	int high_zoneidx = gfp_zone(gfp_mask);
-	pg_data_t *pgdat;
-
-	/*
-	 * Kernel threads should not be throttled as they may be indirectly
-	 * responsible for cleaning pages necessary for reclaim to make forward
-	 * progress. kjournald for example may enter direct reclaim while
-	 * committing a transaction where throttling it could force other
-	 * processes to block on log_wait_commit().
-	 */
-	if (current->flags & PF_KTHREAD)
-		goto out;
-
-	/*
-	 * If a fatal signal is pending, this process should not throttle.
-	 * It should return quickly so it can exit and free its memory
-	 */
-	if (fatal_signal_pending(current))
-		goto killed;
-
-	/* Check if the pfmemalloc reserves are ok */
-	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-	pgdat = zone->zone_pgdat;
-	if (pfmemalloc_watermark_ok(pgdat))
-		goto out;
-
-	/* Account for the throttling */
-	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-
-	/*
-	 * If the caller cannot enter the filesystem, it's possible that it
-	 * is due to the caller holding an FS lock or performing a journal
-	 * transaction in the case of a filesystem like ext[3|4]. In this case,
-	 * it is not safe to block on pfmemalloc_wait as kswapd could be
-	 * blocked waiting on the same lock. Instead, throttle for up to a
-	 * second before continuing.
-	 */
-	if (!(gfp_mask & __GFP_FS)) {
-		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
-					pfmemalloc_watermark_ok(pgdat), HZ);
-	} else {
-		/* Throttle until kswapd wakes the process */
-		wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
-				    pfmemalloc_watermark_ok(pgdat));
-	}
-
-	if (fatal_signal_pending(current)) {
-killed:
-		return true;
-	}
-
-out:
-	return false;
-}
-
-(I hate that "goto killed" thing, but can't think of a better way)
-
---- a/mm/vmscan.c~mm-vmscan-check-for-fatal-signals-iff-the-process-was-throttled-fix
-+++ a/mm/vmscan.c
-@@ -2209,7 +2209,7 @@ static bool pfmemalloc_watermark_ok(pg_d
-  * depleted. kswapd will continue to make progress and wake the processes
-  * when the low watermark is reached.
-  *
-- * Returns true if a fatal signal was delivered during throttling. If this
-+ * Returns true if a fatal signal was received during throttling.  If this
-  * happens, the page allocator should not consider triggering the OOM killer.
-  */
- static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-@@ -2223,7 +2223,7 @@ static bool throttle_direct_reclaim(gfp_
- 	 * Kernel threads should not be throttled as they may be indirectly
- 	 * responsible for cleaning pages necessary for reclaim to make forward
- 	 * progress. kjournald for example may enter direct reclaim while
--	 * committing a transaction where throttling it could forcing other
-+	 * committing a transaction where throttling it could force other
- 	 * processes to block on log_wait_commit().
- 	 */
- 	if (current->flags & PF_KTHREAD)
-@@ -2234,7 +2234,7 @@ static bool throttle_direct_reclaim(gfp_
- 	 * It should return quickly so it can exit and free its memory
- 	 */
- 	if (fatal_signal_pending(current))
--		goto out;
-+		goto killed;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3717e7b..5699b21 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -840,6 +840,11 @@ static void wake_futex(struct futex_q *q)
+ {
+ 	struct task_struct *p = q->task;
  
- 	/* Check if the pfmemalloc reserves are ok */
- 	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-@@ -2255,18 +2255,17 @@ static bool throttle_direct_reclaim(gfp_
- 	 */
- 	if (!(gfp_mask & __GFP_FS)) {
- 		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
--			pfmemalloc_watermark_ok(pgdat), HZ);
--
--		goto check_pending;
-+					pfmemalloc_watermark_ok(pgdat), HZ);
-+	} else {
-+		/* Throttle until kswapd wakes the process */
-+		wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
-+				    pfmemalloc_watermark_ok(pgdat));
++	if (q->pi_state || q->rt_waiter) {
++		WARN(1, "%s: refusing to wake PI futex\n", __FUNCTION__);
++		return;
++	}
++
+ 	/*
+ 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+ 	 * a non-futex wake up happens on another CPU then the task
+@@ -1075,6 +1080,10 @@ retry_private:
+ 
+ 	plist_for_each_entry_safe(this, next, head, list) {
+ 		if (match_futex (&this->key, &key1)) {
++			if (this->pi_state || this->rt_waiter) {
++				ret = -EINVAL;
++				goto out_unlock;
++			}
+ 			wake_futex(this);
+ 			if (++ret >= nr_wake)
+ 				break;
+@@ -1087,6 +1096,10 @@ retry_private:
+ 		op_ret = 0;
+ 		plist_for_each_entry_safe(this, next, head, list) {
+ 			if (match_futex (&this->key, &key2)) {
++				if (this->pi_state || this->rt_waiter) {
++					ret = -EINVAL;
++					goto out_unlock;
++				}
+ 				wake_futex(this);
+ 				if (++op_ret >= nr_wake2)
+ 					break;
+@@ -1095,6 +1108,7 @@ retry_private:
+ 		ret += op_ret;
  	}
  
--	/* Throttle until kswapd wakes the process */
--	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
--		pfmemalloc_watermark_ok(pgdat));
--
--check_pending:
--	if (fatal_signal_pending(current))
-+	if (fatal_signal_pending(current)) {
-+killed:
- 		return true;
-+	}
- 
- out:
- 	return false;
-@@ -2292,7 +2291,7 @@ unsigned long try_to_free_pages(struct z
- 	};
- 
- 	/*
--	 * Do not enter reclaim if fatal signal was delivered while throttled.
-+	 * Do not enter reclaim if a fatal signal was received while throttled.
- 	 * 1 is returned so that the page allocator does not OOM kill at this
- 	 * point.
- 	 */
-_
-
-
-(Still hating that "goto killed")
-
-(relents)
-
-How about this version?
-
-static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-					nodemask_t *nodemask)
-{
-	struct zone *zone;
-	int high_zoneidx = gfp_zone(gfp_mask);
-	pg_data_t *pgdat;
-
-	/*
-	 * Kernel threads should not be throttled as they may be indirectly
-	 * responsible for cleaning pages necessary for reclaim to make forward
-	 * progress. kjournald for example may enter direct reclaim while
-	 * committing a transaction where throttling it could force other
-	 * processes to block on log_wait_commit().
-	 */
-	if (current->flags & PF_KTHREAD)
-		return false;
-
-	/*
-	 * If a fatal signal is pending, this process should not throttle.
-	 * It should return quickly so it can exit and free its memory
-	 */
-	if (fatal_signal_pending(current))
-		return true;
-
-	/* Check if the pfmemalloc reserves are ok */
-	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-	pgdat = zone->zone_pgdat;
-	if (pfmemalloc_watermark_ok(pgdat))
-		return false;
-
-	/* Account for the throttling */
-	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-
-	/*
-	 * If the caller cannot enter the filesystem, it's possible that it
-	 * is due to the caller holding an FS lock or performing a journal
-	 * transaction in the case of a filesystem like ext[3|4]. In this case,
-	 * it is not safe to block on pfmemalloc_wait as kswapd could be
-	 * blocked waiting on the same lock. Instead, throttle for up to a
-	 * second before continuing.
-	 */
-	if (!(gfp_mask & __GFP_FS)) {
-		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
-					pfmemalloc_watermark_ok(pgdat), HZ);
-	} else {
-		/* Throttle until kswapd wakes the process */
-		wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
-				    pfmemalloc_watermark_ok(pgdat));
-	}
-
-	return fatal_signal_pending(current);
-}
-
++out_unlock:
+ 	double_unlock_hb(hb1, hb2);
+ out_put_keys:
+ 	put_futex_key(&key2);
+@@ -1384,9 +1398,13 @@ retry_private:
+ 		/*
+ 		 * FUTEX_WAIT_REQEUE_PI and FUTEX_CMP_REQUEUE_PI should always
+ 		 * be paired with each other and no other futex ops.
++		 *
++		 * We should never be requeueing a futex_q with a pi_state,
++		 * which is awaiting a futex_unlock_pi().
+ 		 */
+ 		if ((requeue_pi && !this->rt_waiter) ||
+-		    (!requeue_pi && this->rt_waiter)) {
++		    (!requeue_pi && this->rt_waiter) ||
++		    this->pi_state) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
