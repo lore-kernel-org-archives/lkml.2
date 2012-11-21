@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2KUPFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:05:44 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:24056 "EHLO relay.sw.ru"
+	id S1755094Ab2KUPFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:05:55 -0500
+Received: from mga03.intel.com ([143.182.124.21]:44875 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab2KUPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:05:42 -0500
-Subject: [PATCH] nfsd4: remove state lock from nfs4_state_shutdown
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 21 Nov 2012 18:07:38 +0300
-Message-ID: <20121121150730.6644.99859.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755078Ab2KUPFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:05:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
+   d="asc'?scan'208";a="220671136"
+Message-ID: <1353510397.2701.11.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] MTD: use SQUASHFS_MAGIC from uapi/linux/magic.h
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Luka Perkov <luka@openwrt.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Nov 2012 17:06:37 +0200
+In-Reply-To: <1352662335-12028-1-git-send-email-luka@openwrt.org>
+References: <1352662335-12028-1-git-send-email-luka@openwrt.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-h+ejz9pJDuERauZtIrJW"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Protection of __nfs4_state_shutdown() with nfs4_lock_state() looks redundant.
 
-This function is called by the last NFSd thread on it's exit and state lock
-protects actually two functions (del_recall_lru is protected by recall_lock):
-1) nfsd4_client_tracking_exit
-2) __nfs4_state_shutdown_net
+--=-h+ejz9pJDuERauZtIrJW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-"nfsd4_client_tracking_exit" doesn't require state lock protection, because it's
-state can be modified only by tracker callbacks.
-Here a re they:
-1) create: is called only from nfsd4_proc_compound.
-2) remove: is called from either nfsd4_proc_compound or nfs4_laundromat.
-3) check: is called only from nfsd4_proc_compound.
-4) grace_done; called only from nfs4_laundromat.
+On Sun, 2012-11-11 at 20:32 +0100, Luka Perkov wrote:
+> Signed-off-by: Luka Perkov <luka@openwrt.org>
+> ---
 
-nfsd4_proc_compound is called onll by NFSd kthread, which is exiting right
-now.
-nfs4_laundromat is called by laundry_wq. But laundromat_work was canceled
-already.
+Pushed to l2-mtd.git, thanks!
 
-"__nfs4_state_shutdown_net" also doesn't require state lock protection,
-because all NFSd kthreads are dead, and no race can happen with NFSd start,
-because "nfsd_up" flag is still set.
-Moreover, all Nfsd shutdown is protected with global nfsd_mutex.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfs4state.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+--=-h+ejz9pJDuERauZtIrJW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index e75872f..d41cc71 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4926,9 +4926,7 @@ nfs4_state_shutdown(void)
- 	cancel_delayed_work_sync(&nn->laundromat_work);
- 	destroy_workqueue(laundry_wq);
- 	locks_end_grace(&nn->nfsd4_manager);
--	nfs4_lock_state();
- 	__nfs4_state_shutdown(net);
--	nfs4_unlock_state();
- 	nfsd4_destroy_callback_queue();
- }
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQrO39AAoJECmIfjd9wqK0rx4P/1gknvDdYxTk8VuBT0DYkOBl
+wNN6TTdXCK0jGgCgYPWUUX9WUtPPBpfobcJLMWGlZwakqoDiG5p3vdiHk5SDAxx9
+soy922WhN6+tlcZihgPzway3VYz0HmE1xVjmlo/LaYXR20StwVZn3hBMpFu0C5z2
+cwgX8eX2lmJQoTdYRFu9W6AL42DRLWj7AT2JHunxXOXQWfUUWRqZ3PcQYYMqov2i
+6BTTne2XfDiQVTYK7/6MC8YLqB8w3tt7d9Ct6jnxmXGlRluAk5JAr87QPV1bunom
+a03CqwONYiqN4fo+HXBRQPQ5NG56uDsVI3P1KS5b+FPFPKGKi7TWeEMgOfs4Z3w4
+9mMQd8Ei4H97xN3kKZWjj2Cgha/9bMA8pJm9SHNUMPaSk6Hxe/t+d7e8QRcnUxwE
+oZoiZDMpgni7S3+coUeMMUEdF37EUYxAT6/t2zZTgVK7zQvwAyDDjuPfTGeUe0S2
++pGTgLQe/EgvH+HUptXjJAbOZFxZCFASpaZkxl7wQywxkI1WukSh+/QsiewwwoJB
+rSKTAOguot055RaTcqGkmQMkmhMVI1Zbwy/piho+DiwtMdldB480T3cFaV5LdrlU
+NCPAnXXZgWus3Q0fVsMNjwZFFVTQf8upV8rz0eihFVHoonCYVzvqsLEQaOllPpmt
+2Ro6lV3ngPWruvNW2ZvH
+=uzU4
+-----END PGP SIGNATURE-----
+
+--=-h+ejz9pJDuERauZtIrJW--
 
