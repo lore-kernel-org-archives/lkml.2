@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2KUAFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 19:05:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33404 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2KUAFb (ORCPT
+	id S1753836Ab2KUAKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 19:10:01 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:49615 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752159Ab2KUAKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 19:05:31 -0500
-Date: Wed, 21 Nov 2012 00:10:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by
- tag
-Message-ID: <20121121001043.7e1a68df@pyramind.ukuu.org.uk>
-In-Reply-To: <CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com>
-References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
-	<20121120211634.11513416@pyramind.ukuu.org.uk>
-	<50ABFF4E.2050101@broadcom.com>
-	<CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 19:10:00 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEIAOYarFB5LbLL/2dsb2JhbABEvFSGABdzgh4BAQQBOhweBQULCAMYLhQlAyETiAcFvykUjCCEYgOVfZBCgwOBSSQ
+Date: Wed, 21 Nov 2012 11:09:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH RFC 0/12] Final userns conversions
+Message-ID: <20121121000952.GL2591@dastard>
+References: <87pq38wimv.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq38wimv.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not just a separate document but project / github / whatever given
-> that other projects are referring to it now, and we stand to gain more
-> in the community by streamlining it more and making it ubiquitous.
+On Tue, Nov 20, 2012 at 04:42:16AM -0800, Eric W. Biederman wrote:
+> 
+> This patchset contain the basic user namespace changes for filesystems
+> that have needed nontrivial work.  Along with the 2 patches that depend
+> on these changes.
+> 
+> I belive these patches to be correct for allowing the remaining
+> filesystems to work in the presence of user namespaces.  At the same
+> time I would like to give all of these much deeper scrutiny, just
+> because there is so much going on.  Unfortunately these patches
+> individually are not obviously correct.
+> 
+> Since I won't have much time until after Thanksgiving and because the
+> merge window is looming I figure I will put these changes out there and
+> let people see I am looking at these changes, and see if anyone happens
+> to spot anything.
 
+The XFS stuff is non-trivial, causes on-disk format changes and
+likely breaks xfsdump/xfsrestore, so the XFS patch is a no-go until
+that is sorted out.
 
-Cutting and pasting it somewhere works (subject to whatever licensing
-it may have itself), as does having a list and a location for a copy, but
-you still want it in the tree proper.
+Given the short time until the merge window and that the XFS patch
+needs to be significantly revised, it's already too late for the XFS
+changes to be considered for the 3.8 merge window.  Hence I'd
+suggest that you are going to be targeting 3.9 for the XFS changes.
 
-There's a reason that lawyers copy documents into other documents rather
-than doing late dynamic binding - you want to be sure that what you
-reference is the *exact* text that is valid for this case.
+> If I can figure out how to responsibly get these changes into linux-next
+> I want to get these changes into linux-next so that user namespace bugs
+> show up in allyesconfig builds.
 
-If you have a single master official copy and a link then you break all
-that and you'd have to have everyones consensus and planning to change a
-word of it.
+The XFS changes definitely need to be staged through the XFS tree
+given the complexity of the changes, the amount of validation that
+is required. Also, it is likely that there are significant conflicts
+against changes already staged for 3.8, so getting it upstream
+through the XFS tree is the only option that I'd consider
+acceptible...
 
+Cheers,
 
-Alan
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
