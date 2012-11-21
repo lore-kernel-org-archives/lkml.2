@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab2KUR3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:29:37 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:48425 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754610Ab2KUR3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:29:36 -0500
-Date: Wed, 21 Nov 2012 10:29:29 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter.Huewe@infineon.com
-Cc: key@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH resend] TPM: Issue TPM_STARTUP at driver load if the TPM
- has not been started
-Message-ID: <20121121172929.GA6406@obsidianresearch.com>
-References: <20120930233012.GH30637@obsidianresearch.com>
- <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
- <20121001161536.GC31620@obsidianresearch.com>
- <20121001171003.GA1117@ennui.austin.ibm.com>
- <20121001173908.GA22342@obsidianresearch.com>
- <20121004174114.GA6520@ennui.austin.ibm.com>
- <74A44E99E3274B4CB570415926B37D440EC19C@MUCSE501.eu.infineon.com>
- <20121121071015.GD19837@obsidianresearch.com>
- <74A44E99E3274B4CB570415926B37D440F7675@MUCSE501.eu.infineon.com>
+	id S1755385Ab2KURar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:30:47 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:64235 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab2KURaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 12:30:46 -0500
+Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+To: oleg@redhat.com (Oleg Nesterov)
+Date: Thu, 22 Nov 2012 04:30:43 +1100 (EST)
+Cc: rostedt@goodmis.org (Steven Rostedt),
+        fweisbec@gmail.com (Frederic Weisbecker),
+        mingo@redhat.com (Ingo Molnar),
+        a.p.zijlstra@chello.nl (Peter Zijlstra), linux-kernel@vger.kernel.org
+Reply-To: u3557@dialix.com.au
+In-Reply-To: <20121121141627.GB21030@redhat.com>
+X-Mailer: ELM [version 2.5 PL8]
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74A44E99E3274B4CB570415926B37D440F7675@MUCSE501.eu.infineon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+Content-Transfer-Encoding: 7bit
+Message-Id: <20121121173043.F0319592076@miso.sublimeip.com>
+From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 08:59:24AM +0000, Peter.Huewe@infineon.com wrote:
+Hi Oleg,
 
-> I just gave the new version a run on my beagleboard with our Infineon SLB9635 TT 1.2 Soft I2C TPM
-> and it seems to work as expected. (Tested with and without previous startup).
+Yes, I can see that "arch/x86/kernel/vsyscall_64.c"
+has changed dramatically since I last looked at it.
+
+Since this is the case, I no longer need to trap the vsyscall page.
+
+Now however, that "vsyscall" was effectively replaced by vdso, it
+creates a new problem for me and probably for anyone else who uses
+some form of checkpoint/restore:
+
+Suppose a process is checkpointed because the system needs to reboot
+for a kernel-upgrade, then restored on the new and different kernel.
+The new VDSO page may no longer match the new kernel - it could for
+example fetch data from addresses in the vsyscall page that now
+contain different things; or in case the hardware also was changed,
+it may use machine-instructions that are now illegal.
+
+As I don't mind to forego the "fast" sys_time(), my obvious solution
+is to disable the vdso for traced processes that may be checkpointed.
+
+One way to do it would be by brute-force: straight after "execve"
+unmap the tracee's vdso page, then manipulate the ELF tables in
+its memory so the VDSO entry is gone and the library will not go
+looking for it.  Alternately, the function-table within the VDSO
+page can be erased.
+
+I just wonder whether you know of an easier and more standard way
+to disable the vdso in user-mode - ideally on a per-process basis,
+or otherwise, if it's too hard, on the whole computer.  I searched
+the web and found references to "/proc/sys/vm/vdso_enable", but I
+have no such file or "sysctl" option on my system.
+
+Best Regards,
+Amnon.
+
+
 > 
-> Tested-by: Peter Huewe <peter.huewe@infineon.com>
-
-Great, I'll send an updated version, thanks!
- 
-> >+++ b/drivers/char/tpm/tpm.c
-> >+#define TPM_ORD_STARTUP cpu_to_be32(153)
-> >+#define TPM_ST_CLEAR cpu_to_be16(1)
-> >+#define TPM_ST_STATE cpu_to_be16(2)
-> >+#define TPM_ST_DEACTIVATED cpu_to_be16(3)
-> >+static const struct tpm_input_header tpm_startup_header = {
-> >+	.tag = TPM_TAG_RQU_COMMAND,
-> >+	.length = cpu_to_be32(12),
-> >+	.ordinal = TPM_ORD_STARTUP
-> >+};
-> >+
-> > ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
-> > 		   const char *desc)
-> > {
-
-> Purely cosmetic question, but why did you define this before the
-> tpm_getcap and not tpm_startup?  All the other definitions are made
-> before they are used - so this should perhaps better be moved
-> directly before tpm_startup.  (Maybe we should move out these
-> definitions to a common location? Header?)
-
-Hmm, When I first read through this I thought all these definitions were
-being grouped together, easy to move.
-
-> >+struct tpm_startup_in {
-> >+	__be16	startup_type;
-> >+} __packed;
+> Hi Amnon,
+> 
+> Please read my previous email ;)
+> http://marc.info/?l=linux-kernel&m=135342649119153
+> 
+> On 11/21, u3557@miso.sublimeip.com wrote:
+> >
+> > Hi Oleg,
+> >
+> > > Or. Perhaps we can define TRAP_VSYSCALL and change emulate_vsyscall() to
+> > > do
+> > >
+> > >
+> > > 	if (current->ptrace && test_thread_flag(TIF_SYSCALL_TRACE))
+> > > 		send_sigtrap(TRAP_VSYSCALL, ...);
+> > >
+> > > if it returns true?
+> > >
+> >
+> > I wish it were possible, but the vsyscall page is entered in user-mode,
+> 
+> Only in NATIVE mode. emulate_vsyscall() runs in kernel mode.
+> 
+> And in the NATIVE mode PTRACE_SYSCALL should work just fine, because:
+> 
+> > The vsyscall page was designed in order to avoid user/kernel context
+> > switches,
+> 
+> True, it was. But not today. Please look at __vsyscall_page:
+> 
+> 	__vsyscall_page:
+> 
+> 		mov $__NR_gettimeofday, %rax
+> 		syscall
+> 		ret
+> 
+> If you want the "fast" sys_time() without entering the kernel, you can
+> use __vdso_time(). And since vdso has the user-space mapping you can
+> insert "int3" or use hw breakpoints.
+> 
+> At least this is my understanding after I glanced at the new implementation.
 > 
 > 
-> All the other user
-> __attribute__((packed));
-> Care to change to be consistent?
+> However. It is not that I think that TRAP_VSYSCALL is really good idea.
+> At least it needs another option...
+> 
+> Oleg.
+> 
+> 
 
-I used to __packed to avoid a checkpatch warning, they should probably
-all be changed?
-
-Jason
