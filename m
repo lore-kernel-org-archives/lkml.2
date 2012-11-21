@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab2KUL0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 06:26:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62998 "EHLO mx1.redhat.com"
+	id S1754494Ab2KULkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 06:40:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48133 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754202Ab2KUL0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 06:26:20 -0500
-Subject: [PATCH] sign-file: fix the perl warning message when extracting
- ASN.1
-To: torvalds@osdl.org, rusty@rustcorp.com.au
-From: David Howells <dhowells@redhat.com>
-Cc: Chun-Yi Lee <jlee@suse.com>, linux-kernel@vger.kernel.org
-Date: Wed, 21 Nov 2012 11:26:09 +0000
-Message-ID: <20121121112609.5567.70258.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1753542Ab2KULkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 06:40:32 -0500
+Date: Wed, 21 Nov 2012 11:40:26 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH, v2] mm, numa: Turn 4K pte NUMA faults into effective
+ hugepage ones
+Message-ID: <20121121114025.GY8218@suse.de>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+ <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
+ <20121120071704.GA14199@gmail.com>
+ <20121120152933.GA17996@gmail.com>
+ <20121120160918.GA18167@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121120160918.GA18167@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have the following warning message when running modules install for sign ko files:
+On Tue, Nov 20, 2012 at 05:09:18PM +0100, Ingo Molnar wrote:
+> 
+> Ok, the patch withstood a bit more testing as well. Below is a 
+> v2 version of it, with a couple of cleanups (no functional 
+> changes).
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> ----------------->
+> Subject: mm, numa: Turn 4K pte NUMA faults into effective hugepage ones
+> From: Ingo Molnar <mingo@kernel.org>
+> Date: Tue Nov 20 15:48:26 CET 2012
+> 
+> Reduce the 4K page fault count by looking around and processing
+> nearby pages if possible.
+> 
+> To keep the logic and cache overhead simple and straightforward
+> we do a couple of simplifications:
+> 
+>  - we only scan in the HPAGE_SIZE range of the faulting address
+>  - we only go as far as the vma allows us
+> 
+> Also simplify the do_numa_page() flow while at it and fix the
+> previous double faulting we incurred due to not properly fixing
+> up freshly migrated ptes.
+> 
+> Suggested-by: Mel Gorman <mgorman@suse.de>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  mm/memory.c |   99 ++++++++++++++++++++++++++++++++++++++----------------------
+>  1 file changed, 64 insertions(+), 35 deletions(-)
+> 
 
-# make modules_install
-...
-  INSTALL drivers/input/touchscreen/pcap_ts.ko
-Found = in conditional, should be == at scripts/sign-file line 164.
-Found = in conditional, should be == at scripts/sign-file line 161.
-Found = in conditional, should be == at scripts/sign-file line 159.
+This is functionally similar to what balancenuma does but there is one key
+difference worth noting. I only mark the PMD pmd_numa if all the pages
+pointed to by the updated[*] PTEs underneath are on the same node. The
+intention is that if the workload is converged on a PMD boundary then a
+migration of all the pages underneath will be remote->local copies. If the
+workload is not converged on a PMD boundary and you handle all the faults
+then you are potentially incurring remote->remote copies.
 
-This patch change replace '=' by '==' in elsif conditions for avoid the above warning messages.
+It also means that if the workload is not converged on the PMD boundary
+then a PTE fault is just one page. With yours, it will be the full PMD
+every time, right?
 
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+[*] Note I said only the updated ptes are checked. I do not check every
+    PTE underneath. I could but felt the benefit would be marginal.
 
- scripts/sign-file |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-
-diff --git a/scripts/sign-file b/scripts/sign-file
-index 87ca59d..974a20b 100755
---- a/scripts/sign-file
-+++ b/scripts/sign-file
-@@ -156,12 +156,12 @@ sub asn1_extract($$@)
- 
- 	if ($l == 0x1) {
- 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
--	} elsif ($l = 0x2) {
-+	} elsif ($l == 0x2) {
- 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
--	} elsif ($l = 0x3) {
-+	} elsif ($l == 0x3) {
- 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
- 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
--	} elsif ($l = 0x4) {
-+	} elsif ($l == 0x4) {
- 	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
- 	} else {
- 	    die $x509, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
-
+-- 
+Mel Gorman
+SUSE Labs
