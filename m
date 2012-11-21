@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2KUNqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:46:06 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59164 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752260Ab2KUNqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:46:04 -0500
-Message-ID: <1353505564.24807.12.camel@joe-AO722>
-Subject: Re: [PATCH RESEND] acpi: Fix logging when no pci_irq is allocated
-From: Joe Perches <joe@perches.com>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Nov 2012 05:46:04 -0800
-In-Reply-To: <1353487401-10279-1-git-send-email-daniel@numascale-asia.com>
-References: <1353487401-10279-1-git-send-email-daniel@numascale-asia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754351Ab2KUNts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:49:48 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:37486 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab2KUNtq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 08:49:46 -0500
+X-Greylist: delayed 7966 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 08:49:46 EST
+From: <leonid.moiseichuk@nokia.com>
+To: <glommer@parallels.com>
+CC: <kirill@shutemov.name>, <rientjes@google.com>,
+        <anton.vorontsov@linaro.org>, <penberg@kernel.org>, <mgorman@suse.de>,
+        <kosaki.motohiro@gmail.com>, <minchan@kernel.org>,
+        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <kernel-team@android.com>, <linux-man@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <mhocko@suse.cz>,
+        <hannes@cmpxchg.org>, <tj@kernel.org>
+Subject: RE: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+Thread-Topic: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+Thread-Index: AQHNvNajVAwxa4W29kaKh6XYDR71zpfeOmsAgAAB2ACAAAQ9AIAMBlsAgAAMv2eAADn4AIAACneAgAALWQCAANJLAIAAy5CAgACwRQCAABMJAIAADG2AgAQw74CAAdbngIABA1UAgAAU6GCAABNFAIAAHnsA
+Date: Wed, 21 Nov 2012 13:48:14 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB982690469CC31@008-AM1MPN1-002.mgdnok.nokia.com>
+References: <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net>
+ <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
+ <20121115085224.GA4635@lizard>
+ <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com>
+ <50A60873.3000607@parallels.com>
+ <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com>
+ <50A6AC48.6080102@parallels.com>
+ <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
+ <50AA3ABF.4090803@parallels.com>
+ <alpine.DEB.2.00.1211200950120.4200@chino.kir.corp.google.com>
+ <20121121093056.GA31882@shutemov.name>
+ <84FF21A720B0874AA94B46D76DB982690469CC00@008-AM1MPN1-002.mgdnok.nokia.com>
+ <50ACC104.5060006@parallels.com>
+In-Reply-To: <50ACC104.5060006@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-titus-version: 3.3.8.1
+x-tituslabs-classifications-30: TLPropertyRoot=Nokia;Confidentiality=Nokia
+ Internal Use Only;Project=None;
+x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IqbQaTB01pYvlfczhoKjdi5ZneV8m7WL0RqcskKq273oFFVbp422poiaQKmewK6sRvzp6tEaPBmSXpqOn87QrZraLNfMxPAISx+mffQNGbLNclMYovdPaHi2YGVB5mHgI+zCjdRXVbm6VFeCiEpR7yJFZ9NVSFN8NDbl3qwdZ61ArHOwYowz5dgHMgZ/jN918odmb48UcnNNyXl3TyOolxs5NYuG+vYOiqhMZ+Y+S2v46z3f+M1N+3vlgN/gAEtOVg==
+x-headerinfofordlp: None
+x-originating-ip: [172.21.82.153]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 21 Nov 2012 13:48:15.0545 (UTC) FILETIME=[DB16A290:01CDC7EE]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-21 at 16:43 +0800, Daniel J Blueman wrote:
-> Previously a new line is implicitly added in the no GSI case:
-> 
-> [    7.185182] pci 0001:00:12.0: can't derive routing for PCI INT A
-> [    7.191352] pci 0001:00:12.0: PCI INT A: no GSI
-> [    7.195956]  - using ISA IRQ 10
-> 
-> The code thus prints a blank line where no legacy IRQ is available:
-> 
-> [    1.650124] pci 0000:00:14.0: can't derive routing for PCI INT A
-> [    1.650126] pci 0000:00:14.0: PCI INT A: no GSI
-> [    1.650126] 
-> [    1.650180] pci 0000:00:14.0: can't derive routing for PCI INT A
-> 
-> Fix this by making the newline explicit and removing the superfluous
-> one.
 
-This breaks the logging code below it when there is an ISA irq.
+-----Original Message-----
+From: ext Glauber Costa [mailto:glommer@parallels.com] 
+Sent: 21 November, 2012 13:55
+....
+So I'll say it again: if this is always global, there is no reason any
+cgroup needs to be involved. If this turns out to be per-process, as
+Anton suggested in a recent e-mail, I don't see any reason to have
+cgroups involved as well.
+-----
 
-The below works, but is a workaround for a defect in the printk
-subsystem introduced by a logging change that will be fixed in
-a near future release.
+Per-process memory tracking has no much sense: process should consume all available memory but work fast. Also this approach required knowledge about process deps to take into account dependencies e.g. in dbus or Xorg. If you need to know how much memory process consumed in particular moment you can use /proc/self/smaps, that is easier.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/acpi/pci_irq.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index f288e00..68a921d 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -458,19 +458,19 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
- 	 */
- 	if (gsi < 0) {
- 		u32 dev_gsi;
--		dev_warn(&dev->dev, "PCI INT %c: no GSI", pin_name(pin));
- 		/* Interrupt Line values above 0xF are forbidden */
- 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
- 		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
--			printk(" - using ISA IRQ %d\n", dev->irq);
-+			dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
-+				 pin_name(pin), dev->irq);
- 			acpi_register_gsi(&dev->dev, dev_gsi,
- 					  ACPI_LEVEL_SENSITIVE,
- 					  ACPI_ACTIVE_LOW);
--			return 0;
- 		} else {
--			printk("\n");
--			return 0;
-+			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
-+				 pin_name(pin));
- 		}
-+		return 0;
- 	}
- 
- 	rc = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
-
-
+Best Wishes,
+Leonid
