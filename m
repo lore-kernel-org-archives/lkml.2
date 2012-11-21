@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2KULxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 06:53:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48590 "EHLO mx2.suse.de"
+	id S1754607Ab2KULzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 06:55:00 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:57219 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937Ab2KULxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 06:53:02 -0500
-Date: Wed, 21 Nov 2012 11:52:55 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-Message-ID: <20121121115255.GA8218@suse.de>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
- <20121120152933.GA17996@gmail.com>
- <20121120175647.GA23532@gmail.com>
- <1353462853.31820.93.camel@oc6622382223.ibm.com>
+	id S1753937Ab2KULy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 06:54:58 -0500
+Message-ID: <50ACC104.5060006@parallels.com>
+Date: Wed, 21 Nov 2012 15:54:44 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1353462853.31820.93.camel@oc6622382223.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <leonid.moiseichuk@nokia.com>
+CC: <kirill@shutemov.name>, <rientjes@google.com>,
+        <anton.vorontsov@linaro.org>, <penberg@kernel.org>, <mgorman@suse.de>,
+        <kosaki.motohiro@gmail.com>, <minchan@kernel.org>,
+        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <kernel-team@android.com>, <linux-man@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <mhocko@suse.cz>,
+        <hannes@cmpxchg.org>, <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+References: <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com> <50AA3ABF.4090803@parallels.com> <alpine.DEB.2.00.1211200950120.4200@chino.kir.corp.google.com> <20121121093056.GA31882@shutemov.name> <84FF21A720B0874AA94B46D76DB982690469CC00@008-AM1MPN1-002.mgdnok.nokia.com>
+In-Reply-To: <84FF21A720B0874AA94B46D76DB982690469CC00@008-AM1MPN1-002.mgdnok.nokia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 07:54:13PM -0600, Andrew Theurer wrote:
-> On Tue, 2012-11-20 at 18:56 +0100, Ingo Molnar wrote:
-> > * Ingo Molnar <mingo@kernel.org> wrote:
-> > 
-> > > ( The 4x JVM regression is still an open bug I think - I'll
-> > >   re-check and fix that one next, no need to re-report it,
-> > >   I'm on it. )
-> > 
-> > So I tested this on !THP too and the combined numbers are now:
-> > 
-> >                                           |
-> >   [ SPECjbb multi-4x8 ]                   |
-> >   [ tx/sec            ]  v3.7             |  numa/core-v16
-> >   [ higher is better  ] -----             |  -------------
-> >                                           |
-> >               +THP:      639k             |       655k            +2.5%
-> >               -THP:      510k             |       517k            +1.3%
-> > 
-> > So it's not a regression anymore, regardless of whether THP is 
-> > enabled or disabled.
-> > 
-> > The current updated table of performance results is:
-> > 
-> > -------------------------------------------------------------------------
-> >   [ seconds         ]    v3.7  AutoNUMA   |  numa/core-v16    [ vs. v3.7]
-> >   [ lower is better ]   -----  --------   |  -------------    -----------
-> >                                           |
-> >   numa01                340.3    192.3    |      139.4          +144.1%
-> >   numa01_THREAD_ALLOC   425.1    135.1    |	 121.1          +251.0%
-> >   numa02                 56.1     25.3    |       17.5          +220.5%
-> >                                           |
-> >   [ SPECjbb transactions/sec ]            |
-> >   [ higher is better         ]            |
-> >                                           |
-> >   SPECjbb 1x32 +THP      524k     507k    |	  638k           +21.7%
-> >   SPECjbb 1x32 !THP      395k             |       512k           +29.6%
-> >                                           |
-> > -----------------------------------------------------------------------
-> >                                           |
-> >   [ SPECjbb multi-4x8 ]                   |
-> >   [ tx/sec            ]  v3.7             |  numa/core-v16
-> >   [ higher is better  ] -----             |  -------------
-> >                                           |
-> >               +THP:      639k             |       655k            +2.5%
-> >               -THP:      510k             |       517k            +1.3%
-> > 
-> > So I think I've addressed all regressions reported so far - if 
-> > anyone can still see something odd, please let me know so I can 
-> > reproduce and fix it ASAP.
-> 
-> I can confirm single JVM JBB is working well for me.  I see a 30%
-> improvement over autoNUMA.  What I can't make sense of is some perf
-> stats (taken at 80 warehouses on 4 x WST-EX, 512GB memory):
-> 
+Hi,
+>
+> Memory notifications are quite irrelevant to partitioning and cgroups. The use-case is related to user-space handling low memory. Meaning the functionality should be accurate with specific granularity (e.g. 1 MB) and time (0.25s is OK) but better to have it as simple and battery-friendly. I prefer to have pseudo-device-based  text API because it is easy to debug and investigate. It would be nice if it will be possible to use simple scripting to point what kind of memory on which levels need to be tracked but private/shared dirty is #1 and memcg cannot handle it.
+>
+If that is the case, then fine.
+The reason I jumped in talking about memcg, is that it was mentioned
+that at some point we'd like to have those notifications on a per-group
+basis.
 
-I'm curious about possible effects with profiling. Can you rerun just
-this test without any profiling and see if the gain is the same? My own
-tests are running monitors but they only fire every 10 seconds and are
-not running profiles.
+So I'll say it again: if this is always global, there is no reason any
+cgroup needs to be involved. If this turns out to be per-process, as
+Anton suggested in a recent e-mail, I don't see any reason to have
+cgroups involved as well.
 
--- 
-Mel Gorman
-SUSE Labs
+But if this needs to be extended to be per-cgroup, then past experience
+shows that we need to be really careful not to start duplicating
+infrastructure, and creating inter-dependencies like it happened to
+other groups in the past.
