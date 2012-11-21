@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab2KUJ0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:26:08 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:50206 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937Ab2KUJ0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:26:05 -0500
-Message-ID: <50AC9E20.2060208@parallels.com>
-Date: Wed, 21 Nov 2012 13:25:52 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>,
-        <linux-man@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-References: <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com> <50AA3FEF.2070100@parallels.com> <alpine.DEB.2.00.1211201013460.4200@chino.kir.corp.google.com> <50AC9070.2030009@parallels.com> <20121121084603.GA18159@lizard>
-In-Reply-To: <20121121084603.GA18159@lizard>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1753584Ab2KUJ1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:27:35 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56382 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab2KUJ1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 04:27:33 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-dc-50ac9e81b791
+From: Bongkyu Kim <bongkyu.kim@lge.com>
+To: grant.likely@secretlab.ca, rob.herring@calxeda.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Bongkyu Kim <bongkyu.kim@lge.com>
+Subject: [PATCH] of/i2c: check status property for i2c client
+Date: Wed, 21 Nov 2012 17:57:50 +0900
+Message-Id: <1353488270-14723-1-git-send-email-bongkyu.kim@lge.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 12:46 PM, Anton Vorontsov wrote:
-> On Wed, Nov 21, 2012 at 12:27:28PM +0400, Glauber Costa wrote:
->> On 11/20/2012 10:23 PM, David Rientjes wrote:
->>> Anton can correct me if I'm wrong, but I certainly don't think this is 
->>> where mempressure is headed: I don't think any accounting needs to be done
-> 
-> Yup, I'd rather not do any accounting, at least not in bytes.
+Because of_i2c_register_devices() do not check status property,
+all i2c clients are registered.
 
-It doesn't matter here, but memcg doesn't do any accounting in bytes as
-well. It only display it in bytes, but internally, it's all pages. The
-bytes representation is convenient, because then you can be agnostic of
-page sizes.
+This patch add checking status property for i2c client.
+After this patch, if status property is absent or "okay" or "ok",
+i2c client will be registered.
 
-> 
->>> and, if it is, it's a design issue that should be addressed now rather 
->>> than later.  I believe notifications should occur on current's mempressure 
->>> cgroup depending on its level of reclaim: nobody cares if your memcg has a 
->>> limit of 64GB when you only have 32GB of RAM, we'll want the notification.
->>
->> My main concern is that to trigger those notifications, one would have
->> to first determine whether or not the particular group of tasks is under
->> pressure.
-> 
-> As far as I understand, the notifications will be triggered by a process
-> that tries to allocate memory. So, effectively that would be a per-process
-> pressure.
-> 
-> So, if one process in a group is suffering, we notify that "a process in a
-> group is under pressure", and the notification goes to a cgroup listener
+Signed-off-by: Bongkyu Kim <bongkyu.kim@lge.com>
+---
+ drivers/of/of_i2c.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-
-If you effectively have a per-process mechanism, why do you need an
-extra cgroup at all?
-
-It seems to me that this is simply something that should be inherited
-over fork, and then you register the notifier in your first process, and
-it will be valid for everybody in the process tree.
-
-If you need tasks in different processes to respond to the same
-notifier, then you just register the same notifier in two different
-processes.
-
+diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+index 3550f3b..2552fc5 100644
+--- a/drivers/of/of_i2c.c
++++ b/drivers/of/of_i2c.c
+@@ -37,6 +37,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+ 
+ 		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
+ 
++		if (!of_device_is_available(node))
++			continue;
++
+ 		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
+ 			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
+ 				node->full_name);
+-- 
+1.8.0
 
