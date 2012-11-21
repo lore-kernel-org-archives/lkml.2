@@ -1,66 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab2KUEYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:24:12 -0500
-Received: from linux-sh.org ([111.68.239.195]:41840 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937Ab2KUEYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:24:10 -0500
-Date: Wed, 21 Nov 2012 13:23:57 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: Re: [PATCH 00/42] SH pin control and GPIO rework
-Message-ID: <20121121042356.GB14005@linux-sh.org>
-References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	id S1754068Ab2KUEYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:24:11 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56725 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab2KUEYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:24:09 -0500
+Message-ID: <50AC5764.7030401@gmail.com>
+Date: Tue, 20 Nov 2012 22:24:04 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linaro-dev@lists.linaro.org, andriy.shevchenko@intel.com,
+        swarren@wwwdotorg.org, patches@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dt: add helper function to read u8 & u16 variables &
+ arrays
+References: <0ee5b74534a09d75c14b22c2d9330c4971ab30fb.1353386646.git.viresh.kumar@linaro.org>
+In-Reply-To: <0ee5b74534a09d75c14b22c2d9330c4971ab30fb.1353386646.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 03:27:01AM +0100, Laurent Pinchart wrote:
-> Hi everybody,
+On 11/19/2012 10:45 PM, Viresh Kumar wrote:
+> This adds following helper routines:
+> - of_property_read_u8_array()
+> - of_property_read_u16_array()
+> - of_property_read_u8()
+> - of_property_read_u16()
 > 
-> Here's a pretty large patch series that rework pin control and GPIO support
-> for SH and ARM SH/Renesas Mobile/Car platforms. The patches are based on top
-> of v3.7-rc6. You can get them from my git tree at
+> This expects arrays from DT to be passed as:
+> - u8 array:
+> 	property = /bits/ 8 <0x50 0x60 0x70>;
+> - u16 array:
+> 	property = /bits/ 16 <0x5000 0x6000 0x7000>;
 > 
-> 	git://linuxtv.org/pinchartl/fbdev.git pinmux
-> 
-> The idea behind these patches is to move SoC-specific pin control code from
-> arch/ to drivers/pinctrl/ and use the Linux device model to instantiate the
-> pin control device. This is required to add device tree support for the pin
-> control device.
-> 
-> The code has been compile-tested on all modified platforms except SH7264 and
-> SH7269, and runtime tested on SH7372 (Mackerel), SH73A0 (KZM-A9-GT) and
-> R8A7740 (Armadillo) so far. I will runtime test it on R8A7779 (Marzen).
-> 
-> The SH7264 and SH7269 platforms have no gpiolib support so the PFC code can't
-> be compiled for them. As the currently implemented arch-level pinmux support
-> also depends on generic GPIO, we're moving from a situation where the code
-> isn't used to a different situation where the code isn't used. I don't
-> consider that as a regression.
-> 
-> Sorry for the numerous checkpatch warnings, patches that move code around or
-> rename files don't modify the content to make review easier, and thus carry
-> warnings from the existing code.
-> 
-> Currently missing from this series are DT bindings. I will send patches for
-> those a bit later. As they will build on top of this series I would appreciate
-> reviews (and hopefilly ack's).
-> 
-I've only given it a quick look, but in general it looks good!
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-For the series:
+Applied.
 
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+Rob
+
+> ---
+> V2->V3:
+> - Expect u8 & u16 arrays to be passed using: /bits/ 8 or 16
+> - remove common macro, as not much common now :(
+> - Tested on ARM platform.
+> 
+>  drivers/of/base.c  | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of.h | 30 +++++++++++++++++++++
+>  2 files changed, 107 insertions(+)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index af3b22a..f564e31 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -671,12 +671,89 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+>  EXPORT_SYMBOL(of_find_node_by_phandle);
+>  
+>  /**
+> + * of_property_read_u8_array - Find and read an array of u8 from a property.
+> + *
+> + * @np:		device node from which the property value is to be read.
+> + * @propname:	name of the property to be searched.
+> + * @out_value:	pointer to return value, modified only if return value is 0.
+> + * @sz:		number of array elements to read
+> + *
+> + * Search for a property in a device node and read 8-bit value(s) from
+> + * it. Returns 0 on success, -EINVAL if the property does not exist,
+> + * -ENODATA if property does not have a value, and -EOVERFLOW if the
+> + * property data isn't large enough.
+> + *
+> + * dts entry of array should be like:
+> + *	property = /bits/ 8 <0x50 0x60 0x70>;
+> + *
+> + * The out_value is modified only if a valid u8 value can be decoded.
+> + */
+> +int of_property_read_u8_array(const struct device_node *np,
+> +			const char *propname, u8 *out_values, size_t sz)
+> +{
+> +	struct property *prop = of_find_property(np, propname, NULL);
+> +	const u8 *val;
+> +
+> +	if (!prop)
+> +		return -EINVAL;
+> +	if (!prop->value)
+> +		return -ENODATA;
+> +	if ((sz * sizeof(*out_values)) > prop->length)
+> +		return -EOVERFLOW;
+> +
+> +	val = prop->value;
+> +	while (sz--)
+> +		*out_values++ = *val++;
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+> +
+> +/**
+> + * of_property_read_u16_array - Find and read an array of u16 from a property.
+> + *
+> + * @np:		device node from which the property value is to be read.
+> + * @propname:	name of the property to be searched.
+> + * @out_value:	pointer to return value, modified only if return value is 0.
+> + * @sz:		number of array elements to read
+> + *
+> + * Search for a property in a device node and read 16-bit value(s) from
+> + * it. Returns 0 on success, -EINVAL if the property does not exist,
+> + * -ENODATA if property does not have a value, and -EOVERFLOW if the
+> + * property data isn't large enough.
+> + *
+> + * dts entry of array should be like:
+> + *	property = /bits/ 16 <0x5000 0x6000 0x7000>;
+> + *
+> + * The out_value is modified only if a valid u16 value can be decoded.
+> + */
+> +int of_property_read_u16_array(const struct device_node *np,
+> +			const char *propname, u16 *out_values, size_t sz)
+> +{
+> +	struct property *prop = of_find_property(np, propname, NULL);
+> +	const __be16 *val;
+> +
+> +	if (!prop)
+> +		return -EINVAL;
+> +	if (!prop->value)
+> +		return -ENODATA;
+> +	if ((sz * sizeof(*out_values)) > prop->length)
+> +		return -EOVERFLOW;
+> +
+> +	val = prop->value;
+> +	while (sz--)
+> +		*out_values++ = be16_to_cpup(val++);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(of_property_read_u16_array);
+> +
+> +/**
+>   * of_property_read_u32_array - Find and read an array of 32 bit integers
+>   * from a property.
+>   *
+>   * @np:		device node from which the property value is to be read.
+>   * @propname:	name of the property to be searched.
+>   * @out_value:	pointer to return value, modified only if return value is 0.
+> + * @sz:		number of array elements to read
+>   *
+>   * Search for a property in a device node and read 32-bit value(s) from
+>   * it. Returns 0 on success, -EINVAL if the property does not exist,
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index b4e50d5..bfdc130 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -223,6 +223,10 @@ extern struct device_node *of_find_node_with_property(
+>  extern struct property *of_find_property(const struct device_node *np,
+>  					 const char *name,
+>  					 int *lenp);
+> +extern int of_property_read_u8_array(const struct device_node *np,
+> +			const char *propname, u8 *out_values, size_t sz);
+> +extern int of_property_read_u16_array(const struct device_node *np,
+> +			const char *propname, u16 *out_values, size_t sz);
+>  extern int of_property_read_u32_array(const struct device_node *np,
+>  				      const char *propname,
+>  				      u32 *out_values,
+> @@ -364,6 +368,18 @@ static inline struct device_node *of_find_compatible_node(
+>  	return NULL;
+>  }
+>  
+> +static inline int of_property_read_u8_array(const struct device_node *np,
+> +			const char *propname, u8 *out_values, size_t sz)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+> +static inline int of_property_read_u16_array(const struct device_node *np,
+> +			const char *propname, u16 *out_values, size_t sz)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>  static inline int of_property_read_u32_array(const struct device_node *np,
+>  					     const char *propname,
+>  					     u32 *out_values, size_t sz)
+> @@ -470,6 +486,20 @@ static inline bool of_property_read_bool(const struct device_node *np,
+>  	return prop ? true : false;
+>  }
+>  
+> +static inline int of_property_read_u8(const struct device_node *np,
+> +				       const char *propname,
+> +				       u8 *out_value)
+> +{
+> +	return of_property_read_u8_array(np, propname, out_value, 1);
+> +}
+> +
+> +static inline int of_property_read_u16(const struct device_node *np,
+> +				       const char *propname,
+> +				       u16 *out_value)
+> +{
+> +	return of_property_read_u16_array(np, propname, out_value, 1);
+> +}
+> +
+>  static inline int of_property_read_u32(const struct device_node *np,
+>  				       const char *propname,
+>  				       u32 *out_value)
+> 
+
