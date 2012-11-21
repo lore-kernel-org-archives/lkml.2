@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2KUNts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:49:48 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:37486 "EHLO mgw-da01.nokia.com"
+	id S1754338Ab2KUNyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:54:45 -0500
+Received: from mail2.charite.de ([141.42.206.200]:50881 "EHLO mail2.charite.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab2KUNtq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:49:46 -0500
-X-Greylist: delayed 7966 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 08:49:46 EST
-From: <leonid.moiseichuk@nokia.com>
-To: <glommer@parallels.com>
-CC: <kirill@shutemov.name>, <rientjes@google.com>,
-        <anton.vorontsov@linaro.org>, <penberg@kernel.org>, <mgorman@suse.de>,
-        <kosaki.motohiro@gmail.com>, <minchan@kernel.org>,
-        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <kernel-team@android.com>, <linux-man@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <mhocko@suse.cz>,
-        <hannes@cmpxchg.org>, <tj@kernel.org>
-Subject: RE: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-Thread-Topic: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-Thread-Index: AQHNvNajVAwxa4W29kaKh6XYDR71zpfeOmsAgAAB2ACAAAQ9AIAMBlsAgAAMv2eAADn4AIAACneAgAALWQCAANJLAIAAy5CAgACwRQCAABMJAIAADG2AgAQw74CAAdbngIABA1UAgAAU6GCAABNFAIAAHnsA
-Date: Wed, 21 Nov 2012 13:48:14 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB982690469CC31@008-AM1MPN1-002.mgdnok.nokia.com>
-References: <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net>
- <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
- <20121115085224.GA4635@lizard>
- <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com>
- <50A60873.3000607@parallels.com>
- <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com>
- <50A6AC48.6080102@parallels.com>
- <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
- <50AA3ABF.4090803@parallels.com>
- <alpine.DEB.2.00.1211200950120.4200@chino.kir.corp.google.com>
- <20121121093056.GA31882@shutemov.name>
- <84FF21A720B0874AA94B46D76DB982690469CC00@008-AM1MPN1-002.mgdnok.nokia.com>
- <50ACC104.5060006@parallels.com>
-In-Reply-To: <50ACC104.5060006@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-titus-version: 3.3.8.1
-x-tituslabs-classifications-30: TLPropertyRoot=Nokia;Confidentiality=Nokia
- Internal Use Only;Project=None;
-x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IqbQaTB01pYvlfczhoKjdi5ZneV8m7WL0RqcskKq273oFFVbp422poiaQKmewK6sRvzp6tEaPBmSXpqOn87QrZraLNfMxPAISx+mffQNGbLNclMYovdPaHi2YGVB5mHgI+zCjdRXVbm6VFeCiEpR7yJFZ9NVSFN8NDbl3qwdZ61ArHOwYowz5dgHMgZ/jN918odmb48UcnNNyXl3TyOolxs5NYuG+vYOiqhMZ+Y+S2v46z3f+M1N+3vlgN/gAEtOVg==
-x-headerinfofordlp: None
-x-originating-ip: [172.21.82.153]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752260Ab2KUNyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 08:54:44 -0500
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 08:54:44 EST
+Date: Wed, 21 Nov 2012 14:47:19 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: WARNING: at arch/x86/kernel/apic/ipi.c:109
+ default_send_IPI_mask_logical+0x97/0xc7()
+Message-ID: <20121121134718.GZ11530@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-X-OriginalArrivalTime: 21 Nov 2012 13:48:15.0545 (UTC) FILETIME=[DB16A290:01CDC7EE]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+from dmesg on a vanilla 3.6.7
 
------Original Message-----
-From: ext Glauber Costa [mailto:glommer@parallels.com] 
-Sent: 21 November, 2012 13:55
-....
-So I'll say it again: if this is always global, there is no reason any
-cgroup needs to be involved. If this turns out to be per-process, as
-Anton suggested in a recent e-mail, I don't see any reason to have
-cgroups involved as well.
------
+# uname -a
+Linux mail2.charite.de 3.6.7 #1 SMP Sun Nov 18 19:49:09 CET 2012 i686 GNU/Linux
 
-Per-process memory tracking has no much sense: process should consume all available memory but work fast. Also this approach required knowledge about process deps to take into account dependencies e.g. in dbus or Xorg. If you need to know how much memory process consumed in particular moment you can use /proc/self/smaps, that is easier.
+Nov 19 10:54:16 mail2 kernel: [52464.940539] ------------[ cut here ]------------
+Nov 19 10:54:16 mail2 kernel: [52464.940566] WARNING: at arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x97/0xc7()
+Nov 19 10:54:16 mail2 kernel: [52464.940570] Hardware name: ProLiant DL360 G4
+Nov 19 10:54:16 mail2 kernel: [52464.940573] empty IPI mask
+Nov 19 10:54:16 mail2 kernel: [52464.940576] Modules linked in: nfnetlink_log nfnetlink ipv6 microcode psmouse container hpwdt tg3 thermal rng_core i6300esb button processor
+Nov 19 10:54:16 mail2 kernel: [52464.940603] Pid: 27794, comm: clamd Not tainted 3.6.7 #1
+Nov 19 10:54:16 mail2 kernel: [52464.940606] Call Trace:
+Nov 19 10:54:16 mail2 kernel: [52464.940620]  [<c1027f84>] warn_slowpath_common+0x67/0x8e
+Nov 19 10:54:16 mail2 kernel: [52464.940627]  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
+Nov 19 10:54:16 mail2 kernel: [52464.940631]  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
+Nov 19 10:54:16 mail2 kernel: [52464.940636]  [<c1028027>] warn_slowpath_fmt+0x2e/0x30
+Nov 19 10:54:16 mail2 kernel: [52464.940641]  [<c101beef>] default_send_IPI_mask_logical+0x97/0xc7
+Nov 19 10:54:16 mail2 kernel: [52464.940650]  [<c101aac4>] native_send_call_func_ipi+0x42/0x54
+Nov 19 10:54:16 mail2 kernel: [52464.940657]  [<c105c5fa>] smp_call_function_many+0x160/0x1dd
+Nov 19 10:54:16 mail2 kernel: [52464.940663]  [<c1024fe7>] native_flush_tlb_others+0x26/0x28
+Nov 19 10:54:16 mail2 kernel: [52464.940667]  [<c1025087>] flush_tlb_mm_range+0x4f/0x18e
+Nov 19 10:54:16 mail2 kernel: [52464.940676]  [<c108f706>] tlb_flush_mmu+0x7a/0x7c
+Nov 19 10:54:16 mail2 kernel: [52464.940681]  [<c108f71a>] tlb_finish_mmu+0x12/0x33
+Nov 19 10:54:16 mail2 kernel: [52464.940686]  [<c109473f>] unmap_region+0x88/0x9e
+Nov 19 10:54:16 mail2 kernel: [52464.940691]  [<c1095bb9>] do_munmap+0x1bb/0x2aa
+Nov 19 10:54:16 mail2 kernel: [52464.940696]  [<c1095cda>] vm_munmap+0x32/0x45
+Nov 19 10:54:16 mail2 kernel: [52464.940700]  [<c10967e6>] sys_munmap+0xe/0x10
+Nov 19 10:54:16 mail2 kernel: [52464.940710]  [<c129ff17>] sysenter_do_call+0x12/0x26
+Nov 19 10:54:16 mail2 kernel: [52464.940713] ---[ end trace a5fffac357fb1c34 ]---
 
-Best Wishes,
-Leonid
+-- 
+Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
+ralf.hildebrandt@charite.de        Campus Benjamin Franklin
+http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
+Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
