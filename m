@@ -1,138 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2KUS7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:59:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60368 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab2KUS7s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:59:48 -0500
+	id S1755707Ab2KUTCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:02:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42754 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755547Ab2KUTCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 14:02:04 -0500
+Date: Wed, 21 Nov 2012 19:01:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
+Message-ID: <20121121190157.GL8218@suse.de>
+References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
+ <20121121165342.GH8218@suse.de>
+ <20121121170306.GA28811@gmail.com>
+ <20121121172011.GI8218@suse.de>
+ <20121121173316.GA29311@gmail.com>
+ <20121121180200.GK8218@suse.de>
+ <20121121182158.GA29893@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50AD0CA1.8000904@zytor.com>
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
-	<50AD0CA1.8000904@zytor.com>
-Date: Wed, 21 Nov 2012 10:59:46 -0800
-X-Google-Sender-Auth: Fthp9pSggoN1MfuQp0Q5E1bJHjQ
-Message-ID: <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121121182158.GA29893@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 9:17 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/20/2012 11:16 PM, Yinghai Lu wrote:
->>
->>
->> diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
->> index 9efceff..a8263f7 100644
->> --- a/Documentation/x86/boot.txt
->> +++ b/Documentation/x86/boot.txt
->> @@ -57,6 +57,9 @@ Protocol 2.10:        (Kernel 2.6.31) Added a protocol
->> for relaxed alignment
->>   Protocol 2.11:        (Kernel 3.6) Added a field for offset of EFI
->> handover
->>                 protocol entry point.
->>
->> +Protocol 2.12: (Kernel 3.9) Added three fields for loading bzImage and
->> +                ramdisk above 4G with 64bit.
->> +
->>   **** MEMORY LAYOUT
->>
->>   The traditional memory map for the kernel loader, used for Image or
->> @@ -182,7 +185,7 @@ Offset      Proto   Name            Meaning
->>   0230/4        2.05+   kernel_alignment Physical addr alignment required
->> for kernel
->>   0234/1        2.05+   relocatable_kernel Whether kernel is relocatable
->> or not
->>   0235/1        2.10+   min_alignment   Minimum alignment, as a power of
->> two
->> -0236/2 N/A     pad3            Unused
->> +0236/2 2.12+   xloadflags      Boot protocal option flags
->
->                                              ^^^^^^^^
-sorry.
->
->>   0238/4        2.06+   cmdline_size    Maximum size of the kernel command
->> line
->>   023C/4        2.07+   hardware_subarch Hardware subarchitecture
->>   0240/8        2.07+   hardware_subarch_data Subarchitecture-specific
->> data
->> @@ -193,6 +196,9 @@ Offset      Proto   Name            Meaning
->>   0258/8        2.10+   pref_address    Preferred loading address
->>   0260/4        2.10+   init_size       Linear memory required during
->> initialization
->>   0264/4        2.11+   handover_offset Offset of handover entry point
->> +0268/4 2.12+   ext_ramdisk_image ramdisk_image 32 bits
->
->
-> "high 32 bits" presumably...
+On Wed, Nov 21, 2012 at 07:21:58PM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Wed, Nov 21, 2012 at 06:33:16PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Mel Gorman <mgorman@suse.de> wrote:
+> > > 
+> > > > On Wed, Nov 21, 2012 at 06:03:06PM +0100, Ingo Molnar wrote:
+> > > > > 
+> > > > > * Mel Gorman <mgorman@suse.de> wrote:
+> > > > > 
+> > > > > > On Wed, Nov 21, 2012 at 10:21:06AM +0000, Mel Gorman wrote:
+> > > > > > > 
+> > > > > > > I am not including a benchmark report in this but will be posting one
+> > > > > > > shortly in the "Latest numa/core release, v16" thread along with the latest
+> > > > > > > schednuma figures I have available.
+> > > > > > > 
+> > > > > > 
+> > > > > > Report is linked here https://lkml.org/lkml/2012/11/21/202
+> > > > > > 
+> > > > > > I ended up cancelling the remaining tests and restarted with
+> > > > > > 
+> > > > > > 1. schednuma + patches posted since so that works out as
+> > > > > 
+> > > > > Mel, I'd like to ask you to refer to our tree as numa/core or 
+> > > > > 'numacore' in the future. Would such a courtesy to use the 
+> > > > > current name of our tree be possible?
+> > > > > 
+> > > > 
+> > > > Sure, no problem.
+> > > 
+> > > Thanks!
+> > > 
+> > > I ran a quick test with your 'balancenuma v4' tree and while 
+> > > numa02 and numa01-THREAD-ALLOC performance is looking good, 
+> > > numa01 performance does not look very good:
+> > > 
+> > >                     mainline    numa/core      balancenuma-v4
+> > >      numa01:           340.3       139.4          276 secs
+> > > 
+> > > 97% slower than numa/core.
+> > > 
+> > 
+> > It would be. numa01 is an adverse workload where all threads 
+> > are hammering the same memory.  The two-stage filter in 
+> > balancenuma restricts the amount of migration it does so it 
+> > ends up in a situation where it cannot balance properly. [...]
+> 
+> Do you mean this "balancenuma v4" patch attributed to you:
+> 
+>  Subject: mm: Numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
+>  From: Mel Gorman <mgorman@suse.de>
+>  Date: Wed, 21 Nov 2012 10:21:42 +0000
+> 
 
-ok
+Yes.
 
->
->
->> +026C/4 2.12+   ext_ramdisk_size ramdisk_size high 32 bits
->> +0270/4 2.12+   ext_cmd_line_ptr cmd_line_ptr high 32 bits
->
->
-> I'm looking at these three fields and I'm getting worried about space --
-> there are only two more word-sized fields possible in this structure. Since
-> these fields are not initialized (default to zero) and almost certainly
-> aren't useful for people entering via the 16-bit entry point I think we
-> should move them out of struct setup_header and into the remainder of struct
-> boot_param.
+>  ...
+> 
+>  Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> which has:
+> 
+>                 /*
+>                  * Multi-stage node selection is used in conjunction
+>                  * with a periodic migration fault to build a temporal
+>                  * task<->page relation. By using a two-stage filter we
+>                  * remove short/unlikely relations.
+>                  *
+>                  * Using P(p) ~ n_p / n_t as per frequentist
+>                  * probability, we can equate a task's usage of a
+>                  * particular page (n_p) per total usage of this
+>                  * page (n_t) (in a given time-span) to a probability.
+>                  *
+>                  * Our periodic faults will sample this probability and
+>                  * getting the same result twice in a row, given these
+>                  * samples are fully independent, is then given by
+>                  * P(n)^2, provided our sample period is sufficiently
+>                  * short compared to the usage pattern.
+>                  *
+>                  * This quadric squishes small probabilities, making
+>                  * it less likely we act on an unlikely task<->page
+>                  * relation.
+> 
+> This looks very similar to the code and text that Peter wrote 
+> for numa/core:
+> 
+> /*
+>  * Multi-stage node selection is used in conjunction with a periodic
+>  * migration fault to build a temporal task<->page relation. By
+>  * using a two-stage filter we remove short/unlikely relations.
+>  *
+>  * Using P(p) ~ n_p / n_t as per frequentist probability, we can
+>  * equate a task's usage of a particular page (n_p) per total usage
+>  * of this page (n_t) (in a given time-span) to a probability.
+>  *
+>  * Our periodic faults will then sample this probability and getting
+>  * the same result twice in a row, given these samples are fully
+>  * independent, is then given by P(n)^2, provided our sample period
+>  * is sufficiently short compared to the usage pattern.
+>  *
+>  * This quadric squishes small probabilities, making it less likely
+>  * we act on an unlikely task<->page relation.
+>  *
+>  * Return the best node ID this page should be on, or -1 if it should
+>  * stay where it is.
+>  */
+> 
+> see commit:
+> 
+>   30f93abc6cb3 sched, numa, mm: Add the scanning page fault machinery
+> 
+> ?
+> 
+> I think it's the very same concept - yours is taken from an 
+> older sched/numa commit and attributed to yourself? [If so then 
+> please fix the attribution.]
 
-in boot_param:
+Yes, it's completely based on earlier sched/numa patches. In many of the
+patches you'll see notes where I documented what patches I originally
+based on -- be it from sched/numa, autonuma or some combination of both.
+In many cases I could not keep the signed-off-by because the end result
+was simply too different to claim that the author was happy with it. I was
+hoping that these notes would convert to signed-offs-by after review from
+the original authors who were cc'd at all times.
 
-        struct setup_header hdr;    /* setup header */  /* 0x1f1 */
-        __u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
-        __u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];      /* 0x290 */
-        struct e820entry e820_map[E820MAX];             /* 0x2d0 */
-        __u8  _pad8[48];                                /* 0xcd0 */
-        struct edd_info eddbuf[EDDMAXNR];               /* 0xd00 */
-        __u8  _pad9[276];                               /* 0xeec */
+> We have the same filter in numa/core - because we wrote it (FYI, 
+> I wrote bits of the last_cpu variant in numa/core), yet our 
+> numa01 performance is much better than the one of balancenuma.
+> 
 
-so we can use till 0x290.
+Yes, the lack of a note was a mistake. I've added the following note to
+the top of this patch now
 
-and after those three dword, will still have 7 left.
+Note: This two-stage filter was taken directly from the sched/numa patch
+        "sched, numa, mm: Add the scanning page fault machinery" but is
+        only a partial extraction. As the end result is not necessarily
+        recognisable, the signed-offs-by had to be removed. Will be
+        added back if requested.
 
->
->> diff --git a/arch/x86/boot/compressed/cmdline.c
->> b/arch/x86/boot/compressed/cmdline.c
->> index b4c913c..00678d3 100644
->> --- a/arch/x86/boot/compressed/cmdline.c
->> +++ b/arch/x86/boot/compressed/cmdline.c
->> @@ -17,6 +17,9 @@ static unsigned long get_cmd_line_ptr(void)
->>   {
->>         unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
->>
->> +       if (real_mode->hdr.version >= 0x020c)
->> +               cmd_line_ptr |= (u64)real_mode->hdr.ext_cmd_line_ptr <<
->> 32;
->> +
->>         return cmd_line_ptr;
->>   }
->
->
-> No.  hdr.version is information from the kernel to the bootloader; it is
-> meaningless to look at it inside the kernel.
->
-could remove them, but how about vmlinux elf.
+Thanks and apologies in advance for any other patch where I failed to
+document the history correctly.
 
-when kexec vmlinux elf, it will fake one hdr, and fill version there.
-
-> Same in a bunch of other places.
->
-
-Thanks
-
-Yinghai
+-- 
+Mel Gorman
+SUSE Labs
