@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab2KUBH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:07:57 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:47899 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab2KUBH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:07:56 -0500
-X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
-   d="scan'208";a="6241843"
-Message-ID: <50AC295D.9040101@cn.fujitsu.com>
-Date: Wed, 21 Nov 2012 09:07:41 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753393Ab2KUBLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:11:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54862 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab2KUBLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 20:11:14 -0500
+Date: Wed, 21 Nov 2012 02:11:11 +0100
+From: Jan Kara <jack@suse.cz>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: The bug of iput() removal from flusher thread?
+Message-ID: <20121121011111.GE10507@quack.suse.cz>
+References: <8762541uyx.fsf@devron.myhome.or.jp>
+ <873906vumh.fsf@devron.myhome.or.jp>
+ <20121119145140.GA20532@quack.suse.cz>
+ <20121119194102.GB20532@quack.suse.cz>
+ <87a9udtiyk.fsf@devron.myhome.or.jp>
+ <20121119212448.GA29498@quack.suse.cz>
+ <876251tg3b.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@tv-sign.ru>,
-        Serge Hallyn <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 02/11] procfs: Don't cache a pid in the root inode.
-References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-2-git-send-email-ebiederm@xmission.com>
-In-Reply-To: <1353083750-3621-2-git-send-email-ebiederm@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 09:07:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 09:07:36,
-	Serialize complete at 2012/11/21 09:07:36
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <876251tg3b.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/17 00:35, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Tue 20-11-12 06:53:12, OGAWA Hirofumi wrote:
+> Jan Kara <jack@suse.cz> writes:
 > 
-> Now that we have s_fs_info pointing to our pid namespace
-> the original reason for the proc root inode having a struct
-> pid is gone.
+> >> >  static void inode_sync_complete(struct inode *inode)
+> >> >  {
+> >> > +	/* If inode is clean an unused, put it into LRU now.  */
+> >> > +	if (!(inode->i_state & I_DIRTY) && !atomic_read(&inode->i_count))
+> >> > +		inode_lru_list_add(inode);
+> >> 
+> >> IMHO, open coding this would be bad idea.
+> >   Do you mean creating a separate function for the above two lines?
 > 
-> Caching a pid in the root inode has led to some complicated
-> code.  Now that we don't need the struct pid, just remove it.
+> Yes. And the intent is to consolidate "when adds inode to LRU" with
+> iput_final()'s one.
 > 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
+> >> And another one is I_REFERENCED. We really want to remove I_REFERENCED?
+> >   We don't want I_REFERENCED set - noone used the inode. But looking into
+> > the code with fresh eyes, the fix isn't as simple as I thought. First I
+> > need to check MS_ACTIVE and second I need to check I_FREEING... So the
+> > condition will be complex enough to warrant a separate function.
+> 
+> I can't see the issue (sync_filesystem() will wait I_DIRTY before
+> MS_ACTIVE, and I_DIRTY prevents I_FREEING) though, it may be possible.
+  E.g. when inode is deleted it can be both I_DIRTY (and flusher thread
+can be working on it) while it is also marked as I_FREEING. In such case we
+must avoid adding the inode to the LRU.
 
-Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
+  Regarding MS_ACTIVE - you are right that sync_filesystem() should clean
+all dirty inodes but some filesystems dirty their internal inodes during
+umount so it's better to make flusher thread safe and not add such inodes
+to the LRU during umount.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
