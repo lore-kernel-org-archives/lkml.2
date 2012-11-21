@@ -1,29 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab2KUK3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:29:30 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:62282 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754263Ab2KUK31 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:29:27 -0500
-Message-Id: <201211211014.qAL9fLYK010559@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WARNING!!! VIRUS DETECTED AND SPY, UPDATE NOW!!!
-To: Recipients <devine@sunflowerstop.co.za>
-From: "Webmail System Administrator" <devine@sunflowerstop.co.za>
-Date: Wed, 21 Nov 2012 11:12:57 +0100
-Reply-To: losiecki@pg.gda.pl
+	id S1754738Ab2KUK3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:29:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43747 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481Ab2KUKWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:23 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 16/46] mm: mempolicy: Make MPOL_LOCAL a real policy
+Date: Wed, 21 Nov 2012 10:21:22 +0000
+Message-Id: <1353493312-8069-17-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
+References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
+Make MPOL_LOCAL a real and exposed policy such that applications that
+relied on the previous default behaviour can explicitly request it.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Requested-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |    9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 23e62e0..3e835c9 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
++	MPOL_LOCAL,
+ 	MPOL_MAX,	/* always last member of enum */
+ };
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 66e90ec..54bd3e5 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 			     (flags & MPOL_F_RELATIVE_NODES)))
+ 				return ERR_PTR(-EINVAL);
+ 		}
++	} else if (mode == MPOL_LOCAL) {
++		if (!nodes_empty(*nodes))
++			return ERR_PTR(-EINVAL);
++		mode = MPOL_PREFERRED;
+ 	} else if (nodes_empty(*nodes))
+ 		return ERR_PTR(-EINVAL);
+ 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
+@@ -2399,7 +2403,6 @@ void numa_default_policy(void)
+  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+  * Used only for mpol_parse_str() and mpol_to_str()
+  */
+-#define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
+ {
+ 	[MPOL_DEFAULT]    = "default",
+@@ -2452,12 +2455,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (flags)
+ 		*flags++ = '\0';	/* terminate mode string */
+ 
+-	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
++	for (mode = 0; mode < MPOL_MAX; mode++) {
+ 		if (!strcmp(str, policy_modes[mode])) {
+ 			break;
+ 		}
+ 	}
+-	if (mode > MPOL_LOCAL)
++	if (mode >= MPOL_MAX)
+ 		goto out;
+ 
+ 	switch (mode) {
+-- 
+1.7.9.2
+
