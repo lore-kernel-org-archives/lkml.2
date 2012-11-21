@@ -1,129 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2KVTN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:13:29 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:60363 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab2KVTN0 (ORCPT
+	id S932426Ab2KVTNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:13:35 -0500
+Received: from userp1050.oracle.com ([156.151.31.82]:21915 "EHLO
+	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754437Ab2KVTNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:13:26 -0500
-X-Spam-Score: -100.7
-Message-ID: <50ADAF18.7090404@asianux.com>
-Date: Thu, 22 Nov 2012 12:50:32 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] drivers/char: in hpet.c, check for hdp->hd_nirqs
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 14:13:30 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH v4 26/31] xfs: add support for read_iter and write_iter
+Date: Wed, 21 Nov 2012 16:41:06 -0600
+Message-Id: <1353537671-26284-27-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd Bergmann, Greg Kroah-Hartman
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
+---
+ fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
 
-  in drivers/char/hpet.c:1009
-    I suggest to add check for hdp->hd_nirqs whether equal or larger than 32 (HPET_MAX_TIMERS)
-      the type of irqp->interrupt_count is u8 (include/acpi/acrestyp.h:349)
-      the type of hdp->hd_irq is "unsigned int hd_irq[HPET_MAX_TIMERS]" (include/linux/hpet.h:99)
-      #define HPET_MAX_TIMERS (32) (include/linux/hpet.h:38)
-
-  additional information:
-    acpi_register_gsi() not check the boundaries of how many irqs (at least, unlimited for u8).
-    maybe (only maybe) the irqp->interrupt_count is always less than 32 by hardware limitation.
-    I do not know whether it is a bug, so as a suggestion.
-
-
- regards
-
-gchen.
-
-----------------------------------------------------------------------------------------
-
-in include/linux/hpet.h
-
- 38 #define HPET_MAX_TIMERS (32)
- 39 #define HPET_MAX_IRQ    (32)
- ...
-
- 94 struct hpet_data {
- 95         unsigned long hd_phys_address;
- 96         void __iomem *hd_address;
- 97         unsigned short hd_nirqs;
- 98         unsigned int hd_state;  /* timer allocated */
- 99         unsigned int hd_irq[HPET_MAX_TIMERS];
-100 };
-
-in include/acpi/acrestyp.h
-
-344 struct acpi_resource_extended_irq {
-345         u8 producer_consumer;
-346         u8 triggering;
-347         u8 polarity;
-348         u8 sharable;
-349         u8 interrupt_count;
-350         struct acpi_resource_source resource_source;
-351         u32 interrupts[1];
-352 };
-
-
-
-
-in drivers/char/hpet.c:
-
- 964 static acpi_status hpet_resources(struct acpi_resource *res, void *data)
- 965 {
- 966         struct hpet_data *hdp;
- 967         acpi_status status;
- 968         struct acpi_resource_address64 addr;
- 969 
- 970         hdp = data;
- 971 
- 972         status = acpi_resource_to_address64(res, &addr);
- 973 
- 974         if (ACPI_SUCCESS(status)) {
- 975                 hdp->hd_phys_address = addr.minimum;
- 976                 hdp->hd_address = ioremap(addr.minimum, addr.address_length);
- 977 
- 978                 if (hpet_is_known(hdp)) {
- 979                         iounmap(hdp->hd_address);
- 980                         return AE_ALREADY_EXISTS;
- 981                 }
- 982         } else if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
- 983                 struct acpi_resource_fixed_memory32 *fixmem32;
- 984 
- 985                 fixmem32 = &res->data.fixed_memory32;
- 986                 if (!fixmem32)
- 987                         return AE_NO_MEMORY;
- 988 
- 989                 hdp->hd_phys_address = fixmem32->address;
- 990                 hdp->hd_address = ioremap(fixmem32->address,
- 991                                                 HPET_RANGE_SIZE);
- 992 
- 993                 if (hpet_is_known(hdp)) {
- 994                         iounmap(hdp->hd_address);
- 995                         return AE_ALREADY_EXISTS;
- 996                 }
- 997         } else if (res->type == ACPI_RESOURCE_TYPE_EXTENDED_IRQ) {
- 998                 struct acpi_resource_extended_irq *irqp;
- 999                 int i, irq;
-1000 
-1001                 irqp = &res->data.extended_irq;
-1002 
-1003                 for (i = 0; i < irqp->interrupt_count; i++) {
-1004                         irq = acpi_register_gsi(NULL, irqp->interrupts[i],
-1005                                       irqp->triggering, irqp->polarity);
-1006                         if (irq < 0)
-1007                                 return AE_ERROR;
-1008 
-1009                         hdp->hd_irq[hdp->hd_nirqs] = irq;
-1010                         hdp->hd_nirqs++;
-1011                 }
-1012         }
-1013 
-1014         return AE_OK;
-1015 }
-1016 
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index aa473fa..df9bc1a 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -223,10 +223,9 @@ xfs_file_fsync(
+ }
+ 
+ STATIC ssize_t
+-xfs_file_aio_read(
++xfs_file_read_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
+ {
+ 	struct file		*file = iocb->ki_filp;
+@@ -247,9 +246,7 @@ xfs_file_aio_read(
+ 	if (file->f_mode & FMODE_NOCMTIME)
+ 		ioflags |= IO_INVIS;
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
+-	if (ret < 0)
+-		return ret;
++	size = iov_iter_count(iter);
+ 
+ 	if (unlikely(ioflags & IO_ISDIRECT)) {
+ 		xfs_buftarg_t	*target =
+@@ -302,7 +299,7 @@ xfs_file_aio_read(
+ 
+ 	trace_xfs_file_read(ip, size, iocb->ki_pos, ioflags);
+ 
+-	ret = generic_file_aio_read(iocb, iovp, nr_segs, iocb->ki_pos);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
+ 	if (ret > 0)
+ 		XFS_STATS_ADD(xs_read_bytes, ret);
+ 
+@@ -618,10 +615,9 @@ restart:
+ STATIC ssize_t
+ xfs_file_dio_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -629,7 +625,6 @@ xfs_file_dio_aio_write(
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	ssize_t			ret = 0;
+-	size_t			count = ocount;
+ 	int			unaligned_io = 0;
+ 	int			iolock;
+ 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
+@@ -688,8 +683,8 @@ xfs_file_dio_aio_write(
+ 	}
+ 
+ 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_direct_write(iocb, iovp,
+-			&nr_segs, pos, &iocb->ki_pos, count, ocount);
++	ret = generic_file_direct_write_iter(iocb, iter,
++			pos, &iocb->ki_pos, count);
+ 
+ out:
+ 	xfs_rw_iunlock(ip, iolock);
+@@ -702,10 +697,9 @@ out:
+ STATIC ssize_t
+ xfs_file_buffered_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -714,7 +708,6 @@ xfs_file_buffered_aio_write(
+ 	ssize_t			ret;
+ 	int			enospc = 0;
+ 	int			iolock = XFS_IOLOCK_EXCL;
+-	size_t			count = ocount;
+ 
+ 	xfs_rw_ilock(ip, iolock);
+ 
+@@ -727,7 +720,7 @@ xfs_file_buffered_aio_write(
+ 
+ write_retry:
+ 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
++	ret = generic_file_buffered_write_iter(iocb, iter,
+ 			pos, &iocb->ki_pos, count, ret);
+ 	/*
+ 	 * if we just got an ENOSPC, flush the inode now we aren't holding any
+@@ -747,10 +740,9 @@ out:
+ }
+ 
+ STATIC ssize_t
+-xfs_file_aio_write(
++xfs_file_write_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
+ {
+ 	struct file		*file = iocb->ki_filp;
+@@ -758,17 +750,15 @@ xfs_file_aio_write(
+ 	struct inode		*inode = mapping->host;
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	ssize_t			ret;
+-	size_t			ocount = 0;
++	size_t			count = 0;
+ 
+ 	XFS_STATS_INC(xs_write_calls);
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
+-	if (ret)
+-		return ret;
++	count = iov_iter_count(iter);
+ 
+-	if (ocount == 0)
++	if (count == 0)
+ 		return 0;
+ 
+ 	sb_start_write(inode->i_sb);
+@@ -779,10 +769,9 @@ xfs_file_aio_write(
+ 	}
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT))
+-		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
++		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
+ 	else
+-		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
+-						  ocount);
++		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
+ 
+ 	if (ret > 0) {
+ 		ssize_t err;
+@@ -1412,8 +1401,8 @@ const struct file_operations xfs_file_operations = {
+ 	.llseek		= xfs_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= xfs_file_aio_read,
+-	.aio_write	= xfs_file_aio_write,
++	.read_iter	= xfs_file_read_iter,
++	.write_iter	= xfs_file_write_iter,
+ 	.splice_read	= xfs_file_splice_read,
+ 	.splice_write	= xfs_file_splice_write,
+ 	.unlocked_ioctl	= xfs_file_ioctl,
+-- 
+1.8.0
 
