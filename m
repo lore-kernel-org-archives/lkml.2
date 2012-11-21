@@ -1,105 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab2KUJn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:43:28 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:31375 "EHLO
+	id S1754203Ab2KUJoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:44:14 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:31333 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2KUJnX (ORCPT
+	with ESMTP id S1752391Ab2KUJnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:43:23 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-3a-50aca23a3de9
+	Wed, 21 Nov 2012 04:43:10 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-88-50aca22df0e6
 From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, "'Olof Johansson'" <olof@lixom.net>,
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: linux-samsung-soc@vger.kernel.org, "'Olof Johansson'" <olofj@chromium.org>,
         "'Thomas Abraham'" <thomas.abraham@linaro.org>,
         "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Shawn Guo'" <shawn.guo@linaro.org>,
+        "'Rob Herring'" <rob.herring@calxeda.com>,
+        "'Josh Cartwright'" <josh.cartwright@ni.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Arun Kumar K'" <arun.kk@samsung.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1353450155-1663-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1353450155-1663-1-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH] ARM: exynos: dt: add all i2c busses to auxdata
-Date: Wed, 21 Nov 2012 18:43:22 +0900
-Message-id: <0dfe01cdc7cc$a5585da0$f00918e0$%kim@samsung.com>
+References: <1353432158-22999-1-git-send-email-dianders@chromium.org>
+ <1353432158-22999-2-git-send-email-dianders@chromium.org>
+ <CAOesGMiGZHAw0zOZFZcYJ9YngbcMsTJrzhG+DQ5sP9Sq+CyzDQ@mail.gmail.com>
+In-reply-to: 
+Subject: RE: [PATCH 2/2] ARM: dts: snow: Add board dts file for Snow board (ARM
+ Chromebook)
+Date: Wed, 21 Nov 2012 18:43:08 +0900
+Message-id: <0dfc01cdc7cc$9d308170$d7918450$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3HbaUqRzgn4yKSSCOWKGEHq5HDPAAO3JLg
+Thread-index: Ac3HTwExOaL9MfUpTZykk07DvrvdLwAIpD/AAA1xIpA=
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zI12rRWsCDH5d1rbo+PuF0eLyrjls
-	FjPO72NyYPb4vEkugDGKyyYlNSezLLVI3y6BK+P13VaWgibeivWzZBoY/3J1MXJySAiYSKxY
-	vZANwhaTuHBvPZDNxSEksIxRov/KCaYuRg6wojMnrSDiixglFl9fxwrh/GWU6DnQCdbNJqAh
-	cfj9M3YQW0TAT+Lo8x1MIEXMAg8ZJd4/X8wOMklIwEWi/6kMSA2ngKvEpbezwOqFBZwlNi98
-	yQxSwiKgKvHhDQtImFfAVuLBz/tsELagxI/J98DizAJaEut3HmeCsOUlNq95ywxxp7rEo7+6
-	EBcYSTy+95wZokREYt+Ld4wgNouAgMS3yYdYIMplJTYdYIZ4fRu7xO/bNhC2pMTBFTdYJjBK
-	zEKyeBaSxbOQLJ6FZMMCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGCFxJrWDcWWDxSFG
-	AQ5GJR7ejWtXBwixJpYVV+YeYpTgYFYS4d00ZU2AEG9KYmVValF+fFFpTmrxIUYfoMMnMkuJ
-	JucDU0BeSbyhsbGJmYmpibmlqbkpDmElcd5mj5QAIYH0xJLU7NTUgtQimHFMHJxSDYyz52+6
-	udZ0m2LUQrk5YVP8ZOYWzj+YHVq8wN5i7SKtmUUm+364Ley943jyl6yxm2TlFK3AhIDOXSoW
-	no/F86ozCz23z50R8jfgXLxQ33LZd+cZp6W9fLGhMl7zuOeW2xp18lrrOfmiZvv5mefdVjKw
-	3b1iwcuk+5sscuLuzX9YeOLKD4sjq5YqsRRnJBpqMRcVJwIAGLC2FeACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAV2rRWsCDObvUbfo+PuF0eLyrjls
-	FjPO72NyYPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj9d1W
-	loIm3or1s2QaGP9ydTFycEgImEicOWnVxcgJZIpJXLi3nq2LkYtDSGARo8Ti6+tYIZy/jBI9
-	BzrZQKrYBDQkDr9/xg5iiwj4SRx9voMJpIhZ4CGjxPvni9lBpgoJuEj0P5UBqeEUcJW49HYW
-	WL2wgLPE5oUvmUFKWARUJT68YQEJ8wrYSjz4eZ8NwhaU+DH5HlicWUBLYv3O40wQtrzE5jVv
-	mSFuVpd49FcX4gIjicf3njNDlIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihO
-	Ss811CtOzC0uzUvXS87P3cQIjuNnUjsYVzZYHGIU4GBU4uHduHZ1gBBrYllxZe4hRgkOZiUR
-	3k1T1gQI8aYkVlalFuXHF5XmpBYfYvQB+nMis5Rocj4wxeSVxBsam5gZWRqZWRiZmJvjEFYS
-	5232SAkQEkhPLEnNTk0tSC2CGcfEwSnVwFgsae5y+qXnnpR7kpe7c6cuKlPkONkXaiWtzbBA
-	wDn2ZYL25Uu3eJyS397crvs9tVL+zWy9pMfqwXxGJXcKvqsVcvC/v5Dd+HNjqvHXh768U+vM
-	/IXPiHluCTlf+mbli9crHD7PP3XFojk9d9Ojve3/JtkfetB9zNt+Q3Xlp+hlUr6iP1V3lCux
-	FGckGmoxFxUnAgDD+H3wEAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zY13dRWsCDF7+47S4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo48ukKa8FplooJT18yNTAeYe5i5OSQEDCRWDSxA8oW
+	k7hwbz1bFyMXh5DAMkaJSSfeMMEUTVixBCqxiFHi1p11UM5fRomdPZvZQarYBDQkDr9/BmaL
+	CJRJnDlznwWkiFlgP7PEhAnPoTpOMEp8eraTEaSKU4BHYt2fTrDlwgKxEh8u/wWzWQRUJX53
+	LWHtYuTg4BWwlfg2AewMXgFBiR+T77GA2MwCWhLrdx5ngrDlJTavecsMUi4hoC7x6K8uxA1W
+	Es+Pr2aGKBGR2PfiHSPEdAGJb5MPsUCUy0psOsAMcpmEwDp2iV1929ghPpaUOLjiBssERolZ
+	SDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjJM6kdjCubLA4xCjA
+	wajEw7tx7eoAIdbEsuLK3EOMEhzMSiK8m6asCRDiTUmsrEotyo8vKs1JLT7E6AN0+URmKdHk
+	fGAKyCuJNzQ2NjEzMTUxtzQ1N8UhrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qBcWtx54X2
+	QHaXZ78S2lW5fminT/61Z3nxmiNGq3Z+abgnWrJ1xjfhqw8tmN2MD+46/fbx7stJ819/4hH4
+	KxsfEHd+ifzqUzPrvlgzTtNgPGcro5Rpwrc4oUY2kP2h3qrtYlMi3jF9+mqz9UHU/RmXq/vt
+	+P+vdVhw4nZPnX7r2YDe+HCW75GzJZVYijMSDbWYi4oTATXOjAjgAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jAV3dRWsCDPpWsFpc3jWHzWLG+X1M
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmHPl0hbXgNEvF
+	hKcvmRoYjzB3MXJySAiYSExYsYQNwhaTuHBvPZDNxSEksIhR4taddVDOX0aJnT2b2UGq2AQ0
+	JA6/fwZmiwiUSZw5c58FpIhZYD+zxIQJz6E6TjBKfHq2kxGkilOAR2Ldn06wfcICsRIfLv8F
+	s1kEVCV+dy1h7WLk4OAVsJX4NoEJJMwrICjxY/I9FhCbWUBLYv3O40wQtrzE5jVvmUHKJQTU
+	JR791YW4wUri+fHVzBAlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPScw31
+	ihNzi0vz0vWS83M3MYKj+JnUDsaVDRaHGAU4GJV4eDeuXR0gxJpYVlyZe4hRgoNZSYR305Q1
+	AUK8KYmVValF+fFFpTmpxYcYfYD+nMgsJZqcD0wweSXxhsYmZkaWRmYWRibm5jiElcR5mz1S
+	AoQE0hNLUrNTUwtSi2DGMXFwSjUwlrKd6ts89XLVK83Zjkt//egRUbqkuOhz9aJlXeskg25m
+	Wq6cdy/Y8vG3o7/lHRJ9f0psKZg34SVj6vSbey9ERaybapNmLdUd/dI0b3vZG+byRu+y0uUc
+	n8rspQKzbz1YdFiHuzN3Lq9xTcwRYw6Ob0sO5LWHvpRMUAg84vn+Wt2Xxbv3+0wqVmIpzkg0
+	1GIuKk4EAJ8Ak4sPAwAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
+Kukjin Kim wrote:
 > 
-> From: Olof Johansson <olof@lixom.net>
-> 
-> Needed to match device ids for clocks, etc.
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> 
-> ---
->  arch/arm/mach-exynos/mach-exynos5-dt.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-
-> exynos/mach-exynos5-dt.c
-> index ed37273..e1491f7 100644
-> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-> @@ -52,6 +52,16 @@ static const struct of_dev_auxdata
-> exynos5250_auxdata_lookup[] __initconst = {
->  				"s3c2440-i2c.1", NULL),
->  	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(2),
->  				"s3c2440-i2c.2", NULL),
-> +	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(3),
-> +				"s3c2440-i2c.3", NULL),
-> +	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(4),
-> +				"s3c2440-i2c.4", NULL),
-> +	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(5),
-> +				"s3c2440-i2c.5", NULL),
-> +	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(6),
-> +				"s3c2440-i2c.6", NULL),
-> +	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS5_PA_IIC(7),
-> +				"s3c2440-i2c.7", NULL),
->  	OF_DEV_AUXDATA("samsung,s3c2440-hdmiphy-i2c", EXYNOS5_PA_IIC(8),
->  				"s3c2440-hdmiphy-i2c", NULL),
->  	OF_DEV_AUXDATA("samsung,exynos5250-dw-mshc", EXYNOS5_PA_DWMCI0,
-> --
-> 1.7.7.3
+> Olof Johansson wrote:
+> >
 
-Looks ok to me, applied.
+[...]
 
-Thanks.
+> >
+> > Acked-by: Olof Johansson <olof@lixom.net>
+> >
+> > Kukjin, since your pull requests came in today, can you ack this and
+> > I'll just apply it on top of your branches?
+> >
+> Hi Olof, yeah, I sent pull-request but there are some patches for dt and
+> exynos5440 stuff in my tree not sent yet. If you're ok, let me take this
+> with your ack.
+> 
+Applied, thanks.
 
 Best regards,
 Kgene.
