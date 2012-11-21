@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2KUOti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:49:38 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34457 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab2KUOth (ORCPT
+	id S1754885Ab2KUOvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:51:33 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59009 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab2KUOvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:49:37 -0500
-Date: Wed, 21 Nov 2012 14:54:44 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by
- tag
-Message-ID: <20121121145444.5824bcee@pyramind.ukuu.org.uk>
-In-Reply-To: <CAB=NE6X9z5YEPD5avSkYd6Ayc90kHF4+b1Vjfw8cvZ3A0gwXOQ@mail.gmail.com>
-References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
-	<20121120211634.11513416@pyramind.ukuu.org.uk>
-	<50ABFF4E.2050101@broadcom.com>
-	<CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com>
-	<20121121001043.7e1a68df@pyramind.ukuu.org.uk>
-	<CAB=NE6X9z5YEPD5avSkYd6Ayc90kHF4+b1Vjfw8cvZ3A0gwXOQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Nov 2012 09:51:32 -0500
+Date: Wed, 21 Nov 2012 06:52:39 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
+Message-ID: <20121121145239.GA21860@kroah.com>
+References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If you have a single master official copy and a link then you break all
-> > that and you'd have to have everyones consensus and planning to change a
-> > word of it.
+On Wed, Nov 21, 2012 at 02:44:31PM +0000, Grant Likely wrote:
+> The "platform_bus" (note: not platform_bus_type) only exists as an empty
+> directory to put platform devices into. However, it really doesn't make
+> sense to segregate all the platform devices into a sub directory when
+> typically they are memory mapped devices that doen't go through any
+> particular bus. Particularly on embedded type platforms the platform_bus
+> directory doesn't add anything.
 > 
-> Ah so keep the original in place to let references to the original in
-> whatever way those may exist to keep pointing but promote new usage to
-> a copy and.. perhaps refer to the new copy in master, or just leave
-> that in place as is?
+> However, this will probably just end up breaking some userspace that
+> depends on the /sys/devices/platform/ path to be present (no matter how
+> much we protest that userspace must not depend on paths in sysfs). So
+> while I'm seriously proposing this change, it may just be unacceptable
+> ABI breakage
 
-I imagine people would make copies of it for their project and treat it
-as a reference document to work from. Possibly also a mailing list ?
+If the devices don't show up under platform/ where are they going to be
+at now, virtual/ ?  That doesn't sound like a good plan, they should be
+somewhere "useful".
 
-Alan
+And yes, odds are this will break userspace, but we might not know until
+we try it, have you tried it on different distros to see what happens?
+
+thanks,
+
+greg k-h
