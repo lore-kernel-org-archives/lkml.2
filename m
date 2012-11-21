@@ -1,137 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab2KUKxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:53:16 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31262 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2KUKxO (ORCPT
+	id S1754598Ab2KUK4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:56:32 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55706
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752143Ab2KUK4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:53:14 -0500
-Date: Wed, 21 Nov 2012 11:52:21 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: ebiederm@xmission.com
-Cc: andrew.cooper3@citrix.com, hpa@zytor.com, jbeulich@suse.com,
-        konrad.wilk@oracle.com, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-Message-ID: <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
- <87lidwtego.fsf@xmission.com>
+	Wed, 21 Nov 2012 05:56:31 -0500
+Date: Wed, 21 Nov 2012 05:56:24 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, rminnich@sandia.gov, viro@zeniv.linux.org.uk,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/4] bdi: Track users that require stable page writes
+Message-ID: <20121121105624.GA19050@infradead.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020034.10225.51692.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87lidwtego.fsf@xmission.com>
+In-Reply-To: <20121121020034.10225.51692.stgit@blackbox.djwong.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 08:40:39AM -0800, ebiederm@xmission.com wrote:
-> Daniel Kiper <daniel.kiper@oracle.com> writes:
->
-> > Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
-> > functions or require some changes in behavior of kexec/kdump generic code.
-> > To cope with that problem kexec_ops struct was introduced. It allows
-> > a developer to replace all or some functions and control some
-> > functionality of kexec/kdump generic code.
-> >
-> > Default behavior of kexec/kdump generic code is not changed.
->
-> Ick.
->
-> > v2 - suggestions/fixes:
-> >    - add comment for kexec_ops.crash_alloc_temp_store member
-> >      (suggested by Konrad Rzeszutek Wilk),
-> >    - simplify kexec_ops usage
-> >      (suggested by Konrad Rzeszutek Wilk).
-> >
-> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> > ---
-> >  include/linux/kexec.h |   26 ++++++++++
-> >  kernel/kexec.c        |  131 +++++++++++++++++++++++++++++++++++++------------
-> >  2 files changed, 125 insertions(+), 32 deletions(-)
-> >
-> > diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> > index d0b8458..c8d0b35 100644
-> > --- a/include/linux/kexec.h
-> > +++ b/include/linux/kexec.h
-> > @@ -116,7 +116,33 @@ struct kimage {
-> >  #endif
-> >  };
-> >
-> > +struct kexec_ops {
-> > +	/*
-> > +	 * Some kdump implementations (e.g. Xen PVOPS dom0) could not access
-> > +	 * directly crash kernel memory area. In this situation they must
-> > +	 * allocate memory outside of it and later move contents from temporary
-> > +	 * storage to final resting places (usualy done by relocate_kernel()).
-> > +	 * Such behavior could be enforced by setting
-> > +	 * crash_alloc_temp_store member to true.
-> > +	 */
->
-> Why in the world would Xen not be able to access crash kernel memory?
-> As currently defined it is normal memory that the kernel chooses not to
-> use.
->
-> If relocate kernel can access that memory you definitely can access the
-> memory so the comment does not make any sense.
+> +static inline void bdi_require_stable_pages(struct backing_dev_info *bdi)
+> +{
+> +	bdi->capabilities |= BDI_CAP_STABLE_WRITES;
+> +}
+> +
+> +static inline void bdi_unrequire_stable_pages(struct backing_dev_info *bdi)
+> +{
+> +	bdi->capabilities &= ~BDI_CAP_STABLE_WRITES;
+> +}
 
-Crash kernel memory is reserved by Xen hypervisor and Xen hypervisor
-only has access to it. dom0 does not have any mapping of this area.
-However, relocate_kernel() has access to crash kernel memory
-because it is executed by Xen hypervisor and whole machine
-memory is identity mapped.
+Any reason to provide these wrappers while other BDI_CAP_ values don't
+have it/
 
-> > +	bool crash_alloc_temp_store;
-> > +	struct page *(*kimage_alloc_pages)(gfp_t gfp_mask,
-> > +						unsigned int order,
-> > +						unsigned long limit);
-> > +	void (*kimage_free_pages)(struct page *page);
-> > +	unsigned long (*page_to_pfn)(struct page *page);
-> > +	struct page *(*pfn_to_page)(unsigned long pfn);
-> > +	unsigned long (*virt_to_phys)(volatile void *address);
-> > +	void *(*phys_to_virt)(unsigned long address);
-> > +	int (*machine_kexec_prepare)(struct kimage *image);
-> > +	int (*machine_kexec_load)(struct kimage *image);
-> > +	void (*machine_kexec_cleanup)(struct kimage *image);
-> > +	void (*machine_kexec_unload)(struct kimage *image);
-> > +	void (*machine_kexec_shutdown)(void);
-> > +	void (*machine_kexec)(struct kimage *image);
-> > +};
->
-> Ugh.  This is a nasty abstraction.
->
-> You are mixing and matching a bunch of things together here.
->
-> If you need to override machine_kexec_xxx please do that on a per
-> architecture basis.
+Also what protects bdi->capabilities against concurrent updates now that
+it gets modified at runtime?
 
-Yes, it is possible but I think that it is worth to do it at that
-level because it could be useful for other archs too (e.g. Xen ARM port
-is under development). Then we do not need to duplicate that functionality
-in arch code. Additionally, Xen requires machine_kexec_load and
-machine_kexec_unload hooks which are not available in current generic
-kexec/kdump code.
+> +static inline void queue_require_stable_pages(struct request_queue *q)
+> +{
+> +	bdi_require_stable_pages(&q->backing_dev_info);
+> +}
+> +
+> +static inline void queue_unrequire_stable_pages(struct request_queue *q)
+> +{
+> +	bdi_unrequire_stable_pages(&q->backing_dev_info);
+> +}
+> +
+> +static inline int queue_requires_stable_pages(struct request_queue *q)
+> +{
+> +	return bdi_cap_stable_pages_required(&q->backing_dev_info);
+> +}
 
-> Special case overrides of page_to_pfn, pfn_to_page, virt_to_phys,
-> phys_to_virt, and friends seem completely inappropriate.
+Independent of the above I see no point in these wrappers that just
+provide a single dereference.
 
-They are required in Xen PVOPS case. If we do not do that in that way
-then we at least need to duplicate almost all generic kexec/kdump existing
-code in arch depended files. I do not mention that we need to capture
-relevant syscall and other things. I think that this is wrong way.
+> +static ssize_t stable_pages_required_store(struct device *dev,
+> +					   struct device_attribute *attr,
+> +					   const char *buf, size_t count)
 
-> There may be a point to all of these but you are mixing and matching
-> things badly.
+Can you add a rationale on why we'd want to allow users to change the
+value?  I can't really think of any.
 
-Do you whish to split this kexec_ops struct to something which
-works with addresses and something which is reponsible for
-loading, unloading and executing kexec/kdump? I am able to change
-that but I would like to know a bit about your vision first.
-
-Daniel
