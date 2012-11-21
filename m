@@ -1,69 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2KUBfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:35:50 -0500
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:56672 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab2KUBft (ORCPT
+	id S1753875Ab2KUBpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:45:03 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:2670 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab2KUBpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:35:49 -0500
-Date: Wed, 21 Nov 2012 09:35:28 +0800
-From: Ming Lei <tom.leiming@gmail.com>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
-Message-ID: <20121121093528.4fe11c26@tom-ThinkPad-T410>
-In-Reply-To: <20121120181203.GA7922@shaftnet.org>
-References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
-	<CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
-	<20121120161011.GD18015@shaftnet.org>
-	<20121120163309.GB4990@kroah.com>
-	<20121120181203.GA7922@shaftnet.org>
-Organization: Ming
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Nov 2012 20:45:00 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v7-1 1/5] ACPI: Add acpi_handle_<level>() interfaces
+Date: Tue, 20 Nov 2012 18:36:28 -0700
+Message-Id: <1353461788-808-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012 13:12:03 -0500
-Solomon Peachy <pizza@shaftnet.org> wrote:
+This patch introduces acpi_handle_<level>(), where <level> is
+a kernel message level such as err/warn/info, to support improved
+logging messages for ACPI, esp. hot-plug operations.
+acpi_handle_<level>() appends "ACPI" prefix and ACPI object path
+to the messages.  This improves diagnosis of hotplug operations
+since an error message in a log file identifies an object that
+caused an issue.  This interface acquires the global namespace
+mutex to obtain an object path.  In interrupt context, it shows
+the object path as <n/a>.
 
-> On Tue, Nov 20, 2012 at 08:33:09AM -0800, Greg KH wrote:
-> > > The corresponding .config is attached.  Note that it is for a uClinux 
-> > > 3.3.0-uc0 kernel.
-> > 
-> > Lots of things have changed in the firmware code since 3.3.0, can you
-> > retest this on the 3.7-rc6 tree?
+acpi_handle_<level>() takes acpi_handle as an argument, which is
+passed to ACPI hotplug notify handlers from the ACPICA.  Therefore,
+it is always available unlike other kernel objects, such as device.
 
-Solomon, I can't duplicate the build failure with your .config on 3.7-rc5-next.
+For example:
+  acpi_handle_err(handle, "Device don't exist, dropping EJECT\n");
+logs an error message like this at KERN_ERR.
+  ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
 
-> 
-> Not easily; My employer is contracted to do some driver porting and 
-> we're stuck with the kernel the client provided.  However, the patch is 
-> still relevant for upstream, because the underlying problem still 
-> exists:
->  
->  * The #ifdef wraps code that pertains solely to built-in firmware, (ie 
->    CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disabled.
->  * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c 
->    when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
+ACPI hot-plug drivers can use acpi_handle_<level>() when they need
+to identify a target ACPI object path in their messages, such as
+error cases.  The usage model is similar to dev_<level>().
+acpi_handle_<level>() can be used when a device is not created or
+is invalid during hot-plug operations.  ACPI object path is also
+consistent on the platform, unlike device name that gets incremented
+over hotplug operations.
 
-Enabling CONFIG_EXTRA_FIRMWARE still can make one firmware built in kernel
-even though CONFIG_FIRMWARE_IN_KERNEL isn't defined, so your patch will break
-this case.
+ACPI drivers should use dev_<level>() when a device object is valid.
+Device name provides more user friendly information, and avoids
+acquiring the global ACPI namespace mutex.  ACPI drivers also
+continue to use pr_<level>() when they do not need to specify device
+information, such as boot-up messages.
 
-> 
-> Perhaps the compile problem is solved in newer kernels (by always 
-> generating an empty builtin firmware list?) but the #ifdef is still 
-> incorrect.
+Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
+are not associated with the kernel message level.
 
-Looks the problem hasn't been reported before.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+---
 
+Hi Rafael,
+This patch replaces the [PATCH v7 1/5] below in the v7 series.
+https://lkml.org/lkml/2012/11/20/719
 
-Thanks,
+---
+ drivers/acpi/utils.c | 38 ++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
+
+diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+index 462f7e3..74437130 100644
+--- a/drivers/acpi/utils.c
++++ b/drivers/acpi/utils.c
+@@ -28,6 +28,8 @@
+ #include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
++#include <linux/hardirq.h>
++#include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ 
+@@ -457,3 +459,39 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+ #endif
+ }
+ EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
++
++/**
++ * acpi_handle_printk: Print message with ACPI prefix and object path
++ *
++ * This function is called through acpi_handle_<level> macros and prints
++ * a message with ACPI prefix and object path.  This function acquires
++ * the global namespace mutex to obtain an object path.  In interrupt
++ * context, it shows the object path as <n/a>.
++ */
++void
++acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	struct acpi_buffer buffer = {
++		.length = ACPI_ALLOCATE_BUFFER,
++		.pointer = NULL
++	};
++	const char *path;
++
++	va_start(args, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	if (in_interrupt() ||
++	    acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer) != AE_OK)
++		path = "<n/a>";
++	else
++		path = buffer.pointer;
++
++	printk("%sACPI: %s: %pV", level, path, &vaf);
++
++	va_end(args);
++	kfree(buffer.pointer);
++}
++EXPORT_SYMBOL(acpi_handle_printk);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 0bb2070..417c96c 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -517,4 +517,47 @@ static inline int acpi_dev_pm_attach(struct device *dev) { return -ENODEV; }
+ static inline void acpi_dev_pm_detach(struct device *dev) {}
+ #endif
+ 
++#ifdef CONFIG_ACPI
++__printf(3, 4)
++void acpi_handle_printk(const char *level, acpi_handle handle,
++			const char *fmt, ...);
++#else	/* !CONFIG_ACPI */
++static inline __printf(3, 4) void
++acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
++#endif	/* !CONFIG_ACPI */
++
++/*
++ * acpi_handle_<level>: Print message with ACPI prefix and object path
++ * 
++ * These interfaces acquire the global namespace mutex to obtain an object
++ * path.  In interrupt context, it shows the object path as <n/a>.
++ */
++#define acpi_handle_emerg(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_alert(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_crit(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_err(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_warn(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_notice(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
++#define acpi_handle_info(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
++
++/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
++#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
++#define acpi_handle_debug(handle, fmt, ...)				\
++	acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
++#else
++#define acpi_handle_debug(handle, fmt, ...)				\
++({									\
++	if (0)								\
++		acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__); \
++	0;								\
++})
++#endif
++
+ #endif	/*_LINUX_ACPI_H*/
 -- 
-Ming Lei
+1.7.11.7
+
