@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab2KUChV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 21:37:21 -0500
+	id S1754091Ab2KUChT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 21:37:19 -0500
 Received: from perceval.ideasonboard.com ([95.142.166.194]:46899 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab2KUC0x (ORCPT
+	with ESMTP id S1754043Ab2KUC0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 21:26:53 -0500
+	Tue, 20 Nov 2012 21:26:54 -0500
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-kernel@vger.kernel.org
 Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
         Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
         Phil Edworthy <phil.edworthy@renesas.com>,
         Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: [PATCH 04/42] sh-pfc: Merge PFC core and gpio
-Date: Wed, 21 Nov 2012 03:27:05 +0100
-Message-Id: <1353464863-10281-5-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH 08/42] sh-pfc: Sort headers alphabetically
+Date: Wed, 21 Nov 2012 03:27:09 +0100
+Message-Id: <1353464863-10281-9-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -25,267 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PFC core calls the gpio module gpiochip registration in its
-register_sh_pfc() function, itself called at arch initialization time.
-If the gpio module isn't present then the gpiochip will never be
-registered.
-
-As the gpio module can only be present at arch initialization time if
-it's builtin, there's no point in allowing to build it as a module. Make
-it a boolean option, and initialize it synchronously with the core if
-selected.
-
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/sh/pfc/Kconfig  |    2 +-
- drivers/sh/pfc/Makefile |    4 ++-
- drivers/sh/pfc/core.c   |   23 +++++--------
- drivers/sh/pfc/core.h   |    4 ++
- drivers/sh/pfc/gpio.c   |   79 +++++------------------------------------------
- 5 files changed, 25 insertions(+), 87 deletions(-)
+ drivers/sh/pfc/core.c    |   10 +++++-----
+ drivers/sh/pfc/gpio.c    |    6 +++---
+ drivers/sh/pfc/pinctrl.c |    6 +++---
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/sh/pfc/Kconfig b/drivers/sh/pfc/Kconfig
-index f33d82a..eaeabc5 100644
---- a/drivers/sh/pfc/Kconfig
-+++ b/drivers/sh/pfc/Kconfig
-@@ -11,7 +11,7 @@ config SH_PFC
- 	def_bool y
- 
- config GPIO_SH_PFC
--	tristate "SuperH PFC GPIO support"
-+	bool "SuperH PFC GPIO support"
- 	depends on SH_PFC && GPIOLIB
- 	help
- 	  This enables support for GPIOs within the SoC's pin function
-diff --git a/drivers/sh/pfc/Makefile b/drivers/sh/pfc/Makefile
-index ce6fae3..6315cf3 100644
---- a/drivers/sh/pfc/Makefile
-+++ b/drivers/sh/pfc/Makefile
-@@ -1,3 +1,5 @@
- sh-pfc-objs			= core.o pinctrl.o
-+ifeq ($(CONFIG_GPIO_SH_PFC),y)
-+sh-pfc-objs			+= gpio.o
-+endif
- obj-y				+= sh-pfc.o
--obj-$(CONFIG_GPIO_SH_PFC)	+= gpio.o
 diff --git a/drivers/sh/pfc/core.c b/drivers/sh/pfc/core.c
-index 30e33db..f8f458b 100644
+index 3593de5..f1a0c85 100644
 --- a/drivers/sh/pfc/core.c
 +++ b/drivers/sh/pfc/core.c
-@@ -149,7 +149,6 @@ int sh_pfc_read_bit(struct pinmux_data_reg *dr, unsigned long in_pos)
+@@ -12,15 +12,15 @@
+ #define DRV_NAME "sh-pfc"
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
- 	return (gpio_read_raw_reg(dr->mapped_reg, dr->reg_width) >> pos) & 1;
- }
--EXPORT_SYMBOL_GPL(sh_pfc_read_bit);
- 
- void sh_pfc_write_bit(struct pinmux_data_reg *dr, unsigned long in_pos,
- 		      unsigned long value)
-@@ -169,7 +168,6 @@ void sh_pfc_write_bit(struct pinmux_data_reg *dr, unsigned long in_pos,
- 
- 	gpio_write_raw_reg(dr->mapped_reg, dr->reg_width, dr->reg_shadow);
- }
--EXPORT_SYMBOL_GPL(sh_pfc_write_bit);
- 
- static void config_reg_helper(struct sh_pfc *pfc,
- 			      struct pinmux_cfg_reg *crp,
-@@ -307,7 +305,6 @@ int sh_pfc_get_data_reg(struct sh_pfc *pfc, unsigned gpio,
- 	*bitp = n;
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(sh_pfc_get_data_reg);
- 
- static int get_config_reg(struct sh_pfc *pfc, pinmux_enum_t enum_id,
- 			  struct pinmux_cfg_reg **crp,
-@@ -384,7 +381,6 @@ int sh_pfc_gpio_to_enum(struct sh_pfc *pfc, unsigned gpio, int pos,
- 	pr_err("cannot locate data/mark enum_id for gpio %d\n", gpio);
- 	return -1;
- }
--EXPORT_SYMBOL_GPL(sh_pfc_gpio_to_enum);
- 
- int sh_pfc_config_gpio(struct sh_pfc *pfc, unsigned gpio, int pinmux_type,
- 		       int cfg_mode)
-@@ -500,7 +496,6 @@ int sh_pfc_config_gpio(struct sh_pfc *pfc, unsigned gpio, int pinmux_type,
- 
- int register_sh_pfc(struct sh_pfc_platform_data *pdata)
- {
--	int (*initroutine)(struct sh_pfc *) = NULL;
- 	int ret;
- 
- 	/*
-@@ -531,24 +526,20 @@ int register_sh_pfc(struct sh_pfc_platform_data *pdata)
- 	if (unlikely(ret != 0))
- 		goto err;
- 
-+#ifdef CONFIG_GPIO_SH_PFC
- 	/*
- 	 * Then the GPIO chip
- 	 */
--	initroutine = symbol_request(sh_pfc_register_gpiochip);
--	if (initroutine) {
--		ret = (*initroutine)(&sh_pfc);
--		symbol_put_addr(initroutine);
--
-+	ret = sh_pfc_register_gpiochip(&sh_pfc);
-+	if (unlikely(ret != 0)) {
- 		/*
- 		 * If the GPIO chip fails to come up we still leave the
- 		 * PFC state as it is, given that there are already
- 		 * extant users of it that have succeeded by this point.
- 		 */
--		if (unlikely(ret != 0)) {
--			pr_notice("failed to init GPIO chip, ignoring...\n");
--			ret = 0;
--		}
-+		pr_notice("failed to init GPIO chip, ignoring...\n");
- 	}
-+#endif
- 
- 	pr_info("%s support registered\n", sh_pfc.pdata->name);
- 
-@@ -560,3 +551,7 @@ err:
- 
- 	return ret;
- }
-+
-+MODULE_AUTHOR("Magnus Damm, Paul Mundt");
-+MODULE_DESCRIPTION("Pin Control and GPIO driver for SuperH pin function controller");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/sh/pfc/core.h b/drivers/sh/pfc/core.h
-index b07ae25..f3032b2 100644
---- a/drivers/sh/pfc/core.h
-+++ b/drivers/sh/pfc/core.h
-@@ -20,14 +20,18 @@ struct pfc_window {
- 	unsigned long size;
- };
- 
-+struct sh_pfc_chip;
-+
- struct sh_pfc {
- 	struct sh_pfc_platform_data *pdata;
- 	spinlock_t lock;
- 
- 	struct pfc_window *window;
-+	struct sh_pfc_chip *gpio;
- };
- 
- int sh_pfc_register_gpiochip(struct sh_pfc *pfc);
-+int sh_pfc_unregister_gpiochip(struct sh_pfc *pfc);
- 
- int sh_pfc_register_pinctrl(struct sh_pfc *pfc);
++#include <linux/bitops.h>
++#include <linux/err.h>
+ #include <linux/errno.h>
++#include <linux/io.h>
++#include <linux/ioport.h>
+ #include <linux/kernel.h>
+-#include <linux/sh_pfc.h>
+ #include <linux/module.h>
+-#include <linux/err.h>
+-#include <linux/io.h>
+-#include <linux/bitops.h>
++#include <linux/sh_pfc.h>
+ #include <linux/slab.h>
+-#include <linux/ioport.h>
+ #include <linux/pinctrl/machine.h>
+ #include <linux/platform_device.h>
  
 diff --git a/drivers/sh/pfc/gpio.c b/drivers/sh/pfc/gpio.c
-index 94c5489..91ea4c9 100644
+index 0a85159..9f4f0fd 100644
 --- a/drivers/sh/pfc/gpio.c
 +++ b/drivers/sh/pfc/gpio.c
-@@ -15,7 +15,6 @@
- #include <linux/slab.h>
- #include <linux/spinlock.h>
+@@ -11,13 +11,13 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME " gpio: " fmt
+ 
+-#include <linux/init.h>
+ #include <linux/gpio.h>
+-#include <linux/slab.h>
+-#include <linux/spinlock.h>
++#include <linux/init.h>
  #include <linux/module.h>
--#include <linux/platform_device.h>
  #include <linux/pinctrl/consumer.h>
  #include <linux/sh_pfc.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
  
-@@ -152,44 +151,23 @@ int sh_pfc_register_gpiochip(struct sh_pfc *pfc)
- 	sh_pfc_gpio_setup(chip);
+ #include "core.h"
  
- 	ret = gpiochip_add(&chip->gpio_chip);
--	if (unlikely(ret < 0))
-+	if (unlikely(ret < 0)) {
- 		kfree(chip);
-+		return ret;
-+	}
-+
-+	pfc->gpio = chip;
+diff --git a/drivers/sh/pfc/pinctrl.c b/drivers/sh/pfc/pinctrl.c
+index 21b8678..c0c8271 100644
+--- a/drivers/sh/pfc/pinctrl.c
++++ b/drivers/sh/pfc/pinctrl.c
+@@ -11,17 +11,17 @@
+ #define DRV_NAME "sh-pfc"
+ #define pr_fmt(fmt) KBUILD_MODNAME " pinctrl: " fmt
  
- 	pr_info("%s handling gpio %d -> %d\n",
- 		pfc->pdata->name, pfc->pdata->first_gpio,
- 		pfc->pdata->last_gpio);
++#include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/sh_pfc.h>
+-#include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/pinctrl/consumer.h>
+-#include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/pinconf.h>
+-#include <linux/pinctrl/pinmux.h>
+ #include <linux/pinctrl/pinconf-generic.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
  
--	return ret;
--}
--EXPORT_SYMBOL_GPL(sh_pfc_register_gpiochip);
--
--static int sh_pfc_gpio_match(struct gpio_chip *gc, void *data)
--{
--	return !!strstr(gc->label, data);
--}
--
--static int __devinit sh_pfc_gpio_probe(struct platform_device *pdev)
--{
--	struct sh_pfc_chip *chip;
--	struct gpio_chip *gc;
--
--	gc = gpiochip_find("_pfc", sh_pfc_gpio_match);
--	if (unlikely(!gc)) {
--		pr_err("Cant find gpio chip\n");
--		return -ENODEV;
--	}
--
--	chip = gpio_to_pfc_chip(gc);
--	platform_set_drvdata(pdev, chip);
--
--	pr_info("attaching to GPIO chip %s\n", chip->pfc->pdata->name);
--
- 	return 0;
- }
+ #include "core.h"
  
--static int __devexit sh_pfc_gpio_remove(struct platform_device *pdev)
-+int __exit sh_pfc_unregister_gpiochip(struct sh_pfc *pfc)
- {
--	struct sh_pfc_chip *chip = platform_get_drvdata(pdev);
-+	struct sh_pfc_chip *chip = pfc->gpio;
- 	int ret;
- 
- 	ret = gpiochip_remove(&chip->gpio_chip);
-@@ -197,47 +175,6 @@ static int __devexit sh_pfc_gpio_remove(struct platform_device *pdev)
- 		return ret;
- 
- 	kfree(chip);
-+	pfc->gpio = NULL;
- 	return 0;
- }
--
--static struct platform_driver sh_pfc_gpio_driver = {
--	.probe		= sh_pfc_gpio_probe,
--	.remove		= __devexit_p(sh_pfc_gpio_remove),
--	.driver		= {
--		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
--	},
--};
--
--static struct platform_device sh_pfc_gpio_device = {
--	.name		= KBUILD_MODNAME,
--	.id		= -1,
--};
--
--static int __init sh_pfc_gpio_init(void)
--{
--	int rc;
--
--	rc = platform_driver_register(&sh_pfc_gpio_driver);
--	if (likely(!rc)) {
--		rc = platform_device_register(&sh_pfc_gpio_device);
--		if (unlikely(rc))
--			platform_driver_unregister(&sh_pfc_gpio_driver);
--	}
--
--	return rc;
--}
--
--static void __exit sh_pfc_gpio_exit(void)
--{
--	platform_device_unregister(&sh_pfc_gpio_device);
--	platform_driver_unregister(&sh_pfc_gpio_driver);
--}
--
--module_init(sh_pfc_gpio_init);
--module_exit(sh_pfc_gpio_exit);
--
--MODULE_AUTHOR("Magnus Damm, Paul Mundt");
--MODULE_DESCRIPTION("GPIO driver for SuperH pin function controller");
--MODULE_LICENSE("GPL v2");
--MODULE_ALIAS("platform:pfc-gpio");
 -- 
 1.7.8.6
 
