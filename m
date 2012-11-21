@@ -1,222 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab2KVTcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:32:02 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36125 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571Ab2KVTb5 (ORCPT
+	id S1757014Ab2KVTcd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:32:33 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:40506 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565Ab2KVTc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:31:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121122112451.GE4328@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
-	<b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
-	<20121122112451.GE4328@gmail.com>
-Date: Thu, 22 Nov 2012 19:24:09 +0530
-Message-ID: <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:32:28 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org
+Subject: [PATCH v4 29/31] afs: add support for read_iter and write_iter
+Date: Wed, 21 Nov 2012 16:41:09 -0600
+Message-Id: <1353537671-26284-30-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 November 2012 16:54, Lee Jones <lee.jones@linaro.org> wrote:
-> Big fat NACK.
->
-> You've just overwritten the current implementation with your own.
-> Please take time to understand the mechanisms in place before
-> you submit any changes or additions to it.
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: linux-afs@lists.infradead.org
+---
+ fs/afs/file.c     | 4 ++--
+ fs/afs/internal.h | 3 +--
+ fs/afs/write.c    | 9 ++++-----
+ 3 files changed, 7 insertions(+), 9 deletions(-)
 
-:)
+diff --git a/fs/afs/file.c b/fs/afs/file.c
+index 8f6e923..27b9b66 100644
+--- a/fs/afs/file.c
++++ b/fs/afs/file.c
+@@ -32,8 +32,8 @@ const struct file_operations afs_file_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= generic_file_aio_read,
+-	.aio_write	= afs_file_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= afs_file_write,
+ 	.mmap		= generic_file_readonly_mmap,
+ 	.splice_read	= generic_file_splice_read,
+ 	.fsync		= afs_fsync,
+diff --git a/fs/afs/internal.h b/fs/afs/internal.h
+index a306bb6..9c048ff 100644
+--- a/fs/afs/internal.h
++++ b/fs/afs/internal.h
+@@ -747,8 +747,7 @@ extern int afs_write_end(struct file *file, struct address_space *mapping,
+ extern int afs_writepage(struct page *, struct writeback_control *);
+ extern int afs_writepages(struct address_space *, struct writeback_control *);
+ extern void afs_pages_written_back(struct afs_vnode *, struct afs_call *);
+-extern ssize_t afs_file_write(struct kiocb *, const struct iovec *,
+-			      unsigned long, loff_t);
++extern ssize_t afs_file_write(struct kiocb *, struct iov_iter *, loff_t);
+ extern int afs_writeback_all(struct afs_vnode *);
+ extern int afs_fsync(struct file *, loff_t, loff_t, int);
+ 
+diff --git a/fs/afs/write.c b/fs/afs/write.c
+index 9aa52d9..2c2a6d2 100644
+--- a/fs/afs/write.c
++++ b/fs/afs/write.c
+@@ -624,16 +624,15 @@ void afs_pages_written_back(struct afs_vnode *vnode, struct afs_call *call)
+ /*
+  * write to an AFS file
+  */
+-ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
+-		       unsigned long nr_segs, loff_t pos)
++ssize_t afs_file_write(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct dentry *dentry = iocb->ki_filp->f_path.dentry;
+ 	struct afs_vnode *vnode = AFS_FS_I(dentry->d_inode);
+ 	ssize_t result;
+-	size_t count = iov_length(iov, nr_segs);
++	size_t count = iov_iter_count(iter);
+ 
+ 	_enter("{%x.%u},{%zu},%lu,",
+-	       vnode->fid.vid, vnode->fid.vnode, count, nr_segs);
++	       vnode->fid.vid, vnode->fid.vnode, count, iter->nr_segs);
+ 
+ 	if (IS_SWAPFILE(&vnode->vfs_inode)) {
+ 		printk(KERN_INFO
+@@ -644,7 +643,7 @@ ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (!count)
+ 		return 0;
+ 
+-	result = generic_file_aio_write(iocb, iov, nr_segs, pos);
++	result = generic_file_write_iter(iocb, iter, pos);
+ 	if (IS_ERR_VALUE(result)) {
+ 		_leave(" = %zd", result);
+ 		return result;
+-- 
+1.8.0
 
-My fault. Comments on all overwritten stuff accepted
-
->> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
->> +- irq-over-gpio: bool, true if gpio is used to get irq
->> +- irq-gpios: gpio number over which irq will be requested (significant only if
->> +  irq-over-gpio is true)
->
-> You don't need these. Use gpio_to_irq() instead.
-
-I am passing gpio numbers here and am doing gpio_to_irq() in driver.
-Didn't get this one :(
-
->>  Optional properties:
->> - - interrupts                   : The interrupt outputs from the controller
->> - - interrupt-controller         : Marks the device node as an interrupt controller
->> - - interrupt-parent             : Specifies which IRQ controller we're connected to
->> - - i2c-client-wake              : Marks the input device as wakable
->> - - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
->
-> And you've removed these why?
-
-No. They are readjusted...
-
-One thing removed is interrupt-controller. I had a doubt on this.
-stmpe, by itself doesn't give any interrupt lines to SoC to freely use
-them. Instead
-gpio controller driver part of it does. And so adding
-interrupt-controller for that is
-the right option.
-
-stmpe is an interrupt controller for the IP's which are present inside
-it: gpio, adc.
-But interrupt lines for them are managed by stmpe driver internally. So should
-we really add interrupt-controller for it?
-
->> +- keypad,scan-count: number of key scanning cycles to confirm key data. Maximum
->> +  is STMPE_KEYPAD_MAX_SCAN_COUNT.
->> +- keypad,debounce-ms: debounce interval, in ms. Maximum is
->> +  STMPE_KEYPAD_MAX_DEBOUNCE.
->> +- keypad,no-autorepeat: bool, disable key autorepeat
->
-> See "When adding new bindings, ask yourself" above.
-
-Yes, these are required. This is part of platform data it expects.
-
->> +stmpe-ts:
->> +-----------
-
-> See "When adding new bindings, ask yourself" above.
-
-Same. Can you explicitly point out, which bindings you didn't like.
-
->> +spi@e0100000 {
->
-> This shouldn't be a child of the SPI device becuase it uses SPI.
->
-> Drivers use clocks, regulators, IRQ controller too, but they're
-> not children of those devices.
-
-Yes.
-
->> +             reg = <0>;
->
-> You have reg twice here. Also reg should never be '0'.
-
-For SPI, there are chip selects and there is no reg offset.
-
->> +             stmpe610-ts {
->> +                     compatible = "stmpe,ts";
->> +                     ts,sample-time = <4>;
->> +                     ts,mod-12b = <1>;
->> +                     ts,ref-sel = <0>;
->> +                     ts,adc-freq = <1>;
->> +                     ts,ave-ctrl = <1>;
->> +                     ts,touch-det-delay = <2>;
->> +                     ts,settling = <2>;
->> +                     ts,fraction-z = <7>;
->> +                     ts,i-drive = <1>;
->
-> Wow! See "When adding new bindings, ask yourself" above.
-
-:)
-They are required. I didn't get your point, sorry.
-
->> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
->> +static struct stmpe_keypad_platform_data *
->> +get_keyboard_pdata_dt(struct device *dev, struct device_node *np)
->> +{
->> +     struct stmpe_keypad_platform_data *pdata;
->> +     u32 val;
->> +
->> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
->> +     if (!pdata) {
->> +             dev_warn(dev, "stmpe keypad kzalloc fail\n");
->> +             return NULL;
->> +     }
->> +
->> +     if (!of_property_read_u32(np, "keypad,scan-count", &val))
->> +             pdata->scan_count = val;
->> +     if (!of_property_read_u32(np, "keypad,debounce-ms", &val))
->> +             pdata->debounce_ms = val;
->> +     if (of_property_read_bool(np, "keypad,no-autorepeat"))
->> +             pdata->no_autorepeat = true;
->
-> Why are you (re)adding these here? Have you even looked in the driver?
-
-Because i wanted to keep all DT stuff together. Obviously i have seen keypad
-driver earlier :)
-
-I am not setting pdata of stmpe here, but pdata of keypad.
-
->> +static struct stmpe_gpio_platform_data *get_gpio_pdata_dt(struct device *dev,
->> +             struct device_node *np)
->> +{
->> +     struct stmpe_gpio_platform_data *pdata;
->> +     u32 val;
->> +
->> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
->> +     if (!pdata) {
->> +             dev_warn(dev, "stmpe gpio kzalloc fail\n");
->> +             return NULL;
->> +     }
->> +
->> +     if (!of_property_read_u32(np, "gpio,norequest-mask", &val))
->> +             pdata->norequest_mask = val;
->> +
->> +     /* assign gpio numbers dynamically */
->> +     pdata->gpio_base = -1;
->> +
->> +     return pdata;
->> +}
->
-> Is this function really required? Even if is is, should it live here
-> or in the STMPE driver?
-
-As said earlier, either i can do DT parsing of sub-modules of stmpe in
-their specific files or in stmpe driver itself. Because currently platform
-data of those sub-modules is passed from stmpe, i kept them here only.
-stmpe sub modules can't live without stmpe driver and so keeping all
-binding stuff here isn't that bad of an idea.
-
->> +static struct stmpe_ts_platform_data *get_ts_pdata_dt(struct device *dev,
->> +             struct device_node *np)
->> +{
->> +     struct stmpe_ts_platform_data *pdata;
->> +     u32 val;
->> +
->> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
->> +     if (!pdata) {
->> +             dev_warn(dev, "stmpe ts kzalloc fail\n");
->> +             return NULL;
->> +     }
->> +
->> +     if (!of_property_read_u32(np, "ts,sample-time", &val))
->> +             pdata->sample_time = val;
->> +     if (!of_property_read_u32(np, "ts,mod-12b", &val))
->> +             pdata->mod_12b = val;
->> +     if (!of_property_read_u32(np, "ts,ref-sel", &val))
->> +             pdata->ref_sel = val;
->> +     if (!of_property_read_u32(np, "ts,adc-freq", &val))
->> +             pdata->adc_freq = val;
->> +     if (!of_property_read_u32(np, "ts,ave-ctrl", &val))
->> +             pdata->ave_ctrl = val;
->> +     if (!of_property_read_u32(np, "ts,touch-det-delay", &val))
->> +             pdata->touch_det_delay = val;
->> +     if (!of_property_read_u32(np, "ts,settling", &val))
->> +             pdata->settling = val;
->> +     if (!of_property_read_u32(np, "ts,fraction-z", &val))
->> +             pdata->fraction_z = val;
->> +     if (!of_property_read_u32(np, "ts,i-drive", &val))
->> +             pdata->i_drive = val;
->> +
->> +     return pdata;
->> +}
->
-> As above.
->
-> I'm going to stop my review here. I think you get the idea.
-
-I got most of your worries, but couldn't understand the issue of passing
-all pdata fields as DT bindings.
-
-Thanks for your review though. :)
-
---
-viresh
