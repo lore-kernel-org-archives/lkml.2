@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2KUKUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:20:32 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49189 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab2KUKUb (ORCPT
+	id S1754326Ab2KUKUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:20:44 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36635 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab2KUKUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:20:31 -0500
+	Wed, 21 Nov 2012 05:20:42 -0500
+Message-ID: <50ACAAF5.2030002@gmail.com>
+Date: Wed, 21 Nov 2012 11:20:37 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvxuRtbvTob0j-YgfK6Ydz9TVCdjD5NOToyyKQb2S7bC9Q@mail.gmail.com>
-References: <1353451183-18807-1-git-send-email-elezegarcia@gmail.com>
-	<CAFLxGvxuRtbvTob0j-YgfK6Ydz9TVCdjD5NOToyyKQb2S7bC9Q@mail.gmail.com>
-Date: Wed, 21 Nov 2012 07:20:30 -0300
-Message-ID: <CALF0-+UVNwAcEe5UVK9MdKYGwwubCi70DRXdWaojEUDg3uR+Xg@mail.gmail.com>
-Subject: Re: [RFC/PATCH 1/1] ubi: Add ubiblock driver
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        michael.opdenacker@free-electrons.com, dwmw2@infradead.org,
-        Tim Bird <tim.bird@am.sony.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Dove pinctrl fixes and DT enabling
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkdYAnNCFDCjA67r0h_CSHMifb1Z83YJfYGQV3abPB8uQZg@mail.gmail.com>
+In-Reply-To: <CACRpkdYAnNCFDCjA67r0h_CSHMifb1Z83YJfYGQV3abPB8uQZg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 8:59 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Tue, Nov 20, 2012 at 11:39 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
->> Block device emulation on top of ubi volumes with read/write support.
->> Block devices get automatically created for each ubi volume present.
->>
->> Each ubiblock is fairly cheap since it's based on workqueues
->> and not on threads.
->>
->> Read/write access is expected to work fairly well because the
->> request queue at block elevator orders block transfers to be space-effective.
->> In other words, it's expected that reads and writes gets ordered
->> to point to the same LEB.
->>
->> To help this and reduce access to the UBI volume, a 1-LEB size
->> write-back cache has been implemented.
->> Every read and every write, goes through this cache and the write is
->> only done when a request arrives to read or write to a different LEB
->> or when the device is released, when the last file handle is closed.
+On 11/21/2012 10:59 AM, Linus Walleij wrote:
+> On Mon, Nov 19, 2012 at 10:39 AM, Sebastian Hesselbarth
+> <sebastian.hesselbarth@gmail.com>  wrote:
+>> This patch relies on a patch set for mvebu pinctrl taken through
+>> Linus' pinctrl branch. As there is no other platform than Dove
+>> involved, I suggest to take it though Jason's tree to avoid any
+>> further conflicts.
 >
-> Did you also benchmark your driver with two caches?
-> (One for reading and one for writing.)
-> By using two caches you can lower the amount of atomic LEB changes.
->
-> Maybe it would be also good to ensure that an cache entry becomes not too old.
->
+> Sounds like a plan. So you have some commit history pulled
+> in from the pinctrl tree in the MVEBU tree?
 
-Yes, I thought of this.
+Linus,
 
-For now, I decided to keep the implementation as simple as possible.
+I am referring to patches for a pinctrl/mvebu subfolder. IIRC Thomas
+posted that patch a while ago. Jason is currently sorting things out
+for mvebu pull requests. I guess both can comment on your question,
+as I don't fully understand it.
 
-Regards,
-
-    Ezequiel
+Sebastian
