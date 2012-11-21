@@ -1,110 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab2KUTkS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:40:18 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:41977 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab2KUTkQ (ORCPT
+	id S1755903Ab2KUTpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:45:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58325 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab2KUTpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:40:16 -0500
-Date: Wed, 21 Nov 2012 20:40:14 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net
-Subject: Re: [PATCH] perf: call perf_event_comm under task_lock to fix suspicious rcu usage
-Message-ID: <20121121194014.GR31373@order.stressinduktion.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-	paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net
-References: <20121110053228.GB11317@order.stressinduktion.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121110053228.GB11317@order.stressinduktion.org>
+	Wed, 21 Nov 2012 14:45:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <50AD0E22.3020807@zytor.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-2-git-send-email-yinghai@kernel.org>
+	<50AD0E22.3020807@zytor.com>
+Date: Wed, 21 Nov 2012 11:45:47 -0800
+X-Google-Sender-Auth: Vta8fJeRlhlVn9uzFSgyEElWkl4
+Message-ID: <CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
+Subject: Re: [PATCH v3 01/12] x86, boot: move verify_cpu.S after 0x200
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Content-Type: multipart/mixed; boundary=000e0ce0452cd5bfb704cf069811
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, this problem still persists in v3.7-rc6. Could someone have a look?
+--000e0ce0452cd5bfb704cf069811
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Sat, Nov 10, 2012 at 06:32:28AM +0100, Hannes Frederic Sowa wrote:
-> Following RCU warning showed up while executing a shebang-script under
-> perf-record (could even be an empty script) on a 3.7-rc4 stable kernel:
-> 
->   [   32.185108] 
->   [   32.185332] ===============================
->   [   32.185602] [ INFO: suspicious RCU usage. ]
->   [   32.185903] 3.7.0-rc4 #1 Not tainted
->   [   32.186021] -------------------------------
->   [   32.186021] include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
->   [   32.186021] 
->   [   32.186021] other info that might help us debug this:
->   [   32.186021] 
->   [   32.186021] 
->   [   32.186021] rcu_scheduler_active = 1, debug_locks = 0
->   [   32.186021] 1 lock held by empty.sh/556:
->   [   32.186021]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811d1d16>] prepare_bprm_creds+0x36/0x80
->   [   32.186021] 
->   [   32.186021] stack backtrace:
->   [   32.186021] Pid: 556, comm: empty.sh Not tainted 3.7.0-rc4 #1
->   [   32.186021] Call Trace:
->   [   32.186021]  [<ffffffff810d336d>] lockdep_rcu_suspicious+0xfd/0x130
->   [   32.186021]  [<ffffffff81153de6>] perf_event_comm+0x436/0x610
->   [   32.186021]  [<ffffffff810d181d>] ? trace_hardirqs_off+0xd/0x10
->   [   32.186021]  [<ffffffff810ac37f>] ? local_clock+0x6f/0x80
->   [   32.186021]  [<ffffffff810d217f>] ? lock_release_holdtime.part.26+0xf/0x180
->   [   32.186021]  [<ffffffff811d1bd3>] set_task_comm+0x73/0x180
->   [   32.186021]  [<ffffffff811d24ba>] setup_new_exec+0x9a/0x210
->   [   32.186021]  [<ffffffff81225cf3>] load_elf_binary+0x3e3/0x1ab0
->   [   32.186021]  [<ffffffff810ac0f5>] ? sched_clock_local+0x25/0xa0
->   [   32.186021]  [<ffffffff810ac298>] ? sched_clock_cpu+0xa8/0x120
->   [   32.186021]  [<ffffffff810d181d>] ? trace_hardirqs_off+0xd/0x10
->   [   32.186021]  [<ffffffff810ac37f>] ? local_clock+0x6f/0x80
->   [   32.186021]  [<ffffffff81225910>] ? load_elf_library+0x240/0x240
->   [   32.186021]  [<ffffffff81225910>] ? load_elf_library+0x240/0x240
->   [   32.186021]  [<ffffffff811d14a4>] search_binary_handler+0x194/0x4f0
->   [   32.186021]  [<ffffffff811d136f>] ? search_binary_handler+0x5f/0x4f0
->   [   32.186021]  [<ffffffff81225220>] ? compat_sys_ioctl+0x1510/0x1510
->   [   32.186021]  [<ffffffff812254b4>] load_script+0x294/0x2c0
->   [   32.186021]  [<ffffffff810d217f>] ? lock_release_holdtime.part.26+0xf/0x180
->   [   32.186021]  [<ffffffff81225220>] ? compat_sys_ioctl+0x1510/0x1510
->   [   32.186021]  [<ffffffff811d14a4>] search_binary_handler+0x194/0x4f0
->   [   32.186021]  [<ffffffff811d136f>] ? search_binary_handler+0x5f/0x4f0
->   [   32.186021]  [<ffffffff811d22cb>] do_execve_common.isra.25+0x50b/0x5b0
->   [   32.186021]  [<ffffffff811d1eea>] ? do_execve_common.isra.25+0x12a/0x5b0
->   [   32.186021]  [<ffffffff811d238b>] do_execve+0x1b/0x20
->   [   32.186021]  [<ffffffff811d26c4>] sys_execve+0x54/0x80
->   [   32.186021]  [<ffffffff816d8f99>] stub_execve+0x69/0xc0
-> 
-> I think this dereference qualifies for the task_lock exception (as noted
-> in kernel/cgroup.c), thus this patch ensures calling perf_event_comm
-> before giving up the task_lock.
-> 
-> Changelog -v2 (since <20121103235758.GD18106@order.stressinduktion.org>):
->   1) rebased to 3.7-rc4
->   2) slightly improved/updated commit msg and added more people to Cc
-> 
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> ---
->  fs/exec.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 0039055..a961b9d 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1038,8 +1038,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
->  	memset(tsk->comm, 0, TASK_COMM_LEN);
->  	wmb();
->  	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
-> -	task_unlock(tsk);
->  	perf_event_comm(tsk);
-> +	task_unlock(tsk);
->  }
->  
->  static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
-> 
+On Wed, Nov 21, 2012 at 9:23 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/20/2012 11:15 PM, Yinghai Lu wrote:
+>>
+>> We are short of space before 0x200 that is entry for startup_64.
+>>
+>> And we can not change startup_64 to other value --- ABI ?
+>
+>
+> Here you are saying "I don't understand how this works."  It is YOUR
+> responsibility to find out and write a definite statement rather than
+> leaving that to the reader, or expect the maintainer to edit this.
 
+actually, i can not find that out.
+in the code of arch/x86/boot/compressed/head_64.S
+
+        /*
+         * Be careful here startup_64 needs to be at a predictable
+         * address so I can export it in an ELF header.  Bootloaders
+         * should look at the ELF header to find this address, as
+         * it may change in the future.
+         */
+        .code64
+        .org 0x200
+ENTRY(startup_64)
+        /*
+         * We come here either from startup_32 or directly from a
+         * 64bit bootloader.  If we come here from a bootloader we depend on
+         * an identity mapped page table being provied that maps our
+         * entire text+data+bss and hopefully all of memory.
+         */
+#ifdef CONFIG_EFI_STUB
+        /*
+         * The entry point for the PE/COFF executable is 0x210, so only
+         * legacy boot loaders will execute this jmp.
+         */
+        jmp     preferred_addr
+
+        .org 0x210
+        mov     %rcx, %rdi
+
+and it says that 0x200 will be changed later..
+
+so you said it has to stay with 0x200, do you mean 0x210 from PE/COFF
+force that?
+
+wonder if you are considering attatched patch to move startup_64 down...
+we could kill one jmp.
+
+Thanks
+
+Yinghai
+
+--000e0ce0452cd5bfb704cf069811
+Content-Type: application/octet-stream; name="new_startup_64_0x400.patch"
+Content-Disposition: attachment; filename="new_startup_64_0x400.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h9sv2rui0
+
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9oZWFkXzY0LlMgYi9hcmNoL3g4
+Ni9ib290L2NvbXByZXNzZWQvaGVhZF82NC5TCmluZGV4IDJjNGIxNzEuLjRjYjQwZDcgMTAwNjQ0
+Ci0tLSBhL2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9oZWFkXzY0LlMKKysrIGIvYXJjaC94ODYv
+Ym9vdC9jb21wcmVzc2VkL2hlYWRfNjQuUwpAQCAtMTg0LDI4ICsxODQsOSBAQCBub19sb25nbW9k
+ZToKIAogI2luY2x1ZGUgIi4uLy4uL2tlcm5lbC92ZXJpZnlfY3B1LlMiCiAKLQkvKgotCSAqIEJl
+IGNhcmVmdWwgaGVyZSBzdGFydHVwXzY0IG5lZWRzIHRvIGJlIGF0IGEgcHJlZGljdGFibGUKLQkg
+KiBhZGRyZXNzIHNvIEkgY2FuIGV4cG9ydCBpdCBpbiBhbiBFTEYgaGVhZGVyLiAgQm9vdGxvYWRl
+cnMKLQkgKiBzaG91bGQgbG9vayBhdCB0aGUgRUxGIGhlYWRlciB0byBmaW5kIHRoaXMgYWRkcmVz
+cywgYXMKLQkgKiBpdCBtYXkgY2hhbmdlIGluIHRoZSBmdXR1cmUuCi0JICovCiAJLmNvZGU2NAot
+CS5vcmcgMHgyMDAKLUVOVFJZKHN0YXJ0dXBfNjQpCi0JLyoKLQkgKiBXZSBjb21lIGhlcmUgZWl0
+aGVyIGZyb20gc3RhcnR1cF8zMiBvciBkaXJlY3RseSBmcm9tIGEKLQkgKiA2NGJpdCBib290bG9h
+ZGVyLiAgSWYgd2UgY29tZSBoZXJlIGZyb20gYSBib290bG9hZGVyIHdlIGRlcGVuZCBvbgotCSAq
+IGFuIGlkZW50aXR5IG1hcHBlZCBwYWdlIHRhYmxlIGJlaW5nIHByb3ZpZWQgdGhhdCBtYXBzIG91
+cgotCSAqIGVudGlyZSB0ZXh0K2RhdGErYnNzIGFuZCBob3BlZnVsbHkgYWxsIG9mIG1lbW9yeS4K
+LQkgKi8KICNpZmRlZiBDT05GSUdfRUZJX1NUVUIKLQkvKgotCSAqIFRoZSBlbnRyeSBwb2ludCBm
+b3IgdGhlIFBFL0NPRkYgZXhlY3V0YWJsZSBpcyAweDIxMCwgc28gb25seQotCSAqIGxlZ2FjeSBi
+b290IGxvYWRlcnMgd2lsbCBleGVjdXRlIHRoaXMgam1wLgotCSAqLwotCWptcAlwcmVmZXJyZWRf
+YWRkcgotCisJLyogVGhlIGVudHJ5IHBvaW50IGZvciB0aGUgUEUvQ09GRiBleGVjdXRhYmxlIGlz
+IDB4MjEwICovCiAJLm9yZyAweDIxMAogCW1vdgklcmN4LCAlcmRpCiAJbW92CSVyZHgsICVyc2kK
+QEAgLTIzNCwxMiArMjE1LDI2IEBAIEVOVFJZKHN0YXJ0dXBfNjQpCiAJc3VicQkkM2IsICVyYXgK
+IAlzdWJxCUJQX3ByZWZfYWRkcmVzcyglcnNpKSwgJXJheAogCWFkZAlCUF9jb2RlMzJfc3RhcnQo
+JWVzaSksICVlYXgKLQlsZWFxCXByZWZlcnJlZF9hZGRyKCVyYXgpLCAlcmF4CisJbGVhcQlzdGFy
+dHVwXzY0KCVyYXgpLCAlcmF4CiAJam1wCSolcmF4CiAKLXByZWZlcnJlZF9hZGRyOgogI2VuZGlm
+CiAKKwkvKgorCSAqIEJlIGNhcmVmdWwgaGVyZSBzdGFydHVwXzY0IG5lZWRzIHRvIGJlIGF0IGEg
+cHJlZGljdGFibGUKKwkgKiBhZGRyZXNzIHNvIEkgY2FuIGV4cG9ydCBpdCBpbiBhbiBFTEYgaGVh
+ZGVyLiAgQm9vdGxvYWRlcnMKKwkgKiBzaG91bGQgbG9vayBhdCB0aGUgRUxGIGhlYWRlciB0byBm
+aW5kIHRoaXMgYWRkcmVzcywgYXMKKwkgKiBpdCBtYXkgY2hhbmdlIGluIHRoZSBmdXR1cmUuCisJ
+ICovCisJLm9yZyAweDQwMAorRU5UUlkoc3RhcnR1cF82NCkKKwkvKgorCSAqIFdlIGNvbWUgaGVy
+ZSBlaXRoZXIgZnJvbSBzdGFydHVwXzMyIG9yIGRpcmVjdGx5IGZyb20gYQorCSAqIDY0Yml0IGJv
+b3Rsb2FkZXIuICBJZiB3ZSBjb21lIGhlcmUgZnJvbSBhIGJvb3Rsb2FkZXIgd2UgZGVwZW5kIG9u
+CisJICogYW4gaWRlbnRpdHkgbWFwcGVkIHBhZ2UgdGFibGUgYmVpbmcgcHJvdmllZCB0aGF0IG1h
+cHMgb3VyCisJICogZW50aXJlIHRleHQrZGF0YStic3MgYW5kIGhvcGVmdWxseSBhbGwgb2YgbWVt
+b3J5LgorCSAqLworCiAJLyogU2V0dXAgZGF0YSBzZWdtZW50cy4gKi8KIAl4b3JsCSVlYXgsICVl
+YXgKIAltb3ZsCSVlYXgsICVkcwo=
+--000e0ce0452cd5bfb704cf069811--
