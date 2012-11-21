@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2KUIDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:03:34 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61332 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab2KUIDd (ORCPT
+	id S1753096Ab2KUIFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:05:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44472 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab2KUIFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:03:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353484243-6115-1-git-send-email-linus.walleij@stericsson.com>
-References: <1353484243-6115-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 21 Nov 2012 13:33:32 +0530
-Message-ID: <CAKohpoke+OKbEL-svE=z5HJeVqoKRkAftrbiXV3c3d6iLL_EsQ@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: rename pin range arguments
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Nov 2012 03:05:39 -0500
+Date: Wed, 21 Nov 2012 00:05:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: The bug of iput() removal from flusher thread?
+Message-Id: <20121121000533.a0ab9eea.akpm@linux-foundation.org>
+In-Reply-To: <20121121014851.GH10507@quack.suse.cz>
+References: <8762541uyx.fsf@devron.myhome.or.jp>
+	<873906vumh.fsf@devron.myhome.or.jp>
+	<20121119145140.GA20532@quack.suse.cz>
+	<20121119194102.GB20532@quack.suse.cz>
+	<87a9udtiyk.fsf@devron.myhome.or.jp>
+	<20121119212448.GA29498@quack.suse.cz>
+	<876251tg3b.fsf@devron.myhome.or.jp>
+	<20121121011111.GE10507@quack.suse.cz>
+	<20121121014851.GH10507@quack.suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 November 2012 13:20, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> To be crystal clear on what the arguments mean in this
-> funtion dealing with both GPIO and PIN ranges with confusing
-> naming, we now have gpio_offset and pin_offset and we are
-> on the clear that these are offsets into the specific GPIO
-> and pin controller respectively. The GPIO chip itself will
-> of course keep track of the base offset into the global
-> GPIO number space.
->
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpiolib.c     | 19 ++++++++++---------
->  include/asm-generic/gpio.h |  4 ++--
->  include/linux/gpio.h       |  2 +-
->  3 files changed, 13 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 317ff04..26e27c1 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1191,13 +1191,13 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
->   * gpiochip_add_pin_range() - add a range for GPIO <-> pin mapping
->   * @chip: the gpiochip to add the range for
->   * @pinctrl_name: the dev_name() of the pin controller to map to
-> - * @offset: the start offset in the current gpio_chip number space
-> - * @pin_base: the start offset in the pin controller number space
-> + * @gpio_offset: the start offset in the current gpio_chip number space
-> + * @pin_offset: the start offset in the pin controller number space
->   * @npins: the number of pins from the offset of each pin space (GPIO and
->   *     pin controller) to accumulate in this range
->   */
->  int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-> -                          unsigned int offset, unsigned int pin_base,
-> +                          unsigned int gpio_offset, unsigned int pin_offset,
->                            unsigned int npins)
->  {
->         struct gpio_pin_range *pin_range;
-> @@ -1210,11 +1210,11 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
->         }
->
->         /* Use local offset as range ID */
-> -       pin_range->range.id = offset;
-> +       pin_range->range.id = gpio_offset;
->         pin_range->range.gc = chip;
->         pin_range->range.name = chip->label;
-> -       pin_range->range.base = chip->base + offset;
-> -       pin_range->range.pin_base = pin_base;
-> +       pin_range->range.base = chip->base + gpio_offset;
-> +       pin_range->range.pin_base = pin_offset;
->         pin_range->range.npins = npins;
->         pin_range->pctldev = pinctrl_find_and_add_gpio_range(pinctl_name,
->                         &pin_range->range);
-> @@ -1224,9 +1224,10 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
->                 kfree(pin_range);
->                 return PTR_ERR(pin_range->pctldev);
->         }
-> -       pr_debug("%s: GPIO chip: created GPIO range %d->%d ==> PIN %d->%d\n",
-> -                chip->label, offset, offset + npins - 1,
-> -                pin_base, pin_base + npins - 1);
-> +       pr_debug("GPIO chip %s: created GPIO range %d->%d ==> %s PIN %d->%d\n",
-> +                chip->label, gpio_offset, gpio_offset + npins - 1,
-> +                pinctl_name,
-> +                pin_offset, pin_offset + npins - 1);
->
->         list_add_tail(&pin_range->node, &chip->pin_ranges);
->
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index ec58fdb..9fd3093 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -283,7 +283,7 @@ struct gpio_pin_range {
->  };
->
->  int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-> -                          unsigned int offset, unsigned int pin_base,
-> +                          unsigned int gpio_offset, unsigned int pin_offset,
->                            unsigned int npins);
->  void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
->
-> @@ -291,7 +291,7 @@ void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
->
->  static inline int
->  gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-> -                      unsigned int offset, unsigned int pin_base,
-> +                      unsigned int gpio_offset, unsigned int pin_offset,
->                        unsigned int npins)
->  {
->         return 0;
-> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-> index 99861c6..bfe6656 100644
-> --- a/include/linux/gpio.h
-> +++ b/include/linux/gpio.h
-> @@ -233,7 +233,7 @@ static inline int irq_to_gpio(unsigned irq)
->
->  static inline int
->  gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-> -                      unsigned int offset, unsigned int pin_base,
-> +                      unsigned int gpio_offset, unsigned int pin_offset,
->                        unsigned int npins)
->  {
->         WARN_ON(1);
+On Wed, 21 Nov 2012 02:48:51 +0100 Jan Kara <jack@suse.cz> wrote:
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+> +/*
+> + * Add inode to LRU if needed (inode is unused and clean).
+> + *
+> + * Needs inode->i_lock held.
+> + */
+> +void inode_add_lru(struct inode *inode)
+> +{
+> +	if (!(inode->i_state & (I_DIRTY | I_FREEING | I_SYNC)) &&
+> +	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
+> +		inode_lru_list_add(inode);
+> +}
+
+Is i_lock sufficient to stabilise i_count?
+
+<looks at the code a bit>
+
+Is evict_inodes() wrong to test i_count outside i_lock?
+
+invalidate_inodes() looks better.
+
+can_unuse() must be called under i_lock, and is.  Apparently this
+requirement was sufficiently obvious to not meed documenting.
+
+prune_icache_sb() gets it right.
+
+iput() gets it right.
+
+So to answer my own question: yes, it is sufficient.  But a) the
+comment for inode.i_lock is out of date and b) evict_inodes() looks
+fishy.
+
