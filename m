@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2KURIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:08:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38856 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049Ab2KURIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:08:54 -0500
-Date: Wed, 21 Nov 2012 18:08:50 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: The bug of iput() removal from flusher thread?
-Message-ID: <20121121170850.GD30250@quack.suse.cz>
-References: <8762541uyx.fsf@devron.myhome.or.jp>
- <873906vumh.fsf@devron.myhome.or.jp>
- <20121119145140.GA20532@quack.suse.cz>
- <20121119194102.GB20532@quack.suse.cz>
- <87a9udtiyk.fsf@devron.myhome.or.jp>
- <20121119212448.GA29498@quack.suse.cz>
- <876251tg3b.fsf@devron.myhome.or.jp>
- <20121121011111.GE10507@quack.suse.cz>
- <20121121014851.GH10507@quack.suse.cz>
- <20121121024405.GN2591@dastard>
+	id S1754536Ab2KURKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:10:55 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50740 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2KURKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 12:10:53 -0500
+Date: Wed, 21 Nov 2012 18:10:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121121171047.GA28875@gmail.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+ <20121120060014.GA14065@gmail.com>
+ <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+ <20121120074445.GA14539@gmail.com>
+ <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
+ <20121120090637.GA14873@gmail.com>
+ <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121121024405.GN2591@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-11-12 13:44:05, Dave Chinner wrote:
-> On Wed, Nov 21, 2012 at 02:48:51AM +0100, Jan Kara wrote:
-> > 
-> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > index 51ea267..3e3422f 100644
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@ -228,6 +228,8 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
-> >  static void inode_sync_complete(struct inode *inode)
-> >  {
-> >  	inode->i_state &= ~I_SYNC;
-> > +	/* If inode is clean an unused, put it into LRU now... */
-> > +	inode_add_lru(inode);
-> >  	/* Waiters must see I_SYNC cleared before being woken up */
-> >  	smp_mb();
-> >  	wake_up_bit(&inode->i_state, __I_SYNC);
-> > diff --git a/fs/inode.c b/fs/inode.c
-> > index b03c719..8f6396f 100644
-> > --- a/fs/inode.c
-> > +++ b/fs/inode.c
-> > @@ -408,6 +408,19 @@ static void inode_lru_list_add(struct inode *inode)
-> >  	spin_unlock(&inode->i_sb->s_inode_lru_lock);
-> >  }
-> >  
-> > +/*
-> > + * Add inode to LRU if needed (inode is unused and clean).
-> > + *
-> > + * Needs inode->i_lock held.
-> > + */
-> > +void inode_add_lru(struct inode *inode)
-> > +{
-> > +	if (!(inode->i_state & (I_DIRTY | I_FREEING | I_SYNC)) &&
-> > +	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
-> > +		inode_lru_list_add(inode);
-> 
-> Needs to avoid I_WILL_FREE as well. There's no point putting it on
-> the LRU if we are writing from iput_final()....
-  Yeah, it won't cause any real problems but you are right it's not useful
-to put such inodes into the LRU. I'll send v3 in a moment, now as a proper
-patch submission since we seem to agree...
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Mon, Nov 19, 2012 at 11:06 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > Oh, finally a clue: you seem to have vsyscall emulation
+> > overhead!
+> 
+> Ingo, stop it already!
+> 
+> This is *exactly* the kind of "blame everybody else than 
+> yourself" behavior that I was talking about earlier.
+> 
+> There have been an absolute *shitload* of patches to try to 
+> make up for the schednuma regressions THAT HAVE ABSOLUTELY 
+> NOTHING TO DO WITH SCHEDNUMA, and are all about trying to work 
+> around the fact that it regresses. The whole TLB optimization, 
+> and now this kind of crap.
+> 
+> Ingo, look your code in the mirror some day, and ask yourself: 
+> why do you think this fixes a "regression"?
+
+Because scalability slowdowns are often non-linear.
+
+So with CONFIG_NUMA_BALANCING=y we are taking a higher page 
+fault rate, in exchange for a speedup.
+
+But if some other factor further increases the page fault rate 
+(such as vsyscall emulation) then the speedup can be 
+non-linearly slower than the cost of the technique - washing it 
+out or even turning it into an outright regression.
+
+So, for example:
+
+  - 10K page faults/sec from CONFIG_SCHED_BALANCING: 0.5% cost
+  - 10K page faults/sec from vsyscall emu:           0.5% cost
+
+If the two are mixed together the slowdown is non-linear:
+
+  - 10K+10K page faults/sec overhead is not a linear 1%, but 
+    might be 3%
+
+So because I did not have an old-glibc system like David's, I 
+did not know the actual page fault rate. If it is high enough 
+then nonlinear effects might cause such effects.
+
+This is an entirely valid line of inquiry IMO.
+
+Thanks,
+
+	Ingo
