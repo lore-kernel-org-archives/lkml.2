@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab2KUNmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:42:17 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38268 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab2KUNmP (ORCPT
+	id S1754069Ab2KUNmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:42:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22576 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab2KUNmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:42:15 -0500
-Date: Wed, 21 Nov 2012 13:46:21 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-pm@vger.kernel.org, rjw@sisk.pl, keescook@chromium.org,
-        serge.hallyn@canonical.com, linux-kernel@vger.kernel.org,
-        myungjoo.ham@gmail.com
-Subject: Re: [PATCH] PM / devfreq: missing rcu_read_lock() added for
- find_device_opp()
-Message-ID: <20121121134621.GA30575@mail.hallyn.com>
-References: <CAGXu5j+g8inUZV43GFQzs9KpRvjPGPTJsXinb4Y=wOuOf2jnVQ@mail.gmail.com>
- <1353492634-10730-1-git-send-email-myungjoo.ham@samsung.com>
+	Wed, 21 Nov 2012 08:42:20 -0500
+Date: Wed, 21 Nov 2012 16:42:00 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: MAACHE Mehdi <mehdi.maache@gmail.com>
+Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        tdent48227@gmail.com
+Subject: Re: [PATCH] Staging: rtl8187se: bugfix in r8180_wx.c
+Message-ID: <20121121134200.GH6186@mwanda>
+References: <1353504042-9422-1-git-send-email-mehdi.maache@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353492634-10730-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1353504042-9422-1-git-send-email-mehdi.maache@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting MyungJoo Ham (myungjoo.ham@samsung.com):
-> opp_get_notifier() uses find_device_opp(), which requires to
-> held rcu_read_lock. In order to keep the notifier-header
-> valid, we have added rcu_read_lock().
+On Wed, Nov 21, 2012 at 02:20:42PM +0100, MAACHE Mehdi wrote:
+> This bug was introduced in de171bd6ff "Staging: rtl8187se: r8180_wx: fixed a lot of checkpatch.pl issues".
 > 
-> Reported-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> ---
->  drivers/devfreq/devfreq.c |   26 ++++++++++++++++++++------
->  1 files changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index 45e053e..e91cb22 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -1023,11 +1023,18 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
->   */
->  int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
->  {
-> -	struct srcu_notifier_head *nh = opp_get_notifier(dev);
-> +	struct srcu_notifier_head *nh;
-> +	int ret = 0;
->  
-> +	rcu_read_lock();
-> +	nh = opp_get_notifier(dev);
->  	if (IS_ERR(nh))
-> -		return PTR_ERR(nh);
-> -	return srcu_notifier_chain_register(nh, &devfreq->nb);
-> +		ret = PTR_ERR(nh);
-> +	if (!ret)
-> +		ret = srcu_notifier_chain_register(nh, &devfreq->nb);
 
-Hm, but if I'm seeing right, srcu_notifier_chain_register calls
-mutex_lock(), which sleeps, so you can't do that under rcu_read_lock().
+The change log should describe the patch so we don't have to read
+the code to know what it does.  Idealy it would describe the user
+visible effects of the code, but neither you nor I really know what
+those are.
 
--serge
+Here is a better changelog.  Please resend with this or something
+similar.
+
+---
+Subject: [PATCH v2] Staging: rtl8187se: remove check for IW_ENCODE_DISABLED
+
+The original code had a no-op stub where it checked if
+IW_ENCODE_DISABLED and did nothing.  Then in a cleanup patch we
+accidentally turned the check on.  That was: de171bd6ff "Staging:
+rtl8187se: r8180_wx: fixed a lot of checkpatch.pl issues".
+
+The check should just be removed.
+---
+
+regards,
+dan carpenter
+
