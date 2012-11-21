@@ -1,40 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab2KUFQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 00:16:37 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:53254 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab2KUFQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 00:16:36 -0500
-Date: Wed, 21 Nov 2012 14:16:33 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: Re: [PATCH 11/42] ARM: shmobile: Register PFC platform device
-Message-ID: <20121121051633.GF6570@verge.net.au>
-References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1353464863-10281-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	id S1752165Ab2KUFW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 00:22:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51857 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab2KUFWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 00:22:25 -0500
+X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
+   d="scan'208";a="6244046"
+Message-ID: <50AC668B.3050201@cn.fujitsu.com>
+Date: Wed, 21 Nov 2012 13:28:43 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353464863-10281-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
+ SPARSEMEM_VMEMMAP
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB669D.3060007@gmail.com> <50AC4505.1000007@cn.fujitsu.com> <50AC571C.4030504@gmail.com> <50AC5BC1.9050200@cn.fujitsu.com> <50AC608F.2020307@gmail.com>
+In-Reply-To: <50AC608F.2020307@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 13:22:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 13:22:05,
+	Serialize complete at 2012/11/21 13:22:05
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 03:27:12AM +0100, Laurent Pinchart wrote:
-> Add arch code to register the PFC platform device instead of calling the
-> driver directly. Platform device registration in the sh-pfc driver will
-> be removed.
+At 11/21/2012 01:03 PM, Jaegeuk Hanse Wrote:
+> On 11/21/2012 12:42 PM, Wen Congyang wrote:
+>> At 11/21/2012 12:22 PM, Jaegeuk Hanse Wrote:
+>>> On 11/21/2012 11:05 AM, Wen Congyang wrote:
+>>>> At 11/20/2012 07:16 PM, Jaegeuk Hanse Wrote:
+>>>>> On 11/01/2012 05:44 PM, Wen Congyang wrote:
+>>>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>>
+>>>>>> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
+>>>>>> even if
+>>>>>> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>>>>>>
+>>>>>> So the patch add unregister_memory_section() into __remove_section().
+>>>>> Hi Yasuaki,
+>>>>>
+>>>>> I have a question about these sparse vmemmap memory related
+>>>>> patches. Hot
+>>>>> add memory need allocated vmemmap pages, but this time is allocated by
+>>>>> buddy system. How can gurantee virtual address is continuous to the
+>>>>> address allocated before? If not continuous, page_to_pfn and
+>>>>> pfn_to_page
+>>>>> can't work correctly.
+>>>> vmemmap has its virtual address range:
+>>>> ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+>>>>
+>>>> We allocate memory from buddy system to store struct page, and its
+>>>> virtual
+>>>> address isn't in this range. So we should update the page table:
+>>>>
+>>>> kmalloc_section_memmap()
+>>>>       sparse_mem_map_populate()
+>>>>           pfn_to_page() // get the virtual address in the vmemmap range
+>>>>           vmemmap_populate() // we update page table here
+>>>>
+>>>> When we use vmemmap, page_to_pfn() always returns address in the
+>>>> vmemmap
+>>>> range, not the address that kmalloc() returns. So the virtual address
+>>>> is continuous.
+>>> Hi Congyang,
+>>>
+>>> Another question about memory hotplug. During hot remove memory, it will
+>>> also call memblock_remove to remove related memblock.
+>> IIRC, we don't touch memblock when hot-add/hot-remove memory. memblock is
+>> only used for bootmem allocator. I think it isn't used after booting.
+> 
+> In IBM pseries servers.
+> 
+> pseries_remove_memory()
+>     pseries_remove_memblock()
+>         memblock_remove()
 
-I'm not really sure that I understand the motivation for
-moving platform device registration from the driver into
-mach-shmobile. Could you explain this a little?
+It seems that pseries servers don't use ACPI(ACPI is only supported for
+ia64 and x86 now. arm will be supported in the furture).
+
+I am not ppc expert, and I don't know why we touch memblock when hotadding
+memory in ppc case. But IIRC, we don't need memblock after the machine has
+booted up in x86 case. So there is no need to touch it when hotadd/hotremove
+the memory in x86 case.
+
+Thanks
+Wen Congyang
+
+> 
+> Furthermore, memblock is set to record available memory ranges get from
+> e820 map(you can check it in memblock_x86_fill()) in x86 case, after
+> hot-remove memory, this range of memory can't be available, why not
+> remove them as pseries servers' codes do.
+> 
+>>> memblock_remove()
+>>>             __memblock_remove()memory-hotplug: unregister memory
+>>> section on SPARSEMEM_VMEMMAP
+>>>
+>>>                     memblock_isolate_range()
+>>>                     memblock_remove_region()
+>>>
+>>> But memblock_isolate_range() only record fully contained regions,
+>>> regions which are partial overlapped just be splitted instead of record.
+>>> So these partial overlapped regions can't be removed. Where I miss?
+>> No, memblock_isolate_range() can deal with partial overlapped region.
+>> =====================
+>>         if (rbase < base) {
+>>             /*
+>>              * @rgn intersects from below.  Split and continue
+>>              * to process the next region - the new top half.
+>>              */
+>>             rgn->base = base;
+>>             rgn->size -= base - rbase;
+>>             type->total_size -= base - rbase;
+>>             memblock_insert_region(type, i, rbase, base - rbase,
+>>                            memblock_get_region_node(rgn));
+>>         } else if (rend > end) {
+>>             /*
+>>              * @rgn intersects from above.  Split and redo the
+>>              * current region - the new bottom half.
+>>              */
+>>             rgn->base = end;
+>>             rgn->size -= end - rbase;
+>>             type->total_size -= end - rbase;
+>>             memblock_insert_region(type, i--, rbase, end - rbase,
+>>                            memblock_get_region_node(rgn));
+>> =====================
+>>
+>> If the region is partial overlapped region, we will split the old
+>> region into
+>> two regions. After doing this, it is full contained region now.
+> 
+> You are right, I misunderstand the codes.
+> 
+>>
+>> Thanks
+>> Wen Congyang
+>>
+>>> Regards,
+>>> Jaegeuk
+>>>
+>>>> Thanks
+>>>> Wen Congyang
+>>>>> Regards,
+>>>>> Jaegeuk
+>>>>>
+>>>>>> CC: David Rientjes <rientjes@google.com>
+>>>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>>>> CC: Len Brown <len.brown@intel.com>
+>>>>>> CC: Christoph Lameter <cl@linux.com>
+>>>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>> ---
+>>>>>>     mm/memory_hotplug.c | 13 ++++++++-----
+>>>>>>     1 file changed, 8 insertions(+), 5 deletions(-)
+>>>>>>
+>>>>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>>>>> index ca07433..66a79a7 100644
+>>>>>> --- a/mm/memory_hotplug.c
+>>>>>> +++ b/mm/memory_hotplug.c
+>>>>>> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
+>>>>>> struct zone *zone,
+>>>>>>     #ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>>>>>     static int __remove_section(struct zone *zone, struct mem_section
+>>>>>> *ms)
+>>>>>>     {
+>>>>>> -    /*
+>>>>>> -     * XXX: Freeing memmap with vmemmap is not implement yet.
+>>>>>> -     *      This should be removed later.
+>>>>>> -     */
+>>>>>> -    return -EBUSY;
+>>>>>> +    int ret = -EINVAL;
+>>>>>> +
+>>>>>> +    if (!valid_section(ms))
+>>>>>> +        return ret;
+>>>>>> +
+>>>>>> +    ret = unregister_memory_section(ms);
+>>>>>> +
+>>>>>> +    return ret;
+>>>>>>     }
+>>>>>>     #else
+>>>>>>     static int __remove_section(struct zone *zone, struct mem_section
+>>>>>> *ms)
+>>>
+> 
+> 
+
