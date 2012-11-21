@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2KUTfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:35:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51026 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab2KUTfR (ORCPT
+	id S1755891Ab2KUTgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:36:33 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51870 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab2KUTgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:35:17 -0500
-Date: Wed, 21 Nov 2012 11:35:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of
- pages occupied by memmap
-Message-Id: <20121121113515.3fa5a60c.akpm@linux-foundation.org>
-In-Reply-To: <50ACEAAD.60306@gmail.com>
-References: <20121115112454.e582a033.akpm@linux-foundation.org>
-	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
-	<1353254850-27336-5-git-send-email-jiang.liu@huawei.com>
-	<20121119154240.91efcc53.akpm@linux-foundation.org>
-	<50AB9F4A.5050500@gmail.com>
-	<20121120111942.c9596d3f.akpm@linux-foundation.org>
-	<50ACEAAD.60306@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 21 Nov 2012 14:36:32 -0500
+Message-ID: <50AD2D16.7050304@oracle.com>
+Date: Wed, 21 Nov 2012 14:35:50 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121112 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, penberg@kernel.org
+Subject: Re: [PATCH] x86, smpboot: allow manual hotplug of CPUs
+References: <1353522136-14944-1-git-send-email-sasha.levin@oracle.com> <50AD1CB6.9030707@zytor.com> <50AD1EE7.6020304@oracle.com> <50AD1F88.1010006@zytor.com> <50AD2953.5070700@oracle.com> <50AD2A85.7030705@zytor.com>
+In-Reply-To: <50AD2A85.7030705@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 22:52:29 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
-
-> On 11/21/2012 03:19 AM, Andrew Morton wrote:
-> > On Tue, 20 Nov 2012 23:18:34 +0800
-> > Jiang Liu <liuj97@gmail.com> wrote:
-> > 
-> >>>> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
-> >>>> +				      unsigned long present_pages)
-> >>>> +{
-> >>>> +	unsigned long pages = spanned_pages;
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * Provide a more accurate estimation if there are big holes within
-> >>>> +	 * the zone and SPARSEMEM is in use.
-> >>>> +	 */
-> >>>> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
-> >>>> +	    IS_ENABLED(CONFIG_SPARSEMEM))
-> >>>> +		pages = present_pages;
-> >>>> +
-> >>>> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
-> >>>> +}
-> >>>
-> >>> Please explain the ">> 4" heuristc more completely - preferably in both
-> >>> the changelog and code comments.  Why can't we calculate this
-> >>> requirement exactly?  That might require a second pass, but that's OK for
-> >>> code like this?
-> >> Hi Andrew,
-> >> 	A normal x86 platform always have some holes within the DMA ZONE,
-> >> so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
-> >> ZONE on x86 platforms. 
-> >> 	Because the memmap_size is just an estimation, I feel it's OK to
-> >> remove the ">> 4" heuristic, that shouldn't affect much.
-> > 
-> > Again: why can't we calculate this requirement exactly?  That might
-> > require a second pass, but that's OK for code like this?
+On 11/21/2012 02:24 PM, H. Peter Anvin wrote:
+> On 11/21/2012 11:19 AM, Sasha Levin wrote:
+>>>
+>>> So, are there any mptables platforms which support hotplug?  If the
+>>> answer is "KVM" then the answer is that KVM needs to move to ACPI to get
+>>> the proper functionality; putting a hack in is really not okay.
+>>
+>> There are no platforms which support actual hotplug, but you can still set
+>> existing processors as disabled in the table and without this patch there's
+>> no way enable them.
+>>
+>> I'm not sure if it's a "hack" though - the presentation of hotpluggable cpus
+>> is the almost the same between mptable and acpi, and acpi provides a way to
+>> manually probe/release cpus as well. The only difference is that acpi also
+>> provides notifications about such events.
+>>
+>> Actually, maybe acpi should start using probe/release as well... hmm...
+>>
 > 
-> Hi Andrew,
-> 	If there are holes within a zone, it may cost us one or two extra pages
-> for each populated region within the zone due to alignment because memmap for 
-> each populated regions may not naturally aligned on page boundary.
+> The bottom line is that I don't want the underlying implementation to
+> end up with a user-visible difference... therein lies madness and lots
+> of bugs.
 
-Right.  So with an additional pass across the zone and a bit of
-arithmetic, we can calculate the exact space requirement for memmap?
-No need for kludgy heuristics?
+Okay, so if in the case of ACPI, 'probe' will call acpi_processor_add()
+and 'release' would call acpi_processor_remove() so the behaviour
+would be the same for both ACPI and mptables. Is this okay?
 
-> Originally the ">> 4" heuristic is to trade off these extra memmap pages,
-> especially for small zones linke DMA zone.
 
+Thanks,
+Sasha
