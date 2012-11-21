@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab2KUPZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:25:50 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33832 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab2KUPZs (ORCPT
+	id S1755089Ab2KUP1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:27:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35842 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921Ab2KUP1G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:25:48 -0500
-Message-ID: <50ACF26D.9090506@gmail.com>
-Date: Wed, 21 Nov 2012 23:25:33 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Wed, 21 Nov 2012 10:27:06 -0500
 MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, mtosatti@redhat.com,
-        Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        zhangyanfei@cn.fujitsu.com
-Subject: [PATCH v6 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
-References: <50ACF210.5020802@gmail.com>
-In-Reply-To: <50ACF210.5020802@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Message-ID: <3b3b72db-32fd-446c-9971-e119a8993b3d@default>
+Date: Wed, 21 Nov 2012 07:26:58 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Konrad Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: RE: [PATCH] xen: tmem: selfballooning should be enabled when xen tmem
+ is enabled
+References: <748aba10-531a-4ad5-bad3-7af0f86c0489@default>
+ <20121121024753.GB11912@konrad-lan.dumpdata.com>
+In-Reply-To: <20121121024753.GB11912@konrad-lan.dumpdata.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an atomic notifier list named vmclear_notifier_list.
-When loading kvm-intel module, a notifier will be registered in
-the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
-needed.
+> From: Konrad Rzeszutek Wilk
+> Sent: Tuesday, November 20, 2012 7:48 PM
+> To: Dan Magenheimer
+> Cc: linux-kernel@vger.kernel.org; xen-devel@lists.xen.org
+> Subject: Re: [PATCH] xen: tmem: selfballooning should be enabled when xen tmem is enabled
+> 
+> On Tue, Nov 20, 2012 at 02:42:18PM -0800, Dan Magenheimer wrote:
+> > Konrad: Any chance this can get in for the upcoming window?
+> > (Or is it enough of a bug fix that it can go in at an -rcN?)
+> 
+> Lets do it in the next merge window. About now I am comfortable
+> only with regression fixes.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/x86/include/asm/kexec.h |    2 ++
- arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
+OK, thanks!
 
-diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-index 317ff17..43e0db3 100644
---- a/arch/x86/include/asm/kexec.h
-+++ b/arch/x86/include/asm/kexec.h
-@@ -163,6 +163,8 @@ struct kimage_arch {
- };
- #endif
- 
-+extern struct atomic_notifier_head vmclear_notifier_list;
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* _ASM_X86_KEXEC_H */
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 13ad899..c953d50 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -16,6 +16,8 @@
- #include <linux/delay.h>
- #include <linux/elf.h>
- #include <linux/elfcore.h>
-+#include <linux/module.h>
-+#include <linux/notifier.h>
- 
- #include <asm/processor.h>
- #include <asm/hardirq.h>
-@@ -30,6 +32,19 @@
- 
- int in_crash_kexec;
- 
-+/*
-+ * The list is used to VMCLEAR vmcss loaded on all
-+ * cpus. And when loading kvm_intel module, the
-+ * vmclear function will be registered in the list.
-+ */
-+ATOMIC_NOTIFIER_HEAD(vmclear_notifier_list);
-+EXPORT_SYMBOL_GPL(vmclear_notifier_list);
-+
-+static inline void cpu_emergency_vmclear_loaded_vmcss(void)
-+{
-+	atomic_notifier_call_chain(&vmclear_notifier_list, 0, NULL);
-+}
-+
- #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
- 
- static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
-@@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
- #endif
- 	crash_save_cpu(regs, cpu);
- 
-+	/*
-+	 * VMCLEAR vmcss loaded on all cpus if needed.
-+	 */
-+	cpu_emergency_vmclear_loaded_vmcss();
-+
- 	/* Disable VMX or SVM if needed.
- 	 *
- 	 * We need to disable virtualization on all CPUs.
-@@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 
- 	kdump_nmi_shootdown_cpus();
- 
-+	/*
-+	 * VMCLEAR vmcss loaded on this cpu if needed.
-+	 */
-+	cpu_emergency_vmclear_loaded_vmcss();
-+
- 	/* Booting kdump kernel with VMX or SVM enabled won't work,
- 	 * because (among other limitations) we can't disable paging
- 	 * with the virt flags.
--- 
-1.7.1
-
+> > It was just pointed out to me that some kernels have
+> > cleancache and frontswap and xen_tmem enabled but NOT
+> > xen_selfballooning!  While this configuration should be
+> > possible, nearly all kernels that have CONFIG_XEN_TMEM=y should
+> > also have CONFIG_XEN_SELFBALLOONING=y, since Transcendent
+> > Memory (tmem) for Xen has very limited value without
+> > selfballooning.
+> >
+> > This is probably a result of a Kconfig mistake fixed I think
+> > by the patch below.  Note that the year-old Oracle UEK2 kernel
+> > distro has both CONFIG_XEN_TMEM and CONFIG_XEN_SELFBALLOONING
+> > enabled, as does a Fedora 17 kernel update (3.6.6-1.fc17), so
+> > the combination should be well tested.  Also, Xen tmem (and thus
+> > selfballooning) are currently only enabled when a kernel boot
+> > parameter is supplied so there is no runtime impact without
+> > that boot parameter.
+> >
+> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >
+> > diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> > index d4dffcd..b5f02f3 100644
+> > --- a/drivers/xen/Kconfig
+> > +++ b/drivers/xen/Kconfig
+> > @@ -10,9 +10,9 @@ config XEN_BALLOON
+> >  	  return unneeded memory to the system.
+> >
+> >  config XEN_SELFBALLOONING
+> > -	bool "Dynamically self-balloon kernel memory to target"
+> > -	depends on XEN && XEN_BALLOON && CLEANCACHE && SWAP && XEN_TMEM
+> > -	default n
+> > +	bool
+> > +	depends on XEN_BALLOON && SWAP
+> > +	default y if XEN_TMEM
+> >  	help
+> >  	  Self-ballooning dynamically balloons available kernel memory driven
+> >  	  by the current usage of anonymous memory ("committed AS") and
