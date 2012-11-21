@@ -1,68 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422637Ab2KUUya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 15:54:30 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39910 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422626Ab2KUUy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 15:54:28 -0500
-Date: Wed, 21 Nov 2012 12:54:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mike Turquette <mturquette@ti.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
-Message-ID: <20121121205424.GA25470@core.coreip.homeip.net>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
- <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
- <20121121204324.21126.99677@nucleus>
+	id S1030206Ab2KUUyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 15:54:41 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:56760 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030184Ab2KUUyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 15:54:40 -0500
+Date: Wed, 21 Nov 2012 13:54:33 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter H?we <PeterHuewe@gmx.de>
+Cc: Peter.Huewe@infineon.com, key@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: [PATCH v5] TPM: Issue TPM_STARTUP at driver load if the TPM has not
+ been started
+Message-ID: <20121121205433.GA15285@obsidianresearch.com>
+References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
+ <20121121183713.GA12822@obsidianresearch.com>
+ <201211212117.55040.PeterHuewe@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121121204324.21126.99677@nucleus>
+In-Reply-To: <201211212117.55040.PeterHuewe@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 12:43:24PM -0800, Mike Turquette wrote:
-> Quoting Viresh Kumar (2012-11-20 02:13:55)
-> > On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > > We'll need to invoke clk_unprepare() via a pointer in our devm_*
-> > > conversion so let's uninline the pair.
-> > 
-> > Sorry, but you aren't doing this :(
-> > This routine is already uninlined as it is in clk.c
-> > 
-> > Instead you are just moving clk_prepare(), etc calls within
-> > #ifdef CONFIG_HAVE_CLK
-> > #else
-> > #endif
-> > 
-> > I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
-> > earlier. Can they exist without CONFIG_HAVE_CLK
-> > 
-> > @Mike: ?
-> > 
-> 
-> HAVE_CLK logically wraps HAVE_CLK_PREPARE.  There is no point in
-> selecting HAVE_CLK_PREPARE without HAVE_CLK.
-> 
-> Looking through the code I see that this used to be the case.  Commit
-> 93abe8e "clk: add non CONFIG_HAVE_CLK routines" moved the
-> clk_(un)prepare declarations outside of #ifdef CONFIG_HAVE_CLK.  That
-> commit was authored by you.  Can you elaborate on why that aspect of the
-> patch was needed?
-> 
+The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
+TPM_STARTUP has not been issued. Detect this and automatically
+issue TPM_STARTUP.
 
-BTW, it looks like the only place where we select HAVE_CLK_PREPARE is
-IMX platform and it also selects COMMON_CLK so I think HAVE_CLK_PREPARE
-can be removed now.
+This is for embedded applications where the kernel is the first thing
+to touch the TPM.
 
-Thanks.
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Tested-by: Peter Huewe <peter.huewe@infineon.com>
+Reviewed-by: Peter Huewe <peter.huewe@infineon.com>
+---
+ drivers/char/tpm/tpm.c |   44 ++++++++++++++++++++++++++++++++++++++++----
+ drivers/char/tpm/tpm.h |    6 ++++++
+ 2 files changed, 46 insertions(+), 4 deletions(-)
 
+v5 changes:
+ - Use %zd for printing ssize_t
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 93211df..433ad6b 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -468,7 +468,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+ 		return -EFAULT;
+ 
+ 	err = be32_to_cpu(cmd->header.out.return_code);
+-	if (err != 0)
++	if (err != 0 && desc)
+ 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
+ 
+ 	return err;
+@@ -528,6 +528,25 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
+ }
+ EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
+ 
++#define TPM_ORD_STARTUP cpu_to_be32(153)
++#define TPM_ST_CLEAR cpu_to_be16(1)
++#define TPM_ST_STATE cpu_to_be16(2)
++#define TPM_ST_DEACTIVATED cpu_to_be16(3)
++static const struct tpm_input_header tpm_startup_header = {
++	.tag = TPM_TAG_RQU_COMMAND,
++	.length = cpu_to_be32(12),
++	.ordinal = TPM_ORD_STARTUP
++};
++
++static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
++{
++	struct tpm_cmd_t start_cmd;
++	start_cmd.header.in = tpm_startup_header;
++	start_cmd.params.startup_in.startup_type = startup_type;
++	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
++			    "attempting to start the TPM");
++}
++
+ int tpm_get_timeouts(struct tpm_chip *chip)
+ {
+ 	struct tpm_cmd_t tpm_cmd;
+@@ -541,11 +560,28 @@ int tpm_get_timeouts(struct tpm_chip *chip)
+ 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+ 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
++	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
+ 
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+-			"attempting to determine the timeouts");
+-	if (rc)
++	if (rc == TPM_ERR_INVALID_POSTINIT) {
++		/* The TPM is not started, we are the first to talk to it.
++		   Execute a startup command. */
++		dev_info(chip->dev, "Issuing TPM_STARTUP");
++		if (tpm_startup(chip, TPM_ST_CLEAR))
++			return rc;
++
++		tpm_cmd.header.in = tpm_getcap_header;
++		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
++		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
++		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
++		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
++				  NULL);
++	}
++	if (rc) {
++		dev_err(chip->dev,
++			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
++			rc);
+ 		goto duration;
++	}
+ 
+ 	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
+ 	    be32_to_cpu(tpm_cmd.header.out.length)
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 8ef7649..8971b12 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -47,6 +47,7 @@ enum tpm_addr {
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+ #define TPM_ERR_DISABLED        0x7
++#define TPM_ERR_INVALID_POSTINIT 38
+ 
+ #define TPM_HEADER_SIZE		10
+ extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
+@@ -291,6 +292,10 @@ struct tpm_getrandom_in {
+ 	__be32 num_bytes;
+ }__attribute__((packed));
+ 
++struct tpm_startup_in {
++	__be16	startup_type;
++} __packed;
++
+ typedef union {
+ 	struct	tpm_getcap_params_out getcap_out;
+ 	struct	tpm_readpubek_params_out readpubek_out;
+@@ -301,6 +306,7 @@ typedef union {
+ 	struct	tpm_pcrextend_in pcrextend_in;
+ 	struct	tpm_getrandom_in getrandom_in;
+ 	struct	tpm_getrandom_out getrandom_out;
++	struct tpm_startup_in startup_in;
+ } tpm_cmd_params;
+ 
+ struct tpm_cmd_t {
 -- 
-Dmitry
+1.7.5.4
+
