@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab2KUHRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:17:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42615 "EHLO
+	id S1753054Ab2KUHRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:17:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42620 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab2KUHQd (ORCPT
+	with ESMTP id S1752650Ab2KUHQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Nov 2012 02:16:33 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,79 +12,48 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 09/12] x86, boot: update cmd_line_ptr to unsigned long
-Date: Tue, 20 Nov 2012 23:16:07 -0800
-Message-Id: <1353482170-10160-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 12/12] x86: remove 1024g limitation for kexec buffer on 64bit
+Date: Tue, 20 Nov 2012 23:16:10 -0800
+Message-Id: <1353482170-10160-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
 References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-boot/compressed/misc.c could be with 64 bit, and cmd_line_ptr could
-above 4g.
+Now 64bit kernel supports more than 1T ram and kexec tools
+could find buffer above 1T, remove that obsolete limitation.
+and use MAXMEM instead.
 
-So change to unsigned long instead. that will be 64bit in 64bit,
-and 32bit in 32bit.
+Tested on system more than 1024g ram.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- arch/x86/boot/boot.h    |    8 ++++----
- arch/x86/boot/cmdline.c |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/kexec.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 7fadf80..5b75319 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -285,11 +285,11 @@ struct biosregs {
- void intcall(u8 int_no, const struct biosregs *ireg, struct biosregs *oreg);
+diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+index 317ff17..11bfdc5 100644
+--- a/arch/x86/include/asm/kexec.h
++++ b/arch/x86/include/asm/kexec.h
+@@ -48,11 +48,11 @@
+ # define vmcore_elf_check_arch_cross(x) ((x)->e_machine == EM_X86_64)
+ #else
+ /* Maximum physical address we can use pages from */
+-# define KEXEC_SOURCE_MEMORY_LIMIT      (0xFFFFFFFFFFUL)
++# define KEXEC_SOURCE_MEMORY_LIMIT      (MAXMEM-1)
+ /* Maximum address we can reach in physical address mode */
+-# define KEXEC_DESTINATION_MEMORY_LIMIT (0xFFFFFFFFFFUL)
++# define KEXEC_DESTINATION_MEMORY_LIMIT (MAXMEM-1)
+ /* Maximum address we can use for the control pages */
+-# define KEXEC_CONTROL_MEMORY_LIMIT     (0xFFFFFFFFFFUL)
++# define KEXEC_CONTROL_MEMORY_LIMIT     (MAXMEM-1)
  
- /* cmdline.c */
--int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize);
--int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
-+int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize);
-+int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
- 
- 	if (cmd_line_ptr >= 0x100000)
- 		return -1;      /* inaccessible */
-@@ -299,7 +299,7 @@ static inline int cmdline_find_option(const char *option, char *buffer, int bufs
- 
- static inline int cmdline_find_option_bool(const char *option)
- {
--	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
- 
- 	if (cmd_line_ptr >= 0x100000)
- 		return -1;      /* inaccessible */
-diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
-index 768f00f..625d21b 100644
---- a/arch/x86/boot/cmdline.c
-+++ b/arch/x86/boot/cmdline.c
-@@ -27,7 +27,7 @@ static inline int myisspace(u8 c)
-  * Returns the length of the argument (regardless of if it was
-  * truncated to fit in the buffer), or -1 on not found.
-  */
--int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize)
-+int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize)
- {
- 	addr_t cptr;
- 	char c;
-@@ -99,7 +99,7 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
-  * Returns the position of that option (starts counting with 1)
-  * or 0 on not found
-  */
--int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
-+int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option)
- {
- 	addr_t cptr;
- 	char c;
+ /* Allocate one page for the pdp and the second for the code */
+ # define KEXEC_CONTROL_PAGE_SIZE  (4096UL + 4096UL)
 -- 
 1.7.7
 
