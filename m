@@ -1,111 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2KVTLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:11:17 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62689 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab2KVTLO (ORCPT
+	id S1756563Ab2KVTLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:11:46 -0500
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:60182 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394Ab2KVTLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:11:14 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: [PATCH 2/2] input: gpio-keys: Add runtime support
-Date: Thu, 22 Nov 2012 13:23:37 +0000
-Message-Id: <1353590617-11466-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
-References: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 Nov 2012 14:11:09 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mmc: dw_mmc: Handle wp-gpios from device tree
+Date: Wed, 21 Nov 2012 14:03:03 -0800
+Message-Id: <1353535387-32106-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1353535387-32106-1-git-send-email-dianders@chromium.org>
+References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+On some SoCs (like exynos5250) you need to use an external GPIO for
+write protect.  Add support for wp-gpios to the core dw_mmc driver
+since it could be useful across multiple SoCs.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+With this change I am able to make use of the write protect for the
+external SD slot on exynos5250-snow.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/input/keyboard/gpio_keys.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/mmc/host/dw_mmc.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 2cf6757..cff548c 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -29,6 +29,7 @@
- #include <linux/of_platform.h>
- #include <linux/of_gpio.h>
- #include <linux/spinlock.h>
-+#include <linux/pm_runtime.h>
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 5b41348..9c79870 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -34,6 +34,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/workqueue.h>
+ #include <linux/of.h>
++#include <linux/of_gpio.h>
  
- struct gpio_button_data {
- 	const struct gpio_keys_button *button;
-@@ -533,6 +534,7 @@ static int gpio_keys_open(struct input_dev *input)
- 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
- 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
+ #include "dw_mmc.h"
  
-+	pm_runtime_get_sync(input->dev.parent);
- 	ddata->enabled = true;
+@@ -74,6 +75,7 @@ struct idmac_desc {
+  * struct dw_mci_slot - MMC slot state
+  * @mmc: The mmc_host representing this slot.
+  * @host: The MMC controller this slot is using.
++ * @wp_gpio: If gpio_is_valid() we'll use this to read write protect.
+  * @ctype: Card type for this slot.
+  * @mrq: mmc_request currently being processed or waiting to be
+  *	processed, or NULL when the slot is idle.
+@@ -88,6 +90,8 @@ struct dw_mci_slot {
+ 	struct mmc_host		*mmc;
+ 	struct dw_mci		*host;
  
- 	return pdata->enable ? pdata->enable(input->dev.parent) : 0;
-@@ -547,6 +549,8 @@ static void gpio_keys_close(struct input_dev *input)
- 
- 	if (pdata->disable)
- 		pdata->disable(input->dev.parent);
++	int			wp_gpio;
 +
-+	pm_runtime_put(input->dev.parent);
+ 	u32			ctype;
+ 
+ 	struct mmc_request	*mrq;
+@@ -832,6 +836,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+ 		read_only = 0;
+ 	else if (brd->get_ro)
+ 		read_only = brd->get_ro(slot->id);
++	else if (gpio_is_valid(slot->wp_gpio))
++		read_only = gpio_get_value(slot->wp_gpio);
+ 	else
+ 		read_only =
+ 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
+@@ -1802,6 +1808,29 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ 			       " as 1\n");
+ 	return bus_wd;
  }
- 
- /*
-@@ -708,6 +712,8 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 	input->id.product = 0x0001;
- 	input->id.version = 0x0100;
- 
-+	pm_runtime_enable(&pdev->dev);
 +
- 	/* Enable auto repeat feature of Linux input subsystem */
- 	if (pdata->rep)
- 		__set_bit(EV_REP, input->evbit);
-@@ -773,6 +779,8 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
- 	struct input_dev *input = ddata->input;
- 	int i;
- 
-+	pm_runtime_disable(&pdev->dev);
++/* find the write protect gpio for a given slot; or -1 if none specified */
++static u32 dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
++	int gpio;
 +
- 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
++	if (!np)
++		return -1;
++
++	gpio = of_get_named_gpio(np, "wp-gpios", 0);
++
++	/* Having a missing entry is valid; return silently */
++	if (!gpio_is_valid(gpio))
++		return -1;
++
++	if (devm_gpio_request(dev, gpio, "dw-mci-wp")) {
++		dev_warn(dev, "gpio [%d] request failed\n", gpio);
++		return -1;
++	}
++
++	return gpio;
++}
+ #else /* CONFIG_OF */
+ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ {
+@@ -1811,6 +1840,10 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+ {
+ 	return NULL;
+ }
++static u32 dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	return -1;
++}
+ #endif /* CONFIG_OF */
  
- 	device_init_wakeup(&pdev->dev, 0);
-@@ -805,8 +813,8 @@ static int gpio_keys_suspend(struct device *dev)
- 		}
- 	} else {
- 		ddata->enable_after_suspend = ddata->enabled;
--		if (ddata->enabled)
--			gpio_keys_close(ddata->input);
-+		if (ddata->enabled && ddata->disable)
-+			ddata->disable(dev);
- 	}
+ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+@@ -1923,6 +1956,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	else
+ 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
  
- 	return 0;
-@@ -826,8 +834,9 @@ static int gpio_keys_resume(struct device *dev)
- 			gpio_keys_gpio_report_event(bdata);
- 	}
++	slot->wp_gpio = dw_mci_of_get_wp_gpio(host->dev, slot->id);
++
+ 	mmc_add_host(mmc);
  
--	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
--		gpio_keys_open(ddata->input);
-+	if (!device_may_wakeup(dev) && ddata->enable_after_suspend
-+	    && ddata->enable)
-+		ddata->enable(dev);
- 
- 	input_sync(ddata->input);
- 
+ #if defined(CONFIG_DEBUG_FS)
 -- 
-1.7.9.5
+1.7.7.3
 
