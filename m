@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab2KUMmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:42:52 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56030 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab2KUMmu (ORCPT
+	id S1752457Ab2KUMpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:45:47 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63477 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2KUMpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:42:50 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: Re: [PATCH 11/42] ARM: shmobile: Register PFC platform device
-Date: Wed, 21 Nov 2012 13:43:15 +0100
-Message-ID: <1633136.U5nCbqepA4@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121121051633.GF6570@verge.net.au>
-References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1353464863-10281-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <20121121051633.GF6570@verge.net.au>
+	Wed, 21 Nov 2012 07:45:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20121116192606.11799.35711.stgit@localhost.localdomain>
+References: <20121116192606.11799.35711.stgit@localhost.localdomain>
+Date: Wed, 21 Nov 2012 07:45:45 -0500
+Message-ID: <CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
+Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
+From: Josh Boyer <jwboyer@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+On Fri, Nov 16, 2012 at 2:27 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>
+> [The fb maintainer appears to be absent at the moment].
+>
+> This is needed to fix a pile of lockdep splats that now show up because console_lock()
+> is being properly audited. Hugh Dickins and Sasha Levin have tested it and both reports
+> all looks good. This is probably not the whole story - the entire fb layer has locking
+> confusion problems that were previously hidden but it seems to get the ones people hit
+> in testing. This hopefully explains a few of the weird fb hangs that have been floating
+> around forever.
+>
+> From: Alan Cox <alan@linux.intel.com>
+>
+> Adjust the console layer to allow a take over call where the caller already
+> holds the locks. Make the fb layer lock in order.
+>
+> This s partly a band aid, the fb layer is terminally confused about the
+> locking rules it uses for its notifiers it seems.
+>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-On Wednesday 21 November 2012 14:16:33 Simon Horman wrote:
-> On Wed, Nov 21, 2012 at 03:27:12AM +0100, Laurent Pinchart wrote:
-> > Add arch code to register the PFC platform device instead of calling the
-> > driver directly. Platform device registration in the sh-pfc driver will
-> > be removed.
-> 
-> I'm not really sure that I understand the motivation for
-> moving platform device registration from the driver into
-> mach-shmobile. Could you explain this a little?
+Should this eventually get into the stable trees?
 
-Sure.
-
-The traditional device model associates a driver with a device. For historical 
-reasons mach-shmobile doesn't define and register a platform device for PFC 
-hardware but calls an initialization function directly in the PFC driver, 
-passing it what is essentially platform data, including resources.
-
-The PFC driver needs a struct device to pass to the pinctrl subsystem. As no 
-struct device corresponding to the hardware is created by mach-shmobile, the 
-driver creates one, registers it and registers itself as a platform driver. 
-The probe function is thus called synchronously, with a valid struct 
-platform_device.
-
-This is a hack that can't support device tree based instantiation, as the 
-platform device will be created when the platform is populated from the DT in 
-that case. To support DT (and to remove the hack), I've moved platform device 
-registration to mach-shmobile as it should be, like already done for all (or 
-most, I haven't checked if there's no similar hacks in other drivers) the 
-platform devices. This allows converting a board to DT by just adding the PFC 
-device node in the DT and removing the platform device registration call in 
-board code.
-
-I hope this made the intend of this part of the patch series clear. If not, 
-just tell me and I'll try to provide more explanations.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+josh
