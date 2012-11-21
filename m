@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030213Ab2KUVPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 16:15:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36550 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964878Ab2KUVPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 16:15:11 -0500
-Date: Wed, 21 Nov 2012 13:13:19 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: axboe@kernel.dk, lucho@ionkov.net, ericvh@gmail.com, tytso@mit.edu,
-        rminnich@sandia.gov, viro@zeniv.linux.org.uk,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
- page writes
-Message-ID: <20121121211319.GA32202@blackbox.djwong.org>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
+	id S1030224Ab2KUVPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 16:15:32 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:48617 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964856Ab2KUVPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 16:15:30 -0500
+Date: Wed, 21 Nov 2012 14:15:29 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: [PATCH] TPM: Work around buggy TPMs that block during continue self
+ test
+Message-ID: <20121121211529.GA27696@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121121021543.GI10507@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > tries to mount in write mode.
-> > 
-> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > ---
-> >  fs/ext3/super.c |    8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> > 
-> > 
-> > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > index 5366393..5b3725d 100644
-> > --- a/fs/ext3/super.c
-> > +++ b/fs/ext3/super.c
-> > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> >  			"forcing read-only mode");
-> >  		res = MS_RDONLY;
-> >  	}
-> > +	if (!read_only &&
-> > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > +		ext3_msg(sb, KERN_ERR,
-> > +			"error: ext3 cannot safely write data to a disk "
-> > +			"requiring stable pages writes; forcing read-only "
-> > +			"mode.  Upgrading to ext4 is recommended.");
-> > +		res = MS_RDONLY;
-> > +	}
-> >  	if (read_only)
-> >  		return res;
-> >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
->   Why this? ext3 should be fixed by your change to
-> filemap_page_mkwrite()... Or does testing show otherwise?
+We've been testing an alternative TPM for our embedded products and
+found random kernel boot failures due to time outs after the continue
+self test command.
 
-Yes, it's still broken even with this new set of changes.  Now that I think
-about it a little more, I recall that writeback mode was actually fine, so this
-is a little harsh.
+This was happening randomly, and has been *very* hard to track down, but it
+looks like with this chip there is some kind of race with the tpm_tis_status()
+check of TPM_STS_COMMAND_READY. If things get there 'too fast' then
+it sees the chip is ready, or tpm_tis_ready() works. Otherwise it takes
+somewhere over 400ms before the chip will return TPM_STS_COMMAND_READY.
 
-Hm... looking at the ordered code a little more, it looks like
-ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-to write mapped buffers back through the journal?  Taking it out seems to fix
-ordered mode, though I have a suspicion that it might very well break ordered
-mode too.
+Adding some delay after tpm_continue_selftest() makes things reliably
+hit the failure path, otherwise it is a crapshot.
 
---D
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The spec says it should be returning TPM_WARN_DOING_SELFTEST, not holding
+off on ready..
+
+Boot log during this event looks like this:
+
+tpm_tis 70030000.tpm_tis: 1.2 TPM (device-id 0x3204, rev-id 64)
+tpm_tis 70030000.tpm_tis: Issuing TPM_STARTUP
+tpm_tis 70030000.tpm_tis: tpm_transmit: tpm_send: error -62
+tpm_tis 70030000.tpm_tis: [Hardware Error]: TPM command timed out during continue self test
+tpm_tis 70030000.tpm_tis: tpm_transmit: tpm_send: error -62
+tpm_tis 70030000.tpm_tis: [Hardware Error]: TPM command timed out during continue self test
+tpm_tis 70030000.tpm_tis: tpm_transmit: tpm_send: error -62
+tpm_tis 70030000.tpm_tis: [Hardware Error]: TPM command timed out during continue self test
+tpm_tis 70030000.tpm_tis: tpm_transmit: tpm_send: error -62
+tpm_tis 70030000.tpm_tis: [Hardware Error]: TPM command timed out during continue self test
+
+The other TPM vendor we use doesn't show this wonky behaviour:
+tpm_tis 70030000.tpm_tis: 1.2 TPM (device-id 0xFE, rev-id 70)
+
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 454e032..61d62c2 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -857,7 +857,7 @@ int tpm_do_selftest(struct tpm_chip *chip)
+ {
+ 	int rc;
+ 	unsigned int loops;
+-	unsigned int delay_msec = 1000;
++	unsigned int delay_msec = 100;
+ 	unsigned long duration;
+ 	struct tpm_cmd_t cmd;
+ 
+@@ -878,6 +878,14 @@ int tpm_do_selftest(struct tpm_chip *chip)
+ 		cmd.header.in = pcrread_header;
+ 		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
+ 		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
++		/* Some buggy TPMs will not respond to tpm_tis_ready() for
++		 * around 300ms while the self test is ongoing, keep trying
++		 * until the self test duration expires. */
++		if (rc == -ETIME) {
++			dev_info(chip->dev, HW_ERR "TPM command timed out during continue self test");
++			msleep(delay_msec);
++			continue;
++		}
+ 
+ 		if (rc < TPM_HEADER_SIZE)
+ 			return -EFAULT;
+-- 
+1.7.5.4
+
