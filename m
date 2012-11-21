@@ -1,158 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2KUPid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:38:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
+	id S1755218Ab2KUPlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:41:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57196 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106Ab2KUPib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:38:31 -0500
-Date: Wed, 21 Nov 2012 15:38:24 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Sonny Rao <sonnyrao@google.com>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] mm: vmscan: Check for fatal signals iff the process was
- throttled
-Message-ID: <20121121153824.GG8218@suse.de>
-References: <20121102083057.GG8218@suse.de>
- <20121102223630.GA2070@barrios>
- <20121105144614.GJ8218@suse.de>
- <20121106002550.GA3530@barrios>
- <20121106085822.GN8218@suse.de>
- <20121106101719.GA2005@barrios>
- <20121109095024.GI8218@suse.de>
- <20121112133218.GA3156@barrios>
- <20121112140631.GV8218@suse.de>
- <20121113133109.GA5204@barrios>
+	id S1755106Ab2KUPlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:41:15 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] UAPI: (Scripted) Disintegrate include/scsi/fc
+To: robert.w.love@intel.com
+From: David Howells <dhowells@redhat.com>
+Cc: devel@open-fcoe.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Nov 2012 15:40:51 +0000
+Message-ID: <20121121154051.9479.33391.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121113133109.GA5204@barrios>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
-are low and swap is backed by network storage") introduced a check for
-fatal signals after a process gets throttled for network storage. The
-intention was that if a process was throttled and got killed that it
-should not trigger the OOM killer. As pointed out by Minchan Kim and
-David Rientjes, this check is in the wrong place and too broad. If a
-system is in am OOM situation and a process is exiting, it can loop in
-__alloc_pages_slowpath() and calling direct reclaim in a loop. As the
-fatal signal is pending it returns 1 as if it is making forward progress
-and can effectively deadlock.
-
-This patch moves the fatal_signal_pending() check after throttling to
-throttle_direct_reclaim() where it belongs. If the process is killed
-while throttled, it will return immediately without direct reclaim
-except now it will have TIF_MEMDIE set and will use the PFMEMALLOC
-reserves.
-
-Minchan pointed out that it may be better to direct reclaim before returning
-to avoid using the reserves because there may be pages that can easily
-reclaim that would avoid using the reserves. However, we do no such targetted
-reclaim and there is no guarantee that suitable pages are available. As it
-is expected that this throttling happens when swap-over-NFS is used there
-is a possibility that the process will instead swap which may allocate
-network buffers from the PFMEMALLOC reserves. Hence, in the swap-over-nfs
-case where a process can be throtted and be killed it can use the reserves
-to exit or it can potentially use reserves to swap a few pages and then
-exit. This patch takes the option of using the reserves if necessary to
-allow the process exit quickly.
-
-If this patch passes review it should be considered a -stable candidate
-for 3.6.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Dave Jones <davej@redhat.com>
 ---
- mm/vmscan.c |   37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 48550c6..cbf84e1 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2207,9 +2207,12 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
-  * Throttle direct reclaimers if backing storage is backed by the network
-  * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-  * depleted. kswapd will continue to make progress and wake the processes
-- * when the low watermark is reached
-+ * when the low watermark is reached.
-+ *
-+ * Returns true if a fatal signal was delivered during throttling. If this
-+ * happens, the page allocator should not consider triggering the OOM killer.
-  */
--static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-+static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 					nodemask_t *nodemask)
- {
- 	struct zone *zone;
-@@ -2224,13 +2227,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	 * processes to block on log_wait_commit().
- 	 */
- 	if (current->flags & PF_KTHREAD)
--		return;
-+		goto out;
-+
-+	/*
-+	 * If a fatal signal is pending, this process should not throttle.
-+	 * It should return quickly so it can exit and free its memory
-+	 */
-+	if (fatal_signal_pending(current))
-+		goto out;
- 
- 	/* Check if the pfmemalloc reserves are ok */
- 	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
- 	pgdat = zone->zone_pgdat;
- 	if (pfmemalloc_watermark_ok(pgdat))
--		return;
-+		goto out;
- 
- 	/* Account for the throttling */
- 	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-@@ -2246,12 +2256,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (!(gfp_mask & __GFP_FS)) {
- 		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
- 			pfmemalloc_watermark_ok(pgdat), HZ);
--		return;
-+
-+		goto check_pending;
- 	}
- 
- 	/* Throttle until kswapd wakes the process */
- 	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
- 		pfmemalloc_watermark_ok(pgdat));
-+
-+check_pending:
-+	if (fatal_signal_pending(current))
-+		return true;
-+
-+out:
-+	return false;
- }
- 
- unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
-@@ -2273,13 +2291,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.gfp_mask = sc.gfp_mask,
- 	};
- 
--	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
--
- 	/*
--	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
--	 * that the page allocator does not consider triggering OOM
-+	 * Do not enter reclaim if fatal signal was delivered while throttled.
-+	 * 1 is returned so that the page allocator does not OOM kill at this
-+	 * point.
- 	 */
--	if (fatal_signal_pending(current))
-+	if (throttle_direct_reclaim(gfp_mask, zonelist, nodemask))
- 		return 1;
- 
- 	trace_mm_vmscan_direct_reclaim_begin(order,
+ include/scsi/fc/Kbuild        |    4 ----
+ include/uapi/scsi/fc/Kbuild   |    4 ++++
+ include/uapi/scsi/fc/fc_els.h |    0 
+ include/uapi/scsi/fc/fc_fs.h  |    0 
+ include/uapi/scsi/fc/fc_gs.h  |    0 
+ include/uapi/scsi/fc/fc_ns.h  |    0 
+ 6 files changed, 4 insertions(+), 4 deletions(-)
+ rename include/{scsi/fc/fc_els.h => uapi/scsi/fc/fc_els.h} (100%)
+ rename include/{scsi/fc/fc_fs.h => uapi/scsi/fc/fc_fs.h} (100%)
+ rename include/{scsi/fc/fc_gs.h => uapi/scsi/fc/fc_gs.h} (100%)
+ rename include/{scsi/fc/fc_ns.h => uapi/scsi/fc/fc_ns.h} (100%)
+
+diff --git a/include/scsi/fc/Kbuild b/include/scsi/fc/Kbuild
+index 5660381..e69de29 100644
+--- a/include/scsi/fc/Kbuild
++++ b/include/scsi/fc/Kbuild
+@@ -1,4 +0,0 @@
+-header-y += fc_els.h
+-header-y += fc_fs.h
+-header-y += fc_gs.h
+-header-y += fc_ns.h
+diff --git a/include/uapi/scsi/fc/Kbuild b/include/uapi/scsi/fc/Kbuild
+index aafaa5a..5ead9fa 100644
+--- a/include/uapi/scsi/fc/Kbuild
++++ b/include/uapi/scsi/fc/Kbuild
+@@ -1 +1,5 @@
+ # UAPI Header export list
++header-y += fc_els.h
++header-y += fc_fs.h
++header-y += fc_gs.h
++header-y += fc_ns.h
+diff --git a/include/scsi/fc/fc_els.h b/include/uapi/scsi/fc/fc_els.h
+similarity index 100%
+rename from include/scsi/fc/fc_els.h
+rename to include/uapi/scsi/fc/fc_els.h
+diff --git a/include/scsi/fc/fc_fs.h b/include/uapi/scsi/fc/fc_fs.h
+similarity index 100%
+rename from include/scsi/fc/fc_fs.h
+rename to include/uapi/scsi/fc/fc_fs.h
+diff --git a/include/scsi/fc/fc_gs.h b/include/uapi/scsi/fc/fc_gs.h
+similarity index 100%
+rename from include/scsi/fc/fc_gs.h
+rename to include/uapi/scsi/fc/fc_gs.h
+diff --git a/include/scsi/fc/fc_ns.h b/include/uapi/scsi/fc/fc_ns.h
+similarity index 100%
+rename from include/scsi/fc/fc_ns.h
+rename to include/uapi/scsi/fc/fc_ns.h
+
