@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964871Ab2KUVCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 16:02:44 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:38886 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964825Ab2KUVCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 16:02:43 -0500
-Date: Wed, 21 Nov 2012 14:02:40 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] of: When constructing the bus id consider assigned-addresses
- as well
-Message-ID: <20121121210240.GC15285@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S964876Ab2KUVEs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 16:04:48 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37061 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964825Ab2KUVEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 16:04:47 -0500
+Message-ID: <1353531886.24807.43.camel@joe-AO722>
+Subject: Re: [PATCH 01/12] VMCI: context implementation.
+From: Joe Perches <joe@perches.com>
+To: George Zhang <georgezhang@vmware.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        pv-drivers@vmware.com, gregkh@linuxfoundation.org
+Date: Wed, 21 Nov 2012 13:04:46 -0800
+In-Reply-To: <20121121203109.13252.92744.stgit@promb-2n-dhcp175.eng.vmware.com>
+References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
+	 <20121121203109.13252.92744.stgit@promb-2n-dhcp175.eng.vmware.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'assigned-addresses' is used for certain PCI device type nodes in
-lieu of 'reg',  since this is enforced by of/address.c, have
-of_device_make_bus_id look there as well.
+On Wed, 2012-11-21 at 12:31 -0800, George Zhang wrote:
+> VMCI Context code maintains state for vmci and allows the driver to communicate
+> with multiple VMs
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/of/platform.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Just some trivial notes.
 
-of_can_translate_address and of_translate_address already support
-using assigned-addresses.
+> diff --git a/drivers/misc/vmw_vmci/vmci_context.c b/drivers/misc/vmw_vmci/vmci_context.c
+[]
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b80891b..4f0f701 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -105,6 +105,8 @@ void of_device_make_bus_id(struct device *dev)
- 	 * For MMIO, get the physical address
- 	 */
- 	reg = of_get_property(node, "reg", NULL);
-+	if (!reg)
-+		reg = of_get_property(node, "assigned-addresses", NULL);
- 	if (reg) {
- 		if (of_can_translate_address(node)) {
- 			addr = of_translate_address(node, reg);
--- 
-1.7.5.4
+It'd be nicer if you added this #define before any #include
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+so that pr_<level> messages are prefixed.
+(never mind, found a similar macro in patch 12/12)
+
+> +#include <linux/vmw_vmci_defs.h>
+> +#include <linux/vmw_vmci_api.h>
+[]
+> +	context = kzalloc(sizeof(*context), GFP_KERNEL);
+> +	if (!context) {
+> +		pr_warn("Failed to allocate memory for VMCI context.\n");
+
+OOM logging messages aren't necessary as alloc failures
+are already logged with a stack trace.
+
+That goes for the entire patch series.
+
+> +	/* Fire event to all subscribers. */
+> +	array_size = vmci_handle_arr_get_size(subscriber_array);
+> +	for (i = 0; i < array_size; i++) {
+> +		int result;
+> +		struct vmci_event_msg *e_msg;
+> +		struct vmci_event_payld_ctx *ev_payload;
+> +		char buf[sizeof(*e_msg) + sizeof(*ev_payload)];
+
+Maybe just use
+	struct vmci_event_msg e_msg;
+	struct vmci_event_payld_ctx ev_payload;
+and change the addressing or use a cast as appropriate?
+
+> +	/* Allocate guest call entry and add it to the target VM's queue. */
+> +	dq_entry = kmalloc(sizeof(*dq_entry), GFP_KERNEL);
+> +	if (dq_entry == NULL) {
+> +		pr_warn("Failed to allocate memory for datagram.\n");
+
+Another unnecessary OOM message.
+
+You also have some inconsistency in whether or not your
+logging messages use a terminating period.  I suggest
+you just delete all the periods.
+	s/\.\\n"/\\n"/g
+
 
