@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab2KUUMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 15:12:18 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:32896 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756182Ab2KUUMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 15:12:17 -0500
-Date: Wed, 21 Nov 2012 13:12:10 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter H?we <PeterHuewe@gmx.de>
-Cc: Peter.Huewe@infineon.com, key@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH v4] TPM: Issue TPM_STARTUP at driver load if the TPM has
- not been started
-Message-ID: <20121121201210.GE12822@obsidianresearch.com>
-References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
- <20121121183713.GA12822@obsidianresearch.com>
- <201211212117.55040.PeterHuewe@gmx.de>
+	id S1756243Ab2KUUPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 15:15:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48736 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab2KUUPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 15:15:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211212117.55040.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <50AD307C.6060008@zytor.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-2-git-send-email-yinghai@kernel.org>
+	<50AD0E22.3020807@zytor.com>
+	<CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
+	<50AD307C.6060008@zytor.com>
+Date: Wed, 21 Nov 2012 12:15:28 -0800
+X-Google-Sender-Auth: 40TRfmeWLUAMZbwOOZRDjQDjyMQ
+Message-ID: <CAE9FiQUaajsWe3854xxUOyPEZ7Dbt3GE0VWs8KvQbtqVrOXQdw@mail.gmail.com>
+Subject: Re: [PATCH v3 01/12] x86, boot: move verify_cpu.S after 0x200
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 09:17:54PM +0100, Peter H?we wrote:
+On Wed, Nov 21, 2012 at 11:50 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> The comment is just plain wrong.  It assumes you're loading an ELF file,
+> whereas in practice that is rarely true.
+>
+> This does explain why the poor ABI, though.  A jump table at the
+> beginning would have been a lot cleaner.
 
-> Care to change to 
-> > +			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
-> 
-> Sorry that I didn't spot it earlier.
+Can you please have patch to update the comments and point to the API there ?
 
-Right.. Probably like this in my tree because of:
+Thanks
 
-http://permalink.gmane.org/gmane.linux.kernel/1397887
-
-I should really get sparse setup here... Never enough hours.
-
-Jason
+Yinghai
