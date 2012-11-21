@@ -1,285 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab2KVTWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:22:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756101Ab2KVTRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:17:38 -0500
-Message-ID: <50ADD30F.2060408@redhat.com>
-Date: Thu, 22 Nov 2012 15:23:59 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
-References: <1353315222-27685-1-git-send-email-asias@redhat.com> <20121119202641.GB12283@redhat.com> <50AB25AC.2070606@redhat.com> <20121120133714.GC3448@redhat.com> <50AC5797.1060604@redhat.com> <20121121115734.GC31911@redhat.com>
-In-Reply-To: <20121121115734.GC31911@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756226Ab2KVTXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:23:12 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:24000 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab2KVTXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:23:08 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: [PATCH v4 24/31] btrfs: add support for read_iter and write_iter
+Date: Wed, 21 Nov 2012 16:41:04 -0600
+Message-Id: <1353537671-26284-25-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 07:57 PM, Michael S. Tsirkin wrote:
-> On Wed, Nov 21, 2012 at 12:24:55PM +0800, Asias He wrote:
->> On 11/20/2012 09:37 PM, Michael S. Tsirkin wrote:
->>> On Tue, Nov 20, 2012 at 02:39:40PM +0800, Asias He wrote:
->>>> On 11/20/2012 04:26 AM, Michael S. Tsirkin wrote:
->>>>> On Mon, Nov 19, 2012 at 04:53:42PM +0800, Asias He wrote:
->>>>>> vhost-blk is an in-kernel virito-blk device accelerator.
->>>>>>
->>>>>> Due to lack of proper in-kernel AIO interface, this version converts
->>>>>> guest's I/O request to bio and use submit_bio() to submit I/O directly.
->>>>>> So this version any supports raw block device as guest's disk image,
->>>>>> e.g. /dev/sda, /dev/ram0. We can add file based image support to
->>>>>> vhost-blk once we have in-kernel AIO interface. There are some work in
->>>>>> progress for in-kernel AIO interface from Dave Kleikamp and Zach Brown:
->>>>>>
->>>>>>    http://marc.info/?l=linux-fsdevel&m=133312234313122
->>>>>>
->>>>>> Performance evaluation:
->>>>>> -----------------------------
->>>>>> 1) LKVM
->>>>>> Fio with libaio ioengine on Fusion IO device using kvm tool
->>>>>> IOPS(k)    Before       After   Improvement
->>>>>> seq-read   107          121     +13.0%
->>>>>> seq-write  130          179     +37.6%
->>>>>> rnd-read   102          122     +19.6%
->>>>>> rnd-write  125          159     +27.0%
->>>>>>
->>>>>> 2) QEMU
->>>>>> Fio with libaio ioengine on Fusion IO device using QEMU
->>>>>> IOPS(k)    Before       After   Improvement
->>>>>> seq-read   76           123     +61.8%
->>>>>> seq-write  139          173     +24.4%
->>>>>> rnd-read   73           120     +64.3%
->>>>>> rnd-write  75           156     +108.0%
->>>>>
->>>>> Could you compare with dataplane qemu as well please?
->>>>
->>>>
->>>> Well, I will try to collect it.
->>>>
->>>>>
->>>>>>
->>>>>> Userspace bits:
->>>>>> -----------------------------
->>>>>> 1) LKVM
->>>>>> The latest vhost-blk userspace bits for kvm tool can be found here:
->>>>>> git@github.com:asias/linux-kvm.git blk.vhost-blk
->>>>>>
->>>>>> 2) QEMU
->>>>>> The latest vhost-blk userspace prototype for QEMU can be found here:
->>>>>> git@github.com:asias/qemu.git blk.vhost-blk
->>>>>>
->>>>>> Changes in v5:
->>>>>> - Do not assume the buffer layout
->>>>>> - Fix wakeup race
->>>>>>
->>>>>> Changes in v4:
->>>>>> - Mark req->status as userspace pointer
->>>>>> - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
->>>>>> - Add if (need_resched()) schedule() in blk thread
->>>>>> - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
->>>>>> - Use vq_err() instead of pr_warn()
->>>>>> - Fail un Unsupported request
->>>>>> - Add flush in vhost_blk_set_features()
->>>>>>
->>>>>> Changes in v3:
->>>>>> - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
->>>>>> - Check file passed by user is a raw block device file
->>>>>>
->>>>>> Signed-off-by: Asias He <asias@redhat.com>
->>>>>
->>>>> Since there are files shared by this and vhost net
->>>>> it's easiest for me to merge this all through the
->>>>> vhost tree.
->>>>>
->>>>> Jens, could you ack this and the bio usage in this driver
->>>>> please?
->>>>>
->>>>>> ---
->>>>>>  drivers/vhost/Kconfig     |   1 +
->>>>>>  drivers/vhost/Kconfig.blk |  10 +
->>>>>>  drivers/vhost/Makefile    |   2 +
->>>>>>  drivers/vhost/blk.c       | 697 ++++++++++++++++++++++++++++++++++++++++++++++
->>>>>>  drivers/vhost/blk.h       |   8 +
->>>>>>  5 files changed, 718 insertions(+)
->>>>>>  create mode 100644 drivers/vhost/Kconfig.blk
->>>>>>  create mode 100644 drivers/vhost/blk.c
->>>>>>  create mode 100644 drivers/vhost/blk.h
->>>>>>
->>>>>> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
->>>>>> index 202bba6..acd8038 100644
->>>>>> --- a/drivers/vhost/Kconfig
->>>>>> +++ b/drivers/vhost/Kconfig
->>>>>> @@ -11,4 +11,5 @@ config VHOST_NET
->>>>>>  
->>>>>>  if STAGING
->>>>>>  source "drivers/vhost/Kconfig.tcm"
->>>>>> +source "drivers/vhost/Kconfig.blk"
->>>>>>  endif
->>>>>> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
->>>>>> new file mode 100644
->>>>>> index 0000000..ff8ab76
->>>>>> --- /dev/null
->>>>>> +++ b/drivers/vhost/Kconfig.blk
->>>>>> @@ -0,0 +1,10 @@
->>>>>> +config VHOST_BLK
->>>>>> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
->>>>>> +	depends on BLOCK &&  EXPERIMENTAL && m
->>>>>> +	---help---
->>>>>> +	  This kernel module can be loaded in host kernel to accelerate
->>>>>> +	  guest block with virtio_blk. Not to be confused with virtio_blk
->>>>>> +	  module itself which needs to be loaded in guest kernel.
->>>>>> +
->>>>>> +	  To compile this driver as a module, choose M here: the module will
->>>>>> +	  be called vhost_blk.
->>>>>> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
->>>>>> index a27b053..1a8a4a5 100644
->>>>>> --- a/drivers/vhost/Makefile
->>>>>> +++ b/drivers/vhost/Makefile
->>>>>> @@ -2,3 +2,5 @@ obj-$(CONFIG_VHOST_NET) += vhost_net.o
->>>>>>  vhost_net-y := vhost.o net.o
->>>>>>  
->>>>>>  obj-$(CONFIG_TCM_VHOST) += tcm_vhost.o
->>>>>> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
->>>>>> +vhost_blk-y := blk.o
->>>>>> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
->>>>>> new file mode 100644
->>>>>> index 0000000..f0f118a
->>>>>> --- /dev/null
->>>>>> +++ b/drivers/vhost/blk.c
->>>>>> @@ -0,0 +1,697 @@
->>>>>> +/*
->>>>>> + * Copyright (C) 2011 Taobao, Inc.
->>>>>> + * Author: Liu Yuan <tailai.ly@taobao.com>
->>>>>> + *
->>>>>> + * Copyright (C) 2012 Red Hat, Inc.
->>>>>> + * Author: Asias He <asias@redhat.com>
->>>>>> + *
->>>>>> + * This work is licensed under the terms of the GNU GPL, version 2.
->>>>>> + *
->>>>>> + * virtio-blk server in host kernel.
->>>>>> + */
->>>>>> +
->>>>>> +#include <linux/miscdevice.h>
->>>>>> +#include <linux/module.h>
->>>>>> +#include <linux/vhost.h>
->>>>>> +#include <linux/virtio_blk.h>
->>>>>> +#include <linux/mutex.h>
->>>>>> +#include <linux/file.h>
->>>>>> +#include <linux/kthread.h>
->>>>>> +#include <linux/blkdev.h>
->>>>>> +#include <linux/llist.h>
->>>>>> +
->>>>>> +#include "vhost.c"
->>>>>> +#include "vhost.h"
->>>>>> +#include "blk.h"
->>>>>> +
->>>>>> +static DEFINE_IDA(vhost_blk_index_ida);
->>>>>> +
->>>>>> +enum {
->>>>>> +	VHOST_BLK_VQ_REQ = 0,
->>>>>> +	VHOST_BLK_VQ_MAX = 1,
->>>>>> +};
->>>>>> +
->>>>>> +struct req_page_list {
->>>>>> +	struct page **pages;
->>>>>> +	int pages_nr;
->>>>>> +};
->>>>>> +
->>>>>> +struct vhost_blk_req {
->>>>>> +	struct llist_node llnode;
->>>>>> +	struct req_page_list *pl;
->>>>>> +	struct vhost_blk *blk;
->>>>>> +
->>>>>> +	struct iovec *iov;
->>>>>> +	int iov_nr;
->>>>>> +
->>>>>> +	struct bio **bio;
->>>>>> +	atomic_t bio_nr;
->>>>>> +
->>>>>> +	struct iovec status[1];
->>>>>> +
->>>>>> +	sector_t sector;
->>>>>> +	int write;
->>>>>> +	u16 head;
->>>>>> +	long len;
->>>>>> +};
->>>>>> +
->>>>>> +struct vhost_blk {
->>>>>> +	struct task_struct *host_kick;
->>>>>
->>>>> Could you please add a comment here explaining why
->>>>> is this better than using the builtin vhost thread?
->>>>
->>>> With separate thread model, the request submit and request completion
->>>> can be handled in parallel. I have measured significant performance
->>>> improvement with this model.
->>>> In the long term, It would be nice if the
->>>> vhost core can provide multiple thread support.
->>>
->>> Strange, all completion does it write out the used ring.
->>> I am guessing you didn't complete requests
->>> in a timely manner which was what caused the issue.
->>
->> Previously, there was two 'struct vhost_work' work which poll on the
->> guest kick eventfd and host aio eventfd. The vhost thread is handling
->> the works when there are data in eventfd, either guest kick or aio
->> completion.
-> 
-> See VHOST_NET_WEIGHT in how in -net we prevent starvation
-> between tx and rx.
+btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
+on btrfs_file_aio_write(), then have the latter call the former.
 
-Looks interesting.
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Chris Mason <chris.mason@fusionio.com>
+Cc: linux-btrfs@vger.kernel.org
+---
+ fs/btrfs/file.c | 42 ++++++++++++++----------------------------
+ 1 file changed, 14 insertions(+), 28 deletions(-)
 
->>> OTOH I'm not sure how increasing the number of threads
->>> scales with # of VMs. Increased scheduler pressure is
->>> also a concern.
->>
->> Agree, this is also my concern. However, this is a trade-off. we have a
->> price to pay for the parallelism.
-> 
-> If the work offloaded is trivial in size then the gain is likely
-> to be marginal.
-> 
->> Also, one thread per vhost device
->> might not scale with # of VMs too, compared to e.g. per cpu thread.
-> 
-> I'e no idea how to do QoS with a per cpu thread otherwise
-> 
->>> Did you try checking completion after each
->>> submitted request to address this?
->>
->> Isn't this a sync operation? We can not only account on the checking the
->> completion in the submit path. Another polling on the completion is
->> needed anyway. Mixing the completion in submit path, 1) makes the submit
->> delay longer 2) does not help with the case where a single request takes
->> relatively long time to finish. IMHO, I do not think mixing the submit
->> and completion is a good idea.
-> 
-> To clarify, you would
-> 1. do llist_del_all in handle_kick -
->    the delay this adds should be trivial
-> 2. for completion queue work on vhost thread -
->    this can be as simple as waking up the regular
->    kick handler
-
-I am trying the one thread model. If it works fine, I will switch to it
-in v6.
-
-> You can further reduce overhead by batching
-> the wakeups in 2. See my patch
-> vhost-net: reduce vq polling on tx zerocopy
-> that does this for -net.
-
-okay. thanks!
-
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 9ab1bed..b691dd5 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -375,7 +375,7 @@ static noinline int btrfs_copy_from_user(loff_t pos, int num_pages,
+ 		write_bytes -= copied;
+ 		total_copied += copied;
+ 
+-		/* Return to btrfs_file_aio_write to fault page */
++		/* Return to btrfs_file_write_iter to fault page */
+ 		if (unlikely(copied == 0))
+ 			break;
+ 
+@@ -1361,27 +1361,23 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
+ }
+ 
+ static ssize_t __btrfs_direct_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs, loff_t pos,
+-				    loff_t *ppos, size_t count, size_t ocount)
++				     struct iov_iter *iter, loff_t pos,
++				    loff_t *ppos, size_t count)
+ {
+ 	struct file *file = iocb->ki_filp;
+-	struct iov_iter i;
+ 	ssize_t written;
+ 	ssize_t written_buffered;
+ 	loff_t endbyte;
+ 	int err;
+ 
+-	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
+-					    count, ocount);
++	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
+ 
+ 	if (written < 0 || written == count)
+ 		return written;
+ 
+ 	pos += written;
+ 	count -= written;
+-	iov_iter_init(&i, iov, nr_segs, count, written);
+-	written_buffered = __btrfs_buffered_write(file, &i, pos);
++	written_buffered = __btrfs_buffered_write(file, iter, pos);
+ 	if (written_buffered < 0) {
+ 		err = written_buffered;
+ 		goto out;
+@@ -1398,9 +1394,8 @@ out:
+ 	return written ? written : err;
+ }
+ 
+-static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs, loff_t pos)
++static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter, loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = fdentry(file)->d_inode;
+@@ -1409,18 +1404,13 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	u64 start_pos;
+ 	ssize_t num_written = 0;
+ 	ssize_t err = 0;
+-	size_t count, ocount;
++	size_t count;
+ 
+ 	sb_start_write(inode->i_sb);
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
+-	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
+-	if (err) {
+-		mutex_unlock(&inode->i_mutex);
+-		goto out;
+-	}
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 
+ 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+@@ -1468,14 +1458,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	}
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT)) {
+-		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
+-						   pos, ppos, count, ocount);
++		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
++						   count);
+ 	} else {
+-		struct iov_iter i;
+-
+-		iov_iter_init(&i, iov, nr_segs, count, num_written);
+-
+-		num_written = __btrfs_buffered_write(file, &i, pos);
++		num_written = __btrfs_buffered_write(file, iter, pos);
+ 		if (num_written > 0)
+ 			*ppos = pos + num_written;
+ 	}
+@@ -2280,9 +2266,9 @@ const struct file_operations btrfs_file_operations = {
+ 	.llseek		= btrfs_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read       = generic_file_aio_read,
+ 	.splice_read	= generic_file_splice_read,
+-	.aio_write	= btrfs_file_aio_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= btrfs_file_write_iter,
+ 	.mmap		= btrfs_file_mmap,
+ 	.open		= generic_file_open,
+ 	.release	= btrfs_release_file,
 -- 
-Asias
+1.8.0
+
