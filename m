@@ -1,109 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2KUHQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:16:35 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26351 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2KUHQc (ORCPT
+	id S1753187Ab2KUHR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:17:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42614 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab2KUHQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:16:32 -0500
+	Wed, 21 Nov 2012 02:16:33 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 04/12] x86, 64bit: add support for loading kernel above 512G
-Date: Tue, 20 Nov 2012 23:16:02 -0800
-Message-Id: <1353482170-10160-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 10/12] x86: use io_remap to access real_mode_data
+Date: Tue, 20 Nov 2012 23:16:08 -0800
+Message-Id: <1353482170-10160-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
 References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current kernel is not allowed to be loaded above 512g, it thinks
-that address is too big.
+When 64bit bootloader put real mode data above 4g, We can not
+access real mode data directly.
 
-We only need to add one extra spare page for needed level3 to
-point another 512g range.
+because in arch/x86/kernel/head_64.S, only set ident mapping
+for 0-1g, and kernel code/data/bss.
 
-Need to check _text range and set level4 pg to point to that spare
-level3 page, and set level3 to point to level2 page to cover
-[_text, _end] with extra mapping.
+So need to move early_ioremap_init() calling from setup_arch
+to x86_64_start_kernel.
 
-We need this to put relocatable bzImage high above 512g.
+Also use rsi/rdi instead of esi/edi.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- arch/x86/kernel/head_64.S |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ arch/x86/kernel/head64.c  |   17 ++++++++++++++---
+ arch/x86/kernel/head_64.S |    4 ++--
+ arch/x86/kernel/setup.c   |    2 ++
+ 3 files changed, 18 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 3ac6cad..735cd47 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -52,12 +52,21 @@ static void __init copy_bootdata(char *real_mode_data)
+ {
+ 	char * command_line;
+ 	unsigned long cmd_line_ptr;
++	char *p;
+ 
+-	memcpy(&boot_params, real_mode_data, sizeof boot_params);
++	/*
++	 * for 64bit bootload path, those data could be above 4G,
++	 * and we do set ident mapping for them in head_64.S.
++	 * So need to ioremap to access them.
++	 */
++	p = early_memremap((unsigned long)real_mode_data, sizeof(boot_params));
++	memcpy(&boot_params, p, sizeof(boot_params));
++	early_iounmap(p, sizeof(boot_params));
+ 	cmd_line_ptr = get_cmd_line_ptr();
+ 	if (cmd_line_ptr) {
+-		command_line = __va(cmd_line_ptr);
++		command_line = early_memremap(cmd_line_ptr, COMMAND_LINE_SIZE);
+ 		memcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
++		early_iounmap(command_line, COMMAND_LINE_SIZE);
+ 	}
+ }
+ 
+@@ -104,7 +113,9 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 
+ void __init x86_64_start_reservations(char *real_mode_data)
+ {
+-	copy_bootdata(__va(real_mode_data));
++	early_ioremap_init();
++
++	copy_bootdata(real_mode_data);
+ 
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
 diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index efc0c08..32fa9d0 100644
+index 32fa9d0..14c5de2 100644
 --- a/arch/x86/kernel/head_64.S
 +++ b/arch/x86/kernel/head_64.S
-@@ -78,12 +78,6 @@ startup_64:
- 	testl	%eax, %eax
- 	jnz	bad_address
+@@ -262,9 +262,9 @@ ENTRY(secondary_startup_64)
+ 	movl	initial_gs+4(%rip),%edx
+ 	wrmsr	
  
--	/* Is the address too large? */
--	leaq	_text(%rip), %rdx
--	movq	$PGDIR_SIZE, %rax
--	cmpq	%rax, %rdx
--	jae	bad_address
--
- 	/* Fixup the physical addresses in the page table
- 	 */
- 	addq	%rbp, init_level4_pgt + 0(%rip)
-@@ -102,12 +96,35 @@ startup_64:
- 	andq	$PMD_PAGE_MASK, %rdi
+-	/* esi is pointer to real mode structure with interesting info.
++	/* rsi is pointer to real mode structure with interesting info.
+ 	   pass it to C */
+-	movl	%esi, %edi
++	movq	%rsi, %rdi
+ 	
+ 	/* Finally jump to run C code and to be on real kernel address
+ 	 * Since we are running on identity-mapped space we have to jump
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 194e151..573fa7d7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -718,7 +718,9 @@ void __init setup_arch(char **cmdline_p)
  
- 	movq	%rdi, %rax
-+	shrq	$PGDIR_SHIFT, %rax
-+	andq	$(PTRS_PER_PGD - 1), %rax
-+	jz	skip_level3_spare
-+
-+	/* Set level3 at first */
-+	leaq	(level3_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
-+	leaq	init_level4_pgt(%rip), %rbx
-+	movq	%rdx, 0(%rbx, %rax, 8)
-+	addq	$L4_PAGE_OFFSET, %rax
-+	movq	%rdx, 0(%rbx, %rax, 8)
-+
-+	/* always need to set level2 */
-+	movq	%rdi, %rax
-+	shrq	$PUD_SHIFT, %rax
-+	andq	$(PTRS_PER_PUD - 1), %rax
-+	leaq	level3_spare_pgt(%rip), %rbx
-+	jmp	set_level2_spare
-+
-+skip_level3_spare:
-+	movq	%rdi, %rax
- 	shrq	$PUD_SHIFT, %rax
- 	andq	$(PTRS_PER_PUD - 1), %rax
- 	jz	ident_complete
+ 	early_trap_init();
+ 	early_cpu_init();
++#ifdef CONFIG_X86_32
+ 	early_ioremap_init();
++#endif
  
--	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
-+	/* only set level2 with out level3 spare */
- 	leaq	level3_ident_pgt(%rip), %rbx
-+
-+set_level2_spare:
-+	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
- 	movq	%rdx, 0(%rbx, %rax, 8)
- 
- 	movq	%rdi, %rax
-@@ -435,6 +452,9 @@ NEXT_PAGE(level2_kernel_pgt)
- 	PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
- 		KERNEL_IMAGE_SIZE/PMD_SIZE)
- 
-+NEXT_PAGE(level3_spare_pgt)
-+	.fill   512, 8, 0
-+
- NEXT_PAGE(level2_spare_pgt)
- 	.fill   512, 8, 0
+ 	setup_olpc_ofw_pgd();
  
 -- 
 1.7.7
