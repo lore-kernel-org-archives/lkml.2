@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab2KUTvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:51:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54520 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab2KUTvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:51:12 -0500
-Message-ID: <50AD307C.6060008@zytor.com>
-Date: Wed, 21 Nov 2012 11:50:20 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1755964Ab2KUTvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:51:24 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44970 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab2KUTvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 14:51:22 -0500
+Date: Wed, 21 Nov 2012 11:51:15 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH RFC 09/12] userns: Convert ocfs2 to use kuid and kgid
+ where appropriate
+Message-ID: <20121121195114.GM2822@localhost>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	linux-fsdevel@vger.kernel.org,
+	Linux Containers <containers@lists.linux-foundation.org>,
+	linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+	Mark Fasheh <mfasheh@suse.com>
+References: <87pq38wimv.fsf@xmission.com>
+ <1353415420-5457-1-git-send-email-ebiederm@xmission.com>
+ <1353415420-5457-9-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 01/12] x86, boot: move verify_cpu.S after 0x200
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-2-git-send-email-yinghai@kernel.org> <50AD0E22.3020807@zytor.com> <CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353415420-5457-9-git-send-email-ebiederm@xmission.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 11:45 AM, Yinghai Lu wrote:
-> On Wed, Nov 21, 2012 at 9:23 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 11/20/2012 11:15 PM, Yinghai Lu wrote:
->>>
->>> We are short of space before 0x200 that is entry for startup_64.
->>>
->>> And we can not change startup_64 to other value --- ABI ?
->>
->>
->> Here you are saying "I don't understand how this works."  It is YOUR
->> responsibility to find out and write a definite statement rather than
->> leaving that to the reader, or expect the maintainer to edit this.
-> 
-> actually, i can not find that out.
-> in the code of arch/x86/boot/compressed/head_64.S
-> 
->         /*
->          * Be careful here startup_64 needs to be at a predictable
->          * address so I can export it in an ELF header.  Bootloaders
->          * should look at the ELF header to find this address, as
->          * it may change in the future.
->          */
->         .code64
->         .org 0x200
-> ENTRY(startup_64)
->         /*
->          * We come here either from startup_32 or directly from a
->          * 64bit bootloader.  If we come here from a bootloader we depend on
->          * an identity mapped page table being provied that maps our
->          * entire text+data+bss and hopefully all of memory.
->          */
-> #ifdef CONFIG_EFI_STUB
->         /*
->          * The entry point for the PE/COFF executable is 0x210, so only
->          * legacy boot loaders will execute this jmp.
->          */
->         jmp     preferred_addr
-> 
->         .org 0x210
->         mov     %rcx, %rdi
-> 
-> and it says that 0x200 will be changed later..
-> 
-> so you said it has to stay with 0x200, do you mean 0x210 from PE/COFF
-> force that?
-> 
-> wonder if you are considering attatched patch to move startup_64 down...
-> we could kill one jmp.
-> 
+On Tue, Nov 20, 2012 at 04:43:37AM -0800, Eric W. Biederman wrote:
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -1116,7 +1116,8 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
+>  			    (unsigned long long)OCFS2_I(inode)->ip_blkno,
+>  			    dentry->d_name.len, dentry->d_name.name,
+>  			    attr->ia_valid, attr->ia_mode,
+> -			    attr->ia_uid, attr->ia_gid);
+> +			    from_kuid(&init_user_ns, attr->ia_uid),
+> +			    from_kgid(&init_user_ns, attr->ia_gid));
 
-The comment is just plain wrong.  It assumes you're loading an ELF file,
-whereas in practice that is rarely true.
+Dear Eric,
+	I have a similar question about init_user_ns to Dave.  As far as
+I can tell, using init_user_ns here means we'll never get translations
+based on the current process namespace.  It just so happens that
+include/linux/user_namespace.h doesn't allow new namespaces yet, but I
+can't see why we would propagate that knowledge elsewhere.
+	Is there some magic about when init_user_ns should be used
+regardless?
 
-This does explain why the poor ABI, though.  A jump table at the
-beginning would have been a lot cleaner.
+Joel
 
-	-hpa
+-- 
 
+ Brain: I shall pollute the water supply with this DNAdefibuliser,
+        turning everyone into mindless slaves.
+ Pinky: What about the people who drink bottled water?
+ Brain: Pinky, people who pay 5 dollars for a bottle of water are
+        already mindless slaves.
 
+			http://www.jlbec.org/
+			jlbec@evilplan.org
