@@ -1,217 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2KVSau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:30:50 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:22356 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab2KVSao (ORCPT
+	id S1752878Ab2KVSay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:30:54 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:3698 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752812Ab2KVSav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:30:44 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH v4 06/31] iov_iter: add bvec support
-Date: Wed, 21 Nov 2012 16:40:46 -0600
-Message-Id: <1353537671-26284-7-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 22 Nov 2012 13:30:51 -0500
+X-Forefront-Antispam-Report: CIP:157.56.241.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0810HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: PS-3(zzbb2dI98dI1432Izz1de0h1202h1d1ah1d2ahzz17326ah8275dhz2fh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
+Message-ID: <50AD5F54.4070609@ozmodevices.com>
+Date: Wed, 21 Nov 2012 23:10:12 +0000
+From: Rupesh Gujare <rgujare@ozmodevices.com>
+Organization: Ozmo Devices
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, <devel@driverdev.osuosl.org>,
+        <sachin.kamat@linaro.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH 1/3] staging: ozwpan: Remove redundant null check before
+ kfree in ozpd.c
+References: <20121120163513.GC4990@kroah.com> <1353501977-6585-2-git-send-email-rgujare@ozmodevices.com> <20121121130527.GH11248@mwanda> <50ACDA54.7040508@ozmodevices.com> <20121121161859.GI6186@mwanda> <50AD0EB4.5070307@ozmodevices.com> <20121121214823.GA28532@kroah.com>
+In-Reply-To: <20121121214823.GA28532@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [94.9.187.151]
+X-OriginatorOrg: ozmodevices.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On 21/11/12 21:48, Greg KH wrote:
+> On Wed, Nov 21, 2012 at 05:26:12PM +0000, Rupesh Gujare wrote:
+>> On 21/11/12 16:19, Dan Carpenter wrote:
+>>> When someone sends a patch there are a several possible responses:
+>>> 1) Ack the patch.
+>>> 2) Request that the submitter redo it.  The downside is that no one
+>>>     likes redoing patches.
+>>> 3) Reject the patch.
+>>> 4) Redo it yourself and say "Based on a patch from Sachin Kamat".
+>>>     This isn't nice because everyone wants author credit.
+>>> 5) Redo it and get permission from the original author to give them
+>>>     author credit get their signed-off-by.
+>>>
+>>>
+>> Thanks Dan
+>>
+>> I will keep it in mind in future.
+>>
+>> Sachin,
+>>
+>> Are you interested in redoing (or sending sign-off ?) for this patch
+>> series ? I am more than happy to accept either.
+> Don't worry, I'll clean up the mess here...
+>
+>
+Sorry Greg,
 
-This adds a set of iov_iter_ops calls which work with memory which is
-specified by an array of bio_vec structs instead of an array of iovec
-structs.
+But looks like you applied V1 of this patch series, rather than V2. Is 
+that intentional ?
 
-The big difference is that the pages referenced by the bio_vec elements
-are pinned.  They don't need to be faulted in and we can always use
-kmap_atomic() to map them one at a time.
+Below is link for V2 :-
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- include/linux/fs.h |  17 ++++++++
- mm/iov-iter.c      | 126 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 143 insertions(+)
+http://driverdev.linuxdriverproject.org/pipermail/devel/2012-November/033339.html
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 6cece28..0d7f42f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -342,6 +342,23 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
- 	return i->ops->ii_single_seg_count(i);
- }
- 
-+extern struct iov_iter_ops ii_bvec_ops;
-+
-+struct bio_vec;
-+static inline void iov_iter_init_bvec(struct iov_iter *i,
-+				      struct bio_vec *bvec,
-+				      unsigned long nr_segs,
-+				      size_t count, size_t written)
-+{
-+	i->ops = &ii_bvec_ops;
-+	i->data = (unsigned long)bvec;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count + written;
-+
-+	iov_iter_advance(i, written);
-+}
-+
- extern struct iov_iter_ops ii_iovec_ops;
- 
- static inline void iov_iter_init(struct iov_iter *i,
-diff --git a/mm/iov-iter.c b/mm/iov-iter.c
-index bae1553..c5d0a9e 100644
---- a/mm/iov-iter.c
-+++ b/mm/iov-iter.c
-@@ -5,6 +5,7 @@
- #include <linux/hardirq.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/bio.h>
- 
- static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
- 				   size_t base, size_t bytes, int atomic)
-@@ -86,6 +87,131 @@ static size_t ii_iovec_copy_to_user(struct page *page,
- 	return copied;
- }
- 
-+/*
-+ * As an easily verifiable first pass, we implement all the methods that
-+ * copy data to and from bvec pages with one function.  We implement it
-+ * all with kmap_atomic().
-+ */
-+static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
-+				    unsigned long page_offset, size_t bytes,
-+				    int topage)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)iter->data;
-+	size_t bvec_offset = iter->iov_offset;
-+	size_t remaining = bytes;
-+	void *bvec_map;
-+	void *page_map;
-+	size_t copy;
-+
-+	page_map = kmap_atomic(page);
-+
-+	BUG_ON(bytes > iter->count);
-+	while (remaining) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec_offset >= bvec->bv_len);
-+		copy = min(remaining, bvec->bv_len - bvec_offset);
-+		bvec_map = kmap_atomic(bvec->bv_page);
-+		if (topage)
-+			memcpy(page_map + page_offset,
-+			       bvec_map + bvec->bv_offset + bvec_offset,
-+			       copy);
-+		else
-+			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
-+			       page_map + page_offset,
-+			       copy);
-+		kunmap_atomic(bvec_map);
-+		remaining -= copy;
-+		bvec_offset += copy;
-+		page_offset += copy;
-+		if (bvec_offset == bvec->bv_len) {
-+			bvec_offset = 0;
-+			bvec++;
-+		}
-+	}
-+
-+	kunmap_atomic(page_map);
-+
-+	return bytes;
-+}
-+
-+static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
-+					  unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_from_user_atomic(struct page *page,
-+					    struct iov_iter *i,
-+					    unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
-+				     unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+
-+/*
-+ * bio_vecs have a stricter structure than iovecs that might have
-+ * come from userspace.  There are no zero length bio_vec elements.
-+ */
-+static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	size_t offset = i->iov_offset;
-+	size_t delta;
-+
-+	BUG_ON(i->count < bytes);
-+	while (bytes) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec->bv_len <= offset);
-+		delta = min(bytes, bvec->bv_len - offset);
-+		offset += delta;
-+		i->count -= delta;
-+		bytes -= delta;
-+		if (offset == bvec->bv_len) {
-+			bvec++;
-+			offset = 0;
-+		}
-+	}
-+
-+	i->data = (unsigned long)bvec;
-+	i->iov_offset = offset;
-+}
-+
-+/*
-+ * pages pointed to by bio_vecs are always pinned.
-+ */
-+static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return 0;
-+}
-+
-+static size_t ii_bvec_single_seg_count(struct iov_iter *i)
-+{
-+	const struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	if (i->nr_segs == 1)
-+		return i->count;
-+	else
-+		return min(i->count, bvec->bv_len - i->iov_offset);
-+}
-+
-+struct iov_iter_ops ii_bvec_ops = {
-+	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_bvec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_bvec_copy_from_user,
-+	.ii_advance = ii_bvec_advance,
-+	.ii_fault_in_readable = ii_bvec_fault_in_readable,
-+	.ii_single_seg_count = ii_bvec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_bvec_ops);
-+
- static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
- 				     size_t base, size_t bytes, int atomic)
- {
+& yes, V2 is missing -
+
+From: Sachin Kamat<sachin.kamat@linaro.org>
+
+
+
 -- 
-1.8.0
+Regards,
+Rupesh Gujare
+
 
