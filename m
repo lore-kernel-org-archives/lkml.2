@@ -1,105 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2KUPdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:33:45 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40417 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082Ab2KUPdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:33:44 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [linux-keystone] Re: [linux-keystone] [PATCH] spi: davinci: add OF support for the spi controller
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: rob.herring@calxeda.com, rob@landley.net,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-keystone@list.ti.com
-In-Reply-To: <50A66AAE.3070707@ti.com>
-References: <1352755702-21488-1-git-send-email-m-karicheri2@ti.com> <20121115162042.A24F13E194B@localhost> <50A66AAE.3070707@ti.com>
-Date: Wed, 21 Nov 2012 15:33:39 +0000
-Message-Id: <20121121153339.A4B233E0A47@localhost>
+	id S1755206Ab2KUPid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:38:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106Ab2KUPib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:38:31 -0500
+Date: Wed, 21 Nov 2012 15:38:24 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Sonny Rao <sonnyrao@google.com>, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] mm: vmscan: Check for fatal signals iff the process was
+ throttled
+Message-ID: <20121121153824.GG8218@suse.de>
+References: <20121102083057.GG8218@suse.de>
+ <20121102223630.GA2070@barrios>
+ <20121105144614.GJ8218@suse.de>
+ <20121106002550.GA3530@barrios>
+ <20121106085822.GN8218@suse.de>
+ <20121106101719.GA2005@barrios>
+ <20121109095024.GI8218@suse.de>
+ <20121112133218.GA3156@barrios>
+ <20121112140631.GV8218@suse.de>
+ <20121113133109.GA5204@barrios>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121113133109.GA5204@barrios>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012 11:32:46 -0500, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> On 11/15/2012 11:20 AM, Grant Likely wrote:
-> > On Mon, 12 Nov 2012 16:28:22 -0500, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> >> This adds OF support to DaVinci SPI controller to configure platform
-> >> data through device bindings.
-> >>
-> >> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> > Hi Murali,
-> >
-> > Comments below...
-> >
-> >> ---
-> >>   .../devicetree/bindings/spi/spi-davinci.txt        |   50 ++++++++++++
-> >>   drivers/spi/spi-davinci.c                          |   80 +++++++++++++++++++-
-> >>   2 files changed, 126 insertions(+), 4 deletions(-)
-> >>   create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/spi/spi-davinci.txt b/Documentation/devicetree/bindings/spi/spi-davinci.txt
-> >> new file mode 100644
-> >> index 0000000..0369369
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/spi/spi-davinci.txt
-> >> @@ -0,0 +1,50 @@
-> >> +Davinci SPI controller device bindings
-> >> +
-> >> +Required properties:
-> >> +- #address-cells: number of cells required to define a chip select
-> >> +	address on the SPI bus.
-> > Will this *ever* be something other than '1'?
-> Will add "should be set to 1" as only once cell is used for this.
-> >> +- #size-cells: should be zero.
-> >> +- compatible:
-> >> +	- "ti,davinci-spi"
-> > Please use the actual model of the chip here. Don't try to be generic
-> > with the compatible string. A driver can bind against more than one
-> > compatible value and new devices can claim compatiblity with old by
-> > including the old compatible string in this list.
-> >
-> >> +- reg: Offset and length of SPI controller register space
-> >> +- ti,davinci-spi-version: SPI version :- "1.0" or "2.0"
-> > Usually this is determined from the compatible value directly (which is
-> > why compatible strings shouldn't be generic). Don't use a separate
-> > property for it.
-> Ok. Based on the ablve two comments, I think I will remove 
-> davinci-spi-version property. So driver will add two compatibility 
-> strings "ti,davinci-spi1" and "ti,davinci-spi2" amd match data for 
-> ti,davinci-spi2 will have the version set to 2 so that driver can use it 
-> to behave differently. This way DTS file for a board can set the 
-> compatibility string to use different version of the IP for the driver. 
-> Do you think I got you right?
+commit 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
+are low and swap is backed by network storage") introduced a check for
+fatal signals after a process gets throttled for network storage. The
+intention was that if a process was throttled and got killed that it
+should not trigger the OOM killer. As pointed out by Minchan Kim and
+David Rientjes, this check is in the wrong place and too broad. If a
+system is in am OOM situation and a process is exiting, it can loop in
+__alloc_pages_slowpath() and calling direct reclaim in a loop. As the
+fatal signal is pending it returns 1 as if it is making forward progress
+and can effectively deadlock.
 
-Mostly, but what would be better is something like:
+This patch moves the fatal_signal_pending() check after throttling to
+throttle_direct_reclaim() where it belongs. If the process is killed
+while throttled, it will return immediately without direct reclaim
+except now it will have TIF_MEMDIE set and will use the PFMEMALLOC
+reserves.
 
-"ti,davinci(model)-spi" and "ti,keystone(model)-spi" replacing (model)
-with the actual chip part number.
+Minchan pointed out that it may be better to direct reclaim before returning
+to avoid using the reserves because there may be pages that can easily
+reclaim that would avoid using the reserves. However, we do no such targetted
+reclaim and there is no guarantee that suitable pages are available. As it
+is expected that this throttling happens when swap-over-NFS is used there
+is a possibility that the process will instead swap which may allocate
+network buffers from the PFMEMALLOC reserves. Hence, in the swap-over-nfs
+case where a process can be throtted and be killed it can use the reserves
+to exit or it can potentially use reserves to swap a few pages and then
+exit. This patch takes the option of using the reserves if necessary to
+allow the process exit quickly.
 
-It is always better to use real part names than to make up meaninless
-'1', '2' numbers. Newer devices can include the older compatible part
-in the compatible property. For example:
+If this patch passes review it should be considered a -stable candidate
+for 3.6.
 
-	compatible = "ti,keystone-gen2-spi", "ti,keystone-original-spi";
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |   37 +++++++++++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 10 deletions(-)
 
-(I'm making up part names here, but you get the idea). So a driver that
-binds against "ti,keystone-original-spi" will work with a newer
-keystone gen2.
-
-> >> +- ti,davinci-spi-num-cs: Number of chip selects
-> >> +- ti,davinci-spi-intr-line: interrupt line used to connect the SPI
-> >> +	IP to the ARM interrupt controller withn the SoC. Possible values
-> >> +	are 0 and 1.
-> > ? Isn't that what the interrupts property is for? I don't understand why
-> > this is needed from the description.
-> Based on the IP manual, there are two interrupt lines coming from the IP 
-> and only one of them is tied to the interrupt controller in a specific 
-> SoC. There is a register to program which interrupt line is used based 
-> on the SoC configuration. So this is different from interrupts.
-
-Okay.
-
-g.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 48550c6..cbf84e1 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2207,9 +2207,12 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+  * Throttle direct reclaimers if backing storage is backed by the network
+  * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+  * depleted. kswapd will continue to make progress and wake the processes
+- * when the low watermark is reached
++ * when the low watermark is reached.
++ *
++ * Returns true if a fatal signal was delivered during throttling. If this
++ * happens, the page allocator should not consider triggering the OOM killer.
+  */
+-static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
++static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 					nodemask_t *nodemask)
+ {
+ 	struct zone *zone;
+@@ -2224,13 +2227,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	 * processes to block on log_wait_commit().
+ 	 */
+ 	if (current->flags & PF_KTHREAD)
+-		return;
++		goto out;
++
++	/*
++	 * If a fatal signal is pending, this process should not throttle.
++	 * It should return quickly so it can exit and free its memory
++	 */
++	if (fatal_signal_pending(current))
++		goto out;
+ 
+ 	/* Check if the pfmemalloc reserves are ok */
+ 	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+ 	pgdat = zone->zone_pgdat;
+ 	if (pfmemalloc_watermark_ok(pgdat))
+-		return;
++		goto out;
+ 
+ 	/* Account for the throttling */
+ 	count_vm_event(PGSCAN_DIRECT_THROTTLE);
+@@ -2246,12 +2256,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (!(gfp_mask & __GFP_FS)) {
+ 		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
+ 			pfmemalloc_watermark_ok(pgdat), HZ);
+-		return;
++
++		goto check_pending;
+ 	}
+ 
+ 	/* Throttle until kswapd wakes the process */
+ 	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+ 		pfmemalloc_watermark_ok(pgdat));
++
++check_pending:
++	if (fatal_signal_pending(current))
++		return true;
++
++out:
++	return false;
+ }
+ 
+ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+@@ -2273,13 +2291,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.gfp_mask = sc.gfp_mask,
+ 	};
+ 
+-	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+-
+ 	/*
+-	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
+-	 * that the page allocator does not consider triggering OOM
++	 * Do not enter reclaim if fatal signal was delivered while throttled.
++	 * 1 is returned so that the page allocator does not OOM kill at this
++	 * point.
+ 	 */
+-	if (fatal_signal_pending(current))
++	if (throttle_direct_reclaim(gfp_mask, zonelist, nodemask))
+ 		return 1;
+ 
+ 	trace_mm_vmscan_direct_reclaim_begin(order,
