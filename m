@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2KUBOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:14:04 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:62801 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab2KUBOC (ORCPT
+	id S1753623Ab2KUBPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:15:50 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48227 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159Ab2KUBPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:14:02 -0500
+	Tue, 20 Nov 2012 20:15:48 -0500
+Date: Tue, 20 Nov 2012 17:15:44 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Richard Retanubun <richardretanubun@ruggedcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Tang Nguyen <TangNguyen@ruggedcom.com>,
+        linux-usb mailing list <linux-usb@vger.kernel.org>,
+        stable@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: kmemleak report on isp1763 and sierra MC8705
+Message-ID: <20121121011544.GA5381@kroah.com>
+References: <Pine.LNX.4.44L0.1210291806360.31151-100000@netrider.rowland.org>
+ <509D804A.7080807@ruggedcom.com>
+ <CAMgPeKUPeJSKas2VOqbG+Nt5MOtdA3jUUCsFwUcDVhwDJJCr6A@mail.gmail.com>
+ <50A3D0E1.4060209@ruggedcom.com>
+ <20121114175218.GA2912@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20121121001043.7e1a68df@pyramind.ukuu.org.uk>
-References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com>
- <20121120211634.11513416@pyramind.ukuu.org.uk> <50ABFF4E.2050101@broadcom.com>
- <CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com> <20121121001043.7e1a68df@pyramind.ukuu.org.uk>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 20 Nov 2012 17:13:40 -0800
-X-Google-Sender-Auth: FnmEJaDQcxE0S-JdyczhTGFpBV8
-Message-ID: <CAB=NE6X9z5YEPD5avSkYd6Ayc90kHF4+b1Vjfw8cvZ3A0gwXOQ@mail.gmail.com>
-Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by tag
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121114175218.GA2912@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 4:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Not just a separate document but project / github / whatever given
->> that other projects are referring to it now, and we stand to gain more
->> in the community by streamlining it more and making it ubiquitous.
->
->
-> Cutting and pasting it somewhere works (subject to whatever licensing
-> it may have itself), as does having a list and a location for a copy, but
-> you still want it in the tree proper.
->
-> There's a reason that lawyers copy documents into other documents rather
-> than doing late dynamic binding - you want to be sure that what you
-> reference is the *exact* text that is valid for this case.
->
-> If you have a single master official copy and a link then you break all
-> that and you'd have to have everyones consensus and planning to change a
-> word of it.
+On Wed, Nov 14, 2012 at 06:52:18PM +0100, Johan Hovold wrote:
+> On Wed, Nov 14, 2012 at 12:12:01PM -0500, Richard Retanubun wrote:
+> > On 10/11/12 09:30 AM, Johan Hovold wrote:
+> > Hi Johan,
+> > 
+> > > There was a reference-count fix for the probe error path that went in to
+> > > v3.5. Haven't read all the details on how you trigger your leak, but at
+> > > the face of it, it could be related.
+> > >
+> > > Have a look at 0658a3366db7e27fa ("usb: use usb_serial_put in
+> > > usb_serial_probe errors). If related, you should be seeing "Ignoring
+> > > blacklisted interface #n" messages when you enable debug (e.g. #define
+> > > DEBUG) in the sierra driver.
+> > 
+> > That was it! Thanks so much for the research.
+> > I can apply it cleanly to 3.0.22 and see usb_release_dev() being
+> > called and thus no more kmemleak.
+> > 
+> > >
+> > > Greg, it seems to me that the fix referred to above should be backported
+> > > to the earlier stable trees either way.
+> > I would vote "yes" for this also.
+> > 
+> > While my setup circumstances may be a corner case, (modem kept
+> > resetting to re-establish PPP connection) it was leaking 1192 bytes
+> > per occurrence.
+> 
+> The leak affects every failed probe, for example due to blacklisted
+> interfaces which is quite common, so commit 0658a3366db7 ("usb: use
+> usb_serial_put in usb_serial_probe errors) should be backported to the
+> <= 3.4 stable trees.
 
-Ah so keep the original in place to let references to the original in
-whatever way those may exist to keep pointing but promote new usage to
-a copy and.. perhaps refer to the new copy in master, or just leave
-that in place as is?
+Thanks, now applied.
 
-  Luis
+greg k-h
