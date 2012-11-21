@@ -1,88 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab2KVVJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:09:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62852 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2KVVJR (ORCPT
+	id S1756657Ab2KVVKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:10:48 -0500
+Received: from userp1050.oracle.com ([156.151.31.82]:24052 "EHLO
+	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab2KVSqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:09:17 -0500
-Date: Thu, 22 Nov 2012 22:08:57 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
-Subject: Re: [PATCH v4 09/11] ARM: dts: AM33XX: Add PWMSS device tree nodes
-Message-ID: <20121122210857.GH16716@avionic-0098.adnet.avionic-design.de>
-References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
- <1353503469-18634-10-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8/pVXlBMPtxfSuJG"
-Content-Disposition: inline
-In-Reply-To: <1353503469-18634-10-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:oyxL5LbudohnvgAcufS8AZqd4jBcv3BoV5Hxa5ipEoz
- WBatIMluiulptUkvNWGjGgZx5djzC4D2wQSUYEQbKAkrsCwkY+
- 9FOE2G+1AU1vCnlrYPS7+CW2qjpzho/CbjkCnlsANkCQgv7UVX
- mOGYrkH23zfOLj8S2PPatz5hCrYenjV4cNZboMake1AlbAI3CK
- SoC6uEpea2mmcCWZsTbcNVQUnqsPjZnyy4+YwKAUchdlEVbVfz
- WtR56vf7yJiYooMdX800vWCgaei+dbPoG5gwqV5sAGWaPXKWSY
- BI9a0G8a2eXT0ffCTqqAAJtgBqJfrUurQfVjuWjpyDoN5YkP4e
- 4oY3sCDSuRVM3kim/OC8jhvK0cXTASD6PEx80Qmm1AwrJO/NNu
- Xi6ghUzcKcYjpriKqCyczL5WMPn/wsD5Sc=
+	Thu, 22 Nov 2012 13:46:40 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Asias He <asias@redhat.com>, Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH v4 25/31] block_dev: add support for read_iter, write_iter
+Date: Wed, 21 Nov 2012 16:41:05 -0600
+Message-Id: <1353537671-26284-26-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Asias He <asias@redhat.com>
 
---8/pVXlBMPtxfSuJG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use generic_file_read_iter for read_iter. Add blkdev_write_iter which is
+based on blkdev_aio_write for write_iter.
 
-On Wed, Nov 21, 2012 at 06:41:06PM +0530, Philip, Avinash wrote:
-> Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
-> AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
-> adding necessary properties like pwm-cells, base reg & set disabled as
-> status.
->=20
-> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
-> ---
-> Changes since v2:
-> 	- ranges property populated to handle child devices address range
->=20
-> :100644 100644 20a3f29... 4393161... M	arch/arm/boot/dts/am33xx.dtsi
->  arch/arm/boot/dts/am33xx.dtsi |   84 +++++++++++++++++++++++++++++++++++=
-++++++
->  1 files changed, 84 insertions(+), 0 deletions(-)
+Signed-off-by: Asias He <asias@redhat.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ drivers/char/raw.c |  4 ++--
+ fs/block_dev.c     | 18 ++++++++----------
+ include/linux/fs.h |  8 ++++----
+ 3 files changed, 14 insertions(+), 16 deletions(-)
 
-Looks good to me,
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 0bb207e..70eb45a 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -285,9 +285,9 @@ static long raw_ctl_compat_ioctl(struct file *file, unsigned int cmd,
+ 
+ static const struct file_operations raw_fops = {
+ 	.read		= do_sync_read,
+-	.aio_read	= blkdev_aio_read,
++	.read_iter	= blkdev_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= blkdev_aio_write,
++	.write_iter	= blkdev_write_iter,
+ 	.fsync		= blkdev_fsync,
+ 	.open		= raw_open,
+ 	.release	= raw_release,
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 36bff7c..30d05fd9 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1593,21 +1593,20 @@ static long block_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+ 	return blkdev_ioctl(bdev, mode, cmd, arg);
+ }
+ 
+-ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
+-			unsigned long nr_segs, loff_t pos)
++ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	ssize_t ret;
+ 	struct block_device *bdev = I_BDEV(iocb->ki_filp->f_mapping->host);
+ 
+ 	percpu_down_read(&bdev->bd_block_size_semaphore);
+ 
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, pos);
++	ret = generic_file_read_iter(iocb, iter, pos);
+ 
+ 	percpu_up_read(&bdev->bd_block_size_semaphore);
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(blkdev_aio_read);
++EXPORT_SYMBOL_GPL(blkdev_read_iter);
+ 
+ /*
+  * Write data to the block device.  Only intended for the block device itself
+@@ -1616,8 +1615,7 @@ EXPORT_SYMBOL_GPL(blkdev_aio_read);
+  * Does not take i_mutex for the write and thus is not for general purpose
+  * use.
+  */
+-ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-			 unsigned long nr_segs, loff_t pos)
++ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct block_device *bdev = I_BDEV(file->f_mapping->host);
+@@ -1630,7 +1628,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	percpu_down_read(&bdev->bd_block_size_semaphore);
+ 
+-	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	ret = __generic_file_write_iter(iocb, iter, &pos);
+ 	if (ret > 0 || ret == -EIOCBQUEUED) {
+ 		ssize_t err;
+ 
+@@ -1645,7 +1643,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(blkdev_aio_write);
++EXPORT_SYMBOL_GPL(blkdev_write_iter);
+ 
+ static int blkdev_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+@@ -1724,8 +1722,8 @@ const struct file_operations def_blk_fops = {
+ 	.llseek		= block_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-  	.aio_read	= blkdev_aio_read,
+-	.aio_write	= blkdev_aio_write,
++	.read_iter	= blkdev_read_iter,
++	.write_iter	= blkdev_write_iter,
+ 	.mmap		= blkdev_mmap,
+ 	.fsync		= blkdev_fsync,
+ 	.unlocked_ioctl	= block_ioctl,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e0960bd..71b2388 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2490,10 +2490,10 @@ extern int generic_segment_checks(const struct iovec *iov,
+ 		unsigned long *nr_segs, size_t *count, int access_flags);
+ 
+ /* fs/block_dev.c */
+-extern ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
+-			       unsigned long nr_segs, loff_t pos);
+-extern ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-				unsigned long nr_segs, loff_t pos);
++extern ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *iter,
++				loff_t pos);
++extern ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				 loff_t pos);
+ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+ 			int datasync);
+ extern void block_sync_page(struct page *page);
+-- 
+1.8.0
 
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-
---8/pVXlBMPtxfSuJG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrpRpAAoJEN0jrNd/PrOhEvwP/3Fxsbbdh+3U/XaMi+df3SPu
-v+FhtZMtoL/7nUkhk9VOUpbnmokcx+Cgl8D7ApHEgnWvp90Y4HaJNEk9xxgNevKc
-YvNrtg+6zL2Yx4gZIOdQDHXEMiBNBBfmeXFwUwmZUxjz/1HgqY0o1j+bm9GBsbD5
-RCi8NT+f9pw/QdKK7/nWvl++6ZHRG6eVW5l0Z+usN5XAFQJxYOh5XsoDVF+JkZ5q
-yJrkx8jXuc2xvPH/NIcSsTILs74/mvle3pBv6LaeIT4HN/3ac6M3a4LfljNqO2ZP
-g1arIfSeI4cqpptEekCFDvUoDS2H7pV18DbN/s/2rICt2r2nmQIJGArVe1sH9Hrs
-PCANVlyOtINYxk95oYhMNIEBDiOmuphcat8YGMhr19YSeBSqtZa0hHV43mc52ZTz
-2GB68u6i/SSkLpJTOKWDr5Mw8BOSCBJruONyyUPQBXIEBsTDF7o6WZdZK9lnU2JE
-r7kFCTQiUItktg2d89AgZ3BCStkRL7Z4mFpFFNWfVmPL8AQZTVJUOk3WE/sIxhP3
-PRge095DGL0sYLrY1OLrp7AANO7OVAodpnN5v2ADrbNefJrkEE4creGFeWhLSou3
-gZHzmXsqbIMaYkTYE74ZIhtZRe0zSDy/RTQqHkZajnrrzvnwBYYYEUpA95nmZbSi
-JXxlxKYPglzfMop+FQD3
-=/RVl
------END PGP SIGNATURE-----
-
---8/pVXlBMPtxfSuJG--
