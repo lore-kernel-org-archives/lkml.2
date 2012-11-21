@@ -1,67 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2KUHDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:03:08 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60647 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2KUHDG (ORCPT
+	id S1752776Ab2KUHFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:05:11 -0500
+Received: from relay02.ioffe.ru ([194.85.224.38]:51487 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751970Ab2KUHFK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:03:06 -0500
-Date: Tue, 20 Nov 2012 23:03:03 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-mmc@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL v2] at91: fixes for 3.7-rc7
-Message-ID: <20121121070303.GD7615@quad.lixom.net>
-References: <50AA5ED5.8090901@atmel.com>
- <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
- <50AA6C76.3000606@atmel.com>
- <50AB466F.5010500@atmel.com>
+	Wed, 21 Nov 2012 02:05:10 -0500
+Message-Id: <201211210659.qAL6tanb097303@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AB466F.5010500@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING!!! VIRUS DETECTED AND SPY, UPDATE NOW!!!
+To: Recipients <devine@sunflowerstop.co.za>
+From: "Webmail System Administrator" <devine@sunflowerstop.co.za>
+Date: Wed, 21 Nov 2012 07:57:17 +0100
+Reply-To: losiecki@pg.gda.pl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
 
-On Tue, Nov 20, 2012 at 09:59:27AM +0100, Nicolas Ferre wrote:
-> Arnd, Olof,
-> 
-> Just for the record, I do not want to put pressure at a such late time in
-> the 3.7-rc process. So, I just reworked that pull-request because the previous
-> one was wrong:
-> - wrong patch content (DT nodes with wrong size)
-> - not all tags in patches (Jean-Christophe and Arnd tags were missing...)
-> 
-> Just to start from a sane base if I have to rebase this work for 3.8, I let you know
-> that I have updated this tag...
-> 
-> The following changes since commit 641f3ce64b050961d454a0716bb6dbf528315aac:
-> 
->   ARM: at91/usbh: fix overcurrent gpio setup (2012-11-16 10:46:29 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-The new patches seem to belong in an at91/dt branch, not in a fixes one.
-
-I can pull in the previous fixes branch as an at91/fixes-non-critical for 3.8
-if you want. There's no need to rebase them for this, is there? What is the
-pinctrl dependency that you are talking about, are some of these patches needed
-as prerequisites for pinctrl changes or the other way around?
-
-Sorry if I've missed more elaborate emails on this and are asking repeat
-questions. ;)
-
--Olof
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
