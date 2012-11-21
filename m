@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab2KURp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:45:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39596 "EHLO mx1.redhat.com"
+	id S1755439Ab2KURrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:47:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab2KURpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:45:55 -0500
-Message-ID: <50AD1333.7070900@redhat.com>
-Date: Wed, 21 Nov 2012 12:45:23 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754273Ab2KURrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 12:47:12 -0500
+Date: Wed, 21 Nov 2012 12:46:55 -0500
+From: Dave Jones <davej@redhat.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: pi futex oops in __lock_acquire
+Message-ID: <20121121174655.GA25392@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+References: <507F9944.50505@kernel.dk>
+ <20121019052136.GA30852@redhat.com>
+ <1350650972.30157.34.camel@twins>
+ <20121023195026.GA2872@redhat.com>
+ <20121024202411.GA20597@redhat.com>
+ <5088C397.3000501@linux.intel.com>
+ <20121120164637.GA19893@redhat.com>
+ <50AC0DFA.3000103@linux.intel.com>
+ <50AC20A5.8040500@linux.intel.com>
+ <50AD1164.2000904@linux.intel.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com> <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com> <20121120060014.GA14065@gmail.com> <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com> <20121120074445.GA14539@gmail.com> <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com> <20121120090637.GA14873@gmail.com> <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
-In-Reply-To: <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AD1164.2000904@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 12:02 PM, Linus Torvalds wrote:
+On Wed, Nov 21, 2012 at 09:37:40AM -0800, Darren Hart wrote:
+ > I've sent a patch to address this. It has now been running "trinity -c
+ > futex" for about 12 hours. I haven't seen any more futex failures
 
-> The same is true of all your arguments about Mel's numbers wrt THP
-> etc. Your arguments are misleading - either intentionally, of because
-> you yourself didn't think things through. For schednuma, it's not
-> enough to be par with mainline with THP off - the competition
-> (autonuma) has been beating mainline soundly in Mel's configuration.
-> So the target to beat is not mainline, but the much *higher*
-> performance that autonuma got.
+Looks good here too.
 
-Once the numa base patches are upstream, the bar will be raised
-automatically.
+ > but I
+ > have seen a few OOMs. Is that expected from trinity?
 
-With the same infrastructure in place, we will be able to do
-an apples to apples comparison of the NUMA placement policies,
-and figure out which one will be the best to merge.
+Yeah, seems there's some leaks (both in trinity and the kernel).
+Oddly enough someone else emailed me about that this morning, which
+prompted me to write up this: http://codemonkey.org.uk/2012/11/21/fuzz-testing-oom-killer/
+Which is just part of the problem. There are other issues too it seems. Fun.
 
--- 
-All rights reversed
+	Dave
+
