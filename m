@@ -1,161 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab2KVSst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:48:49 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55523 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab2KVSso (ORCPT
+	id S932175Ab2KVSsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:48:46 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:35879 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab2KVSsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:48:44 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <13540495.epaCf4JVn9@percival>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com> <20121120215429.B621F3E1821@localhost> <13540495.epaCf4JVn9@percival>
-Date: Thu, 22 Nov 2012 13:39:41 +0000
-Message-Id: <20121122133941.24B883E129E@localhost>
+	Thu, 22 Nov 2012 13:48:43 -0500
+Date: Wed, 21 Nov 2012 13:52:07 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, rminnich@sandia.gov, viro@zeniv.linux.org.uk,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/4] bdi: Track users that require stable page writes
+Message-ID: <20121121215207.GB32202@blackbox.djwong.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020034.10225.51692.stgit@blackbox.djwong.org>
+ <20121121105624.GA19050@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121105624.GA19050@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 13:23:06 +0900, Alex Courbot <acourbot@nvidia.com> wrote:
-> Hi Grant,
+Ok, I'll update the description a bit.
+
+On Wed, Nov 21, 2012 at 05:56:24AM -0500, Christoph Hellwig wrote:
+> > +static inline void bdi_require_stable_pages(struct backing_dev_info *bdi)
+> > +{
+> > +	bdi->capabilities |= BDI_CAP_STABLE_WRITES;
+> > +}
+> > +
+> > +static inline void bdi_unrequire_stable_pages(struct backing_dev_info *bdi)
+> > +{
+> > +	bdi->capabilities &= ~BDI_CAP_STABLE_WRITES;
+> > +}
 > 
-> On Wednesday 21 November 2012 05:54:29 Grant Likely wrote:
-> > > With the advent of the device tree and of ARM kernels that are not
-> > > board-tied, we cannot rely on these board-specific hooks anymore but
-> > 
-> > This isn't strictly true. It is still perfectly fine to have board
-> > specific code when necessary. However, there is strong encouragement to
-> > enable that code in device drivers as much as possible and new board
-> > files need to have very strong justification.
+> Any reason to provide these wrappers while other BDI_CAP_ values don't
+> have it/
 > 
-> But doesn't introducing board-specific code into the kernel just defeats the 
-> purpose of the DT? If we extend this logic, we are heading straight back to 
-> board-definition files. To a lesser extent than before I agree, but the problem 
-> is fundamentally the same.
+> Also what protects bdi->capabilities against concurrent updates now that
+> it gets modified at runtime?
 
-There is *always* board specific code. There is always something fiddly
-enough, complex enough, or just plain ugly enough that it is best
-handled in C code. The trick is to make the board-specific stuff the
-exception, not the rule.
+Nothing seems to update ->capabilities at run time.
 
-When you can factor out common behavour (like you are doing here), then
-it is a really good candidate for a common binding, but still please
-always ask yourself the question is this going to make things better or
-worse in the long run.
+That said, if you're really worried about concurrent updates, I can always put
+a spinlock around all the updates.
 
-> > I'm thinking about the scripts as trivial-to-parse ascii strings that
-> > have a very simple set of commands. The commands use resources already
-> > defined in the node. ie. 'g0' refers to the first entry in the gpios
-> > property. 'r0' for the regulator, 'p0' for the pwms, 'd' means delay. By
-> > no means take this as the format to use, it is just an example off the
-> > top of my head, but it is already way easier to work with than putting
-> > each command into a node.
+(Or revert to the atomic_t counter, but that seemed unpopular...)
+
+I think I can drop the wrappers.
+
+> > +static inline void queue_require_stable_pages(struct request_queue *q)
+> > +{
+> > +	bdi_require_stable_pages(&q->backing_dev_info);
+> > +}
+> > +
+> > +static inline void queue_unrequire_stable_pages(struct request_queue *q)
+> > +{
+> > +	bdi_unrequire_stable_pages(&q->backing_dev_info);
+> > +}
+> > +
+> > +static inline int queue_requires_stable_pages(struct request_queue *q)
+> > +{
+> > +	return bdi_cap_stable_pages_required(&q->backing_dev_info);
+> > +}
 > 
-> I'd argue that this opens the door wide open towards having a complete 
-> interpreter in the device tree. At least DT nodes restrict what we can do 
-> conveniently.
-
-I disagree... see below.
-
-> > The trick is still to define a syntax that doesn't fall apart when it
-> > needs to be extended. I would also like to get opinions on whether or
-> > not conditionals or loops should be supported (ie. loop waiting for a
-> > status to change). If they should then we need to be a lot more careful
-> > about the design (and due to my aforementioned nervousness, somebody may
-> > need to get me therapy).
+> Independent of the above I see no point in these wrappers that just
+> provide a single dereference.
 > 
-> That's IMHO the main argument in favor of using DT nodes here (the syntax 
-> extension, not your therapy).
-
-hahaha :-)
-
-> They can be extended simply by adding properties 
-> to them, and I was relying on this to make power seqs extensible while keeping 
-> things consistent (and backward-compatible). For instance, when we want to 
-> support voltage setting in regulators we can just add a "voltage" property for 
-> that.
+> > +static ssize_t stable_pages_required_store(struct device *dev,
+> > +					   struct device_attribute *attr,
+> > +					   const char *buf, size_t count)
 > 
-> So to sum up the pros of the current node-base representation:
-> - give a "data like" representation of powering sequences (what they should 
-> be, actually)
-> - puts sanity barriers for not turning power seqs into a real code interpreter
-> - easily extensible
+> Can you add a rationale on why we'd want to allow users to change the
+> value?  I can't really think of any.
+
+I dislike the idea that if a program is dirtying pages that are being written
+out, then I don't really know whether the disk will write the before or after
+version.  If the power goes out before the inevitable second write, how do you
+know which version you get?  Sure would be nice if I could force on stable
+writes if I'm feeling paranoid.
+
+--D
 > 
-> There are probably a few cons, the numbering of steps being one, but at least 
-> we don't need to design a new DSL and care too much about extensibility which 
-> is, in the nodes case, built-in and free.
-
-No matter how it is encoded, this *IS* a new DSL. Using nodes and
-properties doesn't change that. Extensibility is no more built-in and
-free with nodes that it is with another encoding. If there aren't clear
-guidelines on how to extend it then we'll get weird stuff. For example,
-even with the nodes case someone might do this:
-
-	step3 {
-		type = "loop";
-		count = 10;
-		step1 {
-			type = "gpio";
-			gpio = <&gpio 1>;
-			value = 1;
-		};
-		step2 {
-			type = "delay";
-			value = 10000;
-		};
-		step3 {
-			type = "gpio";
-			gpio = <&gpio 1>;
-			value = 0;
-		};
-		step4 {
-			type = "delay";
-			value = 10000;
-		};
-	};
-
-And even while cringing as I type the above, I also have to consider
-that looping may just be a valid use case for sequences.
-
-And even here, a very simple sequence fragment required 22 lines of
-code.
-
-Next, I'm concerned about where these will show up. Say for instance
-there needs to be a power sequence added to an spi bus node. Already spi
-bus child nodes have a defined meaning; they are spi slaves. How then
-should the sequence be attached to the spi bus?
-
-> If that makes you feel better, maybe we can try and fix what is wrong with the 
-> current bindings instead of introducing a new language that will be, by 
-> nature, more complex to handle and difficult to extend without breaking things?
-
-Okay, here are 3 concrete objections with the proposed binding:
-- The syntax concerns of it being too verbose and it effectively uses
-  line numbers for ordering (Do you remember fighting with BASIC?).
-- There are many devices that won't be able to use the binding because
-  they already have a meaning for child nodes
-- I think resources should be declared separate from the sequence based
-  on the assumption that multiple steps will be operating on the same
-  resource.
-
-I do think that each sequence should be contained within a single
-property, but I'm open to other suggestions.
-
-g.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
