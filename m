@@ -1,136 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab2KVUW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:22:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40039 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab2KVT0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:43 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 29/40] mm: numa: Migrate on reference policy
-Date: Thu, 22 Nov 2012 19:25:42 +0000
-Message-Id: <1353612353-1576-30-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S932450Ab2KVUXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:23:33 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35665 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab2KVUX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:23:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPnjgZ3W3YfJLwfmg41oM4HvM+JnH2qiwmDN6Yhf3G8KnBFRhw@mail.gmail.com>
+References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com>
+ <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
+ <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
+ <20121121154758.93CE43E0AE2@localhost> <CAPnjgZ3W3YfJLwfmg41oM4HvM+JnH2qiwmDN6Yhf3G8KnBFRhw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 21 Nov 2012 23:07:06 +0000
+X-Google-Sender-Auth: 69vDeXhZTj-6aOl1zCHijzkSoyY
+Message-ID: <CACxGe6tm_7wwZDNexUCJhLsKMM12iYQJ2Yi0=M7fU1z5YLhvRA@mail.gmail.com>
+Subject: Re: Device tree node to major/minor?
+To: Simon Glass <sjg@chromium.org>
+Cc: lk <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Che-liang Chiou <clchiou@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the simplest possible policy that still does something of note.
-When a pte_numa is faulted, it is moved immediately. Any replacement
-policy must at least do better than this and in all likelihood this
-policy regresses normal workloads.
+On Wed, Nov 21, 2012 at 8:48 PM, Simon Glass <sjg@chromium.org> wrote:
+> Hi Grant,
+>
+> On Wed, Nov 21, 2012 at 7:47 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Tue, 20 Nov 2012 15:48:24 -0800, Simon Glass <sjg@chromium.org> wrote:
+>>> Hi Grant,
+>>>
+>>> On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>> > On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
+>>> >> Hi,
+>>> >>
+>>> >> I hope this is a stupid question with an easy answer, but I cannot find it.
+>>> >>
+>>> >> I have a device tree node for an mmc block device and I want to use
+>>> >> that block device from another driver. I have a phandle which lets me
+>>> >> get the node of the mmc device, but I am not sure how to convert that
+>>> >> into a block_device. In order to do so, I think I need a major/minor
+>>> >> number. Of course the phandle might in fact point to a SCSI driver and
+>>> >> I want that to work correctly also.
+>>> >>
+>>> >> I imagine I might be able to search through the wonders of sysfs in
+>>> >> user space, but is there a better way?
+>>> >
+>>> > Do you /want/ to do it from userspace? What is your use case? Mounting
+>>> > the rootfs?
+>>>
+>>> The use case is storing some raw data on a block device from within a
+>>> driver in the kernel. It is used to keep track of the verified boot
+>>> state.
+>>>
+>>> >
+>>> > Regardless, userspace can monitor the uevents when devices are added
+>>> > (that's what udev does) and watch for the full path of the node you
+>>> > want in the uevent attribute. Then you can look for the child device
+>>> > with the block major/minor numbers in it.
+>>>
+>>> So is there a way to do this entirely in the kernel ex post? It might
+>>> need to happen during kernel boot, before user space.
+>>
+>> Yes, it is certainly doable within the kernel. First, you'll need to use
+>> a notifier to get called back whenever a new device is created. Then
+>> you'll need to look at the dev->of_node(->full_name) to see if it is the
+>> node you actually want. You might need/want to resolve it from an alias
+>> or something, but I presume you already have a way to find the
+>> device_node before seaching for a struct device.
+>
+> OK thank you. Was hoping to find a simple way to find a block device
+> from a device tree node (yes I know the right one) but I suppose in
+> general this is impossible, since nodes may create more than one
+> device, and each has its own data structures leading to the block
+> device.
+>
+> So it seems like a notifier is the best way. Thanks for looking at this Grant.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   38 ++++++++++++++++++++++++++++++++++++--
- 2 files changed, 37 insertions(+), 2 deletions(-)
+It's certainly the least invasive way. Otherwise you need to hook into
+the DT device creation code.
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 16fb4e6..0d11c3d 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -67,6 +67,7 @@ enum mpol_rebind_step {
- #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
- #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
- #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
-+#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
- 
- 
- #endif /* _UAPI_LINUX_MEMPOLICY_H */
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 516491f..4c1c8d8 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -118,6 +118,26 @@ static struct mempolicy default_policy = {
- 	.flags = MPOL_F_LOCAL,
- };
- 
-+static struct mempolicy preferred_node_policy[MAX_NUMNODES];
-+
-+static struct mempolicy *get_task_policy(struct task_struct *p)
-+{
-+	struct mempolicy *pol = p->mempolicy;
-+	int node;
-+
-+	if (!pol) {
-+		node = numa_node_id();
-+		if (node != -1)
-+			pol = &preferred_node_policy[node];
-+
-+		/* preferred_node_policy is not initialised early in boot */
-+		if (!pol->mode)
-+			pol = NULL;
-+	}
-+
-+	return pol;
-+}
-+
- static const struct mempolicy_operations {
- 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
- 	/*
-@@ -1598,7 +1618,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
- struct mempolicy *get_vma_policy(struct task_struct *task,
- 		struct vm_area_struct *vma, unsigned long addr)
- {
--	struct mempolicy *pol = task->mempolicy;
-+	struct mempolicy *pol = get_task_policy(task);
- 
- 	if (vma) {
- 		if (vma->vm_ops && vma->vm_ops->get_policy) {
-@@ -2021,7 +2041,7 @@ retry_cpuset:
-  */
- struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- {
--	struct mempolicy *pol = current->mempolicy;
-+	struct mempolicy *pol = get_task_policy(current);
- 	struct page *page;
- 	unsigned int cpuset_mems_cookie;
- 
-@@ -2295,6 +2315,11 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	default:
- 		BUG();
- 	}
-+
-+	/* Migrate the page towards the node whose CPU is referencing it */
-+	if (pol->flags & MPOL_F_MORON)
-+		polnid = numa_node_id();
-+
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
-@@ -2483,6 +2508,15 @@ void __init numa_policy_init(void)
- 				     sizeof(struct sp_node),
- 				     0, SLAB_PANIC, NULL);
- 
-+	for_each_node(nid) {
-+		preferred_node_policy[nid] = (struct mempolicy) {
-+			.refcnt = ATOMIC_INIT(1),
-+			.mode = MPOL_PREFERRED,
-+			.flags = MPOL_F_MOF | MPOL_F_MORON,
-+			.v = { .preferred_node = nid, },
-+		};
-+	}
-+
- 	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
--- 
-1.7.9.2
+g.
 
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
