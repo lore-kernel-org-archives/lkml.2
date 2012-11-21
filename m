@@ -1,59 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab2KUR0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:26:22 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:5680
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754470Ab2KUR0V (ORCPT
+	id S1755371Ab2KUR1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:27:19 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42563 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab2KUR1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:26:21 -0500
-X-Forefront-Antispam-Report: CIP:157.56.245.149;KIP:(null);UIP:(null);IPV:NLI;H:CH1PRD0810HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI1432Izz1de0h1202h1d1ah1d2ahzzz2fh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-Message-ID: <50AD0EB4.5070307@ozmodevices.com>
-Date: Wed, 21 Nov 2012 17:26:12 +0000
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-Organization: Ozmo Devices
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 21 Nov 2012 12:27:17 -0500
+Date: Wed, 21 Nov 2012 15:27:09 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: marcel@holtmann.org, Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: net, bluetooth: object debug warning in bt_host_release()
+Message-ID: <20121121172709.GB15370@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Sasha Levin <sasha.levin@oracle.com>, marcel@holtmann.org,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Dave Jones <davej@redhat.com>
+References: <50A272E7.9080103@oracle.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <devel@driverdev.osuosl.org>, <sachin.kamat@linaro.org>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH 1/3] staging: ozwpan: Remove redundant null check before
- kfree in ozpd.c
-References: <20121120163513.GC4990@kroah.com> <1353501977-6585-2-git-send-email-rgujare@ozmodevices.com> <20121121130527.GH11248@mwanda> <50ACDA54.7040508@ozmodevices.com> <20121121161859.GI6186@mwanda>
-In-Reply-To: <20121121161859.GI6186@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.149.82.179]
-X-OriginatorOrg: ozmodevices.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wq9mPyueHGvFACwf"
+Content-Disposition: inline
+In-Reply-To: <50A272E7.9080103@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/12 16:19, Dan Carpenter wrote:
-> When someone sends a patch there are a several possible responses:
-> 1) Ack the patch.
-> 2) Request that the submitter redo it.  The downside is that no one
->     likes redoing patches.
-> 3) Reject the patch.
-> 4) Redo it yourself and say "Based on a patch from Sachin Kamat".
->     This isn't nice because everyone wants author credit.
-> 5) Redo it and get permission from the original author to give them
->     author credit get their signed-off-by.
->
->
-Thanks Dan
 
-I will keep it in mind in future.
+--wq9mPyueHGvFACwf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sachin,
+* Sasha Levin <sasha.levin@oracle.com> [2012-11-13 11:18:47 -0500]:
 
-Are you interested in redoing (or sending sign-off ?) for this patch 
-series ? I am more than happy to accept either.
+> Hi all,
+>=20
+> While fuzzing with trinity on a KVM tools (lkvm) guest running latest -ne=
+xt kernel I've
+> stumbled on the following:
+>=20
+> [ 1434.201149] ------------[ cut here ]------------
+> [ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e=
+/0xb0()
+> [ 1434.208324] ODEBUG: free active (active state 0) object type: work_str=
+uct hint: hci_power_on+0x0/0x90
+> [ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    3.=
+7.0-rc5-next-20121112-sasha-00018-g2f4ce0e #127
+> [ 1434.210760] Call Trace:
+> [ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
+> [ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
+> [ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
+> [ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
+> [ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
+> [ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55/0=
+xa0
+> [ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x230
+> [ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
+> [ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
+> [ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
+> [ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
+> [ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
+> [ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
+> [ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
+> [ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
+> [ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
+> [ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
+> [ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
+> [ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
+> [ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
+> [ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
+> [ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
+> [ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
+> [ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
+> [ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
+>=20
+> Not that the guest doesn't emulate anything that looks like a bluetooth d=
+evice or
+> has bluetooth capabilities.
 
--- 
-Regards,
-Rupesh Gujare
+You have a virtual bluetooth device (vhci). That is why you get a bluetooth
+crash. I think the following patch will fix this issue.
+
+	Gustavo
+
+---
+Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Date:   Wed Nov 21 00:50:21 2012 -0200
+
+    Bluetooth: cancel power_on work when unregistering the device
+   =20
+    We need to cancel the hci_power_on work in order to avoid it run when we
+    try to free the hdev.
+   =20
+    [ 1434.201149] ------------[ cut here ]------------
+    [ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x=
+8e/0xb0()
+    [ 1434.208324] ODEBUG: free active (active state 0) object type: work_s=
+truct hint:
+    _power_on+0x0/0x90
+    [ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    =
+3.7.0-rc5-n
+    20121112-sasha-00018-g2f4ce0e #127
+    [ 1434.210760] Call Trace:
+    [ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
+    [ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
+    [ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
+    [ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
+    [ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
+    [ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55=
+/0xa0
+    [ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x=
+230
+    [ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
+    [ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
+    [ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
+    [ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
+    [ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
+    [ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
+    [ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
+    [ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
+    [ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
+    [ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
+    [ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
+    [ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
+    [ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
+    [ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
+    [ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
+    [ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
+    [ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
+    [ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
+   =20
+    Reported-by: Sasha Levin <sasha.levin@oracle.com>
+    Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index 81f4bac..69eb644 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1854,6 +1854,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
+        for (i =3D 0; i < NUM_REASSEMBLY; i++)
+                kfree_skb(hdev->reassembly[i]);
+=20
++       cancel_work_sync(&hdev->power_on);
++
+        if (!test_bit(HCI_INIT, &hdev->flags) &&
+            !test_bit(HCI_SETUP, &hdev->dev_flags)) {
+                hci_dev_lock(hdev);
 
 
+--wq9mPyueHGvFACwf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQrQ7sAAoJEPs3PUX4s20olbsP/0eu6HagUf9SEOek9DSNogCF
+6sT//DU7IJPiY9kw21yHwmYbxWpv+EiGqmO2ryfk5l7IQI1fGuvWWA+MT+YWkfIj
+wNlqpzmSGjE0v3WBh6sswTCbx2kTAHLYyGu8ebvNazIrr+zMrRRYTm3jMk6YW4Q0
+3fxUhl6yYnTgs3uD9Tt8EIzkk5zsDbsrxeyf6F2lrLBoKHCSXmHRd7RsVT3HAplH
+HILixhkj8l/+nSfJMi0Xf025d65PdzbTfMhPyoSkNpJeSGg4MJNbgkVyhU3StNiV
+ivFBUGaRUJXPuHdNA0Wvlnzqf+l6Z9OKfh4Om6vWDtW5pYTZozhISGov1pnq4K7H
+FUe6npeTN0KwDJ15VHjSzfWIQZj/E32YmidhW7g1iK/P9BVDtfxOTtLPPWBnTssQ
+n71Inuisu74L7iRwY6HQlaOqKZ97tsZoCnADZOQ/rVoF1hGkArUze/svvzTJpkIm
+c++LawVqXM+SgCxq1OX9LzlsNGw3kQthrE5g7gc+EbLFY0gNOBrkWETvaLt1X3en
+svOpsJNZGS6KLUKuybSVX7NxjOYeurXmb5iAQo8sjIgK/bHj6Ol1Vz/yLeyrwRN2
+A89m0fr2VY851bh9A4iySl0GiUhDGPftPI6aqBOYKL17G7EwWJ2fz1YS4qhAH0Zg
+zJQA20U29MMbGyC5aHGo
+=u5vq
+-----END PGP SIGNATURE-----
+
+--wq9mPyueHGvFACwf--
