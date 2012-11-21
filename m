@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab2KUNlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:41:12 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:33666 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab2KUNlL (ORCPT
+	id S1753968Ab2KUNmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:42:17 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38268 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab2KUNmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:41:11 -0500
-Message-ID: <50ACD9F2.40207@gmail.com>
-Date: Wed, 21 Nov 2012 07:41:06 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 21 Nov 2012 08:42:15 -0500
+Date: Wed, 21 Nov 2012 13:46:21 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-pm@vger.kernel.org, rjw@sisk.pl, keescook@chromium.org,
+        serge.hallyn@canonical.com, linux-kernel@vger.kernel.org,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH] PM / devfreq: missing rcu_read_lock() added for
+ find_device_opp()
+Message-ID: <20121121134621.GA30575@mail.hallyn.com>
+References: <CAGXu5j+g8inUZV43GFQzs9KpRvjPGPTJsXinb4Y=wOuOf2jnVQ@mail.gmail.com>
+ <1353492634-10730-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: Bongkyu Kim <bongkyu.kim@lge.com>
-CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/i2c: support more interrupt specifiers
-References: <1353488322-14764-1-git-send-email-bongkyu.kim@lge.com>
-In-Reply-To: <1353488322-14764-1-git-send-email-bongkyu.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353492634-10730-1-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 02:58 AM, Bongkyu Kim wrote:
-> This patch supports more interrupt specifiers for i2c client.
-
-Why?
-
-> Signed-off-by: Bongkyu Kim <bongkyu.kim@lge.com>
+Quoting MyungJoo Ham (myungjoo.ham@samsung.com):
+> opp_get_notifier() uses find_device_opp(), which requires to
+> held rcu_read_lock. In order to keep the notifier-header
+> valid, we have added rcu_read_lock().
+> 
+> Reported-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > ---
->  drivers/of/of_i2c.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+>  drivers/devfreq/devfreq.c |   26 ++++++++++++++++++++------
+>  1 files changed, 20 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-> index 3550f3b..c6d9b7e 100644
-> --- a/drivers/of/of_i2c.c
-> +++ b/drivers/of/of_i2c.c
-> @@ -34,6 +34,7 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
->  		struct dev_archdata dev_ad = {};
->  		const __be32 *addr;
->  		int len;
-> +		int nr = 0;
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 45e053e..e91cb22 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -1023,11 +1023,18 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+>   */
+>  int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
+>  {
+> -	struct srcu_notifier_head *nh = opp_get_notifier(dev);
+> +	struct srcu_notifier_head *nh;
+> +	int ret = 0;
 >  
->  		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
->  
-> @@ -57,7 +58,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
->  			continue;
->  		}
->  
-> -		info.irq = irq_of_parse_and_map(node, 0);
-> +		info.irq = irq_of_parse_and_map(node, nr++);
-> +		while (irq_of_parse_and_map(node, nr))
-> +			nr++;
+> +	rcu_read_lock();
+> +	nh = opp_get_notifier(dev);
+>  	if (IS_ERR(nh))
+> -		return PTR_ERR(nh);
+> -	return srcu_notifier_chain_register(nh, &devfreq->nb);
+> +		ret = PTR_ERR(nh);
+> +	if (!ret)
+> +		ret = srcu_notifier_chain_register(nh, &devfreq->nb);
 
-What's the point if you are just discarding the interrupt number? If
-this is needed, then shouldn't you fix i2c_board_info first?
+Hm, but if I'm seeing right, srcu_notifier_chain_register calls
+mutex_lock(), which sleeps, so you can't do that under rcu_read_lock().
 
-Rob
-
->  		info.of_node = of_node_get(node);
->  		info.archdata = &dev_ad;
->  
-> 
+-serge
