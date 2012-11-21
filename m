@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab2KUPsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:48:09 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57566 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755169Ab2KUPsG (ORCPT
+	id S1755255Ab2KUPun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:50:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52512 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab2KUPul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:48:06 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: Device tree node to major/minor?
-To: Simon Glass <sjg@chromium.org>
-Cc: lk <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Che-liang Chiou <clchiou@chromium.org>
-In-Reply-To: <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
-References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com> <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com> <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
-Date: Wed, 21 Nov 2012 15:47:58 +0000
-Message-Id: <20121121154758.93CE43E0AE2@localhost>
+	Wed, 21 Nov 2012 10:50:41 -0500
+Message-ID: <50ACF847.3070709@samsung.com>
+Date: Thu, 22 Nov 2012 00:50:31 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "'Joerg Roedel'" <joro@8bytes.org>, sw0312.kim@samsung.com,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        prathyush.k@samsung.com, rahul.sharma@samsung.com
+Subject: Re: [PATCH v3 02/12] ARM: EXYNOS: Add clk_ops for gating clocks of
+ System MMU
+References: <002801cdc7a5$8535f6d0$8fa1e470$%cho@samsung.com>
+In-Reply-To: <002801cdc7a5$8535f6d0$8fa1e470$%cho@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012 15:48:24 -0800, Simon Glass <sjg@chromium.org> wrote:
-> Hi Grant,
-> 
-> On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
-> >> Hi,
-> >>
-> >> I hope this is a stupid question with an easy answer, but I cannot find it.
-> >>
-> >> I have a device tree node for an mmc block device and I want to use
-> >> that block device from another driver. I have a phandle which lets me
-> >> get the node of the mmc device, but I am not sure how to convert that
-> >> into a block_device. In order to do so, I think I need a major/minor
-> >> number. Of course the phandle might in fact point to a SCSI driver and
-> >> I want that to work correctly also.
-> >>
-> >> I imagine I might be able to search through the wonders of sysfs in
-> >> user space, but is there a better way?
-> >
-> > Do you /want/ to do it from userspace? What is your use case? Mounting
-> > the rootfs?
-> 
-> The use case is storing some raw data on a block device from within a
-> driver in the kernel. It is used to keep track of the verified boot
-> state.
-> 
-> >
-> > Regardless, userspace can monitor the uevents when devices are added
-> > (that's what udev does) and watch for the full path of the node you
-> > want in the uevent attribute. Then you can look for the child device
-> > with the block major/minor numbers in it.
-> 
-> So is there a way to do this entirely in the kernel ex post? It might
-> need to happen during kernel boot, before user space.
+On 11/21/12 14:03, Cho KyongHo wrote:
+> Touching some System MMU needs its master devices' clock to be enabled
+> before. This commit adds clk_ops.set_parent of gating clocks of System
+> MMU to ensure gating clocks of System MMU's mater devices are enabled
+> when enabling gating clocks of System MMU.
+>
+> Change-Id: Icd58b12f599e92692c032516331a444f4703ba6b
 
-Yes, it is certainly doable within the kernel. First, you'll need to use
-a notifier to get called back whenever a new device is created. Then
-you'll need to look at the dev->of_node(->full_name) to see if it is the
-node you actually want. You might need/want to resolve it from an alias
-or something, but I presume you already have a way to find the
-device_node before seaching for a struct device.
+Same here, we don't need this :-)
 
-g.
+> Signed-off-by: KyongHo Cho<pullip.cho@samsung.com>
+> ---
+>   arch/arm/mach-exynos/clock-exynos5.c | 25 +++++++++++++++++++++++++
+>   1 file changed, 25 insertions(+)
+>
+
+Looks good to me, and I think, this can be applied independently from 
+this series. Will apply with removing 'Change-Id'.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
