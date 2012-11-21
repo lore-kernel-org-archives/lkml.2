@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2KUOLD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:11:03 -0500
-Received: from mga14.intel.com ([143.182.124.37]:43979 "EHLO mga14.intel.com"
+	id S1754670Ab2KUOMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:12:48 -0500
+Received: from v37049.1blu.de ([89.202.2.49]:50811 "EHLO v37049.1blu.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591Ab2KUOLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:11:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
-   d="scan'208";a="220650859"
-Date: Wed, 21 Nov 2012 15:10:58 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH 1/1] mfd/twl6040: Remove duplicate inclusion of
- linux/err.h
-Message-ID: <20121121141058.GU18738@sortiz-mobl>
-References: <1353390555-25519-1-git-send-email-sachin.kamat@linaro.org>
+	id S1752039Ab2KUOMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 09:12:47 -0500
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 09:12:47 EST
+To: linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, patrik.r.jakobsson@gmail.com,
+        christian.gmeiner@gmail.com
+Date: Wed, 21 Nov 2012 15:04:42 +0100
+Message-ID: <20121121140442.782733@zweiblum.hodek.net>
+From: roman@hodek.net
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353390555-25519-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+X-Mailer: RoMail 2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+Hi,
 
-On Tue, Nov 20, 2012 at 11:19:15AM +0530, Sachin Kamat wrote:
-> linux/err.h was included twice.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/mfd/twl6040.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-Applied, thanks.
+I've found your discussion about a gma500 Atom E6xx graphics device with PCI
+ID 0x4108. I'm currently working on such a box, too.
 
-Cheers,
-Samuel.
+There are two variants of my hardware, one with LVDS output for smaller
+panels, and one with a Chrontel 7308 SDVO->LVDS converter for larger ones. My
+HW developer says the platform is called "Little Bay" and similar to Queens
+Bay.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Anyway, the small LVDS one works fine so far, at least when I hardcode the
+panel resolution (there's no VBT etc. in BIOS yet). However, the SDVO one
+stays black. No wonder, as there's no SDVO code in the Oaktrail part of the
+driver.
+
+So I tried to add this... and simply started with adding a call to
+psb_intel_sdvo_init() in oaktrail_output_init(), to see what happens. The
+result: it doesn't find anything :-( I could track problems down to the point
+that the SDVO i2c registers seem to be the wrong ones.
+
+At the known offsets for i2c regs (0x5100 and on) I see only 0xffffffff, so
+probably these registers are not present or somewhere else on my platform.
+
+Does anybody of you have any infos on this? How can I get further?
+Thanks for any help in advance!
+
+Roman
+
+
+PS: Please keep me in Cc:, I'm not subscribed to LKML.
+
