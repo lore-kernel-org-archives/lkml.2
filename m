@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab2KUNhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:37:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19932 "EHLO mga02.intel.com"
+	id S1753895Ab2KUNkD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:40:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14855 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab2KUNhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:37:46 -0500
+	id S1752720Ab2KUNkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 08:40:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
-   d="scan'208";a="222635030"
-Date: Wed, 21 Nov 2012 14:37:43 +0100
+   d="scan'208";a="252382310"
+Date: Wed, 21 Nov 2012 14:39:57 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH RESEND 0/5] mfd: tps65090: cleanups and use regmap-irq
- for interrupt support
-Message-ID: <20121121133743.GQ18738@sortiz-mobl>
-References: <1353381289-11643-1-git-send-email-ldewangan@nvidia.com>
+To: wei_wang@realsil.com.cn
+Cc: cjb@laptop.org, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org, arnd@arndb.de,
+        oakad@yahoo.com, bp@alien8.de
+Subject: Re: [PATCH v3 0/2] rtsx patch for for-next branch in MFD tree
+Message-ID: <20121121133957.GR18738@sortiz-mobl>
+References: <cover.1353381810.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353381289-11643-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <cover.1353381810.git.wei_wang@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+Hi Wei,
 
-On Tue, Nov 20, 2012 at 08:44:44AM +0530, Laxman Dewangan wrote:
-> This patch series cleanups the driver code by removing unused
-> member, rearranging code and moving irq implementation to regmap-irq
-> framework.
+On Tue, Nov 20, 2012 at 11:24:29AM +0800, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> Just resending in case of it is missed.
+> Wei WANG (2):
+>   mmc/host/rtsx: Configure SD_CFG2 register in sd_rw_multi
+>   mmc/host/rtsx: Explicitely include slab.h in rtsx_pci_sdmmc.c
 > 
-> Laxman Dewangan (5):
->   mfd: add battery charger in tps65090 sub devs
->   mfd: tps65090: add error prints when mem alloc failed
->   mfd: tps65090: remove unused member of struct tps65090
->   mfd: tps65090: move register access APIs to header
->   mfd: tps65090: use regmap irq framework for interrupt support
-> 
->  drivers/mfd/tps65090.c       |  312 ++++++++++++++----------------------------
->  include/linux/mfd/tps65090.h |   73 ++++++++---
->  2 files changed, 159 insertions(+), 226 deletions(-)
-All 5 patches applied, thanks.
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |    2 ++
+>  1 file changed, 2 insertions(+)
+Applied, thanks.
 
 Cheers,
 Samuel.
