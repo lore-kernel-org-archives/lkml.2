@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2KULm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 06:42:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9176 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2KULm4 (ORCPT
+	id S1754455Ab2KULou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 06:44:50 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:11351 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752826Ab2KULot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 06:42:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 21 Nov 2012 03:42:45 -0800
-From: Sivaram Nair <sivaramn@nvidia.com>
-To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>,
-        <linux-tegra@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Sivaram Nair <sivaramn@nvidia.com>
-Subject: [PATCH 1/1] arm: tegra: fix comment in dsib clk set_parent
-Date: Wed, 21 Nov 2012 13:42:27 +0200
-Message-ID: <1353498147-14574-1-git-send-email-sivaramn@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 21 Nov 2012 06:44:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvAnAIS9rFB8qHg4PGdsb2JhbAANN4YghDq3fgMBAQEBOIJSAQEBBCNWEAsYAgImAgJDFLNhcJMCgSKMToIUgRMDqUI
+Subject: Re: BUG at kernel/timer.c:1100 when using JFFS2
+From: Nathan Williams <nathan@traverse.com.au>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1353496126.2378.6.camel@laptop>
+References: <1353483457.9160.26.camel@laptop>
+	 <1353484194.2701.5.camel@sauron.fi.intel.com>
+	 <1353496126.2378.6.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Nov 2012 22:44:47 +1100
+Message-ID: <1353498287.2378.9.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the clk framework has already taken necessary locks before calling
-into the arch clk ops code, no further locks are needed while setting
-the parent of dsib clk. This patch removes a comment that indicated
-otherwise, and yet did not take any locks.
+On Wed, 2012-11-21 at 22:08 +1100, Nathan Williams wrote:
+> On Wed, 2012-11-21 at 09:49 +0200, Artem Bityutskiy wrote:
+> > You probably use 3.5? There was a bug which was fixed, try the latest
+> > stable 3.5 version, the fix must be there.
+> > 
+> 
+> No I'm using 3.6.  Do you know what the patch was so I can look it up?
+> 
+Ok I'll try 3.6.7.  "JFFS2: fix unmount regression" seems to be your
+patch.  Thanks for your help.
 
-Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
----
- arch/arm/mach-tegra/tegra30_clocks.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/tegra30_clocks.c b/arch/arm/mach-tegra/tegra30_clocks.c
-index efc000e..d714777 100644
---- a/arch/arm/mach-tegra/tegra30_clocks.c
-+++ b/arch/arm/mach-tegra/tegra30_clocks.c
-@@ -2045,9 +2045,7 @@ struct clk_ops tegra30_periph_clk_ops = {
- static int tegra30_dsib_clk_set_parent(struct clk_hw *hw, u8 index)
- {
- 	struct clk *d = clk_get_sys(NULL, "pll_d");
--	/* The DSIB parent selection bit is in PLLD base
--	   register - can not do direct r-m-w, must be
--	   protected by PLLD lock */
-+	/* The DSIB parent selection bit is in PLLD base register */
- 	tegra_clk_cfg_ex(
- 		d, TEGRA_CLK_PLLD_MIPI_MUX_SEL, index);
- 
--- 
-1.7.9.5
+Regards,
+Nathan
 
