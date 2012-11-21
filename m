@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab2KUDdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 22:33:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57603 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab2KUDdU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 22:33:20 -0500
-Date: Tue, 20 Nov 2012 19:33:17 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-In-Reply-To: <20121120175647.GA23532@gmail.com>
-Message-ID: <alpine.DEB.2.00.1211201913410.6458@chino.kir.corp.google.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org> <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com> <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com> <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com> <20121120152933.GA17996@gmail.com> <20121120175647.GA23532@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753263Ab2KUEA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:00:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40236 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab2KUEA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:00:28 -0500
+X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
+   d="scan'208";a="6243549"
+Message-ID: <50AC4A1B.9020908@cn.fujitsu.com>
+Date: Wed, 21 Nov 2012 11:27:23 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rob Landley <rob@landley.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PART4 Patch v2 1/2] numa: add CONFIG_MOVABLE_NODE for movable-dedicated
+ node
+References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>	<1353067090-19468-2-git-send-email-wency@cn.fujitsu.com> <20121120142550.5c126194.akpm@linux-foundation.org>
+In-Reply-To: <20121120142550.5c126194.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 11:20:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/21 11:20:51,
+	Serialize complete at 2012/11/21 11:20:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Nov 2012, Ingo Molnar wrote:
-
-> The current updated table of performance results is:
+At 11/21/2012 06:25 AM, Andrew Morton Wrote:
+> On Fri, 16 Nov 2012 19:58:09 +0800
+> Wen Congyang <wency@cn.fujitsu.com> wrote:
 > 
-> -------------------------------------------------------------------------
->   [ seconds         ]    v3.7  AutoNUMA   |  numa/core-v16    [ vs. v3.7]
->   [ lower is better ]   -----  --------   |  -------------    -----------
->                                           |
->   numa01                340.3    192.3    |      139.4          +144.1%
->   numa01_THREAD_ALLOC   425.1    135.1    |	 121.1          +251.0%
->   numa02                 56.1     25.3    |       17.5          +220.5%
->                                           |
->   [ SPECjbb transactions/sec ]            |
->   [ higher is better         ]            |
->                                           |
->   SPECjbb 1x32 +THP      524k     507k    |	  638k           +21.7%
->   SPECjbb 1x32 !THP      395k             |       512k           +29.6%
->                                           |
-> -----------------------------------------------------------------------
->                                           |
->   [ SPECjbb multi-4x8 ]                   |
->   [ tx/sec            ]  v3.7             |  numa/core-v16
->   [ higher is better  ] -----             |  -------------
->                                           |
->               +THP:      639k             |       655k            +2.5%
->               -THP:      510k             |       517k            +1.3%
+>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>
+>> All are prepared, we can actually introduce N_MEMORY.
+>> add CONFIG_MOVABLE_NODE make we can use it for movable-dedicated node
 > 
-> So I think I've addressed all regressions reported so far - if 
-> anyone can still see something odd, please let me know so I can 
-> reproduce and fix it ASAP.
+> This description is far too short on details.
+> 
+> I grabbed this from the [0/n] email:
+> 
+> : We need a node which only contains movable memory.  This feature is very
+> : important for node hotplug.  If a node has normal/highmem, the memory may
+> : be used by the kernel and can't be offlined.  If the node only contains
+> : movable memory, we can offline the memory and the node.
+> 
+> which helps a bit, but it's still pretty thin.
+> 
+> Why is this option made configurable?  Why not enable it unconditionally?
+> 
+> Please send a patch which adds the Kconfig help text for
+> CONFIG_MOVABLE_NODE.  Let's make that text nice and detailed.
+> 
+> The name MOVABLE_NODE is not a good one.  It means "a node which is
+> movable", whereas the concept is actually "a node whcih contains only
+> movable memory".  I suppose we could change it to something like
+> CONFIG_MOVABLE_MEMORY_ONLY_NODE or similar.  But I suppose that
+> CONFIG_MOVABLE_NODE is good enough, as long as it is well-described in
+> associated comments or help text.  This is not the case at present.
+> 
+>> +#ifdef CONFIG_MOVABLE_NODE
+>> +	N_MEMORY,		/* The node has memory(regular, high, movable) */
+>> +#else
+> 
+> I think the comment should be "The node has only movable memory"?
+
+No, the comment is right. In the kernel, we need the following two
+mask:
+1. the node contains memory that the kernel can use(N_HIGH_MEMORY)
+2. the node contains memory (N_MEMORY)
+
+There is no code need the mask: the node contains only movable memory
+now.
+
+Thanks
+Wen Congyang
+
+> 
+> 
 > 
 
-I started profiling on a new machine that is an exact duplicate of the 
-16-way, 4 node, 32GB machine I was profiling with earlier to rule out any 
-machine-specific problems.  I pulled master and ran new comparisons with 
-THP enabled at c418de93e398 ("Merge branch 'x86/mm'"): 
-
-  CONFIG_NUMA_BALANCING disabled	136521.55 SPECjbb2005 bops
-  CONFIG_NUMA_BALANCING enabled		132476.07 SPECjbb2005 bops (-3.0%)
-
-Aside: neither 4739578c3ab3 ("x86/mm: Don't flush the TLB on #WP pmd 
-fixups") nor 01e9c2441eee ("x86/vsyscall: Add Kconfig option to use native 
-vsyscalls and switch to it") significantly improved upon the throughput on 
-this system.
-
-Over the past 24 hours, however, throughput has significantly improved 
-from a 6.3% regression to a 3.0% regression because of 246c0b9a1caf ("mm, 
-numa: Turn 4K pte NUMA faults into effective hugepage ones")!
-
-One request: I noticed that the entire patchset doesn't add any fields to 
-/proc/vmstat through count_vm_event() like thp did, which I found very 
-useful when profiling that set when it was being reviewed.  Would it be 
-possible to add some vm events to the balancing code so we can capture 
-data of how the NUMA balancing is behaving?  Their usefulness would extend 
-beyond just the review period.
