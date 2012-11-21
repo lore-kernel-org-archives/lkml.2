@@ -1,174 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab2KUMv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:51:29 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49713 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2KUMv1 (ORCPT
+	id S1752508Ab2KUNA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:00:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49675 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2KUNAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:51:27 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v3 00/16] perf: add memory access sampling support
-Date: Wed, 21 Nov 2012 13:49:26 +0100
-Message-Id: <1353502185-26521-1-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 21 Nov 2012 08:00:53 -0500
+Date: Wed, 21 Nov 2012 14:00:39 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Tomi Valkeinen <tomba@iki.fi>, Alex Courbot <acourbot@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20121121130039.GA12191@avionic-0098.adnet.avionic-design.de>
+References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
+ <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
+ <20121120215429.B621F3E1821@localhost>
+ <13540495.epaCf4JVn9@percival>
+ <50ACB59B.4090404@iki.fi>
+ <20121121114018.GA31576@avionic-0098.adnet.avionic-design.de>
+ <50ACC341.3090204@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
+Content-Disposition: inline
+In-Reply-To: <50ACC341.3090204@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:IKhT7Mc67j9+VJJ35oJl05s0Jil5ttouvJoRylrzfXm
+ wANCDUvqOJBEYUY1cnprcbFg0gsnh/nN8DluQpyBhZG2vyXSft
+ rH0KsZhUT4uPUM3zcSEVtqaaDcaVvsX1jeHZ9cu6qYgosJDdAa
+ s1bxId4HMu8BZEvgmaVISquNSpT/B4rDUR0zDMHUynUKAQo42w
+ VWh2tEe5EPnm6Kc6Dzzjszrbgx0YtBARjvcTzA5fuE6ffkiuuS
+ wzR4AGWx6pU7tEqo9s16cQYy2kTNxTwTx9WgchKXIzmlyGi6CO
+ Dv3yQXtokEXXPWCNirhSq64WDCIU82+kawPVN6eOk0qw+URUJI
+ +FNOmIH9BmGLcHsopN97016lIx3F15CUKyudGbuALHa5nUzxgM
+ zqy04ElFy2UrVsUQhT/zfMNqkOVaIch6H/BWwOYvmFW+3uDR9F
+ HRPQm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series had a new feature to the kernel perf_events
-interface and corresponding user level tool, perf.
 
-With this patch, it is possible to sample (not trace) memory
-accesses (load, store). For loads, the instruction and data
-addresses are captured along with the latency and data source.
-For stores, the instruction and data addresses are capture
-along with limited cache and TLB information.
+--YiEDa0DAkWCtVeE4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For load data source, the memory hierarchy level, the tlb, snoop
-and lock information is captured.
+On Wed, Nov 21, 2012 at 02:04:17PM +0200, Tomi Valkeinen wrote:
+> On 2012-11-21 13:40, Thierry Reding wrote:
+> > On Wed, Nov 21, 2012 at 01:06:03PM +0200, Tomi Valkeinen wrote:
+>=20
+> (sorry for bouncing back and forth with my private and my @ti addresses.
+> I can't find an option in thunderbird to only use one sender address,
+> and I always forget to change it when responding...)
+>=20
+> >> My suggestion would be to go forward with an in-driver solution, and
+> >> look at the DT based solution later if we are seeing an increasing blo=
+at
+> >> in the drivers.
+> >=20
+> > Assuming we go with your approach, what's the plan? We're actually
+> > facing this problem right now for Tegra. Basically we have a DRM driver
+> > that can drive the panel, but we're still missing a way to hook up the
+> > backlight and panel enabling code. So we effectively can't support any
+> > of the LVDS devices out there without this series.
+>=20
+> Could you describe the hardware setup you have related to the LCD and
+> backlight? Is it a public board with public schematics?
 
-Although the perf_event interface is extended in a generic manner,
-sampling memory accesses requires HW support. The current patches
-implement the feature on Intel processors starting with Nehalem.
-The patches leverage the PEBS Load Latency and Precise Store
-mechanisms. Precise Store is present only on Sandy Bridge and
-Ivy Bridge based processors.
+I don't think any of the schematics are public. The Tamonten Evaluation
+Carrier is available publicly from our website and the schematics are
+available on demand as well. If required I can probably arrange to send
+you a copy.
 
-The perf tool is extended to make capturing and analyzing the
-data easier with a new command: perf mem.
+> I've understood that you don't have anything special in your board, just
+> an LCD and a backlight, and the power sequences are related to powering
+> up the LCD and the backlight, without anything board specific. If so,
+> there's no need for board specific code, but just improving the panel
+> and backlight drivers to support the models you use.
 
-$ perf mem -t load rec triad
-$ perf mem -t load rep --stdio
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : cost,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
-#
-# Overhead      Samples     Cost  Memory access Symbol      Shared Obj  Data Symbol             Data Object Snoop  TLB access   Locked
-# ........  ...........  .......  ............. ..........  ........... ......................  ........... ...... ............ ......
-#
-     0.10%            1      986  LFB hit       [.] triad   triad       [.] 0x00007f67dffe8038  [unknown]    None  L1 or L2 hit  No    
-     0.09%            1      890  LFB hit       [.] triad   triad       [.] 0x00007f67df91a750  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      826  LFB hit       [.] triad   triad       [.] 0x00007f67e288fba8  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      825  LFB hit       [.] triad   triad       [.] 0x00007f67dea28c80  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      787  LFB hit       [.] triad   triad       [.] 0x00007f67df055a60  [unknown]    None  L1 or L2 hit  No    
+Correct. Basically we have two GPIOs that each enable the panel or the
+backlight respectively and one PWM to control the brightness. Are the
+panel drivers that you refer to those in drivers/video? I'm not sure if
+adding more ad-hoc drivers there just to move them to a generic
+framework in the next cycle is a good idea. I'd rather spend some time
+on helping to get the framework right and have drivers for that instead.
 
-The perf mem command is a wrapper around perf record/report. It passes the
-right options to the report and record commands. Note that the TUI mode is
-supported.
+=46rom what I understand by looking at the OMAP display drivers, they also
+provide the timings for the displays. Steffen's videomode helpers can be
+used to represent these easily in DT, but I suppose if all of those per-
+panel specifics are represented in the drivers then that won't be needed
+anymore either.
 
-One powerful feature of perf is that users can toy with sort order to display
-the information in different format or from a different angle. This is particularly
-useful with memory sampling:
+> > As I understand it, what you propose is similar to what ASoC does. For a
+> > specific board, you'd have to write a driver, presumably for the new
+> > panel/display framework, that provides code to power the panel on and
+> > off. That means we'll have to have a driver for each panel out there
+> > basically, or we'd need to write generic drivers that can be configured
+> > to some degree (via platform data or DT). This is similar to how ASoC
+> > works, where we have a driver that provides support for a specific codec
+> > connected to the Tegra SoC. For the display framework things could be
+> > done in a similar way I suppose, so that Tegra could have one display
+> > driver to handle all aspects of powering on and off the various panels
+> > for the various boards out there.
+>=20
+> I think we should only need the board drivers for very special cases. If
+> there's just a panel and a backlight, without any special dynamic muxing
+> or other trickery needed, I don't see a need for a board driver. I
+> presume this is the case for most of the boards.
 
-$ perf mem -t load rep --sort=mem
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : mem
-#
-# Overhead      Samples             Memory access
-# ........  ...........  ........................
-#
-    85.26%        10633  LFB hit                 
-     7.35%         8151  L1 hit                  
-     3.13%          383  L3 hit                  
-     3.09%          195  Local RAM hit           
-     1.16%          259  L2 hit                  
-     0.00%            4  Uncached hit            
+For Tegra ASoC, the way to provide for this is to allow a specific board
+to introduce a separate compatible value to enable per-board quirks or
+special handling if it cannot be supported by the generic driver and
+configuration mechanisms.
 
-Or if one is interested in the data view:
-$ perf mem -t load rep --sort=symbol_daddr,cost
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : symbol_daddr,cost
-#
-# Overhead      Samples             Data Symbol     Cost
-# ........  ...........  ......................  .......
-#
-     0.10%            1  [.] 0x00007f67dffe8038      986
-     0.09%            1  [.] 0x00007f67df91a750      890
-     0.08%            1  [.] 0x00007f67e288fba8      826
+> > Obviously, a lot of the code will be similar for other SoCs, but maybe
+> > that's just the way things are if we choose that approach. There's also
+> > the potential for factoring out large chunks of common code later on
+> > once we start to see common patterns.
+> >=20
+> > One thing that's not very clear is how the backlight subsystem should be
+> > wired up with the display framework. I have a patch on top of the Tegra
+> > DRM driver which adds some ad-hoc display support using this power
+> > sequences series and the pwm-backlight.
+>=20
+> I think that's a separate issue: how to associate the lcd device and
+> backlight device together. I don't have a clear answer to this.
+>=20
+> There are many ways the backlight may be handled. In some cases the
+> panel and the backlight are truly independent, and you can use the other
+> without using the other (not very practical, though =3D).
 
+At least for DT I think we can easily wire that up. I've actually posted
+a patch recently that does so. I think in most cases it makes sense to
+control them together, such as on DPMS changes, where you really want to
+turn both the backlight and the LCD off, independent of how they are
+tied together.
 
-One note on the cost displayed: On Intel processors with PEBS Load Latency, as described
-in the SDM, the cost encompasses the number of cycles from dispatch to Globally Observable
-(GO) state. That means, that it includes OOO execution. It is not usual to see L1D Hits
-with a cost of > 100 cycles. Always look at the memory level for an approximation of the
-access penalty, then interpret the cost value accordingly.
+> But then with some LCDs the backlight may be controlled by sending
+> commands to the panel, and in this case the two may be quite linked.
+> Changing the backlight requires the panel driver to be up and running,
+> and sometimes the sending the backlight commands may need to be (say,
+> DSI display, with backlight commands going over the DSI bus).
+>=20
+> So my feeling is that the panel driver should know about the related
+> backlight device. In the first case the panel driver would just call
+> enable/disable in the backlight device when the panel is turned on.
 
-Data symbolization is working for initialized global variables. Dynamically allocated
-data and bss symbolization is currently non-functional.
+Exactly.
 
-There is no cost associated with stores.
+> In the second case of the DSI panel... I'm not sure. I've implemented it
+> so that the panel driver creates the backlight device, and implements
+> the backlight callbacks. It then sends the DSI commands from those
+> callbacks.
 
-In v2, we leverage some of Andi Kleen's Haswell patches, namely the weighted
-samples and perf tool event parser fixes. We  also introduce PERF_RECORD_MISC_DATA_MMAP
-to tag mmaps for data vs. code. This helps the perf tool distinguish data. vs. code
-mmaps (and therefore symbols). We have also integrated the feedback from v1. Note that in
-v2 data symbol resolution is not yet fully operational, but there is a slight improvement.
+That certainly sounds like the right approach to me.
 
-In v3, we rebased the patch on 3.7.0-rc6 which includes certain of Nahyung's patches.
+> > From reading the proposal for the panel/display framework, it sounds
+> > like a lot more is planned than just enabling or disabling panels, but
+> > it also seems like a lot of code needs to be written to support things
+> > like DSI, DBI or other control busses.
+> >=20
+> > At least for Tegra, and I think the same holds for a wide variety of
+> > other SoCs, dumb panels would be enough for a start. In the interest of
+> > getting a working solution for those setups, maybe we can start small
+> > and add just enough framework to register dumb panel drivers to along
+> > with code to wire up a backlight to light up the display. Then we could
+> > possibly still make it to have a proper solution to support the various
+> > LVDS panels for Tegra with 3.9.
+>=20
+> Yes, we (Laurent and me) both agree that we should start simple.
+>=20
+> However, the common panel framework is not strictly needed for this. I'm
+> not sure of the current architecture for Tegra, but for OMAP we already
+> have panel drivers (omap specific ones, though). The panel drivers may
+> support multiple models, (for example,
+> drivers/video/omap2/displays/panel-generic-dpi.c).
+>=20
+> I don't see any problem with adding small Tegra specific panel drivers
+> for the time being, with the intention of converting to common panel
+> framework when that's available.
 
-Andi Kleen (2):
-  perf, x86: Support CPU specific sysfs events
-  perf, core: Add a concept of a weightened sample
+I can take a look at how such a driver could be implemented, but again,
+I'm a bit reluctant to add something ad-hoc now when maybe we can have
+it supported in a proper framework not too far away in the future.
 
-Namhyung Kim (3):
-  perf tools: Synthesize data mmap events for threads
-  perf tools: Ignore ABS symbols when loading data maps
-  perf tools: Fix output of symbol_daddr offset
+> Of course, the DT side is an issue. If you now create DT bindings for a
+> temporary model, and need to change it again later, you'll have some
+> headaches trying managing that without breaking the old bindings... This
+> is why I haven't pushed DT bindings for OMAP, as I know I have to change
+> them in the near future.
 
-Stephane Eranian (14):
-  perf/x86: improve sysfs event mapping with event string
-  perf/x86: add flags to event constraints
-  perf: add minimal support for PERF_SAMPLE_WEIGHT
-  perf: add support for PERF_SAMPLE_ADDR in dump_sampple()
-  perf: add generic memory sampling interface
-  perf/x86: add memory profiling via PEBS Load Latency
-  perf/x86: export PEBS load latency threshold register to sysfs
-  perf/x86: add support for PEBS Precise Store
-  perf tools: add mem access sampling core support
-  perf report: add support for mem access profiling
-  perf record: add support for mem access profiling
-  perf tools: add new mem command for memory access profiling
-  perf: add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
-  perf tools: detect data vs. text mappings
+We're already keeping back on this and none of the patches that define
+the bindings have been merged yet. Although bindings have been known to
+change every once in a while even for code that is already in mainline.
 
- arch/x86/include/asm/msr-index.h              |    1 +
- arch/x86/kernel/cpu/perf_event.c              |   63 +++--
- arch/x86/kernel/cpu/perf_event.h              |   62 ++++-
- arch/x86/kernel/cpu/perf_event_intel.c        |   34 ++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     |  182 +++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- include/linux/perf_event.h                    |    5 +
- include/uapi/linux/perf_event.h               |   74 +++++-
- kernel/events/core.c                          |   15 ++
- tools/perf/Makefile                           |    1 +
- tools/perf/builtin-mem.c                      |  238 ++++++++++++++++++
- tools/perf/builtin-record.c                   |    2 +
- tools/perf/builtin-report.c                   |  131 +++++++++-
- tools/perf/builtin.h                          |    1 +
- tools/perf/command-list.txt                   |    1 +
- tools/perf/perf.c                             |    1 +
- tools/perf/perf.h                             |    1 +
- tools/perf/util/event.c                       |   78 +++---
- tools/perf/util/event.h                       |    2 +
- tools/perf/util/evsel.c                       |   15 ++
- tools/perf/util/hist.c                        |   66 ++++-
- tools/perf/util/hist.h                        |   13 +
- tools/perf/util/machine.c                     |   10 +-
- tools/perf/util/session.c                     |   44 ++++
- tools/perf/util/session.h                     |    4 +
- tools/perf/util/sort.c                        |  324 ++++++++++++++++++++++++-
- tools/perf/util/sort.h                        |   10 +-
- tools/perf/util/symbol-elf.c                  |    3 +
- tools/perf/util/symbol.h                      |    7 +
- 29 files changed, 1298 insertions(+), 92 deletions(-)
- create mode 100644 tools/perf/builtin-mem.c
+Thierry
 
--- 
-1.7.9.5
+--YiEDa0DAkWCtVeE4
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQrNB3AAoJEN0jrNd/PrOh5DYQAIzlPEji9P1q3ToLewnuGdmP
+WlCds86dAUJ3kKINOs8PMaNWWb4DzZvfV5NRTUhof1LiKh28ZcnovgOpxaM2aYDQ
+p7VwqyiTtT5xcx50Ekae++ZrXGivooLddQCk5tVADX080R+6VWGSRrWRCW04EPJ1
+9JGKe16l/U+rZrgh/vHA5lTlPUlFLNe3NR02fSUFVZygUwWB+q6z4ERuuyR/Aa87
+w4lEDRcKDjwy3xPrSlYml/BmzRANMengCEHnnbYsLGeH34v1S36U3B2xz9b/KvA4
+N60ECKlWEHklVv3+xf+2BG4dNi4/+oGc8OL3zvIzq0DErsSH+2q6lNW2US96yIv1
+sBqgYpGUkejRqkBWt1mTUfjvywY6W5ThR/xetOSw80YAjT83W78cie3Lt5b95STo
+KQ7S0sDh5cRwfRRxUpKf+DWSI9dwMlsu3ZXRCRvsZ2TzMdb7mkIzJ5SLVJ09AQ55
+56sB4d+VflXHz91tEwBxVR+SX2JN6hIjdE7yWc4guyiDdETuW+I0DdtcujhpBrKX
+BqwY/rtC1e0f5bsOO74L9519xvYzI/HsgcMLbQHjTdVYhbY/ncVPkpa22XkIy1GK
+IsUfMWLbAAIYGbjpmxhdWeOs6kHgz/57Zpik6EHWE4AJGttzQ036A2mZjLLnRoq8
+hX9HSMkH4J41Bj9SpWMd
+=wZk1
+-----END PGP SIGNATURE-----
+
+--YiEDa0DAkWCtVeE4--
