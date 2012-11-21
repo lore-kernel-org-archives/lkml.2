@@ -1,189 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab2KUP1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:27:32 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59508 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab2KUP1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:27:30 -0500
-Message-ID: <50ACF2D7.7060607@gmail.com>
-Date: Wed, 21 Nov 2012 23:27:19 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	id S1755150Ab2KUP17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:27:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60721 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754921Ab2KUP16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:27:58 -0500
+Date: Wed, 21 Nov 2012 16:27:56 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ronny Meeus <ronny.meeus@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Question about idle time in /proc/stat
+Message-ID: <20121121152756.GA8767@dhcp22.suse.cz>
+References: <CAMJ=MEdyKaTFhON6aWujmzWTn8vmyoChVSOxfL5iYqQobdxVxg@mail.gmail.com>
 MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, mtosatti@redhat.com,
-        Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        zhangyanfei@cn.fujitsu.com
-Subject: [PATCH v6 2/2] KVM-INTEL: add a notifier and a bitmap to support
- VMCLEAR in kdump
-References: <50ACF210.5020802@gmail.com>
-In-Reply-To: <50ACF210.5020802@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMJ=MEdyKaTFhON6aWujmzWTn8vmyoChVSOxfL5iYqQobdxVxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The notifier will be registered in vmclear_notifier_list when loading
-kvm-intel module. And the bitmap indicates whether we should do
-VMCLEAR operation in kdump. The bits in the bitmap are set/unset
-according to different conditions.
+On Mon 19-11-12 21:15:50, Ronny Meeus wrote:
+> Hello
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/x86/kvm/vmx.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 76 insertions(+), 1 deletions(-)
+Hi,
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 4ff0ab9..eea55b3 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -41,6 +41,7 @@
- #include <asm/i387.h>
- #include <asm/xcr.h>
- #include <asm/perf_event.h>
-+#include <asm/kexec.h>
- 
- #include "trace.h"
- 
-@@ -963,6 +964,49 @@ static void vmcs_load(struct vmcs *vmcs)
- 		       vmcs, phys_addr);
- }
- 
-+#ifdef CONFIG_KEXEC
-+/*
-+ * This bitmap is used to indicate whether the vmclear
-+ * operation is enabled on all cpus. All disabled by
-+ * default.
-+ */
-+static cpumask_t crash_vmclear_enabled_bitmap = CPU_MASK_NONE;
-+
-+static inline void crash_enable_local_vmclear(int cpu)
-+{
-+	cpumask_set_cpu(cpu, &crash_vmclear_enabled_bitmap);
-+}
-+
-+static inline void crash_disable_local_vmclear(int cpu)
-+{
-+	cpumask_clear_cpu(cpu, &crash_vmclear_enabled_bitmap);
-+}
-+
-+static inline int crash_local_vmclear_enabled(int cpu)
-+{
-+	return cpumask_test_cpu(cpu, &crash_vmclear_enabled_bitmap);
-+}
-+
-+static void vmclear_local_loaded_vmcss(void);
-+static int crash_vmclear_local_loaded_vmcss(struct notifier_block *this,
-+					    unsigned long val, void *ptr)
-+{
-+	int cpu = raw_smp_processor_id();
-+
-+	if (crash_local_vmclear_enabled(cpu))
-+		vmclear_local_loaded_vmcss();
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block crash_vmclear_notifier = {
-+	.notifier_call = crash_vmclear_local_loaded_vmcss,
-+};
-+#else
-+static inline void crash_enable_local_vmclear(int cpu) { }
-+static inline void crash_disable_local_vmclear(int cpu) { }
-+#endif /* CONFIG_KEXEC */
-+
- static void __loaded_vmcs_clear(void *arg)
- {
- 	struct loaded_vmcs *loaded_vmcs = arg;
-@@ -972,8 +1016,10 @@ static void __loaded_vmcs_clear(void *arg)
- 		return; /* vcpu migration can race with cpu offline */
- 	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
- 		per_cpu(current_vmcs, cpu) = NULL;
-+	crash_disable_local_vmclear(cpu);
- 	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
- 	loaded_vmcs_init(loaded_vmcs);
-+	crash_enable_local_vmclear(cpu);
- }
- 
- static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
-@@ -1491,8 +1537,10 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 
- 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
- 		local_irq_disable();
-+		crash_disable_local_vmclear(cpu);
- 		list_add(&vmx->loaded_vmcs->loaded_vmcss_on_cpu_link,
- 			 &per_cpu(loaded_vmcss_on_cpu, cpu));
-+		crash_enable_local_vmclear(cpu);
- 		local_irq_enable();
- 
- 		/*
-@@ -2302,6 +2350,18 @@ static int hardware_enable(void *garbage)
- 		return -EBUSY;
- 
- 	INIT_LIST_HEAD(&per_cpu(loaded_vmcss_on_cpu, cpu));
-+
-+	/*
-+	 * Now we can enable the vmclear operation in kdump
-+	 * since the loaded_vmcss_on_cpu list on this cpu
-+	 * has been initialized.
-+	 *
-+	 * Though the cpu is not in VMX operation now, there
-+	 * is no problem to enable the vmclear operation
-+	 * for the loaded_vmcss_on_cpu list is empty!
-+	 */
-+	crash_enable_local_vmclear(cpu);
-+
- 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
- 
- 	test_bits = FEATURE_CONTROL_LOCKED;
-@@ -2335,7 +2395,6 @@ static void vmclear_local_loaded_vmcss(void)
- 		__loaded_vmcs_clear(v);
- }
- 
--
- /* Just like cpu_vmxoff(), but with the __kvm_handle_fault_on_reboot()
-  * tricks.
-  */
-@@ -2348,6 +2407,12 @@ static void hardware_disable(void *garbage)
- {
- 	if (vmm_exclusive) {
- 		vmclear_local_loaded_vmcss();
-+		/*
-+		 * vmclear operation in kdump should be disabled here
-+		 * because the cpu is going to exit VMX operation
-+		 * and the loaded_vmcss_on_cpu list may not be empty!
-+		 */
-+		crash_disable_local_vmclear(raw_smp_processor_id());
- 		kvm_cpu_vmxoff();
- 	}
- 	write_cr4(read_cr4() & ~X86_CR4_VMXE);
-@@ -7230,6 +7295,11 @@ static int __init vmx_init(void)
- 	if (r)
- 		goto out3;
- 
-+#ifdef CONFIG_KEXEC
-+	atomic_notifier_chain_register(&vmclear_notifier_list,
-+				       &crash_vmclear_notifier);
-+#endif
-+
- 	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
- 	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
- 	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
-@@ -7265,6 +7335,11 @@ static void __exit vmx_exit(void)
- 	free_page((unsigned long)vmx_io_bitmap_b);
- 	free_page((unsigned long)vmx_io_bitmap_a);
- 
-+#ifdef CONFIG_KEXEC
-+	atomic_notifier_chain_unregister(&vmclear_notifier_list,
-+					 &crash_vmclear_notifier);
-+#endif
-+
- 	kvm_exit();
- }
- 
+> I have an created an application that measures the cpuload consumed by
+> the tasks within a process.
+> For this I use the file /proc/stat and /proc/<pid>/tasks/<tid>/stat
+> 
+> The cpuload monitor is a very simple application that just executes in
+> a loop a sleep command, followed by retrieving the information about
+> all the tasks belonging to the process.
+> What I observe is that there is a big difference in the idle time
+> available in the /proc/stat file.
+> 
+> This is the Linux version I use:
+> Linux version 2.6.36.4 (meeusr@devws156) (gcc version 4.4.3
+> (crosstool-NG 1.15.2 - buildroot 2012.05-hga35945e88d23) ) #1 SMP
+> PREEMPT Wed Oct 10 08:41:17 CEST 2012
+> Please note that this is a kernel that contains patches of FreeScale.
+[...]
+> 2181820:130777 Delta=889 User=39 NiceUser=0 System=5 Idle=356
+> 2181821:131720 Delta=875 User=39 NiceUser=0 System=6 Idle=356
+> 2181822:132650 Delta=892 User=40 NiceUser=0 System=5 Idle=356
+> 2181823:133598 Delta=874 User=38 NiceUser=0 System=6 Idle=357
+> 2181824:134527 Delta=880 User=38 NiceUser=0 System=6 Idle=356
+> 2181825:135460 Delta=876 User=39 NiceUser=0 System=5 Idle=356
+> 2181826:136390 Delta=882 User=39 NiceUser=0 System=5 Idle=356
+> 2181827:137333 Delta=909 User=40 NiceUser=0 System=9 Idle=396
+> 2181828:138303 Delta=895 User=39 NiceUser=0 System=5 Idle=256
+> 2181829:139255 Delta=893 User=39 NiceUser=0 System=5 Idle=256
+> 2181830:140206 Delta=893 User=39 NiceUser=0 System=5 Idle=256
+> 2181831:141155 Delta=891 User=38 NiceUser=0 System=6 Idle=256
+> 2181832:142103 Delta=869 User=39 NiceUser=0 System=5 Idle=257
+> 2181833:143051 Delta=868 User=39 NiceUser=0 System=5 Idle=256
+> 2181834:143976 Delta=886 User=38 NiceUser=0 System=6 Idle=256
+> 2181835:144919 Delta=890 User=39 NiceUser=0 System=5 Idle=256
+> 2181836:145866 Delta=887 User=38 NiceUser=0 System=6 Idle=256
+> 2181837:146814 Delta=906 User=41 NiceUser=0 System=8 Idle=1254
+> 2181838:147782 Delta=891 User=38 NiceUser=0 System=6 Idle=256
+> 2181839:148729 Delta=892 User=39 NiceUser=0 System=5 Idle=256
+> 2181840:149678 Delta=891 User=39 NiceUser=0 System=5 Idle=256
+> 2181841:150626 Delta=888 User=38 NiceUser=0 System=6 Idle=256
+> 2181842:151571 Delta=889 User=39 NiceUser=0 System=5 Idle=257
+> 2181843:152515 Delta=885 User=39 NiceUser=0 System=5 Idle=256
+> 2181844:153457 Delta=890 User=38 NiceUser=0 System=6 Idle=256
+> 2181845:154403 Delta=885 User=39 NiceUser=0 System=5 Idle=256
+> 2181846:155343 Delta=886 User=39 NiceUser=0 System=5 Idle=256
+> 2181847:156288 Delta=907 User=40 NiceUser=0 System=9 Idle=1253
+> 2181848:157257 Delta=891 User=39 NiceUser=0 System=5 Idle=256
+> 2181849:158204 Delta=888 User=39 NiceUser=0 System=6 Idle=256
+> 2181850:159150 Delta=895 User=38 NiceUser=0 System=6 Idle=256
+> 2181851:160102 Delta=871 User=39 NiceUser=0 System=4 Idle=257
+> 2181852:161054 Delta=876 User=39 NiceUser=0 System=6 Idle=255
+> 2181853:161989 Delta=883 User=39 NiceUser=0 System=5 Idle=257
+> 2181854:162932 Delta=891 User=39 NiceUser=0 System=5 Idle=267
+> 2181855:163878 Delta=887 User=39 NiceUser=0 System=6 Idle=245
+> 2181856:164821 Delta=889 User=39 NiceUser=0 System=5 Idle=256
+> 2181857:165769 Delta=910 User=40 NiceUser=0 System=9 Idle=1253
+> 2181858:166740 Delta=890 User=39 NiceUser=0 System=5 Idle=256
+> 2181859:167686 Delta=884 User=38 NiceUser=0 System=5 Idle=256
+> 2181860:168627 Delta=888 User=39 NiceUser=0 System=6 Idle=263
+> 
+> 
+> The first column is the timestamp returned by gettimeofday. This is
+> nicely incrementing 1 second at a time.
+> The Delta shows how long it took to execute the processing of the stat file.
+> 
+> Since this is a 4 core machine, I would expect that the sum of
+> User,NiceUser,System and Idle is 400 (100 Ticks per core).
+> In some samples this is correct, while in other samples, the sum is
+> only something like 300 while in one of the next samples the idle time
+> suddenly increases to 1253.
+> So it looks like the time it has lost before is recovered in that one sample.
+> 
+> Can somebody explain what the issue is and how it can be resolved?
+
+I assume you are using tickless kernel (CONFIG_NOHZ). If this is the
+case then this is caused by the idle time accounting which is tick
+based. This means that the per-CPU counter is not updated while the CPU
+is idle. Have a look at a25cac519 (proc: Consider NO_HZ when printing
+idle and iowait times) for more information. You will also need:
+6beea0cd - nohz: Fix update_ts_time_stat idle accounting
+09a1d34f - nohz: Make idle/iowait counter update conditional
+as prerequisites and
+2a95ea6c - procfs: do not overflow get_{idle,iowait}_time for nohz
+34845636 - procfs: do not confuse jiffies with cputime64_t
+
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
