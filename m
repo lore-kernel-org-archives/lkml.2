@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2KUQfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 11:35:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:48430 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755223Ab2KUQfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 11:35:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
-   d="scan'208";a="171054277"
-Date: Wed, 21 Nov 2012 17:35:01 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: lpc_ich: one uninitialized cell is no error
-Message-ID: <20121121163501.GB18738@sortiz-mobl>
-References: <1353355451.19434.14.camel@x61.thuisdomein>
+	id S1755322Ab2KUQfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 11:35:45 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37638 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755223Ab2KUQfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 11:35:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353355451.19434.14.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352881898.9388.2.camel@joe-AO722>
+References: <1352789457-15244-1-git-send-email-acooks@gmail.com>
+	<1352881898.9388.2.camel@joe-AO722>
+Date: Thu, 22 Nov 2012 00:35:42 +0800
+Message-ID: <CAJtEV7aAe9bFtqCPdxQqr7FiErJ8G6-82Yog_bLXJL_3R_yNsA@mail.gmail.com>
+Subject: Re: [PATCH] boot_delay should only affect output
+From: Andrew Cooks <acooks@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Joe
 
-On Mon, Nov 19, 2012 at 09:04:11PM +0100, Paul Bolle wrote:
-> At every boot of an (outdated) laptop lpc_ich prints an error:
->     lpc_ich 0000:00:1f.0: I/O space for GPIO uninitialized
-> 
-> But if one looks at lpc_ich's probe function one notices that the code
-> only cares if both lpc_ich_init_wdt() and lpc_ich_init_gpio() fail to
-> add any cells. So stop treating the failure to add a single cell as an
-> error. Those messages can be printed at notice level. And then only warn
-> if no cells were added.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) This patch was written on top of v3.7-rc4 and tested on v3.6.7.
-> 
-> 1) Please note that this patch prints a warning when no MFD cells are
-> added at all. I didn't make that an error because I'm not sure there's
-> anything one can do if this happens. Is there?
-> 
->  drivers/mfd/lpc_ich.c |   11 ++++++-----
->  1 files changed, 6 insertions(+), 5 deletions(-)
-Applied, thanks.
+On Wed, Nov 14, 2012 at 4:31 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2012-11-13 at 14:50 +0800, Andrew Cooks wrote:
+>> The boot_delay parameter affects all printk(), even if the log level
+>>  prevents visible output from the call. It results in delays greater
+>>  than the user intended without purpose.
+>>
+>> This patch changes the behaviour of boot_delay to only delay output.
+>
+> Seems sensible.
+>
+> Couldn't that be done for printk_delay too?
+>
 
-Cheers,
-Samuel.
+This was only my second submitted patch, so I tried to keep things as
+simple as possible to get the process right.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+When printk_delay is called, the log message is written into a buffer
+regardless of log level. The log level may change before the logs are
+flushed to console/syslog, so delaying based on log level at the
+buffer input side is not ideal.
+
+I thought about moving the delay to the point where the buffer is
+cleared, but that seems like it would drastically increase the
+likelihood of dropping messages under load.
+
+Dropping the message in vprintk_emit, before any delay or buffer
+management might also be an option, though I'm not sure if it's
+acceptable for printk to return 0.
+
+a.
