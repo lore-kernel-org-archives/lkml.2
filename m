@@ -1,41 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab2KUH5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:57:44 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52949 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab2KUH5m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:57:42 -0500
+	id S1753489Ab2KUH6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:58:25 -0500
+Received: from mga01.intel.com ([192.55.52.88]:14021 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752585Ab2KUH6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 02:58:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,291,1352102400"; 
+   d="scan'208";a="250403994"
+Date: Wed, 21 Nov 2012 15:57:45 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+Cc: Claudio Freire <klaussfreire@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: fadvise interferes with readahead
+Message-ID: <20121121075745.GA8136@localhost>
+References: <CAGTBQpaDR4+V5b1AwAVyuVLu5rkU=Wc1WeUdLu5ag=WOk5oJzQ@mail.gmail.com>
+ <20121120080427.GA11019@localhost>
+ <CAGTBQpayd-HyH8SWfUCavS7epybcQR5SAx+tr+wyB38__4b-2Q@mail.gmail.com>
+ <20121120145807.GB19467@localhost>
+ <50AC87E7.5040700@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokYD7Cyv77p4MtmtJ+UJSfb3fjYWmjXkQV40Czbh7FOWw@mail.gmail.com>
-References: <1353483465-25961-1-git-send-email-linus.walleij@stericsson.com>
-	<CAKohpokYD7Cyv77p4MtmtJ+UJSfb3fjYWmjXkQV40Czbh7FOWw@mail.gmail.com>
-Date: Wed, 21 Nov 2012 08:57:42 +0100
-Message-ID: <CACRpkdbykZxp=vUzLzy6to3VhmnLjSXAKWOWj4f4S2u5xzipYg@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: fix bug and clarify OF use of ranges
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AC87E7.5040700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 8:42 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On Wed, Nov 21, 2012 at 03:51:03PM +0800, Jaegeuk Hanse wrote:
+> On 11/20/2012 10:58 PM, Fengguang Wu wrote:
+> >On Tue, Nov 20, 2012 at 10:34:11AM -0300, Claudio Freire wrote:
+> >>On Tue, Nov 20, 2012 at 5:04 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> >>>Yes. The kernel readahead code by design will outperform simple
+> >>>fadvise in the case of clustered random reads. Imagine the access
+> >>>pattern 1, 3, 2, 6, 4, 9. fadvise will trigger 6 IOs literally. While
+> >>>kernel readahead will likely trigger 3 IOs for 1, 3, 2-9. Because on
+> >>>the page miss for 2, it will detect the existence of history page 1
+> >>>and do readahead properly. For hard disks, it's mainly the number of
+> >>>IOs that matters. So even if kernel readahead loses some opportunities
+> >>>to do async IO and possibly loads some extra pages that will never be
+> >>>used, it still manges to perform much better.
+> >>>
+> >>>>The fix would lay in fadvise, I think. It should update readahead
+> >>>>tracking structures. Alternatively, one could try to do it in
+> >>>>do_generic_file_read, updating readahead on !PageUptodate or even on
+> >>>>page cache hits. I really don't have the expertise or time to go
+> >>>>modifying, building and testing the supposedly quite simple patch that
+> >>>>would fix this. It's mostly about the testing, in fact. So if someone
+> >>>>can comment or try by themselves, I guess it would really benefit
+> >>>>those relying on fadvise to fix this behavior.
+> >>>One possible solution is to try the context readahead at fadvise time
+> >>>to check the existence of history pages and do readahead accordingly.
+> >>>
+> >>>However it will introduce *real interferences* between kernel
+> >>>readahead and user prefetching. The original scheme is, once user
+> >>>space starts its own informed prefetching, kernel readahead will
+> >>>automatically stand out of the way.
+> >>I understand that would seem like a reasonable design, but in this
+> >>particular case it doesn't seem to be. I propose that in most cases it
+> >>doesn't really work well as a design decision, to make fadvise work as
+> >>direct I/O. Precisely because fadvise is supposed to be a hint to let
+> >>the kernel make better decisions, and not a request to make the kernel
+> >>stop making decisions.
+> >>
+> >>Any interference so introduced wouldn't be any worse than the
+> >>interference introduced by readahead over reads. I agree, if fadvise
+> >>were to trigger readahead, it could be bad for applications that don't
+> >>read what they say the will.
+> >Right.
+> >
+> >>But if cache hits were to simply update
+> >>readahead state, it would only mean that read calls behave the same
+> >>regardless of fadvise calls. I think that's worth pursuing.
+> >Here you are describing an alternative solution that will somehow trap
+> >into the readahead code even when, for example, the application is
+> >accessing once and again an already cached file?  I'm afraid this will
+> >add non-trivial overheads and is less attractive than the "readahead
+> >on fadvise" solution.
+> 
+> Hi Fengguang,
+> 
+> Page cache sync readahead only triggered when cache miss, but if
+> file has already cached, how can readahead be trigged again if the
+> application is accessing once and again an already cached file.
 
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> This is what i was asking you earlier: "Doesn't gpiochip_add_pin_range
-> have any users?" and you said NO and i didn't cross checked :(
-
-Yes I forgot that I refactored the OF code to actually use this
-function.... sorry.
+The answer is opposite to your expectation: for an already cached
+file, kernel readahead code won't be triggered at all, which is good
+for avoid pointless overheads for the common repeated memory hot
+accesses.
 
 Thanks,
-Linus Walleij
+Fengguang
