@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2KUTjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:39:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51040 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab2KUTjV (ORCPT
+	id S1755916Ab2KUTkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:40:18 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:41977 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab2KUTkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:39:21 -0500
-Date: Wed, 21 Nov 2012 11:39:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 3/3] man-pages: Add man page for vmpressure_fd(2)
-Message-Id: <20121121113920.0f0672b1.akpm@linux-foundation.org>
-In-Reply-To: <20121121150149.GE8218@suse.de>
-References: <20121107105348.GA25549@lizard>
-	<20121107110152.GC30462@lizard>
-	<20121119215211.6370ac3b.akpm@linux-foundation.org>
-	<20121120062400.GA9468@lizard>
-	<alpine.DEB.2.00.1211201004390.4200@chino.kir.corp.google.com>
-	<20121121150149.GE8218@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 21 Nov 2012 14:40:16 -0500
+Date: Wed, 21 Nov 2012 20:40:14 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@ghostprotocols.net
+Subject: Re: [PATCH] perf: call perf_event_comm under task_lock to fix suspicious rcu usage
+Message-ID: <20121121194014.GR31373@order.stressinduktion.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+	paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net
+References: <20121110053228.GB11317@order.stressinduktion.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121110053228.GB11317@order.stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 15:01:50 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+Ping, this problem still persists in v3.7-rc6. Could someone have a look?
 
-> On Tue, Nov 20, 2012 at 10:12:28AM -0800, David Rientjes wrote:
-> > On Mon, 19 Nov 2012, Anton Vorontsov wrote:
-> > 
-> > > We try to make userland freeing resources when the system becomes low on
-> > > memory. Once we're short on memory, sometimes it's better to discard
-> > > (free) data, rather than let the kernel to drain file caches or even start
-> > > swapping.
-> > > 
-> > 
-> > To add another usecase: its possible to modify our version of malloc (or 
-> > any malloc) so that memory that is free()'d can be released back to the 
-> > kernel only when necessary, i.e. when keeping the extra memory around 
-> > starts to have a detremental effect on the system, memcg, or cpuset.  When 
-> > there is an abundance of memory available such that allocations need not 
-> > defragment or reclaim memory to be allocated, it can improve performance 
-> > to keep a memory arena from which to allocate from immediately without 
-> > calling the kernel.
-> > 
+On Sat, Nov 10, 2012 at 06:32:28AM +0100, Hannes Frederic Sowa wrote:
+> Following RCU warning showed up while executing a shebang-script under
+> perf-record (could even be an empty script) on a 3.7-rc4 stable kernel:
 > 
-> A potential third use case is a variation of the first for batch systems. If
-> it's running low priority tasks and a high priority task starts that
-> results in memory pressure then the job scheduler may decide to move the
-> low priority jobs elsewhere (or cancel them entirely).
+>   [   32.185108] 
+>   [   32.185332] ===============================
+>   [   32.185602] [ INFO: suspicious RCU usage. ]
+>   [   32.185903] 3.7.0-rc4 #1 Not tainted
+>   [   32.186021] -------------------------------
+>   [   32.186021] include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
+>   [   32.186021] 
+>   [   32.186021] other info that might help us debug this:
+>   [   32.186021] 
+>   [   32.186021] 
+>   [   32.186021] rcu_scheduler_active = 1, debug_locks = 0
+>   [   32.186021] 1 lock held by empty.sh/556:
+>   [   32.186021]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811d1d16>] prepare_bprm_creds+0x36/0x80
+>   [   32.186021] 
+>   [   32.186021] stack backtrace:
+>   [   32.186021] Pid: 556, comm: empty.sh Not tainted 3.7.0-rc4 #1
+>   [   32.186021] Call Trace:
+>   [   32.186021]  [<ffffffff810d336d>] lockdep_rcu_suspicious+0xfd/0x130
+>   [   32.186021]  [<ffffffff81153de6>] perf_event_comm+0x436/0x610
+>   [   32.186021]  [<ffffffff810d181d>] ? trace_hardirqs_off+0xd/0x10
+>   [   32.186021]  [<ffffffff810ac37f>] ? local_clock+0x6f/0x80
+>   [   32.186021]  [<ffffffff810d217f>] ? lock_release_holdtime.part.26+0xf/0x180
+>   [   32.186021]  [<ffffffff811d1bd3>] set_task_comm+0x73/0x180
+>   [   32.186021]  [<ffffffff811d24ba>] setup_new_exec+0x9a/0x210
+>   [   32.186021]  [<ffffffff81225cf3>] load_elf_binary+0x3e3/0x1ab0
+>   [   32.186021]  [<ffffffff810ac0f5>] ? sched_clock_local+0x25/0xa0
+>   [   32.186021]  [<ffffffff810ac298>] ? sched_clock_cpu+0xa8/0x120
+>   [   32.186021]  [<ffffffff810d181d>] ? trace_hardirqs_off+0xd/0x10
+>   [   32.186021]  [<ffffffff810ac37f>] ? local_clock+0x6f/0x80
+>   [   32.186021]  [<ffffffff81225910>] ? load_elf_library+0x240/0x240
+>   [   32.186021]  [<ffffffff81225910>] ? load_elf_library+0x240/0x240
+>   [   32.186021]  [<ffffffff811d14a4>] search_binary_handler+0x194/0x4f0
+>   [   32.186021]  [<ffffffff811d136f>] ? search_binary_handler+0x5f/0x4f0
+>   [   32.186021]  [<ffffffff81225220>] ? compat_sys_ioctl+0x1510/0x1510
+>   [   32.186021]  [<ffffffff812254b4>] load_script+0x294/0x2c0
+>   [   32.186021]  [<ffffffff810d217f>] ? lock_release_holdtime.part.26+0xf/0x180
+>   [   32.186021]  [<ffffffff81225220>] ? compat_sys_ioctl+0x1510/0x1510
+>   [   32.186021]  [<ffffffff811d14a4>] search_binary_handler+0x194/0x4f0
+>   [   32.186021]  [<ffffffff811d136f>] ? search_binary_handler+0x5f/0x4f0
+>   [   32.186021]  [<ffffffff811d22cb>] do_execve_common.isra.25+0x50b/0x5b0
+>   [   32.186021]  [<ffffffff811d1eea>] ? do_execve_common.isra.25+0x12a/0x5b0
+>   [   32.186021]  [<ffffffff811d238b>] do_execve+0x1b/0x20
+>   [   32.186021]  [<ffffffff811d26c4>] sys_execve+0x54/0x80
+>   [   32.186021]  [<ffffffff816d8f99>] stub_execve+0x69/0xc0
 > 
-> A similar use case is monitoring systems running high priority workloads
-> that should never swap. It can be easily detected if the system starts
-> swapping but a pressure notification might act as an early warning system
-> that something is happening on the system that might cause the primary
-> workload to start swapping.
-
-I hope Anton's writing all of this down ;)
-
-
-The proposed API bugs me a bit.  It seems simplistic.  I need to have a
-quality think about this.  Maybe the result of that think will be to
-suggest an interface which can be extended in a back-compatible fashion
-later on, if/when the simplistic nature becomes a problem.
+> I think this dereference qualifies for the task_lock exception (as noted
+> in kernel/cgroup.c), thus this patch ensures calling perf_event_comm
+> before giving up the task_lock.
+> 
+> Changelog -v2 (since <20121103235758.GD18106@order.stressinduktion.org>):
+>   1) rebased to 3.7-rc4
+>   2) slightly improved/updated commit msg and added more people to Cc
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> ---
+>  fs/exec.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 0039055..a961b9d 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1038,8 +1038,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+>  	memset(tsk->comm, 0, TASK_COMM_LEN);
+>  	wmb();
+>  	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+> -	task_unlock(tsk);
+>  	perf_event_comm(tsk);
+> +	task_unlock(tsk);
+>  }
+>  
+>  static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
+> 
 
