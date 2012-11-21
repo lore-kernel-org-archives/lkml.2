@@ -1,126 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab2KUJqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:46:21 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53174 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2KUJqS (ORCPT
+	id S1753953Ab2KUJsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:48:07 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:21811
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751051Ab2KUJsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:46:18 -0500
+	Wed, 21 Nov 2012 04:48:04 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzd799hc8kzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
+From: <b29237@freescale.com>
+To: <dan.j.williams@gmail.com>, <vinod.koul@intel.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: <iws@ovro.caltech.edu>, Xuelin Shi <b29237@freescale.com>,
+        Harninder Rai <harninder.rai@freescale.com>,
+        Naveen Burmi <naveenburmi@freescale.com>
+Subject: [PATCH 1/2] powerpc/dma/raidengine: add raidengine device
+Date: Wed, 21 Nov 2012 17:01:20 +0800
+Message-ID: <1353488481-14371-1-git-send-email-b29237@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-In-Reply-To: <1353390792.3833.1.camel@rzhang1-mobl4>
-References: <007301cdc6ba$067107e0$135317a0$%choi@samsung.com>
-	<CAH9JG2UYsQ6VFMO4COyEr9fBzCL03+37bXTN=AgjKbD7NjR1MA@mail.gmail.com>
-	<1353390792.3833.1.camel@rzhang1-mobl4>
-Date: Wed, 21 Nov 2012 15:16:17 +0530
-Message-ID: <CAK44p20ko1cqiVkYc4-4W9RN01kwfffnDf9-fNdPZt+oOF9igQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] thermal: exynos: Fix wrong bit to control tmu core
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, dg77.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2012 11:23, Zhang Rui <rui.zhang@intel.com> wrote:
-> On Tue, 2012-11-20 at 10:39 +0900, Kyungmin Park wrote:
->> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
->> > [0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
->> >
->> > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->
-> Amit and Donggeun Kim,
->
-> any comments on this patch?
->
-> thanks,
-> rui
-Hi Riu,
+From: Xuelin Shi <b29237@freescale.com>
 
-This patch is according to the suggestion I made earlier and looks fine.
-Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+The RaidEngine is a new Freescale hardware that used for parity
+computation offloading in RAID5/6.
 
-Thanks,
-Amit Daniel
->
->> > ---
->> >  drivers/thermal/exynos_thermal.c |   16 ++++++++++++----
->> >  1 files changed, 12 insertions(+), 4 deletions(-)
->> >
->> > diff --git a/drivers/thermal/exynos_thermal.c
->> > b/drivers/thermal/exynos_thermal.c
->> > index 6dd29e4..129e827 100644
->> > --- a/drivers/thermal/exynos_thermal.c
->> > +++ b/drivers/thermal/exynos_thermal.c
->> > @@ -52,9 +52,12 @@
->> >
->> >  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
->> >  #define EXYNOS_TMU_GAIN_SHIFT          8
->> > +#define EXYNOS_TMU_GAIN_MASK           (0xF << EXYNOS_TMU_GAIN_SHIFT)
->> >  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
->> > -#define EXYNOS_TMU_CORE_ON             3
->> > -#define EXYNOS_TMU_CORE_OFF            2
->> > +#define EXYNOS_TMU_REF_VOLTAGE_MASK    (0x1F <<
->> > EXYNOS_TMU_REF_VOLTAGE_SHIFT)
->> > +#define EXYNOS_TMU_CORE_ON             BIT(0)
->> > +#define EXYNOS_TMU_CORE_ON_SHIFT       0
->> > +#define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
->> > EXYNOS_TMU_CORE_ON_SHIFT)
->> >  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
->> >
->> >  /* Exynos4210 specific registers */
->> > @@ -85,7 +88,9 @@
->> >  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 16)
->> >  #define EXYNOS_MUX_ADDR_VALUE          6
->> >  #define EXYNOS_MUX_ADDR_SHIFT          20
->> > +#define EXYNOS_MUX_ADDR_MASK           (0x7 << EXYNOS_MUX_ADDR_SHIFT)
->> >  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
->> > +#define EXYNOS_TMU_TRIP_MODE_MASK      (0x7 << EXYNOS_TMU_TRIP_MODE_SHIFT)
->> >
->> >  #define EFUSE_MIN_VALUE 40
->> >  #define EFUSE_MAX_VALUE 100
->> > @@ -650,10 +655,14 @@ static void exynos_tmu_control(struct platform_device
->> > *pdev, bool on)
->> >         mutex_lock(&data->lock);
->> >         clk_enable(data->clk);
->> >
->> > -       con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
->> > +       con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
->> > +       con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK | EXYNOS_TMU_GAIN_MASK |
->> > +               EXYNOS_TMU_CORE_ON_MASK);
->> > +       con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
->> >                 pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
->> >
->> >         if (data->soc == SOC_ARCH_EXYNOS) {
->> > +               con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
->> >                 con |= pdata->noise_cancel_mode <<
->> > EXYNOS_TMU_TRIP_MODE_SHIFT;
->> >                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
->> >         }
->> > @@ -665,7 +674,6 @@ static void exynos_tmu_control(struct platform_device
->> > *pdev, bool on)
->> >                         pdata->trigger_level1_en << 4 |
->> >                         pdata->trigger_level0_en;
->> >         } else {
->> > -               con |= EXYNOS_TMU_CORE_OFF;
->> >                 interrupt_en = 0; /* Disable all interrupts */
->> >         }
->> >         writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
->> > --
->> > 1.7.4.1
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> >
->
->
+This patch adds the device node in device tree and related binding
+documentation.
+
+Signed-off-by: Harninder Rai <harninder.rai@freescale.com>
+Signed-off-by: Naveen Burmi <naveenburmi@freescale.com>
+Signed-off-by: Xuelin Shi <b29237@freescale.com>
+---
+ .../devicetree/bindings/powerpc/fsl/raideng.txt    |   81 +++++++++++++++++++
+ arch/powerpc/boot/dts/fsl/p5020si-post.dtsi        |    1 +
+ arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi         |    6 ++
+ arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi     |   85 ++++++++++++++++++++
+ 4 files changed, 173 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/powerpc/fsl/raideng.txt
+ create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi
+
+diff --git a/Documentation/devicetree/bindings/powerpc/fsl/raideng.txt b/Documentation/devicetree/bindings/powerpc/fsl/raideng.txt
+new file mode 100644
+index 0000000..4ad29b9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/powerpc/fsl/raideng.txt
+@@ -0,0 +1,81 @@
++* Freescale 85xx RAID Engine nodes
++
++RAID Engine nodes are defined to describe on-chip RAID accelerators.  Each RAID
++Engine should have a separate node.
++
++Supported chips:
++P5020, P5040
++
++Required properties:
++
++- compatible:	Should contain "fsl,raideng-v1.0" as the value
++		This identifies RAID Engine block. 1 in 1.0 represents
++		major number whereas 0 represents minor number. The
++		version matches the hardware IP version.
++- reg:		offset and length of the register set for the device
++- ranges:	standard ranges property specifying the translation
++		between child address space and parent address space
++
++Example:
++	/* P5020 */
++	raideng: raideng@320000 {
++		compatible = "fsl,raideng-v1.0";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg	= <0x320000 0x10000>;
++		ranges	= <0 0x320000 0x10000>;
++	};
++
++
++There must be a sub-node for each job queue present in RAID Engine
++This node must be a sub-node of the main RAID Engine node
++
++- compatible:	Should contain "fsl,raideng-v1.0-job-queue" as the value
++		This identifies the job queue interface
++- reg:		offset and length of the register set for job queue
++- ranges:	standard ranges property specifying the translation
++		between child address space and parent address space
++
++Example:
++	/* P5020 */
++	raideng_jq0@1000 {
++		compatible = "fsl,raideng-v1.0-job-queue";
++		reg	   = <0x1000 0x1000>;
++		ranges	   = <0x0 0x1000 0x1000>;
++	};
++
++
++There must be a sub-node for each job ring present in RAID Engine
++This node must be a sub-node of job queue node
++
++- compatible:	Must contain "fsl,raideng-v1.0-job-ring" as the value
++		This identifies job ring. Should contain either
++		"fsl,raideng-v1.0-hp-ring" or "fsl,raideng-v1.0-lp-ring"
++		depending upon whether ring has high or low priority
++- reg:		offset and length of the register set for job ring
++- interrupts:	interrupt mapping for job ring IRQ
++
++Optional property:
++
++- fsl,liodn:	Specifies the LIODN to be used for Job Ring. This
++		property is normally set by firmware. Value
++		is of 12-bits which is the LIODN number for this JR.
++		This property is used by the IOMMU (PAMU) to distinquish
++		transactions from this JR and than be able to do address
++		translation & protection accordingly.
++
++Example:
++	/* P5020 */
++	raideng_jq0@1000 {
++		compatible = "fsl,raideng-v1.0-job-queue";
++		reg	   = <0x1000 0x1000>;
++		ranges	   = <0x0 0x1000 0x1000>;
++
++		raideng_jr0: jr@0 {
++			compatible = "fsl,raideng-v1.0-job-ring", "fsl,raideng-v1.0-hp-ring";
++			reg	   = <0x0 0x400>;
++			interrupts = <139 2 0 0>;
++			interrupt-parent = <&mpic>;
++			fsl,liodn = <0x41>;
++		};
++	};
+diff --git a/arch/powerpc/boot/dts/fsl/p5020si-post.dtsi b/arch/powerpc/boot/dts/fsl/p5020si-post.dtsi
+index 64b6abe..5d7205b 100644
+--- a/arch/powerpc/boot/dts/fsl/p5020si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/p5020si-post.dtsi
+@@ -354,4 +354,5 @@
+ /include/ "qoriq-sata2-0.dtsi"
+ /include/ "qoriq-sata2-1.dtsi"
+ /include/ "qoriq-sec4.2-0.dtsi"
++/include/ "qoriq-raid1.0-0.dtsi"
+ };
+diff --git a/arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi b/arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi
+index 0a198b0..8df47fc 100644
+--- a/arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi
++++ b/arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi
+@@ -73,6 +73,12 @@
+ 		rtic_c = &rtic_c;
+ 		rtic_d = &rtic_d;
+ 		sec_mon = &sec_mon;
++
++		raideng = &raideng;
++		raideng_jr0 = &raideng_jr0;
++		raideng_jr1 = &raideng_jr1;
++		raideng_jr2 = &raideng_jr2;
++		raideng_jr3 = &raideng_jr3;
+ 	};
+ 
+ 	cpus {
+diff --git a/arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi
+new file mode 100644
+index 0000000..8d2e8aa
+--- /dev/null
++++ b/arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi
+@@ -0,0 +1,85 @@
++/*
++ * QorIQ RAID 1.0 device tree stub [ controller @ offset 0x320000 ]
++ *
++ * Copyright 2012 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
++ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
++ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++raideng: raideng@320000 {
++	compatible = "fsl,raideng-v1.0";
++	#address-cells = <1>;
++	#size-cells = <1>;
++	reg = <0x320000 0x10000>;
++	ranges = <0 0x320000 0x10000>;
++
++	raideng_jq0@1000 {
++		compatible = "fsl,raideng-v1.0-job-queue";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x1000 0x1000>;
++		ranges = <0x0 0x1000 0x1000>;
++
++		raideng_jr0: jr@0 {
++			compatible = "fsl,raideng-v1.0-job-ring", "fsl,raideng-v1.0-hp-ring";
++			reg = <0x0 0x400>;
++			interrupts = <139 2 0 0>;
++			interrupt-parent = <&mpic>;
++		};
++
++		raideng_jr1: jr@400 {
++			compatible = "fsl,raideng-v1.0-job-ring", "fsl,raideng-v1.0-lp-ring";
++			reg = <0x400 0x400>;
++			interrupts = <140 2 0 0>;
++			interrupt-parent = <&mpic>;
++		};
++	};
++
++	raideng_jq1@2000 {
++		compatible = "fsl,raideng-v1.0-job-queue";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x2000 0x1000>;
++		ranges = <0x0 0x2000 0x1000>;
++
++		raideng_jr2: jr@0 {
++			compatible = "fsl,raideng-v1.0-job-ring", "fsl,raideng-v1.0-hp-ring";
++			reg = <0x0 0x400>;
++			interrupts = <141 2 0 0>;
++			interrupt-parent = <&mpic>;
++		};
++
++		raideng_jr3: jr@400 {
++			compatible = "fsl,raideng-v1.0-job-ring", "fsl,raideng-v1.0-lp-ring";
++			reg = <0x400 0x400>;
++			interrupts = <142 2 0 0>;
++			interrupt-parent = <&mpic>;
++		};
++	};
++};
+-- 
+1.7.9.5
+
+
