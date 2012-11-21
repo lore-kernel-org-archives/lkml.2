@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab2KUEhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:37:23 -0500
-Received: from gate.crashing.org ([63.228.1.57]:53023 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab2KUEhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:37:22 -0500
-Message-ID: <1353472633.17856.37.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Nov 2012 15:37:13 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753399Ab2KUElQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:41:16 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59523 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2KUElP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:41:15 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sachin.kamat@linaro.org,
+        patches@linaro.org
+Subject: [PATCH 1/2] extcon: max77693: Fix uninitialised variable warning
+Date: Wed, 21 Nov 2012 10:04:57 +0530
+Message-Id: <1353472498-5793-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+Hi Chanwoo,
 
-Here are small 52xx fixes that Anatolij asked me to pull a while back
-and that I completely missed. The stuff is local to that platform code,
-and was in next for a while, so it should still go into 3.7.
+Please merge this patch with the previous one titled
+"extcon: max77693: Use devm_kzalloc"
+---
+ drivers/extcon/extcon-max77693.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks,
-Ben.
-
-The following changes since commit 8c23f406c6d86808726ace580657186bc3b44587:
-
-  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-11-01 08:27:02 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to d6dc24613c222f9057131ccbd5264a10bcba9f97:
-
-  Merge remote-tracking branch 'agust/merge' into merge (2012-11-21 13:24:49 +1100)
-
-----------------------------------------------------------------
-
-Anatolij Gustschin (1):
-      powerpc/mpc5200: move lpbfifo node and fix its interrupt property
-
-Benjamin Herrenschmidt (1):
-      Merge remote-tracking branch 'agust/merge' into merge
-
-Eric Millbrandt (1):
-      powerpc/pcm030: add pcm030-audio-fabric to dts
-
-Wolfram Sang (1):
-      powerpc: 52xx: nop out unsupported critical IRQs
-
- arch/powerpc/boot/dts/mpc5200b.dtsi       |    6 ++++++
- arch/powerpc/boot/dts/o2d.dtsi            |    6 ------
- arch/powerpc/boot/dts/pcm030.dts          |    7 ++++++-
- arch/powerpc/platforms/52xx/mpc52xx_pic.c |    9 +++++----
- 4 files changed, 17 insertions(+), 11 deletions(-)
-
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 3c29bb7..1da4ad4 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -672,9 +672,10 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
+ 						info->max77693->muic,
+ 						&max77693_muic_regmap_config);
+ 		if (IS_ERR(info->max77693->regmap_muic)) {
++			ret = PTR_ERR(info->max77693->regmap_muic);
+ 			dev_err(max77693->dev,
+ 				"failed to allocate register map: %d\n", ret);
+-			return PTR_ERR(info->max77693->regmap_muic);
++			return ret;
+ 		}
+ 	}
+ 	platform_set_drvdata(pdev, info);
+-- 
+1.7.4.1
 
