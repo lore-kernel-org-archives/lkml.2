@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab2KUIek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:34:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24697 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab2KUIej (ORCPT
+	id S1754012Ab2KUIet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:34:49 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60086 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590Ab2KUIer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:34:39 -0500
-Date: Wed, 21 Nov 2012 11:34:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johan Meiring <johanmeiring@gmail.com>
-Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] staging: wlags49_h2: ap_h2.c: fixes inconsistent
- spacing around *
-Message-ID: <20121121083417.GD11248@mwanda>
-References: <1353422700-14485-1-git-send-email-johanmeiring@gmail.com>
- <1353422700-14485-7-git-send-email-johanmeiring@gmail.com>
+	Wed, 21 Nov 2012 03:34:47 -0500
+Message-ID: <50AC9220.70202@gmail.com>
+Date: Wed, 21 Nov 2012 16:34:40 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353422700-14485-7-git-send-email-johanmeiring@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: metin d <metdos@yahoo.com>, Fengguang Wu <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Problem in Page Cache Replacement
+References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com> <20121120182500.GH1408@quack.suse.cz> <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com> <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
+In-Reply-To: <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 04:45:00PM +0200, Johan Meiring wrote:
-> This commit fixes an inconsistent spacing issue around *
-> 
+Cc Fengguang Wu.
 
-The others are good, but this one is not right.
-
-> Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
-> ---
->  drivers/staging/wlags49_h2/ap_h2.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/wlags49_h2/ap_h2.c b/drivers/staging/wlags49_h2/ap_h2.c
-> index e524153..c2d43ec 100644
-> --- a/drivers/staging/wlags49_h2/ap_h2.c
-> +++ b/drivers/staging/wlags49_h2/ap_h2.c
-> @@ -3256,7 +3256,7 @@ static const CFG_PROG_STRCT fw_image_code[] = {
->  		0x0146,		/* sizeof(fw_image_1_data), */
->  		0x00000060,					/* Target address in NIC Memory */
->  		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
-> -		(hcf_8 FAR *) fw_image_1_data
-> +		(hcf_8 FAR*) fw_image_1_data
-
-We don't use far pointers in linux.  When you're casting something
-there is no space between the cat operation and the variable.  The
-reason is that casting is a high precedence operation.
-
-More readable:  (char *)p + 1;
-Less readable:  (char *) p + 1;
-
-In the first line it's obvious that we cast first and then add 1.
-
-So this should be:
-	(hcf_8 *)fw_image_1_data,
-
-regards,
-dan carpenter
+On 11/21/2012 04:13 PM, metin d wrote:
+>>    Curious. Added linux-mm list to CC to catch more attention. If you run
+>> echo 1 >/proc/sys/vm/drop_caches does it evict data-1 pages from memory?
+> I'm guessing it'd evict the entries, but am wondering if we could run any more diagnostics before trying this.
+>
+> We regularly use a setup where we have two databases; one gets used frequently and the other one about once a month. It seems like the memory manager keeps unused pages in memory at the expense of frequently used database's performance.
+>
+> My understanding was that under memory pressure from heavily accessed pages, unused pages would eventually get evicted. Is there anything else we can try on this host to understand why this is happening?
+>
+> Thank you,
+>
+> Metin
+>
+> On Tue 20-11-12 09:42:42, metin d wrote:
+>> I have two PostgreSQL databases named data-1 and data-2 that sit on the
+>> same machine. Both databases keep 40 GB of data, and the total memory
+>> available on the machine is 68GB.
+>>
+>> I started data-1 and data-2, and ran several queries to go over all their
+>> data. Then, I shut down data-1 and kept issuing queries against data-2.
+>> For some reason, the OS still holds on to large parts of data-1's pages
+>> in its page cache, and reserves about 35 GB of RAM to data-2's files. As
+>> a result, my queries on data-2 keep hitting disk.
+>>
+>> I'm checking page cache usage with fincore. When I run a table scan query
+>> against data-2, I see that data-2's pages get evicted and put back into
+>> the cache in a round-robin manner. Nothing happens to data-1's pages,
+>> although they haven't been touched for days.
+>>
+>> Does anybody know why data-1's pages aren't evicted from the page cache?
+>> I'm open to all kind of suggestions you think it might relate to problem.
+>    Curious. Added linux-mm list to CC to catch more attention. If you run
+> echo 1 >/proc/sys/vm/drop_caches
+>    does it evict data-1 pages from memory?
+>
+>> This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
+>> swap space. The kernel version is:
+>>
+>> $ uname -r
+>> 3.2.28-45.62.amzn1.x86_64
+>> Edit:
+>>
+>> and it seems that I use one NUMA instance, if  you think that it can a problem.
+>>
+>> $ numactl --hardware
+>> available: 1 nodes (0)
+>> node 0 cpus: 0 1 2 3 4 5 6 7
+>> node 0 size: 70007 MB
+>> node 0 free: 360 MB
+>> node distances:
+>> node   0
+>>     0:  10
 
