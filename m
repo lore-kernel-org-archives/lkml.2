@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2KUPxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:53:40 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49704 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab2KUPxj convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 21 Nov 2012 10:53:39 -0500
-Message-Id: <50AD074A02000078000AA6B3@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 21 Nov 2012 15:54:34 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Dan Magenheimer" <dan.magenheimer@oracle.com>
-Cc: <xen-devel@lists.xen.org>, "Konrad Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH] xen: tmem: selfballooning should be
- enabled when xen tmem is enabled
-References: <748aba10-531a-4ad5-bad3-7af0f86c0489@default>
- <50AC9CFF02000078000AA43C@nat28.tlf.novell.com>
- <6912a721-cd5b-4c12-91b2-795eb58ace66@default>
-In-Reply-To: <6912a721-cd5b-4c12-91b2-795eb58ace66@default>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753397Ab2KUQBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 11:01:19 -0500
+Received: from mo5.mail-out.ovh.net ([178.32.228.5]:34825 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2KUQBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 11:01:18 -0500
+Date: Wed, 21 Nov 2012 16:53:12 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-serial@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: [PATCH v5] linux,stdout-path helper
+Message-ID: <20121121155312.GX4398@game.jcrosoft.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+X-Mailer: git-send-email 1.7.10.4
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 17968236614556625751
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrudejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehoiihlrggsshdrohhrghenucfjughrpeffhfhsvffukfggtgguofgfsehttdfttderredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrudejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehoiihlrggsshdrohhrghenucfjughrpeffhfhsvffukfggtgguofgfsehttdfttderredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.11.12 at 16:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->>  From: Jan Beulich [mailto:JBeulich@suse.com]
->> Sent: Wednesday, November 21, 2012 1:21 AM
->> To: Dan Magenheimer
->> Cc: xen-devel@lists.xen.org; Konrad Wilk; linux-kernel@vger.kernel.org 
->> Subject: Re: [Xen-devel] [PATCH] xen: tmem: selfballooning should be enabled 
-> when xen tmem is enabled
->> 
->> >>> On 20.11.12 at 23:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->> > Konrad: Any chance this can get in for the upcoming window?
->> > (Or is it enough of a bug fix that it can go in at an -rcN?)
->> >
->> > It was just pointed out to me that some kernels have
->> > cleancache and frontswap and xen_tmem enabled but NOT
->> > xen_selfballooning!  While this configuration should be
->> > possible, nearly all kernels that have CONFIG_XEN_TMEM=y should
->> > also have CONFIG_XEN_SELFBALLOONING=y, since Transcendent
->> > Memory (tmem) for Xen has very limited value without
->> > selfballooning.
->> >
->> > This is probably a result of a Kconfig mistake fixed I think
->> > by the patch below.  Note that the year-old Oracle UEK2 kernel
->> > distro has both CONFIG_XEN_TMEM and CONFIG_XEN_SELFBALLOONING
->> > enabled, as does a Fedora 17 kernel update (3.6.6-1.fc17), so
->> > the combination should be well tested.  Also, Xen tmem (and thus
->> > selfballooning) are currently only enabled when a kernel boot
->> > parameter is supplied so there is no runtime impact without
->> > that boot parameter.
->> >
->> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
->> >
->> > diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
->> > index d4dffcd..b5f02f3 100644
->> > --- a/drivers/xen/Kconfig
->> > +++ b/drivers/xen/Kconfig
->> > @@ -10,9 +10,9 @@ config XEN_BALLOON
->> >  	  return unneeded memory to the system.
->> >
->> >  config XEN_SELFBALLOONING
->> > -	bool "Dynamically self-balloon kernel memory to target"
->> 
->> Why would you want to take away the configurability of this?
->> You wanting it always on in your use case doesn't mean everyone
->> agrees. This would be the right way only when the option being
->> off despite all its dependencies being enabled is actively wrong.
-> 
-> I'd like it to be configurable, but my config steps
-> (e.g. yes "" | make oldconfig, after enabling CLEANCACHE and
-> FRONTSWAP and XEN_TMEM) failed to enable it.  Removing the
-> prompt is the only thing that worked.
+The following adds a helper for matching the linux,stdout-path property
+in the chosen node and makes use of it in the i.MX serial and Atmel serial driver.
 
-If all of the dependencies are enabled, then I can't see why the
-prompt wouldn't show up.
+changes since v4:
 
-> P.S. I removed the CLEANCACHE dependency because that dependency
-> is present for XEN_TMEM and I assumed dependencies are transitive.
+ - add option support and check stdout-path too
 
-That's correct.
+changes since v3:
 
-Jan
+- move code from separate files to drivers/of/base.c and include/linux/of.h
 
+changes since v2:
+
+- move helper to OF core and make it independent of serial devices
+
+changes since v1:
+
+- move it out of the i.MX serial driver and make it generic for serial
+  devices.
+
+_______________________________________________
+devicetree-discuss mailing list
+devicetree-discuss@lists.ozlabs.org
+https://lists.ozlabs.org/listinfo/devicetree-discuss
