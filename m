@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2KUHvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:51:07 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:52194 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751511Ab2KUHvG (ORCPT
+	id S1752962Ab2KUHvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:51:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49395 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab2KUHvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:51:06 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpiolib: rename pin range arguments
-Date: Wed, 21 Nov 2012 08:50:43 +0100
-Message-ID: <1353484243-6115-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 21 Nov 2012 02:51:11 -0500
+Message-ID: <50AC87E7.5040700@gmail.com>
+Date: Wed, 21 Nov 2012 15:51:03 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Claudio Freire <klaussfreire@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: fadvise interferes with readahead
+References: <CAGTBQpaDR4+V5b1AwAVyuVLu5rkU=Wc1WeUdLu5ag=WOk5oJzQ@mail.gmail.com> <20121120080427.GA11019@localhost> <CAGTBQpayd-HyH8SWfUCavS7epybcQR5SAx+tr+wyB38__4b-2Q@mail.gmail.com> <20121120145807.GB19467@localhost>
+In-Reply-To: <20121120145807.GB19467@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On 11/20/2012 10:58 PM, Fengguang Wu wrote:
+> On Tue, Nov 20, 2012 at 10:34:11AM -0300, Claudio Freire wrote:
+>> On Tue, Nov 20, 2012 at 5:04 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>>> Yes. The kernel readahead code by design will outperform simple
+>>> fadvise in the case of clustered random reads. Imagine the access
+>>> pattern 1, 3, 2, 6, 4, 9. fadvise will trigger 6 IOs literally. While
+>>> kernel readahead will likely trigger 3 IOs for 1, 3, 2-9. Because on
+>>> the page miss for 2, it will detect the existence of history page 1
+>>> and do readahead properly. For hard disks, it's mainly the number of
+>>> IOs that matters. So even if kernel readahead loses some opportunities
+>>> to do async IO and possibly loads some extra pages that will never be
+>>> used, it still manges to perform much better.
+>>>
+>>>> The fix would lay in fadvise, I think. It should update readahead
+>>>> tracking structures. Alternatively, one could try to do it in
+>>>> do_generic_file_read, updating readahead on !PageUptodate or even on
+>>>> page cache hits. I really don't have the expertise or time to go
+>>>> modifying, building and testing the supposedly quite simple patch that
+>>>> would fix this. It's mostly about the testing, in fact. So if someone
+>>>> can comment or try by themselves, I guess it would really benefit
+>>>> those relying on fadvise to fix this behavior.
+>>> One possible solution is to try the context readahead at fadvise time
+>>> to check the existence of history pages and do readahead accordingly.
+>>>
+>>> However it will introduce *real interferences* between kernel
+>>> readahead and user prefetching. The original scheme is, once user
+>>> space starts its own informed prefetching, kernel readahead will
+>>> automatically stand out of the way.
+>> I understand that would seem like a reasonable design, but in this
+>> particular case it doesn't seem to be. I propose that in most cases it
+>> doesn't really work well as a design decision, to make fadvise work as
+>> direct I/O. Precisely because fadvise is supposed to be a hint to let
+>> the kernel make better decisions, and not a request to make the kernel
+>> stop making decisions.
+>>
+>> Any interference so introduced wouldn't be any worse than the
+>> interference introduced by readahead over reads. I agree, if fadvise
+>> were to trigger readahead, it could be bad for applications that don't
+>> read what they say the will.
+> Right.
+>
+>> But if cache hits were to simply update
+>> readahead state, it would only mean that read calls behave the same
+>> regardless of fadvise calls. I think that's worth pursuing.
+> Here you are describing an alternative solution that will somehow trap
+> into the readahead code even when, for example, the application is
+> accessing once and again an already cached file?  I'm afraid this will
+> add non-trivial overheads and is less attractive than the "readahead
+> on fadvise" solution.
 
-To be crystal clear on what the arguments mean in this
-funtion dealing with both GPIO and PIN ranges with confusing
-naming, we now have gpio_offset and pin_offset and we are
-on the clear that these are offsets into the specific GPIO
-and pin controller respectively. The GPIO chip itself will
-of course keep track of the base offset into the global
-GPIO number space.
+Hi Fengguang,
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpiolib.c     | 19 ++++++++++---------
- include/asm-generic/gpio.h |  4 ++--
- include/linux/gpio.h       |  2 +-
- 3 files changed, 13 insertions(+), 12 deletions(-)
+Page cache sync readahead only triggered when cache miss, but if file 
+has already cached, how can readahead be trigged again if the 
+application is accessing once and again an already cached file.
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 317ff04..26e27c1 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1191,13 +1191,13 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
-  * gpiochip_add_pin_range() - add a range for GPIO <-> pin mapping
-  * @chip: the gpiochip to add the range for
-  * @pinctrl_name: the dev_name() of the pin controller to map to
-- * @offset: the start offset in the current gpio_chip number space
-- * @pin_base: the start offset in the pin controller number space
-+ * @gpio_offset: the start offset in the current gpio_chip number space
-+ * @pin_offset: the start offset in the pin controller number space
-  * @npins: the number of pins from the offset of each pin space (GPIO and
-  *	pin controller) to accumulate in this range
-  */
- int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--			   unsigned int offset, unsigned int pin_base,
-+			   unsigned int gpio_offset, unsigned int pin_offset,
- 			   unsigned int npins)
- {
- 	struct gpio_pin_range *pin_range;
-@@ -1210,11 +1210,11 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 	}
- 
- 	/* Use local offset as range ID */
--	pin_range->range.id = offset;
-+	pin_range->range.id = gpio_offset;
- 	pin_range->range.gc = chip;
- 	pin_range->range.name = chip->label;
--	pin_range->range.base = chip->base + offset;
--	pin_range->range.pin_base = pin_base;
-+	pin_range->range.base = chip->base + gpio_offset;
-+	pin_range->range.pin_base = pin_offset;
- 	pin_range->range.npins = npins;
- 	pin_range->pctldev = pinctrl_find_and_add_gpio_range(pinctl_name,
- 			&pin_range->range);
-@@ -1224,9 +1224,10 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 		kfree(pin_range);
- 		return PTR_ERR(pin_range->pctldev);
- 	}
--	pr_debug("%s: GPIO chip: created GPIO range %d->%d ==> PIN %d->%d\n",
--		 chip->label, offset, offset + npins - 1,
--		 pin_base, pin_base + npins - 1);
-+	pr_debug("GPIO chip %s: created GPIO range %d->%d ==> %s PIN %d->%d\n",
-+		 chip->label, gpio_offset, gpio_offset + npins - 1,
-+		 pinctl_name,
-+		 pin_offset, pin_offset + npins - 1);
- 
- 	list_add_tail(&pin_range->node, &chip->pin_ranges);
- 
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ec58fdb..9fd3093 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -283,7 +283,7 @@ struct gpio_pin_range {
- };
- 
- int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--			   unsigned int offset, unsigned int pin_base,
-+			   unsigned int gpio_offset, unsigned int pin_offset,
- 			   unsigned int npins);
- void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
- 
-@@ -291,7 +291,7 @@ void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
- 
- static inline int
- gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--		       unsigned int offset, unsigned int pin_base,
-+		       unsigned int gpio_offset, unsigned int pin_offset,
- 		       unsigned int npins)
- {
- 	return 0;
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 99861c6..bfe6656 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -233,7 +233,7 @@ static inline int irq_to_gpio(unsigned irq)
- 
- static inline int
- gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--		       unsigned int offset, unsigned int pin_base,
-+		       unsigned int gpio_offset, unsigned int pin_offset,
- 		       unsigned int npins)
- {
- 	WARN_ON(1);
--- 
-1.7.11.3
+Regards,
+Jaegeuk
+
+>
+>> I ought to try to prepare a patch for this to illustrate my point. Not
+>> sure I'll be able to though.
+> I'd be glad to materialize the readahead on fadvise proposal, if there
+> are no obvious negative examples/cases.
+>
+> Thanks,
+> Fengguang
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
