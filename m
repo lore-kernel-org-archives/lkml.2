@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab2KUUJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 15:09:26 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60529 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756134Ab2KUUJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 15:09:25 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18R3NJCcJ8RPIt7eMkKoqKSYcXYjDeFeUVX0FKTFc
-	1U8k6oo+NFyUuJ
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [PATCH v4] TPM: Issue TPM_STARTUP at driver load if the TPM has not been started
-Date: Wed, 21 Nov 2012 21:17:54 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.7; KDE/4.8.5; x86_64; ; )
+	id S1756200Ab2KUUMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 15:12:18 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:32896 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756182Ab2KUUMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 15:12:17 -0500
+Date: Wed, 21 Nov 2012 13:12:10 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter H?we <PeterHuewe@gmx.de>
 Cc: Peter.Huewe@infineon.com, key@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com> <74A44 <20121121183713.GA12822@obsidianresearch.com>
-In-Reply-To: <20121121183713.GA12822@obsidianresearch.com>
+Subject: Re: [PATCH v4] TPM: Issue TPM_STARTUP at driver load if the TPM has
+ not been started
+Message-ID: <20121121201210.GE12822@obsidianresearch.com>
+References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
+ <20121121183713.GA12822@obsidianresearch.com>
+ <201211212117.55040.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211212117.55040.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211212117.55040.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Wed, Nov 21, 2012 at 09:17:54PM +0100, Peter H?we wrote:
 
-Thanks for the updated patch! 
-Sorry, I have one really minor remark left:
+> Care to change to 
+> > +			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
+> 
+> Sorry that I didn't spot it earlier.
 
-> +	if (rc) {
-> +		dev_err(chip->dev,
-> +			"A TPM error (%d) occurred attempting to determine the timeouts\n",
+Right.. Probably like this in my tree because of:
 
-rc is a ssize_t here and when compiling with C=1 I get
-drivers/char/tpm/tpm.c:582:4: warning: format '%d' expects argument of type 'int', but argument 3 has type 'ssize_t' [-Wformat]
+http://permalink.gmane.org/gmane.linux.kernel/1397887
 
-Care to change to 
-> +			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
+I should really get sparse setup here... Never enough hours.
 
-Sorry that I didn't spot it earlier.
-
-
-Thanks,
-Peter
-
+Jason
