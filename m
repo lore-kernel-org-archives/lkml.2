@@ -1,29 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab2KUKC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:02:28 -0500
-Received: from relay02.ioffe.ru ([194.85.224.38]:63281 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753145Ab2KUKAZ convert rfc822-to-8bit (ORCPT
+	id S1753700Ab2KUKGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:06:16 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:52266 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2KUKGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:00:25 -0500
-Message-Id: <201211210951.qAL9ejKm010447@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 21 Nov 2012 05:06:14 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WARNING!!! VIRUS DETECTED AND SPY, UPDATE NOW!!!
-To: Recipients <devine@sunflowerstop.co.za>
-From: "Webmail System Administrator" <devine@sunflowerstop.co.za>
-Date: Wed, 21 Nov 2012 10:50:34 +0100
-Reply-To: losiecki@pg.gda.pl
+In-Reply-To: <1353487355-9894-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1353487355-9894-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 21 Nov 2012 15:36:13 +0530
+Message-ID: <CAKohpo=ff2H5o433QteDT5dfm90=EAe6=-OKPSp-TQz8bk2+HA@mail.gmail.com>
+Subject: Re: [PATCHv2 1/2] dw_dmac: store direction in the custom channel structure
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Your webmail account is corrupted by virus, you are to advise to upgrade. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
+On 21 November 2012 14:12, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Currently the direction value comes from the generic slave configuration
+> structure and explicitly as a preparation function parameter. The first one is
+> kinda obsoleted. Thus, we have to store the value passed to the preparation
+> function somewhere in our structures to be able to use it later. The best
+> candidate to provide the storage is a custom channel structure. Until now we
+> still keep and check the direction field of the slave config structure as well.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEpjd3JLRmFxbWxjb215RjNSeFZjeVE6MQ
-
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Vinod, these patches look fine to me. Please apply them for 3.8.
