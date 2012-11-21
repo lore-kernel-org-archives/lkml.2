@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2KURUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:20:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39296 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab2KURUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:20:18 -0500
-Date: Wed, 21 Nov 2012 17:20:11 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+	id S1754804Ab2KURUx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:20:53 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54627 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2KURUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 12:20:52 -0500
+Date: Wed, 21 Nov 2012 18:20:46 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
-Message-ID: <20121121172011.GI8218@suse.de>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
- <20121121165342.GH8218@suse.de>
- <20121121170306.GA28811@gmail.com>
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121121172046.GA28975@gmail.com>
+References: <20121119162909.GL8218@suse.de>
+ <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
+ <20121120060014.GA14065@gmail.com>
+ <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+ <20121120074445.GA14539@gmail.com>
+ <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
+ <20121120090637.GA14873@gmail.com>
+ <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
+ <20121121171047.GA28875@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121121170306.GA28811@gmail.com>
+In-Reply-To: <20121121171047.GA28875@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 06:03:06PM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > On Wed, Nov 21, 2012 at 10:21:06AM +0000, Mel Gorman wrote:
-> > > 
-> > > I am not including a benchmark report in this but will be posting one
-> > > shortly in the "Latest numa/core release, v16" thread along with the latest
-> > > schednuma figures I have available.
-> > > 
-> > 
-> > Report is linked here https://lkml.org/lkml/2012/11/21/202
-> > 
-> > I ended up cancelling the remaining tests and restarted with
-> > 
-> > 1. schednuma + patches posted since so that works out as
-> 
-> Mel, I'd like to ask you to refer to our tree as numa/core or 
-> 'numacore' in the future. Would such a courtesy to use the 
-> current name of our tree be possible?
-> 
 
-Sure, no problem.
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-> (We dropped sched/numa long ago and that you still keep 
-> referring to it is rather confusing to me.)
-> 
+> This is an entirely valid line of inquiry IMO.
 
-Understood.
+Btw., what I did was to simply look at David's profile on the 
+regressing system and I compared it to the profile I got on a 
+pretty similar (but unfortunately not identical and not 
+regressing) system. I saw 3 differences:
 
--- 
-Mel Gorman
-SUSE Labs
+ - the numa emulation faults
+ - the higher TLB miss cost
+ - numa/core's failure to handle 4K pages properly
+
+And addressed those, in the hope of one of them making a
+difference.
+
+There's a fourth line of inquiry I'm pursuing as well: the node 
+assymetry that David and Paul mentioned could have a performance 
+effect as well - resulting from non-ideal placement under 
+numa/core.
+
+That is not easy to cure - I have written a patch to take the 
+node assymetry into consideration, I'm still testing it with 
+David's topology simulated on a testbox:
+
+   numa=fake=4:10,20,20,30,20,10,20,20,20,20,10,20,30,20,20,10
+
+Will send the patch out later.
+
+Thanks,
+
+	Ingo
