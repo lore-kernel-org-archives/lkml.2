@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2KVTCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:02:34 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:26844 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab2KVTCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:02:31 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-4a-50adaf3f4647
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com, kyungmin.park@samsung.com,
-        sachin.kamat@linaro.org, khoroshilov@ispras.ru
-Subject: [GIT PULL] extcon for Linux 3.8
-Date: Thu, 22 Nov 2012 13:51:10 +0900
-Message-id: <1353559870-23394-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-In-reply-to: <20121121143553.GB21654@kroah.com>
-References: <20121121143553.GB21654@kroah.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t8zXV379WsDDG5uY7O4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ/89MYSq4J1gxcfoypgbGf3xdjJwcEgImEj/XH2eCsMUkLtxb
-	z9bFyMUhJLCMUeLZjw/sXYwcYEVPFiZCxKczSnyZ3cIK4Sxlklh2+iwzSDebgK7E1g13WUBs
-	EQE5iSe3/zCDFDELzGOUmPLoHDtIQlhAQ2LH9ztgRSwCqhL71k9iBbF5BTwk/q29zwZxhoLE
-	ryOrwOKcAvoSnz+3gS0QEtCTOLv+KBNEr4DEt8mHWCCuk5XYdIAZovU6m8S8uakQtqTEwRU3
-	WCYwCi9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERKC0jsYVzVYHGIU4GBU4uHNMFgb
-	IMSaWFZcmXuIUYKDWUmEd1EBUIg3JbGyKrUoP76oNCe1+BCjD9AhE5mlRJPzgfGRVxJvaGxg
-	bGhoaWhmamlqgENYSZy32SMlQEggPbEkNTs1tSC1CGYcEwenVANjTemalvaQ2z/iDO7VuUgL
-	m2qwR5VkFx4JEzqYfVN35uPps/kDMgSts2R2TfG0dFL/3nrONnvlzX55Gb78awtPzS1cZTbh
-	R0u2rVNFnbvvLjtvoT1Zrmo7bNotzhulbmA5sWOrb84FlQO+H/8prF7jr3Ym7M6NiE7x5q3c
-	83RfHM9IuWe6lF+JpTgj0VCLuag4EQBX/LhlbgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e+xoK7d+rUBBlsn2Vhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjP9npjAV3BOsmDh9GVMD
-	4z++LkYODgkBE4knCxO7GDmBTDGJC/fWs3UxcnEICUxnlPgyu4UVwlnKJLHs9FlmkCo2AV2J
-	rRvusoDYIgJyEk9u/2EGKWIWmMcoMeXROXaQhLCAhsSO73fAilgEVCX2rZ/ECmLzCnhI/Ft7
-	nw1inYLEryOrwOKcAvoSnz+3gS0QEtCTOLv+KNMERt4FjAyrGEVTC5ILipPSc430ihNzi0vz
-	0vWS83M3MYJD/Jn0DsZVDRaHGAU4GJV4eDMM1gYIsSaWFVfmHmKU4GBWEuFdVAAU4k1JrKxK
-	LcqPLyrNSS0+xOgDdNVEZinR5Hxg/OWVxBsam5gZWRqZGZuYGxvjEFYS5232SAkQEkhPLEnN
-	Tk0tSC2CGcfEwSnVwNihHJpjoK7c7TtHX//OV+lPbIdf+2zcsXOTUXf+6Z3vxF19O7e/mD35
-	p7H4hqhd1UuSsw4uarWat7lt9usWkRmvT84q/5vj0ze9P1jQ+99yl9bXPMpL9Uqt6kWP7swv
-	nWX6WE4rMdTsbffqjaffeh9UU+1fetnWMLA7pGzBqkb3oNIgE1FNbiWW4oxEQy3mouJEAEfB
-	IdWeAgAA
-X-CFilter-Loop: Reflected
+	id S1754346Ab2KVTCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:02:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:54021 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753908Ab2KVTCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:02:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,295,1352102400"; 
+   d="scan'208";a="252615567"
+Message-ID: <50AD6543.1050501@linux.intel.com>
+Date: Wed, 21 Nov 2012 15:35:31 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] futex: Avoid wake_futex for a PI futex_q
+References: <3b25c8ba053760892871713ff6e81660433f6734.1353483196.git.dvhart@linux.intel.com> <20121121143454.d72866e8.akpm@linux-foundation.org>
+In-Reply-To: <20121121143454.d72866e8.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull extcon patches for Linux 3.8.
 
 
+On 11/21/2012 02:34 PM, Andrew Morton wrote:
+> On Tue, 20 Nov 2012 23:36:45 -0800
+> Darren Hart <dvhart@linux.intel.com> wrote:
+> 
+>> Dave Jones reported a bug with futex_lock_pi() that his trinity test
+>> exposed. Sometime between queue_me() and taking the q.lock_ptr, the
+>> lock_ptr became NULL, resulting in a crash.
+>>
+>> While futex_wake() is careful to not call wake_futex() on futex_q's with
+>> a pi_state or an rt_waiter (which are either waiting for a
+>> futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
+>> futex_requeue() do not perform the same test.
+>>
+>> Update futex_wake_op() and futex_requeue() to test for q.pi_state and
+>> q.rt_waiter and abort with -EINVAL if detected. To ensure any future
+>> breakage is caught, add a WARN() to wake_futex() if the same condition
+>> is true.
+>>
+>> This fix has seen 3 hours of testing with "trinity -c futex" on an
+>> x86_64 VM with 4 CPUS.
+>>
+>> ...
+>>
+>> --- a/kernel/futex.c
+>> +++ b/kernel/futex.c
+>> @@ -840,6 +840,11 @@ static void wake_futex(struct futex_q *q)
+>>  {
+>>  	struct task_struct *p = q->task;
+>>  
+>> +	if (q->pi_state || q->rt_waiter) {
+>> +		WARN(1, "%s: refusing to wake PI futex\n", __FUNCTION__);
+>> +		return;
+>> +	}
+> 
+> There's no need to display __FUNCTION__ because WARN() gives a
+> backtrace, and we can more neatly use the WARN() return value:
+> 
+> --- a/kernel/futex.c~futex-avoid-wake_futex-for-a-pi-futex_q-fix
+> +++ a/kernel/futex.c
+> @@ -843,10 +843,8 @@ static void wake_futex(struct futex_q *q
+>  {
+>  	struct task_struct *p = q->task;
+>  
+> -	if (q->pi_state || q->rt_waiter) {
+> -		WARN(1, "%s: refusing to wake PI futex\n", __FUNCTION__);
+> +	if (WARN(q->pi_state || q->rt_waiter, "refusing to wake PI futex\n"))
+>  		return;
+> -	}
 
-Cheers,
-MyungJoo
+Thanks, that's better. Duh. That block of code used to be a lot more
+complex during my debug sessions, I should have caught that and boiled
+it down one step further.
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+--
+Darren
 
-The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
 
-  Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
+>  
+>  	/*
+>  	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+> _
+> 
+>>
+>> ...
+>>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git for-next
-
-Alexey Khoroshilov (1):
-      extcon: arizona: unlock mutex on error path in arizona_micdet()
-
-Chanwoo Choi (1):
-      extcon: Add missing header file to extcon.h
-
-MyungJoo Ham (1):
-      extcon: kernel_doc style fix
-
-Sachin Kamat (9):
-      extcon: Fix return value in extcon-class.c
-      extcon: max8997: Fix incorrect error check and return value
-      extcon: max77693: Fix incorrect error check and return value
-      extcon: max77693: Fix coding style
-      extcon: max8997: Fix checkpatch error
-      extcon: max8997: Fix a typo
-      extcon: max8997: Use devm_kzalloc
-      extcon: max77693: Use devm_kzalloc
-      extcon: max77693: Fix uninitialised variable warning
-
- drivers/extcon/extcon-arizona.c  |    1 +
- drivers/extcon/extcon-class.c    |    2 +-
- drivers/extcon/extcon-max77693.c |   36 ++++++++++++---------------
- drivers/extcon/extcon-max8997.c  |   28 +++++++++------------
- include/linux/extcon.h           |   50 +++++++++++++++++++------------------
- 5 files changed, 56 insertions(+), 61 deletions(-)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQra5aAAoJEBOhurvWBoCK/soP/A/h7YIeBV/k9naDbhcMQ9bP
-vtRUXdTziJKyBEjVbUdGx62CBUJkAx5oYLOUp02CZrwITFRWFQvlsP934OVXbzfj
-UhGYv7HKlRvAF1jdARXBdIHNyLuPrKBIxv36WYn/GA2SH+1uiV0tLdswON5Y+Hji
-T9ukH+6+HnGyewZ3NcCpgfIo93jSxhJXJ1H90ENVMWwJC+YlCtceRmFB+wgy+/9b
-JLaSjBNVCIAdMdfCGU8ikv3q2t6YGpP4n52dsEBoRcuJq/xuFNw/27xMhSA11rhF
-tG/14ExOj8LehKxhO4Q4ceVI4qt9SDdGfywjbYqk7MdpPLy5eRdX/4wo7/SBzfzh
-mRksPv85E9gbGY6ex8wZpfwpwbs0zq8abVbQP9Mmdpddd/xJYMS9r4eJzZRJSN6L
-D7Wvi+k2DqxklYe7KGpNt1FVCTs7tNJOGw8+gQ8l/N+DRkE+fq8QvLo46XQJaXRR
-Atu74bg4d0DmEaFIkaSN79ps0vNuRfUTq29G5ofQvHuxmbrtmsJ+MOcIY6sX9p0+
-0kmvMjentU2fGJ8qu9iJL95/TRUJzo/6GG3VUQIHhVzggJEXUe+EOJIZ47d0A7z9
-6/2Sb6oBoiuPSNiYorO6wEh4ml1OkAa75oSxJ38ePiZ0Qvrcjqjgu1L4sPjN00hj
-NidgtxwGkzphXtXS6uKc
-=yFA7
------END PGP SIGNATURE-----
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
