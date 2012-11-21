@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2KUJiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:38:10 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38850 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab2KUJiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:38:07 -0500
-Date: Wed, 21 Nov 2012 10:38:00 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-Message-ID: <20121121093800.GA26148@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
- <20121120152933.GA17996@gmail.com>
- <20121120175647.GA23532@gmail.com>
- <alpine.DEB.2.00.1211201913410.6458@chino.kir.corp.google.com>
+	id S1754093Ab2KUJjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:39:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753127Ab2KUJjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 04:39:40 -0500
+Date: Wed, 21 Nov 2012 11:39:28 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Hu Tao <hutao@cn.fujitsu.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
+        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Subject: Re: [PATCH v11] kvm: notify host when the guest is panicked
+Message-ID: <20121121093928.GN21208@redhat.com>
+References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
+ <20121031011256.GC12325@amt.cnet>
+ <50908354.5070608@cn.fujitsu.com>
+ <CA+1xoqdcaeAm05_=rx3h9KHph+j7Ab8vRG_w9yUk7jtn+wHuBg@mail.gmail.com>
+ <20121106015835.GA11971@localhost.localdomain>
+ <CA+1xoqd60YihExEuSU2qzsyFRXLS=XaeeX9AaMLhPHggfM6V3A@mail.gmail.com>
+ <20121113021908.GA8176@amt.cnet>
+ <20121120100948.GB17311@localhost.localdomain>
+ <20121120213349.GA31355@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211201913410.6458@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121120213349.GA31355@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Rientjes <rientjes@google.com> wrote:
-
-> I started profiling on a new machine that is an exact 
-> duplicate of the 16-way, 4 node, 32GB machine I was profiling 
-> with earlier to rule out any machine-specific problems.  I 
-> pulled master and ran new comparisons with THP enabled at 
-> c418de93e398 ("Merge branch 'x86/mm'"):
+On Tue, Nov 20, 2012 at 07:33:49PM -0200, Marcelo Tosatti wrote:
+> On Tue, Nov 20, 2012 at 06:09:48PM +0800, Hu Tao wrote:
+> > Hi Marcelo,
+> > 
+> > On Tue, Nov 13, 2012 at 12:19:08AM -0200, Marcelo Tosatti wrote:
+> > > On Fri, Nov 09, 2012 at 03:17:39PM -0500, Sasha Levin wrote:
+> > > > On Mon, Nov 5, 2012 at 8:58 PM, Hu Tao <hutao@cn.fujitsu.com> wrote:
+> > > > > But in the case of panic notification, more dependency means more
+> > > > > chances of failure of panic notification. Say, if we use a virtio device
+> > > > > to do panic notification, then we will fail if: virtio itself has
+> > > > > problems, virtio for some reason can't be deployed(neither built-in or
+> > > > > as a module), or guest doesn't support virtio, etc.
+> > > > 
+> > > > Add polling to your virtio device. If it didn't notify of a panic but
+> > > > taking more than 20 sec to answer your poll request you can assume
+> > > > it's dead.
+> > > > 
+> > > > Actually, just use virtio-serial and something in userspace on the guest.
+> > > 
+> > > They want the guest to stop, so a memory dump can be taken by management
+> > > interface.
+> > > 
+> > > Hu Tao, lets assume port I/O is the preferred method for communication.
+> > 
+> > Okey.
+> > 
+> > > Now, the following comments have still not been addressed:
+> > > 
+> > > 1) Lifecycle of the stopped guest and interaction with other stopped
+> > > states in QEMU.
+> > 
+> > Patch 3 already deals with run state transitions. But in case I'm
+> > missing something, could you be more specific?
 > 
->   CONFIG_NUMA_BALANCING disabled	136521.55 SPECjbb2005 bops
->   CONFIG_NUMA_BALANCING enabled		132476.07 SPECjbb2005 bops (-3.0%)
+> - What are the possibilities during migration? Say:
+> 	- migration starts.
+> 	- guest panics.
+> 	- migration starts vm on other side?
+> - Guest stopped due to EIO.
+> 	- guest vcpuN panics, VMEXIT but still outside QEMU.
+> 	- QEMU EIO error, stop vm.
+> 	- guest vcpuN completes, processes IO exit.
+>         - system_reset due to panic.
+> - Add all possibilities that should be verified (that is, interaction 
+> of this feature with other stopped states in QEMU).
 > 
-> Aside: neither 4739578c3ab3 ("x86/mm: Don't flush the TLB on 
-> #WP pmd fixups") nor 01e9c2441eee ("x86/vsyscall: Add Kconfig 
-> option to use native vsyscalls and switch to it") 
-> significantly improved upon the throughput on this system.
+BTW I do remember getting asserts while using breakpoints via gdbstub
+and stop/cont from the monitor.
 
-Could you please send an updated profile done with latest -tip? 
-The last profile I got from you still had the vsyscall emulation 
-page faults in it.
+> ---
+> 
+> - What happens if the guest has reboot-on-panic configured? Does it take
+> precedence over hypervisor notification?
+> 
+> 
+> 
+> Out of curiosity, does kexec support memory dumping?
+> 
+> > > 2) Format of the interface for other architectures (you can choose
+> > > a different KVM supported architecture and write an example).
+> > > 
+> > > 3) Clear/documented management interface for the feature.
+> > 
+> > It is documented in patch 0: Documentation/virtual/kvm/pv_event.txt.
+> > Does it need to be improved?
+> 
+> This is documentation for the host<->guest interface. There is no 
+> documentation on the interface for management.
 
-Thanks,
-
-	Ingo
+--
+			Gleb.
