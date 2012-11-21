@@ -1,129 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2KUI73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:59:29 -0500
-Received: from smtp2.infineon.com ([217.10.60.23]:41787 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2KUI72 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:59:28 -0500
-X-SBRS: None
-From: <Peter.Huewe@infineon.com>
-To: <jgunthorpe@obsidianresearch.com>, <key@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <tpmdd-devel@lists.sourceforge.net>
-Subject: RE: [PATCH resend] TPM: Issue TPM_STARTUP at driver load if the TPM
- has not been started
-Thread-Topic: [PATCH resend] TPM: Issue TPM_STARTUP at driver load if the
- TPM has not been started
-Thread-Index: AQHNx7dElapQS2HSZE2eryDfqZhcBpfz8S/A
-Date: Wed, 21 Nov 2012 08:59:24 +0000
-Message-ID: <74A44E99E3274B4CB570415926B37D440F7675@MUCSE501.eu.infineon.com>
-References: <20120930233012.GH30637@obsidianresearch.com>
- <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
- <20121001161536.GC31620@obsidianresearch.com>
- <20121001171003.GA1117@ennui.austin.ibm.com>
- <20121001173908.GA22342@obsidianresearch.com>
- <20121004174114.GA6520@ennui.austin.ibm.com>
- <74A44E99E3274B4CB570415926B37D440EC19C@MUCSE501.eu.infineon.com>
- <20121121071015.GD19837@obsidianresearch.com>
-In-Reply-To: <20121121071015.GD19837@obsidianresearch.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.8.249]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753362Ab2KUJCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:02:48 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20315 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab2KUJCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 04:02:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,291,1352102400"; 
+   d="h'?c'?scan'208";a="170909450"
+Date: Wed, 21 Nov 2012 17:02:04 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+Cc: metin d <metdos@yahoo.com>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Problem in Page Cache Replacement
+Message-ID: <20121121090204.GA9064@localhost>
+References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
+ <20121120182500.GH1408@quack.suse.cz>
+ <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com>
+ <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
+ <50AC9220.70202@gmail.com>
 MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+In-Reply-To: <50AC9220.70202@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason, Hi Kent,
->
->Discussion on this got a bit sidetracked talking about
->suspend/resume.. To be clear, this fixes a real, serious, problem on
->normal embedded cases where the kernel refuses to attach the TPM driver
->at all.
->
->Key, are you happy with this as-is for the next merge window?
->
->This version is rebased and retested to 3.7-rc6. Tested on Atmel
->and Nuvoton LPC TPMs on PPC32.
 
-Sorry I was tied up at work with other stuff, so I couldn't try out your initial patch.
-Thanks for resubmitting!
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I just gave the new version a run on my beagleboard with our Infineon SLB9635 TT 1.2 Soft I2C TPM
-and it seems to work as expected. (Tested with and without previous startup).
-
-Tested-by: Peter Huewe <peter.huewe@infineon.com>
-
-I just have some minor comments - please see below.
-
-
->+++ b/drivers/char/tpm/tpm.c
->+#define TPM_ORD_STARTUP cpu_to_be32(153)
->+#define TPM_ST_CLEAR cpu_to_be16(1)
->+#define TPM_ST_STATE cpu_to_be16(2)
->+#define TPM_ST_DEACTIVATED cpu_to_be16(3)
->+static const struct tpm_input_header tpm_startup_header = {
->+	.tag = TPM_TAG_RQU_COMMAND,
->+	.length = cpu_to_be32(12),
->+	.ordinal = TPM_ORD_STARTUP
->+};
->+
-> ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
-> 		   const char *desc)
-> {
-
-
-Purely cosmetic question, but why did you define this before the tpm_getcap and not tpm_startup?
-All the other definitions are made before they are used - so this should perhaps better be moved directly before tpm_startup.
-(Maybe we should move out these definitions to a common location? Header?)
-
-
-
-
->@@ -541,11 +560,27 @@ int tpm_get_timeouts(struct tpm_chip *chip)
-> 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
-> 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
-> 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
->+	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
-
-Please use NULL instead of 0, otherwise sparse complains - so 
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
-+	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
-
-
->+	if (rc == TPM_ERR_INVALID_POSTINIT) {
->	...
->+		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
-
-Same here 
-please use NULL instead of 0, otherwise sparse complains - so 
--		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
-+		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
-
-
->diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
->@@ -291,6 +292,10 @@ struct tpm_getrandom_in {
-> 	__be32 num_bytes;
-> }__attribute__((packed));
+On Wed, Nov 21, 2012 at 04:34:40PM +0800, Jaegeuk Hanse wrote:
+> Cc Fengguang Wu.
 > 
->+struct tpm_startup_in {
->+	__be16	startup_type;
->+} __packed;
+> On 11/21/2012 04:13 PM, metin d wrote:
+> >>   Curious. Added linux-mm list to CC to catch more attention. If you run
+> >>echo 1 >/proc/sys/vm/drop_caches does it evict data-1 pages from memory?
+> >I'm guessing it'd evict the entries, but am wondering if we could run any more diagnostics before trying this.
+> >
+> >We regularly use a setup where we have two databases; one gets used frequently and the other one about once a month. It seems like the memory manager keeps unused pages in memory at the expense of frequently used database's performance.
 
+> >My understanding was that under memory pressure from heavily
+> >accessed pages, unused pages would eventually get evicted. Is there
+> >anything else we can try on this host to understand why this is
+> >happening?
 
-All the other user
-__attribute__((packed));
-Care to change to be consistent?
+We may debug it this way.
 
+1) run 'fadvise data-2 0 0 dontneed' to drop data-2 cached pages
+   (please double check via /proc/vmstat whether it does the expected work)
 
-Apart from these three minor topics also a 
-Reviewed-by: Peter Huewe <peter.huewe@infineon.com>
+2) run 'page-types -r' with root, to view the page status for the
+   remaining pages of data-1
+
+The fadvise tool comes from Andrew Morton's ext3-tools. (source code attached)
+Please compile them with options "-Dlinux -I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
+
+page-types can be found in the kernel source tree tools/vm/page-types.c
+
+Sorry that sounds a bit twisted.. I do have a patch to directly dump
+page cache status of a user specified file, however it's not
+upstreamed yet.
 
 Thanks,
-Peter
+Fengguang
+
+> >On Tue 20-11-12 09:42:42, metin d wrote:
+> >>I have two PostgreSQL databases named data-1 and data-2 that sit on the
+> >>same machine. Both databases keep 40 GB of data, and the total memory
+> >>available on the machine is 68GB.
+> >>
+> >>I started data-1 and data-2, and ran several queries to go over all their
+> >>data. Then, I shut down data-1 and kept issuing queries against data-2.
+> >>For some reason, the OS still holds on to large parts of data-1's pages
+> >>in its page cache, and reserves about 35 GB of RAM to data-2's files. As
+> >>a result, my queries on data-2 keep hitting disk.
+> >>
+> >>I'm checking page cache usage with fincore. When I run a table scan query
+> >>against data-2, I see that data-2's pages get evicted and put back into
+> >>the cache in a round-robin manner. Nothing happens to data-1's pages,
+> >>although they haven't been touched for days.
+> >>
+> >>Does anybody know why data-1's pages aren't evicted from the page cache?
+> >>I'm open to all kind of suggestions you think it might relate to problem.
+> >   Curious. Added linux-mm list to CC to catch more attention. If you run
+> >echo 1 >/proc/sys/vm/drop_caches
+> >   does it evict data-1 pages from memory?
+> >
+> >>This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
+> >>swap space. The kernel version is:
+> >>
+> >>$ uname -r
+> >>3.2.28-45.62.amzn1.x86_64
+> >>Edit:
+> >>
+> >>and it seems that I use one NUMA instance, if  you think that it can a problem.
+> >>
+> >>$ numactl --hardware
+> >>available: 1 nodes (0)
+> >>node 0 cpus: 0 1 2 3 4 5 6 7
+> >>node 0 size: 70007 MB
+> >>node 0 free: 360 MB
+> >>node distances:
+> >>node   0
+> >>    0:  10
+
+--FCuugMFkClbJLl1L
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="fadvise.c"
+
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "fadvise.h"
+
+char *progname;
+
+static void usage(void)
+{
+	fprintf(stderr, "Usage: %s filename offset length advice [loops]\n", progname);
+	fprintf(stderr, "      advice: normal sequential willneed noreuse "
+					"dontneed asyncwrite writewait\n");
+	exit(1);
+}
+
+int
+main(int argc, char *argv[])
+{
+	int c;
+	int fd;
+	char *sadvice;
+	char *filename;
+	loff_t offset;
+	unsigned long length;
+	int advice = 0;
+	int ret;
+	int loops = 1;
+
+	progname = argv[0];
+
+	while ((c = getopt(argc, argv, "")) != -1) {
+		switch (c) {
+		}
+	}
+
+	if (optind == argc)
+		usage();
+	filename = argv[optind++];
+
+	if (optind == argc)
+		usage();
+	offset = strtoull(argv[optind++], NULL, 0);
+
+	if (optind == argc)
+		usage();
+	length = strtol(argv[optind++], NULL, 0);
+
+	if (optind == argc)
+		usage();
+	sadvice = argv[optind++];
+
+	if (optind != argc)
+		loops = strtol(argv[optind++], NULL, 0);
+
+	if (optind != argc)
+		usage();
+
+	if (!strcmp(sadvice, "normal"))
+		advice = POSIX_FADV_NORMAL;
+	else if (!strcmp(sadvice, "sequential"))
+		advice = POSIX_FADV_SEQUENTIAL;
+	else if (!strcmp(sadvice, "willneed"))
+		advice = POSIX_FADV_WILLNEED;
+	else if (!strcmp(sadvice, "noreuse"))
+		advice = POSIX_FADV_NOREUSE;
+	else if (!strcmp(sadvice, "dontneed"))
+		advice = POSIX_FADV_DONTNEED;
+	else if (!strcmp(sadvice, "asyncwrite"))
+		advice = LINUX_FADV_ASYNC_WRITE;
+	else if (!strcmp(sadvice, "writewait"))
+		advice = LINUX_FADV_WRITE_WAIT;
+	else
+		usage();
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "%s: cannot open `%s': %s\n",
+			progname, filename, strerror(errno));
+		exit(1);
+	}
+
+	while (loops--) {
+		ret = __posix_fadvise64(fd, offset, length, advice);
+		if (ret) {
+			fprintf(stderr, "%s: fadvise() failed: %s\n",
+				progname, strerror(errno));
+			exit(1);
+		}
+	}
+	close(fd);
+	exit(0);
+}
+
+--FCuugMFkClbJLl1L
+Content-Type: text/x-chdr; charset=us-ascii
+Content-Disposition: attachment; filename="fadvise.h"
+
+#include <asm/unistd.h>
+#include <sys/errno.h>
+
+#ifndef __NR_fadvise64
+#if defined (__i386__)
+#define __NR_fadvise64          250
+#elif defined(__powerpc__)
+#define __NR_fadvise64          233
+#elif defined(__ia64__)
+#define __NR_fadvise64		1234
+#elif defined(__x86_64__)
+#define __NR_fadvise64		221
+#endif
+#endif
+
+#ifndef LINUX_FADV_ASYNC_WRITE
+#define LINUX_FADV_ASYNC_WRITE 32
+#endif
+
+#ifndef LINUX_FADV_WRITE_WAIT
+#define LINUX_FADV_WRITE_WAIT 33
+#endif
+
+#ifndef __x86_64__
+_syscall5(int,fadvise64, int,fd, long,offset_lo,
+		long,offset_hi, size_t,len, int,advice)
+#endif
+
+/* Works by luck on ppc32, fails on ppc64 */
+#if defined(__i386__)
+int __posix_fadvise(int fd, off_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, 0, len, advice);
+}
+
+int __posix_fadvise64(int fd, loff_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, offset >> 32, len, advice);
+}
+#elif defined(__powerpc64__)
+int __posix_fadvise(int fd, off_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, len, advice);
+}
+
+int __posix_fadvise64(int fd, loff_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, len, advice);
+}
+#elif defined(__powerpc__)
+
+/* 
+ * long longs are passed in an odd even register pair on ppc32 so
+ * we need to pad before offset
+ *
+ * Note also the glibc syscall() function for ppc has been broken for
+ * 6 argument syscalls until recently (~2.3.1 CVS)
+ */
+#define ppc_fadvise64(fd, offset_hi, offset_lo, len, advice) \
+	syscall(__NR_fadvise64, fd, 0, offset_hi, offset_lo, len, advice)
+
+int __posix_fadvise(int fd, off_t offset, size_t len, int advice)
+{
+	return ppc_fadvise64(fd, 0, offset, len, advice);
+}
+
+/* big endian, akpm. */
+int __posix_fadvise64(int fd, loff_t offset, size_t len, int advice)
+{
+	return ppc_fadvise64(fd, (unsigned int)(offset >> 32),
+			(unsigned int)(offset & 0xffffffff), len, advice);
+}
+#elif defined(__ia64__)
+int __posix_fadvise(int fd, off_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, len, advice);
+}
+
+int __posix_fadvise64(int fd, loff_t offset, size_t len, int advice)
+{
+	return fadvise64(fd, offset, len, advice);
+}
+#elif defined(__x86_64__)
+int __posix_fadvise(int fd, off_t offset, size_t len, int advice)
+{
+	return -1;
+}
+
+int __posix_fadvise64(int fd, loff_t offset, size_t len, int advice)
+{
+	return syscall(__NR_fadvise64, fd, offset, len, advice);
+}
+#endif
+
+--FCuugMFkClbJLl1L--
