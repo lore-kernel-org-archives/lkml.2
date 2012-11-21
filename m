@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965101Ab2KVTQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:16:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50263 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754799Ab2KVTQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:16:44 -0500
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: <alsa-devel@alsa-project.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <tony@atomide.com>, <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <perex@perex.cz>, <nsekhar@ti.com>, <sudhakar.raj@ti.com>,
-        <gururaja.hebbar@ti.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <rob@landley.net>
-Subject: [PATCH 1/2] ASoC: davinci-mcasp: Add pinctrl support
-Date: Thu, 22 Nov 2012 09:34:58 +0530
-Message-ID: <1353557099-21599-2-git-send-email-gururaja.hebbar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
-References: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S965128Ab2KVTRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:17:06 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:27996 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965071Ab2KVTQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:16:58 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>,
+        ecryptfs@vger.kernel.org
+Subject: [PATCH v4 30/31] ecrpytfs: Convert aio_read/write ops to read/write_iter
+Date: Wed, 21 Nov 2012 16:41:10 -0600
+Message-Id: <1353537671-26284-31-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-
-Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Tyler Hicks <tyhicks@canonical.com>
+Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>
+Cc: ecryptfs@vger.kernel.org
 ---
-:100644 100644 5715595... 76c05d9... M	sound/soc/davinci/davinci-mcasp.c
- sound/soc/davinci/davinci-mcasp.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/ecryptfs/file.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 5715595..76c05d9 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -25,6 +25,7 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index d45ba45..5aaa180 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -36,22 +36,21 @@
+ /**
+  * ecryptfs_read_update_atime
+  *
+- * generic_file_read updates the atime of upper layer inode.  But, it
++ * generic_file_read_iter updates the atime of upper layer inode.  But, it
+  * doesn't give us a chance to update the atime of the lower layer
+- * inode.  This function is a wrapper to generic_file_read.  It
+- * updates the atime of the lower level inode if generic_file_read
++ * inode.  This function is a wrapper to generic_file_read_iter.  It
++ * updates the atime of the lower level inode if generic_file_read_iter
+  * returns without any errors. This is to be used only for file reads.
+  * The function to be used for directory reads is ecryptfs_read.
+  */
+ static ssize_t ecryptfs_read_update_atime(struct kiocb *iocb,
+-				const struct iovec *iov,
+-				unsigned long nr_segs, loff_t pos)
++				struct iov_iter *iter, loff_t pos)
+ {
+ 	ssize_t rc;
+ 	struct path lower;
+ 	struct file *file = iocb->ki_filp;
  
- #include <sound/core.h>
- #include <sound/pcm.h>
-@@ -1108,6 +1109,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	struct resource *mem, *ioarea, *res;
- 	struct snd_platform_data *pdata;
- 	struct davinci_audio_dev *dev;
-+	struct pinctrl *pinctrl;
- 	int ret;
- 
- 	if (!pdev->dev.platform_data && !pdev->dev.of_node) {
-@@ -1139,6 +1141,11 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 		return -EBUSY;
- 	}
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&pdev->dev,
-+			"pins are not configured from the driver\n");
-+
- 	pm_runtime_enable(&pdev->dev);
- 
- 	ret = pm_runtime_get_sync(&pdev->dev);
+-	rc = generic_file_aio_read(iocb, iov, nr_segs, pos);
++	rc = generic_file_read_iter(iocb, iter, pos);
+ 	/*
+ 	 * Even though this is a async interface, we need to wait
+ 	 * for IO to finish to update atime
+@@ -357,9 +356,9 @@ const struct file_operations ecryptfs_dir_fops = {
+ const struct file_operations ecryptfs_main_fops = {
+ 	.llseek = generic_file_llseek,
+ 	.read = do_sync_read,
+-	.aio_read = ecryptfs_read_update_atime,
++	.read_iter = ecryptfs_read_update_atime,
+ 	.write = do_sync_write,
+-	.aio_write = generic_file_aio_write,
++	.write_iter = generic_file_write_iter,
+ 	.readdir = ecryptfs_readdir,
+ 	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
 -- 
-1.7.9.5
+1.8.0
 
