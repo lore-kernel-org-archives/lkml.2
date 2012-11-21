@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab2KUIWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:22:24 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:8532 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752725Ab2KUIWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:22:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEIAIeOrFB5LbLL/2dsb2JhbABEvE2FeBdzgh4BAQQBJxMcIwULCAMOCi4UJQMhE4gHBb8xFIwghGIDi0uKMoZaiWiDAw
-Date: Wed, 21 Nov 2012 19:22:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: The bug of iput() removal from flusher thread?
-Message-ID: <20121121082219.GQ2591@dastard>
-References: <8762541uyx.fsf@devron.myhome.or.jp>
- <873906vumh.fsf@devron.myhome.or.jp>
- <20121119145140.GA20532@quack.suse.cz>
- <20121119194102.GB20532@quack.suse.cz>
- <87a9udtiyk.fsf@devron.myhome.or.jp>
- <20121119212448.GA29498@quack.suse.cz>
- <876251tg3b.fsf@devron.myhome.or.jp>
- <20121121011111.GE10507@quack.suse.cz>
- <20121121014851.GH10507@quack.suse.cz>
- <20121121000533.a0ab9eea.akpm@linux-foundation.org>
+	id S1753609Ab2KUI1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:27:44 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:47805 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753182Ab2KUI1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 03:27:42 -0500
+Message-ID: <50AC9070.2030009@parallels.com>
+Date: Wed, 21 Nov 2012 12:27:28 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121000533.a0ab9eea.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>,
+        <linux-man@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com> <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com> <50AA3FEF.2070100@parallels.com> <alpine.DEB.2.00.1211201013460.4200@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1211201013460.4200@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 12:05:33AM -0800, Andrew Morton wrote:
-> On Wed, 21 Nov 2012 02:48:51 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > +/*
-> > + * Add inode to LRU if needed (inode is unused and clean).
-> > + *
-> > + * Needs inode->i_lock held.
-> > + */
-> > +void inode_add_lru(struct inode *inode)
-> > +{
-> > +	if (!(inode->i_state & (I_DIRTY | I_FREEING | I_SYNC)) &&
-> > +	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
-> > +		inode_lru_list_add(inode);
-> > +}
-> 
-> Is i_lock sufficient to stabilise i_count?
-> 
-> <looks at the code a bit>
-> 
-> Is evict_inodes() wrong to test i_count outside i_lock?
-> 
-> invalidate_inodes() looks better.
-> 
-> can_unuse() must be called under i_lock, and is.  Apparently this
-> requirement was sufficiently obvious to not meed documenting.
+On 11/20/2012 10:23 PM, David Rientjes wrote:
+> Anton can correct me if I'm wrong, but I certainly don't think this is 
+> where mempressure is headed: I don't think any accounting needs to be done 
+> and, if it is, it's a design issue that should be addressed now rather 
+> than later.  I believe notifications should occur on current's mempressure 
+> cgroup depending on its level of reclaim: nobody cares if your memcg has a 
+> limit of 64GB when you only have 32GB of RAM, we'll want the notification.
 
-It is documented. can_unuse looks at i_state and i_count, and both
-are documented as requiring the i_lock at the top of the file in
-the locking rules section. Also, see __iget(), also mentioned in
-the locking rules....
+My main concern is that to trigger those notifications, one would have
+to first determine whether or not the particular group of tasks is under
+pressure. And to do that, we need to somehow know how much memory we are
+using, and how much we are reclaiming, etc. On a system-wide level, we
+have this information. On a grouplevel, this is already accounted by memcg.
 
-> prune_icache_sb() gets it right.
-> 
-> iput() gets it right.
-> 
-> So to answer my own question: yes, it is sufficient.  But a) the
-> comment for inode.i_lock is out of date
+In fact, the current code already seems to rely on memcg:
 
-If you means the one in fs.h, then yeah, it's way out of date....
->
-> and b) evict_inodes() looks
-> fishy.
++	vmpressure(sc->target_mem_cgroup,
++		   sc->nr_scanned - nr_scanned, nr_reclaimed);
 
-As I understand it, evict_inodes() is special - it's only called
-from generic_shutdown_super() after the MS_ACTIVE flag has been
-removed from the filesytem, the dcache has been pruned and all the
-inodes cleaned. So there should be no new references to the inodes
-occurring, and hence we don't need to hold the lock to serialise
-against new references being taken....
+Now, let's start simple: Assume we will have a different cgroup.
+We want per-group pressure notifications for that group. How would you
+determine that the specific group is under pressure?
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
