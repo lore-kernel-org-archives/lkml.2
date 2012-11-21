@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2KUB0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:26:13 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50659 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963Ab2KUB0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:26:11 -0500
-X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
-   d="scan'208";a="6242133"
-Message-ID: <50AC2DAB.8010609@cn.fujitsu.com>
-Date: Wed, 21 Nov 2012 09:26:03 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753595Ab2KUB0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:26:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40819 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab2KUB0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 20:26:24 -0500
+Date: Tue, 20 Nov 2012 17:26:20 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [ 31/66] NFS: Wait for session recovery to finish before
+ returning
+Message-ID: <20121121012620.GF5381@kroah.com>
+References: <20121115040939.016421011@linuxfoundation.org>
+ <20121115040941.255779659@linuxfoundation.org>
+ <1353082639.4867.89.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@tv-sign.ru>,
-        Serge Hallyn <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 03/11] pidns: Capture the user namespace and filter ns_last_pid
-References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-3-git-send-email-ebiederm@xmission.com>
-In-Reply-To: <1353083750-3621-3-git-send-email-ebiederm@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 09:25:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 09:25:55,
-	Serialize complete at 2012/11/21 09:25:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353082639.4867.89.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2012/11/17 00:35, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Fri, Nov 16, 2012 at 04:17:19PM +0000, Ben Hutchings wrote:
+> On Wed, 2012-11-14 at 20:10 -0800, Greg Kroah-Hartman wrote:
+> > 3.6-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Bryan Schumaker <bjschuma@netapp.com>
+> > 
+> > commit 399f11c3d872bd748e1575574de265a6304c7c43 upstream.
+> [...]
 > 
-> - Capture the the user namespace that creates the pid namespace
-> - Use that user namespace to test if it is ok to write to
->   /proc/sys/kernel/ns_last_pid.
-> 
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
+> Also not applied to 3.0 and 3.4; here's my version for 3.2 which is
+> probably usable for at least one of those.
 
-Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
+Now applied, thanks.
+
+greg k-h
