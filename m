@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab2KUCBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 21:01:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42289 "EHLO
+	id S1754010Ab2KUCBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 21:01:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42355 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab2KUCBi (ORCPT
+	with ESMTP id S1752854Ab2KUCBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 21:01:38 -0500
-Subject: [PATCH 2/4] mm: Only enforce stable page writes if the backing device
- requires it
+	Tue, 20 Nov 2012 21:01:47 -0500
+Subject: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable page
+ writes
 To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
         tytso@mit.edu, rminnich@sandia.gov, viro@zeniv.linux.org.uk
 From: "Darrick J. Wong" <darrick.wong@oracle.com>
@@ -16,112 +16,46 @@ Cc: martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
         v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Date: Tue, 20 Nov 2012 18:00:41 -0800
-Message-ID: <20121121020041.10225.35875.stgit@blackbox.djwong.org>
+Date: Tue, 20 Nov 2012 18:00:56 -0800
+Message-ID: <20121121020056.10225.15220.stgit@blackbox.djwong.org>
 In-Reply-To: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
 References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a helper function to check if a backing device requires stable page
-writes and, if so, performs the necessary wait.  Then, make it so that all
-points in the memory manager that handle making pages writable use the helper
-function.  This should provide stable page write support to most filesystems,
-while eliminating unnecessary waiting for devices that don't require the
-feature.
+ext3 doesn't properly isolate pages from changes during writeback.  Since the
+recommended fix is to use ext4, for now we'll just print a warning if the user
+tries to mount in write mode.
 
 Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 ---
- fs/buffer.c             |    2 +-
- fs/ext4/inode.c         |    2 +-
- include/linux/pagemap.h |    1 +
- mm/filemap.c            |    3 ++-
- mm/page-writeback.c     |   11 +++++++++++
- 5 files changed, 16 insertions(+), 3 deletions(-)
+ fs/ext3/super.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index b5f0442..4cf0b78 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2334,7 +2334,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	if (unlikely(ret < 0))
- 		goto out_unlock;
- 	set_page_dirty(page);
--	wait_on_page_writeback(page);
-+	wait_if_stable_page_write(page);
- 	return 0;
- out_unlock:
- 	unlock_page(page);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index b3c243b..24c6193 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4814,7 +4814,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
- 					ext4_bh_unmapped)) {
- 			/* Wait so that we don't change page under IO */
--			wait_on_page_writeback(page);
-+			wait_if_stable_page_write(page);
- 			ret = VM_FAULT_LOCKED;
- 			goto out;
- 		}
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e42c762..1d67f81 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -398,6 +398,7 @@ static inline void wait_on_page_writeback(struct page *page)
- }
- 
- extern void end_page_writeback(struct page *page);
-+void wait_if_stable_page_write(struct page *page);
- 
- /*
-  * Add an arbitrary waiter to a page's wait queue
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..34df185 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1728,6 +1728,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	 * see the dirty page and writeprotect it again.
- 	 */
- 	set_page_dirty(page);
-+	wait_if_stable_page_write(page);
- out:
- 	sb_end_pagefault(inode->i_sb);
- 	return ret;
-@@ -2274,7 +2275,7 @@ repeat:
- 		return NULL;
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index 5366393..5b3725d 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
+ 			"forcing read-only mode");
+ 		res = MS_RDONLY;
  	}
- found:
--	wait_on_page_writeback(page);
-+	wait_if_stable_page_write(page);
- 	return page;
- }
- EXPORT_SYMBOL(grab_cache_page_write_begin);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..cbbaeca 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2275,3 +2275,14 @@ int mapping_tagged(struct address_space *mapping, int tag)
- 	return radix_tree_tagged(&mapping->page_tree, tag);
- }
- EXPORT_SYMBOL(mapping_tagged);
-+
-+void wait_if_stable_page_write(struct page *page)
-+{
-+	struct backing_dev_info *bdi = page->mapping->backing_dev_info;
-+
-+	if (!bdi_cap_stable_pages_required(bdi))
-+		return;
-+
-+	wait_on_page_writeback(page);
-+}
-+EXPORT_SYMBOL_GPL(wait_if_stable_page_write);
++	if (!read_only &&
++	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
++		ext3_msg(sb, KERN_ERR,
++			"error: ext3 cannot safely write data to a disk "
++			"requiring stable pages writes; forcing read-only "
++			"mode.  Upgrading to ext4 is recommended.");
++		res = MS_RDONLY;
++	}
+ 	if (read_only)
+ 		return res;
+ 	if (!(sbi->s_mount_state & EXT3_VALID_FS))
 
