@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2KUOdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:33:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57228 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805Ab2KUOdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:33:08 -0500
-Date: Wed, 21 Nov 2012 14:33:03 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.7-rc6] capture_free_page() frees page without accounting for
- them??
-Message-ID: <20121121143303.GD8218@suse.de>
-References: <50ABE741.2020604@linux.vnet.ibm.com>
+	id S1754828Ab2KUOes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:34:48 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61397 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab2KUOer (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 09:34:47 -0500
+Date: Wed, 21 Nov 2012 06:35:53 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com, kyungmin.park@samsung.com,
+        sachin.kamat@linaro.org, khoroshilov@ispras.ru
+Subject: Re: [GIT PULL] extcon fixes for Linux 3.7 rc6
+Message-ID: <20121121143553.GB21654@kroah.com>
+References: <1353496525-6868-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50ABE741.2020604@linux.vnet.ibm.com>
+In-Reply-To: <1353496525-6868-1-git-send-email-myungjoo.ham@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 12:25:37PM -0800, Dave Hansen wrote:
-> Hi Mel,
+On Wed, Nov 21, 2012 at 08:15:25PM +0900, MyungJoo Ham wrote:
+> The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
 > 
-> I'm chasing an apparent memory leak introduced post-3.6. 
-
-An accounting leak could also contribute to the kswapd bugs we've been
-seeing recently.
-
-Andrew, this is quite important and might be worth wedging in before 3.7
-comes out because it'll cause serious problems if Dave is right.
-
-> The
-> interesting thing is that it appears that the pages are in the
-> allocator, but not being accounted for:
+>   Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
 > 
-> 	http://www.spinics.net/lists/linux-mm/msg46187.html
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=50181
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git for-gregkh
 > 
-
-Differences in the buddy allocator and reported free figures almost
-always point to either per-cpu drift or NR_FREE_PAGES accounting bugs.
-Usually the drift is not too bad and the drift is always within a
-margin related to the number of CPUs. NR_FREE_PAGES accounting bugs get
-progressively worse until the machine starts OOM killing or locks up.
-
-> I started auditing anything that might be messing with NR_FREE_PAGES,
-> and came across commit 1fb3f8ca. 
-
-It could certainly affect NR_FREE_PAGES due to its manipulating of buddy
-pages. It will not result in happy and the system would potentially need
-to be running a long time before it's spotted.
-
-> It does something curious with
-> capture_free_page() (previously known as split_free_page()).
+> Alexey Khoroshilov (1):
+>       extcon: arizona: unlock mutex on error path in arizona_micdet()
 > 
-> int capture_free_page(struct page *page, int alloc_order,
-> ...
->         __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+> Chanwoo Choi (1):
+>       extcon: Add missing header file to extcon.h
 > 
-> -       /* Split into individual pages */
-> -       set_page_refcounted(page);
-> -       split_page(page, order);
-> +       if (alloc_order != order)
-> +               expand(zone, page, alloc_order, order,
-> +                       &zone->free_area[order], migratetype);
-> 
-> Note that expand() puts the pages _back_ in the allocator, but it does
-> not bump NR_FREE_PAGES.  We "return" alloc_order' worth of pages, but we
-> accounted for removing 'order'.
-> 
-> I _think_ the correct fix is to just:
-> 
-> -     __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
-> +     __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << alloc_order));
-> 
+> Sachin Kamat (3):
+>       extcon: Fix return value in extcon-class.c
+>       extcon: max8997: Fix incorrect error check and return value
+>       extcon: max77693: Fix incorrect error check and return value
 
-This looks correct to me but it will collide with other patches. You'll
-need something like the below. If it works for you, stick a changelog on
-it, feel free to put my Acked on it and get it to Andrew for ASAP
-because I really think this needs to be in before 3.7 comes out or we'll
-be swamped with a maze of kswapd-goes-mental bugs, all similar with
-different root causes.
+It's _really_ late in the release cycle for any new patches that are not
+MAJOR problems.  I don't think any of these meet that rule, do you?  If
+you really need them into 3.7, mark them with the Cc: stable line and
+get them into 3.8-rc1.
 
-Thanks a million Dave!
+> Note to Chanwoo and Sachin:
+> In this pull request, I've added bugfixes only.
+> If you see the for-next branch, you can see that the style fixes and
+> devm_* applications are added for later pull requests.
 
+Note, after tomorrow, I will not be taking any new patches for 3.8-rc1,
+so you better get your -next branch to me soon. :)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fd6a073..ad99f0f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1406,7 +1406,7 @@ int capture_free_page(struct page *page, int alloc_order, int migratetype)
- 
- 	mt = get_pageblock_migratetype(page);
- 	if (unlikely(mt != MIGRATE_ISOLATE))
--		__mod_zone_freepage_state(zone, -(1UL << order), mt);
-+		__mod_zone_freepage_state(zone, -(1UL << alloc_order), mt);
- 
- 	if (alloc_order != order)
- 		expand(zone, page, alloc_order, order,
+thanks,
 
+greg k-h
