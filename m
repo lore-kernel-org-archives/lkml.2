@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab2KUMre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:47:34 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13491 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2KUMrd convert rfc822-to-8bit (ORCPT
+	id S1752854Ab2KUMrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:47:52 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34247 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab2KUMrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:47:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 21 Nov 2012 04:47:32 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Nov 2012 13:47:27 +0100
-Subject: Re: [PATCH 1/1] memory: tegra30: Fix warning w/o PM_SLEEP
-Thread-Topic: [PATCH 1/1] memory: tegra30: Fix warning w/o PM_SLEEP
-Thread-Index: Ac3H5lz2jcutOWTIRS6bGthao+DmIQ==
-Message-ID: <20121121.144727.1842286617829159643.hdoyu@nvidia.com>
-References: <1353501740-25420-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1353501740-25420-1-git-send-email-hdoyu@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
+	Wed, 21 Nov 2012 07:47:51 -0500
+Date: Wed, 21 Nov 2012 12:53:10 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de
+Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
+Message-ID: <20121121125310.00625f55@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
+References: <20121116192606.11799.35711.stgit@localhost.localdomain>
+	<CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2257f87f95c3982aac7c30389357db66f597c083 Mon Sep 17 00:00:00 2001
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-Date: Thu, 15 Nov 2012 08:28:39 +0200
-Subject: [PATCH 1/1] memory: tegra30: Fix warning w/o PM_SLEEP
+On Wed, 21 Nov 2012 07:45:45 -0500
+Josh Boyer <jwboyer@gmail.com> wrote:
 
-Fix build warning w/o PM_SLEEP.
+> On Fri, Nov 16, 2012 at 2:27 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >
+> > [The fb maintainer appears to be absent at the moment].
+> >
+> > This is needed to fix a pile of lockdep splats that now show up because console_lock()
+> > is being properly audited. Hugh Dickins and Sasha Levin have tested it and both reports
+> > all looks good. This is probably not the whole story - the entire fb layer has locking
+> > confusion problems that were previously hidden but it seems to get the ones people hit
+> > in testing. This hopefully explains a few of the weird fb hangs that have been floating
+> > around forever.
+> >
+> > From: Alan Cox <alan@linux.intel.com>
+> >
+> > Adjust the console layer to allow a take over call where the caller already
+> > holds the locks. Make the fb layer lock in order.
+> >
+> > This s partly a band aid, the fb layer is terminally confused about the
+> > locking rules it uses for its notifiers it seems.
+> >
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> 
+> Should this eventually get into the stable trees?
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- drivers/memory/tegra30-mc.c |    2 ++
- 1 file changed, 2 insertions(+)
+Thats a question I'm not sure about at this point. I think the bug is
+real but not caught by the lock checker in older trees but I've not
+investigated.
 
-diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
-index 802b9ea..cf10b77 100644
---- a/drivers/memory/tegra30-mc.c
-+++ b/drivers/memory/tegra30-mc.c
-@@ -267,6 +267,7 @@ static const u32 tegra30_mc_ctx[] = {
- 	MC_INTMASK,
- };
- 
-+#ifdef CONFIG_PM_SLEEP
- static int tegra30_mc_suspend(struct device *dev)
- {
- 	int i;
-@@ -290,6 +291,7 @@ static int tegra30_mc_resume(struct device *dev)
- 	mc_readl(mc, MC_TIMING_CONTROL);
- 	return 0;
- }
-+#endif
- 
- static UNIVERSAL_DEV_PM_OPS(tegra30_mc_pm,
- 			    tegra30_mc_suspend,
--- 
-1.7.9.5
+Alan
