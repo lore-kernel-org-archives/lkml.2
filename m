@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2KUC7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 21:59:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:8124 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab2KUC7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 21:59:23 -0500
-X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
-   d="scan'208";a="6242998"
-Message-ID: <50AC4505.1000007@cn.fujitsu.com>
-Date: Wed, 21 Nov 2012 11:05:41 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753963Ab2KUDU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 22:20:27 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:55251 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2KUDU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 22:20:26 -0500
+Message-ID: <50AC485A.7090507@linux.vnet.ibm.com>
+Date: Wed, 21 Nov 2012 11:19:54 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH v3 06/12] memory-hotplug: unregister memory section on
- SPARSEMEM_VMEMMAP
-References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com> <50AB669D.3060007@gmail.com>
-In-Reply-To: <50AB669D.3060007@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 10:59:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 10:59:04,
-	Serialize complete at 2012/11/21 10:59:04
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
+References: <5097AC70.1080904@linux.vnet.ibm.com> <5097ACA0.7080408@linux.vnet.ibm.com> <20121112231223.GC5798@amt.cnet> <50A20750.8050808@linux.vnet.ibm.com> <20121120221853.GA31427@amt.cnet> <50AC10EE.8000008@linux.vnet.ibm.com> <20121120235147.GA12391@amt.cnet>
+In-Reply-To: <20121120235147.GA12391@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+x-cbid: 12112103-0260-0000-0000-000002315CDC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/20/2012 07:16 PM, Jaegeuk Hanse Wrote:
-> On 11/01/2012 05:44 PM, Wen Congyang wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On 11/21/2012 07:51 AM, Marcelo Tosatti wrote:
+> On Wed, Nov 21, 2012 at 07:23:26AM +0800, Xiao Guangrong wrote:
+>> On 11/21/2012 06:18 AM, Marcelo Tosatti wrote:
 >>
->> Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But
->> even if
->> we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+>>>>>> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
+>>>>>> -			drop_parent_pte(child, sptep);
+>>>>>> -			kvm_flush_remote_tlbs(vcpu->kvm);
+>>>>>
+>>>>> How come its safe to drop this case?
+>>>>
+>>>> We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
+>>>> There are two cases:
+>>>> 1) the sptep is not the last mapping.
+>>>>    under this case, sptep must point to a shadow page table, that means
+>>>>    spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
+>>>>    so, 'if' condition must be satisfied, the sptep will be dropped.
+>>>>
+>>>>    Actually, This is the origin case:
+>>>>   | if (level > PT_PAGE_TABLE_LEVEL &&
+>>>>   |	    !is_large_pte(*sptep))"
+>>>>
+>>>> 2) the sptep is the last mapping.
+>>>>    under this case, the level of spte (sp.level) must equal the 'level' which
+>>>>    we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
+>>>>    we drop it.
+>>>>
+>>>> I think this is safe. :)
+>>>
+>>> mmu_page_zap_pte takes care of it, OK.
+>>>
+>>> What if was_rmapped=true but gfn is different? Say if the spte comes
+>>> from an unsync shadow page, the guest modifies that shadow page (but
+>>> does not invalidate it with invlpg), then faults. gfn can still point
+>>> to the same gfn (but in that case, with your patch,
+>>> page_header_update_slot is not called.
 >>
->> So the patch add unregister_memory_section() into __remove_section().
-> 
-> Hi Yasuaki,
-> 
-> I have a question about these sparse vmemmap memory related patches. Hot
-> add memory need allocated vmemmap pages, but this time is allocated by
-> buddy system. How can gurantee virtual address is continuous to the
-> address allocated before? If not continuous, page_to_pfn and pfn_to_page
-> can't work correctly.
-
-vmemmap has its virtual address range:
-ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
-
-We allocate memory from buddy system to store struct page, and its virtual
-address isn't in this range. So we should update the page table:
-
-kmalloc_section_memmap()
-    sparse_mem_map_populate()
-        pfn_to_page() // get the virtual address in the vmemmap range
-        vmemmap_populate() // we update page table here
-
-When we use vmemmap, page_to_pfn() always returns address in the vmemmap
-range, not the address that kmalloc() returns. So the virtual address
-is continuous.
-
-Thanks
-Wen Congyang
-> 
-> Regards,
-> Jaegeuk
-> 
+>> Marcelo,
 >>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>   mm/memory_hotplug.c | 13 ++++++++-----
->>   1 file changed, 8 insertions(+), 5 deletions(-)
+>> Page fault path and other sync/prefetch paths will reread guest page table,
+>> then it get a different target pfn.
 >>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index ca07433..66a79a7 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -286,11 +286,14 @@ static int __meminit __add_section(int nid,
->> struct zone *zone,
->>   #ifdef CONFIG_SPARSEMEM_VMEMMAP
->>   static int __remove_section(struct zone *zone, struct mem_section *ms)
->>   {
->> -    /*
->> -     * XXX: Freeing memmap with vmemmap is not implement yet.
->> -     *      This should be removed later.
->> -     */
->> -    return -EBUSY;
->> +    int ret = -EINVAL;
->> +
->> +    if (!valid_section(ms))
->> +        return ret;
->> +
->> +    ret = unregister_memory_section(ms);
->> +
->> +    return ret;
->>   }
->>   #else
->>   static int __remove_section(struct zone *zone, struct mem_section *ms)
+>> The scenario is like this:
+>>
+>> gfn1 = pfn1, gfn2 = pfn2
+>> gpte = pfn1, spte is shadowed by gpte and it is a unsync spte
+>>
+>> Guest                               Host
+>>                                      spte = (gfn1, pfn1)
+>>
+>> modify gpte to let it point to gfn2
+>>                                     spte = (gfn1, pfn1)
+>> page-fault on gpte
+>>                                     intercept the page-fault, then
+>>                                     want to update spte to (gfn2, pfn2)
+>>
+>>                                     in mmu_set_spte, we can detect
+>>                                     pfn2 != pfn1, then drop it.
+>>
+>> Hmm, the interesting thing is what if different gfns map to the same pfn.
+>> For example, spte1 is shadowed by gfn1 and spte2 is shadowed by pfn2, both
+>> gfn1 and gfn2 map to pfn, the code (including the current code) will set
+>> spte1 to the gfn2's rmap and spte2 to the gfn1's rmap. But i think it is ok.
 > 
+> Current code updates gfn properly in set_spte by
+> page_header_update_slot. 
 > 
+> Better keep state properly.
+
+Okay, i will not change the position of page_header_update_slot in the
+next version. Thank you, Marcelo!
+
 
