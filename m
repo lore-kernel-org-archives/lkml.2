@@ -1,193 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab2KUPrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:47:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab2KUPrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:47:46 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] UAPI: (Scripted) Disintegrate include/rdma
-To: dillowda@ornl.gov, roland@kernel.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Wed, 21 Nov 2012 15:47:40 +0000
-Message-ID: <20121121154740.9777.72384.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755266Ab2KUPsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:48:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57566 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755169Ab2KUPsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:48:06 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Device tree node to major/minor?
+To: Simon Glass <sjg@chromium.org>
+Cc: lk <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Che-liang Chiou <clchiou@chromium.org>
+In-Reply-To: <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
+References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com> <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com> <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
+Date: Wed, 21 Nov 2012 15:47:58 +0000
+Message-Id: <20121121154758.93CE43E0AE2@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Dave Jones <davej@redhat.com>
----
+On Tue, 20 Nov 2012 15:48:24 -0800, Simon Glass <sjg@chromium.org> wrote:
+> Hi Grant,
+> 
+> On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
+> >> Hi,
+> >>
+> >> I hope this is a stupid question with an easy answer, but I cannot find it.
+> >>
+> >> I have a device tree node for an mmc block device and I want to use
+> >> that block device from another driver. I have a phandle which lets me
+> >> get the node of the mmc device, but I am not sure how to convert that
+> >> into a block_device. In order to do so, I think I need a major/minor
+> >> number. Of course the phandle might in fact point to a SCSI driver and
+> >> I want that to work correctly also.
+> >>
+> >> I imagine I might be able to search through the wonders of sysfs in
+> >> user space, but is there a better way?
+> >
+> > Do you /want/ to do it from userspace? What is your use case? Mounting
+> > the rootfs?
+> 
+> The use case is storing some raw data on a block device from within a
+> driver in the kernel. It is used to keep track of the verified boot
+> state.
+> 
+> >
+> > Regardless, userspace can monitor the uevents when devices are added
+> > (that's what udev does) and watch for the full path of the node you
+> > want in the uevent attribute. Then you can look for the child device
+> > with the block major/minor numbers in it.
+> 
+> So is there a way to do this entirely in the kernel ex post? It might
+> need to happen during kernel boot, before user space.
 
- include/rdma/Kbuild               |    6 ------
- include/rdma/rdma_netlink.h       |   36 +-----------------------------------
- include/uapi/rdma/Kbuild          |    6 ++++++
- include/uapi/rdma/ib_user_cm.h    |    0 
- include/uapi/rdma/ib_user_mad.h   |    0 
- include/uapi/rdma/ib_user_sa.h    |    0 
- include/uapi/rdma/ib_user_verbs.h |    0 
- include/uapi/rdma/rdma_netlink.h  |   37 +++++++++++++++++++++++++++++++++++++
- include/uapi/rdma/rdma_user_cm.h  |    0 
- 9 files changed, 44 insertions(+), 41 deletions(-)
- rename include/{rdma/ib_user_cm.h => uapi/rdma/ib_user_cm.h} (100%)
- rename include/{rdma/ib_user_mad.h => uapi/rdma/ib_user_mad.h} (100%)
- rename include/{rdma/ib_user_sa.h => uapi/rdma/ib_user_sa.h} (100%)
- rename include/{rdma/ib_user_verbs.h => uapi/rdma/ib_user_verbs.h} (100%)
- create mode 100644 include/uapi/rdma/rdma_netlink.h
- rename include/{rdma/rdma_user_cm.h => uapi/rdma/rdma_user_cm.h} (100%)
+Yes, it is certainly doable within the kernel. First, you'll need to use
+a notifier to get called back whenever a new device is created. Then
+you'll need to look at the dev->of_node(->full_name) to see if it is the
+node you actually want. You might need/want to resolve it from an alias
+or something, but I presume you already have a way to find the
+device_node before seaching for a struct device.
 
-diff --git a/include/rdma/Kbuild b/include/rdma/Kbuild
-index ea56f76..e69de29 100644
---- a/include/rdma/Kbuild
-+++ b/include/rdma/Kbuild
-@@ -1,6 +0,0 @@
--header-y += ib_user_cm.h
--header-y += ib_user_mad.h
--header-y += ib_user_sa.h
--header-y += ib_user_verbs.h
--header-y += rdma_netlink.h
--header-y += rdma_user_cm.h
-diff --git a/include/rdma/rdma_netlink.h b/include/rdma/rdma_netlink.h
-index bd3d8b2..e38de79 100644
---- a/include/rdma/rdma_netlink.h
-+++ b/include/rdma/rdma_netlink.h
-@@ -1,41 +1,9 @@
- #ifndef _RDMA_NETLINK_H
- #define _RDMA_NETLINK_H
- 
--#include <linux/types.h>
--
--enum {
--	RDMA_NL_RDMA_CM = 1
--};
--
--#define RDMA_NL_GET_CLIENT(type) ((type & (((1 << 6) - 1) << 10)) >> 10)
--#define RDMA_NL_GET_OP(type) (type & ((1 << 10) - 1))
--#define RDMA_NL_GET_TYPE(client, op) ((client << 10) + op)
--
--enum {
--	RDMA_NL_RDMA_CM_ID_STATS = 0,
--	RDMA_NL_RDMA_CM_NUM_OPS
--};
--
--enum {
--	RDMA_NL_RDMA_CM_ATTR_SRC_ADDR = 1,
--	RDMA_NL_RDMA_CM_ATTR_DST_ADDR,
--	RDMA_NL_RDMA_CM_NUM_ATTR,
--};
--
--struct rdma_cm_id_stats {
--	__u32	qp_num;
--	__u32	bound_dev_if;
--	__u32	port_space;
--	__s32	pid;
--	__u8	cm_state;
--	__u8	node_type;
--	__u8	port_num;
--	__u8	qp_type;
--};
--
--#ifdef __KERNEL__
- 
- #include <linux/netlink.h>
-+#include <uapi/rdma/rdma_netlink.h>
- 
- struct ibnl_client_cbs {
- 	int (*dump)(struct sk_buff *skb, struct netlink_callback *nlcb);
-@@ -88,6 +56,4 @@ void *ibnl_put_msg(struct sk_buff *skb, struct nlmsghdr **nlh, int seq,
- int ibnl_put_attr(struct sk_buff *skb, struct nlmsghdr *nlh,
- 		  int len, void *data, int type);
- 
--#endif /* __KERNEL__ */
--
- #endif /* _RDMA_NETLINK_H */
-diff --git a/include/uapi/rdma/Kbuild b/include/uapi/rdma/Kbuild
-index aafaa5a..687ae33 100644
---- a/include/uapi/rdma/Kbuild
-+++ b/include/uapi/rdma/Kbuild
-@@ -1 +1,7 @@
- # UAPI Header export list
-+header-y += ib_user_cm.h
-+header-y += ib_user_mad.h
-+header-y += ib_user_sa.h
-+header-y += ib_user_verbs.h
-+header-y += rdma_netlink.h
-+header-y += rdma_user_cm.h
-diff --git a/include/rdma/ib_user_cm.h b/include/uapi/rdma/ib_user_cm.h
-similarity index 100%
-rename from include/rdma/ib_user_cm.h
-rename to include/uapi/rdma/ib_user_cm.h
-diff --git a/include/rdma/ib_user_mad.h b/include/uapi/rdma/ib_user_mad.h
-similarity index 100%
-rename from include/rdma/ib_user_mad.h
-rename to include/uapi/rdma/ib_user_mad.h
-diff --git a/include/rdma/ib_user_sa.h b/include/uapi/rdma/ib_user_sa.h
-similarity index 100%
-rename from include/rdma/ib_user_sa.h
-rename to include/uapi/rdma/ib_user_sa.h
-diff --git a/include/rdma/ib_user_verbs.h b/include/uapi/rdma/ib_user_verbs.h
-similarity index 100%
-rename from include/rdma/ib_user_verbs.h
-rename to include/uapi/rdma/ib_user_verbs.h
-diff --git a/include/uapi/rdma/rdma_netlink.h b/include/uapi/rdma/rdma_netlink.h
-new file mode 100644
-index 0000000..8297285
---- /dev/null
-+++ b/include/uapi/rdma/rdma_netlink.h
-@@ -0,0 +1,37 @@
-+#ifndef _UAPI_RDMA_NETLINK_H
-+#define _UAPI_RDMA_NETLINK_H
-+
-+#include <linux/types.h>
-+
-+enum {
-+	RDMA_NL_RDMA_CM = 1
-+};
-+
-+#define RDMA_NL_GET_CLIENT(type) ((type & (((1 << 6) - 1) << 10)) >> 10)
-+#define RDMA_NL_GET_OP(type) (type & ((1 << 10) - 1))
-+#define RDMA_NL_GET_TYPE(client, op) ((client << 10) + op)
-+
-+enum {
-+	RDMA_NL_RDMA_CM_ID_STATS = 0,
-+	RDMA_NL_RDMA_CM_NUM_OPS
-+};
-+
-+enum {
-+	RDMA_NL_RDMA_CM_ATTR_SRC_ADDR = 1,
-+	RDMA_NL_RDMA_CM_ATTR_DST_ADDR,
-+	RDMA_NL_RDMA_CM_NUM_ATTR,
-+};
-+
-+struct rdma_cm_id_stats {
-+	__u32	qp_num;
-+	__u32	bound_dev_if;
-+	__u32	port_space;
-+	__s32	pid;
-+	__u8	cm_state;
-+	__u8	node_type;
-+	__u8	port_num;
-+	__u8	qp_type;
-+};
-+
-+
-+#endif /* _UAPI_RDMA_NETLINK_H */
-diff --git a/include/rdma/rdma_user_cm.h b/include/uapi/rdma/rdma_user_cm.h
-similarity index 100%
-rename from include/rdma/rdma_user_cm.h
-rename to include/uapi/rdma/rdma_user_cm.h
-
+g.
