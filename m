@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab2KUPM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:12:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:53058 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2KUPMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:12:25 -0500
-Date: Wed, 21 Nov 2012 16:12:09 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, Tomi Valkeinen <tomba@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, Mark Zhang <markz@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121121151209.GA4048@avionic-0098.adnet.avionic-design.de>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
- <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
- <20121120215429.B621F3E1821@localhost>
- <13540495.epaCf4JVn9@percival>
- <50ACB59B.4090404@iki.fi>
- <20121121114018.GA31576@avionic-0098.adnet.avionic-design.de>
- <50ACC341.3090204@ti.com>
- <20121121130039.GA12191@avionic-0098.adnet.avionic-design.de>
- <50ACD7DC.5060405@ti.com>
- <CAAVeFuJofYwj926=3v0ApBCq_vNhCdC1PnzDc-B3d=LL_L40Uw@mail.gmail.com>
+	id S1755124Ab2KUPNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:13:22 -0500
+Received: from mail.uibero.cl ([200.111.126.196]:53200 "EHLO mail.unicit.cl"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755037Ab2KUPNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:13:21 -0500
+X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 10:13:20 EST
+Date: Wed, 21 Nov 2012 12:03:00 -0300 (ART)
+From: "Mr. Paul Fletch." <dsequeira@unicit.cl>
+Reply-To: "Mr. Paul Fletch." <paulfletch_gtaccts@yahoo.com>
+Subject: =?utf-8?B?5oKo5aW977yB?=
+Message-ID: <934f80c9-ce38-4edf-ae7b-e7a52aa439b8@mail>
+Content-Type: text/plain; charset=utf-8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuJofYwj926=3v0ApBCq_vNhCdC1PnzDc-B3d=LL_L40Uw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:GTLCccTIwmloGYo/0XG0Iyzlzg7d5gIT20mojJvBmA2
- 7QbPp1EIhslsGMSU2stFVuov8vtwZl7T+YHCLsNkWXJ3QGL+zo
- 486muZ+ACfmm2mmwefkfNo8U7Dct8amk0dEWpqe4I0DEzm0StB
- bBzECv/oOxLhfP8sioqx7Jdk4ZPpFA5VGyBGCGOShhpOmoKEMH
- KlyMICIPcx1tor2cpPWInAbvMT99WxTItX7CNeujge4wcNB0bP
- J3p1WXtuvGP00Sx+swndXTvJzbpWg/g6TMuvFxsZt3JikN0bW/
- 1Byp1cN+y8wG70gUvMNOTMbIC8a6+7NbeysfSnWCIlMD6JtQVi
- GgwmkRm7j8Ey1LJZA1VaIaRdKoTOiYA5SS4fin0qmjD5oXN59A
- 1lXD2O6uGvcI7EbX1/dyaR8lM7PRM1BcwU=
+X-Originating-IP: [41.138.187.204]
+X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qALFDPjY031121
 
+您好！
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+这实在是我的荣幸，你写这封信，我相信这将是一个惊喜给你，因为我们从来没有遇到过，我感到非常抱歉，如果我以任何方式干扰您的隐私。我郑明陈伟伟从Harlsden，位于伦敦西北部，在英国的。我的工作与桑坦德银行有限公司伦敦。与应有的尊重和重视，我写你从我的办公室，这将是对我们双方巨大的好处。在我的部门，即私人银行经理（大伦敦地区办事处）。我的个人会计师下旬Mr.Ron布拉姆利奇一个商人，一个美国公民不幸失去了他的生命，他的妻子和他们的四个孩子被打死时，他们的小飞机撞上佛罗里达州中部的沼泽区，2012年6月7日。罗恩布拉姆利奇先生，一个杰出的商人，谁拥有路边风险投资有限责任公司和一个房地产经纪人，打算到这里来投资到房地产和其他有利可图的商业企业，他存放在英国的总和13700000英镑GBP（十三万7十万磅）在我们的银行帐户，我相信没有人知道这件事。
 
-On Thu, Nov 22, 2012 at 12:02:47AM +0900, Alexandre Courbot wrote:
-> Mmmm so maybe I am misinterpreting things, but it looks like we
-> have just buried the power sequences here, haven't we?
+引起你住的地方，特别是由于本次交易的敏感性和保密本文从地域性质的选择与您联系。现在，我们的银行一直在等待任何的亲戚或合作伙伴来的索赔，但没有人这样做。我个人一直未能成功定位的亲戚或合作伙伴，我希望你同意你的近亲或合作伙伴，我们的死者的客户，使该帐户的收益价值13700000英镑GBP（十三亿700000磅）可以支付给你的，所以我向你保证，这个企业是100％的风险。如果这个建议是可以接受的你，请尽量立刻回答我。
 
-I don't think so. In fact I was just starting to think that maybe for
-Tegra we could have a generic panel driver which used power sequences
-to abstract away the pin differences for powering up the panel. Since
-most likely that will be where the differences are there is a lot of
-potential to factor things out into sequences.
+在本基金转移到您的帐户中，40％将是你的份额提供的帐户和提供的援助在传输过程中的资金到您的银行帐户中，50％将是我份额作为协调员的交易，而余下的10％将共享各种可敬的慈善组织，在您的国家中心。我喜欢帮助穷人！
 
-Perhaps what we may want to postpone for now is the DT representation
-since that's what Tomi and Grant seem to be mostly opposed to.
+我有所有必要的法律文件，可以用来支持这种说法，我们是使该基金。所有我需要的是填写你的姓名或信息的文件合法化，它在英国高等法院在伦敦，以证明你的合法受益人。现在我需要的是你的诚实合作，庄严的保密和信任，让我们来看看本次交易通过。我向你保证，这将是一个合法的安排下，将保护你免受任何违反法律的执行。
 
-Thierry
+请给我提供以下内容：我们有5天的时间来运行它通过。这是非常迫切的，请。
 
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature
+1。全名
+2。您的电话号码
+3。您的联系地址。
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+在经历了一个有条不紊的搜索，我决定与您联系，希望你会发现这个建议。请确认这一消息，并表示你的兴趣，我将为您提供更多的信息。努力让我知道你的决定，而不是让我waiting.Call或写信给我在收到的邮件：+44-7024093983
 
-iQIcBAEBAgAGBQJQrO9JAAoJEN0jrNd/PrOhsvAQAKSVMEuMUIu44H6ENIW4tAKS
-XdGSSQxiv1wbXStKB+n52L652AZp+ht98aXWqhZQY7BGj/v+FOMD6tPnPaeUk8Pt
-7P/q/KR8jkiG5888WwBsZ3iKtZcM5uui+3Bsn39npWDkrLJ9lb/AKxRWjMfOrGGc
-SHh8/l+uigV0m217MsOqAlrEMFxRIdpRWsMUuEXvkmGoiq3Psr5qJvbDgU9ZjuCu
-M7n/iP8mllBxqFEa22a9Ka9s39jo6zzFvz1CislH9HEnRsykGBNXXmmA0G4yjDAA
-Gb/kegNpyRKy/dCTZuqXes3daH5ygosnluvV8wp22Wv9QjvGN6All3PzWHVEWvAA
-HWGxvNFsyRA+a1yHOIQHCAORsfmoE5U3/ynG5NCaJcNDQhdtgF80hlk2t6UoFBfa
-162u9k108xW+afC2OUTmWMAXJTvYBUPdfRHzQeMStudDs00KS2vSVTdHVF+Yweej
-TNQcyTm6LjRVwHajc6bXtWOpw4zTrMd/QJfuSgVF4yqMMFYA0nQxHx3iYU9fkuTh
-H8lBFgSxQFLAijTiTcQZg4ga7wdmWP/NDxo3ZMsORheAFG283Gmx21C7ZoxLjfkr
-USWZvosHvDjBSSvZPfSK05ave+BTWHzdzMnEhdKbQ4x7vlUbBS/LDTDzAlA1F6mL
-LizHf/P1c7XzZEF+iL5s
-=NaXm
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
+此致，
+保罗陈伟伟先生。
+paulfletch_gtacct@yahoo.com���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
