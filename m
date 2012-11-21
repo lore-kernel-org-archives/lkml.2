@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab2KUG41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 01:56:27 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:41006 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab2KUG40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 01:56:26 -0500
-Date: Tue, 20 Nov 2012 23:56:24 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] lib/vsprintf.c: Fix handling of %zd when using ssize_t
-Message-ID: <20121121065624.GB19837@obsidianresearch.com>
+	id S1752498Ab2KUG7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 01:59:15 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64636 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab2KUG7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 01:59:14 -0500
+Date: Tue, 20 Nov 2012 22:59:09 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 4/4] input: misc: introduce retu-pwrbutton
+Message-ID: <20121121065909.GC16772@core.coreip.homeip.net>
+References: <1353256582-12166-1-git-send-email-aaro.koskinen@iki.fi>
+ <1353256582-12166-5-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1353256582-12166-5-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/printk-formats.txt says to use %zd for a ssize_t argument
-and some drivers do. Unfortunately this prints a positive number for
-negative values eg:
+Hi Aaro,
 
-tpm_tis 70030000.tpm_tis: tpm_transmit: tpm_send: error 4294967234
+On Sun, Nov 18, 2012 at 06:36:22PM +0200, Aaro Koskinen wrote:
+> Add Retu power button driver.
+>
 
-Add a case to va_args a ssize_t type if the interpretation should be
-signed.
+This patch (with minot edits) has been queued to 3.8.
 
-Tested on PPC32.
+Thanks!
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- lib/vsprintf.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 39c99fe..41da074 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1485,7 +1485,10 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
- 				num = va_arg(args, long);
- 				break;
- 			case FORMAT_TYPE_SIZE_T:
--				num = va_arg(args, size_t);
-+				if (spec.flags & SIGN)
-+					num = va_arg(args, ssize_t);
-+				else
-+					num = va_arg(args, size_t);
- 				break;
- 			case FORMAT_TYPE_PTRDIFF:
- 				num = va_arg(args, ptrdiff_t);
 -- 
-1.7.4.1
-
+Dmitry
