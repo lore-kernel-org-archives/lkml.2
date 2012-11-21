@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2KUNPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:15:53 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50314 "EHLO arroyo.ext.ti.com"
+	id S1753911Ab2KUNQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:16:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41709 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752986Ab2KUNPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:15:51 -0500
+	id S1753368Ab2KUNQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 08:16:11 -0500
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>
@@ -14,9 +14,9 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
         "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v4 09/11] ARM: dts: AM33XX: Add PWMSS device tree nodes
-Date: Wed, 21 Nov 2012 18:41:06 +0530
-Message-ID: <1353503469-18634-10-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v4 11/11] ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk
+Date: Wed, 21 Nov 2012 18:41:08 +0530
+Message-ID: <1353503469-18634-12-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
 References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
@@ -26,114 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
-AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
-adding necessary properties like pwm-cells, base reg & set disabled as
-status.
+PWM output from ecap2 uses as backlight source. Also adds low threshold
+value to have a uniform divisions in brightness-levels scales with
+inverse polarity.
 
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
-Changes since v2:
-	- ranges property populated to handle child devices address range
+:100644 100644 f5a6162... 6f3de83... M	arch/arm/boot/dts/am335x-evmsk.dts
+ arch/arm/boot/dts/am335x-evmsk.dts |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-:100644 100644 20a3f29... 4393161... M	arch/arm/boot/dts/am33xx.dtsi
- arch/arm/boot/dts/am33xx.dtsi |   84 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 84 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 20a3f29..4393161 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -338,5 +338,89 @@
- 			power = <250>;
- 			ti,hwmods = "usb_otg_hs";
+diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
+index f5a6162..6f3de83 100644
+--- a/arch/arm/boot/dts/am335x-evmsk.dts
++++ b/arch/arm/boot/dts/am335x-evmsk.dts
+@@ -51,6 +51,12 @@
+ 				0x9c 0x27	/* gpmc_ben0_cle.gpio2_5, INPUT | MODE7 */
+ 			>;
  		};
 +
-+		epwmss0: epwmss@48300000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48300000 0x10>;
-+			ti,hwmods = "epwmss0";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48300100 0x48300100 0x80   /* ECAP */
-+				  0x48300180 0x48300180 0x80   /* EQEP */
-+				  0x48300200 0x48300200 0x80>; /* EHRPWM */
-+
-+			ecap0: ecap@48300100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48300100 0x80>;
-+				ti,hwmods = "ecap0";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm0: ehrpwm@48300200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48300200 0x80>;
-+				ti,hwmods = "ehrpwm0";
-+				status = "disabled";
-+			};
++		ecap2_pins: backlight_pins {
++			pinctrl-single,pins = <
++				0x19c 0x4	/* mcasp0_ahclkr.ecap2_in_pwm2_out MODE4 */
++			>;
 +		};
-+
-+		epwmss1: epwmss@48302000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48302000 0x10>;
-+			ti,hwmods = "epwmss1";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48302100 0x48302100 0x80   /* ECAP */
-+				  0x48302180 0x48302180 0x80   /* EQEP */
-+				  0x48302200 0x48302200 0x80>; /* EHRPWM */
-+
-+			ecap1: ecap@48302100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48302100 0x80>;
-+				ti,hwmods = "ecap1";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm1: ehrpwm@48302200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48302200 0x80>;
-+				ti,hwmods = "ehrpwm1";
-+				status = "disabled";
-+			};
-+		};
+ 	};
+ 
+ 	ocp {
+@@ -94,6 +100,16 @@
+ 				st,max-limit-z = <750>;
+ 			};
+ 		};
 +
 +		epwmss2: epwmss@48304000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48304000 0x10>;
-+			ti,hwmods = "epwmss2";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48304100 0x48304100 0x80   /* ECAP */
-+				  0x48304180 0x48304180 0x80   /* EQEP */
-+				  0x48304200 0x48304200 0x80>; /* EHRPWM */
++			status = "okay";
 +
 +			ecap2: ecap@48304100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48304100 0x80>;
-+				ti,hwmods = "ecap2";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm2: ehrpwm@48304200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48304200 0x80>;
-+				ti,hwmods = "ehrpwm2";
-+				status = "disabled";
++				status = "okay";
++				pinctrl-names = "default";
++				pinctrl-0 = <&ecap2_pins>;
 +			};
 +		};
  	};
+ 
+ 	vbat: fixedregulator@0 {
+@@ -170,6 +186,13 @@
+ 			gpios = <&gpio3 5 0>;
+ 		};
+ 	};
++
++	backlight {
++		compatible	= "pwm-backlight";
++		pwms = <&ecap2 0 50000 1>;
++		brightness-levels = <0 58 61 66 75 90 125 170 255>;
++		default-brightness-level = <8>;
++	};
  };
+ 
+ /include/ "tps65910.dtsi"
 -- 
 1.7.0.4
 
