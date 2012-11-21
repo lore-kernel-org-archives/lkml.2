@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2KUMmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:42:42 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2859 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab2KUMml (ORCPT
+	id S1752616Ab2KUMmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:42:52 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56030 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab2KUMmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:42:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 21 Nov 2012 04:42:39 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] memory: tegra30: Fix warning w/o PM_SLEEP
-Date: Wed, 21 Nov 2012 14:42:15 +0200
-Message-ID: <1353501740-25420-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 21 Nov 2012 07:42:50 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: Re: [PATCH 11/42] ARM: shmobile: Register PFC platform device
+Date: Wed, 21 Nov 2012 13:43:15 +0100
+Message-ID: <1633136.U5nCbqepA4@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121121051633.GF6570@verge.net.au>
+References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1353464863-10281-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <20121121051633.GF6570@verge.net.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build warning w/o PM_SLEEP.
+Hi Simon,
 
-Change-Id: I713f7dd697f1ad9fb1fee56b389b0d6c45bb540c
+On Wednesday 21 November 2012 14:16:33 Simon Horman wrote:
+> On Wed, Nov 21, 2012 at 03:27:12AM +0100, Laurent Pinchart wrote:
+> > Add arch code to register the PFC platform device instead of calling the
+> > driver directly. Platform device registration in the sh-pfc driver will
+> > be removed.
+> 
+> I'm not really sure that I understand the motivation for
+> moving platform device registration from the driver into
+> mach-shmobile. Could you explain this a little?
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- drivers/memory/tegra30-mc.c |    2 ++
- 1 file changed, 2 insertions(+)
+Sure.
 
-diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
-index 802b9ea..cf10b77 100644
---- a/drivers/memory/tegra30-mc.c
-+++ b/drivers/memory/tegra30-mc.c
-@@ -267,6 +267,7 @@ static const u32 tegra30_mc_ctx[] = {
- 	MC_INTMASK,
- };
- 
-+#ifdef CONFIG_PM_SLEEP
- static int tegra30_mc_suspend(struct device *dev)
- {
- 	int i;
-@@ -290,6 +291,7 @@ static int tegra30_mc_resume(struct device *dev)
- 	mc_readl(mc, MC_TIMING_CONTROL);
- 	return 0;
- }
-+#endif
- 
- static UNIVERSAL_DEV_PM_OPS(tegra30_mc_pm,
- 			    tegra30_mc_suspend,
+The traditional device model associates a driver with a device. For historical 
+reasons mach-shmobile doesn't define and register a platform device for PFC 
+hardware but calls an initialization function directly in the PFC driver, 
+passing it what is essentially platform data, including resources.
+
+The PFC driver needs a struct device to pass to the pinctrl subsystem. As no 
+struct device corresponding to the hardware is created by mach-shmobile, the 
+driver creates one, registers it and registers itself as a platform driver. 
+The probe function is thus called synchronously, with a valid struct 
+platform_device.
+
+This is a hack that can't support device tree based instantiation, as the 
+platform device will be created when the platform is populated from the DT in 
+that case. To support DT (and to remove the hack), I've moved platform device 
+registration to mach-shmobile as it should be, like already done for all (or 
+most, I haven't checked if there's no similar hacks in other drivers) the 
+platform devices. This allows converting a board to DT by just adding the PFC 
+device node in the DT and removing the platform device registration call in 
+board code.
+
+I hope this made the intend of this part of the patch series clear. If not, 
+just tell me and I'll try to provide more explanations.
+
 -- 
-1.7.9.5
+Regards,
+
+Laurent Pinchart
 
