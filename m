@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab2KUHDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:03:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36038 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab2KUHDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:03:02 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Mohammed, Afzal" <afzal@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>
-Subject: RE: [PATCH v2 0/3] mtd: nand: OMAP: ELM error correction support
- for BCH ecc
-Thread-Topic: [PATCH v2 0/3] mtd: nand: OMAP: ELM error correction support
- for BCH ecc
-Thread-Index: AQHNtzjAYJXEaMIpjk+PG7tWZP2/spfqfEcAgAaEjeCAAudd0A==
-Date: Wed, 21 Nov 2012 07:01:25 +0000
-Deferred-Delivery: Wed, 21 Nov 2012 07:01:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9EC70D@DBDE01.ent.ti.com>
-References: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
- <1352978534.2221.33.camel@sauron.fi.intel.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S1752937Ab2KUHDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:03:08 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60647 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab2KUHDG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 02:03:06 -0500
+Date: Tue, 20 Nov 2012 23:03:03 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-mmc@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL v2] at91: fixes for 3.7-rc7
+Message-ID: <20121121070303.GD7615@quad.lixom.net>
+References: <50AA5ED5.8090901@atmel.com>
+ <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
+ <50AA6C76.3000606@atmel.com>
+ <50AB466F.5010500@atmel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AB466F.5010500@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAL73DnB027917
 
-On Mon, Nov 19, 2012 at 18:13:56, Philip, Avinash wrote:
-> 
-> On Thu, Nov 15, 2012 at 16:52:14, Artem Bityutskiy wrote:
-> > On Wed, 2012-10-31 at 12:38 +0530, Philip, Avinash wrote:
-> > > Support to use ELM as BCH 4 & 8 bit error correction module. Also performance
-> > > enhancement by adding single shot read_page and write_page functions for the
-> > > nand flashes with page size less than 4 KB.
-> > > 
-> > > ELM module can be used to correct errors reported by BCH 4, 8 & 16 bit
-> > > ECC scheme. For now only 4 & 8 bit support is added.
-> > > 
-> > > BCH 4 & 8 bit error detection support is already available in mainline
-> > > kernel and works with software error correction.
-> > > 
-> > > This series is based on [1] and tested with RFC: OMAP GPMC bindings
-> > > patch series
-> > > 
-> > > 1. linux-next/20121030
-> > 
-> > Would you please re-send a version which cleanly applies to the
-> > l2-mtd.git tree? This series has many conflicts. Thanks!
-> 
-> Artem,
-> 
-> Omap nand driver is being changed considerably with Afzal's omap-gpmc cleanup
-> series for common arm zImage [2] and those changes move many
-> of the nand related code from platform folders to omap nand driver.
-> 
-> Omap-gpmc changes are present in Tony's " omap-for-v3.8/cleanup-headers-gpmc"
-> branch [3]and is present in linux-next also, but is not present in l2-mtd.
-> Tony has signed tag including omap-gpmc cleanup series,
-> "omap-for-v3.8/cleanup-headers-prepare-multiplatform-v3-signed" [4]
-> 
-> If this series is made over l2-mtd, and it would cause lot of conflict
-> with omap-gpmc cleanup series.
-> 
-> I am not sure how this dependency has to be handled for this series,
-> let me know whether you still want it to be made over l2-mtd?
+Hi,
 
-Artem,
 
-Is it possible for you to give ack for these patches so that these patches
-can go in Tony's tree where Omap-gpmc changes are present?
+On Tue, Nov 20, 2012 at 09:59:27AM +0100, Nicolas Ferre wrote:
+> Arnd, Olof,
+> 
+> Just for the record, I do not want to put pressure at a such late time in
+> the 3.7-rc process. So, I just reworked that pull-request because the previous
+> one was wrong:
+> - wrong patch content (DT nodes with wrong size)
+> - not all tags in patches (Jean-Christophe and Arnd tags were missing...)
+> 
+> Just to start from a sane base if I have to rebase this work for 3.8, I let you know
+> that I have updated this tag...
+> 
+> The following changes since commit 641f3ce64b050961d454a0716bb6dbf528315aac:
+> 
+>   ARM: at91/usbh: fix overcurrent gpio setup (2012-11-16 10:46:29 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
 
-Thanks
-Avinash
-> 
-> 2. http://markmail.org/message/ev67wm7irgc2qc5d#query:+page:1+mid:wgjdv6fsfghnua5z+state:results
-> 3. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=shortlog;h=refs/heads/omap-for-v3.8/cleanup-headers-gpmc
-> 4. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=tag;h=refs/tags/omap-for-v3.8/cleanup-headers-prepare-multiplatform-v3-signed
-> 
-> 
-> Thanks
-> Avinash
-> 
-> > 
-> > git://git.infradead.org/users/dedekind/l2-mtd.git
-> > 
-> > -- 
-> > Best Regards,
-> > Artem Bityutskiy
-> > 
-> 
-> 
+The new patches seem to belong in an at91/dt branch, not in a fixes one.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I can pull in the previous fixes branch as an at91/fixes-non-critical for 3.8
+if you want. There's no need to rebase them for this, is there? What is the
+pinctrl dependency that you are talking about, are some of these patches needed
+as prerequisites for pinctrl changes or the other way around?
+
+Sorry if I've missed more elaborate emails on this and are asking repeat
+questions. ;)
+
+-Olof
