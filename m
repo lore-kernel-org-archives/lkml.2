@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2KUK2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:28:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43850 "EHLO mx2.suse.de"
+	id S1754777Ab2KUK2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:28:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43828 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548Ab2KUKWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:37 -0500
+	id S1752691Ab2KUKWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:34 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 24/46] mm: numa: Add fault driven placement and migration
-Date: Wed, 21 Nov 2012 10:21:30 +0000
-Message-Id: <1353493312-8069-25-git-send-email-mgorman@suse.de>
+Subject: [PATCH 22/46] mm: mempolicy: Implement change_prot_numa() in terms of change_protection()
+Date: Wed, 21 Nov 2012 10:21:28 +0000
+Message-Id: <1353493312-8069-23-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,453 +28,406 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-NOTE: This patch is based on "sched, numa, mm: Add fault driven
-	placement and migration policy" but as it throws away all the policy
-	to just leave a basic foundation I had to drop the signed-offs-by.
-
-This patch creates a bare-bones method for setting PTEs pte_numa in the
-context of the scheduler that when faulted later will be faulted onto the
-node the CPU is running on.  In itself this does nothing useful but any
-placement policy will fundamentally depend on receiving hints on placement
-from fault context and doing something intelligent about it.
+This patch converts change_prot_numa() to use change_protection(). As
+pte_numa and friends check the PTE bits directly it is necessary for
+change_protection() to use pmd_mknuma(). Hence the required
+modifications to change_protection() are a little clumsy but the
+end result is that most of the numa page table helpers are just one or
+two instructions.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
 ---
- arch/sh/mm/Kconfig       |    1 +
- arch/x86/Kconfig         |    2 +
- include/linux/mm_types.h |   11 ++++
- include/linux/sched.h    |   20 ++++++++
- kernel/sched/core.c      |   13 +++++
- kernel/sched/fair.c      |  125 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/features.h  |    7 +++
- kernel/sched/sched.h     |    6 +++
- kernel/sysctl.c          |   24 ++++++++-
- mm/huge_memory.c         |    5 +-
- mm/memory.c              |   14 +++++-
- 11 files changed, 224 insertions(+), 4 deletions(-)
+ include/linux/huge_mm.h |    3 +-
+ include/linux/mm.h      |    4 +-
+ mm/huge_memory.c        |   14 ++++-
+ mm/mempolicy.c          |  137 +++++------------------------------------------
+ mm/mprotect.c           |   62 +++++++++++++++------
+ 5 files changed, 75 insertions(+), 145 deletions(-)
 
-diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
-index cb8f992..0f7c852 100644
---- a/arch/sh/mm/Kconfig
-+++ b/arch/sh/mm/Kconfig
-@@ -111,6 +111,7 @@ config VSYSCALL
- config NUMA
- 	bool "Non Uniform Memory Access (NUMA) Support"
- 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
-+	select ARCH_WANT_NUMA_VARIABLE_LOCALITY
- 	default n
- 	help
- 	  Some SH systems have many various memories scattered around
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..1137028 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -22,6 +22,8 @@ config X86
- 	def_bool y
- 	select HAVE_AOUT if X86_32
- 	select HAVE_UNSTABLE_SCHED_CLOCK
-+	select ARCH_SUPPORTS_NUMA_BALANCING
-+	select ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_PCSPKR_PLATFORM
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 31f8a3a..d82accb 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -398,6 +398,17 @@ struct mm_struct {
- #ifdef CONFIG_CPUMASK_OFFSTACK
- 	struct cpumask cpumask_allocation;
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 406f81c..01f17a3 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -27,7 +27,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
+ 			 unsigned long new_addr, unsigned long old_end,
+ 			 pmd_t *old_pmd, pmd_t *new_pmd);
+ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, pgprot_t newprot);
++			unsigned long addr, pgprot_t newprot,
++			int prot_numa);
+ 
+ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_FLAG,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 471185e..d04c2f0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1080,7 +1080,7 @@ extern unsigned long do_mremap(unsigned long addr,
+ 			       unsigned long flags, unsigned long new_addr);
+ extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 			      unsigned long end, pgprot_t newprot,
+-			      int dirty_accountable);
++			      int dirty_accountable, int prot_numa);
+ extern int mprotect_fixup(struct vm_area_struct *vma,
+ 			  struct vm_area_struct **pprev, unsigned long start,
+ 			  unsigned long end, unsigned long newflags);
+@@ -1552,7 +1552,7 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
  #endif
-+#ifdef CONFIG_BALANCE_NUMA
-+	/*
-+	 * numa_next_scan is the next time when the PTEs will me marked
-+	 * pte_numa to gather statistics and migrate pages to new nodes
-+	 * if necessary
-+	 */
-+	unsigned long numa_next_scan;
-+
-+	/* numa_scan_seq prevents two threads setting pte_numa */
-+	int numa_scan_seq;
-+#endif
- 	struct uprobes_state uprobes_state;
- };
  
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..ac71181 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1479,6 +1479,14 @@ struct task_struct {
- 	short il_next;
- 	short pref_node_fork;
+ #ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
+-void change_prot_numa(struct vm_area_struct *vma,
++unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
  #endif
-+#ifdef CONFIG_BALANCE_NUMA
-+	int numa_scan_seq;
-+	int numa_migrate_seq;
-+	unsigned int numa_scan_period;
-+	u64 node_stamp;			/* migration stamp  */
-+	struct callback_head numa_work;
-+#endif /* CONFIG_BALANCE_NUMA */
-+
- 	struct rcu_head rcu;
  
- 	/*
-@@ -1553,6 +1561,14 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
- 
-+#ifdef CONFIG_BALANCE_NUMA
-+extern void task_numa_fault(int node, int pages);
-+#else
-+static inline void task_numa_fault(int node, int pages)
-+{
-+}
-+#endif
-+
- /*
-  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-@@ -1990,6 +2006,10 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
- 
-+extern unsigned int sysctl_balance_numa_scan_period_min;
-+extern unsigned int sysctl_balance_numa_scan_period_max;
-+extern unsigned int sysctl_balance_numa_settle_count;
-+
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
- extern unsigned int sysctl_sched_nr_migrate;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2d8927f..81fa185 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1533,6 +1533,19 @@ static void __sched_fork(struct task_struct *p)
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	INIT_HLIST_HEAD(&p->preempt_notifiers);
- #endif
-+
-+#ifdef CONFIG_BALANCE_NUMA
-+	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
-+		p->mm->numa_next_scan = jiffies;
-+		p->mm->numa_scan_seq = 0;
-+	}
-+
-+	p->node_stamp = 0ULL;
-+	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
-+	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
-+	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+	p->numa_work.next = &p->numa_work;
-+#endif /* CONFIG_BALANCE_NUMA */
- }
- 
- /*
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a1..b6d3ed7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -26,6 +26,8 @@
- #include <linux/slab.h>
- #include <linux/profile.h>
- #include <linux/interrupt.h>
-+#include <linux/mempolicy.h>
-+#include <linux/task_work.h>
- 
- #include <trace/events/sched.h>
- 
-@@ -776,6 +778,126 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
-  * Scheduling class queueing methods:
-  */
- 
-+#ifdef CONFIG_BALANCE_NUMA
-+/*
-+ * numa task sample period in ms: 5s
-+ */
-+unsigned int sysctl_balance_numa_scan_period_min = 5000;
-+unsigned int sysctl_balance_numa_scan_period_max = 5000*16;
-+
-+static void task_numa_placement(struct task_struct *p)
-+{
-+	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-+
-+	if (p->numa_scan_seq == seq)
-+		return;
-+	p->numa_scan_seq = seq;
-+
-+	/* FIXME: Scheduling placement policy hints go here */
-+}
-+
-+/*
-+ * Got a PROT_NONE fault for a page on @node.
-+ */
-+void task_numa_fault(int node, int pages)
-+{
-+	struct task_struct *p = current;
-+
-+	/* FIXME: Allocate task-specific structure for placement policy here */
-+
-+	task_numa_placement(p);
-+}
-+
-+/*
-+ * The expensive part of numa migration is done from task_work context.
-+ * Triggered from task_tick_numa().
-+ */
-+void task_numa_work(struct callback_head *work)
-+{
-+	unsigned long migrate, next_scan, now = jiffies;
-+	struct task_struct *p = current;
-+	struct mm_struct *mm = p->mm;
-+
-+	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
-+
-+	work->next = work; /* protect against double add */
-+	/*
-+	 * Who cares about NUMA placement when they're dying.
-+	 *
-+	 * NOTE: make sure not to dereference p->mm before this check,
-+	 * exit_task_work() happens _after_ exit_mm() so we could be called
-+	 * without p->mm even though we still had it when we enqueued this
-+	 * work.
-+	 */
-+	if (p->flags & PF_EXITING)
-+		return;
-+
-+	/*
-+	 * Enforce maximal scan/migration frequency..
-+	 */
-+	migrate = mm->numa_next_scan;
-+	if (time_before(now, migrate))
-+		return;
-+
-+	if (p->numa_scan_period == 0)
-+		p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+
-+	next_scan = now + 2*msecs_to_jiffies(p->numa_scan_period);
-+	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
-+		return;
-+
-+	ACCESS_ONCE(mm->numa_scan_seq)++;
-+	{
-+		struct vm_area_struct *vma;
-+
-+		down_read(&mm->mmap_sem);
-+		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+			if (!vma_migratable(vma))
-+				continue;
-+			change_prot_numa(vma, vma->vm_start, vma->vm_end);
-+		}
-+		up_read(&mm->mmap_sem);
-+	}
-+}
-+
-+/*
-+ * Drive the periodic memory faults..
-+ */
-+void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+{
-+	struct callback_head *work = &curr->numa_work;
-+	u64 period, now;
-+
-+	/*
-+	 * We don't care about NUMA placement if we don't have memory.
-+	 */
-+	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
-+		return;
-+
-+	/*
-+	 * Using runtime rather than walltime has the dual advantage that
-+	 * we (mostly) drive the selection from busy threads and that the
-+	 * task needs to have done some actual work before we bother with
-+	 * NUMA placement.
-+	 */
-+	now = curr->se.sum_exec_runtime;
-+	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
-+
-+	if (now - curr->node_stamp > period) {
-+		curr->node_stamp = now;
-+
-+		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-+			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
-+			task_work_add(curr, work, true);
-+		}
-+	}
-+}
-+#else
-+static void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+{
-+}
-+#endif /* CONFIG_BALANCE_NUMA */
-+
- static void
- account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
- {
-@@ -4954,6 +5076,9 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
- 		cfs_rq = cfs_rq_of(se);
- 		entity_tick(cfs_rq, se, queued);
- 	}
-+
-+	if (sched_feat_numa(NUMA))
-+		task_tick_numa(rq, curr);
- }
- 
- /*
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index eebefca..7cfd289 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -61,3 +61,10 @@ SCHED_FEAT(TTWU_QUEUE, true)
- SCHED_FEAT(FORCE_SD_OVERLAP, false)
- SCHED_FEAT(RT_RUNTIME_SHARE, true)
- SCHED_FEAT(LB_MIN, false)
-+
-+/*
-+ * Apply the automatic NUMA scheduling policy
-+ */
-+#ifdef CONFIG_BALANCE_NUMA
-+SCHED_FEAT(NUMA,	true)
-+#endif
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7a7db09..9a43241 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -648,6 +648,12 @@ extern struct static_key sched_feat_keys[__SCHED_FEAT_NR];
- #define sched_feat(x) (sysctl_sched_features & (1UL << __SCHED_FEAT_##x))
- #endif /* SCHED_DEBUG && HAVE_JUMP_LABEL */
- 
-+#ifdef CONFIG_BALANCE_NUMA
-+#define sched_feat_numa(x) sched_feat(x)
-+#else
-+#define sched_feat_numa(x) (0)
-+#endif
-+
- static inline u64 global_rt_period(void)
- {
- 	return (u64)sysctl_sched_rt_period * NSEC_PER_USEC;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 26f65ea..1359f51 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -256,9 +256,11 @@ static int min_sched_granularity_ns = 100000;		/* 100 usecs */
- static int max_sched_granularity_ns = NSEC_PER_SEC;	/* 1 second */
- static int min_wakeup_granularity_ns;			/* 0 usecs */
- static int max_wakeup_granularity_ns = NSEC_PER_SEC;	/* 1 second */
-+#ifdef CONFIG_SMP
- static int min_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;
- static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END-1;
--#endif
-+#endif /* CONFIG_SMP */
-+#endif /* CONFIG_SCHED_DEBUG */
- 
- #ifdef CONFIG_COMPACTION
- static int min_extfrag_threshold;
-@@ -301,6 +303,7 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &min_wakeup_granularity_ns,
- 		.extra2		= &max_wakeup_granularity_ns,
- 	},
-+#ifdef CONFIG_SMP
- 	{
- 		.procname	= "sched_tunable_scaling",
- 		.data		= &sysctl_sched_tunable_scaling,
-@@ -347,7 +350,24 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
--#endif
-+#endif /* CONFIG_SMP */
-+#ifdef CONFIG_BALANCE_NUMA
-+	{
-+		.procname	= "balance_numa_scan_period_min_ms",
-+		.data		= &sysctl_balance_numa_scan_period_min,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "balance_numa_scan_period_max_ms",
-+		.data		= &sysctl_balance_numa_scan_period_max,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+#endif /* CONFIG_BALANCE_NUMA */
-+#endif /* CONFIG_SCHED_DEBUG */
- 	{
- 		.procname	= "sched_rt_period_us",
- 		.data		= &sysctl_sched_rt_period,
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 68e0412..b3d4c4b 100644
+index df1af09..68e0412 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1045,6 +1045,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 */
- 	split_huge_page(page);
- 	put_page(page);
-+
- 	return 0;
- 
- clear_pmdnuma:
-@@ -1059,8 +1060,10 @@ clear_pmdnuma:
- 
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
--	if (page)
-+	if (page) {
- 		put_page(page);
-+		task_numa_fault(numa_node_id(), HPAGE_PMD_NR);
-+	}
- 	return 0;
+@@ -1146,7 +1146,7 @@ out:
  }
  
-diff --git a/mm/memory.c b/mm/memory.c
-index 6bebb41..b23b081 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3454,7 +3454,8 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, pgprot_t newprot)
++		unsigned long addr, pgprot_t newprot, int prot_numa)
  {
- 	struct page *page = NULL;
- 	spinlock_t *ptl;
--	int current_nid, target_nid;
-+	int current_nid = -1;
-+	int target_nid;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int ret = 0;
+@@ -1154,7 +1154,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		pmd_t entry;
+ 		entry = pmdp_get_and_clear(mm, addr, pmd);
+-		entry = pmd_modify(entry, newprot);
++		if (!prot_numa)
++			entry = pmd_modify(entry, newprot);
++		else {
++			struct page *page = pmd_page(*pmd);
++
++			/* only check non-shared pages */
++			if (page_mapcount(page) == 1 &&
++			    !pmd_numa(*pmd)) {
++				entry = pmd_mknuma(entry);
++			}
++		}
+ 		set_pmd_at(mm, addr, pmd, entry);
+ 		spin_unlock(&vma->vm_mm->page_table_lock);
+ 		ret = 1;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 51d3ebd..75d4600 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -568,134 +568,23 @@ static inline int check_pgd_range(struct vm_area_struct *vma,
  
- 	/*
- 	* The "pte" at this point cannot be used safely without
-@@ -3501,6 +3502,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		current_nid = target_nid;
+ #ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
+ /*
+- * Here we search for not shared page mappings (mapcount == 1) and we
+- * set up the pmd/pte_numa on those mappings so the very next access
+- * will fire a NUMA hinting page fault.
++ * This is used to mark a range of virtual addresses to be inaccessible.
++ * These are later cleared by a NUMA hinting fault. Depending on these
++ * faults, pages may be migrated for better NUMA placement.
++ *
++ * This is assuming that NUMA faults are handled using PROT_NONE. If
++ * an architecture makes a different choice, it will need further
++ * changes to the core.
+  */
+-static int
+-change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
+-			unsigned long address)
+-{
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *pte, *_pte;
+-	struct page *page;
+-	unsigned long _address, end;
+-	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	VM_BUG_ON(address & ~PAGE_MASK);
+-
+-	pgd = pgd_offset(mm, address);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, address);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, address);
+-	if (pmd_none(*pmd))
+-		goto out;
+-
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+-		int page_nid;
+-		ret = HPAGE_PMD_NR;
+-
+-		VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+-
+-		if (pmd_numa(*pmd)) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		page = pmd_page(*pmd);
+-
+-		/* only check non-shared pages */
+-		if (page_mapcount(page) != 1) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		page_nid = page_to_nid(page);
+-
+-		if (pmd_numa(*pmd)) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
+-		ret += HPAGE_PMD_NR;
+-		/* defer TLB flush to lower the overhead */
+-		spin_unlock(&mm->page_table_lock);
+-		goto out;
+-	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		goto out;
+-	VM_BUG_ON(!pmd_present(*pmd));
+-
+-	end = min(vma->vm_end, (address + PMD_SIZE) & PMD_MASK);
+-	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+-	for (_address = address, _pte = pte; _address < end;
+-	     _pte++, _address += PAGE_SIZE) {
+-		pte_t pteval = *_pte;
+-		if (!pte_present(pteval))
+-			continue;
+-		if (pte_numa(pteval))
+-			continue;
+-		page = vm_normal_page(vma, _address, pteval);
+-		if (unlikely(!page))
+-			continue;
+-		/* only check non-shared pages */
+-		if (page_mapcount(page) != 1)
+-			continue;
+-
+-		set_pte_at(mm, _address, _pte, pte_mknuma(pteval));
+-
+-		/* defer TLB flush to lower the overhead */
+-		ret++;
+-	}
+-	pte_unmap_unlock(pte, ptl);
+-
+-	if (ret && !pmd_numa(*pmd)) {
+-		spin_lock(&mm->page_table_lock);
+-		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
+-		spin_unlock(&mm->page_table_lock);
+-		/* defer TLB flush to lower the overhead */
+-	}
+-
+-out:
+-	return ret;
+-}
+-
+-/* Assumes mmap_sem is held */
+-void
+-change_prot_numa(struct vm_area_struct *vma,
+-			unsigned long address, unsigned long end)
++unsigned long change_prot_numa(struct vm_area_struct *vma,
++			unsigned long addr, unsigned long end)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-	int progress = 0;
+-
+-	while (address < end) {
+-		VM_BUG_ON(address < vma->vm_start ||
+-			  address + PAGE_SIZE > vma->vm_end);
++	int nr_updated;
++	BUILD_BUG_ON(_PAGE_NUMA != _PAGE_PROTNONE);
  
- out:
-+	task_numa_fault(current_nid, 1);
- 	return 0;
+-		progress += change_prot_numa_range(mm, vma, address);
+-		address = (address + PMD_SIZE) & PMD_MASK;
+-	}
++	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
+ 
+-	/*
+-	 * Flush the TLB for the mm to start the NUMA hinting
+-	 * page faults after we finish scanning this vma part
+-	 * if there were any PTE updates
+-	 */
+-	if (progress) {
+-		mmu_notifier_invalidate_range_start(vma->vm_mm, address, end);
+-		flush_tlb_range(vma, address, end);
+-		mmu_notifier_invalidate_range_end(vma->vm_mm, address, end);
+-	}
++	return nr_updated;
  }
+ #else
+ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 7c3628a..1b383b7 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -35,10 +35,11 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ }
+ #endif
  
-@@ -3536,6 +3538,7 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
- 		pte_t pteval = *pte;
- 		struct page *page;
-+		int curr_nid;
- 		if (!pte_present(pteval))
- 			continue;
- 		if (!pte_numa(pteval))
-@@ -3553,6 +3556,15 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page = vm_normal_page(vma, addr, pteval);
- 		if (unlikely(!page))
- 			continue;
-+		/* only check non-shared pages */
-+		if (unlikely(page_mapcount(page) != 1))
-+			continue;
-+		pte_unmap_unlock(pte, ptl);
+-static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
++static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
++	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte, oldpte;
+ 	spinlock_t *ptl;
+ 	unsigned long pages = 0;
+@@ -49,19 +50,39 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 		oldpte = *pte;
+ 		if (pte_present(oldpte)) {
+ 			pte_t ptent;
++			bool updated = false;
+ 
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
+-			ptent = pte_modify(ptent, newprot);
++			if (!prot_numa) {
++				ptent = pte_modify(ptent, newprot);
++				updated = true;
++			} else {
++				struct page *page;
 +
-+		curr_nid = page_to_nid(page);
-+		task_numa_fault(curr_nid, 1);
++				page = vm_normal_page(vma, addr, oldpte);
++				if (page) {
++					/* only check non-shared pages */
++					if (!pte_numa(oldpte) &&
++					    page_mapcount(page) == 1) {
++						ptent = pte_mknuma(ptent);
++						updated = true;
++					}
++				}
++			}
+ 
+ 			/*
+ 			 * Avoid taking write faults for pages we know to be
+ 			 * dirty.
+ 			 */
+-			if (dirty_accountable && pte_dirty(ptent))
++			if (dirty_accountable && pte_dirty(ptent)) {
+ 				ptent = pte_mkwrite(ptent);
++				updated = true;
++			}
 +
-+		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
++			if (updated)
++				pages++;
+ 
+ 			ptep_modify_prot_commit(mm, addr, pte, ptent);
+-			pages++;
+ 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ 
+@@ -85,7 +106,7 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 
+ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+@@ -97,7 +118,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+ 				split_huge_page_pmd(vma->vm_mm, pmd);
+-			else if (change_huge_pmd(vma, pmd, addr, newprot)) {
++			else if (change_huge_pmd(vma, pmd, addr, newprot, prot_numa)) {
+ 				pages += HPAGE_PMD_NR;
+ 				continue;
+ 			}
+@@ -105,8 +126,17 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 		}
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+-		pages += change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
+-				 dirty_accountable);
++		pages += change_pte_range(vma, pmd, addr, next, newprot,
++				 dirty_accountable, prot_numa);
++
++		if (prot_numa) {
++			struct mm_struct *mm = vma->vm_mm;
++
++			spin_lock(&mm->page_table_lock);
++			set_pmd_at(mm, addr & PMD_MASK, pmd, pmd_mknuma(*pmd));
++			spin_unlock(&mm->page_table_lock);
++		}
++
+ 	} while (pmd++, addr = next, addr != end);
+ 
+ 	return pages;
+@@ -114,7 +144,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 
+ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+@@ -126,7 +156,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *
+ 		if (pud_none_or_clear_bad(pud))
+ 			continue;
+ 		pages += change_pmd_range(vma, pud, addr, next, newprot,
+-				 dirty_accountable);
++				 dirty_accountable, prot_numa);
+ 	} while (pud++, addr = next, addr != end);
+ 
+ 	return pages;
+@@ -134,7 +164,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *
+ 
+ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pgd_t *pgd;
+@@ -150,7 +180,7 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 		if (pgd_none_or_clear_bad(pgd))
+ 			continue;
+ 		pages += change_pud_range(vma, pgd, addr, next, newprot,
+-				 dirty_accountable);
++				 dirty_accountable, prot_numa);
+ 	} while (pgd++, addr = next, addr != end);
+ 
+ 	/* Only flush the TLB if we actually modified any entries: */
+@@ -162,7 +192,7 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 
+ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 		       unsigned long end, pgprot_t newprot,
+-		       int dirty_accountable)
++		       int dirty_accountable, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long pages;
+@@ -171,7 +201,7 @@ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 	if (is_vm_hugetlb_page(vma))
+ 		pages = hugetlb_change_protection(vma, start, end, newprot);
+ 	else
+-		pages = change_protection_range(vma, start, end, newprot, dirty_accountable);
++		pages = change_protection_range(vma, start, end, newprot, dirty_accountable, prot_numa);
+ 	mmu_notifier_invalidate_range_end(mm, start, end);
+ 
+ 	return pages;
+@@ -249,7 +279,7 @@ success:
+ 		dirty_accountable = 1;
  	}
- 	pte_unmap_unlock(orig_pte, ptl);
  
+-	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
++	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable, 0);
+ 
+ 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
+ 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
 -- 
 1.7.9.2
 
