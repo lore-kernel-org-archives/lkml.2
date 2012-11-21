@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab2KUIeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:34:00 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50052 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752359Ab2KUId7 (ORCPT
+	id S1753042Ab2KUIek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:34:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:24697 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab2KUIej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:33:59 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zz1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
-Subject: Re: [PATCH RFT] regulator: da9055: Properly handle voltage range
- that doesn't start with 0 offset
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: AxelLin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED38A89780@KCHJEXMB03.kpit.com>
-References: <C3AE124F08223B42BC95AEB82F0F6CED38A89780@KCHJEXMB03.kpit.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Nov 2012 14:03:02 +0530
-Message-ID: <1353486782.1760.20.camel@dhruva>
+	Wed, 21 Nov 2012 03:34:39 -0500
+Date: Wed, 21 Nov 2012 11:34:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Johan Meiring <johanmeiring@gmail.com>
+Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
+        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] staging: wlags49_h2: ap_h2.c: fixes inconsistent
+ spacing around *
+Message-ID: <20121121083417.GD11248@mwanda>
+References: <1353422700-14485-1-git-send-email-johanmeiring@gmail.com>
+ <1353422700-14485-7-git-send-email-johanmeiring@gmail.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353422700-14485-7-git-send-email-johanmeiring@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch implements map_voltage and list_voltage callbacks to properly handle
-> the case voltage range that doesn't start with 0 offset.
+On Tue, Nov 20, 2012 at 04:45:00PM +0200, Johan Meiring wrote:
+> This commit fixes an inconsistent spacing issue around *
 > 
-> Now we adjust the selector in map_voltage() before calling set_voltage_sel().
-> And return 0 in list_voltage() for invalid selectors.
-> 
-> With above change, we can remove da9055_regulator_set_voltage_bits function.
-> 
-> One tricky part is that we need adding voffset to n_voltages.
-> Although for the cases "selector < voffset" are invalid, we need add voffset to
-> n_voltage so regulator_list_voltage() won't fail while checking the boundary for
-> selector before calling list_voltage callback.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> Hi Ashish,
->   I don't have this hardware to test this patch.
->   Can you help to review and test this patch?
-> Thank you,
-> Axel
-This patch looks good to me.
-I have tested this patch on SMDK6410 using the DA9055 evaluation board.
-Tested-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
+The others are good, but this one is not right.
+
+> Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/ap_h2.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/wlags49_h2/ap_h2.c b/drivers/staging/wlags49_h2/ap_h2.c
+> index e524153..c2d43ec 100644
+> --- a/drivers/staging/wlags49_h2/ap_h2.c
+> +++ b/drivers/staging/wlags49_h2/ap_h2.c
+> @@ -3256,7 +3256,7 @@ static const CFG_PROG_STRCT fw_image_code[] = {
+>  		0x0146,		/* sizeof(fw_image_1_data), */
+>  		0x00000060,					/* Target address in NIC Memory */
+>  		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
+> -		(hcf_8 FAR *) fw_image_1_data
+> +		(hcf_8 FAR*) fw_image_1_data
+
+We don't use far pointers in linux.  When you're casting something
+there is no space between the cat operation and the variable.  The
+reason is that casting is a high precedence operation.
+
+More readable:  (char *)p + 1;
+Less readable:  (char *) p + 1;
+
+In the first line it's obvious that we cast first and then add 1.
+
+So this should be:
+	(hcf_8 *)fw_image_1_data,
+
+regards,
+dan carpenter
 
