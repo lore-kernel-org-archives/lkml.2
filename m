@@ -1,126 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab2KUKdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:33:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47149 "EHLO mx1.redhat.com"
+	id S1753549Ab2KUKgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:36:21 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:42948 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2KUKdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:33:31 -0500
-Date: Wed, 21 Nov 2012 12:33:16 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
-Message-ID: <20121121103316.GP21208@redhat.com>
-References: <50AC3AA9.7080004@cn.fujitsu.com>
- <50AC3B10.3090005@cn.fujitsu.com>
+	id S1752759Ab2KUKgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:36:19 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: trace filemap add and del
+References: <1352404450-30100-1-git-send-email-robert.jarzmik@free.fr>
+	<20121120155735.905bbf9e.akpm@linux-foundation.org>
+X-URL: http://belgarath.falguerolles.org/
+Date: Wed, 21 Nov 2012 11:36:09 +0100
+In-Reply-To: <20121120155735.905bbf9e.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Tue, 20 Nov 2012 15:57:35 -0800")
+Message-ID: <87sj835jl2.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AC3B10.3090005@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 10:23:12AM +0800, Zhang Yanfei wrote:
-> This patch adds an atomic notifier list named crash_notifier_list.
-> When loading kvm-intel module, a notifier will be registered in
-> the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
-> needed.
-> 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kexec.h |    2 ++
->  arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
->  2 files changed, 27 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-> index 317ff17..5e22b00 100644
-> --- a/arch/x86/include/asm/kexec.h
-> +++ b/arch/x86/include/asm/kexec.h
-> @@ -163,6 +163,8 @@ struct kimage_arch {
->  };
->  #endif
->  
-> +extern struct atomic_notifier_head crash_notifier_list;
-> +
->  #endif /* __ASSEMBLY__ */
->  
->  #endif /* _ASM_X86_KEXEC_H */
-> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> index 13ad899..0f3d5b4 100644
-> --- a/arch/x86/kernel/crash.c
-> +++ b/arch/x86/kernel/crash.c
-> @@ -16,6 +16,8 @@
->  #include <linux/delay.h>
->  #include <linux/elf.h>
->  #include <linux/elfcore.h>
-> +#include <linux/module.h>
-> +#include <linux/notifier.h>
->  
->  #include <asm/processor.h>
->  #include <asm/hardirq.h>
-> @@ -30,6 +32,19 @@
->  
->  int in_crash_kexec;
->  
-> +/*
-> + * The list is used to VMCLEAR vmcss loaded on all
-> + * cpus. And when loading kvm_intel module, the
-> + * vmclear function will be registered in the list.
-> + */
-> +ATOMIC_NOTIFIER_HEAD(crash_notifier_list);
-> +EXPORT_SYMBOL_GPL(crash_notifier_list);
-> +
-> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
-> +{
-> +	atomic_notifier_call_chain(&crash_notifier_list, 0, NULL);
-> +}
-> +
-The notifier list is not VMX specific. It may be used for other
-purposes, so please use better name or just open code it.
+Andrew Morton <akpm@linux-foundation.org> writes:
+>> +	TP_STRUCT__entry(
+>> +		__field(struct page *, page)
+>> +		__field(unsigned long, i_no)
+>
+> May as well call this i_ino - there's little benefit in using a
+> different identifier.
+Agreed for patch V2.
+>
+>> +		__field(unsigned long, pageofs)
+>
+> "index".
+Agreed for patch V2.
 
-ACKs from kexec side are needed.
+>
+>> +		__field(dev_t, s_dev)
+>
+> Perhaps use super_block.s_id here
+If you imply by that that dereferencing page->mapping->host->i_sb and looking
+for field s_dev, then I don't agree. Sometimes i_sb is NULL from what I recall,
+especially in cases where the read page is from a journaling partition.
 
->  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
->  
->  static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
-> @@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
->  #endif
->  	crash_save_cpu(regs, cpu);
->  
-> +	/*
-> +	 * VMCLEAR vmcss loaded on all cpus if needed.
-> +	 */
-> +	cpu_emergency_vmclear_loaded_vmcss();
-> +
->  	/* Disable VMX or SVM if needed.
->  	 *
->  	 * We need to disable virtualization on all CPUs.
-> @@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
->  
->  	kdump_nmi_shootdown_cpus();
->  
-> +	/*
-> +	 * VMCLEAR vmcss loaded on this cpu if needed.
-> +	 */
-> +	cpu_emergency_vmclear_loaded_vmcss();
-> +
->  	/* Booting kdump kernel with VMX or SVM enabled won't work,
->  	 * because (among other limitations) we can't disable paging
->  	 * with the virt flags.
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+So unless I didn't understand you, I'll keep this part as well as the following,
+to cover :
+ - a mapping of an actual file
+ - a mapping of a partition block
 
---
-			Gleb.
+>
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->page = page;
+>> +		__entry->i_no = page->mapping->host->i_ino;
+>> +		__entry->pageofs = page->index;
+>> +		if (page->mapping->host->i_sb)
+>> +			__entry->s_dev = page->mapping->host->i_sb->s_dev;
+>> +		else
+>> +			__entry->s_dev = page->mapping->host->i_rdev;
+>
+> and hence avoid all this stuff.
+See above.
+
+>
+>> +	),
+>> +
+>> +	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
+>> +		__entry->page,
+>> +		page_to_pfn(__entry->page),
+>> +		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
+>> +		__entry->i_no,
+>> +		__entry->pageofs << PAGE_SHIFT)
+>> +);
+>> +
+>> +TRACE_EVENT(mm_filemap_add_to_page_cache,
+>
+Agreed for patch V2.
+
+Thanks for the review.
+
+-- 
+Robert
