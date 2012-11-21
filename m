@@ -1,81 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2KUP1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:27:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35842 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab2KUP1G convert rfc822-to-8bit (ORCPT
+	id S1755183Ab2KUP1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:27:32 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59508 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab2KUP1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:27:06 -0500
+	Wed, 21 Nov 2012 10:27:30 -0500
+Message-ID: <50ACF2D7.7060607@gmail.com>
+Date: Wed, 21 Nov 2012 23:27:19 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Message-ID: <3b3b72db-32fd-446c-9971-e119a8993b3d@default>
-Date: Wed, 21 Nov 2012 07:26:58 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Subject: RE: [PATCH] xen: tmem: selfballooning should be enabled when xen tmem
- is enabled
-References: <748aba10-531a-4ad5-bad3-7af0f86c0489@default>
- <20121121024753.GB11912@konrad-lan.dumpdata.com>
-In-Reply-To: <20121121024753.GB11912@konrad-lan.dumpdata.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: x86@kernel.org, kexec@lists.infradead.org, mtosatti@redhat.com,
+        Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        zhangyanfei@cn.fujitsu.com
+Subject: [PATCH v6 2/2] KVM-INTEL: add a notifier and a bitmap to support
+ VMCLEAR in kdump
+References: <50ACF210.5020802@gmail.com>
+In-Reply-To: <50ACF210.5020802@gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk
-> Sent: Tuesday, November 20, 2012 7:48 PM
-> To: Dan Magenheimer
-> Cc: linux-kernel@vger.kernel.org; xen-devel@lists.xen.org
-> Subject: Re: [PATCH] xen: tmem: selfballooning should be enabled when xen tmem is enabled
-> 
-> On Tue, Nov 20, 2012 at 02:42:18PM -0800, Dan Magenheimer wrote:
-> > Konrad: Any chance this can get in for the upcoming window?
-> > (Or is it enough of a bug fix that it can go in at an -rcN?)
-> 
-> Lets do it in the next merge window. About now I am comfortable
-> only with regression fixes.
+The notifier will be registered in vmclear_notifier_list when loading
+kvm-intel module. And the bitmap indicates whether we should do
+VMCLEAR operation in kdump. The bits in the bitmap are set/unset
+according to different conditions.
 
-OK, thanks!
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/kvm/vmx.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 76 insertions(+), 1 deletions(-)
 
-> > It was just pointed out to me that some kernels have
-> > cleancache and frontswap and xen_tmem enabled but NOT
-> > xen_selfballooning!  While this configuration should be
-> > possible, nearly all kernels that have CONFIG_XEN_TMEM=y should
-> > also have CONFIG_XEN_SELFBALLOONING=y, since Transcendent
-> > Memory (tmem) for Xen has very limited value without
-> > selfballooning.
-> >
-> > This is probably a result of a Kconfig mistake fixed I think
-> > by the patch below.  Note that the year-old Oracle UEK2 kernel
-> > distro has both CONFIG_XEN_TMEM and CONFIG_XEN_SELFBALLOONING
-> > enabled, as does a Fedora 17 kernel update (3.6.6-1.fc17), so
-> > the combination should be well tested.  Also, Xen tmem (and thus
-> > selfballooning) are currently only enabled when a kernel boot
-> > parameter is supplied so there is no runtime impact without
-> > that boot parameter.
-> >
-> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> >
-> > diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-> > index d4dffcd..b5f02f3 100644
-> > --- a/drivers/xen/Kconfig
-> > +++ b/drivers/xen/Kconfig
-> > @@ -10,9 +10,9 @@ config XEN_BALLOON
-> >  	  return unneeded memory to the system.
-> >
-> >  config XEN_SELFBALLOONING
-> > -	bool "Dynamically self-balloon kernel memory to target"
-> > -	depends on XEN && XEN_BALLOON && CLEANCACHE && SWAP && XEN_TMEM
-> > -	default n
-> > +	bool
-> > +	depends on XEN_BALLOON && SWAP
-> > +	default y if XEN_TMEM
-> >  	help
-> >  	  Self-ballooning dynamically balloons available kernel memory driven
-> >  	  by the current usage of anonymous memory ("committed AS") and
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4ff0ab9..eea55b3 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -41,6 +41,7 @@
+ #include <asm/i387.h>
+ #include <asm/xcr.h>
+ #include <asm/perf_event.h>
++#include <asm/kexec.h>
+ 
+ #include "trace.h"
+ 
+@@ -963,6 +964,49 @@ static void vmcs_load(struct vmcs *vmcs)
+ 		       vmcs, phys_addr);
+ }
+ 
++#ifdef CONFIG_KEXEC
++/*
++ * This bitmap is used to indicate whether the vmclear
++ * operation is enabled on all cpus. All disabled by
++ * default.
++ */
++static cpumask_t crash_vmclear_enabled_bitmap = CPU_MASK_NONE;
++
++static inline void crash_enable_local_vmclear(int cpu)
++{
++	cpumask_set_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static inline void crash_disable_local_vmclear(int cpu)
++{
++	cpumask_clear_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static inline int crash_local_vmclear_enabled(int cpu)
++{
++	return cpumask_test_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static void vmclear_local_loaded_vmcss(void);
++static int crash_vmclear_local_loaded_vmcss(struct notifier_block *this,
++					    unsigned long val, void *ptr)
++{
++	int cpu = raw_smp_processor_id();
++
++	if (crash_local_vmclear_enabled(cpu))
++		vmclear_local_loaded_vmcss();
++
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block crash_vmclear_notifier = {
++	.notifier_call = crash_vmclear_local_loaded_vmcss,
++};
++#else
++static inline void crash_enable_local_vmclear(int cpu) { }
++static inline void crash_disable_local_vmclear(int cpu) { }
++#endif /* CONFIG_KEXEC */
++
+ static void __loaded_vmcs_clear(void *arg)
+ {
+ 	struct loaded_vmcs *loaded_vmcs = arg;
+@@ -972,8 +1016,10 @@ static void __loaded_vmcs_clear(void *arg)
+ 		return; /* vcpu migration can race with cpu offline */
+ 	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
+ 		per_cpu(current_vmcs, cpu) = NULL;
++	crash_disable_local_vmclear(cpu);
+ 	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
+ 	loaded_vmcs_init(loaded_vmcs);
++	crash_enable_local_vmclear(cpu);
+ }
+ 
+ static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
+@@ -1491,8 +1537,10 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 
+ 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 		local_irq_disable();
++		crash_disable_local_vmclear(cpu);
+ 		list_add(&vmx->loaded_vmcs->loaded_vmcss_on_cpu_link,
+ 			 &per_cpu(loaded_vmcss_on_cpu, cpu));
++		crash_enable_local_vmclear(cpu);
+ 		local_irq_enable();
+ 
+ 		/*
+@@ -2302,6 +2350,18 @@ static int hardware_enable(void *garbage)
+ 		return -EBUSY;
+ 
+ 	INIT_LIST_HEAD(&per_cpu(loaded_vmcss_on_cpu, cpu));
++
++	/*
++	 * Now we can enable the vmclear operation in kdump
++	 * since the loaded_vmcss_on_cpu list on this cpu
++	 * has been initialized.
++	 *
++	 * Though the cpu is not in VMX operation now, there
++	 * is no problem to enable the vmclear operation
++	 * for the loaded_vmcss_on_cpu list is empty!
++	 */
++	crash_enable_local_vmclear(cpu);
++
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
+ 
+ 	test_bits = FEATURE_CONTROL_LOCKED;
+@@ -2335,7 +2395,6 @@ static void vmclear_local_loaded_vmcss(void)
+ 		__loaded_vmcs_clear(v);
+ }
+ 
+-
+ /* Just like cpu_vmxoff(), but with the __kvm_handle_fault_on_reboot()
+  * tricks.
+  */
+@@ -2348,6 +2407,12 @@ static void hardware_disable(void *garbage)
+ {
+ 	if (vmm_exclusive) {
+ 		vmclear_local_loaded_vmcss();
++		/*
++		 * vmclear operation in kdump should be disabled here
++		 * because the cpu is going to exit VMX operation
++		 * and the loaded_vmcss_on_cpu list may not be empty!
++		 */
++		crash_disable_local_vmclear(raw_smp_processor_id());
+ 		kvm_cpu_vmxoff();
+ 	}
+ 	write_cr4(read_cr4() & ~X86_CR4_VMXE);
+@@ -7230,6 +7295,11 @@ static int __init vmx_init(void)
+ 	if (r)
+ 		goto out3;
+ 
++#ifdef CONFIG_KEXEC
++	atomic_notifier_chain_register(&vmclear_notifier_list,
++				       &crash_vmclear_notifier);
++#endif
++
+ 	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
+ 	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
+ 	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
+@@ -7265,6 +7335,11 @@ static void __exit vmx_exit(void)
+ 	free_page((unsigned long)vmx_io_bitmap_b);
+ 	free_page((unsigned long)vmx_io_bitmap_a);
+ 
++#ifdef CONFIG_KEXEC
++	atomic_notifier_chain_unregister(&vmclear_notifier_list,
++					 &crash_vmclear_notifier);
++#endif
++
+ 	kvm_exit();
+ }
+ 
+-- 
+1.7.1
+
