@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2KUDXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 22:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24707 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab2KUDXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 22:23:30 -0500
-Message-ID: <50AC4912.7040503@redhat.com>
-Date: Tue, 20 Nov 2012 22:22:58 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753995Ab2KUD2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 22:28:21 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53994 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2KUD2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 22:28:20 -0500
 MIME-Version: 1.0
-To: habanero@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>  <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com>  <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com>  <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>  <20121120071704.GA14199@gmail.com> <20121120152933.GA17996@gmail.com>  <20121120175647.GA23532@gmail.com> <1353462853.31820.93.camel@oc6622382223.ibm.com>
-In-Reply-To: <1353462853.31820.93.camel@oc6622382223.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1353464863-10281-18-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1353464863-10281-18-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Wed, 21 Nov 2012 08:58:19 +0530
+X-Google-Sender-Auth: Ok8LW1ZRV3v_j7drub4fY-gZqSo
+Message-ID: <CAOh2x=kEv1Sgx74jNgdQJL4ivrYVpYhC0kM6--BTk+ibwRm3kg@mail.gmail.com>
+Subject: Re: [PATCH 17/42] sh-pfc: Move driver from drivers/sh/ to drivers/pinctrl/
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 08:54 PM, Andrew Theurer wrote:
+On Wed, Nov 21, 2012 at 7:57 AM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+> ---
+>  drivers/pinctrl/Kconfig          |    1 +
+>  drivers/pinctrl/Makefile         |    1 +
+>  drivers/pinctrl/sh-pfc/Kconfig   |   24 ++
+>  drivers/pinctrl/sh-pfc/Makefile  |    5 +
+>  drivers/pinctrl/sh-pfc/core.c    |  611 ++++++++++++++++++++++++++++++++++++++
+>  drivers/pinctrl/sh-pfc/core.h    |   54 ++++
+>  drivers/pinctrl/sh-pfc/gpio.c    |  181 +++++++++++
+>  drivers/pinctrl/sh-pfc/pinctrl.c |  481 ++++++++++++++++++++++++++++++
+>  drivers/sh/Kconfig               |    1 -
+>  drivers/sh/Makefile              |    1 -
+>  drivers/sh/pfc/Kconfig           |   18 --
+>  drivers/sh/pfc/Makefile          |    5 -
+>  drivers/sh/pfc/core.c            |  611 --------------------------------------
+>  drivers/sh/pfc/core.h            |   54 ----
+>  drivers/sh/pfc/gpio.c            |  181 -----------
+>  drivers/sh/pfc/pinctrl.c         |  481 ------------------------------
 
-> I can confirm single JVM JBB is working well for me.  I see a 30%
-> improvement over autoNUMA.  What I can't make sense of is some perf
-> stats (taken at 80 warehouses on 4 x WST-EX, 512GB memory):
+I haven't gone through the patch, but is it a simple git mv of files?
+If yes, please generate such patches with following command to make review
+really simple:
 
-AutoNUMA does not have native THP migration, that may explain some
-of the difference.
-
-> tips numa/core:
->
->       5,429,632,865 node-loads
->       3,806,419,082 node-load-misses(70.1%)
->       2,486,756,884 node-stores
->       2,042,557,277 node-store-misses(82.1%)
->       2,878,655,372 node-prefetches
->       2,201,441,900 node-prefetch-misses
->
-> autoNUMA:
->
->       4,538,975,144 node-loads
->       2,666,374,830 node-load-misses(58.7%)
->       2,148,950,354 node-stores
->       1,682,942,931 node-store-misses(78.3%)
->       2,191,139,475 node-prefetches
->       1,633,752,109 node-prefetch-misses
->
-> The percentage of misses is higher for numa/core.  I would have expected
-> the performance increase be due to lower "node-misses", but perhaps I am
-> misinterpreting the perf data.
-
-Lack of native THP migration may be enough to explain the
-performance difference, despite autonuma having better node
-locality.
-
->> Next I'll work on making multi-JVM more of an improvement, and
->> I'll also address any incoming regression reports.
->
-> I have issues with multiple KVM VMs running either JBB or
-> dbench-in-tmpfs, and I suspect whatever I am seeing is similar to
-> whatever multi-jvm in baremetal is.  What I typically see is no real
-> convergence of a single node for resource usage for any of the VMs.  For
-> example, when running 8 VMs, 10 vCPUs each, a VM may have the following
-> resource usage:
-
-This is an issue.  I have tried understanding the new local/shared
-and shared task grouping code, but have not wrapped my mind around
-that code yet.
-
-I will have to look at that code a few more times, and ask more
-questions of Ingo and Peter (and maybe ask some of the same questions
-again - I see that some of my comments were addressed in the next
-version of the patch, but the email never got a reply).
-
--- 
-All rights reversed
+git format-patch -C -M
