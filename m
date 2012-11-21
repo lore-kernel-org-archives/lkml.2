@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab2KUIaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:30:30 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:47925 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab2KUIa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:30:28 -0500
-Message-ID: <50AC911A.3070501@parallels.com>
-Date: Wed, 21 Nov 2012 12:30:18 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>, <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jirislaby@gmail.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
-References: <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz> <509C84ED.8090605@linux.vnet.ibm.com> <509CB9D1.6060704@redhat.com> <20121109090635.GG8218@suse.de> <509F6C2A.9060502@redhat.com> <20121112113731.GS8218@suse.de> <50AB4ADB.6090506@parallels.com> <20121120121817.cf80b8ad.akpm@linux-foundation.org>
-In-Reply-To: <20121120121817.cf80b8ad.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753739Ab2KUIb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:31:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44582 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2KUIb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 03:31:57 -0500
+Date: Wed, 21 Nov 2012 00:31:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Derek Basehore <dbasehore@chromium.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, msb@chromium.orq,
+        bleung@chromium.org, taysom@chromium.org
+Subject: Re: [PATCH v2 1/2] block: Remove deadlock in disk_clear_events
+Message-Id: <20121121003151.0d125ef5.akpm@linux-foundation.org>
+In-Reply-To: <1353377222-19541-1-git-send-email-dbasehore@chromium.org>
+References: <1353377222-19541-1-git-send-email-dbasehore@chromium.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 12:18 AM, Andrew Morton wrote:
-> On Tue, 20 Nov 2012 13:18:19 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->> On 11/12/2012 03:37 PM, Mel Gorman wrote:
->>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
->>> index 02c1c971..d0a7967 100644
->>> --- a/include/linux/gfp.h
->>> +++ b/include/linux/gfp.h
->>> @@ -31,6 +31,7 @@ struct vm_area_struct;
->>>  #define ___GFP_THISNODE		0x40000u
->>>  #define ___GFP_RECLAIMABLE	0x80000u
->>>  #define ___GFP_NOTRACK		0x200000u
->>> +#define ___GFP_NO_KSWAPD	0x400000u
->>>  #define ___GFP_OTHER_NODE	0x800000u
->>>  #define ___GFP_WRITE		0x1000000u
->>
->> Keep in mind that this bit has been reused in -mm.
->> If this patch needs to be reverted, we'll need to first change
->> the definition of __GFP_KMEMCG (and __GFP_BITS_SHIFT as a result), or it
->> would break things.
-> 
-> I presently have
-> 
-> /* Plain integer GFP bitmasks. Do not use this directly. */
-> #define ___GFP_DMA		0x01u
-> #define ___GFP_HIGHMEM		0x02u
-> #define ___GFP_DMA32		0x04u
-> #define ___GFP_MOVABLE		0x08u
-> #define ___GFP_WAIT		0x10u
-> #define ___GFP_HIGH		0x20u
-> #define ___GFP_IO		0x40u
-> #define ___GFP_FS		0x80u
-> #define ___GFP_COLD		0x100u
-> #define ___GFP_NOWARN		0x200u
-> #define ___GFP_REPEAT		0x400u
-> #define ___GFP_NOFAIL		0x800u
-> #define ___GFP_NORETRY		0x1000u
-> #define ___GFP_MEMALLOC		0x2000u
-> #define ___GFP_COMP		0x4000u
-> #define ___GFP_ZERO		0x8000u
-> #define ___GFP_NOMEMALLOC	0x10000u
-> #define ___GFP_HARDWALL		0x20000u
-> #define ___GFP_THISNODE		0x40000u
-> #define ___GFP_RECLAIMABLE	0x80000u
-> #define ___GFP_KMEMCG		0x100000u
-> #define ___GFP_NOTRACK		0x200000u
-> #define ___GFP_NO_KSWAPD	0x400000u
-> #define ___GFP_OTHER_NODE	0x800000u
-> #define ___GFP_WRITE		0x1000000u
-> 
-> and
-> 
+On Mon, 19 Nov 2012 18:07:01 -0800 Derek Basehore <dbasehore@chromium.org> wrote:
 
-Humm, I didn't realize there were also another free space at 0x100000u.
-This seems fine.
+> In disk_clear_events, do not put work on system_nrt_freezable_wq. Instead, put
+> it on system_nrt_wq.
+> 
+> There is a race between probing a usb and suspending the device. Since probing a
+> usb calls disk_clear_events, which puts work on a frozen workqueue, probing
+> cannot finish after the workqueue is frozen. However, suspending cannot finish
+> until the usb probe is finished, so we get a deadlock.
 
-> #define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
-> #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
-> 
-> Which I think is OK?
-Yes, if we haven't increased the size of the flag-space, no need to
-change it.
+um,
 
-> 
-> I'd forgotten about __GFP_BITS_SHIFT.  Should we do this?
-> 
-> --- a/include/linux/gfp.h~a
-> +++ a/include/linux/gfp.h
-> @@ -35,6 +35,7 @@ struct vm_area_struct;
->  #define ___GFP_NO_KSWAPD	0x400000u
->  #define ___GFP_OTHER_NODE	0x800000u
->  #define ___GFP_WRITE		0x1000000u
-> +/* If the above are modified, __GFP_BITS_SHIFT may need updating */
+- this is identical to v1
+
+- ten days ago Jens said "thanks, applied" to v1, but it isn't in linux-next.
+
+- At that time Jens asked you whether a -stable backport was
+  warranted but I see no reply on that topic.
+
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -1571,7 +1571,13 @@ unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask)
 >  
-This is a very helpful comment.
+>  	/* uncondtionally schedule event check and wait for it to finish */
+>  	disk_block_events(disk);
+> -	queue_delayed_work(system_freezable_wq, &ev->dwork, 0);
+> +	/* We need to put the work on system_nrt_wq here since there is a
+
+Like this:
+
+	/*
+	 * We need to ...
+
+> +	 * deadlock that happens while probing a usb device while suspending. If
+> +	 * we put work on a freezable worqueue here, a usb probe will wait here
+
+s/worqueue/workqueue/
+
+> +	 * until the workqueue is unfrozen during suspend. Since suspend waits
+> +	 * on all probes to complete, we have a deadlock
+> +	 */
+> +	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
+>  	flush_delayed_work(&ev->dwork);
+>  	__disk_unblock_events(disk, false);
+
