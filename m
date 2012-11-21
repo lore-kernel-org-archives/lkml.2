@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2KUHXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:23:06 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50091 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab2KUHXD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:23:03 -0500
-Date: Tue, 20 Nov 2012 23:23:00 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Josh Cartwright <josh.cartwright@ni.com>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 0/3] ARM: zynq: ARCH_MULTIPLATFORM support
-Message-ID: <20121121072300.GI7615@quad.lixom.net>
-References: <cover.1353349191.git.josh.cartwright@ni.com>
- <CAHTX3d+YE7mtsQOdrBV4B=zp_CHSTrWbbXgjkBBkTeenv_4DHg@mail.gmail.com>
+	id S1753062Ab2KUHYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:24:52 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:46582 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752797Ab2KUHYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 02:24:51 -0500
+Date: Wed, 21 Nov 2012 00:24:48 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] of: Have of_device_add call platform_device_add rather
+ than device_add
+Message-ID: <20121121072448.GG19837@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHTX3d+YE7mtsQOdrBV4B=zp_CHSTrWbbXgjkBBkTeenv_4DHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 01:30:58PM +0100, Michal Simek wrote:
-> Hi Josh, Arnd and Olof,
-> 
-> 2012/11/19 Josh Cartwright <josh.cartwright@ni.com>:
-> > Michal-
-> >
-> > Here's an attempt at supporting ARCH_MULTIPLATFORM on Zynq.  I've gotten
-> > a multiplatform kernel building and booting on the zc702, although I
-> > haven't tried to boot the same image on another non-Zynq board, due to
-> > lack of available hardware.
-> >
-> > It would be super awesome if this set could land in 3.8, but I know
-> > we're running out of time there.  I wouldn't be too heartbroken if it
-> > didn't make it.
-> >
-> > This patchset is on top of your arm-next branch and with the
-> > debug_ll_init support patch @ arm-soc/devel/debug_ll_init.
-> >
-> > Patch 1 drops the early TTC mapping.  It is not necessary, since the TTC
-> > driver now supports pulling mapping info from the device tree.
-> >
-> > Patch 2 converts zynq to use the debug_ll_init() infrastructure slated
-> > to go into 3.8.
-> >
-> > Patch 3 is the bulk of the set, moving around logic around within
-> > mach-zynq/include, and setting up the necessary build magic to get Zynq
-> > building w/ CONFIG_ARCH_MULTIPLATFORM.
-> >
-> 
-> I wanted to look at it too today. You were faster!
-> I have tested your patches and all works for me.
-> I have also added them to my arm-next branch.
-> 
-> I don't have others ARM boards to test but it shouldn't be big problem
-> because others will test it.
-> 
-> We are out of merge window that's why we should wait to the next one.
-> Anyway Arnd/Olof if there is any option to get this to v3.8, please let me know.
+This allows platform_device_add a chance to call insert_resource
+on all of the resources from OF. At a minimum this fills in proc/iomem
+and presumably makes resource tracking and conflict detection work
+better.
 
-Feel free to post a pull request, if things look clean we can probably pick it up.
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/of/device.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+Tested on PPC32 and ARM32 embedded kernels.
 
--Olof (playing good cop for once :-)
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index 4c74e4f..a5b67dc 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -62,7 +62,7 @@ int of_device_add(struct platform_device *ofdev)
+ 	if (!ofdev->dev.parent)
+ 		set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
+ 
+-	return device_add(&ofdev->dev);
++	return platform_device_add(ofdev);
+ }
+ 
+ int of_device_register(struct platform_device *pdev)
+-- 
+1.7.4.1
+
