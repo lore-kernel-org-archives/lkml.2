@@ -1,152 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030206Ab2KUUyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 15:54:41 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:56760 "EHLO quartz.orcorp.ca"
+	id S964862Ab2KUU4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 15:56:50 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:33771 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030184Ab2KUUyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 15:54:40 -0500
-Date: Wed, 21 Nov 2012 13:54:33 -0700
+	id S964798Ab2KUU4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 15:56:49 -0500
+Date: Wed, 21 Nov 2012 13:56:45 -0700
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: Peter H?we <PeterHuewe@gmx.de>
 Cc: Peter.Huewe@infineon.com, key@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: [PATCH v5] TPM: Issue TPM_STARTUP at driver load if the TPM has not
- been started
-Message-ID: <20121121205433.GA15285@obsidianresearch.com>
-References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
- <20121121183713.GA12822@obsidianresearch.com>
- <201211212117.55040.PeterHuewe@gmx.de>
+Subject: [PATCH] TPM: Switch to __packed instead of __attribute__((packed))
+Message-ID: <20121121205645.GB15285@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201211212117.55040.PeterHuewe@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
-TPM_STARTUP has not been issued. Detect this and automatically
-issue TPM_STARTUP.
-
-This is for embedded applications where the kernel is the first thing
-to touch the TPM.
+This seems to be preferred these days.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Tested-by: Peter Huewe <peter.huewe@infineon.com>
-Reviewed-by: Peter Huewe <peter.huewe@infineon.com>
 ---
- drivers/char/tpm/tpm.c |   44 ++++++++++++++++++++++++++++++++++++++++----
- drivers/char/tpm/tpm.h |    6 ++++++
- 2 files changed, 46 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm.h |   34 +++++++++++++++++-----------------
+ 1 files changed, 17 insertions(+), 17 deletions(-)
 
-v5 changes:
- - Use %zd for printing ssize_t
+As discussed with Peter.
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 93211df..433ad6b 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -468,7 +468,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- 		return -EFAULT;
- 
- 	err = be32_to_cpu(cmd->header.out.return_code);
--	if (err != 0)
-+	if (err != 0 && desc)
- 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
- 
- 	return err;
-@@ -528,6 +528,25 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
- }
- EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
- 
-+#define TPM_ORD_STARTUP cpu_to_be32(153)
-+#define TPM_ST_CLEAR cpu_to_be16(1)
-+#define TPM_ST_STATE cpu_to_be16(2)
-+#define TPM_ST_DEACTIVATED cpu_to_be16(3)
-+static const struct tpm_input_header tpm_startup_header = {
-+	.tag = TPM_TAG_RQU_COMMAND,
-+	.length = cpu_to_be32(12),
-+	.ordinal = TPM_ORD_STARTUP
-+};
-+
-+static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
-+{
-+	struct tpm_cmd_t start_cmd;
-+	start_cmd.header.in = tpm_startup_header;
-+	start_cmd.params.startup_in.startup_type = startup_type;
-+	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
-+			    "attempting to start the TPM");
-+}
-+
- int tpm_get_timeouts(struct tpm_chip *chip)
- {
- 	struct tpm_cmd_t tpm_cmd;
-@@ -541,11 +560,28 @@ int tpm_get_timeouts(struct tpm_chip *chip)
- 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
- 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
-+	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
- 
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
--			"attempting to determine the timeouts");
--	if (rc)
-+	if (rc == TPM_ERR_INVALID_POSTINIT) {
-+		/* The TPM is not started, we are the first to talk to it.
-+		   Execute a startup command. */
-+		dev_info(chip->dev, "Issuing TPM_STARTUP");
-+		if (tpm_startup(chip, TPM_ST_CLEAR))
-+			return rc;
-+
-+		tpm_cmd.header.in = tpm_getcap_header;
-+		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
-+		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
-+		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
-+		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-+				  NULL);
-+	}
-+	if (rc) {
-+		dev_err(chip->dev,
-+			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
-+			rc);
- 		goto duration;
-+	}
- 
- 	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
- 	    be32_to_cpu(tpm_cmd.header.out.length)
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 8ef7649..8971b12 100644
+index c20fa8d..7d05ced 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -47,6 +47,7 @@ enum tpm_addr {
- #define TPM_WARN_DOING_SELFTEST 0x802
- #define TPM_ERR_DEACTIVATED     0x6
- #define TPM_ERR_DISABLED        0x7
-+#define TPM_ERR_INVALID_POSTINIT 38
- 
- #define TPM_HEADER_SIZE		10
- extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
-@@ -291,6 +292,10 @@ struct tpm_getrandom_in {
- 	__be32 num_bytes;
- }__attribute__((packed));
- 
-+struct tpm_startup_in {
-+	__be16	startup_type;
+@@ -157,13 +157,13 @@ struct tpm_input_header {
+ 	__be16	tag;
+ 	__be32	length;
+ 	__be32	ordinal;
+-}__attribute__((packed));
 +} __packed;
-+
- typedef union {
- 	struct	tpm_getcap_params_out getcap_out;
- 	struct	tpm_readpubek_params_out readpubek_out;
-@@ -301,6 +306,7 @@ typedef union {
- 	struct	tpm_pcrextend_in pcrextend_in;
- 	struct	tpm_getrandom_in getrandom_in;
- 	struct	tpm_getrandom_out getrandom_out;
-+	struct tpm_startup_in startup_in;
- } tpm_cmd_params;
  
+ struct tpm_output_header {
+ 	__be16	tag;
+ 	__be32	length;
+ 	__be32	return_code;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	stclear_flags_t {
+ 	__be16	tag;
+@@ -172,14 +172,14 @@ struct	stclear_flags_t {
+ 	u8	physicalPresence;
+ 	u8	physicalPresenceLock;
+ 	u8	bGlobalLock;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	tpm_version_t {
+ 	u8	Major;
+ 	u8	Minor;
+ 	u8	revMajor;
+ 	u8	revMinor;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	tpm_version_1_2_t {
+ 	__be16	tag;
+@@ -187,20 +187,20 @@ struct	tpm_version_1_2_t {
+ 	u8	Minor;
+ 	u8	revMajor;
+ 	u8	revMinor;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	timeout_t {
+ 	__be32	a;
+ 	__be32	b;
+ 	__be32	c;
+ 	__be32	d;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct duration_t {
+ 	__be32	tpm_short;
+ 	__be32	tpm_medium;
+ 	__be32	tpm_long;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct permanent_flags_t {
+ 	__be16	tag;
+@@ -224,7 +224,7 @@ struct permanent_flags_t {
+ 	u8	tpmEstablished;
+ 	u8	maintenanceDone;
+ 	u8	disableFullDALogicInfo;
+-}__attribute__((packed));
++} __packed;
+ 
+ typedef union {
+ 	struct	permanent_flags_t perm_flags;
+@@ -242,12 +242,12 @@ struct	tpm_getcap_params_in {
+ 	__be32	cap;
+ 	__be32	subcap_size;
+ 	__be32	subcap;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	tpm_getcap_params_out {
+ 	__be32	cap_size;
+ 	cap_t	cap;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct	tpm_readpubek_params_out {
+ 	u8	algorithm[4];
+@@ -258,7 +258,7 @@ struct	tpm_readpubek_params_out {
+ 	__be32	keysize;
+ 	u8	modulus[256];
+ 	u8	checksum[20];
+-}__attribute__((packed));
++} __packed;
+ 
+ typedef union {
+ 	struct	tpm_input_header in;
+@@ -268,16 +268,16 @@ typedef union {
+ #define TPM_DIGEST_SIZE 20
+ struct tpm_pcrread_out {
+ 	u8	pcr_result[TPM_DIGEST_SIZE];
+-}__attribute__((packed));
++} __packed;
+ 
+ struct tpm_pcrread_in {
+ 	__be32	pcr_idx;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct tpm_pcrextend_in {
+ 	__be32	pcr_idx;
+ 	u8	hash[TPM_DIGEST_SIZE];
+-}__attribute__((packed));
++} __packed;
+ 
+ /* 128 bytes is an arbitrary cap. This could be as large as TPM_BUFSIZE - 18
+  * bytes, but 128 is still a relatively large number of random bytes and
+@@ -288,11 +288,11 @@ struct tpm_pcrextend_in {
+ struct tpm_getrandom_out {
+ 	__be32 rng_data_len;
+ 	u8     rng_data[TPM_MAX_RNG_DATA];
+-}__attribute__((packed));
++} __packed;
+ 
+ struct tpm_getrandom_in {
+ 	__be32 num_bytes;
+-}__attribute__((packed));
++} __packed;
+ 
+ struct tpm_startup_in {
+ 	__be16	startup_type;
+@@ -314,7 +314,7 @@ typedef union {
  struct tpm_cmd_t {
+ 	tpm_cmd_header	header;
+ 	tpm_cmd_params	params;
+-}__attribute__((packed));
++} __packed;
+ 
+ ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
+ 
 -- 
 1.7.5.4
 
