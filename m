@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2KUI2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:28:17 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54113 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab2KUI2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:28:13 -0500
+	id S1753514Ab2KUIaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:30:30 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:47925 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab2KUIa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 03:30:28 -0500
+Message-ID: <50AC911A.3070501@parallels.com>
+Date: Wed, 21 Nov 2012 12:30:18 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1353349867-28494-11-git-send-email-swarren@wwwdotorg.org>
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-	<1353349867-28494-11-git-send-email-swarren@wwwdotorg.org>
-Date: Wed, 21 Nov 2012 09:28:12 +0100
-Message-ID: <CACRpkdb-cmwTH_7EJO02m2+CCZrJ2ycgtGpf8stoiFKSm8jqww@mail.gmail.com>
-Subject: Re: [PATCH V3 10/11] ARM: remove struct sys_timer suspend and resume fields
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Jonas ABERG <jonas.aberg@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Zdenek Kabelac <zkabelac@redhat.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>, <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jirislaby@gmail.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
+References: <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz> <509C84ED.8090605@linux.vnet.ibm.com> <509CB9D1.6060704@redhat.com> <20121109090635.GG8218@suse.de> <509F6C2A.9060502@redhat.com> <20121112113731.GS8218@suse.de> <50AB4ADB.6090506@parallels.com> <20121120121817.cf80b8ad.akpm@linux-foundation.org>
+In-Reply-To: <20121120121817.cf80b8ad.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh and there was this comment/TODO:
+On 11/21/2012 12:18 AM, Andrew Morton wrote:
+> On Tue, 20 Nov 2012 13:18:19 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
+> 
+>> On 11/12/2012 03:37 PM, Mel Gorman wrote:
+>>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+>>> index 02c1c971..d0a7967 100644
+>>> --- a/include/linux/gfp.h
+>>> +++ b/include/linux/gfp.h
+>>> @@ -31,6 +31,7 @@ struct vm_area_struct;
+>>>  #define ___GFP_THISNODE		0x40000u
+>>>  #define ___GFP_RECLAIMABLE	0x80000u
+>>>  #define ___GFP_NOTRACK		0x200000u
+>>> +#define ___GFP_NO_KSWAPD	0x400000u
+>>>  #define ___GFP_OTHER_NODE	0x800000u
+>>>  #define ___GFP_WRITE		0x1000000u
+>>
+>> Keep in mind that this bit has been reused in -mm.
+>> If this patch needs to be reverted, we'll need to first change
+>> the definition of __GFP_KMEMCG (and __GFP_BITS_SHIFT as a result), or it
+>> would break things.
+> 
+> I presently have
+> 
+> /* Plain integer GFP bitmasks. Do not use this directly. */
+> #define ___GFP_DMA		0x01u
+> #define ___GFP_HIGHMEM		0x02u
+> #define ___GFP_DMA32		0x04u
+> #define ___GFP_MOVABLE		0x08u
+> #define ___GFP_WAIT		0x10u
+> #define ___GFP_HIGH		0x20u
+> #define ___GFP_IO		0x40u
+> #define ___GFP_FS		0x80u
+> #define ___GFP_COLD		0x100u
+> #define ___GFP_NOWARN		0x200u
+> #define ___GFP_REPEAT		0x400u
+> #define ___GFP_NOFAIL		0x800u
+> #define ___GFP_NORETRY		0x1000u
+> #define ___GFP_MEMALLOC		0x2000u
+> #define ___GFP_COMP		0x4000u
+> #define ___GFP_ZERO		0x8000u
+> #define ___GFP_NOMEMALLOC	0x10000u
+> #define ___GFP_HARDWALL		0x20000u
+> #define ___GFP_THISNODE		0x40000u
+> #define ___GFP_RECLAIMABLE	0x80000u
+> #define ___GFP_KMEMCG		0x100000u
+> #define ___GFP_NOTRACK		0x200000u
+> #define ___GFP_NO_KSWAPD	0x400000u
+> #define ___GFP_OTHER_NODE	0x800000u
+> #define ___GFP_WRITE		0x1000000u
+> 
+> and
+> 
 
-On Mon, Nov 19, 2012 at 7:31 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+Humm, I didn't realize there were also another free space at 0x100000u.
+This seems fine.
 
-> @@ -17,15 +17,6 @@
->   *   Initialise the kernels jiffy timer source, claim interrupt
->   *   using setup_irq.  This is called early on during initialisation
->   *   while interrupts are still disabled on the local CPU.
-> - * - suspend
-> - *   Suspend the kernel jiffy timer source, if necessary.  This
-> - *   is called with interrupts disabled, after all normal devices
-> - *   have been suspended.  If no action is required, set this to
-> - *   NULL.
-> - * - resume
-> - *   Resume the kernel jiffy timer source, if necessary.  This
-> - *   is called with interrupts disabled before any normal devices
-> - *   are resumed.  If no action is required, set this to NULL.
->   * - offset
->   *   Return the timer offset in microseconds since the last timer
->   *   interrupt.  Note: this must take account of any unprocessed
-> @@ -33,8 +24,6 @@
->   */
->  struct sys_timer {
->         void                    (*init)(void);
-> -       void                    (*suspend)(void);
-> -       void                    (*resume)(void);
->  };
+> #define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
+> #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+> 
+> Which I think is OK?
+Yes, if we haven't increased the size of the flag-space, no need to
+change it.
 
-So from the above it is quite clear that the sys_timer is breaking
-the suspend_noirq/resume_noirq naming convention from
-runtime PM as IRQs are disabled on these paths.
-
-The same goes for struct clock_event_device ...
-
-So while this looks just as bad after as before the patch,
-we should take a mental notice to rename the .suspend
-and .resume hooks in the clock_event_device to
-.suspend_noirq and .resume_noirq at some point.
-
-I was thinking that if your patch set is introducing a
-plethora of new users of these hooks we should maybe
-stick a patch at the beginning of the series renaming the
-hooks to *_noirq, but if it's a major obstacle it can surely wait.
-
-Yours,
-Linus Walleij
+> 
+> I'd forgotten about __GFP_BITS_SHIFT.  Should we do this?
+> 
+> --- a/include/linux/gfp.h~a
+> +++ a/include/linux/gfp.h
+> @@ -35,6 +35,7 @@ struct vm_area_struct;
+>  #define ___GFP_NO_KSWAPD	0x400000u
+>  #define ___GFP_OTHER_NODE	0x800000u
+>  #define ___GFP_WRITE		0x1000000u
+> +/* If the above are modified, __GFP_BITS_SHIFT may need updating */
+>  
+This is a very helpful comment.
