@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab2KUNyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:54:45 -0500
-Received: from mail2.charite.de ([141.42.206.200]:50881 "EHLO mail2.charite.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260Ab2KUNyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:54:44 -0500
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 08:54:44 EST
-Date: Wed, 21 Nov 2012 14:47:19 +0100
-From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+	id S1754413Ab2KUNzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:55:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:22185 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2KUNzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 08:55:16 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-72-50acdd43a55b
+From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-kernel@vger.kernel.org
-Subject: WARNING: at arch/x86/kernel/apic/ipi.c:109
- default_send_IPI_mask_logical+0x97/0xc7()
-Message-ID: <20121121134718.GZ11530@charite.de>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH] regulator: max8997: skip gpio dvs setup if not used
+Date: Wed, 21 Nov 2012 19:53:15 +0530
+Message-id: <1353507795-3516-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jQV3nu2sCDN4eUbW4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4eGgLe0GvaMWVvQ9YGhi7BbsYOTkkBEwkLqzvYYew
+	xSQu3FvP1sXIxSEkMJ1RYmbDNnYIp41J4vCi14wgVWwCBhKPFr4D6xARUJDY3PuMFcRmFkiT
+	2H90OhuILSzgIrG0E6KeRUBVYkPfK7A4r4CHRPOcO1DblCQ29B5lmsDIvYCRYRWjaGpBckFx
+	UnquoV5xYm5xaV66XnJ+7iZGsDefSe1gXNlgcYhRgINRiYd349rVAUKsiWXFlbmHGCU4mJVE
+	eGMurgkQ4k1JrKxKLcqPLyrNSS0+xCjNwaIkztvskRIgJJCeWJKanZpakFoEk2Xi4JRqYIw7
+	0Tqf58oDz9LJK5V7pEx9FeJuKb6dkao1p2r+ipB/7TPDfqcqftu6O0c/Ma3MZO6r6t6n51a7
+	sDBMczi2vfF+U5KjrX7eqtlOSxa8vCZ9ZkPsydfGQUJr+xtX+zt4d8TPKN+o9j1hQ1CN0/+H
+	la/lC30rzn//X9xr+j98xfTj4umfVbZe6lRiKc5INNRiLipOBABuv6zb4gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from dmesg on a vanilla 3.6.7
+If gpio based voltage selection for buck 1/2/5 are not used, then the execution
+of gpio dvs setup code during probe can be skipped completly.
 
-# uname -a
-Linux mail2.charite.de 3.6.7 #1 SMP Sun Nov 18 19:49:09 CET 2012 i686 GNU/Linux
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ drivers/regulator/max8997.c |   31 ++++++++++++++++++-------------
+ 1 files changed, 18 insertions(+), 13 deletions(-)
 
-Nov 19 10:54:16 mail2 kernel: [52464.940539] ------------[ cut here ]------------
-Nov 19 10:54:16 mail2 kernel: [52464.940566] WARNING: at arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x97/0xc7()
-Nov 19 10:54:16 mail2 kernel: [52464.940570] Hardware name: ProLiant DL360 G4
-Nov 19 10:54:16 mail2 kernel: [52464.940573] empty IPI mask
-Nov 19 10:54:16 mail2 kernel: [52464.940576] Modules linked in: nfnetlink_log nfnetlink ipv6 microcode psmouse container hpwdt tg3 thermal rng_core i6300esb button processor
-Nov 19 10:54:16 mail2 kernel: [52464.940603] Pid: 27794, comm: clamd Not tainted 3.6.7 #1
-Nov 19 10:54:16 mail2 kernel: [52464.940606] Call Trace:
-Nov 19 10:54:16 mail2 kernel: [52464.940620]  [<c1027f84>] warn_slowpath_common+0x67/0x8e
-Nov 19 10:54:16 mail2 kernel: [52464.940627]  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
-Nov 19 10:54:16 mail2 kernel: [52464.940631]  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
-Nov 19 10:54:16 mail2 kernel: [52464.940636]  [<c1028027>] warn_slowpath_fmt+0x2e/0x30
-Nov 19 10:54:16 mail2 kernel: [52464.940641]  [<c101beef>] default_send_IPI_mask_logical+0x97/0xc7
-Nov 19 10:54:16 mail2 kernel: [52464.940650]  [<c101aac4>] native_send_call_func_ipi+0x42/0x54
-Nov 19 10:54:16 mail2 kernel: [52464.940657]  [<c105c5fa>] smp_call_function_many+0x160/0x1dd
-Nov 19 10:54:16 mail2 kernel: [52464.940663]  [<c1024fe7>] native_flush_tlb_others+0x26/0x28
-Nov 19 10:54:16 mail2 kernel: [52464.940667]  [<c1025087>] flush_tlb_mm_range+0x4f/0x18e
-Nov 19 10:54:16 mail2 kernel: [52464.940676]  [<c108f706>] tlb_flush_mmu+0x7a/0x7c
-Nov 19 10:54:16 mail2 kernel: [52464.940681]  [<c108f71a>] tlb_finish_mmu+0x12/0x33
-Nov 19 10:54:16 mail2 kernel: [52464.940686]  [<c109473f>] unmap_region+0x88/0x9e
-Nov 19 10:54:16 mail2 kernel: [52464.940691]  [<c1095bb9>] do_munmap+0x1bb/0x2aa
-Nov 19 10:54:16 mail2 kernel: [52464.940696]  [<c1095cda>] vm_munmap+0x32/0x45
-Nov 19 10:54:16 mail2 kernel: [52464.940700]  [<c10967e6>] sys_munmap+0xe/0x10
-Nov 19 10:54:16 mail2 kernel: [52464.940710]  [<c129ff17>] sysenter_do_call+0x12/0x26
-Nov 19 10:54:16 mail2 kernel: [52464.940713] ---[ end trace a5fffac357fb1c34 ]---
-
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index cea9ec9..e81a381 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -973,6 +973,10 @@ static int max8997_pmic_probe(struct platform_device *pdev)
+ 	memcpy(max8997->buck125_gpios, pdata->buck125_gpios, sizeof(int) * 3);
+ 	max8997->ignore_gpiodvs_side_effect = pdata->ignore_gpiodvs_side_effect;
+ 
++	if (!pdata->buck1_gpiodvs && !pdata->buck2_gpiodvs &&
++			!pdata->buck5_gpiodvs)
++		goto skip_gpiodvs;
++
+ 	for (i = 0; i < 8; i++) {
+ 		max8997->buck1_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+@@ -1019,6 +1023,19 @@ static int max8997_pmic_probe(struct platform_device *pdev)
+ 				max_buck5, 0x3f);
+ 	}
+ 
++	/* Initialize all the DVS related BUCK registers */
++	for (i = 0; i < 8; i++) {
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
++				max8997->buck1_vol[i],
++				0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
++				max8997->buck2_vol[i],
++				0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
++				max8997->buck5_vol[i],
++				0x3f);
++	}
++
+ 	/*
+ 	 * If buck 1, 2, and 5 do not care DVS GPIO settings, ignore them.
+ 	 * If at least one of them cares, set gpios.
+@@ -1060,6 +1077,7 @@ static int max8997_pmic_probe(struct platform_device *pdev)
+ 				& 0x1); /* SET3 */
+ 	}
+ 
++skip_gpiodvs:
+ 	/* DVS-GPIO disabled */
+ 	max8997_update_reg(i2c, MAX8997_REG_BUCK1CTRL, (pdata->buck1_gpiodvs) ?
+ 			(1 << 1) : (0 << 1), 1 << 1);
+@@ -1068,19 +1086,6 @@ static int max8997_pmic_probe(struct platform_device *pdev)
+ 	max8997_update_reg(i2c, MAX8997_REG_BUCK5CTRL, (pdata->buck5_gpiodvs) ?
+ 			(1 << 1) : (0 << 1), 1 << 1);
+ 
+-	/* Initialize all the DVS related BUCK registers */
+-	for (i = 0; i < 8; i++) {
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
+-				max8997->buck1_vol[i],
+-				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
+-				max8997->buck2_vol[i],
+-				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
+-				max8997->buck5_vol[i],
+-				0x3f);
+-	}
+-
+ 	/* Misc Settings */
+ 	max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
+ 	max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
 -- 
-Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
-ralf.hildebrandt@charite.de        Campus Benjamin Franklin
-http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
-Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
+1.6.6.rc2
+
