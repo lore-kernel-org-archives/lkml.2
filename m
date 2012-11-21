@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2KUJmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:42:44 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64732 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab2KUJml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:42:41 -0500
-Message-ID: <50ACA209.9000101@gmail.com>
-Date: Wed, 21 Nov 2012 17:42:33 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1754141Ab2KUJmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:42:52 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:3060 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729Ab2KUJms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 04:42:48 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
+Subject: Re: [PATCH v2] checkpatch: add double empty line check
+From: "Eilon Greenstein" <eilong@broadcom.com>
+Reply-to: eilong@broadcom.com
+To: "Joe Perches" <joe@perches.com>, "Andy Whitcroft" <apw@canonical.com>
+cc: "David Rientjes" <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Wed, 21 Nov 2012 11:42:01 +0200
+In-Reply-To: <1353454874.17819.41.camel@joe-AO722>
+References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+ <20121120115239.GA7955@dm> <1353448728.17819.33.camel@joe-AO722>
+ <20121120231930.GA27492@localhost>
+ <1353454874.17819.41.camel@joe-AO722>
+Organization: Broadcom
+X-Mailer: Evolution 3.2.3-0ubuntu6
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: metin d <metdos@yahoo.com>, Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Problem in Page Cache Replacement
-References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com> <20121120182500.GH1408@quack.suse.cz> <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com> <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com> <50AC9220.70202@gmail.com> <20121121090204.GA9064@localhost>
-In-Reply-To: <20121121090204.GA9064@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-WSS-ID: 7CB27EFB3R06543203-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 05:02 PM, Fengguang Wu wrote:
-> On Wed, Nov 21, 2012 at 04:34:40PM +0800, Jaegeuk Hanse wrote:
->> Cc Fengguang Wu.
->>
->> On 11/21/2012 04:13 PM, metin d wrote:
->>>>    Curious. Added linux-mm list to CC to catch more attention. If you run
->>>> echo 1 >/proc/sys/vm/drop_caches does it evict data-1 pages from memory?
->>> I'm guessing it'd evict the entries, but am wondering if we could run any more diagnostics before trying this.
->>>
->>> We regularly use a setup where we have two databases; one gets used frequently and the other one about once a month. It seems like the memory manager keeps unused pages in memory at the expense of frequently used database's performance.
->>> My understanding was that under memory pressure from heavily
->>> accessed pages, unused pages would eventually get evicted. Is there
->>> anything else we can try on this host to understand why this is
->>> happening?
-> We may debug it this way.
->
-> 1) run 'fadvise data-2 0 0 dontneed' to drop data-2 cached pages
->     (please double check via /proc/vmstat whether it does the expected work)
->
-> 2) run 'page-types -r' with root, to view the page status for the
->     remaining pages of data-1
->
-> The fadvise tool comes from Andrew Morton's ext3-tools. (source code attached)
-> Please compile them with options "-Dlinux -I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
->
-> page-types can be found in the kernel source tree tools/vm/page-types.c
->
-> Sorry that sounds a bit twisted.. I do have a patch to directly dump
-> page cache status of a user specified file, however it's not
-> upstreamed yet.
+On Tue, 2012-11-20 at 15:41 -0800, Joe Perches wrote:
+> On Tue, 2012-11-20 at 23:19 +0000, Andy Whitcroft wrote:
+> > On Tue, Nov 20, 2012 at 01:58:48PM -0800, Joe Perches wrote:
+> > 
+> > > +# check for multiple blank lines, warn only on the second one in a block
+> > > +		if ($rawline =~ /^.\s*$/ &&
+> > > +		    $prevrawline =~ /^.\s*$/ &&
+> > > +		    $linenr != $last_blank_linenr + 1) {
+> > > +			CHK("DOUBLE_EMPTY_LINE",
+> > > +			    "One blank line separating blocks is generally sufficient\n" . $herecurr);
+> > > +			$last_blank_linenr = $linenr;
+> > > +		}
+> > > +
+> > >  # check for line continuations in quoted strings with odd counts of "
+> > >  		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
+> > >  			WARN("LINE_CONTINUATIONS",
+> > 
+> > Pretty sure that will fail with combination which have removed lines.
+> 
+> Not as far as I can tell.
+> Deleted lines followed by inserted lines seem
+> to work OK.
+> 
+> This check is located after the test that ensures
+> the current $line/$rawline is an insertion.
+> 
 
-Hi Fengguang,
+But you do not look at the next line, so you will miss something like
+that:
 
-Thanks for you detail steps, I think metin can have a try.
+diff --git a/test.c b/test.c
+index e3c46d4..e1c6ffc 100644
+--- a/test.c
++++ b/test.c
+@@ -15,7 +15,8 @@
+  * something
+  * something
+  * something
+- * next line was already empty */
++ * next line was already empty, but I'm adding another one now*/
++
+ 
+ /* something else
+  * something else
 
-         flags    page-count       MB  symbolic-flags long-symbolic-flags
-0x0000000000000000        607699     2373 
-___________________________________
-0x0000000100000000        343227     1340 
-_______________________r___________    reserved
+> > I have a version here which I am testing with the combinations I have
+> > isolated to far ...
+> 
+> Enjoy.
+> Can you please test my proposal against those combinations too?
+> 
 
-But I have some questions of the print of page-type:
+The way I see it, we have to handle the following cases:
+a. The patch adds more than a single consecutive empty line - easy
+enough, the only "problem" here is to warn only once and there are many
+ways to do that.
+b. The patch is adding a new empty line after an existing empty line -
+for that, we must check the previous line.
+c. The patch is adding a new empty line before an existing empty line -
+for that, we must check the next line. If we are already checking the
+next line, we can tell if this is the last empty line added and
+therefore do not need to save anything in order to warn only once per
+block.
 
-Is 2373MB here mean total memory in used include page cache? I don't 
-think so.
-Which kind of pages will be marked reserved?
-Which line of long-symbolic-flags is for page cache?
+My version of the patch addresses all 3 cases above, and I do not see
+how we can do it without looking at the next line and the previous line
+- so I think it is a valid approach.
 
-Regards,
-Jaegeuk
+The only identified down side is that it might fail to warn about double
+empty lines if we will find a diff utility that will add the deleted
+lines after the inserted lines - but even in that case, it will not
+generate any annoying false positives and no other perl warnings. To
+address this issue, I can add a loop that will look forward if the next
+line after a newly added empty line is a deleted line, but I think this
+is excessive and I will only be able to test it on manually generated
+files since the diff utilities I'm familiar with are behaving nicely and
+delete before adding.
 
->
-> Thanks,
-> Fengguang
->
->>> On Tue 20-11-12 09:42:42, metin d wrote:
->>>> I have two PostgreSQL databases named data-1 and data-2 that sit on the
->>>> same machine. Both databases keep 40 GB of data, and the total memory
->>>> available on the machine is 68GB.
->>>>
->>>> I started data-1 and data-2, and ran several queries to go over all their
->>>> data. Then, I shut down data-1 and kept issuing queries against data-2.
->>>> For some reason, the OS still holds on to large parts of data-1's pages
->>>> in its page cache, and reserves about 35 GB of RAM to data-2's files. As
->>>> a result, my queries on data-2 keep hitting disk.
->>>>
->>>> I'm checking page cache usage with fincore. When I run a table scan query
->>>> against data-2, I see that data-2's pages get evicted and put back into
->>>> the cache in a round-robin manner. Nothing happens to data-1's pages,
->>>> although they haven't been touched for days.
->>>>
->>>> Does anybody know why data-1's pages aren't evicted from the page cache?
->>>> I'm open to all kind of suggestions you think it might relate to problem.
->>>    Curious. Added linux-mm list to CC to catch more attention. If you run
->>> echo 1 >/proc/sys/vm/drop_caches
->>>    does it evict data-1 pages from memory?
->>>
->>>> This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
->>>> swap space. The kernel version is:
->>>>
->>>> $ uname -r
->>>> 3.2.28-45.62.amzn1.x86_64
->>>> Edit:
->>>>
->>>> and it seems that I use one NUMA instance, if  you think that it can a problem.
->>>>
->>>> $ numactl --hardware
->>>> available: 1 nodes (0)
->>>> node 0 cpus: 0 1 2 3 4 5 6 7
->>>> node 0 size: 70007 MB
->>>> node 0 free: 360 MB
->>>> node distances:
->>>> node   0
->>>>     0:  10
+Anyway, I'm looking forward for your version.
+
+Thanks,
+Eilon
+
 
