@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab2KUTaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:30:25 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:56328 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768Ab2KUTaY (ORCPT
+	id S1755874Ab2KUTbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:31:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51014 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab2KUTbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:30:24 -0500
-Date: Wed, 21 Nov 2012 19:34:30 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        John Johansen <john.johansen@canonical.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-Subject: Re: [PULL] Yama update (3.8)
-Message-ID: <20121121193430.GA9928@mail.hallyn.com>
-References: <20121120195503.GA28563@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120195503.GA28563@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Nov 2012 14:31:51 -0500
+Date: Wed, 21 Nov 2012 11:31:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 1/5] mm: introduce new field "managed_pages" to
+ struct zone
+Message-Id: <20121121113149.92e1bcd8.akpm@linux-foundation.org>
+In-Reply-To: <50ACE708.5050009@gmail.com>
+References: <20121115112454.e582a033.akpm@linux-foundation.org>
+	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
+	<1353254850-27336-2-git-send-email-jiang.liu@huawei.com>
+	<20121119153832.437c7e59.akpm@linux-foundation.org>
+	<50AB9A0B.9090105@gmail.com>
+	<20121120113119.38d2a635.akpm@linux-foundation.org>
+	<50ACE708.5050009@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> Hi James,
-> 
-> Please pull these Yama changes for 3.8. Thanks!
-> 
-> -Kees,
-> 
-> The following changes since commit b5666502700855a1eb1a15482005b22478b9460e:
-> 
->   drivers/char/tpm: remove tasklet and cleanup (2012-11-01 15:23:14 -0500)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/yama-3.8
-> 
-> for you to fetch changes up to 235e752789eb65a81477bb82845323dfcbf93012:
-> 
->   Yama: remove locking from delete path (2012-11-20 10:32:08 -0800)
-> 
+On Wed, 21 Nov 2012 22:36:56 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
-Sorry, I never saw the new version of the second patch in my email (likely
-my bad, i'm quick to delete), but looking at gitweb it looks good, thanks.
+> > void mod_zone_managed_pages(struct zone *zone, signed long delta)
+> > {
+> > 	WARN_ON(system_state != SYSTEM_BOOTING &&
+> > 		!is_locked_memory_hotplug());
+> > 	zone->managed_pages += delta;
+> > }
+> This seems a little overhead because __free_pages_bootmem() is on the hot path
+> and will be called many times at boot time.
 
-Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
+Maybe, maybe not.  These things are measurable so let's not just guess.
 
-thanks,
--serge
+But I'm not really recommending that we do this - there are all sorts
+of things we *could* check and warn about, but we don't.  Potential
+errors in this area don't seem terribly important.
+
+
