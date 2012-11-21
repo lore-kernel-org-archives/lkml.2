@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab2KUNZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:25:11 -0500
+	id S1754016Ab2KUNZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:25:26 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:52314 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab2KUNZF (ORCPT
+	with ESMTP id S1752306Ab2KUNZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:25:05 -0500
+	Wed, 21 Nov 2012 08:25:22 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ravishankar N <ravi.n1@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v5 6/8] fat (exportfs): rebuild inode if ilookup() fails
-Date: Wed, 21 Nov 2012 22:24:54 +0900
-Message-Id: <1353504294-5985-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
+Date: Wed, 21 Nov 2012 22:25:11 +0900
+Message-Id: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,137 +24,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-If the cache lookups fail,use the i_pos value to find the
-directory entry of the inode and rebuild the inode.Since this
-involves accessing the FAT media, do this only if the "nostale_ro" nfs
-mount option is specified.
+This patch enables rebuilding of directory inodes which are not present
+in the cache.This is done by traversing the disk clusters to find the
+directory entry of the parent directory and using its i_pos to build the
+inode.
+Do this only if the "nostale_ro" nfs mount option is specified.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/fat.h   |    1 +
- fs/fat/inode.c |   15 +++++++++++++++
- fs/fat/nfs.c   |   40 +++++++++++++++++++++++++++++++++++-----
- 3 files changed, 51 insertions(+), 5 deletions(-)
+ fs/fat/nfs.c |  119 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 118 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 40ceb79..bbad32c 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -75,6 +75,7 @@ struct msdos_sb_info {
- 	unsigned long root_cluster;   /* first cluster of the root directory */
- 	unsigned long fsinfo_sector;  /* sector number of FAT32 fsinfo */
- 	struct mutex fat_lock;
-+	struct mutex nfs_build_inode_lock;
- 	struct mutex s_lock;
- 	unsigned int prev_free;      /* previously allocated cluster number */
- 	unsigned int free_clusters;  /* -1 if undefined */
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 3127c0b..62e0ad5 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -444,12 +444,25 @@ static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
- 	return 0;
- }
- 
-+static inline void fat_lock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_lock(&sbi->nfs_build_inode_lock);
-+}
-+
-+static inline void fat_unlock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_unlock(&sbi->nfs_build_inode_lock);
-+}
-+
- struct inode *fat_build_inode(struct super_block *sb,
- 			struct msdos_dir_entry *de, loff_t i_pos)
- {
- 	struct inode *inode;
- 	int err;
- 
-+	fat_lock_build_inode(MSDOS_SB(sb));
- 	inode = fat_iget(sb, i_pos);
- 	if (inode)
- 		goto out;
-@@ -469,6 +482,7 @@ struct inode *fat_build_inode(struct super_block *sb,
- 	fat_attach(inode, i_pos);
- 	insert_inode_hash(inode);
- out:
-+	fat_unlock_build_inode(MSDOS_SB(sb));
- 	return inode;
- }
- 
-@@ -1188,6 +1202,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sb->s_magic = MSDOS_SUPER_MAGIC;
- 	sb->s_op = &fat_sops;
- 	sb->s_export_op = &fat_export_ops;
-+	mutex_init(&sbi->nfs_build_inode_lock);
- 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
- 			     DEFAULT_RATELIMIT_BURST);
- 
 diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
-index 6ea1d41..898bef4 100644
+index 898bef4..6a9933a 100644
 --- a/fs/fat/nfs.c
 +++ b/fs/fat/nfs.c
-@@ -52,19 +52,49 @@ static struct inode *fat_dget(struct super_block *sb, int i_logstart)
- 	return inode;
+@@ -211,6 +211,120 @@ static struct dentry *fat_fh_to_parent_nostale(struct super_block *sb,
  }
  
-+static struct inode *fat_ilookup(struct super_block *sb, u64 ino, loff_t i_pos)
+ /*
++ * Read the directory entries of 'search_clus' and find the entry
++ * which contains 'match_ipos' for the starting cluster.If the entry
++ * is found, rebuild its inode.
++ */
++static struct inode *fat_traverse_cluster(struct super_block *sb,
++				int search_clus, int match_ipos)
 +{
-+	if (MSDOS_SB(sb)->options.nfs == FAT_NFS_NOSTALE_RO)
-+		return fat_iget(sb, i_pos);
-+	else {
-+		if ((ino < MSDOS_ROOT_INO) || (ino == MSDOS_FSINFO_INO))
-+			return NULL;
-+		return ilookup(sb, ino);
-+	}
-+}
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	struct buffer_head *bh;
++	sector_t blknr;
++	int parent_ipos, search_ipos;
++	int i;
++	struct msdos_dir_entry *de;
++	struct inode *inode = NULL;
++	int iterations = sbi->cluster_size >> sb->s_blocksize_bits;
++	blknr = fat_clus_to_blknr(sbi, search_clus);
 +
- static struct inode *__fat_nfs_get_inode(struct super_block *sb,
- 				       u64 ino, u32 generation, loff_t i_pos)
- {
--	struct inode *inode;
--
--	if ((ino < MSDOS_ROOT_INO) || (ino == MSDOS_FSINFO_INO))
--		return NULL;
-+	struct inode *inode = fat_ilookup(sb, ino, i_pos);
- 
--	inode = ilookup(sb, ino);
- 	if (inode && generation && (inode->i_generation != generation)) {
- 		iput(inode);
- 		inode = NULL;
- 	}
-+	if (inode == NULL && MSDOS_SB(sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
-+		struct buffer_head *bh = NULL;
-+		struct msdos_dir_entry *de ;
-+		sector_t blocknr;
-+		int offset;
-+		fat_get_blknr_offset(MSDOS_SB(sb), i_pos, &blocknr, &offset);
-+		bh = sb_bread(sb, blocknr);
++	do {
++		bh = sb_bread(sb, blknr);
 +		if (!bh) {
 +			fat_msg(sb, KERN_ERR,
-+				"unable to read block(%llu) for building NFS inode",
-+				(llu)blocknr);
-+			return inode;
++				"NFS:unable to read block(%llu) while traversing cluster(%d)",
++				(llu)blknr, search_clus);
++			inode = ERR_PTR(-EIO);
++			goto out;
 +		}
 +		de = (struct msdos_dir_entry *)bh->b_data;
-+		/* If a file is deleted on server and client is not updated
-+		 * yet, we must not build the inode upon a lookup call.
-+		 */
-+		if (IS_FREE(de[offset].name))
-+			inode = NULL;
-+		else
-+			inode = fat_build_inode(sb, &de[offset], i_pos);
++		for (i = 0; i < sbi->dir_per_block; i++) {
++			if (de[i].name[0] == FAT_ENT_FREE) {
++				/*Reached end of directory*/
++				brelse(bh);
++				inode = ERR_PTR(-ENODATA);
++				goto out;
++			}
++			if (de[i].name[0] == DELETED_FLAG)
++				continue;
++			if (de[i].attr == ATTR_EXT)
++				continue;
++			if (!(de[i].attr & ATTR_DIR))
++				continue;
++			else {
++				search_ipos = fat_get_start(sbi, &de[i]);
++				if (search_ipos == match_ipos) {
++					/*Success.Now build the inode*/
++					parent_ipos = (loff_t)i +
++					 (blknr << sbi->dir_per_block_bits);
++					inode = fat_build_inode(sb, &de[i],
++								parent_ipos);
++					brelse(bh);
++					goto out;
++				}
++			}
++		}
 +		brelse(bh);
++		blknr += 1;
++	} while (--iterations > 0);
++out:
++	return inode;
++}
++
++/*
++ * Rebuild the parent for a directory that is not connected
++ *  to the filesystem root
++ */
++static
++struct inode *fat_rebuild_parent(struct super_block *sb, int parent_logstart)
++{
++	int search_clus, clus_to_match;
++	struct msdos_dir_entry *de;
++	struct inode *parent;
++	struct fat_entry fatent;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
++	struct buffer_head *parent_bh = sb_bread(sb, blknr);
++
++	if (!parent_bh) {
++		fat_msg(sb, KERN_ERR,
++			"NFS:unable to read cluster of parent directory");
++		return NULL;
 +	}
++	de = (struct msdos_dir_entry *) parent_bh->b_data;
++	clus_to_match = fat_get_start(sbi, &de[0]);
++	search_clus = fat_get_start(sbi, &de[1]);
++	if (!search_clus) {
++		if (sbi->fat_bits == 32)
++			search_clus = sbi->root_cluster;
++		else
++			/* sbi->root_cluster is valid only for FAT32.
++			 * Compute search_cluster such that when
++			 * fat_traverse_cluster() is called for FAT 12/16,
++			 * fat_clus_to_blknr() in it gives us sbi->dir_start
++			 */
++			search_clus = ((int)(sbi->dir_start - sbi->data_start)
++					     >> ilog2(sbi->sec_per_clus))
++					     + FAT_START_ENT;
++	}
++	brelse(parent_bh);
++	do {
++		parent = fat_traverse_cluster(sb,
++					search_clus, clus_to_match);
++		if (IS_ERR(parent) || parent)
++			break;
++		fatent_init(&fatent);
++		search_clus = fat_ent_read(sb, &fatent, search_clus);
++		fatent_brelse(&fatent);
++		if (search_clus < 0 || search_clus == FAT_ENT_FREE)
++			break;
++	} while (search_clus != FAT_ENT_EOF);
++
++	return parent;
++
++}
++
++/*
+  * Find the parent for a directory that is not currently connected to
+  * the filesystem root.
+  *
+@@ -222,10 +336,13 @@ static struct dentry *fat_get_parent(struct dentry *child_dir)
+ 	struct buffer_head *bh = NULL;
+ 	struct msdos_dir_entry *de;
+ 	struct inode *parent_inode = NULL;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
  
- 	return inode;
- }
+ 	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
+-		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
++		int parent_logstart = fat_get_start(sbi, de);
+ 		parent_inode = fat_dget(sb, parent_logstart);
++		if (!parent_inode && sbi->options.nfs == FAT_NFS_NOSTALE_RO)
++			parent_inode = fat_rebuild_parent(sb, parent_logstart);
+ 	}
+ 	brelse(bh);
+ 
 -- 
 1.7.9.5
 
