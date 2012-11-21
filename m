@@ -1,57 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2KUTgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:36:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51870 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2KUTgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:36:32 -0500
-Message-ID: <50AD2D16.7050304@oracle.com>
-Date: Wed, 21 Nov 2012 14:35:50 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121112 Thunderbird/16.0.1
+	id S1755885Ab2KUTiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:38:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755807Ab2KUTiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 14:38:20 -0500
+Date: Wed, 21 Nov 2012 20:37:12 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+Message-ID: <20121121193712.GJ3773@redhat.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121121103859.GU8218@suse.de>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, penberg@kernel.org
-Subject: Re: [PATCH] x86, smpboot: allow manual hotplug of CPUs
-References: <1353522136-14944-1-git-send-email-sasha.levin@oracle.com> <50AD1CB6.9030707@zytor.com> <50AD1EE7.6020304@oracle.com> <50AD1F88.1010006@zytor.com> <50AD2953.5070700@oracle.com> <50AD2A85.7030705@zytor.com>
-In-Reply-To: <50AD2A85.7030705@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121103859.GU8218@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 02:24 PM, H. Peter Anvin wrote:
-> On 11/21/2012 11:19 AM, Sasha Levin wrote:
->>>
->>> So, are there any mptables platforms which support hotplug?  If the
->>> answer is "KVM" then the answer is that KVM needs to move to ACPI to get
->>> the proper functionality; putting a hack in is really not okay.
->>
->> There are no platforms which support actual hotplug, but you can still set
->> existing processors as disabled in the table and without this patch there's
->> no way enable them.
->>
->> I'm not sure if it's a "hack" though - the presentation of hotpluggable cpus
->> is the almost the same between mptable and acpi, and acpi provides a way to
->> manually probe/release cpus as well. The only difference is that acpi also
->> provides notifications about such events.
->>
->> Actually, maybe acpi should start using probe/release as well... hmm...
->>
+Hi,
+
+On Wed, Nov 21, 2012 at 10:38:59AM +0000, Mel Gorman wrote:
+> HACKBENCH PIPES
+>                          3.7.0                 3.7.0                 3.7.0                 3.7.0                 3.7.0
+>                rc6-stats-v4r12   rc6-schednuma-v16r2rc6-autonuma-v28fastr3       rc6-moron-v4r38    rc6-twostage-v4r38
+> Procs 1       0.0320 (  0.00%)      0.0354 (-10.53%)      0.0410 (-28.28%)      0.0310 (  3.00%)      0.0296 (  7.55%)
+> Procs 4       0.0560 (  0.00%)      0.0699 (-24.87%)      0.0641 (-14.47%)      0.0556 (  0.79%)      0.0562 ( -0.36%)
+> Procs 8       0.0850 (  0.00%)      0.1084 (-27.51%)      0.1397 (-64.30%)      0.0833 (  1.96%)      0.0953 (-12.07%)
+> Procs 12      0.1047 (  0.00%)      0.1084 ( -3.54%)      0.1789 (-70.91%)      0.0990 (  5.44%)      0.1127 ( -7.72%)
+> Procs 16      0.1276 (  0.00%)      0.1323 ( -3.67%)      0.1395 ( -9.34%)      0.1236 (  3.16%)      0.1240 (  2.83%)
+> Procs 20      0.1405 (  0.00%)      0.1578 (-12.29%)      0.2452 (-74.52%)      0.1471 ( -4.73%)      0.1454 ( -3.50%)
+> Procs 24      0.1823 (  0.00%)      0.1800 (  1.24%)      0.3030 (-66.22%)      0.1776 (  2.58%)      0.1574 ( 13.63%)
+> Procs 28      0.2019 (  0.00%)      0.2143 ( -6.13%)      0.3403 (-68.52%)      0.2000 (  0.94%)      0.1983 (  1.78%)
+> Procs 32      0.2162 (  0.00%)      0.2329 ( -7.71%)      0.6526 (-201.85%)      0.2235 ( -3.36%)      0.2158 (  0.20%)
+> Procs 36      0.2354 (  0.00%)      0.2577 ( -9.47%)      0.4468 (-89.77%)      0.2619 (-11.24%)      0.2451 ( -4.11%)
+> Procs 40      0.2600 (  0.00%)      0.2850 ( -9.62%)      0.5247 (-101.79%)      0.2724 ( -4.77%)      0.2646 ( -1.75%)
 > 
-> The bottom line is that I don't want the underlying implementation to
-> end up with a user-visible difference... therein lies madness and lots
-> of bugs.
+> The number of procs hackbench is running is too low here for a 48-core
+> machine. It should have been reconfigured but this is better than nothing.
+> 
+> schednuma and autonuma both show large regressions in the performance here.
+> I do not investigate why but as there are a number of scheduler changes
+> it could be anything.
 
-Okay, so if in the case of ACPI, 'probe' will call acpi_processor_add()
-and 'release' would call acpi_processor_remove() so the behaviour
-would be the same for both ACPI and mptables. Is this okay?
+Strange, last time I tested hackbench it was perfectly ok, I even had
+this test shown in some of the pdf.
 
+Lately (post my last hackbench run) I disabled the affine wakeups
+cross-node and pipes use sd_affine wakeups. That could matter for
+these heavy scheduling tests as it practically disables the _sync in
+wake_up_interruptible_sync_poll used by the pipe code, if the waker
+CPU is in a different node than the wakee prev_cpu. I discussed this
+with Mike and he liked this change IIRC but it's the first thing that
+should be checked at the light of above regression.
 
-Thanks,
-Sasha
+> PAGE FAULT TEST
+> 
+> This is a microbenchmark for page faults. The number of clients are badly ordered
+> which again, I really should fix but anyway.
+> 
+>                               3.7.0                 3.7.0                 3.7.0                 3.7.0                 3.7.0
+>                     rc6-stats-v4r12   rc6-schednuma-v16r2rc6-autonuma-v28fastr3       rc6-moron-v4r38    rc6-twostage-v4r38
+> System     1       8.0710 (  0.00%)      8.1085 ( -0.46%)      8.0925 ( -0.27%)      8.0170 (  0.67%)     37.3075 (-362.24%
+> System     10      9.4975 (  0.00%)      9.5690 ( -0.75%)     12.0055 (-26.41%)      9.5915 ( -0.99%)      9.5835 ( -0.91%)
+> System     11      9.7740 (  0.00%)      9.7915 ( -0.18%)     13.4890 (-38.01%)      9.7275 (  0.48%)      9.6810 (  0.95%)
+
+No real clue on this one as I should look in what the test does. It
+might be related to THP splits though. I can't imagine anything else
+because there's nothing at all in autonuma that alters the page faults
+(except from arming NUMA hinting faults which should be lighter in
+autonuma than in the other implementation using task work).
+
+Chances are the faults are tested by touching bytes at different 4k
+offsets in the same 2m naturally aligned virtual range.
+
+Hugh THP native migration patch will clarify things on the above.
+
+> also hope that the concepts of autonuma would be reimplemented on top of
+> this foundation so we can do a meaningful comparison between different
+> placement policies.
+
+I'll try to help with this to see what could be added from autonuma on
+top to improve on top your balancenuma foundation. Your current
+foundation looks ideal for inclusion to me.
+
+I noticed you haven't run any single instance specjbb workload, that
+should be added to the battery of tests. But hey take your time, the
+amount of data you provided is already very comprehensive and you were
+so fast.
+
+The thing is: single instance and multi instance are totally different
+beasts.
+
+multi instance is all about avoiding NUMA false sharing in the first
+place (the anti false sharing algorithm becomes a noop), and it has a
+trivial perfect solution with all cross node traffic guaranteed to
+stop after converence has been reached for the whole duration of the
+workload.
+
+single instance is all about NUMA false sharing detection and it has
+no perfect solution and there's no way to fully converge and to stop
+all cross node traffic. So it's a tradeoff between doing too many
+CPU/memory spurious migrations (harmful, causes regressions) and doing
+too few (i.e. not improving at all compared to upstream but not
+regressing either).
+
+autonuma27/28/28fast will perform identical on multi instance loads
+(i.e. optimal, a few percent away from hard bindings). 
+
+I was just starting to improve the anti false sharing algorithm in
+autonuma28/28fast to improve single instance specjbb too (this is why
+you really need autonuma28 or autonuma28fast to test single instance
+specjbb and not autonuma27).
+
+About THP, normally when I was running benchmarks I was testing these
+4 configs:
+
+1) THP on PMD scan on
+2) THP on PMD scan off
+3) THP off PMD scan on
+4) THP off PMD scan off
+
+(1 and 2 are practically the same for the autonuma benchmark, because
+all memory is backed by THP rendering the PMD level hinting faults for
+4k pages very unlikely, but I was testing it anyway just in case)
+
+THP off is going to hit KVM guests the most and much less host
+workloads. But even for KVM it's good practice to test with THP off
+too, to verify the cost of the numa hinting page faults remains very
+low (the cost is much higher for guests than host because of the
+vmexists).
+
+The KVM benchmark run by IBM was also done in all 4 combinations: THP
+on/off KSM on/off and showed improvement even for the "No THP" case
+(btw, things should run much better these days than the old
+autonuma13).
+
+http://dl.dropbox.com/u/82832537/kvm-numa-comparison-0.png
