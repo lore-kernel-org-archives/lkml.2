@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2KUTdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:33:05 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44880 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768Ab2KUTdD (ORCPT
+	id S1755888Ab2KUTfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:35:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51026 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749Ab2KUTfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:33:03 -0500
-Date: Wed, 21 Nov 2012 11:32:41 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com, jmoyer@redhat.com,
-        bpm@sgi.com, viro@zeniv.linux.org.uk, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 7/9] ocfs2: Use generic handlers of O_SYNC AIO DIO
-Message-ID: <20121121193240.GL2822@localhost>
-Mail-Followup-To: "Darrick J. Wong" <darrick.wong@oracle.com>,
-	axboe@kernel.dk, tytso@mit.edu, david@fromorbit.com,
-	jmoyer@redhat.com, bpm@sgi.com, viro@zeniv.linux.org.uk,
-	jack@suse.cz, linux-fsdevel@vger.kernel.org, hch@infradead.org,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	xfs@oss.sgi.com
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
- <20121120075114.25270.83181.stgit@blackbox.djwong.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120075114.25270.83181.stgit@blackbox.djwong.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Nov 2012 14:35:17 -0500
+Date: Wed, 21 Nov 2012 11:35:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of
+ pages occupied by memmap
+Message-Id: <20121121113515.3fa5a60c.akpm@linux-foundation.org>
+In-Reply-To: <50ACEAAD.60306@gmail.com>
+References: <20121115112454.e582a033.akpm@linux-foundation.org>
+	<1353254850-27336-1-git-send-email-jiang.liu@huawei.com>
+	<1353254850-27336-5-git-send-email-jiang.liu@huawei.com>
+	<20121119154240.91efcc53.akpm@linux-foundation.org>
+	<50AB9F4A.5050500@gmail.com>
+	<20121120111942.c9596d3f.akpm@linux-foundation.org>
+	<50ACEAAD.60306@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 11:51:14PM -0800, Darrick J. Wong wrote:
-> Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-> file.
-> 
-> From: Jan Kara <jack@suse.cz>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
+On Wed, 21 Nov 2012 22:52:29 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
-> ---
->  fs/ocfs2/aops.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+> On 11/21/2012 03:19 AM, Andrew Morton wrote:
+> > On Tue, 20 Nov 2012 23:18:34 +0800
+> > Jiang Liu <liuj97@gmail.com> wrote:
+> > 
+> >>>> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
+> >>>> +				      unsigned long present_pages)
+> >>>> +{
+> >>>> +	unsigned long pages = spanned_pages;
+> >>>> +
+> >>>> +	/*
+> >>>> +	 * Provide a more accurate estimation if there are big holes within
+> >>>> +	 * the zone and SPARSEMEM is in use.
+> >>>> +	 */
+> >>>> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
+> >>>> +	    IS_ENABLED(CONFIG_SPARSEMEM))
+> >>>> +		pages = present_pages;
+> >>>> +
+> >>>> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
+> >>>> +}
+> >>>
+> >>> Please explain the ">> 4" heuristc more completely - preferably in both
+> >>> the changelog and code comments.  Why can't we calculate this
+> >>> requirement exactly?  That might require a second pass, but that's OK for
+> >>> code like this?
+> >> Hi Andrew,
+> >> 	A normal x86 platform always have some holes within the DMA ZONE,
+> >> so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
+> >> ZONE on x86 platforms. 
+> >> 	Because the memmap_size is just an estimation, I feel it's OK to
+> >> remove the ">> 4" heuristic, that shouldn't affect much.
+> > 
+> > Again: why can't we calculate this requirement exactly?  That might
+> > require a second pass, but that's OK for code like this?
 > 
-> 
-> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-> index 6577432..60457cc 100644
-> --- a/fs/ocfs2/aops.c
-> +++ b/fs/ocfs2/aops.c
-> @@ -593,9 +593,7 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
->  	level = ocfs2_iocb_rw_locked_level(iocb);
->  	ocfs2_rw_unlock(inode, level);
->  
-> -	if (is_async)
-> -		aio_complete(iocb, ret, 0);
-> -	inode_dio_done(inode);
-> +	generic_dio_end_io(iocb, offset, bytes, private, ret, is_async);
->  }
->  
->  /*
-> @@ -642,7 +640,7 @@ static ssize_t ocfs2_direct_IO(int rw,
->  	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
->  				    iov, offset, nr_segs,
->  				    ocfs2_direct_IO_get_blocks,
-> -				    ocfs2_dio_end_io, NULL, 0);
-> +				    ocfs2_dio_end_io, NULL, DIO_SYNC_WRITES);
->  }
->  
->  static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hi Andrew,
+> 	If there are holes within a zone, it may cost us one or two extra pages
+> for each populated region within the zone due to alignment because memmap for 
+> each populated regions may not naturally aligned on page boundary.
 
--- 
+Right.  So with an additional pass across the zone and a bit of
+arithmetic, we can calculate the exact space requirement for memmap?
+No need for kludgy heuristics?
 
-"Hell is oneself, hell is alone, the other figures in it, merely projections."
-        - T. S. Eliot
+> Originally the ">> 4" heuristic is to trade off these extra memmap pages,
+> especially for small zones linke DMA zone.
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
