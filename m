@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2KUObd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:31:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56483 "EHLO mga11.intel.com"
+	id S1754831Ab2KUOdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:33:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57228 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754384Ab2KUObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:31:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
-   d="scan'208";a="250557231"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH, resend] kfifo: initialize fifo accordingly to C99 standard
-Date: Wed, 21 Nov 2012 16:31:11 +0200
-Message-Id: <1353508271-30646-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754805Ab2KUOdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 09:33:08 -0500
+Date: Wed, 21 Nov 2012 14:33:03 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.7-rc6] capture_free_page() frees page without accounting for
+ them??
+Message-ID: <20121121143303.GD8218@suse.de>
+References: <50ABE741.2020604@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <50ABE741.2020604@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When build a kernel with "make W=1" we will get a warning about missing
-initializer. It comes from kfifo usage style. The DEFINE_KFIFO macro doesn't
-initialize the buf[] field of the fifo structure. So, using C99 style helps in
-such case.
+On Tue, Nov 20, 2012 at 12:25:37PM -0800, Dave Hansen wrote:
+> Hi Mel,
+> 
+> I'm chasing an apparent memory leak introduced post-3.6. 
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/kfifo.h |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+An accounting leak could also contribute to the kswapd bugs we've been
+seeing recently.
 
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index 10308c6..3de51a1 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -155,8 +155,7 @@ struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
- #define DEFINE_KFIFO(fifo, type, size) \
- 	DECLARE_KFIFO(fifo, type, size) = \
- 	(typeof(fifo)) { \
--		{ \
--			{ \
-+		.kfifo = { \
- 			.in	= 0, \
- 			.out	= 0, \
- 			.mask	= __is_kfifo_ptr(&(fifo)) ? \
-@@ -166,11 +165,9 @@ struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
- 			.data	= __is_kfifo_ptr(&(fifo)) ? \
- 				NULL : \
- 				(fifo).buf, \
--			} \
- 		} \
- 	}
+Andrew, this is quite important and might be worth wedging in before 3.7
+comes out because it'll cause serious problems if Dave is right.
+
+> The
+> interesting thing is that it appears that the pages are in the
+> allocator, but not being accounted for:
+> 
+> 	http://www.spinics.net/lists/linux-mm/msg46187.html
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=50181
+> 
+
+Differences in the buddy allocator and reported free figures almost
+always point to either per-cpu drift or NR_FREE_PAGES accounting bugs.
+Usually the drift is not too bad and the drift is always within a
+margin related to the number of CPUs. NR_FREE_PAGES accounting bugs get
+progressively worse until the machine starts OOM killing or locks up.
+
+> I started auditing anything that might be messing with NR_FREE_PAGES,
+> and came across commit 1fb3f8ca. 
+
+It could certainly affect NR_FREE_PAGES due to its manipulating of buddy
+pages. It will not result in happy and the system would potentially need
+to be running a long time before it's spotted.
+
+> It does something curious with
+> capture_free_page() (previously known as split_free_page()).
+> 
+> int capture_free_page(struct page *page, int alloc_order,
+> ...
+>         __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+> 
+> -       /* Split into individual pages */
+> -       set_page_refcounted(page);
+> -       split_page(page, order);
+> +       if (alloc_order != order)
+> +               expand(zone, page, alloc_order, order,
+> +                       &zone->free_area[order], migratetype);
+> 
+> Note that expand() puts the pages _back_ in the allocator, but it does
+> not bump NR_FREE_PAGES.  We "return" alloc_order' worth of pages, but we
+> accounted for removing 'order'.
+> 
+> I _think_ the correct fix is to just:
+> 
+> -     __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+> +     __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << alloc_order));
+> 
+
+This looks correct to me but it will collide with other patches. You'll
+need something like the below. If it works for you, stick a changelog on
+it, feel free to put my Acked on it and get it to Andrew for ASAP
+because I really think this needs to be in before 3.7 comes out or we'll
+be swamped with a maze of kswapd-goes-mental bugs, all similar with
+different root causes.
+
+Thanks a million Dave!
+
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index fd6a073..ad99f0f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1406,7 +1406,7 @@ int capture_free_page(struct page *page, int alloc_order, int migratetype)
  
--
- static inline unsigned int __must_check
- __kfifo_uint_must_check_helper(unsigned int val)
- {
--- 
-1.7.10.4
+ 	mt = get_pageblock_migratetype(page);
+ 	if (unlikely(mt != MIGRATE_ISOLATE))
+-		__mod_zone_freepage_state(zone, -(1UL << order), mt);
++		__mod_zone_freepage_state(zone, -(1UL << alloc_order), mt);
+ 
+ 	if (alloc_order != order)
+ 		expand(zone, page, alloc_order, order,
 
