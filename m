@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab2KUKZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:25:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44014 "EHLO mx2.suse.de"
+	id S1754699Ab2KUK0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:26:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43965 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754646Ab2KUKW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:56 -0500
+	id S1754615Ab2KUKWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:51 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 36/46] mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
-Date: Wed, 21 Nov 2012 10:21:42 +0000
-Message-Id: <1353493312-8069-37-git-send-email-mgorman@suse.de>
+Subject: [PATCH 33/46] mm: numa: Rate limit setting of pte_numa if node is saturated
+Date: Wed, 21 Nov 2012 10:21:39 +0000
+Message-Id: <1353493312-8069-34-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,65 +28,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While it is desirable that all threads in a process run on its home
-node, this is not always possible or necessary. There may be more
-threads than exist within the node or the node might over-subscribed
-with unrelated processes.
-
-This can cause a situation whereby a page gets migrated off its home
-node because the threads clearing pte_numa were running off-node. This
-patch uses page->last_nid to build a two-stage filter before pages get
-migrated to avoid problems with short or unlikely task<->node
-relationships.
+If there are a large number of NUMA hinting faults and all of them
+are resulting in migrations it may indicate that memory is just
+bouncing uselessly around. NUMA balancing cost is likely exceeding
+any benefit from locality. Rate limit the PTE updates if the node
+is migration rate-limited. As noted in the comments, this distorts
+the NUMA faulting statistics.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
+ include/linux/migrate.h |    6 ++++++
+ kernel/sched/fair.c     |    9 +++++++++
+ mm/migrate.c            |   20 ++++++++++++++++++++
+ 3 files changed, 35 insertions(+)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 4c1c8d8..fd20e28 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2317,9 +2317,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	}
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 69f60b5..0d4ee94 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -41,6 +41,7 @@ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
+ extern int migrate_misplaced_page(struct page *page, int node);
++extern bool migrate_ratelimited(int node);
+ #else
  
- 	/* Migrate the page towards the node whose CPU is referencing it */
--	if (pol->flags & MPOL_F_MORON)
-+	if (pol->flags & MPOL_F_MORON) {
-+		int last_nid;
-+
- 		polnid = numa_node_id();
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -79,6 +80,11 @@ int migrate_misplaced_page(struct page *page, int node)
+ {
+ 	return -EAGAIN; /* can't migrate now */
+ }
++static inline
++bool migrate_ratelimited(int node)
++{
++	return false;
++}
+ #endif /* CONFIG_MIGRATION */
  
-+		/*
-+		 * Multi-stage node selection is used in conjunction
-+		 * with a periodic migration fault to build a temporal
-+		 * task<->page relation. By using a two-stage filter we
-+		 * remove short/unlikely relations.
-+		 *
-+		 * Using P(p) ~ n_p / n_t as per frequentist
-+		 * probability, we can equate a task's usage of a
-+		 * particular page (n_p) per total usage of this
-+		 * page (n_t) (in a given time-span) to a probability.
-+		 *
-+		 * Our periodic faults will sample this probability and
-+		 * getting the same result twice in a row, given these
-+		 * samples are fully independent, is then given by
-+		 * P(n)^2, provided our sample period is sufficiently
-+		 * short compared to the usage pattern.
-+		 *
-+		 * This quadric squishes small probabilities, making
-+		 * it less likely we act on an unlikely task<->page
-+		 * relation.
-+		 */
-+		last_nid = page_xchg_last_nid(page, polnid);
-+		if (last_nid != polnid)
-+			goto out;
-+	}
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2e65f44..357057c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -27,6 +27,7 @@
+ #include <linux/profile.h>
+ #include <linux/interrupt.h>
+ #include <linux/mempolicy.h>
++#include <linux/migrate.h>
+ #include <linux/task_work.h>
+ 
+ #include <trace/events/sched.h>
+@@ -861,6 +862,14 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
++	/*
++	 * Do not set pte_numa if the current running node is rate-limited.
++	 * This loses statistics on the fault but if we are unwilling to
++	 * migrate to this node, it is less likely we can do useful work
++	 */
++	if (migrate_ratelimited(numa_node_id()))
++		return;
 +
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
+ 	start = mm->numa_scan_offset;
+ 	pages = sysctl_balance_numa_scan_size;
+ 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index cf0970f..3033669 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1464,10 +1464,30 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
+  * page migration rate limiting control.
+  * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
+  * window of time. Default here says do not migrate more than 1280M per second.
++ * If a node is rate-limited then PTE NUMA updates are also rate-limited. However
++ * as it is faults that reset the window, pte updates will happen unconditionally
++ * if there has not been a fault since @pteupdate_interval_millisecs after the
++ * throttle window closed.
+  */
+ static unsigned int migrate_interval_millisecs __read_mostly = 100;
++static unsigned int pteupdate_interval_millisecs __read_mostly = 1000;
+ static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
+ 
++/* Returns true if NUMA migration is currently rate limited */
++bool migrate_ratelimited(int node)
++{
++	pg_data_t *pgdat = NODE_DATA(node);
++
++	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window +
++				msecs_to_jiffies(pteupdate_interval_millisecs)))
++		return false;
++
++	if (pgdat->balancenuma_migrate_nr_pages < ratelimit_pages)
++		return false;
++
++	return true;
++}
++
+ /*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
 -- 
 1.7.9.2
 
