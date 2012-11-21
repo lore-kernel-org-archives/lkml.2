@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2KVSsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:48:23 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:18885 "EHLO
+	id S932171Ab2KVSsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:48:32 -0500
+Received: from userp1050.oracle.com ([156.151.31.82]:18897 "EHLO
 	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab2KVSsS (ORCPT
+	with ESMTP id S1754086Ab2KVSs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:48:18 -0500
+	Thu, 22 Nov 2012 13:48:29 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH v4 09/31] dio: create a dio_aligned() helper function
-Date: Wed, 21 Nov 2012 16:40:49 -0600
-Message-Id: <1353537671-26284-10-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH v4 08/31] iov_iter: let callers extract iovecs and bio_vecs
+Date: Wed, 21 Nov 2012 16:40:48 -0600
+Message-Id: <1353537671-26284-9-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
@@ -25,109 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-__blockdev_direct_IO() had two instances of the same code to determine
-if a given offset wasn't aligned first to the inode's blkbits and then
-to the underlying device's blkbits.   This was confusing enough but
-we're about to add code that performs the same check on offsets in bvec
-arrays.  Rather than add yet more copies of this code let's have
-everyone call a helper.
+direct IO treats memory from user iovecs and memory from arrays of
+kernel pages very differently.  User memory is pinned and worked with in
+batches while kernel pages are always pinned and don't require
+additional processing.
+
+Rather than try and provide an abstraction that includes these
+different behaviours we let direct IO extract the memory structs and
+hand them to the existing code.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- fs/direct-io.c | 59 ++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 37 insertions(+), 22 deletions(-)
+ include/linux/fs.h | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..035c0a3 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -1020,6 +1020,39 @@ static inline int drop_refcount(struct dio *dio)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8b2f558..6f26f11 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -364,6 +364,17 @@ static inline void iov_iter_init_bvec(struct iov_iter *i,
+ 	iov_iter_advance(i, written);
  }
  
- /*
-+ * Returns true if the given offset is aligned to either the IO size
-+ * specified by the given blkbits or by the logical block size of the
-+ * given block device.
-+ *
-+ * If the given offset isn't aligned to the blkbits arguments as this is
-+ * called then blkbits is set to the block size of the specified block
-+ * device.  The call can then return either true or false.
-+ *
-+ * This bizarre calling convention matches the code paths that
-+ * duplicated the functionality that this helper was built from.  We
-+ * reproduce the behaviour to avoid introducing subtle bugs.
-+ */
-+static int dio_aligned(unsigned long offset, unsigned *blkbits,
-+		       struct block_device *bdev)
++static inline int iov_iter_has_bvec(struct iov_iter *i)
 +{
-+	unsigned mask = (1 << *blkbits) - 1;
-+
-+	/*
-+	 * Avoid references to bdev if not absolutely needed to give
-+	 * the early prefetch in the caller enough time.
-+	 */
-+
-+	if (offset & mask) {
-+		if (bdev)
-+			*blkbits = blksize_bits(bdev_logical_block_size(bdev));
-+		mask = (1 << *blkbits) - 1;
-+		return !(offset & mask);
-+	}
-+
-+	return 1;
++	return i->ops == &ii_bvec_ops;
 +}
 +
-+/*
-  * This is a library function for use by filesystem drivers.
-  *
-  * The locking rules are governed by the flags parameter:
-@@ -1054,7 +1087,6 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	size_t size;
- 	unsigned long addr;
- 	unsigned blkbits = inode->i_blkbits;
--	unsigned blocksize_mask = (1 << blkbits) - 1;
- 	ssize_t retval = -EINVAL;
- 	loff_t end = offset;
- 	struct dio *dio;
-@@ -1067,33 +1099,16 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	if (rw & WRITE)
- 		rw = WRITE_ODIRECT;
++static inline struct bio_vec *iov_iter_bvec(struct iov_iter *i)
++{
++	BUG_ON(!iov_iter_has_bvec(i));
++	return (struct bio_vec *)i->data;
++}
++
+ extern struct iov_iter_ops ii_iovec_ops;
  
--	/*
--	 * Avoid references to bdev if not absolutely needed to give
--	 * the early prefetch in the caller enough time.
--	 */
--
--	if (offset & blocksize_mask) {
--		if (bdev)
--			blkbits = blksize_bits(bdev_logical_block_size(bdev));
--		blocksize_mask = (1 << blkbits) - 1;
--		if (offset & blocksize_mask)
--			goto out;
--	}
-+	if (!dio_aligned(offset, &blkbits, bdev))
-+		goto out;
+ static inline void iov_iter_init(struct iov_iter *i,
+@@ -379,8 +390,14 @@ static inline void iov_iter_init(struct iov_iter *i,
+ 	iov_iter_advance(i, written);
+ }
  
- 	/* Check the memory alignment.  Blocks cannot straddle pages */
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		addr = (unsigned long)iov[seg].iov_base;
- 		size = iov[seg].iov_len;
- 		end += size;
--		if (unlikely((addr & blocksize_mask) ||
--			     (size & blocksize_mask))) {
--			if (bdev)
--				blkbits = blksize_bits(
--					 bdev_logical_block_size(bdev));
--			blocksize_mask = (1 << blkbits) - 1;
--			if ((addr & blocksize_mask) || (size & blocksize_mask))
--				goto out;
--		}
-+		if (!dio_aligned(addr|size, &blkbits, bdev))
-+			goto out;
- 	}
++static inline int iov_iter_has_iovec(struct iov_iter *i)
++{
++	return i->ops == &ii_iovec_ops;
++}
++
+ static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
+ {
++	BUG_ON(!iov_iter_has_iovec(i));
+ 	return (struct iovec *)i->data;
+ }
  
- 	/* watch out for a 0 len io from a tricksy fs */
 -- 
 1.8.0
 
