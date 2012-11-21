@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab2KUKXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:23:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44026 "EHLO mx2.suse.de"
+	id S1754723Ab2KUKYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:24:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44069 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666Ab2KUKW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:58 -0500
+	id S1754673Ab2KUKXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:23:03 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 37/46] mm: numa: Add THP migration for the NUMA working set scanning fault case.
-Date: Wed, 21 Nov 2012 10:21:43 +0000
-Message-Id: <1353493312-8069-38-git-send-email-mgorman@suse.de>
+Subject: [PATCH 40/46] sched: numa: Implement home-node awareness
+Date: Wed, 21 Nov 2012 10:21:46 +0000
+Message-Id: <1353493312-8069-41-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,437 +28,702 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: This is very heavily based on a patch from Peter Zijlstra with
-	fixes from Ingo Molnar, Hugh Dickins and Johannes Weiner.  That patch
-	put a lot of migration logic into mm/huge_memory.c where it does
-	not belong. This version puts tries to share some of the migration
-	logic with migrate_misplaced_page.  However, it should be noted
-	that now migrate.c is doing more with the pagetable manipulation
-	than is preferred. The end result is barely recognisable so as
-	before, the signed-offs had to be removed but will be re-added if
-	the original authors are ok with it.
+NOTE: Entirely on "sched, numa, mm: Implement home-node awareness" but
+	only a subset of it. There was stuff in there that was disabled
+	by default and generally did slightly more than what I felt was
+	necessary at this stage. In particular the random queue selection
+	logic is gone because it looks broken but it does mean that the
+	last CPU in a node may see increased scheduling pressure which
+	is almost certainly the wrong thing to do. Needs re-examination
+	Signed-offs removed as a result but will re-add if authors are ok.
 
-Add THP migration for the NUMA working set scanning fault case.
+Implement home node preference in the scheduler's load-balancer.
 
-It uses the page lock to serialize. No migration pte dance is
-necessary because the pte is already unmapped when we decide
-to migrate.
+- task_numa_hot(); make it harder to migrate tasks away from their
+  home-node, controlled using the NUMA_HOMENODE_PREFERRED feature flag.
+
+- load_balance(); during the regular pull load-balance pass, try
+  pulling tasks that are on the wrong node first with a preference of
+  moving them nearer to their home-node through task_numa_hot(), controlled
+  through the NUMA_PULL feature flag.
+
+- load_balance(); when the balancer finds no imbalance, introduce
+  some such that it still prefers to move tasks towards their home-node,
+  using active load-balance if needed, controlled through the NUMA_PULL_BIAS
+  feature flag.
+
+  In particular, only introduce this BIAS if the system is otherwise properly
+  (weight) balanced and we either have an offnode or !numa task to trade
+  for it.
+
+In order to easily find off-node tasks, split the per-cpu task list
+into two parts.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |   16 ++++
- mm/huge_memory.c        |   55 +++++++-----
- mm/internal.h           |    2 +
- mm/migrate.c            |  212 ++++++++++++++++++++++++++++++++++++++---------
- 4 files changed, 226 insertions(+), 59 deletions(-)
+ include/linux/sched.h   |    3 +
+ kernel/sched/core.c     |   14 ++-
+ kernel/sched/debug.c    |    3 +
+ kernel/sched/fair.c     |  298 +++++++++++++++++++++++++++++++++++++++++++----
+ kernel/sched/features.h |   18 +++
+ kernel/sched/sched.h    |   16 +++
+ 6 files changed, 324 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 0d4ee94..23dc324 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -41,6 +41,11 @@ extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
- extern int migrate_misplaced_page(struct page *page, int node);
-+extern int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, pmd_t entry,
-+			unsigned long address,
-+			struct page *page, int node);
- extern bool migrate_ratelimited(int node);
- #else
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b8580f5..1cccfc3 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -823,6 +823,7 @@ enum cpu_idle_type {
+ #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
+ #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
+ #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
++#define SD_NUMA			0x4000	/* cross-node balancing */
  
-@@ -80,6 +85,17 @@ int migrate_misplaced_page(struct page *page, int node)
- {
- 	return -EAGAIN; /* can't migrate now */
- }
-+
-+static inline
-+int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, pmd_t entry,
-+			unsigned long address,
-+			struct page *page, int node)
-+{
-+	return -EAGAIN;
-+}
-+
- static inline
- bool migrate_ratelimited(int node)
- {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8f89a98..e74cb93 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -600,7 +600,7 @@ out:
- }
- __setup("transparent_hugepage=", setup_transparent_hugepage);
+ extern int __weak arch_sd_sibiling_asym_packing(void);
  
--static inline pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
-+pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
- {
- 	if (likely(vma->vm_flags & VM_WRITE))
- 		pmd = pmd_mkwrite(pmd);
-@@ -1022,9 +1022,11 @@ out:
- int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
- {
--	struct page *page = NULL;
-+	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
- 	int target_nid;
-+	bool migrated;
-+	bool page_locked = false;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
-@@ -1032,39 +1034,54 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	page = pmd_page(pmd);
- 	get_page(page);
--	spin_unlock(&mm->page_table_lock);
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
- 
- 	target_nid = mpol_misplaced(page, vma, haddr);
--	if (target_nid == -1)
-+	if (target_nid == -1) {
-+		put_page(page);
- 		goto clear_pmdnuma;
-+	}
- 
--	/*
--	 * Due to lacking code to migrate thp pages, we'll split
--	 * (which preserves the special PROT_NONE) and re-take the
--	 * fault on the normal pages.
--	 */
--	split_huge_page(page);
--	put_page(page);
--
--	return 0;
-+	/* Acquire the page lock to serialise THP migrations */
-+	spin_unlock(&mm->page_table_lock);
-+	lock_page(page);
-+	page_locked = true;
- 
--clear_pmdnuma:
-+	/* Confirm the PTE did not while locked */
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp)))
-+	if (unlikely(!pmd_same(pmd, *pmdp))) {
-+		unlock_page(page);
-+		put_page(page);
- 		goto out_unlock;
-+	}
-+	spin_unlock(&mm->page_table_lock);
-+
-+	/* Migrate the THP to the requested node */
-+	migrated = migrate_misplaced_transhuge_page(mm, vma,
-+				pmdp, pmd, addr,
-+				page, target_nid);
-+	if (!migrated) {
-+		spin_lock(&mm->page_table_lock);
-+		if (unlikely(!pmd_same(pmd, *pmdp))) {
-+			unlock_page(page);
-+			goto out_unlock;
-+		}
-+		goto clear_pmdnuma;
-+	}
-+
-+	task_numa_fault(target_nid, HPAGE_PMD_NR);
-+	return 0;
- 
-+clear_pmdnuma:
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
-+	if (page_locked)
-+		unlock_page(page);
- 
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
--	if (page) {
--		put_page(page);
--		task_numa_fault(numa_node_id(), HPAGE_PMD_NR);
--	}
- 	return 0;
- }
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index a4fa284..6836396 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -221,6 +221,8 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
- 	}
- }
- 
-+extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
-+
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern unsigned long vma_address(struct page *page,
- 				 struct vm_area_struct *vma);
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 3033669..d7c5bdf 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -410,7 +410,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
+@@ -1481,6 +1482,7 @@ struct task_struct {
+ #endif
+ #ifdef CONFIG_BALANCE_NUMA
+ 	int home_node;
++	unsigned long numa_contrib;
+ 	int numa_scan_seq;
+ 	int numa_migrate_seq;
+ 	unsigned int numa_scan_period;
+@@ -2104,6 +2106,7 @@ extern int sched_setscheduler(struct task_struct *, int,
+ 			      const struct sched_param *);
+ extern int sched_setscheduler_nocheck(struct task_struct *, int,
+ 				      const struct sched_param *);
++extern void sched_setnode(struct task_struct *p, int node);
+ extern struct task_struct *idle_task(int cpu);
+ /**
+  * is_idle_task - is the specified task an idle task?
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 55dcf53..3d9fc26 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5978,9 +5978,9 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
+  * Requeues a task ensuring its on the right load-balance list so
+  * that it might get migrated to its new home.
+  *
+- * Note that we cannot actively migrate ourselves since our callers
+- * can be from atomic context. We rely on the regular load-balance
+- * mechanisms to move us around -- its all preference anyway.
++ * Since home-node is pure preference there's no hard migrate to force
++ * us anywhere, this also allows us to call this from atomic context if
++ * required.
   */
- void migrate_page_copy(struct page *newpage, struct page *page)
+ void sched_setnode(struct task_struct *p, int node)
  {
--	if (PageHuge(page))
-+	if (PageHuge(page) || PageTransHuge(page))
- 		copy_huge_page(newpage, page);
- 	else
- 		copy_highpage(newpage, page);
-@@ -1488,25 +1488,10 @@ bool migrate_ratelimited(int node)
- 	return true;
+@@ -6053,6 +6053,7 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
+ 					| 0*SD_SHARE_PKG_RESOURCES
+ 					| 1*SD_SERIALIZE
+ 					| 0*SD_PREFER_SIBLING
++					| 1*SD_NUMA
+ 					| sd_local_flags(level)
+ 					,
+ 		.last_balance		= jiffies,
+@@ -6914,7 +6915,12 @@ void __init sched_init(void)
+ 		rq->avg_idle = 2*sysctl_sched_migration_cost;
+ 
+ 		INIT_LIST_HEAD(&rq->cfs_tasks);
+-
++#ifdef CONFIG_BALANCE_NUMA
++		INIT_LIST_HEAD(&rq->offnode_tasks);
++		rq->onnode_running = 0;
++		rq->offnode_running = 0;
++		rq->offnode_weight = 0;
++#endif
+ 		rq_attach_root(rq, &def_root_domain);
+ #ifdef CONFIG_NO_HZ
+ 		rq->nohz_flags = 0;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 6f79596..2474a02 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -132,6 +132,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ 	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
+ 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
+ #endif
++#ifdef CONFIG_BALANCE_NUMA
++	SEQ_printf(m, " %d/%d", p->home_node, cpu_to_node(task_cpu(p)));
++#endif
+ #ifdef CONFIG_CGROUP_SCHED
+ 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d66ba9f..462de9b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -776,6 +776,51 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
  }
  
--/*
-- * Attempt to migrate a misplaced page to the specified destination
-- * node. Caller is expected to have an elevated reference count on
-- * the page that will be dropped by this function before returning.
-- */
--int migrate_misplaced_page(struct page *page, int node)
-+/* Returns true if the node is migrate rate-limited after the update */
-+bool numamigrate_update_ratelimit(pg_data_t *pgdat)
- {
--	pg_data_t *pgdat = NODE_DATA(node);
--	int isolated = 0;
--	LIST_HEAD(migratepages);
--
--	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
--	 */
--	if (page_mapcount(page) != 1) {
--		put_page(page);
--		goto out;
--	}
-+	bool rate_limited = false;
- 
- 	/*
- 	 * Rate-limit the amount of data that is being migrated to a node.
-@@ -1519,23 +1504,25 @@ int migrate_misplaced_page(struct page *page, int node)
- 		pgdat->balancenuma_migrate_next_window = jiffies +
- 			msecs_to_jiffies(migrate_interval_millisecs);
- 	}
--	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages) {
--		spin_unlock(&pgdat->balancenuma_migrate_lock);
--		put_page(page);
--		goto out;
--	}
--	pgdat->balancenuma_migrate_nr_pages++;
-+	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages)
-+		rate_limited = true;
-+	else
-+		pgdat->balancenuma_migrate_nr_pages++;
- 	spin_unlock(&pgdat->balancenuma_migrate_lock);
-+	
-+	return rate_limited;
-+}
- 
-+int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
+ /**************************************************
++ * Scheduling class numa methods.
++ */
++
++#ifdef CONFIG_SMP
++static unsigned long task_h_load(struct task_struct *p);
++#endif
++
++#ifdef CONFIG_BALANCE_NUMA
++static struct list_head *account_numa_enqueue(struct rq *rq, struct task_struct *p)
 +{
- 	/* Avoid migrating to a node that is nearly full */
- 	if (migrate_balanced_pgdat(pgdat, 1)) {
- 		int page_lru;
++	struct list_head *tasks = &rq->cfs_tasks;
++
++	if (tsk_home_node(p) != cpu_to_node(task_cpu(p))) {
++		p->numa_contrib = task_h_load(p);
++		rq->offnode_weight += p->numa_contrib;
++		rq->offnode_running++;
++		tasks = &rq->offnode_tasks;
++	} else
++		rq->onnode_running++;
++
++	return tasks;
++}
++
++static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++	if (tsk_home_node(p) != cpu_to_node(task_cpu(p))) {
++		rq->offnode_weight -= p->numa_contrib;
++		rq->offnode_running--;
++	} else
++		rq->onnode_running--;
++}
++#else
++#ifdef CONFIG_SMP
++static struct list_head *account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++	return NULL;
++}
++#endif
++
++static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
++#endif /* CONFIG_BALANCE_NUMA */
++
++/**************************************************
+  * Scheduling class queueing methods:
+  */
  
- 		if (isolate_lru_page(page)) {
- 			put_page(page);
--			goto out;
-+			return 0;
- 		}
--		isolated = 1;
+@@ -973,9 +1018,17 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
+-		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
+-#endif
++	if (entity_is_task(se)) {
++		struct rq *rq = rq_of(cfs_rq);
++		struct task_struct *p = task_of(se);
++		struct list_head *tasks = &rq->cfs_tasks;
++
++		if (tsk_home_node(p) != -1)
++			tasks = account_numa_enqueue(rq, p);
++
++		list_add(&se->group_node, tasks);
++	}
++#endif /* CONFIG_SMP */
+ 	cfs_rq->nr_running++;
+ }
  
- 		/*
- 		 * Page is isolated which takes a reference count so now the
-@@ -1546,27 +1533,172 @@ int migrate_misplaced_page(struct page *page, int node)
+@@ -985,8 +1038,14 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		struct task_struct *p = task_of(se);
++
+ 		list_del_init(&se->group_node);
++
++		if (tsk_home_node(p) != -1)
++			account_numa_dequeue(rq_of(cfs_rq), p);
++	}
+ 	cfs_rq->nr_running--;
+ }
  
- 		page_lru = page_is_file_cache(page);
- 		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
--		list_add(&page->lru, &migratepages);
- 	}
+@@ -3250,6 +3309,8 @@ struct lb_env {
  
--	if (isolated) {
--		int nr_remaining;
--
--		nr_remaining = migrate_pages(&migratepages,
--				alloc_misplaced_dst_page,
--				node, false, MIGRATE_ASYNC,
--				MR_NUMA_MISPLACED);
--		if (nr_remaining) {
--			putback_lru_pages(&migratepages);
--			isolated = 0;
--		} else
--			count_vm_numa_event(NUMA_PAGE_MIGRATE);
-+	return 1;
+ 	unsigned int		flags;
+ 
++	struct list_head	*tasks;
++
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
+@@ -3271,10 +3332,32 @@ static void move_task(struct task_struct *p, struct lb_env *env)
+ }
+ 
+ /*
++ * Returns true if task should stay on the current node. The intent is that
++ * a task that is running on a node identified as the "home node" should
++ * stay there if possible
++ */
++static bool task_numa_hot(struct task_struct *p, struct lb_env *env)
++{
++	int from_dist, to_dist;
++	int node = tsk_home_node(p);
++
++	if (!sched_feat_numa(NUMA_HOMENODE_PREFERRED) || node == -1)
++		return false; /* no node preference */
++
++	from_dist = node_distance(cpu_to_node(env->src_cpu), node);
++	to_dist = node_distance(cpu_to_node(env->dst_cpu), node);
++
++	if (to_dist < from_dist)
++		return false; /* getting closer is ok */
++
++	return true; /* stick to where we are */
 +}
 +
 +/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node. Caller is expected to have an elevated reference count on
-+ * the page that will be dropped by this function before returning.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	pg_data_t *pgdat = NODE_DATA(node);
-+	int isolated = 0;
-+	int nr_remaining;
-+	LIST_HEAD(migratepages);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1) {
-+		put_page(page);
-+		goto out;
- 	}
-+
-+	/*
-+	 * Rate-limit the amount of data that is being migrated to a node.
-+	 * Optimal placement is no good if the memory bus is saturated and
-+	 * all the time is being spent migrating!
-+	 */
-+	if (numamigrate_update_ratelimit(pgdat)) {
-+		put_page(page);
-+		goto out;
-+	}
-+
-+	isolated = numamigrate_isolate_page(pgdat, page);
-+	if (!isolated)
-+		goto out;
-+
-+	list_add(&page->lru, &migratepages);
-+	nr_remaining = migrate_pages(&migratepages,
-+			alloc_misplaced_dst_page,
-+			node, false, MIGRATE_ASYNC,
-+			MR_NUMA_MISPLACED);
-+	if (nr_remaining) {
-+		putback_lru_pages(&migratepages);
-+		isolated = 0;
-+	} else
-+		count_vm_numa_event(NUMA_PAGE_MIGRATE);
- 	BUG_ON(!list_empty(&migratepages));
+  * Is this task likely cache-hot:
+  */
+ static int
+-task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
++task_hot(struct task_struct *p, struct lb_env *env)
+ {
+ 	s64 delta;
  
- out:
- 	return isolated;
+@@ -3297,7 +3380,7 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
+ 	if (sysctl_sched_migration_cost == 0)
+ 		return 0;
+ 
+-	delta = now - p->se.exec_start;
++	delta = env->src_rq->clock_task - p->se.exec_start;
+ 
+ 	return delta < (s64)sysctl_sched_migration_cost;
  }
-+
-+int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+				struct vm_area_struct *vma,
-+				pmd_t *pmd, pmd_t entry,
-+				unsigned long address,
-+				struct page *page, int node)
+@@ -3354,7 +3437,9 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 2) too many balance attempts have failed.
+ 	 */
+ 
+-	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
++	tsk_cache_hot = task_hot(p, env);
++	if (env->idle == CPU_NOT_IDLE)
++		tsk_cache_hot |= task_numa_hot(p, env);
+ 	if (!tsk_cache_hot ||
+ 		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+ #ifdef CONFIG_SCHEDSTATS
+@@ -3376,15 +3461,15 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ /*
+  * move_one_task tries to move exactly one task from busiest to this_rq, as
+  * part of active balancing operations within "domain".
+- * Returns 1 if successful and 0 otherwise.
++ * Returns true if successful and false otherwise.
+  *
+  * Called with both runqueues locked.
+  */
+-static int move_one_task(struct lb_env *env)
++static bool __move_one_task(struct lb_env *env)
+ {
+ 	struct task_struct *p, *n;
+ 
+-	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
++	list_for_each_entry_safe(p, n, env->tasks, se.group_node) {
+ 		if (throttled_lb_pair(task_group(p), env->src_rq->cpu, env->dst_cpu))
+ 			continue;
+ 
+@@ -3398,12 +3483,25 @@ static int move_one_task(struct lb_env *env)
+ 		 * stats here rather than inside move_task().
+ 		 */
+ 		schedstat_inc(env->sd, lb_gained[env->idle]);
+-		return 1;
++		return true;
+ 	}
+-	return 0;
++	return false;
+ }
+ 
+-static unsigned long task_h_load(struct task_struct *p);
++static bool move_one_task(struct lb_env *env)
 +{
-+	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	pg_data_t *pgdat = NODE_DATA(node);
-+	int isolated = 0;
-+	LIST_HEAD(migratepages);
-+	struct page *new_page = NULL;
-+	struct mem_cgroup *memcg = NULL;
-+	int page_lru = page_is_file_cache(page);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1)
-+		goto out_dropref;
-+
-+	/*
-+	 * Rate-limit the amount of data that is being migrated to a node.
-+	 * Optimal placement is no good if the memory bus is saturated and
-+	 * all the time is being spent migrating!
-+	 */
-+	if (numamigrate_update_ratelimit(pgdat))
-+		goto out_dropref;
-+
-+	new_page = alloc_pages_node(node,
-+		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
-+	if (!new_page)
-+		goto out_dropref;
-+
-+	isolated = numamigrate_isolate_page(pgdat, page);
-+	if (!isolated)
-+		goto out_keep_locked;
-+	list_add(&page->lru, &migratepages);
-+
-+	/* Prepare a page as a migration target */
-+	__set_page_locked(new_page);
-+	SetPageSwapBacked(new_page);
-+
-+	/* anon mapping, we can simply copy page->mapping to the new page: */
-+	new_page->mapping = page->mapping;
-+	new_page->index = page->index;
-+	migrate_page_copy(new_page, page);
-+	WARN_ON(PageLRU(new_page));
-+
-+	/* Recheck the target PMD */
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry))) {
-+		spin_unlock(&mm->page_table_lock);
-+
-+		/* Reverse changes made by migrate_page_copy() */
-+		if (TestClearPageActive(new_page))
-+			SetPageActive(page);
-+		if (TestClearPageUnevictable(new_page))
-+			SetPageUnevictable(page);
-+		mlock_migrate_page(page, new_page);
-+
-+		unlock_page(new_page);
-+		put_page(new_page);		/* Free it */
-+
-+		unlock_page(page);
-+		putback_lru_page(page);
-+		goto out;
++	if (sched_feat_numa(NUMA_HOMENODE_PULL)) {
++		env->tasks = offnode_tasks(env->src_rq);
++		if (__move_one_task(env))
++			return true;
 +	}
 +
-+	/*
-+	 * Traditional migration needs to prepare the memcg charge
-+	 * transaction early to prevent the old page from being
-+	 * uncharged when installing migration entries.  Here we can
-+	 * save the potential rollback and start the charge transfer
-+	 * only when migration is already known to end successfully.
-+	 */
-+	mem_cgroup_prepare_migration(page, new_page, &memcg);
++	env->tasks = &env->src_rq->cfs_tasks;
++	if (__move_one_task(env))
++		return true;
 +
-+	entry = mk_pmd(new_page, vma->vm_page_prot);
-+	entry = pmd_mknonnuma(entry);
-+	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-+	entry = pmd_mkhuge(entry);
-+
-+	page_add_new_anon_rmap(new_page, vma, haddr);
-+
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
-+	page_remove_rmap(page);
-+	/*
-+	 * Finish the charge transaction under the page table lock to
-+	 * prevent split_huge_page() from dividing up the charge
-+	 * before it's fully transferred to the new page.
-+	 */
-+	mem_cgroup_end_migration(memcg, page, new_page, true);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	unlock_page(new_page);
-+	unlock_page(page);
-+	put_page(page);			/* Drop the rmap reference */
-+	put_page(page);			/* Drop the LRU isolation reference */
++	return false;
++}
+ 
+ static const unsigned int sched_nr_migrate_break = 32;
+ 
+@@ -3416,7 +3514,6 @@ static const unsigned int sched_nr_migrate_break = 32;
+  */
+ static int move_tasks(struct lb_env *env)
+ {
+-	struct list_head *tasks = &env->src_rq->cfs_tasks;
+ 	struct task_struct *p;
+ 	unsigned long load;
+ 	int pulled = 0;
+@@ -3424,8 +3521,9 @@ static int move_tasks(struct lb_env *env)
+ 	if (env->imbalance <= 0)
+ 		return 0;
+ 
+-	while (!list_empty(tasks)) {
+-		p = list_first_entry(tasks, struct task_struct, se.group_node);
++again:
++	while (!list_empty(env->tasks)) {
++		p = list_first_entry(env->tasks, struct task_struct, se.group_node);
+ 
+ 		env->loop++;
+ 		/* We've more or less seen every task there is, call it quits */
+@@ -3436,7 +3534,7 @@ static int move_tasks(struct lb_env *env)
+ 		if (env->loop > env->loop_break) {
+ 			env->loop_break += sched_nr_migrate_break;
+ 			env->flags |= LBF_NEED_BREAK;
+-			break;
++			goto out;
+ 		}
+ 
+ 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+@@ -3464,7 +3562,7 @@ static int move_tasks(struct lb_env *env)
+ 		 * the critical section.
+ 		 */
+ 		if (env->idle == CPU_NEWLY_IDLE)
+-			break;
++			goto out;
+ #endif
+ 
+ 		/*
+@@ -3472,13 +3570,20 @@ static int move_tasks(struct lb_env *env)
+ 		 * weighted load.
+ 		 */
+ 		if (env->imbalance <= 0)
+-			break;
++			goto out;
+ 
+ 		continue;
+ next:
+-		list_move_tail(&p->se.group_node, tasks);
++		list_move_tail(&p->se.group_node, env->tasks);
+ 	}
+ 
++	if (env->tasks == offnode_tasks(env->src_rq)) {
++		env->tasks = &env->src_rq->cfs_tasks;
++		env->loop = 0;
++		goto again;
++	}
 +
 +out:
-+	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+	return isolated;
-+
-+out_dropref:
-+	put_page(page);
-+out_keep_locked:
-+	return 0;
-+}
- #endif /* CONFIG_BALANCE_NUMA */
+ 	/*
+ 	 * Right now, this is one of only two places move_task() is called,
+ 	 * so we can safely collect move_task() stats here rather than
+@@ -3597,12 +3702,13 @@ static inline void update_shares(int cpu)
+ static inline void update_h_load(long cpu)
+ {
+ }
+-
++#ifdef CONFIG_SMP
+ static unsigned long task_h_load(struct task_struct *p)
+ {
+ 	return p->se.load.weight;
+ }
+ #endif
++#endif
  
- #endif /* CONFIG_NUMA */
+ /********** Helpers for find_busiest_group ************************/
+ /*
+@@ -3633,6 +3739,14 @@ struct sd_lb_stats {
+ 	unsigned int  busiest_group_weight;
+ 
+ 	int group_imb; /* Is there imbalance in this sd */
++#ifdef CONFIG_BALANCE_NUMA
++	struct sched_group *numa_group; /* group which has offnode_tasks */
++	unsigned long numa_group_weight;
++	unsigned long numa_group_running;
++
++	unsigned long this_offnode_running;
++	unsigned long this_onnode_running;
++#endif
+ };
+ 
+ /*
+@@ -3648,6 +3762,11 @@ struct sg_lb_stats {
+ 	unsigned long group_weight;
+ 	int group_imb; /* Is there an imbalance in the group ? */
+ 	int group_has_capacity; /* Is there extra capacity in the group? */
++#ifdef CONFIG_BALANCE_NUMA
++	unsigned long numa_offnode_weight;
++	unsigned long numa_offnode_running;
++	unsigned long numa_onnode_running;
++#endif
+ };
+ 
+ /**
+@@ -3676,6 +3795,121 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
+ 	return load_idx;
+ }
+ 
++#ifdef CONFIG_BALANCE_NUMA
++static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
++{
++	sgs->numa_offnode_weight += rq->offnode_weight;
++	sgs->numa_offnode_running += rq->offnode_running;
++	sgs->numa_onnode_running += rq->onnode_running;
++}
++
++/*
++ * Since the offnode lists are indiscriminate (they contain tasks for all other
++ * nodes) it is impossible to say if there's any task on there that wants to
++ * move towards the pulling cpu. Therefore select a random offnode list to pull
++ * from such that eventually we'll try them all.
++ *
++ * Select a random group that has offnode tasks as sds->numa_group
++ */
++static inline void update_sd_numa_stats(struct sched_domain *sd,
++		struct sched_group *group, struct sd_lb_stats *sds,
++		int local_group, struct sg_lb_stats *sgs)
++{
++	if (!(sd->flags & SD_NUMA))
++		return;
++
++	if (local_group) {
++		sds->this_offnode_running = sgs->numa_offnode_running;
++		sds->this_onnode_running  = sgs->numa_onnode_running;
++		return;
++	}
++
++	if (!sgs->numa_offnode_running)
++		return;
++
++	if (!sds->numa_group) {
++		sds->numa_group = group;
++		sds->numa_group_weight = sgs->numa_offnode_weight;
++		sds->numa_group_running = sgs->numa_offnode_running;
++	}
++}
++
++/*
++ * Pick a random queue from the group that has offnode tasks.
++ */
++static struct rq *find_busiest_numa_queue(struct lb_env *env,
++					  struct sched_group *group)
++{
++	struct rq *busiest = NULL, *rq;
++	int cpu;
++
++	for_each_cpu_and(cpu, sched_group_cpus(group), env->cpus) {
++		rq = cpu_rq(cpu);
++		if (!rq->offnode_running)
++			continue;
++		if (!busiest)
++			busiest = rq;
++	}
++
++	return busiest;
++}
++
++/*
++ * Called in case of no other imbalance. Returns true if there is a queue
++ * running offnode tasks which pretends we are imbalanced anyway to nudge these
++ * tasks towards their home node.
++ */
++static inline int check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
++{
++	if (!sched_feat(NUMA_HOMENODE_PULL_BIAS))
++		return false;
++
++	if (!sds->numa_group)
++		return false;
++
++	/*
++	 * Only pull an offnode task home if we've got offnode or !numa tasks to trade for it.
++	 */
++	if (!sds->this_offnode_running &&
++	    !(sds->this_nr_running - sds->this_onnode_running - sds->this_offnode_running))
++		return false;
++
++	env->imbalance = sds->numa_group_weight / sds->numa_group_running;
++	sds->busiest = sds->numa_group;
++	env->find_busiest_queue = find_busiest_numa_queue;
++	return true;
++}
++
++static inline bool need_active_numa_balance(struct lb_env *env)
++{
++	return env->find_busiest_queue == find_busiest_numa_queue &&
++			env->src_rq->offnode_running == 1 &&
++			env->src_rq->nr_running == 1;
++}
++
++#else /* CONFIG_BALANCE_NUMA */
++
++static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
++{
++}
++
++static inline void update_sd_numa_stats(struct sched_domain *sd,
++		struct sched_group *group, struct sd_lb_stats *sds,
++		int local_group, struct sg_lb_stats *sgs)
++{
++}
++
++static inline bool check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
++{
++	return false;
++}
++
++static inline bool need_active_numa_balance(struct lb_env *env)
++{
++	return false;
++}
++#endif /* CONFIG_BALANCE_NUMA */
++
+ unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu)
+ {
+ 	return SCHED_POWER_SCALE;
+@@ -3891,6 +4125,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		sgs->sum_weighted_load += weighted_cpuload(i);
+ 		if (idle_cpu(i))
+ 			sgs->idle_cpus++;
++
++		update_sg_numa_stats(sgs, rq);
+ 	}
+ 
+ 	/*
+@@ -4044,6 +4280,8 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 			sds->group_imb = sgs.group_imb;
+ 		}
+ 
++		update_sd_numa_stats(env->sd, sg, sds, local_group, &sgs);
++
+ 		sg = sg->next;
+ 	} while (sg != env->sd->groups);
+ }
+@@ -4274,7 +4512,7 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 
+ 	/* There is no busy sibling group to pull tasks from */
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+-		goto out_balanced;
++		goto ret;
+ 
+ 	sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
+ 
+@@ -4296,14 +4534,14 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 	 * don't try and pull any tasks.
+ 	 */
+ 	if (sds.this_load >= sds.max_load)
+-		goto out_balanced;
++		goto ret;
+ 
+ 	/*
+ 	 * Don't pull any tasks if this group is already above the domain
+ 	 * average load.
+ 	 */
+ 	if (sds.this_load >= sds.avg_load)
+-		goto out_balanced;
++		goto ret;
+ 
+ 	if (env->idle == CPU_IDLE) {
+ 		/*
+@@ -4330,6 +4568,9 @@ force_balance:
+ 	return sds.busiest;
+ 
+ out_balanced:
++	if (check_numa_busiest_group(env, &sds))
++		return sds.busiest;
++
+ ret:
+ 	env->imbalance = 0;
+ 	return NULL;
+@@ -4408,6 +4649,9 @@ static int need_active_balance(struct lb_env *env)
+ 			return 1;
+ 	}
+ 
++	if (need_active_numa_balance(env))
++		return 1;
++
+ 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
+ }
+ 
+@@ -4460,6 +4704,8 @@ redo:
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
+ 	}
++	env.src_rq  = busiest;
++	env.src_cpu = busiest->cpu;
+ 
+ 	BUG_ON(busiest == env.dst_rq);
+ 
+@@ -4478,6 +4724,10 @@ redo:
+ 		env.src_cpu   = busiest->cpu;
+ 		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
++		if (sched_feat_numa(NUMA_HOMENODE_PULL))
++			env.tasks = offnode_tasks(busiest);
++		else
++			env.tasks = &busiest->cfs_tasks;
+ 
+ 		update_h_load(env.src_cpu);
+ more_balance:
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 7cfd289..4ae02cb 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -67,4 +67,22 @@ SCHED_FEAT(LB_MIN, false)
+  */
+ #ifdef CONFIG_BALANCE_NUMA
+ SCHED_FEAT(NUMA,	true)
++
++/* Keep tasks running on their home node if possible */
++SCHED_FEAT(NUMA_HOMENODE_PREFERRED, true)
++
++/*
++ * During the regular pull load-balance pass, try pulling tasks that are
++ * running off their home node first with a preference to moving them
++ * nearer their home node through task_numa_hot.
++ */
++SCHED_FEAT(NUMA_HOMENODE_PULL, true)
++
++/*
++ * When the balancer finds no imbalance, introduce some such that it
++ * still prefers to move tasks towards their home node, using active
++ * load-balance if needed.
++ */
++SCHED_FEAT(NUMA_HOMENODE_PULL_BIAS, true)
++
+ #endif
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9a43241..3f0e5a1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -418,6 +418,13 @@ struct rq {
+ 
+ 	struct list_head cfs_tasks;
+ 
++#ifdef CONFIG_BALANCE_NUMA
++	unsigned long    onnode_running;
++	unsigned long    offnode_running;
++	unsigned long	 offnode_weight;
++	struct list_head offnode_tasks;
++#endif
++
+ 	u64 rt_avg;
+ 	u64 age_stamp;
+ 	u64 idle_stamp;
+@@ -469,6 +476,15 @@ struct rq {
+ #endif
+ };
+ 
++static inline struct list_head *offnode_tasks(struct rq *rq)
++{
++#ifdef CONFIG_BALANCE_NUMA
++	return &rq->offnode_tasks;
++#else
++	return NULL;
++#endif
++}
++
+ static inline int cpu_of(struct rq *rq)
+ {
+ #ifdef CONFIG_SMP
 -- 
 1.7.9.2
 
