@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab2KUHit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 02:38:49 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:57618 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753182Ab2KUHis (ORCPT
+	id S1752285Ab2KUHjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 02:39:41 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57663 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab2KUHjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 02:38:48 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpiolib: fix bug and clarify OF use of ranges
-Date: Wed, 21 Nov 2012 08:37:45 +0100
-Message-ID: <1353483465-25961-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 21 Nov 2012 02:39:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <50ABBCD7.3000006@wwwdotorg.org>
+References: <1353411953-27423-1-git-send-email-linus.walleij@stericsson.com>
+	<50ABBCD7.3000006@wwwdotorg.org>
+Date: Wed, 21 Nov 2012 08:39:39 +0100
+Message-ID: <CACRpkdZmeCKxXaEkf1GPP9ivNZmGc4TNz4-k1pDBAGpnTxhJGA@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: let gpiochip_add_pin_range() specify offset
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, Nov 20, 2012 at 6:24 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/20/2012 04:45 AM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> Like with commit 3c739ad0df5eb41cd7adad879eda6aa09879eb76
+>> it is not always enough to specify all the pins of a gpio_chip
+>> from offset zero to be added to a pin map range, since the
+>> mapping from GPIO to pin controller may not be linear at all,
+>> but need to be broken into a few consecutive sub-ranges or
+>> 1-pin entries for complicated cases. The ranges may also be
+>> sparse.
+>>
+>> This alters the signature of the function to accept offsets
+>> into both the GPIO-chip local pinspace and the pin controller
+>> local pinspace.
+>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>
+> Although perhaps rename the new "offset" parameter to "gpio_base" or
+> "gpio_offset", just like the existing "pin_base" rather than
+> pin/base/offset?
 
-In commit c905165f5946f56dca195871641bd4e488eca24a
-"gpiolib: let gpiochip_add_pin_range() specify offset"
-I forgot to update the OF use of the function
-gpiochip_add_pin_range().
+OK I'll rename it...
 
-It turns out that this reveal a weakness in the
-OF range mappings: ranges cannot currently be sparse.
-So put in a comment so we can fix this later.
+I've also made a fat notice that this isn't currently covered
+by the OF GPIO range bindings as a follow-on patch.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpiolib-of.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index a40cd84..d542a14 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -238,8 +238,20 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- 		if (!pctldev)
- 			break;
- 
-+		/*
-+		 * This assumes that the n GPIO pins are consecutive in the
-+		 * GPIO number space, and that the pins are also consecutive
-+		 * in their local number space. Currently it is not possible
-+		 * to add different ranges for one and the same GPIO chip,
-+		 * as the code assumes that we have one consecutive range
-+		 * on both, mapping 1-to-1.
-+		 *
-+		 * TODO: make the OF bindings handle multiple sparse ranges
-+		 * on the same GPIO chip.
-+		 */
- 		ret = gpiochip_add_pin_range(chip,
- 					     pinctrl_dev_get_name(pctldev),
-+					     0, /* offset in gpiochip */
- 					     pinspec.args[0],
- 					     pinspec.args[1]);
- 
--- 
-1.7.11.3
-
+Thanks,
+Linus Walleij
