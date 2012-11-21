@@ -1,125 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2KUIcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:32:20 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13578 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab2KUIcS (ORCPT
+	id S1753696Ab2KUIeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:34:00 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50052 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752359Ab2KUId7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:32:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 21 Nov 2012 00:32:14 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Date: Wed, 21 Nov 2012 17:32:12 +0900
-Message-ID: <1699753.ZQsWMHINxd@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50AC8D3B.6040300@ti.com>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <4316169.5QXVzv7peZ@percival> <50AC8D3B.6040300@ti.com>
+	Wed, 21 Nov 2012 03:33:59 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zz1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
+Subject: Re: [PATCH RFT] regulator: da9055: Properly handle voltage range
+ that doesn't start with 0 offset
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: AxelLin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED38A89780@KCHJEXMB03.kpit.com>
+References: <C3AE124F08223B42BC95AEB82F0F6CED38A89780@KCHJEXMB03.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Nov 2012 14:03:02 +0530
+Message-ID: <1353486782.1760.20.camel@dhruva>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 November 2012 16:13:47 Tomi Valkeinen wrote:
-> * PGP Signed by an unknown key
+> This patch implements map_voltage and list_voltage callbacks to properly handle
+> the case voltage range that doesn't start with 0 offset.
 > 
-> On 2012-11-21 03:56, Alex Courbot wrote:
-> > Hi Tomi,
-> > 
-> > On Tuesday 20 November 2012 22:48:18 Tomi Valkeinen wrote:
-> >> I guess there's a reason, but the above looks a bit inconsistent. For
-> >> gpio you define the gpio resource inside the step. For power and pwm the
-> >> resource is defined before the steps. Why wouldn't "pwm = <&pwm 2
-> >> 5000000>;" work in step2?
-> > 
-> > That's mostly a framework issue. Most frameworks do not export a function
-> > that allow to dereference a phandle - they expect resources to be
-> > declared right under the device node and accessed by name through
-> > foo_get(device, name). So using phandles in power sequences would require
-> > to export these additional
-> Right, I expected something like that.
+> Now we adjust the selector in map_voltage() before calling set_voltage_sel().
+> And return 0 in list_voltage() for invalid selectors.
 > 
-> > functions and also opens the door to some inconsistencies - for instance,
-> > your PWM phandle could be referenced a second time in the sequence with a
-> > different period - how do you know that these are actually referring the
-> > same PWM device?
+> With above change, we can remove da9055_regulator_set_voltage_bits function.
 > 
-> This I didn't understand. Doesn't "<&pwm 2 xyz>" point to a single
-> device, no matter where and how many times it's used?
+> One tricky part is that we need adding voffset to n_voltages.
+> Although for the cases "selector < voffset" are invalid, we need add voffset to
+> n_voltage so regulator_list_voltage() won't fail while checking the boundary for
+> selector before calling list_voltage callback.
 > 
-> >>> +When a power sequence is run, its steps is executed one after the other
-> >>> until +one step fails or the end of the sequence is reached.
-> >> 
-> >> The document doesn't give any hint of what the driver should do if
-> >> running the power sequence fails. Run the "opposite" power sequence?
-> >> Will that work for all resources? I'm mainly thinking of a case where
-> >> each enable of the resource should be matched by a disable, i.e. you
-> >> can't call disable if no enable was called.
-> > 
-> > We discussed that issue already (around v5 I think) and the conclusion was
-> > that it should be up to the driver. When we simply enable/disable
-> > resources it is easy to revert, but in the future non-boolean properties
-> > will likely be introduced, and these cannot easily be reverted. Moreover
-> > some drivers might have more complex recovery needs. This deserves more
-> > discussion I think, as I'd like to have some "generic" recovery mechanism
-> > that covers most of the cases.
-> 
-> Ok. I'll need to dig up the conversation
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Ashish,
+>   I don't have this hardware to test this patch.
+>   Can you help to review and test this patch?
+> Thank you,
+> Axel
+This patch looks good to me.
+I have tested this patch on SMDK6410 using the DA9055 evaluation board.
+Tested-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
-IIRC it was somewhere around here:
-
-https://lkml.org/lkml/2012/9/7/662
-
-See the parent messages too.
-
-> Did you consider any examples
-> of how some driver could handle the error cases?
-
-For all the (limited) use cases I considered, playing the power-off sequence 
-when power-on fails just works. If power-off also fails you are potentially in 
-more trouble though. Maybe we could have another "run" function that does not 
-stop on errors for handling such cases where you want to "stop everything you 
-can".
-
-> What I'm worried about is that, as far as I understand, the power
-> sequence is kinda like black box to the driver. The driver just does
-> "power-up", without knowing what really goes on in there.
-
-The driver could always inspect the sequence, but you are right in that this 
-is not how it is intended to be done.
-
-> And if it doesn't know what goes on in there, nor what's in "power-down"
-> sequence, how can it do anything when an error happens? The only option
-> I see is that the driver doesn't do anything, which will leave some
-> resources enabled, or it can run the power-down sequence, which may or
-> may not work.
-
-Failures might be better handled if sequences have some "recovery policy" 
-about what to do when they fail, as mentioned in the link above. As you 
-pointed out, the driver might not always know enough about the resources 
-involved to do the right thing.
-
-Alex.
 
