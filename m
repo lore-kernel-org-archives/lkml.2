@@ -1,141 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965204Ab2KVTlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:41:21 -0500
+	id S1756721Ab2KVTlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:41:44 -0500
 Received: from userp1050.oracle.com ([156.151.31.82]:25324 "EHLO
 	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2KVTlQ (ORCPT
+	with ESMTP id S1753162Ab2KVTlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:41:16 -0500
-Date: Wed, 21 Nov 2012 17:47:55 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, lucho@ionkov.net,
-        ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
- page writes
-Message-ID: <20121122014755.GH8740@blackbox.djwong.org>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
+	Thu, 22 Nov 2012 14:41:18 -0500
+Message-ID: <50AD5791.5010702@oracle.com>
+Date: Wed, 21 Nov 2012 16:37:05 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122084713.69e5b1fc@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+        Valdis.Kletnieks@vt.edu, David Rientjes <rientjes@google.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        jfs-discussion@lists.sourceforge.net
+Subject: Re: Out of memory on 3.5 kernels
+References: <505B1FA0.6030100@broadcom.com> <20120921194931.GA732@schottelius.org> <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com> <20120926060653.GD16575@schottelius.org> <20120926085708.GA7839@schottelius.org> <20120927055208.GA25252@schottelius.org> <20121003212311.GA14018@schottelius.org> <22962.1349452084@turing-police.cc.vt.edu> <20121005175139.GC831@schottelius.org> <20121030103535.GA10526@schottelius.org>
+In-Reply-To: <20121030103535.GA10526@schottelius.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
-> On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
+On 10/30/2012 05:35 AM, Nico Schottelius wrote:
+> Good morning,
 > 
-> > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
-> > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > > > > tries to mount in write mode.
-> > > > > 
-> > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > > > ---
-> > > > >  fs/ext3/super.c |    8 ++++++++
-> > > > >  1 file changed, 8 insertions(+)
-> > > > > 
-> > > > > 
-> > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > > > > index 5366393..5b3725d 100644
-> > > > > --- a/fs/ext3/super.c
-> > > > > +++ b/fs/ext3/super.c
-> > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> > > > >  			"forcing read-only mode");
-> > > > >  		res = MS_RDONLY;
-> > > > >  	}
-> > > > > +	if (!read_only &&
-> > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > > > > +		ext3_msg(sb, KERN_ERR,
-> > > > > +			"error: ext3 cannot safely write data to a disk "
-> > > > > +			"requiring stable pages writes; forcing read-only "
-> > > > > +			"mode.  Upgrading to ext4 is recommended.");
-> > > > > +		res = MS_RDONLY;
-> > > > > +	}
-> > > > >  	if (read_only)
-> > > > >  		return res;
-> > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
-> > > >   Why this? ext3 should be fixed by your change to
-> > > > filemap_page_mkwrite()... Or does testing show otherwise?
-> > > 
-> > > Yes, it's still broken even with this new set of changes.  Now that I think
-> > > about it a little more, I recall that writeback mode was actually fine, so this
-> > > is a little harsh.
-> > > 
-> > > Hm... looking at the ordered code a little more, it looks like
-> > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-> > > to write mapped buffers back through the journal?  Taking it out seems to fix
-> > > ordered mode, though I have a suspicion that it might very well break ordered
-> > > mode too.
-> >   Oh, right. kjournald writing buffers directly (without setting
-> > PageWriteback) will break things. So please, change warning to:
-
-Maybe we should just fix this anyway?
-
-I still have the patch that adds PG_stable (and changes the
-wait_for_page_stable() test to use this flag instead of PG_writeback) kicking
-around in my tree.  I wrote a patch to jbd that changes journal_do_submit_data
-to set PG_stable, call clear_page_dirty_for_io(), and unsets the stable bit in
-the end_io processing.
-
-It seems to get rid of the checksum-after-write errors, though I'm not
-convinced it's correct.  But, I'll send both patches along.
-
-> > 
-> > 	/*
-> > 	 * In data=ordered mode, kjournald writes buffers without setting
-> > 	 * PageWriteback bit thus generic code does not properly wait for
-> > 	 * writeback of those buffers to finish.
-> > 	 */
-> > 	if (!read_only &&
-> > 	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
-
-test_opt(sb, DATA_FLAGS) != EXT3_MOUNT_WRITEBACK_DATA
-
-since I bet data=journal mode is also borken wrt PageWriteback.
-
-> > 	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > 		ext3_msg(sb, KERN_ERR,
-> > 			"error: data=ordered mode does not support stable "
-> > 			"page writes required by the disk; forcing read-only "
-> > 			"mode. Upgrading to ext4 is recommended.");
-> > 		res = MS_RDONLY;
-> > 	}
-> > 
-> > then you need a similar check in ext3_remount() so that filesystem cannot
-> > be remounted read-write.
-> > 
-> > 								Honza
+> update: this problem still exists on 3.6.2-1-ARCH and it got worse:
 > 
-> Given this restriction, there is no way that I can change md/raid5 to set the
-> "stable pages" flag and stop copying pages into the stripe-cache.  ext3 on
-> raid5 will be much too common to allow this breakage.
+> I reformatted the external disk to use xfs, but as the my
+> root filesystem is still jfs, it still appears:
 > 
-> I would really like to be able to say "I prefer stable pages, but they aren't
-> a requirement as long as I know which is which" ....
+>  Active / Total Objects (% used)    : 642732 / 692268 (92.8%)
+>  Active / Total Slabs (% used)      : 24801 / 24801 (100.0%)
+>  Active / Total Caches (% used)     : 79 / 111 (71.2%)
+>  Active / Total Size (% used)       : 603522.30K / 622612.05K (96.9%)
+>  Minimum / Average / Maximum Object : 0.01K / 0.90K / 15.25K
+> 
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
+> 475548 467649  98%    1.21K  18722       26    599104K jfs_ip
+>  25670  19143  74%    0.05K    302       85      1208K shared_policy_node
+>  24612  16861  68%    0.19K   1172       21      4688K dentry
+>  24426  19524  79%    0.17K   1062       23      4248K vm_area_struct
+>  21636  21180  97%    0.11K    601       36      2404K sysfs_dir_cache
+>  12352   9812  79%    0.06K    193       64       772K kmalloc-64
+>  11684   9145  78%    0.09K    254       46      1016K anon_vma
+>   9855   8734  88%    0.58K    365       27      5840K inode_cache
+>   9728   9281  95%    0.01K     19      512        76K kmalloc-8
+>   8932   4411  49%    0.55K    319       28      5104K radix_tree_node
+>   6336   5760  90%    0.25K    198       32      1584K kmalloc-256
+>   5632   5632 100%    0.02K     22      256        88K kmalloc-16
+>   4998   2627  52%    0.09K    119       42       476K kmalloc-96
+>   4998   3893  77%    0.04K     49      102       196K Acpi-Namespace
+>   4736   3887  82%    0.03K     37      128       148K kmalloc-32
+>   4144   4144 100%    0.07K     74       56       296K Acpi-ParseExt
+>   3740   3740 100%    0.02K     22      170        88K numa_policy
+>   3486   3023  86%    0.19K    166       21       664K kmalloc-192
+>   3200   2047  63%    0.12K    100       32       400K kmalloc-128
+>   2304   2074  90%    0.50K     72       32      1152K kmalloc-512
+>   2136   2019  94%    0.64K     89       24      1424K proc_inode_cache
+>   2080   2080 100%    0.12K     65       32       260K jfs_mp
+>   2024   1890  93%    0.70K     88       23      1408K shmem_inode_cache
+>   1632   1556  95%    1.00K     51       32      1632K kmalloc-1024
+> 
+> 
+> I am wondering if anyone is feeling responsible for this bug or if the mid-term
+> solution is to move away from jfs?
 
-I'd rather just fix ext3. :)
+Sorry, I haven't taken too close a look at this, but I did notice
+another conversation that may be related:
 
-(or remove it, since ext4 can handle ext3)
+https://lkml.org/lkml/2012/11/17/26
 
---D
+The commit in question first showed up in 3.5-rc1, which coincides with
+your problem.
 
-> NeilBrown
-
-
+> 
+> Cheers,
+> 
+> Nico
+> 
