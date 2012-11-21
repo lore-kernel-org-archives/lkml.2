@@ -1,140 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab2KUSwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:52:13 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37539 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755504Ab2KUSwL (ORCPT
+	id S1755691Ab2KUS7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:59:49 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60368 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755507Ab2KUS7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:52:11 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 67.169.73.11
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+vPHp3DERGoxEHCumLC0a
-Date: Wed, 21 Nov 2012 10:52:02 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-Cc: Joerg Roedel <joro@8bytes.org>, Russell King <linux@arm.linux.org.uk>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Ido Yariv <ido@wizery.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH v5 5/5] ARM: OMAP4: hwmod data: ipu and dsp to use
- parent clocks instead of leaf clocks
-Message-ID: <20121121185202.GC18567@atomide.com>
-References: <1353373552-16039-1-git-send-email-omar.luna@linaro.org>
- <1353373552-16039-6-git-send-email-omar.luna@linaro.org>
+	Wed, 21 Nov 2012 13:59:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353373552-16039-6-git-send-email-omar.luna@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50AD0CA1.8000904@zytor.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
+	<50AD0CA1.8000904@zytor.com>
+Date: Wed, 21 Nov 2012 10:59:46 -0800
+X-Google-Sender-Auth: Fthp9pSggoN1MfuQp0Q5E1bJHjQ
+Message-ID: <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Omar Ramirez Luna <omar.luna@linaro.org> [121119 17:08]:
-> This prevents hwmod _enable_clocks...omap2_dflt_clk_enable path
-> from enabling modulemode inside CLKCTRL using its clk->enable_reg
-> field. Instead is left to _omap4_enable_module though soc_ops, as
-> the one in charge of this setting.
-> 
-> According to comments received[1] for related patches the idea is
-> to get rid of leaf clocks in future. So remove these two while at it.
-> 
-> [1] http://lkml.org/lkml/2012/8/20/226
+On Wed, Nov 21, 2012 at 9:17 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/20/2012 11:16 PM, Yinghai Lu wrote:
+>>
+>>
+>> diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+>> index 9efceff..a8263f7 100644
+>> --- a/Documentation/x86/boot.txt
+>> +++ b/Documentation/x86/boot.txt
+>> @@ -57,6 +57,9 @@ Protocol 2.10:        (Kernel 2.6.31) Added a protocol
+>> for relaxed alignment
+>>   Protocol 2.11:        (Kernel 3.6) Added a field for offset of EFI
+>> handover
+>>                 protocol entry point.
+>>
+>> +Protocol 2.12: (Kernel 3.9) Added three fields for loading bzImage and
+>> +                ramdisk above 4G with 64bit.
+>> +
+>>   **** MEMORY LAYOUT
+>>
+>>   The traditional memory map for the kernel loader, used for Image or
+>> @@ -182,7 +185,7 @@ Offset      Proto   Name            Meaning
+>>   0230/4        2.05+   kernel_alignment Physical addr alignment required
+>> for kernel
+>>   0234/1        2.05+   relocatable_kernel Whether kernel is relocatable
+>> or not
+>>   0235/1        2.10+   min_alignment   Minimum alignment, as a power of
+>> two
+>> -0236/2 N/A     pad3            Unused
+>> +0236/2 2.12+   xloadflags      Boot protocal option flags
+>
+>                                              ^^^^^^^^
+sorry.
+>
+>>   0238/4        2.06+   cmdline_size    Maximum size of the kernel command
+>> line
+>>   023C/4        2.07+   hardware_subarch Hardware subarchitecture
+>>   0240/8        2.07+   hardware_subarch_data Subarchitecture-specific
+>> data
+>> @@ -193,6 +196,9 @@ Offset      Proto   Name            Meaning
+>>   0258/8        2.10+   pref_address    Preferred loading address
+>>   0260/4        2.10+   init_size       Linear memory required during
+>> initialization
+>>   0264/4        2.11+   handover_offset Offset of handover entry point
+>> +0268/4 2.12+   ext_ramdisk_image ramdisk_image 32 bits
+>
+>
+> "high 32 bits" presumably...
 
-This one should be queued by Paul, or at least acked by him.
+ok
 
-Regards,
+>
+>
+>> +026C/4 2.12+   ext_ramdisk_size ramdisk_size high 32 bits
+>> +0270/4 2.12+   ext_cmd_line_ptr cmd_line_ptr high 32 bits
+>
+>
+> I'm looking at these three fields and I'm getting worried about space --
+> there are only two more word-sized fields possible in this structure. Since
+> these fields are not initialized (default to zero) and almost certainly
+> aren't useful for people entering via the 16-bit entry point I think we
+> should move them out of struct setup_header and into the remainder of struct
+> boot_param.
 
-Tony
+in boot_param:
 
- 
-> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
-> ---
->  arch/arm/mach-omap2/clock44xx_data.c       |   22 ----------------------
->  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    4 ++--
->  2 files changed, 2 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/clock44xx_data.c b/arch/arm/mach-omap2/clock44xx_data.c
-> index 6efc30c..067c486 100644
-> --- a/arch/arm/mach-omap2/clock44xx_data.c
-> +++ b/arch/arm/mach-omap2/clock44xx_data.c
-> @@ -1316,16 +1316,6 @@ static struct clk dmic_fck = {
->  	.clkdm_name	= "abe_clkdm",
->  };
->  
-> -static struct clk dsp_fck = {
-> -	.name		= "dsp_fck",
-> -	.ops		= &clkops_omap2_dflt,
-> -	.enable_reg	= OMAP4430_CM_TESLA_TESLA_CLKCTRL,
-> -	.enable_bit	= OMAP4430_MODULEMODE_HWCTRL,
-> -	.clkdm_name	= "tesla_clkdm",
-> -	.parent		= &dpll_iva_m4x2_ck,
-> -	.recalc		= &followparent_recalc,
-> -};
-> -
->  static struct clk dss_sys_clk = {
->  	.name		= "dss_sys_clk",
->  	.ops		= &clkops_omap2_dflt,
-> @@ -1696,16 +1686,6 @@ static struct clk i2c4_fck = {
->  	.recalc		= &followparent_recalc,
->  };
->  
-> -static struct clk ipu_fck = {
-> -	.name		= "ipu_fck",
-> -	.ops		= &clkops_omap2_dflt,
-> -	.enable_reg	= OMAP4430_CM_DUCATI_DUCATI_CLKCTRL,
-> -	.enable_bit	= OMAP4430_MODULEMODE_HWCTRL,
-> -	.clkdm_name	= "ducati_clkdm",
-> -	.parent		= &ducati_clk_mux_ck,
-> -	.recalc		= &followparent_recalc,
-> -};
-> -
->  static struct clk iss_ctrlclk = {
->  	.name		= "iss_ctrlclk",
->  	.ops		= &clkops_omap2_dflt,
-> @@ -3151,7 +3131,6 @@ static struct omap_clk omap44xx_clks[] = {
->  	CLK(NULL,	"div_ts_ck",			&div_ts_ck,	CK_446X),
->  	CLK(NULL,	"dmic_sync_mux_ck",		&dmic_sync_mux_ck,	CK_443X),
->  	CLK(NULL,	"dmic_fck",			&dmic_fck,	CK_443X),
-> -	CLK(NULL,	"dsp_fck",			&dsp_fck,	CK_443X),
->  	CLK(NULL,	"dss_sys_clk",			&dss_sys_clk,	CK_443X),
->  	CLK(NULL,	"dss_tv_clk",			&dss_tv_clk,	CK_443X),
->  	CLK(NULL,	"dss_48mhz_clk",		&dss_48mhz_clk,	CK_443X),
-> @@ -3183,7 +3162,6 @@ static struct omap_clk omap44xx_clks[] = {
->  	CLK(NULL,	"i2c2_fck",			&i2c2_fck,	CK_443X),
->  	CLK(NULL,	"i2c3_fck",			&i2c3_fck,	CK_443X),
->  	CLK(NULL,	"i2c4_fck",			&i2c4_fck,	CK_443X),
-> -	CLK(NULL,	"ipu_fck",			&ipu_fck,	CK_443X),
->  	CLK(NULL,	"iss_ctrlclk",			&iss_ctrlclk,	CK_443X),
->  	CLK(NULL,	"iss_fck",			&iss_fck,	CK_443X),
->  	CLK(NULL,	"iva_fck",			&iva_fck,	CK_443X),
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> index aab5c12..1f61093 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> @@ -650,7 +650,7 @@ static struct omap_hwmod omap44xx_dsp_hwmod = {
->  	.mpu_irqs	= omap44xx_dsp_irqs,
->  	.rst_lines	= omap44xx_dsp_resets,
->  	.rst_lines_cnt	= ARRAY_SIZE(omap44xx_dsp_resets),
-> -	.main_clk	= "dsp_fck",
-> +	.main_clk	= "dpll_iva_m4x2_ck",
->  	.prcm = {
->  		.omap4 = {
->  			.clkctrl_offs = OMAP4_CM_TESLA_TESLA_CLKCTRL_OFFSET,
-> @@ -1677,7 +1677,7 @@ static struct omap_hwmod omap44xx_ipu_hwmod = {
->  	.mpu_irqs	= omap44xx_ipu_irqs,
->  	.rst_lines	= omap44xx_ipu_resets,
->  	.rst_lines_cnt	= ARRAY_SIZE(omap44xx_ipu_resets),
-> -	.main_clk	= "ipu_fck",
-> +	.main_clk	= "ducati_clk_mux_ck",
->  	.prcm = {
->  		.omap4 = {
->  			.clkctrl_offs = OMAP4_CM_DUCATI_DUCATI_CLKCTRL_OFFSET,
-> -- 
-> 1.7.4.1
-> 
+        struct setup_header hdr;    /* setup header */  /* 0x1f1 */
+        __u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
+        __u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];      /* 0x290 */
+        struct e820entry e820_map[E820MAX];             /* 0x2d0 */
+        __u8  _pad8[48];                                /* 0xcd0 */
+        struct edd_info eddbuf[EDDMAXNR];               /* 0xd00 */
+        __u8  _pad9[276];                               /* 0xeec */
+
+so we can use till 0x290.
+
+and after those three dword, will still have 7 left.
+
+>
+>> diff --git a/arch/x86/boot/compressed/cmdline.c
+>> b/arch/x86/boot/compressed/cmdline.c
+>> index b4c913c..00678d3 100644
+>> --- a/arch/x86/boot/compressed/cmdline.c
+>> +++ b/arch/x86/boot/compressed/cmdline.c
+>> @@ -17,6 +17,9 @@ static unsigned long get_cmd_line_ptr(void)
+>>   {
+>>         unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+>>
+>> +       if (real_mode->hdr.version >= 0x020c)
+>> +               cmd_line_ptr |= (u64)real_mode->hdr.ext_cmd_line_ptr <<
+>> 32;
+>> +
+>>         return cmd_line_ptr;
+>>   }
+>
+>
+> No.  hdr.version is information from the kernel to the bootloader; it is
+> meaningless to look at it inside the kernel.
+>
+could remove them, but how about vmlinux elf.
+
+when kexec vmlinux elf, it will fake one hdr, and fill version there.
+
+> Same in a bunch of other places.
+>
+
+Thanks
+
+Yinghai
