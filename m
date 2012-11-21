@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2KUKWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:22:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43698 "EHLO mx2.suse.de"
+	id S1754549Ab2KUKWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:22:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43761 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477Ab2KUKWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:18 -0500
+	id S1754523Ab2KUKWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:25 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 12/46] mm: numa: pte_numa() and pmd_numa()
-Date: Wed, 21 Nov 2012 10:21:18 +0000
-Message-Id: <1353493312-8069-13-git-send-email-mgorman@suse.de>
+Subject: [PATCH 17/46] mm: mempolicy: Add MPOL_MF_NOOP
+Date: Wed, 21 Nov 2012 10:21:23 +0000
+Message-Id: <1353493312-8069-18-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,197 +28,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Implement pte_numa and pmd_numa.
+NOTE: I have not yet addressed by own review feedback of this patch. At
+	this point I'm trying to construct a baseline tree and will apply
+	my own review feedback later and then fold it in.
 
-We must atomically set the numa bit and clear the present bit to
-define a pte_numa or pmd_numa.
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
+to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+flags, mbind() will map the pages PROT_NONE so that they will be
+migrated on the next touch.
 
-Once a pte or pmd has been set as pte_numa or pmd_numa, the next time
-a thread touches a virtual address in the corresponding virtual range,
-a NUMA hinting page fault will trigger. The NUMA hinting page fault
-will clear the NUMA bit and set the present bit again to resolve the
-page fault.
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
 
-The expectation is that a NUMA hinting page fault is used as part
-of a placement policy that decides if a page should remain on the
-current node or migrated to a different node.
+[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
 
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/x86/include/asm/pgtable.h |   11 ++++--
- include/asm-generic/pgtable.h  |   74 ++++++++++++++++++++++++++++++++++++++++
- init/Kconfig                   |   33 ++++++++++++++++++
- 3 files changed, 116 insertions(+), 2 deletions(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 5fe03aa..9cd7b72 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -404,7 +404,8 @@ static inline int pte_same(pte_t a, pte_t b)
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 3e835c9..d23dca8 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -21,6 +21,7 @@ enum {
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
+ 	MPOL_LOCAL,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
+ };
  
- static inline int pte_present(pte_t a)
- {
--	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
-+	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+			       _PAGE_NUMA);
- }
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 54bd3e5..c21e914 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
- #define pte_accessible pte_accessible
-@@ -426,7 +427,8 @@ static inline int pmd_present(pmd_t pmd)
- 	 * the _PAGE_PSE flag will remain set at all times while the
- 	 * _PAGE_PRESENT bit is clear).
- 	 */
--	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
-+				 _PAGE_NUMA);
- }
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
+ 	}
+ 	VM_BUG_ON(!nodes);
  
- static inline int pmd_none(pmd_t pmd)
-@@ -485,6 +487,11 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
+@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
  
- static inline int pmd_bad(pmd_t pmd)
- {
-+#ifdef CONFIG_BALANCE_NUMA
-+	/* pmd_numa check */
-+	if ((pmd_flags(pmd) & (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)
-+		return 0;
-+#endif
- 	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
- }
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
  
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 48fc1dc..1e236fe 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -558,6 +558,80 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
- }
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
  
-+#ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
-+/*
-+ * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
-+ * same bit too). It's set only when _PAGE_PRESET is not set and it's
-+ * never set if _PAGE_PRESENT is set.
-+ *
-+ * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
-+ * fault triggers on those regions if pte/pmd_numa returns true
-+ * (because _PAGE_PRESENT is not set).
-+ */
-+#ifndef pte_numa
-+static inline int pte_numa(pte_t pte)
-+{
-+	return (pte_flags(pte) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+#endif
-+
-+#ifndef pmd_numa
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return (pmd_flags(pmd) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+#endif
-+
-+/*
-+ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
-+ * because they're called by the NUMA hinting minor page fault. If we
-+ * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
-+ * would be forced to set it later while filling the TLB after we
-+ * return to userland. That would trigger a second write to memory
-+ * that we optimize away by setting _PAGE_ACCESSED here.
-+ */
-+#ifndef pte_mknonnuma
-+static inline pte_t pte_mknonnuma(pte_t pte)
-+{
-+	pte = pte_clear_flags(pte, _PAGE_NUMA);
-+	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+#endif
-+
-+#ifndef pmd_mknonnuma
-+static inline pmd_t pmd_mknonnuma(pmd_t pmd)
-+{
-+	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
-+	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+#endif
-+
-+#ifndef pte_mknuma
-+static inline pte_t pte_mknuma(pte_t pte)
-+{
-+	pte = pte_set_flags(pte, _PAGE_NUMA);
-+	return pte_clear_flags(pte, _PAGE_PRESENT);
-+}
-+#endif
-+
-+#ifndef pmd_mknuma
-+static inline pmd_t pmd_mknuma(pmd_t pmd)
-+{
-+	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
-+	return pmd_clear_flags(pmd, _PAGE_PRESENT);
-+}
-+#endif
-+#else
-+extern int pte_numa(pte_t pte);
-+extern int pmd_numa(pmd_t pmd);
-+extern pte_t pte_mknonnuma(pte_t pte);
-+extern pmd_t pmd_mknonnuma(pmd_t pmd);
-+extern pte_t pte_mknuma(pte_t pte);
-+extern pmd_t pmd_mknuma(pmd_t pmd);
-+#endif /* CONFIG_ARCH_USES_NUMA_PROT_NONE */
-+
- #endif /* CONFIG_MMU */
  
- #endif /* !__ASSEMBLY__ */
-diff --git a/init/Kconfig b/init/Kconfig
-index 6fdd6e3..6897a05 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -696,6 +696,39 @@ config LOG_BUF_SHIFT
- config HAVE_UNSTABLE_SCHED_CLOCK
- 	bool
+@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
  
-+#
-+# For architectures that want to enable the support for NUMA-affine scheduler
-+# balancing logic:
-+#
-+config ARCH_SUPPORTS_NUMA_BALANCING
-+	bool
-+
-+# For architectures that (ab)use NUMA to represent different memory regions
-+# all cpu-local but of different latencies, such as SuperH.
-+#
-+config ARCH_WANT_NUMA_VARIABLE_LOCALITY
-+	bool
-+
-+#
-+# For architectures that are willing to define _PAGE_NUMA as _PAGE_PROTNONE
-+config ARCH_WANTS_PROT_NUMA_PROT_NONE
-+	bool
-+
-+config ARCH_USES_NUMA_PROT_NONE
-+	bool
-+	default y
-+	depends on ARCH_WANTS_PROT_NUMA_PROT_NONE
-+	depends on BALANCE_NUMA
-+
-+config BALANCE_NUMA
-+	bool "Memory placement aware NUMA scheduler"
-+	default n
-+	depends on ARCH_SUPPORTS_NUMA_BALANCING
-+	depends on !ARCH_WANT_NUMA_VARIABLE_LOCALITY
-+	depends on SMP && NUMA && MIGRATION
-+	help
-+	  This option adds support for automatic NUMA aware memory/task placement.
-+
- menuconfig CGROUPS
- 	boolean "Control Group support"
- 	depends on EVENTFD
+ 	switch (mode) {
 -- 
 1.7.9.2
 
