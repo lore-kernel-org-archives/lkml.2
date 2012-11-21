@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2KUJUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:20:17 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:12437 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab2KUJUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:20:14 -0500
-Message-id: <50AC9CC7.8010103@samsung.com>
-Date: Wed, 21 Nov 2012 10:20:07 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026
- Thunderbird/16.0.2
-MIME-version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+	id S1753512Ab2KUJ0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:26:08 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:50206 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937Ab2KUJ0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 04:26:05 -0500
+Message-ID: <50AC9E20.2060208@parallels.com>
+Date: Wed, 21 Nov 2012 13:25:52 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>,
+        <linux-man@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
- <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
- <20121120113325.dde266ed.akpm@linux-foundation.org>
- <50AC8C14.5050204@samsung.com>
- <20121121003643.97febbdb.akpm@linux-foundation.org>
-In-reply-to: <20121121003643.97febbdb.akpm@linux-foundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+References: <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com> <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com> <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com> <50AA3FEF.2070100@parallels.com> <alpine.DEB.2.00.1211201013460.4200@chino.kir.corp.google.com> <50AC9070.2030009@parallels.com> <20121121084603.GA18159@lizard>
+In-Reply-To: <20121121084603.GA18159@lizard>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/21/2012 12:46 PM, Anton Vorontsov wrote:
+> On Wed, Nov 21, 2012 at 12:27:28PM +0400, Glauber Costa wrote:
+>> On 11/20/2012 10:23 PM, David Rientjes wrote:
+>>> Anton can correct me if I'm wrong, but I certainly don't think this is 
+>>> where mempressure is headed: I don't think any accounting needs to be done
+> 
+> Yup, I'd rather not do any accounting, at least not in bytes.
 
-On 11/21/2012 9:36 AM, Andrew Morton wrote:
-> On Wed, 21 Nov 2012 09:08:52 +0100 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
->
-> > Hello,
-> >
-> > On 11/20/2012 8:33 PM, Andrew Morton wrote:
-> > > On Tue, 20 Nov 2012 15:31:45 +0100
-> > > Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > >
-> > > > dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
-> > > > regardless the flags provided by the caller. This causes excessive
-> > > > pruning of emergency memory pools without any good reason. Additionaly,
-> > > > on ARM architecture any driver which is using dmapools will sooner or
-> > > > later  trigger the following error:
-> > > > "ERROR: 256 KiB atomic DMA coherent pool is too small!
-> > > > Please increase it with coherent_pool= kernel parameter!".
-> > > > Increasing the coherent pool size usually doesn't help much and only
-> > > > delays such error, because all GFP_ATOMIC DMA allocations are always
-> > > > served from the special, very limited memory pool.
-> > > >
-> > >
-> > > Is this problem serious enough to justify merging the patch into 3.7?
-> > > And into -stable kernels?
-> >
-> > I wonder if it is a good idea to merge such change at the end of current
-> > -rc period.
->
-> I'm not sure what you mean by this.
->
-> But what we do sometimes if we think a patch needs a bit more
-> real-world testing before backporting is to merge it into -rc1 in the
-> normal merge window, and tag it for -stable backporting.  That way it
-> gets a few weeks(?) testing in mainline before getting backported.
+It doesn't matter here, but memcg doesn't do any accounting in bytes as
+well. It only display it in bytes, but internally, it's all pages. The
+bytes representation is convenient, because then you can be agnostic of
+page sizes.
 
-I just wondered that if it gets merged to v3.7-rc7 there won't be much time
-for real-world testing before final v3.7 release. This patch is in
-linux-next for over a week and I'm not aware of any issues, but -rc releases
-gets much more attention and testing than linux-next tree.
+> 
+>>> and, if it is, it's a design issue that should be addressed now rather 
+>>> than later.  I believe notifications should occur on current's mempressure 
+>>> cgroup depending on its level of reclaim: nobody cares if your memcg has a 
+>>> limit of 64GB when you only have 32GB of RAM, we'll want the notification.
+>>
+>> My main concern is that to trigger those notifications, one would have
+>> to first determine whether or not the particular group of tasks is under
+>> pressure.
+> 
+> As far as I understand, the notifications will be triggered by a process
+> that tries to allocate memory. So, effectively that would be a per-process
+> pressure.
+> 
+> So, if one process in a group is suffering, we notify that "a process in a
+> group is under pressure", and the notification goes to a cgroup listener
 
-If You think it's fine to put such change to v3.7-rc7 I will send a pull
-request and tag it for stable asap.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+If you effectively have a per-process mechanism, why do you need an
+extra cgroup at all?
+
+It seems to me that this is simply something that should be inherited
+over fork, and then you register the notifier in your first process, and
+it will be valid for everybody in the process tree.
+
+If you need tasks in different processes to respond to the same
+notifier, then you just register the same notifier in two different
+processes.
 
 
