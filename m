@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2KUQsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 11:48:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9505 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259Ab2KUQsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 11:48:50 -0500
-Subject: [PATCH] vfio-pci: Enable device before attempting reset
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Wed, 21 Nov 2012 09:48:49 -0700
-Message-ID: <20121121164837.27832.38020.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755362Ab2KUQtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 11:49:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53360 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab2KUQt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 11:49:29 -0500
+Date: Wed, 21 Nov 2012 11:49:27 -0500 (EST)
+Message-Id: <20121121.114927.2236597401100258829.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-11-21
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121121162406.GA2066@tuxdriver.com>
+References: <20121121162406.GA2066@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices making use of PM reset are getting incorrectly identified as
-not supporting reset because pci_pm_reset() fails unless the device is
-in D0 power state.  When first attached to vfio_pci devices are
-typically in an unknown power state.  We can fix this by explicitly
-setting the power state or simply calling pci_enable_device() before
-attempting a pci_reset_function().  We need to enable the device
-anyway, so move this up in our vfio_pci_enable() function, which also
-simplifies the error path a bit.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 21 Nov 2012 11:24:06 -0500
 
-Note that pci_disable_device() does not explicitly set the power
-state, so there's no need to re-order vfio_pci_disable().
+> Included are two pulls.  Regarding the mac80211 tree, Johannes says:
+> 
+> "Please pull my mac80211.git tree (see below) to get two more fixes for
+> 3.7. Both fix regressions introduced *before* this cycle that weren't
+> noticed until now, one for IBSS not cleaning up properly and the other
+> to add back the "wireless" sysfs directory for Fedora's startup scripts."
+> 
+> Regarding the iwlwifi tree, Johannes says:
+> 
+> "Please also pull my iwlwifi.git tree, I have two fixes: one to remove a
+> spurious warning that can actually trigger in legitimate situations, and
+> the other to fix a regression from when monitor mode was changed to use
+> the "sniffer" firmware mode."
+> 
+> Also included is an nfc tree pull.  Samuel says:
+> 
+> "We mostly have pn533 fixes here, 2 memory leaks and an early unlocking fix.
+> Moreover, we also have an LLCP adapter linked list insertion fix."
+> 
+> On top of that, a few more bits...  Albert Pool adds a USB ID
+> to rtlwifi.  Bing Zhao provides two mwifiex fixes -- one to fix
+> a system hang during a command timeout, and the other to properly
+> report a suspend error to the MMC core.  Finally, Sujith Manoharan
+> fixes a thinko that would trigger an ath9k hang during device reset.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/pci/vfio_pci.c |   23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index 306b90c..b28e66c 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -43,6 +43,10 @@ static int vfio_pci_enable(struct vfio_pci_device *vdev)
- 	u16 cmd;
- 	u8 msix_pos;
- 
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
- 	vdev->reset_works = (pci_reset_function(pdev) == 0);
- 	pci_save_state(pdev);
- 	vdev->pci_saved_state = pci_store_saved_state(pdev);
-@@ -51,8 +55,11 @@ static int vfio_pci_enable(struct vfio_pci_device *vdev)
- 			 __func__, dev_name(&pdev->dev));
- 
- 	ret = vfio_config_init(vdev);
--	if (ret)
--		goto out;
-+	if (ret) {
-+		pci_load_and_free_saved_state(pdev, &vdev->pci_saved_state);
-+		pci_disable_device(pdev);
-+		return ret;
-+	}
- 
- 	if (likely(!nointxmask))
- 		vdev->pci_2_3 = pci_intx_mask_supported(pdev);
-@@ -77,17 +84,7 @@ static int vfio_pci_enable(struct vfio_pci_device *vdev)
- 	} else
- 		vdev->msix_bar = 0xFF;
- 
--	ret = pci_enable_device(pdev);
--	if (ret)
--		goto out;
--
--	return ret;
--
--out:
--	kfree(vdev->pci_saved_state);
--	vdev->pci_saved_state = NULL;
--	vfio_config_free(vdev);
--	return ret;
-+	return 0;
- }
- 
- static void vfio_pci_disable(struct vfio_pci_device *vdev)
-
+Pulled, thanks John.
