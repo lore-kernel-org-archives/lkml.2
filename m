@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab2KUBbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:31:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48311 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752678Ab2KUBbu (ORCPT
+	id S1753822Ab2KUBfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:35:50 -0500
+Received: from mail-pb0-f66.google.com ([209.85.160.66]:56672 "EHLO
+	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab2KUBft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:31:50 -0500
-Date: Wed, 21 Nov 2012 10:31:34 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-pm@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121121013133.GE4673@opensource.wolfsonmicro.com>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
- <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
- <20121120215429.B621F3E1821@localhost>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a1QUDc0q7S3U7/Jg"
-Content-Disposition: inline
-In-Reply-To: <20121120215429.B621F3E1821@localhost>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Nov 2012 20:35:49 -0500
+Date: Wed, 21 Nov 2012 09:35:28 +0800
+From: Ming Lei <tom.leiming@gmail.com>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
+Message-ID: <20121121093528.4fe11c26@tom-ThinkPad-T410>
+In-Reply-To: <20121120181203.GA7922@shaftnet.org>
+References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
+	<CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
+	<20121120161011.GD18015@shaftnet.org>
+	<20121120163309.GB4990@kroah.com>
+	<20121120181203.GA7922@shaftnet.org>
+Organization: Ming
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 20 Nov 2012 13:12:03 -0500
+Solomon Peachy <pizza@shaftnet.org> wrote:
 
---a1QUDc0q7S3U7/Jg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Tue, Nov 20, 2012 at 08:33:09AM -0800, Greg KH wrote:
+> > > The corresponding .config is attached.  Note that it is for a uClinux 
+> > > 3.3.0-uc0 kernel.
+> > 
+> > Lots of things have changed in the firmware code since 3.3.0, can you
+> > retest this on the 3.7-rc6 tree?
 
-On Tue, Nov 20, 2012 at 09:54:29PM +0000, Grant Likely wrote:
-> On Sat, 17 Nov 2012 19:55:45 +0900, Alexandre Courbot <acourbot@nvidia.com> wrote:
+Solomon, I can't duplicate the build failure with your .config on 3.7-rc5-next.
 
-> > With the advent of the device tree and of ARM kernels that are not
-> > board-tied, we cannot rely on these board-specific hooks anymore but
+> 
+> Not easily; My employer is contracted to do some driver porting and 
+> we're stuck with the kernel the client provided.  However, the patch is 
+> still relevant for upstream, because the underlying problem still 
+> exists:
+>  
+>  * The #ifdef wraps code that pertains solely to built-in firmware, (ie 
+>    CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disabled.
+>  * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c 
+>    when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
 
-> This isn't strictly true. It is still perfectly fine to have board
-> specific code when necessary. However, there is strong encouragement to
-> enable that code in device drivers as much as possible and new board
-> files need to have very strong justification.
+Enabling CONFIG_EXTRA_FIRMWARE still can make one firmware built in kernel
+even though CONFIG_FIRMWARE_IN_KERNEL isn't defined, so your patch will break
+this case.
 
-This isn't the message that's gone over, and even for device drivers
-everyone seems to be taking the whole device tree thing as a move to
-pull all data out of the kernel.  In some cases there are some real
-practical advantages to doing this but a lot of the people making these
-changes seem to view having things in DT as a goal in itself.
+> 
+> Perhaps the compile problem is solved in newer kernels (by always 
+> generating an empty builtin firmware list?) but the #ifdef is still 
+> incorrect.
 
-> I'm thinking about the scripts as trivial-to-parse ascii strings that
-> have a very simple set of commands. The commands use resources already
-> defined in the node. ie. 'g0' refers to the first entry in the gpios
-> property. 'r0' for the regulator, 'p0' for the pwms, 'd' means delay. By
-> no means take this as the format to use, it is just an example off the
-> top of my head, but it is already way easier to work with than putting
-> each command into a node.
+Looks the problem hasn't been reported before.
 
-It does appear to have some legibility challenges, especially with using
-the indexes into the arrays of resources.  On the other hand the arrays
-should be fairly small.
 
-> > +Platform Data Format
-> > +--------------------
-> > +All relevant data structures for declaring power sequences are located in
-> > +include/linux/power_seq.h.
-
-> Hmm... If sequences are switched to a string instead, then platform_data
-> should also use it. The power sequence data structures can be created at
-> runtime by parsing the string.
-
-Seems like a step backwards to me - why not let people store the more
-parsed version of the data?  It's going to be less convenient for users
-on non-DT systems.
-
-As I said in my earlier reviews I think this is a useful thing to have
-as a utility library for drivers independantly of the DT bindings, it
-would allow drivers to become more data driven.  Perhaps we can rework
-the series so that the DT bindings are added as a final patch?  All the
-rest of the code seems OK.
-
---a1QUDc0q7S3U7/Jg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrC7uAAoJELSic+t+oim9NTgP/3oUSoRnG5DR736OIwo3IEcq
-lR9QRSr43anEyTnX1ZzIAgJm9byAvH3TRcCG0RlCKb0JPlPvMcuiWnExeR5Xweoj
-d30s7bJ+btF2lk1LJPx6uFS6rhkPswW2eNCNG88z/ogDJnRg+mUlBaJFoMZBJ5MI
-DuP0WnVKrFXt7ixTm0/57z3tLBcXu9YyOttIoBR20Uk6sLOz4RWpbBjNEkit+2Kb
-Exrfxlbj4zEK0dVCjE2NFG/X77kXBoBHI1qplFdz5L+yEPIwAhyE+hjDVzR/H3G3
-x9MUP/LF8ttuKvl0kWfn3mN6/BObK/pGirFdk9+l/HhLS0jzVewZiZQr72K0pIql
-RVTEkc8kw4hiVMMZkzXsUy1LLDSH2C6SlrMMT2yZO2VekKfy9Fw6Kfbxl3ik2Px1
-Fg+lApYi1QrYfERBmUXPwr5ez1YZyL+TgLbZ87AC9gcDgCqHA/hGhv35A82m6ACQ
-Xp8wVxnPcUcDjvHCcvHDiL4UVa+qW1pxx5cZr5FUQENnl2n5byWcxLdH1rvwC9J3
-r2VRmVSyunIBaBi3bZc+BOE8UhiXAT0g59mIOkdVQGfSo5B1WeiAdSXawJWO835p
-I+dkhBA+uWIx5tPMan396vMqGaxydwtpA9iOsCjz9l2q+2sYflvJKUrdAzdU9xDh
-6PLj38T+S4Nw2nVEUU7N
-=EhhC
------END PGP SIGNATURE-----
-
---a1QUDc0q7S3U7/Jg--
+Thanks,
+-- 
+Ming Lei
