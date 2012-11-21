@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab2KUSOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:14:33 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:36447 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755409Ab2KUSOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:14:32 -0500
-Date: Wed, 21 Nov 2012 11:14:30 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] of: Have of_device_add call platform_device_add rather
- than device_add
-Message-ID: <20121121181430.GE6406@obsidianresearch.com>
-References: <20121121072448.GG19837@obsidianresearch.com>
- <20121121155104.726B83E0AE2@localhost>
- <20121121174453.GD6406@obsidianresearch.com>
- <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S1755517Ab2KUSRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:17:38 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39926 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755409Ab2KUSRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 13:17:37 -0500
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Brett Rudley <brudley@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Kan Yan <kanyan@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org
+Subject: [PATCH] brcmsmac: Add __printf verification to logging prototypes
+Date: Wed, 21 Nov 2012 10:17:34 -0800
+Message-Id: <a74034e340d7db52dfb0b1a01c18759eb091fd18.1353521783.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.112.g3fd21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 06:07:46PM +0000, Grant Likely wrote:
+Adding __printf helps spot format and argument mismatches.
 
-> > Which is nesting the generic gpio driver under a larger region..
-> 
-> Try two sibling nodes with overlapping addresses. There are powerpc
-> device trees doing that even though it isn't legal by the ofw and
-> epapr specs.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/brcm80211/brcmsmac/debug.h |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Both my examples were using sibling nodes in the OF tree.
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/debug.h b/drivers/net/wireless/brcm80211/brcmsmac/debug.h
+index c0d2cf7..f77066b 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/debug.h
++++ b/drivers/net/wireless/brcm80211/brcmsmac/debug.h
+@@ -8,17 +8,23 @@
+ #include "main.h"
+ #include "mac80211_if.h"
+ 
++__printf(2, 3)
+ void __brcms_info(struct device *dev, const char *fmt, ...);
++__printf(2, 3)
+ void __brcms_warn(struct device *dev, const char *fmt, ...);
++__printf(2, 3)
+ void __brcms_err(struct device *dev, const char *fmt, ...);
++__printf(2, 3)
+ void __brcms_crit(struct device *dev, const char *fmt, ...);
+ 
+ #if defined(CONFIG_BRCMDBG) || defined(CONFIG_BRCM_TRACING)
++__printf(4, 5)
+ void __brcms_dbg(struct device *dev, u32 level, const char *func,
+ 		 const char *fmt, ...);
+ #else
+-static inline void __brcms_dbg(struct device *dev, u32 level,
+-			       const char *func, const char *fmt, ...)
++static inline __printf(4, 5)
++void __brcms_dbg(struct device *dev, u32 level, const char *func,
++		 const char *fmt, ...)
+ {
+ }
+ #endif
+-- 
+1.7.8.112.g3fd21
 
-	pex@e0000000 {
-		device_type = "pci";
-		ranges = <0x02000000 0x00000000 0x00000000  0xe0000000  0x0 0x8000000>;
-		bus-range = <0x0 0xFF>;
-		chip@0 {
-			ranges = <0x02000000 0x00000000 0x00000000  0x02000000 0x00000000 0x00000000  0x0 0x8000000>;
-			chip_control@0 {
-				compatible = "orc,chip,control";
-				assigned-addresses = <0x02000000 0x0 0x0  0x0 4096>;
-			};
-
-			gpio3: chip_gpio@8 {
-			        #gpio-cells = <2>;
-				compatible = "linux,basic-mmio-gpio";
-				gpio-controller;
-				reg-names = "dat", "set", "dirin";
-				assigned-addresses = <0x02000000 0x0 0x8  0x0 4>,
-				                     <0x02000000 0x0 0xc  0x0 4>,
-				                     <0x02000000 0x0 0x10  0x0 4>;
-			};
-
-Non-conformant yes, but it is the simplest way to get linux to bind
-two drivers to the same memory space.
-
-Jason
