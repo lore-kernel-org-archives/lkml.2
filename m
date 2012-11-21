@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2KUMs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:48:28 -0500
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:46099
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752149Ab2KUMs0 (ORCPT
+	id S1753007Ab2KUMva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:51:30 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49713 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab2KUMv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:48:26 -0500
-X-Forefront-Antispam-Report: CIP:157.56.241.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0810HT001.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: PS0(zzzz1de0h1202h1d1ah1d2ahzz8275bh8275dhz2fh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-To: <devel@driverdev.osuosl.org>
-CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <sachin.kamat@linaro.org>
-Subject: [V2 PATCH 3/3] staging: ozwpan: Remove redundant null check before kfree in ozhcd.c
-Date: Wed, 21 Nov 2012 12:46:17 +0000
-Message-ID: <1353501977-6585-4-git-send-email-rgujare@ozmodevices.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20121120163513.GC4990@kroah.com>
-References: <20121120163513.GC4990@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.149.82.179]
-X-OriginatorOrg: ozmodevices.com
+	Wed, 21 Nov 2012 07:51:29 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v3 01/19] perf, x86: Support CPU specific sysfs events
+Date: Wed, 21 Nov 2012 13:49:27 +0100
+Message-Id: <1353502185-26521-2-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353502185-26521-1-git-send-email-eranian@google.com>
+References: <1353502185-26521-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call kfree only if required else return from function.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
+Add a way for the CPU initialization code to register additional events,
+and merge them into the events attribute directory. Used in the next
+patch.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/staging/ozwpan/ozhcd.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |    1 +
+ 2 files changed, 30 insertions(+)
 
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 33c0009..585aa79 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -274,12 +274,12 @@ static void oz_free_urb_link(struct oz_urb_link *urbl)
- 		if (g_link_pool_size < OZ_MAX_LINK_POOL_SIZE) {
- 			urbl->link.next = g_link_pool;
- 			g_link_pool = &urbl->link;
--			urbl = 0;
- 			g_link_pool_size++;
-+			spin_unlock_irqrestore(&g_link_lock, irq_state);
-+			return;
- 		}
- 		spin_unlock_irqrestore(&g_link_lock, irq_state);
--		if (urbl)
--			kfree(urbl);
-+		kfree(urbl);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..b116788 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1341,6 +1341,30 @@ static void __init filter_events(struct attribute **attrs)
  	}
  }
- /*------------------------------------------------------------------------------
+ 
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a,
++					    struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
++
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return a;
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++	return new;
++}
++ 
+ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1482,6 +1506,11 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
+ 
++	if (x86_pmu.cpu_events)
++		x86_pmu_events_group.attrs =
++			merge_attr(x86_pmu_events_group.attrs,
++				   x86_pmu.cpu_events);
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..4170043 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -355,6 +355,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
+ 
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
+ 
+ 	/*
+ 	 * CPU Hotplug hooks
 -- 
-1.7.5.4
-
+1.7.9.5
 
