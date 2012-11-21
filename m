@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2KUKWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:22:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43838 "EHLO mx2.suse.de"
+	id S1754507Ab2KUKWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:22:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754565Ab2KUKWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:35 -0500
+	id S1754580Ab2KUKWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:22:40 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -18,9 +18,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 23/46] mm: mempolicy: Hide MPOL_NOOP and MPOL_MF_LAZY from userspace for now
-Date: Wed, 21 Nov 2012 10:21:29 +0000
-Message-Id: <1353493312-8069-24-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/46] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+Date: Wed, 21 Nov 2012 10:21:32 +0000
+Message-Id: <1353493312-8069-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
 References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
@@ -28,88 +28,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of MPOL_NOOP and MPOL_MF_LAZY to allow an application to
-explicitly request lazy migration is a good idea but the actual
-API has not been well reviewed and once released we have to support it.
-For now this patch prevents an application using the services. This
-will need to be revisited.
+By accounting against the present PTEs, scanning speed reflects the
+actual present (mapped) memory.
 
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/uapi/linux/mempolicy.h |    4 +---
- mm/mempolicy.c                 |    9 ++++-----
- 2 files changed, 5 insertions(+), 8 deletions(-)
+ kernel/sched/fair.c |   36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 6a1baae..16fb4e6 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -21,7 +21,6 @@ enum {
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
- 	MPOL_LOCAL,
--	MPOL_NOOP,		/* retain existing policy for range */
- 	MPOL_MAX,	/* always last member of enum */
- };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 66d8bd2..773ef97 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -827,8 +827,8 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long offset, end;
+-	long length;
++	unsigned long start, end;
++	long pages;
  
-@@ -57,8 +56,7 @@ enum mpol_rebind_step {
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
  
- #define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
- 			 MPOL_MF_MOVE     | 	\
--			 MPOL_MF_MOVE_ALL |	\
--			 MPOL_MF_LAZY)
-+			 MPOL_MF_MOVE_ALL)
+@@ -858,18 +858,20 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
  
- /*
-  * Internal flags that share the struct mempolicy flags word with
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 75d4600..a7a62fe 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -252,7 +252,7 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
- 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
+-	offset = mm->numa_scan_offset;
+-	length = sysctl_balance_numa_scan_size;
+-	length <<= 20;
++	start = mm->numa_scan_offset;
++	pages = sysctl_balance_numa_scan_size;
++	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!pages)
++		return;
  
--	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
-+	if (mode == MPOL_DEFAULT) {
- 		if (nodes && !nodes_empty(*nodes))
- 			return ERR_PTR(-EINVAL);
- 		return NULL;
-@@ -1186,7 +1186,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (start & ~PAGE_MASK)
- 		return -EINVAL;
- 
--	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
-+	if (mode == MPOL_DEFAULT)
- 		flags &= ~MPOL_MF_STRICT;
- 
- 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
-@@ -1241,7 +1241,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 			  flags | MPOL_MF_INVERT, &pagelist);
- 
- 	err = PTR_ERR(vma);	/* maybe ... */
--	if (!IS_ERR(vma) && mode != MPOL_NOOP)
-+	if (!IS_ERR(vma))
- 		err = mbind_range(mm, start, end, new);
- 
- 	if (!err) {
-@@ -2530,7 +2530,6 @@ static const char * const policy_modes[] =
- 	[MPOL_BIND]       = "bind",
- 	[MPOL_INTERLEAVE] = "interleave",
- 	[MPOL_LOCAL]      = "local",
--	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
- };
- 
- 
-@@ -2581,7 +2580,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 			break;
- 		}
+ 	down_read(&mm->mmap_sem);
+-	vma = find_vma(mm, offset);
++	vma = find_vma(mm, start);
+ 	if (!vma) {
+ 		reset_ptenuma_scan(p);
+-		offset = 0;
++		start = 0;
+ 		vma = mm->mmap;
  	}
--	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
-+	if (mode >= MPOL_MAX)
- 		goto out;
+-	for (; vma && length > 0; vma = vma->vm_next) {
++	for (; vma; vma = vma->vm_next) {
+ 		if (!vma_migratable(vma))
+ 			continue;
  
- 	switch (mode) {
+@@ -877,15 +879,19 @@ void task_numa_work(struct callback_head *work)
+ 		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
+ 			continue;
+ 
+-		offset = max(offset, vma->vm_start);
+-		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-		length -= end - offset;
+-
+-		change_prot_numa(vma, offset, end);
++		do {
++			start = max(start, vma->vm_start);
++			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
++			end = min(end, vma->vm_end);
++			pages -= change_prot_numa(vma, start, end);
+ 
+-		offset = end;
++			start = end;
++			if (pages <= 0)
++				goto out;
++		} while (end != vma->vm_end);
+ 	}
+ 
++out:
+ 	/*
+ 	 * It is possible to reach the end of the VMA list but the last few VMAs are
+ 	 * not guaranteed to the vma_migratable. If they are not, we would find the
+@@ -893,7 +899,7 @@ void task_numa_work(struct callback_head *work)
+ 	 * so check it now.
+ 	 */
+ 	if (vma)
+-		mm->numa_scan_offset = offset;
++		mm->numa_scan_offset = start;
+ 	else
+ 		reset_ptenuma_scan(p);
+ 	up_read(&mm->mmap_sem);
 -- 
 1.7.9.2
 
