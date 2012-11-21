@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab2KVVea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:34:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755163Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ulrich Weber <ulrich.weber@sophos.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 70/83] netfilter: nf_nat: dont check for port change on ICMP tuples
-Date: Wed, 21 Nov 2012 16:42:32 -0800
-Message-Id: <20121122004220.200347850@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1757966Ab2KVVej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:34:39 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57371 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755163Ab2KVVed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:34:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121120235659.95001487.akpm@linux-foundation.org>
+References: <1353112043-11800-1-git-send-email-wfp5p@virginia.edu>
+ <CACxGe6ss3HsnGgNn=aOJsd0-6q-dRumPvkKdqjKWCFja9QDgtQ@mail.gmail.com> <20121120235659.95001487.akpm@linux-foundation.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 21 Nov 2012 23:05:20 +0000
+X-Google-Sender-Auth: pCAHnFinoWzfJxxO5ehqDh8iTxk
+Message-ID: <CACxGe6ubsSdnmdB_RYcdOnaWRNAki-HS0NW0ApFL2o=_CgynyQ@mail.gmail.com>
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 21, 2012 at 7:56 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 20 Nov 2012 10:46:11 +0000 Grant Likely <grant.likely@secretlab.ca> wrote:
+>
+>> On Sat, Nov 17, 2012 at 12:19 AM, Bill Pemberton <wfp5p@virginia.edu> wrote:
+>> > CONFIG_HOTPLUG is no longer an optional setting.  In order to remove
+>> > it as on option code paths that check CONFIG_HOTPLUG will removed
+>> > along with the attributes __devexit_p, __devexit, __devinitconst, and
+>> > __devinitdata.
+>> >
+>> > I'll save the list from the mailbomb of this huge patchset.  The
+>> > patches themselves are going to Greg KH for the driver core tree.
+>> >
+>> >
+>> > Bill Pemberton (493):
+>> [...]
+>> >  2942 files changed, 11645 insertions(+), 12116 deletions(-)
+>>
+>> So, I've got no problem with the reason for the change and I don't
+>> even think you need my ack for the bits that I maintain (though you
+>> have it if you want it). However, this looks like it is going to be
+>> /painful/. First of all it will touch a huge number of files in the
+>> tree. Yes the change is trivial, but it will require manual fixups on
+>> a lot of patches.
+>
+> Yeah, this is dopey.  Send the script to Linus and ask him to run it
+> seven seconds before he releases -rc1, when everyone's trees are
+> empty(ish).  Or send him a single megapatch at that time.
 
-------------------
+Yes please. I'm all on board with doing this in one fell swoop.
 
-From: Ulrich Weber <ulrich.weber@sophos.com>
-
-commit 38fe36a248ec3228f8e6507955d7ceb0432d2000 upstream.
-
-ICMP tuples have id in src and type/code in dst.
-So comparing src.u.all with dst.u.all will always fail here
-and ip_xfrm_me_harder() is called for every ICMP packet,
-even if there was no NAT.
-
-Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
----
- net/ipv4/netfilter/nf_nat_standalone.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/net/ipv4/netfilter/nf_nat_standalone.c
-+++ b/net/ipv4/netfilter/nf_nat_standalone.c
-@@ -194,7 +194,8 @@ nf_nat_out(unsigned int hooknum,
- 
- 		if ((ct->tuplehash[dir].tuple.src.u3.ip !=
- 		     ct->tuplehash[!dir].tuple.dst.u3.ip) ||
--		    (ct->tuplehash[dir].tuple.src.u.all !=
-+		    (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+		     ct->tuplehash[dir].tuple.src.u.all !=
- 		     ct->tuplehash[!dir].tuple.dst.u.all)
- 		   )
- 			return ip_xfrm_me_harder(skb) == 0 ? ret : NF_DROP;
-@@ -230,7 +231,8 @@ nf_nat_local_fn(unsigned int hooknum,
- 				ret = NF_DROP;
- 		}
- #ifdef CONFIG_XFRM
--		else if (ct->tuplehash[dir].tuple.dst.u.all !=
-+		else if (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+			 ct->tuplehash[dir].tuple.dst.u.all !=
- 			 ct->tuplehash[!dir].tuple.src.u.all)
- 			if (ip_xfrm_me_harder(skb))
- 				ret = NF_DROP;
+g.
 
 
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
