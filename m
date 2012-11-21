@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2KUMCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:02:05 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32306 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab2KUMCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:02:03 -0500
-Subject: Re: [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
- balance_dirty_pages
-To: miklos@szeredi.hu
-From: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        linux-mm@kvack.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Date: Wed, 21 Nov 2012 16:01:28 +0400
-Message-ID: <20121121115314.20471.52148.stgit@maximpc.sw.ru>
-In-Reply-To: <20121116171039.3196.92186.stgit@maximpc.sw.ru>
-References: <20121116171039.3196.92186.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	id S1754693Ab2KUMEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:04:31 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63995 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab2KUMEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 07:04:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1353495386.2432.13.camel@dabdike.int.hansenpartnership.com>
+References: <1350474822-7315-1-git-send-email-vinholikatti@gmail.com>
+	<1350474822-7315-2-git-send-email-vinholikatti@gmail.com>
+	<507FA52E.9050400@ti.com>
+	<CAKVbJB_FpmbtcLr5G5sSphNOPnodZUd0sN8ha0C_RtCDtWUG=Q@mail.gmail.com>
+	<1352841998.8317.1.camel@dabdike>
+	<CAKVbJB8sZ4Y5QfF63wh19N61+0honqoXawnkPGY6qUkt2MCrsw@mail.gmail.com>
+	<1353495386.2432.13.camel@dabdike.int.hansenpartnership.com>
+Date: Wed, 21 Nov 2012 17:34:28 +0530
+Message-ID: <CAKVbJB9i-PuEDdBr0=tcRQBP3VrB_nNh_POBb6p_aNQCVrjk5A@mail.gmail.com>
+Subject: Re: [PATCH V4 1/4] [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
+From: vinayak holikatti <vinholikatti@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Venkatraman S <svenkatr@ti.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
+        sreekumar.c@samsung.com, Santosh Yaraganavi <santoshsy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added linux-mm@ to cc:. The patch can stand on it's own.
-
-> Make balance_dirty_pages start the throttling when the WRITEBACK_TEMP
-> counter is high enough. This prevents us from having too many dirty
-> pages on fuse, thus giving the userspace part of it a chance to write
-> stuff properly.
-> 
-> Note, that the existing balance logic is per-bdi, i.e. if the fuse
-> user task gets stuck in the function this means, that it either
-> writes to the mountpoint it serves (but it can deadlock even without
-> the writeback) or it is writing to some _other_ dirty bdi and in the
-> latter case someone else will free the memory for it.
-
-Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
----
- mm/page-writeback.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..499a606 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1220,7 +1220,8 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK) +
-+			global_page_state(NR_WRITEBACK_TEMP);
- 
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-
+On Wed, Nov 21, 2012 at 4:26 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Wed, 2012-11-21 at 16:02 +0530, vinayak holikatti wrote:
+>> On Wed, Nov 14, 2012 at 2:56 AM, James Bottomley
+>> <James.Bottomley@hansenpartnership.com> wrote:
+>> > On Thu, 2012-10-18 at 17:37 +0530, vinayak holikatti wrote:
+>> >> I am Vacation will look into it when i am back to work.
+>> >> > This doesn't apply on 3.7-rc1. Am I missing any patches in between ?
+>> >
+>> > OK, so it doesn't apply for me either:
+>> >
+>> > patching file drivers/scsi/ufs/ufshcd.c
+>> > Hunk #11 FAILED at 902.
+>> > Hunk #15 succeeded at 1157 with fuzz 1 (offset 2 lines).
+>> > Hunk #16 succeeded at 1271 (offset 2 lines).
+>> > Hunk #17 succeeded at 1300 (offset 2 lines).
+>> > Hunk #18 succeeded at 1364 (offset 2 lines).
+>> > Hunk #19 succeeded at 1499 (offset 2 lines).
+>> > Hunk #20 succeeded at 1542 (offset 2 lines).
+>> > Hunk #21 succeeded at 1678 (offset 2 lines).
+>> > Hunk #22 succeeded at 1706 (offset 2 lines).
+>> > Hunk #23 succeeded at 1727 (offset 2 lines).
+>> > Hunk #24 succeeded at 1775 (offset 2 lines).
+>> > Hunk #25 succeeded at 1819 (offset 2 lines).
+>> > Hunk #26 succeeded at 1872 (offset 2 lines).
+>> > Hunk #27 succeeded at 1898 (offset 2 lines).
+>> > Hunk #28 FAILED at 2011.
+>> > 2 out of 28 hunks FAILED -- saving rejects to file
+>> > drivers/scsi/ufs/ufshcd.c.rej
+>> >
+>> I have generated patches based on linux/kernel/git/jejb/scsi.git this
+>> tree, Also i have
+>> confirmed that patches get applied successfully on this git tree.
+>>
+>> James,
+>> Which tree are you refering to. Let me know, which tree i should use to
+>> generate the patches.
+>
+> All patches for the merge window should be against the misc branch of
+> the scsi.git tree.
+>
+> James
+>
+Ok, I will create the patches against misc branch and resend these patches.
+Thanks
+Vinayak Holikatti
