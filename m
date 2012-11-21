@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2KUPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:00:59 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60621 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754940Ab2KUPA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:00:58 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/4 v2] gpio/tc3589x: convert to use the simple irqdomain
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1350644025-31517-1-git-send-email-linus.walleij@linaro.org>
-References: <1350644025-31517-1-git-send-email-linus.walleij@linaro.org>
-Date: Wed, 21 Nov 2012 15:00:52 +0000
-Message-Id: <20121121150052.9A5323E0A47@localhost>
+	id S1754999Ab2KUPBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:01:17 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:50643 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754981Ab2KUPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:01:15 -0500
+Message-ID: <1353510075.24807.24.camel@joe-AO722>
+Subject: Re: [PATCH v2] checkpatch: add double empty line check
+From: Joe Perches <joe@perches.com>
+To: eilong@broadcom.com
+Cc: Andy Whitcroft <apw@canonical.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Wed, 21 Nov 2012 07:01:15 -0800
+In-Reply-To: <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
+References: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+	 <20121120115239.GA7955@dm> <1353448728.17819.33.camel@joe-AO722>
+	 <20121120231930.GA27492@localhost> <1353454874.17819.41.camel@joe-AO722>
+	 <1353490921.6559.40.camel@lb-tlvb-eilong.il.broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Oct 2012 12:53:45 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
-> The special checks for whether we have a base IRQ offset or not
-> is surplus if we use the simple IRQ domain. The IRQ offset
-> zero will be interpreted as a linear domain case.
+On Wed, 2012-11-21 at 11:42 +0200, Eilon Greenstein wrote:
+> On Tue, 2012-11-20 at 15:41 -0800, Joe Perches wrote:
+> > On Tue, 2012-11-20 at 23:19 +0000, Andy Whitcroft wrote:
+> > > On Tue, Nov 20, 2012 at 01:58:48PM -0800, Joe Perches wrote:
+> > > 
+> > > > +# check for multiple blank lines, warn only on the second one in a block
+> > > > +		if ($rawline =~ /^.\s*$/ &&
+> > > > +		    $prevrawline =~ /^.\s*$/ &&
+> > > > +		    $linenr != $last_blank_linenr + 1) {
+> > > > +			CHK("DOUBLE_EMPTY_LINE",
+> > > > +			    "One blank line separating blocks is generally sufficient\n" . $herecurr);
+> > > > +			$last_blank_linenr = $linenr;
+> > > > +		}
+> > > > +
+> > > >  # check for line continuations in quoted strings with odd counts of "
+> > > >  		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
+> > > >  			WARN("LINE_CONTINUATIONS",
+> > > 
+> > > Pretty sure that will fail with combination which have removed lines.
+> > 
+> > Not as far as I can tell.
+> > Deleted lines followed by inserted lines seem
+> > to work OK.
+> > 
+> > This check is located after the test that ensures
+> > the current $line/$rawline is an insertion.
+> > 
 > 
-> Plus this makes sure we allocate descriptors where need be, or
-> warn if they are preallocated with SPARSE_IRQ.
+> But you do not look at the next line, so you will miss something like
+> that:
 > 
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> diff --git a/test.c b/test.c
+> index e3c46d4..e1c6ffc 100644
+> --- a/test.c
+> +++ b/test.c
+> @@ -15,7 +15,8 @@
+>   * something
+>   * something
+>   * something
+> - * next line was already empty */
+> + * next line was already empty, but I'm adding another one now*/
+> +
 
-Applied, thanks.
+Hi Eilon.
 
-g.
+Thanks for the test case.
 
-> ---
-> ChangeLog v1->v2: add a comment that explains what is going on,
->   it fooled me so it could fool somebody else too.
-> ---
->  drivers/gpio/gpio-tc3589x.c | 20 +++++++++-----------
->  1 file changed, 9 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
-> index 1e48317..8c8447c 100644
-> --- a/drivers/gpio/gpio-tc3589x.c
-> +++ b/drivers/gpio/gpio-tc3589x.c
-> @@ -292,17 +292,15 @@ static int tc3589x_gpio_irq_init(struct tc3589x_gpio *tc3589x_gpio,
->  {
->  	int base = tc3589x_gpio->irq_base;
->  
-> -	if (base) {
-> -		tc3589x_gpio->domain = irq_domain_add_legacy(
-> -			NULL, tc3589x_gpio->chip.ngpio, base,
-> -			0, &tc3589x_irq_ops, tc3589x_gpio);
-> -	}
-> -	else {
-> -		tc3589x_gpio->domain = irq_domain_add_linear(
-> -			np, tc3589x_gpio->chip.ngpio,
-> -			&tc3589x_irq_ops, tc3589x_gpio);
-> -	}
-> -
-> +	/*
-> +	 * If this results in a linear domain, irq_create_mapping() will
-> +	 * take care of allocating IRQ descriptors at runtime. When a base
-> +	 * is provided, the IRQ descriptors will be allocated when the
-> +	 * domain is instantiated.
-> +	 */
-> +	tc3589x_gpio->domain = irq_domain_add_simple(np,
-> +			tc3589x_gpio->chip.ngpio, base, &tc3589x_irq_ops,
-> +			tc3589x_gpio);
->  	if (!tc3589x_gpio->domain) {
->  		dev_err(tc3589x_gpio->dev, "Failed to create irqdomain\n");
->  		return -ENOSYS;
-> -- 
-> 1.7.11.7
-> 
+That's true, but I'm OK with missing a few cases in the
+search for simplicity as long as there aren't significant
+false positives.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+For instance the next test
+# check for line continuations in quoted strings with odd counts of "
+		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
+			WARN("LINE_CONTINUATIONS",
+
+That fails if the rawline is:
+	"\"" \
+Does it matter much?  Probably not.
+I suppose that test could be improved by using $line.
+
+checkpatch isn't a perfect tool.  Given how it's constructed,
+I doubt it ever could be.
+
+No doubt you and Andy will find a better solution.
+
+
