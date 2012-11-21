@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab2KUNDg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:03:36 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:37476
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751513Ab2KUNDf (ORCPT
+	id S1752930Ab2KUNDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:03:46 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46549 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2KUNDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:03:35 -0500
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Nov 2012 08:03:34 EST
-X-Forefront-Antispam-Report: CIP:157.56.241.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0810HT001.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: PS0(zzzz1de0h1202h1d1ah1d2ahzz8275bh8275dhz2fh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-To: <devel@driverdev.osuosl.org>
-CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <sachin.kamat@linaro.org>
-Subject: [V2 PATCH 2/3] staging: ozwpan: Remove redundant null check before kfree in ozproto.c
-Date: Wed, 21 Nov 2012 12:46:16 +0000
-Message-ID: <1353501977-6585-3-git-send-email-rgujare@ozmodevices.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20121120163513.GC4990@kroah.com>
-References: <20121120163513.GC4990@kroah.com>
+	Wed, 21 Nov 2012 08:03:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.149.82.179]
-X-OriginatorOrg: ozmodevices.com
+In-Reply-To: <20121119154940.GA6354@redhat.com>
+References: <1351159974-980-1-git-send-email-meltedpianoman@gmail.com>
+	<1353310211-3011-1-git-send-email-meltedpianoman@gmail.com>
+	<20121119151050.GA4270@redhat.com>
+	<CAMSQXEF9BGBVRRtuz88XFqVmPBdbWisepq4qjah3vM05_7hztw@mail.gmail.com>
+	<20121119154940.GA6354@redhat.com>
+Date: Wed, 21 Nov 2012 14:03:41 +0100
+Message-ID: <CAMSQXEGfQE_vcvk9MvP-aJD2jeF7vU+84yx_fEn==v2Jve9w0A@mail.gmail.com>
+Subject: Re: [REPOST-v2] sched: Prevent wakeup to enter critical section needlessly
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free memory if timer pool count > OZ_MAX_TIMER_POOL_SIZE
+Hi
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
----
- drivers/staging/ozwpan/ozproto.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+2012/11/19 Oleg Nesterov <oleg@redhat.com>:
+>
+> Because on a second thought I suspect this change is wrong.
+>
+> Just for example, please look at kauditd_thread(). It does
+>
+>         set_current_state(TASK_INTERRUPTIBLE);
+>
+>         add_wait_queue(&kauditd_wait, &wait);
+>
+>         if (!CONDITION)         // <-- LOAD
+>                 schedule();
+>
+> And the last LOAD can leak into the critical section protected by
+> wait_queue_head_t->lock, and it can be reordered with list_add()
+> inside this critical section. In this case we can race with wake_up()
+> unless it takes the same lock.
+>
+> Oleg.
+>
 
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index cfb5160..832fde1 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -552,8 +552,8 @@ static void oz_protocol_timer(unsigned long arg)
- 			t->link.next = g_timer_pool;
- 			g_timer_pool = &t->link;
- 			g_timer_pool_count++;
--			t = 0;
--		}
-+		} else
-+			kfree(t);
- 		if (!list_empty(&g_timer_list)) {
- 			t2 =  container_of(g_timer_list.next,
- 				struct oz_timer, link);
-@@ -566,8 +566,6 @@ static void oz_protocol_timer(unsigned long arg)
- 		}
- 		spin_unlock_bh(&g_polling_lock);
- 		oz_pd_put(pd);
--		if (t)
--			kfree(t);
- 		t = t2;
- 	} while (t);
- 	g_timer_state = OZ_TIMER_IDLE;
--- 
-1.7.5.4
+I agree that I should solve my problem using the waitqueue_active()
+function locally. I'll abandon this patch and fix it in the
+tty_ldisc.c.
 
+But we try to understand your fault scenario: How can the LOAD leak
+into the critical section? As far as we understand the spin_unlock()
+function also contains a memory barrier to prevent such a reordering
+from happening.
 
+Regards,
+Ivo
