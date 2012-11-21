@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2KUMp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 07:45:58 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:65235 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab2KUMp4 (ORCPT
+	id S1752749Ab2KUMqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 07:46:44 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13433 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2KUMqm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 07:45:56 -0500
+	Wed, 21 Nov 2012 07:46:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 21 Nov 2012 04:46:42 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Nov 2012 13:46:37 +0100
+Subject: Re: [PATCH 1/1] amba: tegra-ahb: Fix warning w/o PM_SLEEP
+Thread-Topic: [PATCH 1/1] amba: tegra-ahb: Fix warning w/o PM_SLEEP
+Thread-Index: Ac3H5kBJjAhH5r8RQja0a+DE77v2eg==
+Message-ID: <20121121.144637.924356344656100182.hdoyu@nvidia.com>
+References: <1353501697-25345-1-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1353501697-25345-1-git-send-email-hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1211201947510.985@eggly.anvils>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
-	<20121119162909.GL8218@suse.de>
-	<20121119191339.GA11701@gmail.com>
-	<20121119211804.GM8218@suse.de>
-	<20121119223604.GA13470@gmail.com>
-	<50AC4912.7040503@redhat.com>
-	<alpine.LNX.2.00.1211201947510.985@eggly.anvils>
-Date: Wed, 21 Nov 2012 20:45:55 +0800
-Message-ID: <CAJd=RBDB7dZ1ppAOnfmk_wr37=-QN5DvEe+eub7AnZXC72nWkQ@mail.gmail.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-From: Hillf Danton <dhillf@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>, habanero@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 12:10 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 20 Nov 2012, Rik van Riel wrote:
->> On 11/20/2012 08:54 PM, Andrew Theurer wrote:
->>
->> > I can confirm single JVM JBB is working well for me.  I see a 30%
->> > improvement over autoNUMA.  What I can't make sense of is some perf
->> > stats (taken at 80 warehouses on 4 x WST-EX, 512GB memory):
->>
->> AutoNUMA does not have native THP migration, that may explain some
->> of the difference.
+>From cd21894b640d456974920247d2a10421e78ba960 Mon Sep 17 00:00:00 2001
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+Date: Thu, 15 Nov 2012 08:27:41 +0200
+Subject: [PATCH 1/1] amba: tegra-ahb: Fix warning w/o PM_SLEEP
 
-Plus, numa/core is sucking the milk of TLB-flsh-optimization from Rik.
+Fix build warning w/o PM_SLEEP.
 
-BTW, I want to see results of numa/core without such TLB boosts.
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ drivers/amba/tegra-ahb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
->
-> When I made some fixes to the sched/numa native THP migration,
-> I did also try porting that (with Hannes's memcg fixes) to AutoNUMA.
->
-Thanks a ton;)
-
-> +
-> +       new_page = alloc_pages_node(numa_node_id(),
-> +           (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
-
-Such a brand new page is selected to be migration target, why?
-
-Hillf
-> +       if (!new_page)
-> +               goto alloc_fail;
+diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+index bd5de08..0576a7d 100644
+--- a/drivers/amba/tegra-ahb.c
++++ b/drivers/amba/tegra-ahb.c
+@@ -157,6 +157,7 @@ int tegra_ahb_enable_smmu(struct device_node *dn)
+ EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+ #endif
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int tegra_ahb_suspend(struct device *dev)
+ {
+ 	int i;
+@@ -176,6 +177,7 @@ static int tegra_ahb_resume(struct device *dev)
+ 		gizmo_writel(ahb, ahb->ctx[i], tegra_ahb_gizmo[i]);
+ 	return 0;
+ }
++#endif
+ 
+ static UNIVERSAL_DEV_PM_OPS(tegra_ahb_pm,
+ 			    tegra_ahb_suspend,
+-- 
+1.7.9.5
