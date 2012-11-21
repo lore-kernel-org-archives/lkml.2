@@ -1,121 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2KUSXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:23:24 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54036 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab2KUSXN (ORCPT
+	id S1755543Ab2KUSZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:25:45 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53821 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab2KUSZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:23:13 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] of: use platform_device_add
-Date: Wed, 21 Nov 2012 18:15:59 +0000
-Message-Id: <1353521759-28263-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 21 Nov 2012 13:25:43 -0500
+Date: Wed, 21 Nov 2012 19:25:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 36/46] mm: numa: Use a two-stage filter to restrict pages
+ being migrated for unlikely task<->node relationships
+Message-ID: <20121121182537.GB29893@gmail.com>
+References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
+ <1353493312-8069-37-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353493312-8069-37-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows platform_device_add a chance to call insert_resource on all
-of the resources from OF. At a minimum this fills in proc/iomem and
-presumably makes resource tracking and conflict detection work better.
-However, it has the side effect of moving all OF generated platform
-devices from /sys/devices to /sys/devices/platform/. It /shouldn't/
-break userspace because userspace is not supposed to depend on the full
-path (because userspace always does what it is supposed to, right?).
 
-It also has a backup call to of_device_add() when running on PowerPC to
-catch any devices that have overlapping regions. It will complain about
-them, but it will not fail to register the device.
+* Mel Gorman <mgorman@suse.de> wrote:
 
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> While it is desirable that all threads in a process run on its home
+> node, this is not always possible or necessary. There may be more
+> threads than exist within the node or the node might over-subscribed
+> with unrelated processes.
+> 
+> This can cause a situation whereby a page gets migrated off its home
+> node because the threads clearing pte_numa were running off-node. This
+> patch uses page->last_nid to build a two-stage filter before pages get
+> migrated to avoid problems with short or unlikely task<->node
+> relationships.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
+>  1 file changed, 29 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 4c1c8d8..fd20e28 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -2317,9 +2317,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+>  	}
+>  
+>  	/* Migrate the page towards the node whose CPU is referencing it */
+> -	if (pol->flags & MPOL_F_MORON)
+> +	if (pol->flags & MPOL_F_MORON) {
+> +		int last_nid;
+> +
+>  		polnid = numa_node_id();
+>  
+> +		/*
+> +		 * Multi-stage node selection is used in conjunction
+> +		 * with a periodic migration fault to build a temporal
+> +		 * task<->page relation. By using a two-stage filter we
+> +		 * remove short/unlikely relations.
+> +		 *
+> +		 * Using P(p) ~ n_p / n_t as per frequentist
+> +		 * probability, we can equate a task's usage of a
+> +		 * particular page (n_p) per total usage of this
+> +		 * page (n_t) (in a given time-span) to a probability.
+> +		 *
+> +		 * Our periodic faults will sample this probability and
+> +		 * getting the same result twice in a row, given these
+> +		 * samples are fully independent, is then given by
+> +		 * P(n)^2, provided our sample period is sufficiently
+> +		 * short compared to the usage pattern.
+> +		 *
+> +		 * This quadric squishes small probabilities, making
+> +		 * it less likely we act on an unlikely task<->page
+> +		 * relation.
+> +		 */
+> +		last_nid = page_xchg_last_nid(page, polnid);
+> +		if (last_nid != polnid)
+> +			goto out;
+> +	}
+> +
+>  	if (curnid != polnid)
+>  		ret = polnid;
+>  out:
+
+As mentioned in my other mail, this patch of yours looks very 
+similar to the numa/core commit attached below, mostly written 
+by Peter:
+
+  30f93abc6cb3 sched, numa, mm: Add the scanning page fault machinery
+
+Thanks,
+
+	Ingo
+
+--------------------->
+>From 30f93abc6cb3fd387a134d6b94ff5ac396be1c88 Mon Sep 17 00:00:00 2001
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue, 13 Nov 2012 12:58:32 +0100
+Subject: [PATCH] sched, numa, mm: Add the scanning page fault machinery
+
+Add the NUMA working set scanning/hinting page fault machinery,
+with no policy yet.
+
+[ The earliest versions had the mpol_misplaced() function from
+  Lee Schermerhorn - this was heavily modified later on. ]
+
+Also-written-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Hugh Dickins <hughd@google.com>
+[ split it out of the main policy patch - as suggested by Mel Gorman ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
+ include/linux/init_task.h |   8 +++
+ include/linux/mempolicy.h |   6 +-
+ include/linux/mm_types.h  |   4 ++
+ include/linux/sched.h     |  41 ++++++++++++--
+ init/Kconfig              |  73 +++++++++++++++++++-----
+ kernel/sched/core.c       |  15 +++++
+ kernel/sysctl.c           |  31 ++++++++++-
+ mm/huge_memory.c          |   1 +
+ mm/mempolicy.c            | 137 ++++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 294 insertions(+), 22 deletions(-)
 
-Greg, do you mind taking a look at this? The reason the OF code hasn't been
-calling platform_device_add() directly to this point is:
-a) there are some trees with resource overlays
-b) I want the devices in /sys/devices not /sys/devices/platform.
+[...]
 
-I could easily add exceptions to platform_device_add() for both those cases, but
-I don't like adding DT exceptions to the common code. However, I still need to
-support the platforms that unfortunately have overlapping resources. This patch
-does that by still calling the old path if platform_device_add() fails, but it
-isn't nice either because of_device_add() has to duplicate
-platform_device_add(). Blech. Plus the exception only applies for PowerPC.
-
-So, how do you feel about having a 'relaxed' mode for platform_device_add()
-which means it won't fail if resources overlap and maybe won't do the silly
-platform_bus parent thing. Thoughts?
-
-g.
-
- drivers/of/platform.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b80891b..3d7ba40 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -203,6 +203,7 @@ struct platform_device *of_platform_device_create_pdata(
- 					struct device *parent)
- {
- 	struct platform_device *dev;
-+	int rc;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d04a8a5..318043a 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2175,6 +2175,143 @@ static void sp_free(struct sp_node *n)
+ 	kmem_cache_free(sn_cache, n);
+ }
  
- 	if (!of_device_is_available(np))
- 		return NULL;
-@@ -214,16 +215,39 @@ struct platform_device *of_platform_device_create_pdata(
- #if defined(CONFIG_MICROBLAZE)
- 	dev->archdata.dma_mask = 0xffffffffUL;
- #endif
-+	dev->name = dev_name(&dev->dev);
- 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
--	dev->dev.bus = &platform_bus_type;
- 	dev->dev.platform_data = platform_data;
-+	dev->dev.id = PLATFORM_DEVID_NONE;
-+	/* device_add will assume that this device is on the same node as
-+	 * the parent. If there is no parent defined, set the node
-+	 * explicitly */
-+	if (!parent)
-+		set_dev_node(&dev->dev, of_node_to_nid(np));
- 
- 	/* We do not fill the DMA ops for platform devices by default.
- 	 * This is currently the responsibility of the platform code
- 	 * to do such, possibly using a device notifier
- 	 */
- 
--	if (of_device_add(dev) != 0) {
-+	rc = platform_device_add(dev);
-+#ifdef CONFIG_POWERPC
++/*
++ * Multi-stage node selection is used in conjunction with a periodic
++ * migration fault to build a temporal task<->page relation. By
++ * using a two-stage filter we remove short/unlikely relations.
++ *
++ * Using P(p) ~ n_p / n_t as per frequentist probability, we can
++ * equate a task's usage of a particular page (n_p) per total usage
++ * of this page (n_t) (in a given time-span) to a probability.
++ *
++ * Our periodic faults will then sample this probability and getting
++ * the same result twice in a row, given these samples are fully
++ * independent, is then given by P(n)^2, provided our sample period
++ * is sufficiently short compared to the usage pattern.
++ *
++ * This quadric squishes small probabilities, making it less likely
++ * we act on an unlikely task<->page relation.
++ *
++ * Return the best node ID this page should be on, or -1 if it should
++ * stay where it is.
++ */
++static int
++numa_migration_target(struct page *page, int page_nid,
++		      struct task_struct *p, int this_cpu,
++		      int cpu_last_access)
++{
++	int nid_last_access;
++	int this_nid;
++
++	if (task_numa_shared(p) < 0)
++		return -1;
++
 +	/*
-+	 * This POWERPC block isn't pretty, but the commit that adds it is a
-+	 * little risky. There are possibly some powerpc platforms that have
-+	 * overlapping resources in the device tree. If so, then I want to find
-+	 * them, but I don't want to break support in the process. So, if
-+	 * platform_device_add() fails, then register the device anyway, but
-+	 * complain about it. Hopefully we can find and fix and problem
-+	 * platforms before removing this code.
++	 * Possibly migrate towards the current node, depends on
++	 * task_numa_placement() and access details.
 +	 */
-+	if (rc == -EBUSY) {
-+		dev_warn(&dev->dev, "WARNING: resource overlap in DT node %s\n",
-+			np->full_name);
-+		rc = of_device_add(dev);
++	nid_last_access = cpu_to_node(cpu_last_access);
++	this_nid = cpu_to_node(this_cpu);
++
++	if (nid_last_access != this_nid) {
++		/*
++		 * 'Access miss': the page got last accessed from a remote node.
++		 */
++		return -1;
 +	}
-+#endif
-+	if (rc) {
- 		platform_device_put(dev);
- 		return NULL;
- 	}
--- 
-1.7.10.4
-
++	/*
++	 * 'Access hit': the page got last accessed from our node.
++	 *
++	 * Migrate the page if needed.
++	 */
++
++	/* The page is already on this node: */
++	if (page_nid == this_nid)
++		return -1;
++
++	return this_nid;
++}
+[...]
