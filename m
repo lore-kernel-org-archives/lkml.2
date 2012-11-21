@@ -1,254 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2KUEXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:23:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40573 "EHLO mx1.redhat.com"
+	id S1754098Ab2KUEYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:24:12 -0500
+Received: from linux-sh.org ([111.68.239.195]:41840 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab2KUEXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:23:19 -0500
-Message-ID: <50AC5797.1060604@redhat.com>
-Date: Wed, 21 Nov 2012 12:24:55 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1753937Ab2KUEYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:24:10 -0500
+Date: Wed, 21 Nov 2012 13:23:57 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms@verge.net.au>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: Re: [PATCH 00/42] SH pin control and GPIO rework
+Message-ID: <20121121042356.GB14005@linux-sh.org>
+References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
-References: <1353315222-27685-1-git-send-email-asias@redhat.com> <20121119202641.GB12283@redhat.com> <50AB25AC.2070606@redhat.com> <20121120133714.GC3448@redhat.com>
-In-Reply-To: <20121120133714.GC3448@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 09:37 PM, Michael S. Tsirkin wrote:
-> On Tue, Nov 20, 2012 at 02:39:40PM +0800, Asias He wrote:
->> On 11/20/2012 04:26 AM, Michael S. Tsirkin wrote:
->>> On Mon, Nov 19, 2012 at 04:53:42PM +0800, Asias He wrote:
->>>> vhost-blk is an in-kernel virito-blk device accelerator.
->>>>
->>>> Due to lack of proper in-kernel AIO interface, this version converts
->>>> guest's I/O request to bio and use submit_bio() to submit I/O directly.
->>>> So this version any supports raw block device as guest's disk image,
->>>> e.g. /dev/sda, /dev/ram0. We can add file based image support to
->>>> vhost-blk once we have in-kernel AIO interface. There are some work in
->>>> progress for in-kernel AIO interface from Dave Kleikamp and Zach Brown:
->>>>
->>>>    http://marc.info/?l=linux-fsdevel&m=133312234313122
->>>>
->>>> Performance evaluation:
->>>> -----------------------------
->>>> 1) LKVM
->>>> Fio with libaio ioengine on Fusion IO device using kvm tool
->>>> IOPS(k)    Before       After   Improvement
->>>> seq-read   107          121     +13.0%
->>>> seq-write  130          179     +37.6%
->>>> rnd-read   102          122     +19.6%
->>>> rnd-write  125          159     +27.0%
->>>>
->>>> 2) QEMU
->>>> Fio with libaio ioengine on Fusion IO device using QEMU
->>>> IOPS(k)    Before       After   Improvement
->>>> seq-read   76           123     +61.8%
->>>> seq-write  139          173     +24.4%
->>>> rnd-read   73           120     +64.3%
->>>> rnd-write  75           156     +108.0%
->>>
->>> Could you compare with dataplane qemu as well please?
->>
->>
->> Well, I will try to collect it.
->>
->>>
->>>>
->>>> Userspace bits:
->>>> -----------------------------
->>>> 1) LKVM
->>>> The latest vhost-blk userspace bits for kvm tool can be found here:
->>>> git@github.com:asias/linux-kvm.git blk.vhost-blk
->>>>
->>>> 2) QEMU
->>>> The latest vhost-blk userspace prototype for QEMU can be found here:
->>>> git@github.com:asias/qemu.git blk.vhost-blk
->>>>
->>>> Changes in v5:
->>>> - Do not assume the buffer layout
->>>> - Fix wakeup race
->>>>
->>>> Changes in v4:
->>>> - Mark req->status as userspace pointer
->>>> - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
->>>> - Add if (need_resched()) schedule() in blk thread
->>>> - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
->>>> - Use vq_err() instead of pr_warn()
->>>> - Fail un Unsupported request
->>>> - Add flush in vhost_blk_set_features()
->>>>
->>>> Changes in v3:
->>>> - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
->>>> - Check file passed by user is a raw block device file
->>>>
->>>> Signed-off-by: Asias He <asias@redhat.com>
->>>
->>> Since there are files shared by this and vhost net
->>> it's easiest for me to merge this all through the
->>> vhost tree.
->>>
->>> Jens, could you ack this and the bio usage in this driver
->>> please?
->>>
->>>> ---
->>>>  drivers/vhost/Kconfig     |   1 +
->>>>  drivers/vhost/Kconfig.blk |  10 +
->>>>  drivers/vhost/Makefile    |   2 +
->>>>  drivers/vhost/blk.c       | 697 ++++++++++++++++++++++++++++++++++++++++++++++
->>>>  drivers/vhost/blk.h       |   8 +
->>>>  5 files changed, 718 insertions(+)
->>>>  create mode 100644 drivers/vhost/Kconfig.blk
->>>>  create mode 100644 drivers/vhost/blk.c
->>>>  create mode 100644 drivers/vhost/blk.h
->>>>
->>>> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
->>>> index 202bba6..acd8038 100644
->>>> --- a/drivers/vhost/Kconfig
->>>> +++ b/drivers/vhost/Kconfig
->>>> @@ -11,4 +11,5 @@ config VHOST_NET
->>>>  
->>>>  if STAGING
->>>>  source "drivers/vhost/Kconfig.tcm"
->>>> +source "drivers/vhost/Kconfig.blk"
->>>>  endif
->>>> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
->>>> new file mode 100644
->>>> index 0000000..ff8ab76
->>>> --- /dev/null
->>>> +++ b/drivers/vhost/Kconfig.blk
->>>> @@ -0,0 +1,10 @@
->>>> +config VHOST_BLK
->>>> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
->>>> +	depends on BLOCK &&  EXPERIMENTAL && m
->>>> +	---help---
->>>> +	  This kernel module can be loaded in host kernel to accelerate
->>>> +	  guest block with virtio_blk. Not to be confused with virtio_blk
->>>> +	  module itself which needs to be loaded in guest kernel.
->>>> +
->>>> +	  To compile this driver as a module, choose M here: the module will
->>>> +	  be called vhost_blk.
->>>> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
->>>> index a27b053..1a8a4a5 100644
->>>> --- a/drivers/vhost/Makefile
->>>> +++ b/drivers/vhost/Makefile
->>>> @@ -2,3 +2,5 @@ obj-$(CONFIG_VHOST_NET) += vhost_net.o
->>>>  vhost_net-y := vhost.o net.o
->>>>  
->>>>  obj-$(CONFIG_TCM_VHOST) += tcm_vhost.o
->>>> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
->>>> +vhost_blk-y := blk.o
->>>> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
->>>> new file mode 100644
->>>> index 0000000..f0f118a
->>>> --- /dev/null
->>>> +++ b/drivers/vhost/blk.c
->>>> @@ -0,0 +1,697 @@
->>>> +/*
->>>> + * Copyright (C) 2011 Taobao, Inc.
->>>> + * Author: Liu Yuan <tailai.ly@taobao.com>
->>>> + *
->>>> + * Copyright (C) 2012 Red Hat, Inc.
->>>> + * Author: Asias He <asias@redhat.com>
->>>> + *
->>>> + * This work is licensed under the terms of the GNU GPL, version 2.
->>>> + *
->>>> + * virtio-blk server in host kernel.
->>>> + */
->>>> +
->>>> +#include <linux/miscdevice.h>
->>>> +#include <linux/module.h>
->>>> +#include <linux/vhost.h>
->>>> +#include <linux/virtio_blk.h>
->>>> +#include <linux/mutex.h>
->>>> +#include <linux/file.h>
->>>> +#include <linux/kthread.h>
->>>> +#include <linux/blkdev.h>
->>>> +#include <linux/llist.h>
->>>> +
->>>> +#include "vhost.c"
->>>> +#include "vhost.h"
->>>> +#include "blk.h"
->>>> +
->>>> +static DEFINE_IDA(vhost_blk_index_ida);
->>>> +
->>>> +enum {
->>>> +	VHOST_BLK_VQ_REQ = 0,
->>>> +	VHOST_BLK_VQ_MAX = 1,
->>>> +};
->>>> +
->>>> +struct req_page_list {
->>>> +	struct page **pages;
->>>> +	int pages_nr;
->>>> +};
->>>> +
->>>> +struct vhost_blk_req {
->>>> +	struct llist_node llnode;
->>>> +	struct req_page_list *pl;
->>>> +	struct vhost_blk *blk;
->>>> +
->>>> +	struct iovec *iov;
->>>> +	int iov_nr;
->>>> +
->>>> +	struct bio **bio;
->>>> +	atomic_t bio_nr;
->>>> +
->>>> +	struct iovec status[1];
->>>> +
->>>> +	sector_t sector;
->>>> +	int write;
->>>> +	u16 head;
->>>> +	long len;
->>>> +};
->>>> +
->>>> +struct vhost_blk {
->>>> +	struct task_struct *host_kick;
->>>
->>> Could you please add a comment here explaining why
->>> is this better than using the builtin vhost thread?
->>
->> With separate thread model, the request submit and request completion
->> can be handled in parallel. I have measured significant performance
->> improvement with this model.
->> In the long term, It would be nice if the
->> vhost core can provide multiple thread support.
+On Wed, Nov 21, 2012 at 03:27:01AM +0100, Laurent Pinchart wrote:
+> Hi everybody,
 > 
-> Strange, all completion does it write out the used ring.
-> I am guessing you didn't complete requests
-> in a timely manner which was what caused the issue.
+> Here's a pretty large patch series that rework pin control and GPIO support
+> for SH and ARM SH/Renesas Mobile/Car platforms. The patches are based on top
+> of v3.7-rc6. You can get them from my git tree at
+> 
+> 	git://linuxtv.org/pinchartl/fbdev.git pinmux
+> 
+> The idea behind these patches is to move SoC-specific pin control code from
+> arch/ to drivers/pinctrl/ and use the Linux device model to instantiate the
+> pin control device. This is required to add device tree support for the pin
+> control device.
+> 
+> The code has been compile-tested on all modified platforms except SH7264 and
+> SH7269, and runtime tested on SH7372 (Mackerel), SH73A0 (KZM-A9-GT) and
+> R8A7740 (Armadillo) so far. I will runtime test it on R8A7779 (Marzen).
+> 
+> The SH7264 and SH7269 platforms have no gpiolib support so the PFC code can't
+> be compiled for them. As the currently implemented arch-level pinmux support
+> also depends on generic GPIO, we're moving from a situation where the code
+> isn't used to a different situation where the code isn't used. I don't
+> consider that as a regression.
+> 
+> Sorry for the numerous checkpatch warnings, patches that move code around or
+> rename files don't modify the content to make review easier, and thus carry
+> warnings from the existing code.
+> 
+> Currently missing from this series are DT bindings. I will send patches for
+> those a bit later. As they will build on top of this series I would appreciate
+> reviews (and hopefilly ack's).
+> 
+I've only given it a quick look, but in general it looks good!
 
-Previously, there was two 'struct vhost_work' work which poll on the
-guest kick eventfd and host aio eventfd. The vhost thread is handling
-the works when there are data in eventfd, either guest kick or aio
-completion.
+For the series:
 
-> OTOH I'm not sure how increasing the number of threads
-> scales with # of VMs. Increased scheduler pressure is
-> also a concern.
-
-Agree, this is also my concern. However, this is a trade-off. we have a
-price to pay for the parallelism. Also, one thread per vhost device
-might not scale with # of VMs too, compared to e.g. per cpu thread.
-
-> Did you try checking completion after each
-> submitted request to address this?
-
-Isn't this a sync operation? We can not only account on the checking the
-completion in the submit path. Another polling on the completion is
-needed anyway. Mixing the completion in submit path, 1) makes the submit
-delay longer 2) does not help with the case where a single request takes
-relatively long time to finish. IMHO, I do not think mixing the submit
-and completion is a good idea.
-
--- 
-Asias
+Acked-by: Paul Mundt <lethal@linux-sh.org>
