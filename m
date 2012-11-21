@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2KUR7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 12:59:35 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35814 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab2KUR7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 12:59:34 -0500
-Subject: Re: numa/core regressions fixed - more testers wanted
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Reply-To: habanero@linux.vnet.ibm.com
-To: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
+	id S1755484Ab2KUSCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:02:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40692 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755463Ab2KUSCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 13:02:08 -0500
+Date: Wed, 21 Nov 2012 18:02:00 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <alpine.LNX.2.00.1211201947510.985@eggly.anvils>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
-	 <20121119162909.GL8218@suse.de> <20121119191339.GA11701@gmail.com>
-	 <20121119211804.GM8218@suse.de> <20121119223604.GA13470@gmail.com>
-	 <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
-	 <20121120071704.GA14199@gmail.com> <20121120152933.GA17996@gmail.com>
-	 <20121120175647.GA23532@gmail.com>
-	 <1353462853.31820.93.camel@oc6622382223.ibm.com>
-	 <50AC4912.7040503@redhat.com>
-	 <alpine.LNX.2.00.1211201947510.985@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 21 Nov 2012 11:59:16 -0600
-Message-ID: <1353520756.31820.99.camel@oc6622382223.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112117-3620-0000-0000-0000006D6964
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
+Message-ID: <20121121180200.GK8218@suse.de>
+References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
+ <20121121165342.GH8218@suse.de>
+ <20121121170306.GA28811@gmail.com>
+ <20121121172011.GI8218@suse.de>
+ <20121121173316.GA29311@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121121173316.GA29311@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-20 at 20:10 -0800, Hugh Dickins wrote:
-> On Tue, 20 Nov 2012, Rik van Riel wrote:
-> > On 11/20/2012 08:54 PM, Andrew Theurer wrote:
+On Wed, Nov 21, 2012 at 06:33:16PM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Wed, Nov 21, 2012 at 06:03:06PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Mel Gorman <mgorman@suse.de> wrote:
+> > > 
+> > > > On Wed, Nov 21, 2012 at 10:21:06AM +0000, Mel Gorman wrote:
+> > > > > 
+> > > > > I am not including a benchmark report in this but will be posting one
+> > > > > shortly in the "Latest numa/core release, v16" thread along with the latest
+> > > > > schednuma figures I have available.
+> > > > > 
+> > > > 
+> > > > Report is linked here https://lkml.org/lkml/2012/11/21/202
+> > > > 
+> > > > I ended up cancelling the remaining tests and restarted with
+> > > > 
+> > > > 1. schednuma + patches posted since so that works out as
+> > > 
+> > > Mel, I'd like to ask you to refer to our tree as numa/core or 
+> > > 'numacore' in the future. Would such a courtesy to use the 
+> > > current name of our tree be possible?
+> > > 
 > > 
-> > > I can confirm single JVM JBB is working well for me.  I see a 30%
-> > > improvement over autoNUMA.  What I can't make sense of is some perf
-> > > stats (taken at 80 warehouses on 4 x WST-EX, 512GB memory):
-> > 
-> > AutoNUMA does not have native THP migration, that may explain some
-> > of the difference.
+> > Sure, no problem.
 > 
-> When I made some fixes to the sched/numa native THP migration,
-> I did also try porting that (with Hannes's memcg fixes) to AutoNUMA.
+> Thanks!
 > 
-> Here's the patch below: it appeared to be working just fine, but
-> you might find that it doesn't quite apply to whatever tree you're
-> using.  I started from 3.6 autonuma28fast in aa.git, but had folded
-> in some of the equally applicable TLB flush optimizations too.
+> I ran a quick test with your 'balancenuma v4' tree and while 
+> numa02 and numa01-THREAD-ALLOC performance is looking good, 
+> numa01 performance does not look very good:
 > 
-> There's also a little "Hack, remove after THP native migration"
-> retuning in mm/huge_memory.c which should probably be removed too.
+>                     mainline    numa/core      balancenuma-v4
+>      numa01:           340.3       139.4          276 secs
+> 
+> 97% slower than numa/core.
+> 
 
-Thanks, this worked for me.  The autoNUMA SPECjbb result is now much
-closer, just 4% lower than the numa/core result.  The number of anon and
-anon-huge pages are now nearly the same.
+It would be. numa01 is an adverse workload where all threads are hammering
+the same memory.  The two-stage filter in balancenuma restricts the amount
+of migration it does so it ends up in a situation where it cannot balance
+properly. It'll do some migration if the PTE updates happen fast enough but
+that's about it.  It needs a proper policy on top to detect this situation
+and interleave the memory between nodes to at least maximise the available
+memory bandwidth. This would replace the two-stage filter which is there
+to mitigate a ping-pong effect.
 
--Andrew Theurer
+> I did a quick SPECjbb 32-warehouses run as well:
+> 
+>                                 numa/core      balancenuma-v4
+>       SPECjbb  +THP:               655 k/sec      607 k/sec
+> 
 
+Cool. Lets see what we have here. I have some questions;
+
+You say you ran with 32 warehouses. Was this a single run with just 32
+warehouses or you did a specjbb run up to 32 warehouses and use the figure
+specjbb spits out? If it ran for multiple warehouses, how did each number
+of warehouses do? I ask because sometimes we do worse for low numbers
+of warehouses and better at high numbers, particularly around where the
+workload peaks.
+
+Was this a single JVM configuration?
+
+What is the comparison with a baseline kernel?
+
+You say you ran with balancenuma-v4. Was that the full series including
+the broken placement policy or did you test with just patches 1-37 as I
+asked in the patch leader?
+
+> Here it's 7.9% slower.
+> 
+
+And in comparison to a vanilla kernel?
+
+Bear in mind that my objective was to have a foundation that did noticably
+better than mainline that a proper placement and scheduling policy could
+be built on top of.
+
+Thanks!
+
+-- 
+Mel Gorman
+SUSE Labs
