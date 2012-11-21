@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2KVXDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:03:15 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45098 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752419Ab2KVXDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 18:03:13 -0500
-Message-ID: <50AEAF20.3070001@ilyx.ru>
-Date: Fri, 23 Nov 2012 03:02:56 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1758483Ab2KVXDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:03:48 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34811 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab2KVXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 18:03:46 -0500
+Date: Wed, 21 Nov 2012 17:01:26 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: kswapd endless loop for compaction
+Message-ID: <20121121220126.GA2301@cmpxchg.org>
+References: <20121120190440.GA24381@cmpxchg.org>
 MIME-Version: 1.0
-To: Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>
-CC: ilya@ilyx.ru, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121120190440.GA24381@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regression 'tty: fix "IRQ45: nobody cared"'
-Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
+Just to be clear, this is not fixed by Dave's patch to NR_FREE_PAGES
+accounting.
 
-  Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
-At the time of request we can have full buffers and throttled driver too. 
-If we don't unthrottle driver, we can get forever throttled driver, because,
-after request, we will have empty buffers and throttled driver and 
-there is no place to unthrottle driver.
-It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
-and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
+I can still get 3.7-rc5 + Dave's fix to drop into an endless loop in
+kswapd within a couple of minutes on my test box.
 
-About 'tty: fix "IRQ45: nobody cared"':
-  We don't call tty_unthrottle() if release last filp - ('tty->count == 0')
-In other case it must be safely. 
+As described below, the bug comes from contradicting conditions in
+balance_pgdat(), not an accounting problem.
 
-Unfortunately, many drivers indirectly invoke tty_unthrottle() before TTY LAYER
-decremented (tty->count).
-  This Patch help us catch bugs in tty's drivers and invoke tty_unthrottle()
-in right moment only.
-
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 26f0d0e..f20b44a 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -173,6 +173,13 @@ static void reset_buffer_flags(struct tty_struct *tty)
- {
- 	unsigned long flags;
- 
-+	WARN_ON(tty->drvbug);
-+	/*
-+	 * We should not call this method from driver's close function.
-+	 * It will be called by TTY layer later.
-+	 */
-+	if (tty->drvbug)
-+		return;
- 	spin_lock_irqsave(&tty->read_lock, flags);
- 	tty->read_head = tty->read_tail = tty->read_cnt = 0;
- 	spin_unlock_irqrestore(&tty->read_lock, flags);
-@@ -184,6 +191,7 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 	tty->canon_head = tty->canon_data = tty->erasing = 0;
- 	memset(&tty->read_flags, 0, sizeof tty->read_flags);
- 	n_tty_set_room(tty);
-+	check_unthrottle(tty);
- }
- 
- /**
-@@ -1585,7 +1593,6 @@ static int n_tty_open(struct tty_struct *tty)
- 			return -ENOMEM;
- 	}
- 	reset_buffer_flags(tty);
--	tty_unthrottle(tty);
- 	tty->column = 0;
- 	n_tty_set_termios(tty, NULL);
- 	tty->minimum_to_wake = 1;
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index b425c79..0cd2370 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1649,8 +1649,10 @@ int tty_release(struct inode *inode, struct file *filp)
- 			tty_name(tty, buf), tty->count);
- #endif
- 
-+	tty->drvbug = 1;
- 	if (tty->ops->close)
- 		tty->ops->close(tty, filp);
-+	tty->drvbug = 0;
- 
- 	tty_unlock();
- 	/*
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index ed1e82e..01455b6 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -281,7 +281,7 @@ struct tty_struct {
- 	int count;
- 	struct winsize winsize;		/* termios mutex */
- 	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
--	unsigned char low_latency:1, warned:1;
-+	unsigned char low_latency:1, warned:1, drvbug:1;
- 	unsigned char ctrl_status;	/* ctrl_lock */
- 	unsigned int receive_room;	/* Bytes free for queue */
-
+On Tue, Nov 20, 2012 at 02:04:41PM -0500, Johannes Weiner wrote:
+> Hi guys,
+> 
+> while testing a 3.7-rc5ish kernel, I noticed that kswapd can drop into
+> a busy spin state without doing reclaim.  printk-style debugging told
+> me that this happens when the distance between a zone's high watermark
+> and its low watermark is less than two huge pages (DMA zone).
+> 
+> 1. The first loop in balance_pgdat() over the zones finds all zones to
+> be above their high watermark and only does goto out (all_zones_ok).
+> 
+> 2. pgdat_balanced() at the out: label also just checks the high
+> watermark, so the node is considered balanced and the order is not
+> reduced.
+> 
+> 3. In the `if (order)' block after it, compaction_suitable() checks if
+> the zone's low watermark + twice the huge page size is okay, which
+> it's not necessarily in a small zone, and so COMPACT_SKIPPED makes it
+> it go back to loop_again:.
+> 
+> This will go on until somebody else allocates and breaches the high
+> watermark and then hopefully goes on to reclaim the zone above low
+> watermark + 2 * THP.
+> 
+> I'm not really sure what the correct solution is.  Should we modify
+> the zone_watermark_ok() checks in balance_pgdat() to take into account
+> the higher watermark requirements for reclaim on behalf of compaction?
+> Change the check in compaction_suitable() / not use it directly?
+> 
+> Thanks,
+> Johannes
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
