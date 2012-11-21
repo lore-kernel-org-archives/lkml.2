@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2KUTjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 14:39:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44158 "EHLO mx2.suse.de"
+	id S1755926Ab2KUTjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 14:39:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54273 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755748Ab2KUTjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 14:39:13 -0500
-Date: Wed, 21 Nov 2012 19:39:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 36/46] mm: numa: Use a two-stage filter to restrict pages
- being migrated for unlikely task<->node relationships
-Message-ID: <20121121193908.GN8218@suse.de>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
- <1353493312-8069-37-git-send-email-mgorman@suse.de>
- <20121121182537.GB29893@gmail.com>
- <20121121191547.GM8218@suse.de>
+	id S1755748Ab2KUTjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 14:39:24 -0500
+Message-ID: <50AD2DDB.1090107@zytor.com>
+Date: Wed, 21 Nov 2012 11:39:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121121191547.GM8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, penberg@kernel.org,
+        "Brown, Len" <len.brown@intel.com>
+Subject: Re: [PATCH] x86, smpboot: allow manual hotplug of CPUs
+References: <1353522136-14944-1-git-send-email-sasha.levin@oracle.com> <50AD1CB6.9030707@zytor.com> <50AD1EE7.6020304@oracle.com> <50AD1F88.1010006@zytor.com> <50AD2953.5070700@oracle.com> <50AD2A85.7030705@zytor.com> <50AD2D16.7050304@oracle.com>
+In-Reply-To: <50AD2D16.7050304@oracle.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 07:15:47PM +0000, Mel Gorman wrote:
-> I've added a note now to that effect now. For all the patches with notes
-> or any other ones, I'll be very happy to add the Signed-offs back on if
-> the original authors acknowledge they are ok with the end result. If you
-> recall, in the original V1 of this series I said;
+On 11/21/2012 11:35 AM, Sasha Levin wrote:
+> On 11/21/2012 02:24 PM, H. Peter Anvin wrote:
+>> On 11/21/2012 11:19 AM, Sasha Levin wrote:
+>>>>
+>>>> So, are there any mptables platforms which support hotplug?  If the
+>>>> answer is "KVM" then the answer is that KVM needs to move to ACPI to get
+>>>> the proper functionality; putting a hack in is really not okay.
+>>>
+>>> There are no platforms which support actual hotplug, but you can still set
+>>> existing processors as disabled in the table and without this patch there's
+>>> no way enable them.
+>>>
+>>> I'm not sure if it's a "hack" though - the presentation of hotpluggable cpus
+>>> is the almost the same between mptable and acpi, and acpi provides a way to
+>>> manually probe/release cpus as well. The only difference is that acpi also
+>>> provides notifications about such events.
+>>>
+>>> Actually, maybe acpi should start using probe/release as well... hmm...
+>>>
+>>
+>> The bottom line is that I don't want the underlying implementation to
+>> end up with a user-visible difference... therein lies madness and lots
+>> of bugs.
 > 
-> 	This series steals very heavily from both autonuma and schednuma
-> 	with very little original code. In some cases I removed the
-> 	signed-off-bys because the result was too different. I have noted
-> 	in the changelog where this happened but the signed-offs can be
-> 	restored if the original authors agree.
-> 
-> Just to compare, this is the wording in "autonuma: memory follows CPU
-> algorithm and task/mm_autonuma stats collection"
-> 
-> +/*
-> + * In this function we build a temporal CPU_node<->page relation by
-> + * using a two-stage autonuma_last_nid filter to remove short/unlikely
-> + * relations.
-> + *
-> + * Using P(p) ~ n_p / n_t as per frequentest probability, we can
-> + * equate a node's CPU usage of a particular page (n_p) per total
-> + * usage of this page (n_t) (in a given time-span) to a probability.
-> + *
-> + * Our periodic faults will then sample this probability and getting
-> + * the same result twice in a row, given these samples are fully
-> + * independent, is then given by P(n)^2, provided our sample period
-> + * is sufficiently short compared to the usage pattern.
-> + *
-> + * This quadric squishes small probabilities, making it less likely
-> + * we act on an unlikely CPU_node<->page relation.
-> + */
-> 
-> If this was the basis for the sched/numa patch then I'd point out that
-> I'm not the only person that failed to preserve history perfectly.
+> Okay, so if in the case of ACPI, 'probe' will call acpi_processor_add()
+> and 'release' would call acpi_processor_remove() so the behaviour
+> would be the same for both ACPI and mptables. Is this okay?
 > 
 
-Which to be clear, it isn't. The original source is sched/numa according
-to https://lkml.org/lkml/2012/8/22/629 
+Sounds reasonable to me.  Adding Len to the Cc: list.
 
--- 
-Mel Gorman
-SUSE Labs
+	-hpa
+
+
