@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab2KUBPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 20:15:50 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48227 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab2KUBPs (ORCPT
+	id S1753649Ab2KUBSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 20:18:36 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48468 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab2KUBSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 20:15:48 -0500
-Date: Tue, 20 Nov 2012 17:15:44 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Retanubun <richardretanubun@ruggedcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Tang Nguyen <TangNguyen@ruggedcom.com>,
-        linux-usb mailing list <linux-usb@vger.kernel.org>,
-        stable@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: kmemleak report on isp1763 and sierra MC8705
-Message-ID: <20121121011544.GA5381@kroah.com>
-References: <Pine.LNX.4.44L0.1210291806360.31151-100000@netrider.rowland.org>
- <509D804A.7080807@ruggedcom.com>
- <CAMgPeKUPeJSKas2VOqbG+Nt5MOtdA3jUUCsFwUcDVhwDJJCr6A@mail.gmail.com>
- <50A3D0E1.4060209@ruggedcom.com>
- <20121114175218.GA2912@localhost>
+	Tue, 20 Nov 2012 20:18:35 -0500
+Message-ID: <50AC2BCC.6050507@gmail.com>
+Date: Tue, 20 Nov 2012 20:18:04 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121112 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121114175218.GA2912@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rafael Aquini <aquini@redhat.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v12 4/7] mm: introduce compaction and migration for ballooned
+ pages
+References: <cover.1352656285.git.aquini@redhat.com> <6602296b38c073a5c6faa13ddbc74ceb1eceb2dd.1352656285.git.aquini@redhat.com> <50A7D0FA.2080709@gmail.com> <20121117215434.GA23879@x61.redhat.com> <CA+1xoqfbxL-mL3XRDXxnuv0R6b9w6qxU7t+8U3FwS2eK5Sf0OA@mail.gmail.com> <20121120141438.GA21672@x61.redhat.com>
+In-Reply-To: <20121120141438.GA21672@x61.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 06:52:18PM +0100, Johan Hovold wrote:
-> On Wed, Nov 14, 2012 at 12:12:01PM -0500, Richard Retanubun wrote:
-> > On 10/11/12 09:30 AM, Johan Hovold wrote:
-> > Hi Johan,
-> > 
-> > > There was a reference-count fix for the probe error path that went in to
-> > > v3.5. Haven't read all the details on how you trigger your leak, but at
-> > > the face of it, it could be related.
-> > >
-> > > Have a look at 0658a3366db7e27fa ("usb: use usb_serial_put in
-> > > usb_serial_probe errors). If related, you should be seeing "Ignoring
-> > > blacklisted interface #n" messages when you enable debug (e.g. #define
-> > > DEBUG) in the sierra driver.
-> > 
-> > That was it! Thanks so much for the research.
-> > I can apply it cleanly to 3.0.22 and see usb_release_dev() being
-> > called and thus no more kmemleak.
-> > 
-> > >
-> > > Greg, it seems to me that the fix referred to above should be backported
-> > > to the earlier stable trees either way.
-> > I would vote "yes" for this also.
-> > 
-> > While my setup circumstances may be a corner case, (modem kept
-> > resetting to re-establish PPP connection) it was leaking 1192 bytes
-> > per occurrence.
+On 11/20/2012 09:14 AM, Rafael Aquini wrote:
+> On Sun, Nov 18, 2012 at 09:59:47AM -0500, Sasha Levin wrote:
+>> On Sat, Nov 17, 2012 at 4:54 PM, Rafael Aquini <aquini@redhat.com> wrote:
+>>> On Sat, Nov 17, 2012 at 01:01:30PM -0500, Sasha Levin wrote:
+>>>>
+>>>> I'm getting the following while fuzzing using trinity inside a KVM tools guest,
+>>>> on latest -next:
+>>>>
+>>>> [ 1642.783728] BUG: unable to handle kernel NULL pointer dereference at 0000000000000194
+>>>> [ 1642.785083] IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
+>>>>
+>>>> My guess is that we see those because of a race during the check in
+>>>> isolate_migratepages_range().
+>>>>
+>>>>
+>>>> Thanks,
+>>>> Sasha
+>>>
+>>> Sasha, could you share your .config and steps you did used with trinity? So I
+>>> can attempt to reproduce this issue you reported.
+>>
+>> Basically try running trinity (with ./trinity -m --quiet --dangerous
+>> -l off) inside a disposable guest as root.
+>>
+>> I manage to hit that every couple of hours.
+>>
+>> Config attached.
+>>
 > 
-> The leak affects every failed probe, for example due to blacklisted
-> interfaces which is quite common, so commit 0658a3366db7 ("usb: use
-> usb_serial_put in usb_serial_probe errors) should be backported to the
-> <= 3.4 stable trees.
+> Howdy Sasha,
+> 
+> After several hours since last Sunday running trinity tests on a traditional
+> KVM-QEMU guest as well as running it on a lkvm guest (both running
+> next-20121115) I couldn't hit a single time the crash you've reported,
+> (un)fortunately.
 
-Thanks, now applied.
+Odd... I can see it happening here every couple of hours.
 
-greg k-h
+> Also, the .config you gave me, applied on top of next-20121115, haven't produced
+> the same bin you've running and hitting the mentioned bug, apparently.
+> 
+> Here's the RIP for your crash:
+> [ 1642.783728] BUG: unable to handle kernel NULL pointer dereference at
+> 0000000000000194
+> [ 1642.785083] IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
+> 
+> 
+> And here's the symbol address for the next-20121115 with your .config I've been
+> running tests on:
+> [raquini@x61 linux]$ nm -n vmlinux | grep isolate_migratepages_range 
+> ffffffff8122d890 T isolate_migratepages_range
+> 
+> Also, it seems quite clear I'm missing something from your tree, as applying the
+> RIP displacement (0x344) to my local isolate_migratepages_range sym addr leads
+> me to the _middle_ of a instruction opcode that does not dereference any
+> pointers at all.
+
+Yup, I carry another small fix to mpol (which is unrelated to this one).
+
+> So, if you're consistently reproducing the same crash, consider to share with us
+> a disassembled dump from the isolate_migratepages_range() you're running along
+> with the crash stack-dump, please.
+
+Sure!
+
+The call chain is:
+
+	isolate_migratepages_range
+		balloon_page_movable
+			__is_movable_balloon_page
+				mapping_balloon
+
+mapping_balloon() fails because it checks for mapping to be non-null (and it is -
+it's usually a small value like 0x50), and then it dereferences that.
+
+The relevant assembly is:
+
+static inline int mapping_balloon(struct address_space *mapping)
+{
+        return mapping && test_bit(AS_BALLOON_MAP, &mapping->flags);
+    17ab:       48 85 c0                test   %rax,%rax
+    17ae:       0f 84 4c 02 00 00       je     1a00 <isolate_migratepages_range+0x590>
+    17b4:       48 8b 80 40 01 00 00    mov    0x140(%rax),%rax
+    17bb:       a9 00 00 00 20          test   $0x20000000,%eax
+    17c0:       0f 84 3a 02 00 00       je     1a00 <isolate_migratepages_range+0x590>
+
+It dies on 17b4.
+
+Let me know if you need anything else from me, I can also add debug code into the
+kernel if it would help you...
+
+
+Thanks,
+Sasha
+
+
