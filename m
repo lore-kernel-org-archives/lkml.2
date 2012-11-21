@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2KUPEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:04:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32812 "EHLO mx1.redhat.com"
+	id S1755061Ab2KUPFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:05:44 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24056 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab2KUPEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:04:32 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
-        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 3/9] xfs: factor out everything but the filemap_write_and_wait from xfs_file_fsync
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-	<20121120074138.24645.36708.stgit@blackbox.djwong.org>
-	<20121121100913.GF23339@infradead.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 21 Nov 2012 09:10:35 -0500
-In-Reply-To: <20121121100913.GF23339@infradead.org> (Christoph Hellwig's
-	message of "Wed, 21 Nov 2012 05:09:13 -0500")
-Message-ID: <x49mwybujvo.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754984Ab2KUPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 10:05:42 -0500
+Subject: [PATCH] nfsd4: remove state lock from nfs4_state_shutdown
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 21 Nov 2012 18:07:38 +0300
+Message-ID: <20121121150730.6644.99859.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Protection of __nfs4_state_shutdown() with nfs4_lock_state() looks redundant.
 
-> On Mon, Nov 19, 2012 at 11:41:38PM -0800, Darrick J. Wong wrote:
->> Hi,
->> 
->> Fsyncing is tricky business, so factor out the bits of the xfs_file_fsync
->> function that can be used from the I/O post-processing path.
->
-> Why would we need to skip the filemap_write_and_wait_range call here?
-> If we're doing direct I/O we should not have any pages in this regions
-> anyway.  You're also not skipping it in the generic implementation as
-> far as I can see, so I see no point in doing it just in XFS.
+This function is called by the last NFSd thread on it's exit and state lock
+protects actually two functions (del_recall_lru is protected by recall_lock):
+1) nfsd4_client_tracking_exit
+2) __nfs4_state_shutdown_net
 
-OK, I'll fix that.
+"nfsd4_client_tracking_exit" doesn't require state lock protection, because it's
+state can be modified only by tracker callbacks.
+Here a re they:
+1) create: is called only from nfsd4_proc_compound.
+2) remove: is called from either nfsd4_proc_compound or nfs4_laundromat.
+3) check: is called only from nfsd4_proc_compound.
+4) grace_done; called only from nfs4_laundromat.
 
-Thanks!
-Jeff
+nfsd4_proc_compound is called onll by NFSd kthread, which is exiting right
+now.
+nfs4_laundromat is called by laundry_wq. But laundromat_work was canceled
+already.
+
+"__nfs4_state_shutdown_net" also doesn't require state lock protection,
+because all NFSd kthreads are dead, and no race can happen with NFSd start,
+because "nfsd_up" flag is still set.
+Moreover, all Nfsd shutdown is protected with global nfsd_mutex.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfs4state.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index e75872f..d41cc71 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4926,9 +4926,7 @@ nfs4_state_shutdown(void)
+ 	cancel_delayed_work_sync(&nn->laundromat_work);
+ 	destroy_workqueue(laundry_wq);
+ 	locks_end_grace(&nn->nfsd4_manager);
+-	nfs4_lock_state();
+ 	__nfs4_state_shutdown(net);
+-	nfs4_unlock_state();
+ 	nfsd4_destroy_callback_queue();
+ }
+ 
+
