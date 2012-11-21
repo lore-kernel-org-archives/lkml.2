@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2KUJkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 04:40:51 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:36927 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab2KUJkA (ORCPT
+	id S1754176Ab2KUJlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 04:41:05 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45267 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab2KUJlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 04:40:00 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+	Wed, 21 Nov 2012 04:41:00 -0500
+Message-ID: <50ACA1A8.1030307@suse.cz>
+Date: Wed, 21 Nov 2012 10:40:56 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arend van Spriel <arend@broadcom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V4 2/3] arm: plat-orion: Add coherency attribute when setup mbus target
-Date: Wed, 21 Nov 2012 10:39:41 +0100
-Message-Id: <1353490783-23101-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353490783-23101-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1353490783-23101-1-git-send-email-gregory.clement@free-electrons.com>
+Subject: Re: Streamlining Developer's Certificate of Origin, Signed-off-by
+ tag
+References: <CAB=NE6WTFv80w6bkQNqaAG69CADmdiqa-tLKD9s=h_p+1D92tQ@mail.gmail.com> <20121120211634.11513416@pyramind.ukuu.org.uk> <50ABFF4E.2050101@broadcom.com> <CAB=NE6UnA2o7ur+0WGouJR984LqtdTYey41XzQCvAw1djhkOkA@mail.gmail.com> <20121121001043.7e1a68df@pyramind.ukuu.org.uk> <CAB=NE6X9z5YEPD5avSkYd6Ayc90kHF4+b1Vjfw8cvZ3A0gwXOQ@mail.gmail.com>
+In-Reply-To: <CAB=NE6X9z5YEPD5avSkYd6Ayc90kHF4+b1Vjfw8cvZ3A0gwXOQ@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent SoC such as Armada 370/XP came with the possibility to deal
-with the I/O coherency by hardware. In this case the transaction
-attribute of the window must be flagged as "Shared transaction". Once
-this flag is set, then the transactions will be forced to be sent
-through the coherency block, in other case transaction is driven
-directly to DRAM.
+On 11/21/2012 02:13 AM, Luis R. Rodriguez wrote:
+> Ah so keep the original in place to let references to the original in
+> whatever way those may exist to keep pointing but promote new usage to
+> a copy and.. perhaps refer to the new copy in master, or just leave
+> that in place as is?
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
----
- arch/arm/plat-orion/addr-map.c              |    4 ++++
- arch/arm/plat-orion/include/plat/addr-map.h |    1 +
- 2 files changed, 5 insertions(+)
+It depends if they really want to have the same thing we do. I.e. don't
+they want to rephrase the document a bit? If so, there is no point of
+linking the document at all.
 
-diff --git a/arch/arm/plat-orion/addr-map.c b/arch/arm/plat-orion/addr-map.c
-index a7b8060..febe386 100644
---- a/arch/arm/plat-orion/addr-map.c
-+++ b/arch/arm/plat-orion/addr-map.c
-@@ -42,6 +42,8 @@ EXPORT_SYMBOL_GPL(mv_mbus_dram_info);
- #define WIN_REMAP_LO_OFF	0x0008
- #define WIN_REMAP_HI_OFF	0x000c
- 
-+#define ATTR_HW_COHERENCY	(0x1 << 4)
-+
- /*
-  * Default implementation
-  */
-@@ -163,6 +165,8 @@ void __init orion_setup_cpu_mbus_target(const struct orion_addr_map_cfg *cfg,
- 			w = &orion_mbus_dram_info.cs[cs++];
- 			w->cs_index = i;
- 			w->mbus_attr = 0xf & ~(1 << i);
-+			if (cfg->hw_io_coherency)
-+				w->mbus_attr |= ATTR_HW_COHERENCY;
- 			w->base = base & 0xffff0000;
- 			w->size = (size | 0x0000ffff) + 1;
- 		}
-diff --git a/arch/arm/plat-orion/include/plat/addr-map.h b/arch/arm/plat-orion/include/plat/addr-map.h
-index ec63e4a..b76c065 100644
---- a/arch/arm/plat-orion/include/plat/addr-map.h
-+++ b/arch/arm/plat-orion/include/plat/addr-map.h
-@@ -17,6 +17,7 @@ struct orion_addr_map_cfg {
- 	const int num_wins;	/* Total number of windows */
- 	const int remappable_wins;
- 	void __iomem *bridge_virt_base;
-+	int hw_io_coherency;
- 
- 	/* If NULL, the default cpu_win_can_remap will be used, using
- 	   the value in remappable_wins */
+If no, we can create a separate document from that in the kernel so that
+we allow people to link that at some fixed version using git commit SHA.
+This can be done easily doing a link to git.kernel.org.
+
+The link to git.kernel.org might seem to be long. One can create a
+dynamic helper on some web like signed-off-by.cgi?id=SHA and it will
+return that document in that version. (It will redirect basically.)
+
+regards,
 -- 
-1.7.9.5
-
+js
+suse labs
