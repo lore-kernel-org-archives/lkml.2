@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab2KVSgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:36:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37449 "EHLO mx2.suse.de"
+	id S1754119Ab2KVSgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:36:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37452 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab2KVSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754041Ab2KVSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:35:57 -0500
-Date: Thu, 22 Nov 2012 09:43:50 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
-Message-ID: <20121122094350.GS8218@suse.de>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
- <20121121165342.GH8218@suse.de>
- <20121121170306.GA28811@gmail.com>
- <20121121172011.GI8218@suse.de>
- <20121121173316.GA29311@gmail.com>
- <20121122090514.GA17769@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121122090514.GA17769@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 22 Nov 2012 09:06:43 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk, lucho@ionkov.net,
+        jack@suse.cz, ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
+        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
+        david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/4] bdi: Track users that require stable page writes
+Message-ID: <20121122090643.7c9551dc@notabene.brown>
+In-Reply-To: <20121121215207.GB32202@blackbox.djwong.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+	<20121121020034.10225.51692.stgit@blackbox.djwong.org>
+	<20121121105624.GA19050@infradead.org>
+	<20121121215207.GB32202@blackbox.djwong.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/PVceyAK9qxlxdwKpsA1PF=h"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 10:05:14AM +0100, Ingo Molnar wrote:
-> 
-> > Thanks!
-> > 
-> > I ran a quick test with your 'balancenuma v4' tree and while 
-> > numa02 and numa01-THREAD-ALLOC performance is looking good, 
-> > numa01 performance does not look very good:
-> > 
-> >                     mainline    numa/core      balancenuma-v4
-> >      numa01:           340.3       139.4          276 secs
-> > 
-> > 97% slower than numa/core.
-> 
-> I mean numa/core was 97% faster. That transforms into 
-> balancenuma-v4 being 50.5% slower.
-> 
+--Sig_/PVceyAK9qxlxdwKpsA1PF=h
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I've asked the other questions on this already so I won't ask again.
+On Wed, 21 Nov 2012 13:52:07 -0800 "Darrick J. Wong"
+<darrick.wong@oracle.com> wrote:
 
-> Your numbers from yesterday showed an even bigger proportion:
-> 
-> AUTONUMA BENCH
->                                           3.7.0                 3.7.0                 3.7.0                 3.7.0                 
-> 3.7.0                 3.7.0
->                                 rc6-stats-v4r12   rc6-schednuma-v16r2 rc6-autonuma-v28fastr3	  rc6-moron-v4r38    rc6-twostage-v4r38  rc6-thpmigrate-v4r38
-> Elapsed NUMA01                1668.03 (  0.00%)      486.04 ( 70.86%) 	   794.10 ( 52.39%)	 601.19 ( 63.96%)     1575.52 (  5.55%)     1066.67 ( 36.05%)
-> 
-> In your test numa/core was 240% times faster than mainline, 63% 
-> faster than autonuma and 119% faster than 
-> balancenuma-"rc6-thpmigrate-v4r38".
-> 
+> > Can you add a rationale on why we'd want to allow users to change the
+> > value?  I can't really think of any.
+>=20
+> I dislike the idea that if a program is dirtying pages that are being wri=
+tten
+> out, then I don't really know whether the disk will write the before or a=
+fter
+> version.  If the power goes out before the inevitable second write, how d=
+o you
+> know which version you get?  Sure would be nice if I could force on stable
+> writes if I'm feeling paranoid.
 
-Yes, I know and I know why. It's the two-filter thing and how it deals
-with an adverse workload. Here is my description in mmtests comments on
-what numa01 is.
+I don't think this fear is at all rational (but then you did suggest
+paranoia).
 
-# NUMA01
-#   Two processes
-#   NUM_CPUS/2 number of threads so all CPUs are in use
-#   
-#   On startup, the process forks
-#   Each process mallocs a 3G buffer but there is no communication
-#       between the processes.
-#   Threads are created that zeros out the full buffer 1000 times
-#
-#   The objective of the test is that initially the two processes
-#   allocate their memory on the same node. As the threads are
-#   are created the memory will migrate from the initial node to
-#   nodes that are closer to the referencing thread.
-#
-#   It is worth noting that this benchmark is specifically tuned
-#   for two nodes and the expectation is that the two processes
-#   and their threads split so that all process A runs on node 0
-#   and all threads on process B run in node 1
-#
-#   With 4 and more nodes, this is actually an adverse workload.
-#   As all the buffer is zeroed in both processes, there is an
-#   expectation that it will continually bounce between two nodes.
-#
-#   So, on 2 nodes, this benchmark tests convergence. On 4 or more
-#   nodes, this partially measures how much busy work automatic
-#   NUMA migrate does and it'll be very noisy due to cache conflicts.
+If the power goes out, then any write that has been requested, but for which
+an 'fsync' hasn't completed, may - or may not - have been written.   Setting
+this flag doesn't really change that.
 
-Wow, that's badly written! STill, on two nodes, numa01 is meant to
-converge. On 4 nodes it is an adverse workload where the only reasonable
-response is to interleave across all nodes. What likely happens is that
-one process bounces between 2 nodes and the second process bounces between
-the other two nodes -- all uselessly unless it's interleaving and then
-backing off. I'm running on 4 nodes.
+The filesystem should provide some degree of certainty - i.e. either old
+data or new data and I believe they mostly do - though ext3 with
+journal=3Dwriteback explicitly doesn't promise very much.  Beyond that, if =
+you
+want any certainty then the app must provide that by using fsync.
 
-My tree has no interleaving policy. All it'll notice is that it may be
-bouncing between nodes and stop migrating on the assumption that a remote
-access is cheaper than a lot of migration. A smart policy is expected to
-be able to overcome this.
+So I'm with Christoph here: I don't think the flag should be user-settable.
 
-Look at the other figures which are for a reasonable NUMA workload.
-balancenuma is beating numacore there and it shouldn't be able to. One strong
-likelihood is that we differ in the base mechanics. Another possibility
-is that there is a bug in the policies somewhere. If you rebased on top,
-we'd find out which.
+NeilBrown
 
--- 
-Mel Gorman
-SUSE Labs
+--Sig_/PVceyAK9qxlxdwKpsA1PF=h
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUK1Qcznsnt1WYoG5AQKCyhAAruA5qi89b/eRoKsp+7jjblOX8YkyS7Pa
+9fXi3yMkpsL+mAnfFCxpdLfPeha0gb+or4lSRilmZBI5zt5ZWjn7O+qtk1NwrjLo
+WRh3DAl+wo5G4bJqwClIQyPc+qkYJ/z+gI69gvgCh79R2x5cWs/NUflhQnAInNC2
+xC905mS6e4pNbRJZlb6p4uj6lO52qtMVPscUVCGHCJt5aOrmBt774dtliVUsEkiK
+dChHlBFvwgnU4iDkI3WpPKDUEvt+tHDfwWUpipq+9K6auJeSxrmUgUAmekyKb9Yg
+5YtPeSrwBf9X3AKp/zEwekSijXIwz2schppw2636wZ9KpBkuoOqgvR84Nideq7OW
+jrIP2htUAce80ANlM5YGbDfKyesCVcitJpz1jK9u3yXUiqzgjH/SDXU0l76X40XA
+YIXI3QxQqnZl+OVj5bf+oS+tmXfSiv+klatPO9n9N6FWPsNfoddLUauW1jMOxHq3
+XMCJ1WSWQh+Hskp3XkW1ffFPi+GCFYHPJ54xzstCN9KVbFy+o6GJEL70FzO31rkz
+TPveCV86XKCpSp5CRQXMcR7s33VysMWaYY33BzcKgY7JQw6pdxq4nUeqpk/jxeHt
+RrbcJvae+tXcTbdEpB5h/43Y/+YzGfBjB13Dbg9zLt8HeQ//+jro4G4oP5rDUDhf
+Z4JqCUCgbxI=
+=0UCN
+-----END PGP SIGNATURE-----
+
+--Sig_/PVceyAK9qxlxdwKpsA1PF=h--
