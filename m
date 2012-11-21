@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab2KUOOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:14:54 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34195 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2KUOOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:14:53 -0500
-Message-ID: <50ACE1D4.3050104@gmail.com>
-Date: Wed, 21 Nov 2012 15:14:44 +0100
-From: MAACHE Mehdi <mehdi.maache@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.10) Gecko/20121029 Thunderbird/10.0.10
+	id S1754763Ab2KUOPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:15:46 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5541 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab2KUOPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 09:15:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
+   d="scan'208";a="222646389"
+Date: Wed, 21 Nov 2012 15:15:41 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
+Subject: Re: [PATCH 1/2] mfd: stmpe: Use devm_*() routines
+Message-ID: <20121121141541.GV18738@sortiz-mobl>
+References: <07672d0597e23fbc580843193415b89e81dba326.1352475033.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        tdent48227@gmail.com
-Subject: Re: [PATCH] Staging: rtl8187se: bugfix in r8180_wx.c
-References: <1353504042-9422-1-git-send-email-mehdi.maache@gmail.com> <20121121134200.GH6186@mwanda>
-In-Reply-To: <20121121134200.GH6186@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <07672d0597e23fbc580843193415b89e81dba326.1352475033.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 21/11/2012 14:42, Dan Carpenter a écrit :
+Hi Viresh,
 
+On Fri, Nov 09, 2012 at 09:01:54PM +0530, Viresh Kumar wrote:
+> This patch frees stmpe driver from tension of freeing resources :)
+> devm_* derivatives of multiple routines are used while allocating resources,
+> which would be freed automatically by kernel.
 > 
-> Here is a better changelog.  Please resend with this or something
-> similar.
-> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 > ---
-> Subject: [PATCH v2] Staging: rtl8187se: remove check for IW_ENCODE_DISABLED
-> 
-> The original code had a no-op stub where it checked if
-> IW_ENCODE_DISABLED and did nothing.  Then in a cleanup patch we
-> accidentally turned the check on.  That was: de171bd6ff "Staging:
-> rtl8187se: r8180_wx: fixed a lot of checkpatch.pl issues".
-> 
-> The check should just be removed.
-> ---
-> 
-> regards,
-> dan carpenter
-> 
+>  drivers/mfd/stmpe.c | 46 +++++++++++++++-------------------------------
+>  1 file changed, 15 insertions(+), 31 deletions(-)
+This one does not apply on top of my for-next branch.
 
+Cheers,
+Samuel.
 
-Thanks again. I wiil do this and next time, I will try a better description.
-
-regards,
-
-maache mehdi
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
