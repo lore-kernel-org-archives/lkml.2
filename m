@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab2KUSjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 13:39:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab2KUSju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 13:39:50 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
-        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 1/9] vfs: Handle O_SYNC AIO DIO in generic code properly
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
-	<20121120074123.24645.41965.stgit@blackbox.djwong.org>
-	<20121121100809.GE23339@infradead.org>
-	<x497gpevqoy.fsf@segfault.boston.devel.redhat.com>
-	<20121121182901.GA4519@infradead.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 21 Nov 2012 13:38:55 -0500
-In-Reply-To: <20121121182901.GA4519@infradead.org> (Christoph Hellwig's
-	message of "Wed, 21 Nov 2012 13:29:01 -0500")
-Message-ID: <x49y5huu7gg.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755709Ab2KUSls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 13:41:48 -0500
+Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:46251 "EHLO
+	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab2KUSlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 13:41:47 -0500
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+To: akpm@linux-foundation.org (Andrew Morton)
+Date: Wed, 21 Nov 2012 13:41:46 -0500
+Cc: grant.likely@secretlab.ca (Grant Likely), gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20121120235659.95001487.akpm@linux-foundation.org>
+X-Mailer: ELM [version 2.5.8.59.gd925]
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20121121184146.A9BCB8013C@viridian.itc.virginia.edu>
+From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Andrew Morton writes:
+> 
+> On Tue, 20 Nov 2012 10:46:11 +0000 Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> > On Sat, Nov 17, 2012 at 12:19 AM, Bill Pemberton <wfp5p@virginia.edu> wrote:
+> > > CONFIG_HOTPLUG is no longer an optional setting.  In order to remove
+> > > it as on option code paths that check CONFIG_HOTPLUG will removed
+> > > along with the attributes __devexit_p, __devexit, __devinitconst, and
+> > > __devinitdata.
+> > >
+> > > I'll save the list from the mailbomb of this huge patchset.  The
+> > > patches themselves are going to Greg KH for the driver core tree.
+> > >
+> > >
+> > > Bill Pemberton (493):
+> > [...]
+> > >  2942 files changed, 11645 insertions(+), 12116 deletions(-)
+> > 
+> > So, I've got no problem with the reason for the change and I don't
+> > even think you need my ack for the bits that I maintain (though you
+> > have it if you want it). However, this looks like it is going to be
+> > /painful/. First of all it will touch a huge number of files in the
+> > tree. Yes the change is trivial, but it will require manual fixups on
+> > a lot of patches.
+> 
+> Yeah, this is dopey.  Send the script to Linus and ask him to run it
+> seven seconds before he releases -rc1, when everyone's trees are
+> empty(ish).  Or send him a single megapatch at that time.
+> 
 
-> On Wed, Nov 21, 2012 at 11:58:05AM -0500, Jeff Moyer wrote:
->> > I'd like to use this as a vehicle to revisit how dio completions work.
->> 
->> I don't like the sound of that.  ;-)  It sounds like this bugfix may get
->> further delayed by the desire for unrelated code cleanup.
->
-> I've got a prototype that isn't much more invasive than the current
-> series.  I'll finish it up and run it through QA and will post it
-> tomorrow.
+I like the script idea for removing all the __dev markings.  Creating
+the patches in the first place was a game of whack-a-mole as various
+trees changed.
 
-Works for me.  Thanks!
+-- 
+Bill
 
--Jeff
