@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2KUEA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:00:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40236 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab2KUEA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:00:28 -0500
-X-IronPort-AV: E=Sophos;i="4.83,290,1352044800"; 
-   d="scan'208";a="6243549"
-Message-ID: <50AC4A1B.9020908@cn.fujitsu.com>
-Date: Wed, 21 Nov 2012 11:27:23 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Rob Landley <rob@landley.net>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PART4 Patch v2 1/2] numa: add CONFIG_MOVABLE_NODE for movable-dedicated
- node
-References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>	<1353067090-19468-2-git-send-email-wency@cn.fujitsu.com> <20121120142550.5c126194.akpm@linux-foundation.org>
-In-Reply-To: <20121120142550.5c126194.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 11:20:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/21 11:20:51,
-	Serialize complete at 2012/11/21 11:20:51
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753431Ab2KUEC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:02:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:36373 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab2KUEC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:02:27 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61b-b7f616d00000319b-04-50ac52511e76
+Message-id: <50AC5250.3070203@samsung.com>
+Date: Wed, 21 Nov 2012 13:02:24 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
+        "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+References: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
+ <CAH9JG2VKYSAQ=Og4-fgToV_aNwEV_aH-=UQZDbAOnA-ShfKdYw@mail.gmail.com>
+In-reply-to: <CAH9JG2VKYSAQ=Og4-fgToV_aNwEV_aH-=UQZDbAOnA-ShfKdYw@mail.gmail.com>
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t8zLd3AoDUBBl1PlS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG+dfL2Qv6ZSrmzYtoYHwl0sXIySEhYCJxsHk2C4QtJnHh3nq2
+	LkYuDiGBZYwSJ/81ssEUffh2lRkisYhR4tTyC2AJXgFBiR+T7wF1c3AwC8hLHLmUDRJmFlCX
+	mDRvEVR9F5NE08Kr7BD1WhJfGuaA9bIIqEpM2v2bGcRmE5CTeNv0jRFkjqhAhMSvfg6QsIiA
+	hsTlXYfA5jALNDBJrGl6BXapsICrxO6pH1kgFrQySkxv3cYKkuAUCJZYsPodM8QCAYlvkw+B
+	HSchICux6QDYIAmBbnaJGWtfQX0mKXFwxQ2WCYxis5D8Mwvhn1lI/lnAyLyKUTS1ILmgOCk9
+	10ivODG3uDQvXS85P3cTIyQipHcwrmqwOMQowMGoxMMrsW91gBBrYllxZe4hRgkOZiURXgb5
+	NQFCvCmJlVWpRfnxRaU5qcWHGH2Ajp3ILCWanA+M1rySeENjA2NDQ0tDM1NLUwMcwkrivM0e
+	KQFCAumJJanZqakFqUUw45g4OKUaGBOSP9b3/Ndsdfwzv9ncTGjGyb0Vggf51pR+/tTz06Z3
+	xhf5Za8/zWAyNGYQdm9cp3+SdVO82VHfm6KbZqru/vs788q9zH3XlvRcFI+sfOqSzdPmefra
+	+hVOJ1IMbVfKuobOyJipwPK8NCr9VWfGFU//Bw81Mz+Ef5Xx+2rN9GFWhc5GPYHARCWW4oxE
+	Qy3mouJEANsqZOe1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jAd3AoDUBBts2S1pc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjPOvl7MX9MtUzJsX0cD4
+	SqSLkZNDQsBE4sO3q8wQtpjEhXvr2boYuTiEBBYxSpxafoENJMErICjxY/I9li5GDg5mAXmJ
+	I5eyQcLMAuoSk+YtYoao72KSaFp4lR2iXkviS8McsF4WAVWJSbt/gy1gE5CTeNv0jRFkjqhA
+	hMSvfg6QsIiAhsTlXYfA5jALNDBJrGl6xQKSEBZwldg99SMLxIJWRonprdtYQRKcAsESC1a/
+	Y57AKDALyX2zEO6bheS+BYzMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC4+2Z9A7GVQ0W
+	hxgFOBiVeHgl9q0OEGJNLCuuzD3EKMHBrCTCyyC/JkCINyWxsiq1KD++qDQntfgQow/QdxOZ
+	pUST84GpIK8k3tDYxMzI0sjM2MTc2BiHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGxn7f
+	hnyH78LVCwxMl50TOenxpML+5Z4nvmv2fAiu+ig3Ze2KdoaH/SqRy9ycvr+9lrYh43r7lCr7
+	mxtXR+9yEDv+4dn6hRe5ee9PyDEJUE3zNfJVMGk2Ldderd2cf+9X6GHJT0u113rESr3rlUx8
+	9pPhw9vcy6v/GspNTnvm4OCtPltpjRgfvxJLcUaioRZzUXEiAE67UfnkAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/21/2012 06:25 AM, Andrew Morton Wrote:
-> On Fri, 16 Nov 2012 19:58:09 +0800
-> Wen Congyang <wency@cn.fujitsu.com> wrote:
-> 
->> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Hi,
+On 2012년 11월 20일 10:40, Kyungmin Park wrote:
+> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+>> TMU urgently sends active-high signal (thermal trip) to PMU,
+>> and thermal tripping by hardware logic i.e PMU is performed.
+>> Thermal tripping means that PMU cut off the whole power of SoC
+>> by controlling external voltage regulator.
 >>
->> All are prepared, we can actually introduce N_MEMORY.
->> add CONFIG_MOVABLE_NODE make we can use it for movable-dedicated node
-> 
-> This description is far too short on details.
-> 
-> I grabbed this from the [0/n] email:
-> 
-> : We need a node which only contains movable memory.  This feature is very
-> : important for node hotplug.  If a node has normal/highmem, the memory may
-> : be used by the kernel and can't be offlined.  If the node only contains
-> : movable memory, we can offline the memory and the node.
-> 
-> which helps a bit, but it's still pretty thin.
-> 
-> Why is this option made configurable?  Why not enable it unconditionally?
-> 
-> Please send a patch which adds the Kconfig help text for
-> CONFIG_MOVABLE_NODE.  Let's make that text nice and detailed.
-> 
-> The name MOVABLE_NODE is not a good one.  It means "a node which is
-> movable", whereas the concept is actually "a node whcih contains only
-> movable memory".  I suppose we could change it to something like
-> CONFIG_MOVABLE_MEMORY_ONLY_NODE or similar.  But I suppose that
-> CONFIG_MOVABLE_NODE is good enough, as long as it is well-described in
-> associated comments or help text.  This is not the case at present.
-> 
->> +#ifdef CONFIG_MOVABLE_NODE
->> +	N_MEMORY,		/* The node has memory(regular, high, movable) */
->> +#else
-> 
-> I think the comment should be "The node has only movable memory"?
+>> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> Ackedy-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  drivers/thermal/exynos_thermal.c |   10 ++++++++++
+>>  1 files changed, 10 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/thermal/exynos_thermal.c
+>> b/drivers/thermal/exynos_thermal.c
+>> index 129e827..569478d 100644
+>> --- a/drivers/thermal/exynos_thermal.c
+>> +++ b/drivers/thermal/exynos_thermal.c
+>> @@ -58,6 +58,7 @@
+>>  #define EXYNOS_TMU_CORE_ON             BIT(0)
+>>  #define EXYNOS_TMU_CORE_ON_SHIFT       0
+>>  #define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+>> EXYNOS_TMU_CORE_ON_SHIFT)
+>> +#define EXYNOS_TMU_TRIP_EN             BIT(12)
+>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+>>
+>>  /* Exynos4210 specific registers */
+>> @@ -631,6 +632,12 @@ static int exynos_tmu_initialize(struct
+>> platform_device
+>> *pdev)
+>>                         goto out;
+>>                 }
+>>                 rising_threshold |= (threshold_code << 16);
+>> +               threshold_code = temp_to_code(data,
+>> pdata->trigger_levels[3]);
+>> +               if (threshold_code < 0) {
+>> +                       ret = threshold_code;
+>> +                       goto out;
+>> +               }
+>> +               rising_threshold |= (threshold_code << 24);
+>>
+>>                 writel(rising_threshold,
+>>                                 data->base + EXYNOS_THD_TEMP_RISE);
+>> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct platform_device
+>> *pdev, bool on)
+>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>                 con |= pdata->noise_cancel_mode <<
+>> EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>> +               if (pdata->trigger_levels[3])
+>> +                       con |= EXYNOS_TMU_TRIP_EN;
+>>         }
+Why don't you support trigger_level[3] in exynos4210 either? Even though 4210 doesn't support
+hardware tripping,
+I think it can be set in same way. I've done it in my local git with following codes.
 
-No, the comment is right. In the kernel, we need the following two
-mask:
-1. the node contains memory that the kernel can use(N_HIGH_MEMORY)
-2. the node contains memory (N_MEMORY)
+if (data->soc == SOC_ARCH_EXYNOS4210)
+interrupt_en |= pdata->trigger_level3_en << 12;
+else
+con |= pdata->trigger_level3_en <<12;
 
-There is no code need the mask: the node contains only movable memory
-now.
+How do you think of it?
 
-Thanks
-Wen Congyang
-
-> 
-> 
-> 
+Thanks.
+>>         if (on) {
+>> @@ -770,6 +779,7 @@ static struct exynos_tmu_platform_data const
+>> exynos_default_tmu_data = {
+>>         .trigger_levels[0] = 85,
+>>         .trigger_levels[1] = 103,
+>>         .trigger_levels[2] = 110,
+>> +       .trigger_levels[3] = 120,
+>>         .trigger_level0_en = 1,
+>>         .trigger_level1_en = 1,
+>>         .trigger_level2_en = 1,
+>> --
+>> 1.7.4.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
