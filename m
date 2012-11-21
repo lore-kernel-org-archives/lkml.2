@@ -1,193 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2KUEXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Nov 2012 23:23:20 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7697 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab2KUEXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Nov 2012 23:23:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 20 Nov 2012 20:23:09 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Date: Wed, 21 Nov 2012 13:23:06 +0900
-Message-ID: <13540495.epaCf4JVn9@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121120215429.B621F3E1821@localhost>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com> <20121120215429.B621F3E1821@localhost>
+	id S1754054Ab2KUEXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Nov 2012 23:23:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab2KUEXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Nov 2012 23:23:19 -0500
+Message-ID: <50AC5797.1060604@redhat.com>
+Date: Wed, 21 Nov 2012 12:24:55 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
+References: <1353315222-27685-1-git-send-email-asias@redhat.com> <20121119202641.GB12283@redhat.com> <50AB25AC.2070606@redhat.com> <20121120133714.GC3448@redhat.com>
+In-Reply-To: <20121120133714.GC3448@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Wednesday 21 November 2012 05:54:29 Grant Likely wrote:
-> > With the advent of the device tree and of ARM kernels that are not
-> > board-tied, we cannot rely on these board-specific hooks anymore but
+On 11/20/2012 09:37 PM, Michael S. Tsirkin wrote:
+> On Tue, Nov 20, 2012 at 02:39:40PM +0800, Asias He wrote:
+>> On 11/20/2012 04:26 AM, Michael S. Tsirkin wrote:
+>>> On Mon, Nov 19, 2012 at 04:53:42PM +0800, Asias He wrote:
+>>>> vhost-blk is an in-kernel virito-blk device accelerator.
+>>>>
+>>>> Due to lack of proper in-kernel AIO interface, this version converts
+>>>> guest's I/O request to bio and use submit_bio() to submit I/O directly.
+>>>> So this version any supports raw block device as guest's disk image,
+>>>> e.g. /dev/sda, /dev/ram0. We can add file based image support to
+>>>> vhost-blk once we have in-kernel AIO interface. There are some work in
+>>>> progress for in-kernel AIO interface from Dave Kleikamp and Zach Brown:
+>>>>
+>>>>    http://marc.info/?l=linux-fsdevel&m=133312234313122
+>>>>
+>>>> Performance evaluation:
+>>>> -----------------------------
+>>>> 1) LKVM
+>>>> Fio with libaio ioengine on Fusion IO device using kvm tool
+>>>> IOPS(k)    Before       After   Improvement
+>>>> seq-read   107          121     +13.0%
+>>>> seq-write  130          179     +37.6%
+>>>> rnd-read   102          122     +19.6%
+>>>> rnd-write  125          159     +27.0%
+>>>>
+>>>> 2) QEMU
+>>>> Fio with libaio ioengine on Fusion IO device using QEMU
+>>>> IOPS(k)    Before       After   Improvement
+>>>> seq-read   76           123     +61.8%
+>>>> seq-write  139          173     +24.4%
+>>>> rnd-read   73           120     +64.3%
+>>>> rnd-write  75           156     +108.0%
+>>>
+>>> Could you compare with dataplane qemu as well please?
+>>
+>>
+>> Well, I will try to collect it.
+>>
+>>>
+>>>>
+>>>> Userspace bits:
+>>>> -----------------------------
+>>>> 1) LKVM
+>>>> The latest vhost-blk userspace bits for kvm tool can be found here:
+>>>> git@github.com:asias/linux-kvm.git blk.vhost-blk
+>>>>
+>>>> 2) QEMU
+>>>> The latest vhost-blk userspace prototype for QEMU can be found here:
+>>>> git@github.com:asias/qemu.git blk.vhost-blk
+>>>>
+>>>> Changes in v5:
+>>>> - Do not assume the buffer layout
+>>>> - Fix wakeup race
+>>>>
+>>>> Changes in v4:
+>>>> - Mark req->status as userspace pointer
+>>>> - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
+>>>> - Add if (need_resched()) schedule() in blk thread
+>>>> - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
+>>>> - Use vq_err() instead of pr_warn()
+>>>> - Fail un Unsupported request
+>>>> - Add flush in vhost_blk_set_features()
+>>>>
+>>>> Changes in v3:
+>>>> - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
+>>>> - Check file passed by user is a raw block device file
+>>>>
+>>>> Signed-off-by: Asias He <asias@redhat.com>
+>>>
+>>> Since there are files shared by this and vhost net
+>>> it's easiest for me to merge this all through the
+>>> vhost tree.
+>>>
+>>> Jens, could you ack this and the bio usage in this driver
+>>> please?
+>>>
+>>>> ---
+>>>>  drivers/vhost/Kconfig     |   1 +
+>>>>  drivers/vhost/Kconfig.blk |  10 +
+>>>>  drivers/vhost/Makefile    |   2 +
+>>>>  drivers/vhost/blk.c       | 697 ++++++++++++++++++++++++++++++++++++++++++++++
+>>>>  drivers/vhost/blk.h       |   8 +
+>>>>  5 files changed, 718 insertions(+)
+>>>>  create mode 100644 drivers/vhost/Kconfig.blk
+>>>>  create mode 100644 drivers/vhost/blk.c
+>>>>  create mode 100644 drivers/vhost/blk.h
+>>>>
+>>>> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+>>>> index 202bba6..acd8038 100644
+>>>> --- a/drivers/vhost/Kconfig
+>>>> +++ b/drivers/vhost/Kconfig
+>>>> @@ -11,4 +11,5 @@ config VHOST_NET
+>>>>  
+>>>>  if STAGING
+>>>>  source "drivers/vhost/Kconfig.tcm"
+>>>> +source "drivers/vhost/Kconfig.blk"
+>>>>  endif
+>>>> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
+>>>> new file mode 100644
+>>>> index 0000000..ff8ab76
+>>>> --- /dev/null
+>>>> +++ b/drivers/vhost/Kconfig.blk
+>>>> @@ -0,0 +1,10 @@
+>>>> +config VHOST_BLK
+>>>> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
+>>>> +	depends on BLOCK &&  EXPERIMENTAL && m
+>>>> +	---help---
+>>>> +	  This kernel module can be loaded in host kernel to accelerate
+>>>> +	  guest block with virtio_blk. Not to be confused with virtio_blk
+>>>> +	  module itself which needs to be loaded in guest kernel.
+>>>> +
+>>>> +	  To compile this driver as a module, choose M here: the module will
+>>>> +	  be called vhost_blk.
+>>>> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
+>>>> index a27b053..1a8a4a5 100644
+>>>> --- a/drivers/vhost/Makefile
+>>>> +++ b/drivers/vhost/Makefile
+>>>> @@ -2,3 +2,5 @@ obj-$(CONFIG_VHOST_NET) += vhost_net.o
+>>>>  vhost_net-y := vhost.o net.o
+>>>>  
+>>>>  obj-$(CONFIG_TCM_VHOST) += tcm_vhost.o
+>>>> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
+>>>> +vhost_blk-y := blk.o
+>>>> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
+>>>> new file mode 100644
+>>>> index 0000000..f0f118a
+>>>> --- /dev/null
+>>>> +++ b/drivers/vhost/blk.c
+>>>> @@ -0,0 +1,697 @@
+>>>> +/*
+>>>> + * Copyright (C) 2011 Taobao, Inc.
+>>>> + * Author: Liu Yuan <tailai.ly@taobao.com>
+>>>> + *
+>>>> + * Copyright (C) 2012 Red Hat, Inc.
+>>>> + * Author: Asias He <asias@redhat.com>
+>>>> + *
+>>>> + * This work is licensed under the terms of the GNU GPL, version 2.
+>>>> + *
+>>>> + * virtio-blk server in host kernel.
+>>>> + */
+>>>> +
+>>>> +#include <linux/miscdevice.h>
+>>>> +#include <linux/module.h>
+>>>> +#include <linux/vhost.h>
+>>>> +#include <linux/virtio_blk.h>
+>>>> +#include <linux/mutex.h>
+>>>> +#include <linux/file.h>
+>>>> +#include <linux/kthread.h>
+>>>> +#include <linux/blkdev.h>
+>>>> +#include <linux/llist.h>
+>>>> +
+>>>> +#include "vhost.c"
+>>>> +#include "vhost.h"
+>>>> +#include "blk.h"
+>>>> +
+>>>> +static DEFINE_IDA(vhost_blk_index_ida);
+>>>> +
+>>>> +enum {
+>>>> +	VHOST_BLK_VQ_REQ = 0,
+>>>> +	VHOST_BLK_VQ_MAX = 1,
+>>>> +};
+>>>> +
+>>>> +struct req_page_list {
+>>>> +	struct page **pages;
+>>>> +	int pages_nr;
+>>>> +};
+>>>> +
+>>>> +struct vhost_blk_req {
+>>>> +	struct llist_node llnode;
+>>>> +	struct req_page_list *pl;
+>>>> +	struct vhost_blk *blk;
+>>>> +
+>>>> +	struct iovec *iov;
+>>>> +	int iov_nr;
+>>>> +
+>>>> +	struct bio **bio;
+>>>> +	atomic_t bio_nr;
+>>>> +
+>>>> +	struct iovec status[1];
+>>>> +
+>>>> +	sector_t sector;
+>>>> +	int write;
+>>>> +	u16 head;
+>>>> +	long len;
+>>>> +};
+>>>> +
+>>>> +struct vhost_blk {
+>>>> +	struct task_struct *host_kick;
+>>>
+>>> Could you please add a comment here explaining why
+>>> is this better than using the builtin vhost thread?
+>>
+>> With separate thread model, the request submit and request completion
+>> can be handled in parallel. I have measured significant performance
+>> improvement with this model.
+>> In the long term, It would be nice if the
+>> vhost core can provide multiple thread support.
 > 
-> This isn't strictly true. It is still perfectly fine to have board
-> specific code when necessary. However, there is strong encouragement to
-> enable that code in device drivers as much as possible and new board
-> files need to have very strong justification.
+> Strange, all completion does it write out the used ring.
+> I am guessing you didn't complete requests
+> in a timely manner which was what caused the issue.
 
-But doesn't introducing board-specific code into the kernel just defeats the 
-purpose of the DT? If we extend this logic, we are heading straight back to 
-board-definition files. To a lesser extent than before I agree, but the problem 
-is fundamentally the same.
+Previously, there was two 'struct vhost_work' work which poll on the
+guest kick eventfd and host aio eventfd. The vhost thread is handling
+the works when there are data in eventfd, either guest kick or aio
+completion.
 
-> > need a way to implement these sequences in a portable manner. This patch
-> > introduces a simple interpreter that can execute such power sequences
-> > encoded either as platform data or within the device tree. It also
-> > introduces first support for regulator, GPIO and PWM resources.
-> 
-> This is where I start getting nervous. Up to now I've strongly resisted
-> adding any kind of interpreted code to the device tree. The model is to
-> identify hardware, but require the driver to know how to control it. (as
-> compared to ACPI which is entirely designed around executable
-> bytecode).
-> 
-> While the power sequences described here certainly cannot be confused
-> with a Turing complete bytecode, it is a step in that direction.
+> OTOH I'm not sure how increasing the number of threads
+> scales with # of VMs. Increased scheduler pressure is
+> also a concern.
 
-Technically speaking power sequences are a step towards an interpreter, but it 
-is a very small one and it should not go much further than the current state. 
-I understand the concern of having "code" into the DT but I really think it 
-should be viewed from a different angle.
+Agree, this is also my concern. However, this is a trade-off. we have a
+price to pay for the parallelism. Also, one thread per vhost device
+might not scale with # of VMs too, compared to e.g. per cpu thread.
 
-Powering sequences are special in that they can be affected by the board design 
-or the devices variations. For instance hundreds of different panels with 
-backlights are currently compatible with the pwm-backlight driver. The only 
-thing that differenciates them is how the backlight is powered on and off. If 
-you are to build a kernel that is supposed to support all these panels, you 
-would need to embed all the powering sequences in the kernel even though only 
-one of them will be used by one specific board. Power sequences in the DT help 
-preventing that.
+> Did you try checking completion after each
+> submitted request to address this?
 
-With that stated, it is clear that we should not need to define more than the 
-short, simple sequences of actions that cannot be elegantly handled by the 
-driver. Anything beyond that should be handled by the driver itself. In 
-particular, here are a few things I do *not* want to see included in power 
-seqs:
+Isn't this a sync operation? We can not only account on the checking the
+completion in the submit path. Another polling on the completion is
+needed anyway. Mixing the completion in submit path, 1) makes the submit
+delay longer 2) does not help with the case where a single request takes
+relatively long time to finish. IMHO, I do not think mixing the submit
+and completion is a good idea.
 
-- conditionals/jumps (or it's not a sequence anymore).
-- direct access to hardware. Resources must at least be abstracted in some 
-way. You shall not e.g. access the address space directly.
-- support for non-power related resources - that is out of the special case of 
-powering sequences and should be done by the driver
-
-That should keep the "grammar" simple, and the sequences short enough to that 
-we can consider then as data belonging to the device, and not as code that is 
-interpreted.
-
-> I think this will get very verbose in a hurry. Already this simple
-> example is 45 lines long. Using the device tree structure to encode the
-> language doesn't look like a very good fit. Not to mention that the
-> order of operations is entirely based on the node name. Want to insert
-> an operation between step0 and step1? Need to rename step1, step2, and
-> step3 to do so.
-
-I don't like that steps numbering thing neither, but it seems to be the best 
-way to do it so far.
-
-As for the DT structure not being adapted for this - I would agree if we 
-wanted to implement a complete interpreter, but that's precisely not the case. 
-More about this later.
-
-> This implementation also isn't very consistent. The gpio is referenced
-> with a phandle in step3/step0, but the regulator and pwm are referenced
-> by id.
-
-Tomi made the same remark - the reason for using the phandle in GPIO is 
-because GPIO framework does not support referencing GPIOs by name yet. I 
-wanted to DT bindings to reflect the underlying framework as much as possible 
-until we have a function like gpio_get(device, id).
-
-However I agree that this makes things inconsistent at the moment and would 
-require a bindings change. And in the case of the DT this is actually easy to 
-implement (I did it in some previous versions). I'll make sure to do it.
-
-> As an alternative, what about something like the following?
-> 
-> 	backlight {
-> 		compatible = "pwm-backlight";
-> 		...
-> 
-> 		/* resources used by the power sequences */
-> 		pwms = <&pwm 2 5000000>;
-> 		pwm-names = "backlight";
-> 		regulators = <&backlight_reg>;
-> 		gpios = <&gpio 28 0>;
-> 
-> 		power-on-sequence = "r0e;d10000m;p0e;g0s";
-> 		power-off-sequence = "g0c;p0d;d10000m;r0d";
-> 	};
-
-Well, *now* it really looks like bytecode. :)
-
-> I'm thinking about the scripts as trivial-to-parse ascii strings that
-> have a very simple set of commands. The commands use resources already
-> defined in the node. ie. 'g0' refers to the first entry in the gpios
-> property. 'r0' for the regulator, 'p0' for the pwms, 'd' means delay. By
-> no means take this as the format to use, it is just an example off the
-> top of my head, but it is already way easier to work with than putting
-> each command into a node.
-
-I'd argue that this opens the door wide open towards having a complete 
-interpreter in the device tree. At least DT nodes restrict what we can do 
-conveniently.
-
-> The trick is still to define a syntax that doesn't fall apart when it
-> needs to be extended. I would also like to get opinions on whether or
-> not conditionals or loops should be supported (ie. loop waiting for a
-> status to change). If they should then we need to be a lot more careful
-> about the design (and due to my aforementioned nervousness, somebody may
-> need to get me therapy).
-
-That's IMHO the main argument in favor of using DT nodes here (the syntax 
-extension, not your therapy). They can be extended simply by adding properties 
-to them, and I was relying on this to make power seqs extensible while keeping 
-things consistent (and backward-compatible). For instance, when we want to 
-support voltage setting in regulators we can just add a "voltage" property for 
-that.
-
-So to sum up the pros of the current node-base representation:
-- give a "data like" representation of powering sequences (what they should 
-be, actually)
-- puts sanity barriers for not turning power seqs into a real code interpreter
-- easily extensible
-
-There are probably a few cons, the numbering of steps being one, but at least 
-we don't need to design a new DSL and care too much about extensibility which 
-is, in the nodes case, built-in and free.
-
-I also like to make it clear that I don't want to see this going out of 
-control and that any extension proposal would have to be thoroughly justified 
-and reviewed - and better not contradict any of the 3 points listed above.
-
-If that makes you feel better, maybe we can try and fix what is wrong with the 
-current bindings instead of introducing a new language that will be, by 
-nature, more complex to handle and difficult to extend without breaking things?
-
-Alex.
-
+-- 
+Asias
