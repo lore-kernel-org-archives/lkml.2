@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2KUPqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 10:46:43 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43563 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab2KUPql (ORCPT
+	id S1755249Ab2KUPqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 10:46:50 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60791 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab2KUPqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 10:46:41 -0500
-Message-ID: <50ACF755.9000706@samsung.com>
-Date: Thu, 22 Nov 2012 00:46:29 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Wed, 21 Nov 2012 10:46:48 -0500
 MIME-Version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "'Joerg Roedel'" <joro@8bytes.org>, sw0312.kim@samsung.com,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        prathyush.k@samsung.com, rahul.sharma@samsung.com
-Subject: Re: [PATCH v3 01/12] ARM: EXYNOS: remove system mmu initialization
- from exynos tree
-References: <002701cdc7a5$756dbdf0$604939d0$%cho@samsung.com>
-In-Reply-To: <002701cdc7a5$756dbdf0$604939d0$%cho@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121120180949.GG1408@quack.suse.cz>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+	<20121120180949.GG1408@quack.suse.cz>
+Date: Wed, 21 Nov 2012 23:46:47 +0800
+Message-ID: <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+Subject: Re: Recent kernel "mount" slow
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/12 14:02, Cho KyongHo wrote:
-> This removes System MMU initialization from arch/arm/mach-exynos/
+On Wed, Nov 21, 2012 at 2:09 AM, Jan Kara <jack@suse.cz> wrote:
+>   I haven't heard about such problem so far. What filesystem are you using?
 
-Basically, looks OK to me, but I think, this removing change should be 
-done after 03/12 patch :-)
+I've tried ext2/ext3/ext4/reiserfs/btrfs ... all seems to be slower
+than before. Seems to be fs independent.
 
-> to move them to DT and the exynos-iommu driver except gating clock
-> definitions.
->
-> Change-Id: Ie29f587c01c645f28fc0e0b94eb3631a0170ebf5
+> Can you quantify 'is slower'? Bisecting would be welcome of course.
 
-No need 'Change-Id' here.
+Haven't measure, but it seems to be 1 sec instead of .3 sec to mount.
+I'll start bisecting:(
+So, since I've 6 mounts on start up, now it takes 4 seconds longer to boot up.
 
-> Signed-off-by: KyongHo Cho<pullip.cho@samsung.com>
-> ---
->   arch/arm/mach-exynos/Kconfig               |   5 -
->   arch/arm/mach-exynos/Makefile              |   1 -
->   arch/arm/mach-exynos/clock-exynos4.c       |  41 +++--
->   arch/arm/mach-exynos/clock-exynos4210.c    |   9 +-
->   arch/arm/mach-exynos/clock-exynos4212.c    |  23 ++-
->   arch/arm/mach-exynos/clock-exynos5.c       |  62 ++++---
->   arch/arm/mach-exynos/dev-sysmmu.c          | 274 -----------------------------
->   arch/arm/mach-exynos/include/mach/sysmmu.h |  66 -------
->   arch/arm/mach-exynos/mach-exynos4-dt.c     |  34 ++++
->   arch/arm/mach-exynos/mach-exynos5-dt.c     |  30 ++++
->   10 files changed, 137 insertions(+), 408 deletions(-)
->   delete mode 100644 arch/arm/mach-exynos/dev-sysmmu.c
->   delete mode 100644 arch/arm/mach-exynos/include/mach/sysmmu.h
-
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Thanks,
+Jeff
