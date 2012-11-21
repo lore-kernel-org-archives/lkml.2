@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab2KUQ6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 11:58:39 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:37045 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab2KUQ6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 11:58:36 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: exynos: add UART3 to DEBUG_LL ports
-Date: Wed, 21 Nov 2012 08:54:25 -0800
-Message-Id: <1353516865-2502-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1353451739-6317-1-git-send-email-dianders@chromium.org>
-References: <1353451739-6317-1-git-send-email-dianders@chromium.org>
+	id S1755395Ab2KURAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 12:00:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52295 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755335Ab2KURAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 12:00:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,293,1352102400"; 
+   d="scan'208";a="250630920"
+Date: Wed, 21 Nov 2012 18:00:21 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Patil, Rachna" <rachna@ti.com>
+Cc: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH RESEND 0/7] MFD: ti_am335x_tscadc: DT support and TSC
+ features addition
+Message-ID: <20121121170021.GE18738@sortiz-mobl>
+References: <1352271124-5513-1-git-send-email-rachna@ti.com>
+ <4CE347531D4CA947960AF71FF095B9323E96C54A@DBDE01.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE347531D4CA947960AF71FF095B9323E96C54A@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olof Johansson <olof@lixom.net>
+Hi Rachna,
 
-Add support for using UART3 for DEBUG_LL on exynos.
+On Fri, Nov 16, 2012 at 10:33:00AM +0000, Patil, Rachna wrote:
+> Hi,
+> 
+> This is just a gentle reminder of the patch set I had posted earlier viz.
+> "[PATCH RESEND 0/7] MFD: ti_am335x_tscadc: DT support and TSC features addition"
+> Can this patch set be pulled in if there are no review comments.
+> This patch set does not break anything existing, it just adds new features and DT support for the MFD core and its clients.
+I'm fine with the MFD part, but did you get Dmitry's ACK on the input ones ?
 
-[dianders: added depend on ARCH_EXYNOS.]
+Cheers,
+Samuel.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-
----
-Changes in v2:
-- Matched Olof's commit message.
-- Added ARCH_EXYNOS to depend list.
-
- arch/arm/Kconfig.debug        |   11 +++++++++++
- arch/arm/plat-samsung/Kconfig |    1 +
- 2 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 33a8930..f54f170 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -355,6 +355,17 @@ choice
- 		  The uncompressor code port configuration is now handled
- 		  by CONFIG_S3C_LOWLEVEL_UART_PORT.
- 
-+	config DEBUG_S3C_UART3
-+		depends on PLAT_SAMSUNG && ARCH_EXYNOS
-+		bool "Use S3C UART 3 for low-level debug"
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to UART 3. The port must have been initialised
-+		  by the boot-loader before use.
-+
-+		  The uncompressor code port configuration is now handled
-+		  by CONFIG_S3C_LOWLEVEL_UART_PORT.
-+
- 	config DEBUG_SOCFPGA_UART
- 		depends on ARCH_SOCFPGA
- 		bool "Use SOCFPGA UART for low-level debug"
-diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-index 59401e1..d342ed0 100644
---- a/arch/arm/plat-samsung/Kconfig
-+++ b/arch/arm/plat-samsung/Kconfig
-@@ -502,5 +502,6 @@ config DEBUG_S3C_UART
- 	default "0" if DEBUG_S3C_UART0
- 	default "1" if DEBUG_S3C_UART1
- 	default "2" if DEBUG_S3C_UART2
-+	default "3" if DEBUG_S3C_UART3
- 
- endif
 -- 
-1.7.7.3
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
