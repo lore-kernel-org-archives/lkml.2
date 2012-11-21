@@ -1,74 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2KUNZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 08:25:41 -0500
+	id S1754096Ab2KUNZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 08:25:52 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:52314 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab2KUNZi (ORCPT
+	with ESMTP id S1751754Ab2KUNZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 08:25:38 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v5 8/8] Documentation: update nfs option in filesystem/vfat.txt
-Date: Wed, 21 Nov 2012 22:25:28 +0900
-Message-Id: <1353504328-6054-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 21 Nov 2012 08:25:49 -0500
+Date: Wed, 21 Nov 2012 22:25:41 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
+ approaches low water mark
+Message-ID: <20121121132540.GA2084@barrios>
+References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+ <20121120000137.GC447@bbox>
+ <50AB987F.30002@samsung.com>
+ <20121121010556.GD447@bbox>
+ <xa1t7gpfgl53.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xa1t7gpfgl53.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Wed, Nov 21, 2012 at 02:07:04PM +0100, Michal Nazarewicz wrote:
+> On Wed, Nov 21 2012, Minchan Kim wrote:
+> > So your concern is that too many free pages in MIGRATE_CMA when OOM happens
+> > is odd? It's natural with considering CMA design which kernel never fallback
+> > non-movable page allocation to CMA area. I guess it's not a your concern.
+> >
+> > Let's think below extreme cases.
+> >
+> > = Before =
+> >
+> > * 1000M DRAM system.
+> > * 400M kernel used pages.
+> > * 300M movable used pages.
+> > * 300M cma freed pages.
+> >
+> > 1. kernel want to request 400M non-movable memory, additionally.
+> > 2. VM start to reclaim 300M movable pages.
+> > 3. But it's not enough to meet 400M request.
+> > 4. go to OOM. (It's natural)
+> >
+> > = After(with your patch) =
+> >
+> > * 1000M DRAM system.
+> > * 400M kernel used pages.
+> > * 300M movable *freed* pages.
+> > * 300M cma used pages(by your patch, I simplified your concept)
+> >
+> > 1. kernel want to request 400M non-movable memory.
+> > 2. 300M movable freed pages isn't enough to meet 400M request.
+> > 3. Also, there is no point to reclaim CMA pages for non-movable allocation.
+> > 4. go to OOM. (It's natural)
+> >
+> > There is no difference between before and after in allocation POV.
+> > Let's think another example.
+> >
+> > = Before =
+> >
+> > * 1000M DRAM system.
+> > * 400M kernel used pages.
+> > * 300M movable used pages.
+> > * 300M cma freed pages.
+> >
+> > 1. kernel want to request 300M non-movable memory.
+> > 2. VM start to reclaim 300M movable pages.
+> > 3. It's enough to meet 300M request.
+> > 4. happy end
+> >
+> > = After(with your patch) =
+> >
+> > * 1000M DRAM system.
+> > * 400M kernel used pages.
+> > * 300M movable *freed* pages.
+> > * 300M cma used pages(by your patch, I simplified your concept)
+> >
+> > 1. kernel want to request 300M non-movable memory.
+> > 2. 300M movable freed pages is enough to meet 300M request.
+> > 3. happy end.
+> >
+> > There is no difference in allocation POV, too.
+> 
+> The difference thou is that before 30% of memory is wasted (ie. free),
+> whereas after all memory is used.  The main point of CMA is to make the
+> memory useful if devices are not using it.  Having it not allocated is
+> defeating that purpose.
 
-update nfs option in filesystem/vfat.txt
+I think it's not a waste because if reclaimed movable pages is working set,
+they are soon reloaded to migrate_cma in this time.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- Documentation/filesystems/vfat.txt |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+> 
+> -- 
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
 
-diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
-index d230dd9..f663c70 100644
---- a/Documentation/filesystems/vfat.txt
-+++ b/Documentation/filesystems/vfat.txt
-@@ -150,13 +150,26 @@ discard       -- If set, issues discard/TRIM commands to the block
- 		 device when blocks are freed. This is useful for SSD devices
- 		 and sparse/thinly-provisoned LUNs.
- 
--nfs           -- This option maintains an index (cache) of directory
--		 inodes by i_logstart which is used by the nfs-related code to
--		 improve look-ups.
--
--		 Enable this only if you want to export the FAT filesystem
-+nfs= stale_rw|nostale_ro
-+	      -- Enable this only if you want to export the FAT filesystem
- 		 over NFS
- 
-+		 stale_rw:This option maintains an index (cache) of directory
-+		 inodes by i_logstart which is used by the nfs-related code to
-+		 improve look-ups.Full file operations (read/write) over NFS is supported
-+		 but with cache eviction at NFS server, this could result in ESTALE issues.
-+
-+		 nostale_ro:This option bases the inode number and filehandle on the on-disk
-+		 location of a file in the MS-DOS directory entry.This ensures that ESTALE
-+		 will not be returned after a file is evicted from the inode cache. However,
-+		 it means that operations such as rename, create and unlink could cause
-+		 filehandles that previously pointed at one file to point at a different file,
-+		 potentially causing data corruption. For this reason, this option also mounts
-+		 the filesystem readonly.
-+
-+		 To maintain backward compatibility, '-o nfs' is also accepted, defaulting to
-+		 stale_rw
-+
- <bool>: 0,1,yes,no,true,false
- 
- TODO
+
+
+
+
 -- 
-1.7.9.5
-
+Kind Regards,
+Minchan Kim
