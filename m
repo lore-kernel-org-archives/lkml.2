@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2KUOvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 09:51:33 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59009 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab2KUOvc (ORCPT
+	id S1754908Ab2KUOvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 09:51:43 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33832 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab2KUOvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 09:51:32 -0500
-Date: Wed, 21 Nov 2012 06:52:39 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
-Message-ID: <20121121145239.GA21860@kroah.com>
-References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
+	Wed, 21 Nov 2012 09:51:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121121144624.GA21766@kroah.com>
+References: <1353475147-28308-1-git-send-email-sachin.kamat@linaro.org>
+	<20121121144624.GA21766@kroah.com>
+Date: Wed, 21 Nov 2012 20:21:40 +0530
+Message-ID: <CAK9yfHy9Pnaoc-bdynFAE=U7=Njz00T8FRdLXTRvhopSxXS9Ng@mail.gmail.com>
+Subject: Re: [PATCH 1/1] tty: vt: Remove redundant null check before kfree.
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 02:44:31PM +0000, Grant Likely wrote:
-> The "platform_bus" (note: not platform_bus_type) only exists as an empty
-> directory to put platform devices into. However, it really doesn't make
-> sense to segregate all the platform devices into a sub directory when
-> typically they are memory mapped devices that doen't go through any
-> particular bus. Particularly on embedded type platforms the platform_bus
-> directory doesn't add anything.
-> 
-> However, this will probably just end up breaking some userspace that
-> depends on the /sys/devices/platform/ path to be present (no matter how
-> much we protest that userspace must not depend on paths in sysfs). So
-> while I'm seriously proposing this change, it may just be unacceptable
-> ABI breakage
+On 21 November 2012 20:16, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Nov 21, 2012 at 10:49:07AM +0530, Sachin Kamat wrote:
+>> kfree on a NULL pointer is a no-op.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> ---
+>>  drivers/tty/vt/consolemap.c |    6 ++----
+>>  1 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+>> index 2aaa0c2..248381b 100644
+>> --- a/drivers/tty/vt/consolemap.c
+>> +++ b/drivers/tty/vt/consolemap.c
+>> @@ -410,10 +410,8 @@ static void con_release_unimap(struct uni_pagedir *p)
+>>               kfree(p->inverse_translations[i]);
+>>               p->inverse_translations[i] = NULL;
+>>       }
+>> -     if (p->inverse_trans_unicode) {
+>> -             kfree(p->inverse_trans_unicode);
+>> -             p->inverse_trans_unicode = NULL;
+>> -     }
+>> +     kfree(p->inverse_trans_unicode);
+>> +     p->inverse_trans_unicode = NULL;
+>
+> kfree with NULL is a no-op, but the line after that just caused a kernel
+> crash if it was NULL, so I can't accept this type of thing.
+>
+> Please be more careful.
 
-If the devices don't show up under platform/ where are they going to be
-at now, virtual/ ?  That doesn't sound like a good plan, they should be
-somewhere "useful".
+My mistake. Apologies for the same.
 
-And yes, odds are this will break userspace, but we might not know until
-we try it, have you tried it on different distros to see what happens?
+Do we need to assign the pointer to NULL after freeing?
 
-thanks,
+>
+> What's with the patches@linaro.org email address?  What is that for?
+That is a logging mechanism (done by patchwork) for all patches sent
+by Linaro engineers.
 
-greg k-h
+>
+> thanks,
+>
+> greg k-h
+
+
+
+-- 
+With warm regards,
+Sachin
