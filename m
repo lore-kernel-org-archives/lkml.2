@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2KUKd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 05:33:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43575 "EHLO mx2.suse.de"
+	id S1754771Ab2KUKdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 05:33:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47149 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2KUKWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 05:22:02 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/46] x86: mm: drop TLB flush from ptep_set_access_flags
-Date: Wed, 21 Nov 2012 10:21:08 +0000
-Message-Id: <1353493312-8069-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353493312-8069-1-git-send-email-mgorman@suse.de>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
+	id S1752735Ab2KUKdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 05:33:31 -0500
+Date: Wed, 21 Nov 2012 12:33:16 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
+Message-ID: <20121121103316.GP21208@redhat.com>
+References: <50AC3AA9.7080004@cn.fujitsu.com>
+ <50AC3B10.3090005@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AC3B10.3090005@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Wed, Nov 21, 2012 at 10:23:12AM +0800, Zhang Yanfei wrote:
+> This patch adds an atomic notifier list named crash_notifier_list.
+> When loading kvm-intel module, a notifier will be registered in
+> the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
+> needed.
+> 
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kexec.h |    2 ++
+>  arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
+>  2 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+> index 317ff17..5e22b00 100644
+> --- a/arch/x86/include/asm/kexec.h
+> +++ b/arch/x86/include/asm/kexec.h
+> @@ -163,6 +163,8 @@ struct kimage_arch {
+>  };
+>  #endif
+>  
+> +extern struct atomic_notifier_head crash_notifier_list;
+> +
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif /* _ASM_X86_KEXEC_H */
+> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+> index 13ad899..0f3d5b4 100644
+> --- a/arch/x86/kernel/crash.c
+> +++ b/arch/x86/kernel/crash.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/delay.h>
+>  #include <linux/elf.h>
+>  #include <linux/elfcore.h>
+> +#include <linux/module.h>
+> +#include <linux/notifier.h>
+>  
+>  #include <asm/processor.h>
+>  #include <asm/hardirq.h>
+> @@ -30,6 +32,19 @@
+>  
+>  int in_crash_kexec;
+>  
+> +/*
+> + * The list is used to VMCLEAR vmcss loaded on all
+> + * cpus. And when loading kvm_intel module, the
+> + * vmclear function will be registered in the list.
+> + */
+> +ATOMIC_NOTIFIER_HEAD(crash_notifier_list);
+> +EXPORT_SYMBOL_GPL(crash_notifier_list);
+> +
+> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
+> +{
+> +	atomic_notifier_call_chain(&crash_notifier_list, 0, NULL);
+> +}
+> +
+The notifier list is not VMX specific. It may be used for other
+purposes, so please use better name or just open code it.
 
-Intel has an architectural guarantee that the TLB entry causing
-a page fault gets invalidated automatically. This means
-we should be able to drop the local TLB invalidation.
+ACKs from kexec side are needed.
 
-Because of the way other areas of the page fault code work,
-chances are good that all x86 CPUs do this.  However, if
-someone somewhere has an x86 CPU that does not invalidate
-the TLB entry causing a page fault, this one-liner should
-be easy to revert.
+>  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
+>  
+>  static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+> @@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+>  #endif
+>  	crash_save_cpu(regs, cpu);
+>  
+> +	/*
+> +	 * VMCLEAR vmcss loaded on all cpus if needed.
+> +	 */
+> +	cpu_emergency_vmclear_loaded_vmcss();
+> +
+>  	/* Disable VMX or SVM if needed.
+>  	 *
+>  	 * We need to disable virtualization on all CPUs.
+> @@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+>  
+>  	kdump_nmi_shootdown_cpus();
+>  
+> +	/*
+> +	 * VMCLEAR vmcss loaded on this cpu if needed.
+> +	 */
+> +	cpu_emergency_vmclear_loaded_vmcss();
+> +
+>  	/* Booting kdump kernel with VMX or SVM enabled won't work,
+>  	 * because (among other limitations) we can't disable paging
+>  	 * with the virt flags.
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- arch/x86/mm/pgtable.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index be3bb46..7353de3 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -317,7 +317,6 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	if (changed && dirty) {
- 		*ptep = entry;
- 		pte_update_defer(vma->vm_mm, address, ptep);
--		__flush_tlb_one(address);
- 	}
- 
- 	return changed;
--- 
-1.7.9.2
-
+--
+			Gleb.
