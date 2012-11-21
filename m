@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2KUItM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Nov 2012 03:49:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59551 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab2KUItJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Nov 2012 03:49:09 -0500
-Message-ID: <50AC956D.7020303@ti.com>
-Date: Wed, 21 Nov 2012 10:48:45 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1753601Ab2KUItS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Nov 2012 03:49:18 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58308 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2KUItP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Nov 2012 03:49:15 -0500
+Date: Wed, 21 Nov 2012 00:46:03 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+Message-ID: <20121121084603.GA18159@lizard>
+References: <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
+ <20121115085224.GA4635@lizard>
+ <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com>
+ <50A60873.3000607@parallels.com>
+ <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com>
+ <50A6AC48.6080102@parallels.com>
+ <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
+ <50AA3FEF.2070100@parallels.com>
+ <alpine.DEB.2.00.1211201013460.4200@chino.kir.corp.google.com>
+ <50AC9070.2030009@parallels.com>
 MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <4316169.5QXVzv7peZ@percival> <50AC8D3B.6040300@ti.com> <1699753.ZQsWMHINxd@percival>
-In-Reply-To: <1699753.ZQsWMHINxd@percival>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigFEB2DE46DC00D8FE6C54AF30"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50AC9070.2030009@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigFEB2DE46DC00D8FE6C54AF30
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 21, 2012 at 12:27:28PM +0400, Glauber Costa wrote:
+> On 11/20/2012 10:23 PM, David Rientjes wrote:
+> > Anton can correct me if I'm wrong, but I certainly don't think this is 
+> > where mempressure is headed: I don't think any accounting needs to be done
 
-On 2012-11-21 10:32, Alex Courbot wrote:
+Yup, I'd rather not do any accounting, at least not in bytes.
 
->> Ok. I'll need to dig up the conversation
->=20
-> IIRC it was somewhere around here:
->=20
-> https://lkml.org/lkml/2012/9/7/662
->=20
-> See the parent messages too.
+> > and, if it is, it's a design issue that should be addressed now rather 
+> > than later.  I believe notifications should occur on current's mempressure 
+> > cgroup depending on its level of reclaim: nobody cares if your memcg has a 
+> > limit of 64GB when you only have 32GB of RAM, we'll want the notification.
+> 
+> My main concern is that to trigger those notifications, one would have
+> to first determine whether or not the particular group of tasks is under
+> pressure.
 
-Thanks.
+As far as I understand, the notifications will be triggered by a process
+that tries to allocate memory. So, effectively that would be a per-process
+pressure.
 
->> Did you consider any examples
->> of how some driver could handle the error cases?
->=20
-> For all the (limited) use cases I considered, playing the power-off seq=
-uence=20
-> when power-on fails just works. If power-off also fails you are potenti=
-ally in=20
-> more trouble though. Maybe we could have another "run" function that do=
-es not=20
-> stop on errors for handling such cases where you want to "stop everythi=
-ng you=20
-> can".
+So, if one process in a group is suffering, we notify that "a process in a
+group is under pressure", and the notification goes to a cgroup listener
 
-If the power-off sequence disables a regulator that was supposed to be
-enabled by the power-on sequence (but wasn't enabled because of an
-error), the regulator_disable is still called when the driver runs the
-power-off sequence, isn't it? Regulator enables and disables are ref
-counted, and the enables should match the disables.
+> And to do that, we need to somehow know how much memory we are
+> using, and how much we are reclaiming, etc. On a system-wide level, we
+> have this information. On a grouplevel, this is already accounted by memcg.
+> 
+> In fact, the current code already seems to rely on memcg:
+> 
+> +	vmpressure(sc->target_mem_cgroup,
+> +		   sc->nr_scanned - nr_scanned, nr_reclaimed);
 
-> Failures might be better handled if sequences have some "recovery polic=
-y"=20
-> about what to do when they fail, as mentioned in the link above. As you=
-=20
-> pointed out, the driver might not always know enough about the resource=
-s=20
-> involved to do the right thing.
+Well, I'm yet unsure about the details, but I guess in "mempressure"
+cgroup approach, this will be derived from the current->, i.e. a task.
 
-Yes, I think such recovery policy would be needed.
+But note that we won't report pressure to a memcg cgroup, we will notify
+only mempressure cgroup. But a process can be in both of them
+simultaneously. In the code, the mempressure and memcg will not depend on
+each other.
 
- Tomi
+> Now, let's start simple: Assume we will have a different cgroup.
+> We want per-group pressure notifications for that group. How would you
+> determine that the specific group is under pressure?
 
+If a process that tries to allocate memory & causes reclaim is a part of
+the cgroup, then cgroup has a pressure.
 
+At least that's very brief understanding of the idea, details to be
+investigated... But I welcome David to comment whether I got everything
+correctly. :)
 
---------------enigFEB2DE46DC00D8FE6C54AF30
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJQrJVtAAoJEPo9qoy8lh71Lu8QAKQYKO3s8JapnGwTRpDb95V/
-ZESzJ5RqPbWBAOzP9+8RBME/FMJ/jXdophNmbvt0IMGfrHpWdGLzBy1AoPD9O5H8
-AHsx4Zfu/NOkLlv7yCI8LePgV/VnJiE1KN6MJXRuR/Rlb76Wj5/AEgstj3KQP6Od
-CrwOmJPd2pQwPRk6QMBatIXiNrWl4FcH6iuAQU1cvCO5gcLlXVXRKG/hVcHS/Ddl
-lCkkfeKGveV4h9z1o/ubilirovPqUmW/o1YdOJOKv0NUFBow8CdhUv43lQ8apqZq
-UZFJ609hSRUU8vYyoG/uoJm72G9b6a+QQ5BVSvgppNVRxV/CgXpZBonon1FvunnH
-we2w8DG/JO5SSoaYA0ZN5iyXDMxIeIEyhX8hQePZzFEde83wd2akoPFrK5z5NGSK
-J5s3a0mopE4cj5Ps0VI00cJlr71mPA8DOCXR0KvssS2R17rgyJaNuisIu/46wvfq
-ANAqkJ61LP3rvf/nH8TJvFapAjIMFOESW3jmJJGaq7GItxpwbTRCJ+kokAZMp7tn
-j4ZFT7xQhN3nj0Hxzwv+gl7jxjC6OvU4xUaKwSZDfHQs1HaDkzXS2m2oaBIoSGRc
-ex6Dkdh8bvSyFh+6tTrXgGPTMUkGjmuHoRPnXjethQbpAlL7gklG9wsRpQVckgDn
-nss1T0JvMISh1HZEAL2W
-=gaYE
------END PGP SIGNATURE-----
-
---------------enigFEB2DE46DC00D8FE6C54AF30--
+Thanks,
+Anton.
