@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab2KVUGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:06:43 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60408 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab2KVUGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:06:35 -0500
-Message-ID: <1353573044.18426.1.camel@phoenix>
-Subject: [PATCH] regulator: tps80031: Trivial cleanups
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Nov 2012 16:30:44 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757468Ab2KVUGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:06:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754179Ab2KVUGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:06:36 -0500
+Date: Fri, 23 Nov 2012 01:36:18 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+In-Reply-To: <CAGXu5jKY90dsnUjLcjC43Djoe53HEAffugtaEfsBphtp7j_A7g@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1211230134410.7814@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net> <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
+ <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com> <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz> <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com> <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
+ <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com> <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz> <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com> <alpine.LFD.2.02.1211182211350.5012@wniryva.cad.erqung.pbz>
+ <CAGXu5jJ4ZuviFMQcFocLWfcMreZSt4kCHFNm-PNW+yuy+v+FiQ@mail.gmail.com> <alpine.LFD.2.02.1211191158550.5042@wniryva.cad.erqung.pbz> <CAGXu5jKY90dsnUjLcjC43Djoe53HEAffugtaEfsBphtp7j_A7g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below cleanups:
++-- On Mon, 19 Nov 2012, Kees Cook wrote --+
+| I think to avoid the explosion of request_module calls in the abusive
+| case, we could simply return ELOOP instead of ENOEXEC on max
+| recursion.
 
-- Fix typo in comment
-- Fix showing wrong register in dev_err
-- Remove unnecessary rinfo variable
-- Add TPS80032 to MODULE_DESCRIPTION
+ -> http://www.spinics.net/lists/mm-commits/msg92433.html
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps80031-regulator.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+1. returning -ELOOP has a side effect of not reaching to request_module()
+   ever, for:
+==
+#ifdef CONFIG_MODULES
+1415                 if (retval != -ENOEXEC || bprm->mm == NULL) {
+1416                         break;
+1417                 } else {
+                        ...
+==
 
-diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
-index 127d175..6d5f203 100644
---- a/drivers/regulator/tps80031-regulator.c
-+++ b/drivers/regulator/tps80031-regulator.c
-@@ -1,7 +1,7 @@
- /*
-  * tps80031-regulator.c -- TI TPS80031 regulator driver.
-  *
-- * Regulator driver for TITPS80031/TPS80032 Fully Integrated Power
-+ * Regulator driver for TI TPS80031/TPS80032 Fully Integrated Power
-  * Management with Power Path and Battery Charger.
-  *
-  * Copyright (c) 2012, NVIDIA Corporation.
-@@ -311,7 +311,7 @@ static int tps80031_vbus_is_enabled(struct regulator_dev *rdev)
- 				TPS80031_CHARGERUSB_CTRL3, &ctrl3);
- 	if (ret < 0) {
- 		dev_err(ri->dev, "reg 0x%02x read failed, e = %d\n",
--			TPS80031_CHARGERUSB_CTRL1, ret);
-+			TPS80031_CHARGERUSB_CTRL3, ret);
- 		return ret;
- 	}
- 	if ((ctrl1 & OPA_MODE_EN) && (ctrl3 & BOOST_HW_PWR_EN))
-@@ -679,7 +679,6 @@ static int tps80031_regulator_probe(struct platform_device *pdev)
- {
- 	struct tps80031_platform_data *pdata;
- 	struct tps80031_regulator_platform_data *tps_pdata;
--	struct tps80031_regulator_info *rinfo;
- 	struct tps80031_regulator *ri;
- 	struct tps80031_regulator *pmic;
- 	struct regulator_dev *rdev;
-@@ -703,9 +702,8 @@ static int tps80031_regulator_probe(struct platform_device *pdev)
- 
- 	for (num = 0; num < TPS80031_REGULATOR_MAX; ++num) {
- 		tps_pdata = pdata->regulator_pdata[num];
--		rinfo = &tps80031_rinfo[num];
- 		ri = &pmic[num];
--		ri->rinfo = rinfo;
-+		ri->rinfo = &tps80031_rinfo[num];
- 		ri->dev = &pdev->dev;
- 
- 		check_smps_mode_mult(pdev->dev.parent, ri);
-@@ -788,6 +786,6 @@ static void __exit tps80031_regulator_exit(void)
- module_exit(tps80031_regulator_exit);
- 
- MODULE_ALIAS("platform:tps80031-regulator");
--MODULE_DESCRIPTION("Regulator Driver for TI TPS80031 PMIC");
-+MODULE_DESCRIPTION("Regulator Driver for TI TPS80031/TPS80032 PMIC");
- MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
- MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+2. above patch does not seem to fix the 2^6(64) recursions issue, for:
+==
++                       bprm->recursion_depth = depth + 1;
+                        retval = fn(bprm);
+                        bprm->recursion_depth = depth;
+==
 
+setting - recursion_dept = depth - again and the outer for(try=0;try<2...) 
+loop seems to be causing the 2^6 recursions.
 
-
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
