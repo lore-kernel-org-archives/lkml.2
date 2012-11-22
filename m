@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030223Ab2KVTuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:50:40 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40432 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030199Ab2KVTuh (ORCPT
+	id S965081Ab2KVTuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:50:15 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59757 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757359Ab2KVTt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:50:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121122031117.GE25470@core.coreip.homeip.net>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
-	<1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
-	<CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
-	<20121121204324.21126.99677@nucleus>
-	<20121121205424.GA25470@core.coreip.homeip.net>
-	<20121121223859.GQ3290@n2100.arm.linux.org.uk>
-	<20121122021750.GD25470@core.coreip.homeip.net>
-	<20121122031117.GE25470@core.coreip.homeip.net>
-Date: Thu, 22 Nov 2012 08:56:04 +0530
-Message-ID: <CAKohpo=emfJgjm8cg0yS+qoaB-kmxHP1to9B-Krn0+_pyrWf_w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:49:59 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 09/46] staging: line6: drop name sysfs attr
+Date: Thu, 22 Nov 2012 20:48:48 +0100
+Message-Id: <1353613765-18690-10-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 November 2012 08:41, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
-> CLK: get rid of HAVE_CLK_PREPARE
->
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->
-> HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
-> platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
-> switched to common clk framework, so we can delete this option now.
->
-> As part of this change we move declarations of clk_prepare() and
-> clk_unprepare() under HAVE_CLK and provide stubs if this option is not
-> enabled.
->
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/clk/Kconfig |    4 ---
->  include/linux/clk.h |   68 ++++++++++++++++++++++++---------------------------
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 165c7ad..76525c5 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -476,18 +476,6 @@ static ssize_t get_name_generic(struct usb_line6_pod *pod, const char *str,
+ /*
+ 	"read" request on "name" special file.
+ */
+-static ssize_t pod_get_name(struct device *dev, struct device_attribute *attr,
+-			    char *buf)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	return get_name_generic(pod, pod->prog_data.header + POD_NAME_OFFSET,
+-				buf);
+-}
+-
+-/*
+-	"read" request on "name" special file.
+-*/
+ static ssize_t pod_get_name_buf(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -862,7 +850,6 @@ static DEVICE_ATTR(firmware_version, S_IRUGO, pod_get_firmware_version,
+ 		   line6_nop_write);
+ static DEVICE_ATTR(midi_postprocess, S_IWUSR | S_IRUGO,
+ 		   pod_get_midi_postprocess, pod_set_midi_postprocess);
+-static DEVICE_ATTR(name, S_IRUGO, pod_get_name, line6_nop_write);
+ static DEVICE_ATTR(name_buf, S_IRUGO, pod_get_name_buf, line6_nop_write);
+ static DEVICE_ATTR(retrieve_amp_setup, S_IWUSR, line6_nop_read,
+ 		   pod_set_retrieve_amp_setup);
+@@ -968,7 +955,6 @@ static int pod_create_files2(struct device *dev)
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_finish));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_firmware_version));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_name));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_name_buf));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_retrieve_amp_setup));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_retrieve_channel));
+@@ -1103,7 +1089,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 			device_remove_file(dev, &dev_attr_finish);
+ 			device_remove_file(dev, &dev_attr_firmware_version);
+ 			device_remove_file(dev, &dev_attr_midi_postprocess);
+-			device_remove_file(dev, &dev_attr_name);
+ 			device_remove_file(dev, &dev_attr_name_buf);
+ 			device_remove_file(dev, &dev_attr_retrieve_amp_setup);
+ 			device_remove_file(dev, &dev_attr_retrieve_channel);
+-- 
+1.8.0
 
-Fix imx select line as pointed out by Mike and add:
-
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
