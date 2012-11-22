@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab2KVU3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:29:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39764 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756795Ab2KVT0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:10 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 08/40] mm: compaction: Move migration fail/success stats to migrate.c
-Date: Thu, 22 Nov 2012 19:25:21 +0000
-Message-Id: <1353612353-1576-9-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S1756863Ab2KVU3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:29:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45720 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756795Ab2KVU3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:29:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <50AE8914.1020507@zytor.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
+	<50AD0CA1.8000904@zytor.com>
+	<CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
+	<50AD291A.10600@zytor.com>
+	<CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com>
+	<a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
+	<CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com>
+	<CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
+	<a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com>
+	<CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
+	<50AE70E7.6060204@zytor.com>
+	<CAE9FiQXKgnZyFNujKhMn94+0JQ6jtAHOihmtMOmk_gJi-4_aYQ@mail.gmail.com>
+	<50AE7429.6030308@zytor.com>
+	<CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
+	<50AE8914.1020507@zytor.com>
+Date: Thu, 22 Nov 2012 12:29:36 -0800
+X-Google-Sender-Auth: XhCnoWYks8M81bcz5ivGMn0raWQ
+Message-ID: <CAE9FiQUHyLJZ-co5ZMC--iuB21uZ-jTe3jqPRHfvX0HzH11U1g@mail.gmail.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compact_pages_moved and compact_pagemigrate_failed events are
-convenient for determining if compaction is active and to what
-degree migration is succeeding but it's at the wrong level. Other
-users of migration may also want to know if migration is working
-properly and this will be particularly true for any automated
-NUMA migration. This patch moves the counters down to migration
-with the new events called pgmigrate_success and pgmigrate_fail.
-The compact_blocks_moved counter is removed because while it was
-useful for debugging initially, it's worthless now as no meaningful
-conclusions can be drawn from its value.
+On Thu, Nov 22, 2012 at 12:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/22/2012 12:18 PM, Yinghai Lu wrote:
+>>
+>>
+>> for kexec bzImage --real-mode-entry, code after setup_header will be
+>> executed.
+>>
+>
+> For real mode entry we go through the real mode path which takes care of
+> this.  What matters is the 32/64-bit entry point.
+>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- include/linux/vm_event_item.h |    4 +++-
- mm/compaction.c               |    4 ----
- mm/migrate.c                  |    6 ++++++
- mm/vmstat.c                   |    7 ++++---
- 4 files changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 3d31145..8aa7cb9 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
- 		KSWAPD_SKIP_CONGESTION_WAIT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
-+#ifdef CONFIG_MIGRATION
-+		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
-+#endif
- #ifdef CONFIG_COMPACTION
--		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
- 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
- #endif
- #ifdef CONFIG_HUGETLB_PAGE
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9eef558..00ad883 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		update_nr_listpages(cc);
- 		nr_remaining = cc->nr_migratepages;
- 
--		count_vm_event(COMPACTBLOCKS);
--		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
--		if (nr_remaining)
--			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
- 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
- 						nr_remaining);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..04687f6 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
- {
- 	int retry = 1;
- 	int nr_failed = 0;
-+	int nr_succeeded = 0;
- 	int pass = 0;
- 	struct page *page;
- 	struct page *page2;
-@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
- 				retry++;
- 				break;
- 			case 0:
-+				nr_succeeded++;
- 				break;
- 			default:
- 				/* Permanent failure */
-@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
- 	}
- 	rc = 0;
- out:
-+	if (nr_succeeded)
-+		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
-+	if (nr_failed)
-+		count_vm_events(PGMIGRATE_FAIL, nr_failed);
- 	if (!swapwrite)
- 		current->flags &= ~PF_SWAPWRITE;
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index c737057..89a7fd6 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
- 
- 	"pgrotated",
- 
-+#ifdef CONFIG_MIGRATION
-+	"pgmigrate_success",
-+	"pgmigrate_fail",
-+#endif
- #ifdef CONFIG_COMPACTION
--	"compact_blocks_moved",
--	"compact_pages_moved",
--	"compact_pagemigrate_failed",
- 	"compact_stall",
- 	"compact_fail",
- 	"compact_success",
--- 
-1.7.9.2
-
+yes.
