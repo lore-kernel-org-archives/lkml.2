@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab2KVT3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:29:25 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:26014 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965209Ab2KVT3B (ORCPT
+	id S965223Ab2KVT35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:29:57 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64301 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965124Ab2KVT3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:29:01 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
-Subject: [PATCH v4 31/31] ubifs: convert file ops from aio_read/write to read/write_iter
-Date: Wed, 21 Nov 2012 16:41:11 -0600
-Message-Id: <1353537671-26284-32-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 22 Nov 2012 14:29:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121121204324.21126.99677@nucleus>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+	<1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+	<CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+	<20121121204324.21126.99677@nucleus>
+Date: Thu, 22 Nov 2012 09:04:18 +0530
+Message-ID: <CAKohpo=fNxADu4z9y6R7XBJEvr7ksOOY0LqZ9MfHnBgmDFgBvg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mike Turquette <mturquette@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-mtd@lists.infradead.org
----
- fs/ubifs/file.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+On 22 November 2012 02:13, Mike Turquette <mturquette@ti.com> wrote:
+> HAVE_CLK logically wraps HAVE_CLK_PREPARE.  There is no point in
+> selecting HAVE_CLK_PREPARE without HAVE_CLK.
+>
+> Looking through the code I see that this used to be the case.  Commit
+> 93abe8e "clk: add non CONFIG_HAVE_CLK routines" moved the
+> clk_(un)prepare declarations outside of #ifdef CONFIG_HAVE_CLK.  That
+> commit was authored by you.  Can you elaborate on why that aspect of the
+> patch was needed?
 
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5bc7781..cfe6210 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -44,7 +44,7 @@
-  * 'ubifs_writepage()' we are only guaranteed that the page is locked.
-  *
-  * Similarly, @i_mutex is not always locked in 'ubifs_readpage()', e.g., the
-- * read-ahead path does not lock it ("sys_read -> generic_file_aio_read ->
-+ * read-ahead path does not lock it ("sys_read -> generic_file_read_iter ->
-  * ondemand_readahead -> readpage"). In case of readahead, @I_SYNC flag is not
-  * set as well. However, UBIFS disables readahead.
-  */
-@@ -1394,8 +1394,8 @@ static int update_mctime(struct ubifs_info *c, struct inode *inode)
- 	return 0;
- }
- 
--static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
--			       unsigned long nr_segs, loff_t pos)
-+static ssize_t ubifs_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+				loff_t pos)
- {
- 	int err;
- 	struct inode *inode = iocb->ki_filp->f_mapping->host;
-@@ -1405,7 +1405,7 @@ static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (err)
- 		return err;
- 
--	return generic_file_aio_write(iocb, iov, nr_segs, pos);
-+	return generic_file_write_iter(iocb, iter, pos);
- }
- 
- static int ubifs_set_page_dirty(struct page *page)
-@@ -1580,8 +1580,8 @@ const struct file_operations ubifs_file_operations = {
- 	.llseek         = generic_file_llseek,
- 	.read           = do_sync_read,
- 	.write          = do_sync_write,
--	.aio_read       = generic_file_aio_read,
--	.aio_write      = ubifs_aio_write,
-+	.read_iter       = generic_file_read_iter,
-+	.write_iter      = ubifs_write_iter,
- 	.mmap           = ubifs_file_mmap,
- 	.fsync          = ubifs_fsync,
- 	.unlocked_ioctl = ubifs_ioctl,
--- 
-1.8.0
+Haha... Caught red handed :(
 
+Before this commit, nothing was enclosed within CONFIG_HAVE_CLK and
+this patch only introduced it. I am not really sure, why i kept
+prepare/unprepare
+out of it though :(
+
+Maybe because some platform at that time is using it directly, without
+CONFIG_HAVE_CLK. Not sure.
+
+--
+viresh
