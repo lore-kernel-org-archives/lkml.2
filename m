@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab2KVUWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:22:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40064 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab2KVT0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:46 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 31/40] mm: numa: Structures for Migrate On Fault per NUMA migration rate limiting
-Date: Thu, 22 Nov 2012 19:25:44 +0000
-Message-Id: <1353612353-1576-32-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S1757373Ab2KVUW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:22:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64462 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab2KVUWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:22:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121121145842.5A45B3E0A47@localhost>
+References: <1350415340-2825-1-git-send-email-linus.walleij@linaro.org>
+	<20121121145842.5A45B3E0A47@localhost>
+Date: Thu, 22 Nov 2012 10:03:35 +0100
+Message-ID: <CACRpkdZBF0PX-XBUjtLc5=Y5mWTp2J+YWn7+8oH-afjsg9A9eA@mail.gmail.com>
+Subject: Re: [PATCH 2/7] gpio/em: convert to linear IRQ domain
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Magnus Damm <damm@opensource.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+On Wed, Nov 21, 2012 at 3:58 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, 16 Oct 2012 21:22:20 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> The code in the em driver seems to want to try to do the job of
+>> the linear IRQ domain (allocate descriptors and grab a virtual
+>> range). So why not just use the linear IRQ domain?
+>>
+>> Also fixed the FIXME to remove the domain after use.
+>
+> Applied, thanks.
 
-This defines the per-node data used by Migrate On Fault in order to
-rate limit the migration. The rate limiting is applied independently
-to each destination node.
+Uh I've taken most of these into my own GPIO tree ... maybe I should
+just send you a pull request for what I have so we can avoid any clashes
+in the V3.8 merge window?
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |   13 +++++++++++++
- mm/page_alloc.c        |    5 +++++
- 2 files changed, 18 insertions(+)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index a23923b..1ed16e5 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -717,6 +717,19 @@ typedef struct pglist_data {
- 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
-+#ifdef CONFIG_BALANCE_NUMA
-+	/*
-+	 * Lock serializing the per destination node AutoNUMA memory
-+	 * migration rate limiting data.
-+	 */
-+	spinlock_t balancenuma_migrate_lock;
-+
-+	/* Rate limiting time interval */
-+	unsigned long balancenuma_migrate_next_window;
-+
-+	/* Number of pages migrated during the rate limiting time interval */
-+	unsigned long balancenuma_migrate_nr_pages;
-+#endif
- } pg_data_t;
- 
- #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5953dc2..df58654 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4449,6 +4449,11 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	int ret;
- 
- 	pgdat_resize_init(pgdat);
-+#ifdef CONFIG_BALANCE_NUMA
-+	spin_lock_init(&pgdat->balancenuma_migrate_lock);
-+	pgdat->balancenuma_migrate_nr_pages = 0;
-+	pgdat->balancenuma_migrate_next_window = jiffies;
-+#endif
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	init_waitqueue_head(&pgdat->pfmemalloc_wait);
- 	pgdat_page_cgroup_init(pgdat);
--- 
-1.7.9.2
-
+Thanks,
+Linus Walleij
