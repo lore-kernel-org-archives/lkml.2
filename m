@@ -1,148 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2KVTXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:23:12 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:24000 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab2KVTXI (ORCPT
+	id S1756243Ab2KVTX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:23:27 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48676 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab2KVTXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:23:08 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH v4 24/31] btrfs: add support for read_iter and write_iter
-Date: Wed, 21 Nov 2012 16:41:04 -0600
-Message-Id: <1353537671-26284-25-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 22 Nov 2012 14:23:19 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH v2 1/3] CLK: get rid of HAVE_CLK_PREPARE
+Date: Wed, 21 Nov 2012 21:34:40 -0800
+Message-Id: <1353562482-12422-2-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
-on btrfs_file_aio_write(), then have the latter call the former.
+HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
+platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
+switched to common clk framework, so we can delete this option now.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org
+As part of this change we move declarations of clk_prepare() and
+clk_unprepare() under HAVE_CLK and provide stubs if this option is not
+enabled.
+
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- fs/btrfs/file.c | 42 ++++++++++++++----------------------------
- 1 file changed, 14 insertions(+), 28 deletions(-)
+ arch/arm/Kconfig    |  1 -
+ drivers/clk/Kconfig |  4 ----
+ include/linux/clk.h | 68 +++++++++++++++++++++++++----------------------------
+ 3 files changed, 32 insertions(+), 41 deletions(-)
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 9ab1bed..b691dd5 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -375,7 +375,7 @@ static noinline int btrfs_copy_from_user(loff_t pos, int num_pages,
- 		write_bytes -= copied;
- 		total_copied += copied;
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ade7e92..ae6c1df 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -453,7 +453,6 @@ config ARCH_MXS
+ 	select CLKSRC_MMIO
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+-	select HAVE_CLK_PREPARE
+ 	select MULTI_IRQ_HANDLER
+ 	select PINCTRL
+ 	select SPARSE_IRQ
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index bace9e9..639ee9d 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -3,15 +3,11 @@ config CLKDEV_LOOKUP
+ 	bool
+ 	select HAVE_CLK
  
--		/* Return to btrfs_file_aio_write to fault page */
-+		/* Return to btrfs_file_write_iter to fault page */
- 		if (unlikely(copied == 0))
- 			break;
- 
-@@ -1361,27 +1361,23 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
- }
- 
- static ssize_t __btrfs_direct_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos,
--				    loff_t *ppos, size_t count, size_t ocount)
-+				     struct iov_iter *iter, loff_t pos,
-+				    loff_t *ppos, size_t count)
- {
- 	struct file *file = iocb->ki_filp;
--	struct iov_iter i;
- 	ssize_t written;
- 	ssize_t written_buffered;
- 	loff_t endbyte;
- 	int err;
- 
--	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
--					    count, ocount);
-+	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
- 
- 	if (written < 0 || written == count)
- 		return written;
- 
- 	pos += written;
- 	count -= written;
--	iov_iter_init(&i, iov, nr_segs, count, written);
--	written_buffered = __btrfs_buffered_write(file, &i, pos);
-+	written_buffered = __btrfs_buffered_write(file, iter, pos);
- 	if (written_buffered < 0) {
- 		err = written_buffered;
- 		goto out;
-@@ -1398,9 +1394,8 @@ out:
- 	return written ? written : err;
- }
- 
--static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos)
-+static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter, loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = fdentry(file)->d_inode;
-@@ -1409,18 +1404,13 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	u64 start_pos;
- 	ssize_t num_written = 0;
- 	ssize_t err = 0;
--	size_t count, ocount;
-+	size_t count;
- 
- 	sb_start_write(inode->i_sb);
- 
- 	mutex_lock(&inode->i_mutex);
- 
--	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
--	if (err) {
--		mutex_unlock(&inode->i_mutex);
--		goto out;
--	}
--	count = ocount;
-+	count = iov_iter_count(iter);
- 
- 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
- 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
-@@ -1468,14 +1458,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	}
- 
- 	if (unlikely(file->f_flags & O_DIRECT)) {
--		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
--						   pos, ppos, count, ocount);
-+		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
-+						   count);
- 	} else {
--		struct iov_iter i;
+-config HAVE_CLK_PREPARE
+-	bool
 -
--		iov_iter_init(&i, iov, nr_segs, count, num_written);
+ config HAVE_MACH_CLKDEV
+ 	bool
+ 
+ config COMMON_CLK
+ 	bool
+-	select HAVE_CLK_PREPARE
+ 	select CLKDEV_LOOKUP
+ 	---help---
+ 	  The common clock framework is a single definition of struct
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b3ac22d..f8204c3 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -84,42 +84,6 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+ 
+ #endif
+ 
+-/**
+- * clk_prepare - prepare a clock source
+- * @clk: clock source
+- *
+- * This prepares the clock source for use.
+- *
+- * Must not be called from within atomic context.
+- */
+-#ifdef CONFIG_HAVE_CLK_PREPARE
+-int clk_prepare(struct clk *clk);
+-#else
+-static inline int clk_prepare(struct clk *clk)
+-{
+-	might_sleep();
+-	return 0;
+-}
+-#endif
 -
--		num_written = __btrfs_buffered_write(file, &i, pos);
-+		num_written = __btrfs_buffered_write(file, iter, pos);
- 		if (num_written > 0)
- 			*ppos = pos + num_written;
- 	}
-@@ -2280,9 +2266,9 @@ const struct file_operations btrfs_file_operations = {
- 	.llseek		= btrfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read       = generic_file_aio_read,
- 	.splice_read	= generic_file_splice_read,
--	.aio_write	= btrfs_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= btrfs_file_write_iter,
- 	.mmap		= btrfs_file_mmap,
- 	.open		= generic_file_open,
- 	.release	= btrfs_release_file,
+-/**
+- * clk_unprepare - undo preparation of a clock source
+- * @clk: clock source
+- *
+- * This undoes a previously prepared clock.  The caller must balance
+- * the number of prepare and unprepare calls.
+- *
+- * Must not be called from within atomic context.
+- */
+-#ifdef CONFIG_HAVE_CLK_PREPARE
+-void clk_unprepare(struct clk *clk);
+-#else
+-static inline void clk_unprepare(struct clk *clk)
+-{
+-	might_sleep();
+-}
+-#endif
+-
+ #ifdef CONFIG_HAVE_CLK
+ /**
+  * clk_get - lookup and obtain a reference to a clock producer.
+@@ -159,6 +123,27 @@ struct clk *clk_get(struct device *dev, const char *id);
+ struct clk *devm_clk_get(struct device *dev, const char *id);
+ 
+ /**
++ * clk_prepare - prepare a clock source
++ * @clk: clock source
++ *
++ * This prepares the clock source for use.
++ *
++ * Must not be called from within atomic context.
++ */
++int clk_prepare(struct clk *clk);
++
++/**
++ * clk_unprepare - undo preparation of a clock source
++ * @clk: clock source
++ *
++ * This undoes a previously prepared clock.  The caller must balance
++ * the number of prepare and unprepare calls.
++ *
++ * Must not be called from within atomic context.
++ */
++void clk_unprepare(struct clk *clk);
++
++/**
+  * clk_enable - inform the system when the clock source should be running.
+  * @clk: clock source
+  *
+@@ -292,6 +277,17 @@ static inline void clk_put(struct clk *clk) {}
+ 
+ static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
+ 
++static inline int clk_prepare(struct clk *clk)
++{
++	might_sleep();
++	return 0;
++}
++
++static inline void clk_unprepare(struct clk *clk)
++{
++	might_sleep();
++}
++
+ static inline int clk_enable(struct clk *clk)
+ {
+ 	return 0;
 -- 
-1.8.0
+1.7.11.7
 
