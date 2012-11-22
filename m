@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2KVS3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:29:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab2KVS3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:29:04 -0500
-Date: Thu, 22 Nov 2012 17:12:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Amnon Shiloh <u3557@miso.sublimeip.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: vdso && cr (Was: arch_check_bp_in_kernelspace: fix the range check)
-Message-ID: <20121122161238.GA27078@redhat.com>
-References: <20121121141627.GB21030@redhat.com> <20121121173043.F0319592076@miso.sublimeip.com>
+	id S1752434Ab2KVS3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:29:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49948 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab2KVS3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:29:14 -0500
+Date: Thu, 22 Nov 2012 14:22:23 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: walter harms <wharms@bfs.de>
+CC: Cyril Roelandt <tipecaml@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <laurent.pinchart@ideasonboard.com>,
+        <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] UVC: use GFP_ATOMIC under spin lock.
+Message-ID: <20121122122223.GC18022@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1353360842-18384-1-git-send-email-tipecaml@gmail.com>
+ <50ADDDD5.1080709@bfs.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
 Content-Disposition: inline
-In-Reply-To: <20121121173043.F0319592076@miso.sublimeip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50ADDDD5.1080709@bfs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22, Amnon Shiloh wrote:
->
-> Now however, that "vsyscall" was effectively replaced by vdso, it
-> creates a new problem for me and probably for anyone else who uses
-> some form of checkpoint/restore:
+--u65IjBhB3TIa72Vp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh, sorry, I can't help here. I can only add Cyrill and Pavel, they
-seem to enjoy trying to solve the c/r problems.
+On Thu, Nov 22, 2012 at 09:09:57AM +0100, walter harms wrote:
+>=20
+>=20
+> Am 19.11.2012 22:34, schrieb Cyril Roelandt:
+> > Found using the following semantic patch:
+> > <spml>
+> > @@
+> > @@
+> > spin_lock_irqsave(...);
+> > ... when !=3D spin_unlock_irqrestore(...);
+> > * GFP_KERNEL
+> > </spml>
+> >=20
+> > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> > ---
+> >  drivers/usb/gadget/uvc_video.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/usb/gadget/uvc_video.c b/drivers/usb/gadget/uvc_vi=
+deo.c
+> > index b0e53a8..79b4132 100644
+> > --- a/drivers/usb/gadget/uvc_video.c
+> > +++ b/drivers/usb/gadget/uvc_video.c
+> > @@ -309,7 +309,7 @@ uvc_video_pump(struct uvc_video *video)
+> >  		video->encode(req, video, buf);
+> > =20
+> >  		/* Queue the USB request */
+> > -		if ((ret =3D usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
+> > +		if ((ret =3D usb_ep_queue(video->ep, req, GFP_ATOMIC)) < 0) {
+> >  			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
+> >  			usb_ep_set_halt(video->ep);
+> >  			spin_unlock_irqrestore(&video->queue.irqlock, flags);
+>=20
+>=20
+> IMHO, this should be two lines, aka:
+>=20
+> ret =3D usb_ep_queue(video->ep, req, GFP_KERNEL);
+> if (ret<0)
 
-> Suppose a process is checkpointed because the system needs to reboot
-> for a kernel-upgrade, then restored on the new and different kernel.
-> The new VDSO page may no longer match the new kernel - it could for
-> example fetch data from addresses in the vsyscall page that now
-> contain different things; or in case the hardware also was changed,
-> it may use machine-instructions that are now illegal.
+correct, please resend with the fix.
 
-Sure. You shouldn't try to save/restore this page(s) directly. But
-I do not really understand why do you need. IOW, I don't really
-understand the problem, it depends on what c/r actually does.
+--=20
+balbi
 
-> As I don't mind to forego the "fast" sys_time(), my obvious solution
-> is to disable the vdso for traced processes that may be checkpointed.
->
-> One way to do it would be by brute-force: straight after "execve"
-> unmap the tracee's vdso page,
+--u65IjBhB3TIa72Vp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Not sure this will be always possible. For example, my (old) glibc
-assumes that vsyscall() must work, I won't be surprised if some time
-later it won't work without vdso. But again, I do not know.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> then manipulate the ELF tables in
-> its memory so the VDSO entry is gone and the library will not go
-> looking for it.
+iQIcBAEBAgAGBQJQrhj+AAoJEIaOsuA1yqREOfMQAKbctsaWRc3L+esWickU5pUe
+lZPq73+gW1FYH2+oMd67/s260DO+gM1Z/HmKgOhdK+oDvqQ5v+PYSwCKKsksOPHw
+2cmksQxSD5fCnmlXmx/JzbPoaSGpODCmGVuq2gUj7uyEf/KYsiKuBLK9hWLbMG0T
+kOSktHfrYul2UeYaBvaQLGGl/20r2AgdoSLr1ljmtWKNFpvup5TNQWpxB6yq4ZlM
+CX06iDwecU3uw6QDWBUZ5Ss+DDJQB4GgrMdM/ecOT+Bq7haXISdggulex+s2vYWy
+ozkUj922KIfmddR9W0WxWxWo3MiGBsssVX2Taoasq/Sj2jUpujazOYkuBgqL6agl
+EP5QFb5jT0l1Iu3lT2XoMF8XbA2smKQ4Z1dejOJ96AbIfgh5rB27Wes2QIzLIEwv
+0mj7DXTYzuYV84fol6qMxUgsXwKzk609SLljMQwSmY5Y3q81TRlBUXj4FNzrCRHf
+iD2jMoA2t/Cz7Z51IxYE6Ep/OtIbAtxwPM4aHYM5MZIzTnhS2osKxC6MKCSOQRX+
+qYfKM+vZumzAps3F9THNHtpBKV02+4UpV9L/8JfXFZZ21UexW/Ej/b9kg1mbKa2W
+669BJ6PjcI7bbauCTLKRnvghM4LFaHB90OyHu6vo2Uu+HY18QWjhnSCGWxw/qrVI
+tJ5+i5H0XYFuk3f1jfxE
+=gce8
+-----END PGP SIGNATURE-----
 
-Probably it would be enough to simply erase AT_SYSINFO_EHDR note,
-but again, I can be easily wrong.
-
-> I just wonder whether you know of an easier and more standard way
-> to disable the vdso in user-mode
-
-Only the kernel parameter, afaics. vdso=0
-
-> - ideally on a per-process basis,
-> or otherwise, if it's too hard, on the whole computer.  I searched
-> the web and found references to "/proc/sys/vm/vdso_enable", but I
-> have no such file or "sysctl" option on my system.
-
-sys/vm/vdso_enabled, but only if CONFIG_X86_32 for some reason. See
-kernel/sysctl.c
-
-Oleg.
-
+--u65IjBhB3TIa72Vp--
