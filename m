@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab2KVU3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:29:54 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64859 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab2KVU3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:29:51 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Cc: wim@iguana.be, patches@linaro.org, Anthony.Olech@diasemi.com
-Subject: [PATCH] watchdog: da9052: Fix invalid free of devm_ allocated data
-Date: Thu, 22 Nov 2012 10:13:04 +0530
-Message-Id: <1353559384-26570-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756802Ab2KVUal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:30:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39749 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756782Ab2KVT0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:08 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 07/40] mm: Optimize the TLB flush of sys_mprotect() and change_protection() users
+Date: Thu, 22 Nov 2012 19:25:20 +0000
+Message-Id: <1353612353-1576-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not required to free devm_ allocated data. Since kref_put
-needs a valid release function, da9052_wdt_release_resources()
-is not deleted.
+From: Ingo Molnar <mingo@kernel.org>
 
-Fixes following warning.
-drivers/watchdog/da9052_wdt.c:59:1-6: WARNING: invalid free of
-devm_ allocated data
+Reuse the NUMA code's 'modified page protections' count that
+change_protection() computes and skip the TLB flush if there's
+no changes to a range that sys_mprotect() modifies.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Given that mprotect() already optimizes the same-flags case
+I expected this optimization to dominantly trigger on
+CONFIG_NUMA_BALANCING=y kernels - but even with that feature
+disabled it triggers rather often.
+
+There's two reasons for that:
+
+1)
+
+While sys_mprotect() already optimizes the same-flag case:
+
+        if (newflags == oldflags) {
+                *pprev = vma;
+                return 0;
+        }
+
+and this test works in many cases, but it is too sharp in some
+others, where it differentiates between protection values that the
+underlying PTE format makes no distinction about, such as
+PROT_EXEC == PROT_READ on x86.
+
+2)
+
+Even where the pte format over vma flag changes necessiates a
+modification of the pagetables, there might be no pagetables
+yet to modify: they might not be instantiated yet.
+
+During a regular desktop bootup this optimization hits a couple
+of hundred times. During a Java test I measured thousands of
+hits.
+
+So this optimization improves sys_mprotect() in general, not just
+CONFIG_NUMA_BALANCING=y kernels.
+
+[ We could further increase the efficiency of this optimization if
+  change_pte_range() and change_huge_pmd() was a bit smarter about
+  recognizing exact-same-value protection masks - when the hardware
+  can do that safely. This would probably further speed up mprotect(). ]
+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/watchdog/da9052_wdt.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ mm/mprotect.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/da9052_wdt.c b/drivers/watchdog/da9052_wdt.c
-index f7abbae..20071de 100644
---- a/drivers/watchdog/da9052_wdt.c
-+++ b/drivers/watchdog/da9052_wdt.c
-@@ -53,10 +53,6 @@ static const struct {
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 1e265be..7c3628a 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -153,7 +153,9 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 				 dirty_accountable);
+ 	} while (pgd++, addr = next, addr != end);
  
- static void da9052_wdt_release_resources(struct kref *r)
- {
--	struct da9052_wdt_data *driver_data =
--		container_of(r, struct da9052_wdt_data, kref);
--
--	kfree(driver_data);
+-	flush_tlb_range(vma, start, end);
++	/* Only flush the TLB if we actually modified any entries: */
++	if (pages)
++		flush_tlb_range(vma, start, end);
+ 
+ 	return pages;
  }
- 
- static int da9052_wdt_set_timeout(struct watchdog_device *wdt_dev,
 -- 
-1.7.4.1
+1.7.9.2
 
