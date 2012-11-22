@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758192Ab2KVWEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:04:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
+	id S1758090Ab2KVWEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:04:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754859Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754870Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 118/171] libceph: encapsulate out message data setup
-Date: Wed, 21 Nov 2012 16:41:04 -0800
-Message-Id: <20121122004045.197933052@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>, Alex Elder <elder@inktank.com>
+Subject: [ 111/171] libceph: fix overflow in __decode_pool_names()
+Date: Wed, 21 Nov 2012 16:40:57 -0800
+Message-Id: <20121122004044.492086863@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,78 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-(cherry picked from commit 739c905baa018c99003564ebc367d93aa44d4861)
+(cherry picked from commit ad3b904c07dfa88603689bf9a67bffbb9b99beb5)
 
-Move the code that prepares to write the data portion of a message
-into its own function.
+`len' is read from network and thus needs validation.  Otherwise a
+large `len' would cause out-of-bounds access via the memcpy() call.
+In addition, len = 0xffffffff would overflow the kmalloc() size,
+leading to out-of-bounds write.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+This patch adds a check of `len' via ceph_decode_need().  Also use
+kstrndup rather than kmalloc/memcpy.
+
+[elder@inktank.com: added -ENOMEM return for null kstrndup() result]
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/messenger.c |   37 +++++++++++++++++++++++--------------
- 1 file changed, 23 insertions(+), 14 deletions(-)
+ net/ceph/osdmap.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -565,6 +565,24 @@ static void con_out_kvec_add(struct ceph
- 	con->out_kvec_bytes += size;
- }
- 
-+static void prepare_write_message_data(struct ceph_connection *con)
-+{
-+	struct ceph_msg *msg = con->out_msg;
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -495,15 +495,16 @@ static int __decode_pool_names(void **p,
+ 		ceph_decode_32_safe(p, end, pool, bad);
+ 		ceph_decode_32_safe(p, end, len, bad);
+ 		dout("  pool %d len %d\n", pool, len);
++		ceph_decode_need(p, end, len, bad);
+ 		pi = __lookup_pg_pool(&map->pg_pools, pool);
+ 		if (pi) {
++			char *name = kstrndup(*p, len, GFP_NOFS);
 +
-+	BUG_ON(!msg);
-+	BUG_ON(!msg->hdr.data_len);
-+
-+	/* initialize page iterator */
-+	con->out_msg_pos.page = 0;
-+	if (msg->pages)
-+		con->out_msg_pos.page_pos = msg->page_alignment;
-+	else
-+		con->out_msg_pos.page_pos = 0;
-+	con->out_msg_pos.data_pos = 0;
-+	con->out_msg_pos.did_page_crc = false;
-+	con->out_more = 1;  /* data + footer will follow */
-+}
-+
- /*
-  * Prepare footer for currently outgoing message, and finish things
-  * off.  Assumes out_kvec* are already valid.. we just add on to the end.
-@@ -657,26 +675,17 @@ static void prepare_write_message(struct
- 		con->out_msg->footer.middle_crc = cpu_to_le32(crc);
- 	} else
- 		con->out_msg->footer.middle_crc = 0;
--	con->out_msg->footer.data_crc = 0;
--	dout("prepare_write_message front_crc %u data_crc %u\n",
-+	dout("%s front_crc %u middle_crc %u\n", __func__,
- 	     le32_to_cpu(con->out_msg->footer.front_crc),
- 	     le32_to_cpu(con->out_msg->footer.middle_crc));
- 
- 	/* is there a data payload? */
--	if (le32_to_cpu(m->hdr.data_len) > 0) {
--		/* initialize page iterator */
--		con->out_msg_pos.page = 0;
--		if (m->pages)
--			con->out_msg_pos.page_pos = m->page_alignment;
--		else
--			con->out_msg_pos.page_pos = 0;
--		con->out_msg_pos.data_pos = 0;
--		con->out_msg_pos.did_page_crc = false;
--		con->out_more = 1;  /* data + footer will follow */
--	} else {
-+	con->out_msg->footer.data_crc = 0;
-+	if (m->hdr.data_len)
-+		prepare_write_message_data(con);
-+	else
- 		/* no, queue up footer too and be done */
- 		prepare_write_message_footer(con);
--	}
- 
- 	set_bit(WRITE_PENDING, &con->flags);
- }
++			if (!name)
++				return -ENOMEM;
+ 			kfree(pi->name);
+-			pi->name = kmalloc(len + 1, GFP_NOFS);
+-			if (pi->name) {
+-				memcpy(pi->name, *p, len);
+-				pi->name[len] = '\0';
+-				dout("  name is %s\n", pi->name);
+-			}
++			pi->name = name;
++			dout("  name is %s\n", pi->name);
+ 		}
+ 		*p += len;
+ 	}
 
 
