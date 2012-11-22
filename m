@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab2KVTiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:38:21 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:25163 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964957Ab2KVTiQ (ORCPT
+	id S1757200Ab2KVTio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:38:44 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:45428 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S965070Ab2KVTiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:38:16 -0500
-Date: Wed, 21 Nov 2012 18:36:45 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, lucho@ionkov.net,
-        ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: [RFC PATCH 2/2] jbd: Stabilize pages during writes when in ordered
- mode
-Message-ID: <20121122023645.GB32182@blackbox.djwong.org>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
- <20121122014755.GH8740@blackbox.djwong.org>
+	Thu, 22 Nov 2012 14:38:19 -0500
+Date: Thu, 22 Nov 2012 10:38:17 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: naveen yadav <yad.naveen@gmail.com>
+cc: linux-kernel@vger.kernel.org, <majordomo@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <marcel@holtmann.org>,
+        <padovan@profusion.mobi>
+Subject: Re: USB 2.0: No giveback comes for one submitted URB
+In-Reply-To: <CAJ8eaTwTM3b2wTa9=o3POy-dcP6hkE_DdoAVX06PBuPDhz4W6w@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1211221036030.345-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122014755.GH8740@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When writing buffers out to disk ahead of committing a transaction, set the
-Stable bit on the page to prevent others from wandering in and modifying the
-page.
+On Thu, 22 Nov 2012, naveen yadav wrote:
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- fs/jbd/commit.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+> Hi,
+> 
+> we are using 3.2.2 version of kernel.
+> 
+> When Bluetooth(connected to USB 2.0) is suspended, urb->use_count
+> value does not become zero and eventually there is a continuous wait
+> in wait_event() of usb_kill_urb().
+>           wait_event(usb_kill_urb_queue, atomic_read(&urb->use_count) == 0);
+> 
+> urb_count is incremented at only one place in usb_hcd_submit_urb() and
 
-diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-index 86b39b1..b1f0eed 100644
---- a/fs/jbd/commit.c
-+++ b/fs/jbd/commit.c
-@@ -155,13 +155,29 @@ static int journal_write_commit_record(journal_t *journal,
- 	return (ret == -EIO);
- }
- 
-+static void end_stable_write_sync(struct buffer_head *bh, int uptodate)
-+{
-+	clear_page_stable(bh->b_page);
-+	end_buffer_write_sync(bh, uptodate);
-+}
-+
- static void journal_do_submit_data(struct buffer_head **wbuf, int bufs,
- 				   int write_op)
- {
- 	int i;
- 
- 	for (i = 0; i < bufs; i++) {
--		wbuf[i]->b_end_io = end_buffer_write_sync;
-+		struct page *p = wbuf[i]->b_page;
-+		if (TestSetPageStable(p))
-+			wbuf[i]->b_end_io = end_buffer_write_sync;
-+		else
-+			wbuf[i]->b_end_io = end_stable_write_sync;
-+
-+		if (trylock_page(p)) {
-+			clear_page_dirty_for_io(p);
-+			unlock_page(p);
-+		}
-+
- 		/* We use-up our safety reference in submit_bh() */
- 		submit_bh(write_op, wbuf[i]);
- 	}
+That's how it is _supposed_ to work.  You have discovered that
+something else increments urb->use_count.
+
+> decremented in usb_hcd_giveback_urb(). (Also, in error case inside
+> usb_hcd_submit_urb()). After taking print of  urb->use_count at all
+> these places, I see, even without connecting the Bluetooth device
+> urb_count is incremented while below execution has never been
+> decremented.
+
+> .....
+> [    3.490000] ====>[usb_hcd_giveback_urb][1626] urb->use_count = 0
+> pipe=2147484032 [vid=0x1d6b] [pid=0x0002][devno=1]
+> [    3.540000] ====>[usb_hcd_submit_urb][1482] urb->use_count = 2
+> pipe=1077969280 [vid=0x1d6b] [pid=0x0002][devno=1]
+> [    3.540000] ====>[usb_hcd_giveback_urb][1626] urb->use_count = 1
+> pipe=1077969280 [vid=0x1d6b] [pid=0x0002][devno=1]
+
+Now you need to find out what other code has changed urb->use_count and
+fix it.
+
+Alan Stern
+
