@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab2KVT0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39736 "EHLO mx2.suse.de"
+	id S1756850Ab2KVT0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:26:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39778 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab2KVT0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:07 -0500
+	id S1754931Ab2KVT0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:12 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/40] mm: Count the number of pages affected in change_protection()
-Date: Thu, 22 Nov 2012 19:25:19 +0000
-Message-Id: <1353612353-1576-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/40] mm: migrate: Add a tracepoint for migrate_pages
+Date: Thu, 22 Nov 2012 19:25:22 +0000
+Message-Id: <1353612353-1576-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,277 +30,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The pgmigrate_success and pgmigrate_fail vmstat counters tells the user
+about migration activity but not the type or the reason. This patch adds
+a tracepoint to identify the type of page migration and why the page is
+being migrated.
 
-This will be used for three kinds of purposes:
-
- - to optimize mprotect()
-
- - to speed up working set scanning for working set areas that
-   have not been touched
-
- - to more accurately scan per real working set
-
-No change in functionality from this patch.
-
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/hugetlb.h |    8 +++++--
- include/linux/mm.h      |    3 +++
- mm/hugetlb.c            |   10 ++++++--
- mm/mprotect.c           |   58 +++++++++++++++++++++++++++++++++++------------
- 4 files changed, 61 insertions(+), 18 deletions(-)
+ include/linux/migrate.h        |   13 ++++++++--
+ include/trace/events/migrate.h |   51 ++++++++++++++++++++++++++++++++++++++++
+ mm/compaction.c                |    3 ++-
+ mm/memory-failure.c            |    3 ++-
+ mm/memory_hotplug.c            |    3 ++-
+ mm/mempolicy.c                 |    6 +++--
+ mm/migrate.c                   |   10 ++++++--
+ mm/page_alloc.c                |    3 ++-
+ 8 files changed, 82 insertions(+), 10 deletions(-)
+ create mode 100644 include/trace/events/migrate.h
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 2251648..06e691b 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -87,7 +87,7 @@ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
- 				pud_t *pud, int write);
- int pmd_huge(pmd_t pmd);
- int pud_huge(pud_t pmd);
--void hugetlb_change_protection(struct vm_area_struct *vma,
-+unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 		unsigned long address, unsigned long end, pgprot_t newprot);
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index ce7e667..9d1c159 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -7,6 +7,15 @@
  
- #else /* !CONFIG_HUGETLB_PAGE */
-@@ -132,7 +132,11 @@ static inline void copy_huge_page(struct page *dst, struct page *src)
- {
- }
+ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
  
--#define hugetlb_change_protection(vma, address, end, newprot)
-+static inline unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
-+		unsigned long address, unsigned long end, pgprot_t newprot)
-+{
-+	return 0;
-+}
++enum migrate_reason {
++	MR_COMPACTION,
++	MR_MEMORY_FAILURE,
++	MR_MEMORY_HOTPLUG,
++	MR_SYSCALL,		/* also applies to cpusets */
++	MR_MEMPOLICY_MBIND,
++	MR_CMA
++};
++
+ #ifdef CONFIG_MIGRATION
  
- static inline void __unmap_hugepage_range_final(struct mmu_gather *tlb,
- 			struct vm_area_struct *vma, unsigned long start,
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index bcaab4e..1856c62 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1078,6 +1078,9 @@ extern unsigned long move_page_tables(struct vm_area_struct *vma,
- extern unsigned long do_mremap(unsigned long addr,
- 			       unsigned long old_len, unsigned long new_len,
- 			       unsigned long flags, unsigned long new_addr);
-+extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
-+			      unsigned long end, pgprot_t newprot,
-+			      int dirty_accountable);
- extern int mprotect_fixup(struct vm_area_struct *vma,
- 			  struct vm_area_struct **pprev, unsigned long start,
- 			  unsigned long end, unsigned long newflags);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 59a0059..712895e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -3014,7 +3014,7 @@ same_page:
- 	return i ? i : -EFAULT;
- }
+ extern void putback_lru_pages(struct list_head *l);
+@@ -14,7 +23,7 @@ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+-			enum migrate_mode mode);
++			enum migrate_mode mode, int reason);
+ extern int migrate_huge_page(struct page *, new_page_t x,
+ 			unsigned long private, bool offlining,
+ 			enum migrate_mode mode);
+@@ -35,7 +44,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ static inline void putback_lru_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, bool offlining,
+-		enum migrate_mode mode) { return -ENOSYS; }
++		enum migrate_mode mode, int reason) { return -ENOSYS; }
+ static inline int migrate_huge_page(struct page *page, new_page_t x,
+ 		unsigned long private, bool offlining,
+ 		enum migrate_mode mode) { return -ENOSYS; }
+diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
+new file mode 100644
+index 0000000..ec2a6cc
+--- /dev/null
++++ b/include/trace/events/migrate.h
+@@ -0,0 +1,51 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM migrate
++
++#if !defined(_TRACE_MIGRATE_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_MIGRATE_H
++
++#define MIGRATE_MODE						\
++	{MIGRATE_ASYNC,		"MIGRATE_ASYNC"},		\
++	{MIGRATE_SYNC_LIGHT,	"MIGRATE_SYNC_LIGHT"},		\
++	{MIGRATE_SYNC,		"MIGRATE_SYNC"}		
++
++#define MIGRATE_REASON						\
++	{MR_COMPACTION,		"compaction"},			\
++	{MR_MEMORY_FAILURE,	"memory_failure"},		\
++	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
++	{MR_SYSCALL,		"syscall_or_cpuset"},		\
++	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
++	{MR_CMA,		"cma"}
++
++TRACE_EVENT(mm_migrate_pages,
++
++	TP_PROTO(unsigned long succeeded, unsigned long failed,
++		 enum migrate_mode mode, int reason),
++
++	TP_ARGS(succeeded, failed, mode, reason),
++
++	TP_STRUCT__entry(
++		__field(	unsigned long,		succeeded)
++		__field(	unsigned long,		failed)
++		__field(	enum migrate_mode,	mode)
++		__field(	int,			reason)
++	),
++
++	TP_fast_assign(
++		__entry->succeeded	= succeeded;
++		__entry->failed		= failed;
++		__entry->mode		= mode;
++		__entry->reason		= reason;
++	),
++
++	TP_printk("nr_succeeded=%lu nr_failed=%lu mode=%s reason=%s",
++		__entry->succeeded,
++		__entry->failed,
++		__print_symbolic(__entry->mode, MIGRATE_MODE),
++		__print_symbolic(__entry->reason, MIGRATE_REASON))
++);
++
++#endif /* _TRACE_MIGRATE_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 00ad883..2c077a7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -990,7 +990,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		nr_migrate = cc->nr_migratepages;
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				(unsigned long)cc, false,
+-				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
++				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
++				MR_COMPACTION);
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
  
--void hugetlb_change_protection(struct vm_area_struct *vma,
-+unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 		unsigned long address, unsigned long end, pgprot_t newprot)
- {
- 	struct mm_struct *mm = vma->vm_mm;
-@@ -3022,6 +3022,7 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
- 	pte_t *ptep;
- 	pte_t pte;
- 	struct hstate *h = hstate_vma(vma);
-+	unsigned long pages = 0;
- 
- 	BUG_ON(address >= end);
- 	flush_cache_range(vma, address, end);
-@@ -3032,12 +3033,15 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
- 		ptep = huge_pte_offset(mm, address);
- 		if (!ptep)
- 			continue;
--		if (huge_pmd_unshare(mm, &address, ptep))
-+		if (huge_pmd_unshare(mm, &address, ptep)) {
-+			pages++;
- 			continue;
-+		}
- 		if (!huge_pte_none(huge_ptep_get(ptep))) {
- 			pte = huge_ptep_get_and_clear(mm, address, ptep);
- 			pte = pte_mkhuge(pte_modify(pte, newprot));
- 			set_huge_pte_at(mm, address, ptep, pte);
-+			pages++;
- 		}
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 6c5899b..ddb68a1 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1558,7 +1558,8 @@ int soft_offline_page(struct page *page, int flags)
+ 					    page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+-							false, MIGRATE_SYNC);
++							false, MIGRATE_SYNC,
++							MR_MEMORY_FAILURE);
+ 		if (ret) {
+ 			putback_lru_pages(&pagelist);
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index e4eeaca..e598bd1 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -812,7 +812,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+ 		 * migrate_pages returns # of failed pages.
+ 		 */
+ 		ret = migrate_pages(&source, alloc_migrate_target, 0,
+-							true, MIGRATE_SYNC);
++							true, MIGRATE_SYNC,
++							MR_MEMORY_HOTPLUG);
+ 		if (ret)
+ 			putback_lru_pages(&source);
  	}
- 	spin_unlock(&mm->page_table_lock);
-@@ -3049,6 +3053,8 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
- 	 */
- 	flush_tlb_range(vma, start, end);
- 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+
-+	return pages << h->order;
- }
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d04a8a5..66e90ec 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -961,7 +961,8 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
  
- int hugetlb_reserve_pages(struct inode *inode,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..1e265be 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -35,12 +35,13 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- }
- #endif
- 
--static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
-+static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
- 	pte_t *pte, oldpte;
- 	spinlock_t *ptl;
-+	unsigned long pages = 0;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
-@@ -60,6 +61,7 @@ static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				ptent = pte_mkwrite(ptent);
- 
- 			ptep_modify_prot_commit(mm, addr, pte, ptent);
-+			pages++;
- 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
- 			swp_entry_t entry = pte_to_swp_entry(oldpte);
- 
-@@ -72,18 +74,22 @@ static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				set_pte_at(mm, addr, pte,
- 					swp_entry_to_pte(entry));
- 			}
-+			pages++;
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_node_page, dest,
+-							false, MIGRATE_SYNC);
++							false, MIGRATE_SYNC,
++							MR_SYSCALL);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+@@ -1202,7 +1203,8 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		if (!list_empty(&pagelist)) {
+ 			nr_failed = migrate_pages(&pagelist, new_vma_page,
+ 						(unsigned long)vma,
+-						false, MIGRATE_SYNC);
++						false, MIGRATE_SYNC,
++						MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+ 				putback_lru_pages(&pagelist);
  		}
- 	} while (pte++, addr += PAGE_SIZE, addr != end);
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(pte - 1, ptl);
-+
-+	return pages;
- }
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 04687f6..27be9c9 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -38,6 +38,9 @@
  
--static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
-+static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
+ #include <asm/tlbflush.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/migrate.h>
++
+ #include "internal.h"
+ 
+ /*
+@@ -958,7 +961,7 @@ out:
+  */
+ int migrate_pages(struct list_head *from,
+ 		new_page_t get_new_page, unsigned long private, bool offlining,
+-		enum migrate_mode mode)
++		enum migrate_mode mode, int reason)
  {
- 	pmd_t *pmd;
- 	unsigned long next;
-+	unsigned long pages = 0;
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -1004,6 +1007,8 @@ out:
+ 		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
+ 	if (nr_failed)
+ 		count_vm_events(PGMIGRATE_FAIL, nr_failed);
++	trace_mm_migrate_pages(nr_succeeded, nr_failed, mode, reason);
++
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
  
- 	pmd = pmd_offset(pud, addr);
- 	do {
-@@ -91,35 +97,42 @@ static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		if (pmd_trans_huge(*pmd)) {
- 			if (next - addr != HPAGE_PMD_SIZE)
- 				split_huge_page_pmd(vma->vm_mm, pmd);
--			else if (change_huge_pmd(vma, pmd, addr, newprot))
-+			else if (change_huge_pmd(vma, pmd, addr, newprot)) {
-+				pages += HPAGE_PMD_NR;
- 				continue;
-+			}
- 			/* fall through */
- 		}
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
--		change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
-+		pages += change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
- 				 dirty_accountable);
- 	} while (pmd++, addr = next, addr != end);
-+
-+	return pages;
- }
+@@ -1145,7 +1150,8 @@ set_status:
+ 	err = 0;
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_page_node,
+-				(unsigned long)pm, 0, MIGRATE_SYNC);
++				(unsigned long)pm, 0, MIGRATE_SYNC,
++				MR_SYSCALL);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7bb35ac..5953dc2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5707,7 +5707,8 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
  
--static inline void change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
-+static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
- 	pud_t *pud;
- 	unsigned long next;
-+	unsigned long pages = 0;
- 
- 	pud = pud_offset(pgd, addr);
- 	do {
- 		next = pud_addr_end(addr, end);
- 		if (pud_none_or_clear_bad(pud))
- 			continue;
--		change_pmd_range(vma, pud, addr, next, newprot,
-+		pages += change_pmd_range(vma, pud, addr, next, newprot,
- 				 dirty_accountable);
- 	} while (pud++, addr = next, addr != end);
-+
-+	return pages;
- }
- 
--static void change_protection(struct vm_area_struct *vma,
-+static unsigned long change_protection_range(struct vm_area_struct *vma,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
-@@ -127,6 +140,7 @@ static void change_protection(struct vm_area_struct *vma,
- 	pgd_t *pgd;
- 	unsigned long next;
- 	unsigned long start = addr;
-+	unsigned long pages = 0;
- 
- 	BUG_ON(addr >= end);
- 	pgd = pgd_offset(mm, addr);
-@@ -135,10 +149,30 @@ static void change_protection(struct vm_area_struct *vma,
- 		next = pgd_addr_end(addr, end);
- 		if (pgd_none_or_clear_bad(pgd))
- 			continue;
--		change_pud_range(vma, pgd, addr, next, newprot,
-+		pages += change_pud_range(vma, pgd, addr, next, newprot,
- 				 dirty_accountable);
- 	} while (pgd++, addr = next, addr != end);
-+
- 	flush_tlb_range(vma, start, end);
-+
-+	return pages;
-+}
-+
-+unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
-+		       unsigned long end, pgprot_t newprot,
-+		       int dirty_accountable)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	unsigned long pages;
-+
-+	mmu_notifier_invalidate_range_start(mm, start, end);
-+	if (is_vm_hugetlb_page(vma))
-+		pages = hugetlb_change_protection(vma, start, end, newprot);
-+	else
-+		pages = change_protection_range(vma, start, end, newprot, dirty_accountable);
-+	mmu_notifier_invalidate_range_end(mm, start, end);
-+
-+	return pages;
- }
- 
- int
-@@ -213,12 +247,8 @@ success:
- 		dirty_accountable = 1;
+ 		ret = migrate_pages(&cc->migratepages,
+ 				    alloc_migrate_target,
+-				    0, false, MIGRATE_SYNC);
++				    0, false, MIGRATE_SYNC,
++				    MR_CMA);
  	}
  
--	mmu_notifier_invalidate_range_start(mm, start, end);
--	if (is_vm_hugetlb_page(vma))
--		hugetlb_change_protection(vma, start, end, vma->vm_page_prot);
--	else
--		change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
--	mmu_notifier_invalidate_range_end(mm, start, end);
-+	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
-+
- 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
- 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
- 	perf_event_mmap(vma);
+ 	putback_lru_pages(&cc->migratepages);
 -- 
 1.7.9.2
 
