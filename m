@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2KVSyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:54:45 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:32988 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab2KVSyn (ORCPT
+	id S1755986Ab2KVSzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:55:01 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62019 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab2KVSy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:54:43 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: shawn.guo@linaro.org
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] clk: mxs: Remove unneeded NULL pointer check
-Date: Wed, 21 Nov 2012 19:33:03 -0200
-Message-Id: <1353533583-13166-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 22 Nov 2012 13:54:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121122093033.GA5764@n2100.arm.linux.org.uk>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+	<1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+	<CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+	<20121121204324.21126.99677@nucleus>
+	<20121121205424.GA25470@core.coreip.homeip.net>
+	<20121121223859.GQ3290@n2100.arm.linux.org.uk>
+	<20121122021750.GD25470@core.coreip.homeip.net>
+	<20121122093033.GA5764@n2100.arm.linux.org.uk>
+Date: Thu, 22 Nov 2012 15:38:52 +0530
+Message-ID: <CAKohpomH7ke+4jJvpDvetFEqmD761BCoryq_=kbygY0bL3j=SQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Turquette <mturquette@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+Hi Russell,
 
-mxs platform has been converted to device tree.
+On 22 November 2012 15:00, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> Err, no you haven't, not with that grep.  What you've found are the places
+> which enable this, and say "yes, I have clk_prepare".
+>
+> What HAVE_CLK_PREPARE is about though is providing a transition path between
+> drivers using clk_prepare() to platforms which _don't_ have a clk_prepare()
+> implementation - and when it's unset, it provides a default implementation.
 
-There is no need to check if np is NULL after doing:
+Just to make it more clear:
 
-np = of_find_compatible_node(NULL, NULL, "fsl,imx[23/28]-clkctrl");
+Categories of platforms:
+- COMMON_CLK=y: For them it is mandatory to have clk_[un]prepare
+- COMMON_CLK=n:
+   - HAVE_CLK=n: dummy implementation suggested in this patch is enough for it.
+      Even existing implementation too.
+   - HAVE_CLK=y:
+       - HAVE_CLK_PREPARE=y: Platforms must have their own implementation of
+          this routine and so a prototype is enough in clk.h
+       - HAVE_CLK_PREPARE=n: This is the problematic place. Who will provide
+         implementation of dummy routine here? With current patch
+Neither platform
+         nor clk.h is providing that.
 
-,as it will always be non-NULL.
+Sorry for not reviewing it properly :(
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/clk/mxs/clk-imx23.c |    8 +++-----
- drivers/clk/mxs/clk-imx28.c |    8 +++-----
- 2 files changed, 6 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
-index f00dffb..02c90d4 100644
---- a/drivers/clk/mxs/clk-imx23.c
-+++ b/drivers/clk/mxs/clk-imx23.c
-@@ -154,11 +154,9 @@ int __init mx23_clocks_init(void)
- 		}
- 
- 	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-clkctrl");
--	if (np) {
--		clk_data.clks = clks;
--		clk_data.clk_num = ARRAY_SIZE(clks);
--		of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
--	}
-+	clk_data.clks = clks;
-+	clk_data.clk_num = ARRAY_SIZE(clks);
-+	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
- 
- 	clk_register_clkdev(clks[clk32k], NULL, "timrot");
- 
-diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-index 42978f1b..1ba6c0f 100644
---- a/drivers/clk/mxs/clk-imx28.c
-+++ b/drivers/clk/mxs/clk-imx28.c
-@@ -232,11 +232,9 @@ int __init mx28_clocks_init(void)
- 		}
- 
- 	np = of_find_compatible_node(NULL, NULL, "fsl,imx28-clkctrl");
--	if (np) {
--		clk_data.clks = clks;
--		clk_data.clk_num = ARRAY_SIZE(clks);
--		of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
--	}
-+	clk_data.clks = clks;
-+	clk_data.clk_num = ARRAY_SIZE(clks);
-+	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
- 
- 	clk_register_clkdev(clks[clk32k], NULL, "timrot");
- 	clk_register_clkdev(clks[enet_out], NULL, "enet_out");
--- 
-1.7.9.5
-
+--
+viresh
