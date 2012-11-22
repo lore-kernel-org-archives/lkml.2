@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab2KVVoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:44:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab2KVSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brent Taylor <motobud@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 30/83] UBIFS: fix mounting problems after power cuts
-Date: Wed, 21 Nov 2012 16:41:52 -0800
-Message-Id: <20121122004215.934929271@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S932671Ab2KVVo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:44:56 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59159 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932628Ab2KVVop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:44:45 -0500
+Date: Wed, 21 Nov 2012 18:17:50 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+Message-ID: <20121122021750.GD25470@core.coreip.homeip.net>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+ <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+ <20121121204324.21126.99677@nucleus>
+ <20121121205424.GA25470@core.coreip.homeip.net>
+ <20121121223859.GQ3290@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121223859.GQ3290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 21, 2012 at 10:38:59PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Nov 21, 2012 at 12:54:24PM -0800, Dmitry Torokhov wrote:
+> > On Wed, Nov 21, 2012 at 12:43:24PM -0800, Mike Turquette wrote:
+> > > Quoting Viresh Kumar (2012-11-20 02:13:55)
+> > > > On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > > > > We'll need to invoke clk_unprepare() via a pointer in our devm_*
+> > > > > conversion so let's uninline the pair.
+> > > > 
+> > > > Sorry, but you aren't doing this :(
+> > > > This routine is already uninlined as it is in clk.c
+> > > > 
+> > > > Instead you are just moving clk_prepare(), etc calls within
+> > > > #ifdef CONFIG_HAVE_CLK
+> > > > #else
+> > > > #endif
+> > > > 
+> > > > I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
+> > > > earlier. Can they exist without CONFIG_HAVE_CLK
+> > > > 
+> > > > @Mike: ?
+> > > > 
+> > > 
+> > > HAVE_CLK logically wraps HAVE_CLK_PREPARE.  There is no point in
+> > > selecting HAVE_CLK_PREPARE without HAVE_CLK.
+> > > 
+> > > Looking through the code I see that this used to be the case.  Commit
+> > > 93abe8e "clk: add non CONFIG_HAVE_CLK routines" moved the
+> > > clk_(un)prepare declarations outside of #ifdef CONFIG_HAVE_CLK.  That
+> > > commit was authored by you.  Can you elaborate on why that aspect of the
+> > > patch was needed?
+> > > 
+> > 
+> > BTW, it looks like the only place where we select HAVE_CLK_PREPARE is
+> > IMX platform and it also selects COMMON_CLK so I think HAVE_CLK_PREPARE
+> > can be removed now.
+> 
+> You've checked non-ARM architectures too?
 
-------------------
+Yes:
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+[dtor@dtor-d630 linux-next]$ grep -r HAVE_CLK_PREPARE .
+./arch/arm/Kconfig:     select HAVE_CLK_PREPARE
+Binary file ./.git/objects/pack/pack-7dad5ee164f601f1327dc78648fa317772c2d872.pack matches
+./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+./drivers/clk/Kconfig:config HAVE_CLK_PREPARE
+./drivers/clk/Kconfig:  select HAVE_CLK_PREPARE
 
-commit a28ad42a4a0c6f302f488f26488b8b37c9b30024 upstream.
+Thanks.
 
-This is a bugfix for a problem with the following symptoms:
-
-1. A power cut happens
-2. After reboot, we try to mount UBIFS
-3. Mount fails with "No space left on device" error message
-
-UBIFS complains like this:
-
-UBIFS error (pid 28225): grab_empty_leb: could not find an empty LEB
-
-The root cause of this problem is that when we mount, not all LEBs are
-categorized. Only those which were read are. However, the
-'ubifs_find_free_leb_for_idx()' function assumes that all LEBs were
-categorized and 'c->freeable_cnt' is valid, which is a false assumption.
-
-This patch fixes the problem by teaching 'ubifs_find_free_leb_for_idx()'
-to always fall back to LPT scanning if no freeable LEBs were found.
-
-This problem was reported by few people in the past, but Brent Taylor
-was able to reproduce it and send me a flash image which cannot be mounted,
-which made it easy to hunt the bug. Kudos to Brent.
-
-Reported-by: Brent Taylor <motobud@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ubifs/find.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
---- a/fs/ubifs/find.c
-+++ b/fs/ubifs/find.c
-@@ -681,8 +681,16 @@ int ubifs_find_free_leb_for_idx(struct u
- 	if (!lprops) {
- 		lprops = ubifs_fast_find_freeable(c);
- 		if (!lprops) {
--			ubifs_assert(c->freeable_cnt == 0);
--			if (c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
-+			/*
-+			 * The first condition means the following: go scan the
-+			 * LPT if there are uncategorized lprops, which means
-+			 * there may be freeable LEBs there (UBIFS does not
-+			 * store the information about freeable LEBs in the
-+			 * master node).
-+			 */
-+			if (c->in_a_category_cnt != c->main_lebs ||
-+			    c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
-+				ubifs_assert(c->freeable_cnt == 0);
- 				lprops = scan_for_leb_for_idx(c);
- 				if (IS_ERR(lprops)) {
- 					err = PTR_ERR(lprops);
-
-
+-- 
+Dmitry
