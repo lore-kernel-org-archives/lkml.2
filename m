@@ -1,115 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab2KVTb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:31:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144Ab2KVTbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:31:23 -0500
-Subject: Re: [PATCH v4 27/31] gfs2: Convert aio_read/write ops to
- read/write_iter
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        cluster-devel@redhat.com
-In-Reply-To: <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-	 <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 22 Nov 2012 09:51:33 +0000
-Message-ID: <1353577893.2757.14.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756087Ab2KVTbZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:31:25 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47167 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab2KVTbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:31:21 -0500
+Date: Wed, 21 Nov 2012 19:11:17 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+Message-ID: <20121122031117.GE25470@core.coreip.homeip.net>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+ <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+ <20121121204324.21126.99677@nucleus>
+ <20121121205424.GA25470@core.coreip.homeip.net>
+ <20121121223859.GQ3290@n2100.arm.linux.org.uk>
+ <20121122021750.GD25470@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122021750.GD25470@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 2012-11-21 at 16:41 -0600, Dave Kleikamp wrote:
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: cluster-devel@redhat.com
-> ---
->  fs/gfs2/file.c | 21 ++++++++++-----------
->  1 file changed, 10 insertions(+), 11 deletions(-)
+On Wed, Nov 21, 2012 at 06:17:50PM -0800, Dmitry Torokhov wrote:
+> On Wed, Nov 21, 2012 at 10:38:59PM +0000, Russell King - ARM Linux wrote:
+> > On Wed, Nov 21, 2012 at 12:54:24PM -0800, Dmitry Torokhov wrote:
+> > > On Wed, Nov 21, 2012 at 12:43:24PM -0800, Mike Turquette wrote:
+> > > > Quoting Viresh Kumar (2012-11-20 02:13:55)
+> > > > > On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > > > > > We'll need to invoke clk_unprepare() via a pointer in our devm_*
+> > > > > > conversion so let's uninline the pair.
+> > > > > 
+> > > > > Sorry, but you aren't doing this :(
+> > > > > This routine is already uninlined as it is in clk.c
+> > > > > 
+> > > > > Instead you are just moving clk_prepare(), etc calls within
+> > > > > #ifdef CONFIG_HAVE_CLK
+> > > > > #else
+> > > > > #endif
+> > > > > 
+> > > > > I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
+> > > > > earlier. Can they exist without CONFIG_HAVE_CLK
+> > > > > 
+> > > > > @Mike: ?
+> > > > > 
+> > > > 
+> > > > HAVE_CLK logically wraps HAVE_CLK_PREPARE.  There is no point in
+> > > > selecting HAVE_CLK_PREPARE without HAVE_CLK.
+> > > > 
+> > > > Looking through the code I see that this used to be the case.  Commit
+> > > > 93abe8e "clk: add non CONFIG_HAVE_CLK routines" moved the
+> > > > clk_(un)prepare declarations outside of #ifdef CONFIG_HAVE_CLK.  That
+> > > > commit was authored by you.  Can you elaborate on why that aspect of the
+> > > > patch was needed?
+> > > > 
+> > > 
+> > > BTW, it looks like the only place where we select HAVE_CLK_PREPARE is
+> > > IMX platform and it also selects COMMON_CLK so I think HAVE_CLK_PREPARE
+> > > can be removed now.
+> > 
+> > You've checked non-ARM architectures too?
 > 
-> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-> index e056b4c..bcea69e 100644
-> --- a/fs/gfs2/file.c
-> +++ b/fs/gfs2/file.c
-> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
->  }
->  
->  /**
-> - * gfs2_file_aio_write - Perform a write to a file
-> + * gfs2_file_write_iter - Perform a write to a file
->   * @iocb: The io context
-> - * @iov: The data to write
-> - * @nr_segs: Number of @iov segments
-> + * @iter: The data to write
->   * @pos: The file position
->   *
->   * We have to do a lock/unlock here to refresh the inode size for
-> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
->   *
->   */
->  
-> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> -				   unsigned long nr_segs, loff_t pos)
-> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-> +				    loff_t pos)
->  {
->  	struct file *file = iocb->ki_filp;
-> -	size_t writesize = iov_length(iov, nr_segs);
-> +	size_t writesize = iov_iter_count(iter);
-Hmm, I'm not sure that length isn't a better name than count for this
-function. What we want is the total length of the i/o request and count
-sounds to me as if it would refer to the number of segments. So could we
-have a iov_iter_length() function instead perhaps?
+> Yes:
+> 
+> [dtor@dtor-d630 linux-next]$ grep -r HAVE_CLK_PREPARE .
+> ./arch/arm/Kconfig:     select HAVE_CLK_PREPARE
+> Binary file ./.git/objects/pack/pack-7dad5ee164f601f1327dc78648fa317772c2d872.pack matches
+> ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> ./drivers/clk/Kconfig:config HAVE_CLK_PREPARE
+> ./drivers/clk/Kconfig:  select HAVE_CLK_PREPARE
+> 
+> Thanks.
+> 
 
-Otherwise this looks good from a GFS2 perspective,
+So how about the one blow?
 
-Steve.
+-- 
+Dmitry
 
->  	struct dentry *dentry = file->f_dentry;
->  	struct gfs2_inode *ip = GFS2_I(dentry->d_inode);
->  	int ret;
-> @@ -692,7 +691,7 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
->  		gfs2_glock_dq_uninit(&gh);
->  	}
->  
-> -	return generic_file_aio_write(iocb, iov, nr_segs, pos);
-> +	return generic_file_write_iter(iocb, iter, pos);
->  }
->  
->  static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
-> @@ -1021,9 +1020,9 @@ static int gfs2_flock(struct file *file, int cmd, struct file_lock *fl)
->  const struct file_operations gfs2_file_fops = {
->  	.llseek		= gfs2_llseek,
->  	.read		= do_sync_read,
-> -	.aio_read	= generic_file_aio_read,
-> +	.read_iter	= generic_file_read_iter,
->  	.write		= do_sync_write,
-> -	.aio_write	= gfs2_file_aio_write,
-> +	.write_iter	= gfs2_file_write_iter,
->  	.unlocked_ioctl	= gfs2_ioctl,
->  	.mmap		= gfs2_mmap,
->  	.open		= gfs2_open,
-> @@ -1053,9 +1052,9 @@ const struct file_operations gfs2_dir_fops = {
->  const struct file_operations gfs2_file_fops_nolock = {
->  	.llseek		= gfs2_llseek,
->  	.read		= do_sync_read,
-> -	.aio_read	= generic_file_aio_read,
-> +	.read_iter	= generic_file_read_iter,
->  	.write		= do_sync_write,
-> -	.aio_write	= gfs2_file_aio_write,
-> +	.write_iter	= gfs2_file_write_iter,
->  	.unlocked_ioctl	= gfs2_ioctl,
->  	.mmap		= gfs2_mmap,
->  	.open		= gfs2_open,
+CLK: get rid of HAVE_CLK_PREPARE
 
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
+HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
+platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
+switched to common clk framework, so we can delete this option now.
+
+As part of this change we move declarations of clk_prepare() and
+clk_unprepare() under HAVE_CLK and provide stubs if this option is not
+enabled.
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/clk/Kconfig |    4 ---
+ include/linux/clk.h |   68 ++++++++++++++++++++++++---------------------------
+ 2 files changed, 32 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index bace9e9..639ee9d 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -3,15 +3,11 @@ config CLKDEV_LOOKUP
+ 	bool
+ 	select HAVE_CLK
+ 
+-config HAVE_CLK_PREPARE
+-	bool
+-
+ config HAVE_MACH_CLKDEV
+ 	bool
+ 
+ config COMMON_CLK
+ 	bool
+-	select HAVE_CLK_PREPARE
+ 	select CLKDEV_LOOKUP
+ 	---help---
+ 	  The common clock framework is a single definition of struct
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b3ac22d..f8204c3 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -84,42 +84,6 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+ 
+ #endif
+ 
+-/**
+- * clk_prepare - prepare a clock source
+- * @clk: clock source
+- *
+- * This prepares the clock source for use.
+- *
+- * Must not be called from within atomic context.
+- */
+-#ifdef CONFIG_HAVE_CLK_PREPARE
+-int clk_prepare(struct clk *clk);
+-#else
+-static inline int clk_prepare(struct clk *clk)
+-{
+-	might_sleep();
+-	return 0;
+-}
+-#endif
+-
+-/**
+- * clk_unprepare - undo preparation of a clock source
+- * @clk: clock source
+- *
+- * This undoes a previously prepared clock.  The caller must balance
+- * the number of prepare and unprepare calls.
+- *
+- * Must not be called from within atomic context.
+- */
+-#ifdef CONFIG_HAVE_CLK_PREPARE
+-void clk_unprepare(struct clk *clk);
+-#else
+-static inline void clk_unprepare(struct clk *clk)
+-{
+-	might_sleep();
+-}
+-#endif
+-
+ #ifdef CONFIG_HAVE_CLK
+ /**
+  * clk_get - lookup and obtain a reference to a clock producer.
+@@ -159,6 +123,27 @@ struct clk *clk_get(struct device *dev, const char *id);
+ struct clk *devm_clk_get(struct device *dev, const char *id);
+ 
+ /**
++ * clk_prepare - prepare a clock source
++ * @clk: clock source
++ *
++ * This prepares the clock source for use.
++ *
++ * Must not be called from within atomic context.
++ */
++int clk_prepare(struct clk *clk);
++
++/**
++ * clk_unprepare - undo preparation of a clock source
++ * @clk: clock source
++ *
++ * This undoes a previously prepared clock.  The caller must balance
++ * the number of prepare and unprepare calls.
++ *
++ * Must not be called from within atomic context.
++ */
++void clk_unprepare(struct clk *clk);
++
++/**
+  * clk_enable - inform the system when the clock source should be running.
+  * @clk: clock source
+  *
+@@ -292,6 +277,17 @@ static inline void clk_put(struct clk *clk) {}
+ 
+ static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
+ 
++static inline int clk_prepare(struct clk *clk)
++{
++	might_sleep();
++	return 0;
++}
++
++static inline void clk_unprepare(struct clk *clk)
++{
++	might_sleep();
++}
++
+ static inline int clk_enable(struct clk *clk)
+ {
+ 	return 0;
