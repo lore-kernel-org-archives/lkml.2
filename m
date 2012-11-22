@@ -1,194 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab2KVTNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:13:35 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:21915 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab2KVTNa (ORCPT
+	id S964988Ab2KVTOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:14:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46413 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab2KVTOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:13:30 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Subject: [PATCH v4 26/31] xfs: add support for read_iter and write_iter
-Date: Wed, 21 Nov 2012 16:41:06 -0600
-Message-Id: <1353537671-26284-27-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+	Thu, 22 Nov 2012 14:14:03 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: raven@themaw.net
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com, mszeredi@suse.cz
+Subject: [PATCH 1/2] autofs4: allow autofs to work outside the initial PID namespace
+Date: Thu, 22 Nov 2012 17:24:38 +0100
+Message-ID: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Ben Myers <bpm@sgi.com>
-Cc: Alex Elder <elder@kernel.org>
-Cc: xfs@oss.sgi.com
+Patches were tested by the customer.
+
+Ian, Eric, do these patches look OK?
+
+Thanks,
+Miklos
+----
+From: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+
+This patch enables autofs4 to work in a "container".  oz_pgrp is converted from
+pid_t to struct pid and this is stored at mount time based on the "pgrp=" option
+or if the option is missing then the current pgrp.
+
+The "pgrp=" option is interpreted in the PID namespace of the current process.
+This option is flawed in that it doesn't carry the namespace information, so it
+should be deprecated.  AFAICS the autofs daemon always sends the current pgrp,
+which is the default anyway.
+
+The oz_pgrp is also set from the AUTOFS_DEV_IOCTL_SETPIPEFD_CMD ioctl.  This
+ioctl sets oz_pgrp to the current pgrp.  It is not allowed to change the pid
+namespace.
+
+oz_pgrp is used mainly to determine whether the process traversing the autofs
+mount tree is the autofs daemon itself or not.  This function now compares the
+pid pointers instead of the pid_t values.
+
+One other use of oz_pgrp is in autofs4_show_options.  There is shows the
+virtual pid number (i.e. the one that is valid inside the PID namespace of the
+calling process)
+
+For debugging printk convert oz_pgrp to the value in the initial pid namespace.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Cc: Serge Hallyn <serue@us.ibm.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
- 1 file changed, 20 insertions(+), 31 deletions(-)
-
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index aa473fa..df9bc1a 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -223,10 +223,9 @@ xfs_file_fsync(
+ fs/autofs4/autofs_i.h  |    4 ++--
+ fs/autofs4/dev-ioctl.c |   16 ++++++++++++++--
+ fs/autofs4/inode.c     |   33 +++++++++++++++++++++++++--------
+ 3 files changed, 41 insertions(+), 12 deletions(-)
+Index: linux-2.6/fs/autofs4/autofs_i.h
+===================================================================
+--- linux-2.6.orig/fs/autofs4/autofs_i.h	2012-11-12 17:55:28.000000000 +0100
++++ linux-2.6/fs/autofs4/autofs_i.h	2012-11-12 19:09:40.000000000 +0100
+@@ -104,7 +104,7 @@ struct autofs_sb_info {
+ 	u32 magic;
+ 	int pipefd;
+ 	struct file *pipe;
+-	pid_t oz_pgrp;
++	struct pid *oz_pgrp;
+ 	int catatonic;
+ 	int version;
+ 	int sub_version;
+@@ -139,7 +139,7 @@ static inline struct autofs_info *autofs
+    filesystem without "magic".) */
+ 
+ static inline int autofs4_oz_mode(struct autofs_sb_info *sbi) {
+-	return sbi->catatonic || task_pgrp_nr(current) == sbi->oz_pgrp;
++	return sbi->catatonic || task_pgrp(current) == sbi->oz_pgrp;
  }
  
- STATIC ssize_t
--xfs_file_aio_read(
-+xfs_file_read_iter(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos)
+ /* Does a dentry have some pending activity? */
+Index: linux-2.6/fs/autofs4/inode.c
+===================================================================
+--- linux-2.6.orig/fs/autofs4/inode.c	2012-11-12 17:55:28.000000000 +0100
++++ linux-2.6/fs/autofs4/inode.c	2012-11-12 19:09:35.000000000 +0100
+@@ -62,6 +62,8 @@ void autofs4_kill_sb(struct super_block
+ 	/* Free wait queues, close pipe */
+ 	autofs4_catatonic_mode(sbi);
+ 
++	put_pid(sbi->oz_pgrp);
++
+ 	sb->s_fs_info = NULL;
+ 	kfree(sbi);
+ 
+@@ -83,7 +85,7 @@ static int autofs4_show_options(struct s
+ 		seq_printf(m, ",uid=%u", root_inode->i_uid);
+ 	if (root_inode->i_gid != 0)
+ 		seq_printf(m, ",gid=%u", root_inode->i_gid);
+-	seq_printf(m, ",pgrp=%d", sbi->oz_pgrp);
++	seq_printf(m, ",pgrp=%d", pid_vnr(sbi->oz_pgrp));
+ 	seq_printf(m, ",timeout=%lu", sbi->exp_timeout/HZ);
+ 	seq_printf(m, ",minproto=%d", sbi->min_proto);
+ 	seq_printf(m, ",maxproto=%d", sbi->max_proto);
+@@ -127,7 +129,8 @@ static const match_table_t tokens = {
+ };
+ 
+ static int parse_options(char *options, int *pipefd, uid_t *uid, gid_t *gid,
+-		pid_t *pgrp, unsigned int *type, int *minproto, int *maxproto)
++			 int *pgrp, bool *pgrp_set, unsigned int *type,
++			 int *minproto, int *maxproto)
  {
- 	struct file		*file = iocb->ki_filp;
-@@ -247,9 +246,7 @@ xfs_file_aio_read(
- 	if (file->f_mode & FMODE_NOCMTIME)
- 		ioflags |= IO_INVIS;
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+@@ -135,7 +138,6 @@ static int parse_options(char *options,
  
--	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
--	if (ret < 0)
--		return ret;
-+	size = iov_iter_count(iter);
+ 	*uid = current_uid();
+ 	*gid = current_gid();
+-	*pgrp = task_pgrp_nr(current);
  
- 	if (unlikely(ioflags & IO_ISDIRECT)) {
- 		xfs_buftarg_t	*target =
-@@ -302,7 +299,7 @@ xfs_file_aio_read(
+ 	*minproto = AUTOFS_MIN_PROTO_VERSION;
+ 	*maxproto = AUTOFS_MAX_PROTO_VERSION;
+@@ -170,6 +172,7 @@ static int parse_options(char *options,
+ 			if (match_int(args, &option))
+ 				return 1;
+ 			*pgrp = option;
++			*pgrp_set = true;
+ 			break;
+ 		case Opt_minproto:
+ 			if (match_int(args, &option))
+@@ -205,6 +208,8 @@ int autofs4_fill_super(struct super_bloc
+ 	int pipefd;
+ 	struct autofs_sb_info *sbi;
+ 	struct autofs_info *ino;
++	int pgrp;
++	bool pgrp_set = false;
  
- 	trace_xfs_file_read(ip, size, iocb->ki_pos, ioflags);
+ 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+ 	if (!sbi)
+@@ -217,7 +222,7 @@ int autofs4_fill_super(struct super_bloc
+ 	sbi->pipe = NULL;
+ 	sbi->catatonic = 1;
+ 	sbi->exp_timeout = 0;
+-	sbi->oz_pgrp = task_pgrp_nr(current);
++	sbi->oz_pgrp = NULL;
+ 	sbi->sb = s;
+ 	sbi->version = 0;
+ 	sbi->sub_version = 0;
+@@ -254,12 +259,23 @@ int autofs4_fill_super(struct super_bloc
  
--	ret = generic_file_aio_read(iocb, iovp, nr_segs, iocb->ki_pos);
-+	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
- 	if (ret > 0)
- 		XFS_STATS_ADD(xs_read_bytes, ret);
- 
-@@ -618,10 +615,9 @@ restart:
- STATIC ssize_t
- xfs_file_dio_aio_write(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos,
--	size_t			ocount)
-+	size_t			count)
- {
- 	struct file		*file = iocb->ki_filp;
- 	struct address_space	*mapping = file->f_mapping;
-@@ -629,7 +625,6 @@ xfs_file_dio_aio_write(
- 	struct xfs_inode	*ip = XFS_I(inode);
- 	struct xfs_mount	*mp = ip->i_mount;
- 	ssize_t			ret = 0;
--	size_t			count = ocount;
- 	int			unaligned_io = 0;
- 	int			iolock;
- 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
-@@ -688,8 +683,8 @@ xfs_file_dio_aio_write(
+ 	/* Can this call block? */
+ 	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
+-				&sbi->oz_pgrp, &sbi->type, &sbi->min_proto,
+-				&sbi->max_proto)) {
++			  &pgrp, &pgrp_set, &sbi->type, &sbi->min_proto,
++			  &sbi->max_proto)) {
+ 		printk("autofs: called with bogus options\n");
+ 		goto fail_dput;
  	}
  
- 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
--	ret = generic_file_direct_write(iocb, iovp,
--			&nr_segs, pos, &iocb->ki_pos, count, ocount);
-+	ret = generic_file_direct_write_iter(iocb, iter,
-+			pos, &iocb->ki_pos, count);
++	if (pgrp_set) {
++		sbi->oz_pgrp = find_get_pid(pgrp);
++		if (!sbi->oz_pgrp) {
++			pr_warn("autofs: could not find process group %d\n",
++				pgrp);
++			goto fail_dput;
++		}
++	} else {
++		sbi->oz_pgrp = get_task_pid(current, PIDTYPE_PGID);
++	}
++
+ 	if (autofs_type_trigger(sbi->type))
+ 		__managed_dentry_set_managed(root);
  
+@@ -283,9 +299,9 @@ int autofs4_fill_super(struct super_bloc
+ 		sbi->version = sbi->max_proto;
+ 	sbi->sub_version = AUTOFS_PROTO_SUBVERSION;
+ 
+-	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, sbi->oz_pgrp);
++	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, pid_nr(sbi->oz_pgrp));
+ 	pipe = fget(pipefd);
+-	
++
+ 	if (!pipe) {
+ 		printk("autofs: could not open pipe file descriptor\n");
+ 		goto fail_dput;
+@@ -315,6 +331,7 @@ int autofs4_fill_super(struct super_bloc
+ fail_ino:
+ 	kfree(ino);
+ fail_free:
++	put_pid(sbi->oz_pgrp);
+ 	kfree(sbi);
+ 	s->s_fs_info = NULL;
+ fail_unlock:
+Index: linux-2.6/fs/autofs4/dev-ioctl.c
+===================================================================
+--- linux-2.6.orig/fs/autofs4/dev-ioctl.c	2012-11-12 17:55:28.000000000 +0100
++++ linux-2.6/fs/autofs4/dev-ioctl.c	2012-11-12 20:41:26.000000000 +0100
+@@ -346,6 +346,7 @@ static int autofs_dev_ioctl_setpipefd(st
+ {
+ 	int pipefd;
+ 	int err = 0;
++	struct pid *new_pid = NULL;
+ 
+ 	if (param->setpipefd.pipefd == -1)
+ 		return -EINVAL;
+@@ -357,7 +358,17 @@ static int autofs_dev_ioctl_setpipefd(st
+ 		mutex_unlock(&sbi->wq_mutex);
+ 		return -EBUSY;
+ 	} else {
+-		struct file *pipe = fget(pipefd);
++		struct file *pipe;
++
++		new_pid = get_task_pid(current, PIDTYPE_PGID);
++
++		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
++			AUTOFS_WARN("Not allowed to change PID namespace");
++			err = -EINVAL;
++			goto out;
++		}
++
++		pipe = fget(pipefd);
+ 		if (!pipe) {
+ 			err = -EBADF;
+ 			goto out;
+@@ -367,12 +378,13 @@ static int autofs_dev_ioctl_setpipefd(st
+ 			fput(pipe);
+ 			goto out;
+ 		}
+-		sbi->oz_pgrp = task_pgrp_nr(current);
++		swap(sbi->oz_pgrp, new_pid);
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
+ 	}
  out:
- 	xfs_rw_iunlock(ip, iolock);
-@@ -702,10 +697,9 @@ out:
- STATIC ssize_t
- xfs_file_buffered_aio_write(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos,
--	size_t			ocount)
-+	size_t			count)
- {
- 	struct file		*file = iocb->ki_filp;
- 	struct address_space	*mapping = file->f_mapping;
-@@ -714,7 +708,6 @@ xfs_file_buffered_aio_write(
- 	ssize_t			ret;
- 	int			enospc = 0;
- 	int			iolock = XFS_IOLOCK_EXCL;
--	size_t			count = ocount;
- 
- 	xfs_rw_ilock(ip, iolock);
- 
-@@ -727,7 +720,7 @@ xfs_file_buffered_aio_write(
- 
- write_retry:
- 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
--	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
-+	ret = generic_file_buffered_write_iter(iocb, iter,
- 			pos, &iocb->ki_pos, count, ret);
- 	/*
- 	 * if we just got an ENOSPC, flush the inode now we aren't holding any
-@@ -747,10 +740,9 @@ out:
++	put_pid(new_pid);
+ 	mutex_unlock(&sbi->wq_mutex);
+ 	return err;
  }
- 
- STATIC ssize_t
--xfs_file_aio_write(
-+xfs_file_write_iter(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos)
- {
- 	struct file		*file = iocb->ki_filp;
-@@ -758,17 +750,15 @@ xfs_file_aio_write(
- 	struct inode		*inode = mapping->host;
- 	struct xfs_inode	*ip = XFS_I(inode);
- 	ssize_t			ret;
--	size_t			ocount = 0;
-+	size_t			count = 0;
- 
- 	XFS_STATS_INC(xs_write_calls);
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
--	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
--	if (ret)
--		return ret;
-+	count = iov_iter_count(iter);
- 
--	if (ocount == 0)
-+	if (count == 0)
- 		return 0;
- 
- 	sb_start_write(inode->i_sb);
-@@ -779,10 +769,9 @@ xfs_file_aio_write(
- 	}
- 
- 	if (unlikely(file->f_flags & O_DIRECT))
--		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
-+		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
- 	else
--		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
--						  ocount);
-+		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
- 
- 	if (ret > 0) {
- 		ssize_t err;
-@@ -1412,8 +1401,8 @@ const struct file_operations xfs_file_operations = {
- 	.llseek		= xfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read	= xfs_file_aio_read,
--	.aio_write	= xfs_file_aio_write,
-+	.read_iter	= xfs_file_read_iter,
-+	.write_iter	= xfs_file_write_iter,
- 	.splice_read	= xfs_file_splice_read,
- 	.splice_write	= xfs_file_splice_write,
- 	.unlocked_ioctl	= xfs_file_ioctl,
--- 
-1.8.0
-
