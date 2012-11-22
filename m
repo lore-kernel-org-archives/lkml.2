@@ -1,122 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab2KVSvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:51:00 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55183 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab2KVSu6 (ORCPT
+	id S1755862Ab2KVSvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:51:39 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:29676
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751753Ab2KVSvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:50:58 -0500
+	Thu, 22 Nov 2012 13:51:36 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1de0h1202h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <alan@linux.intel.com>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lauri.hintsala@bluegiga.com>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 2/2] serial: mxs-auart: unmap the scatter list before we copy the data
+Date: Thu, 22 Nov 2012 15:06:30 +0800
+Message-ID: <1353567990-19907-2-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1353567990-19907-1-git-send-email-b32955@freescale.com>
+References: <1353567990-19907-1-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20121122154612.GC10986@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
-	<b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
-	<20121122112451.GE4328@gmail.com>
-	<CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
-	<20121122154612.GC10986@gmail.com>
-Date: Thu, 22 Nov 2012 22:31:48 +0530
-Message-ID: <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 November 2012 21:16, Lee Jones <lee.jones@linaro.org> wrote:
->> >> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
->> >> +- irq-over-gpio: bool, true if gpio is used to get irq
->> >> +- irq-gpios: gpio number over which irq will be requested (significant only if
->> >> +  irq-over-gpio is true)
->> >
->> > You don't need these. Use gpio_to_irq() instead.
->>
->> I am passing gpio numbers here and am doing gpio_to_irq() in driver.
->> Didn't get this one :(
->
-> For a start you have 'irq-over-gpio' in the binding document and Device Tree
-> and 'irq_over_gpio' in the code. Has it even been tested?
->
-> GPIOs are used as IRQ lines in many other previously DT:ed drivers. Take a
-> look to see how they are handled without adding unnecessary DT bindings.
+We should first unmap the DMA scatter list for receiving data, and
+then copy the data from the DMA buffer.
 
-I already knew it, should have picked that up. :(
+The old code misses unmap the scatter list for RX. This patch fixes it.
 
->> stmpe is an interrupt controller for the IP's which are present inside
->> it: gpio, adc.
->> But interrupt lines for them are managed by stmpe driver internally. So should
->> we really add interrupt-controller for it?
->
-> You can't manage IRQ lines internally, you have to go through
-> the IRQ subsystem. When you request an IRQ via device tree you
-> will do so like this:
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+Tested-by: Lauri Hintsala <lauri.hintsala@bluegiga.com> 
+---
+ drivers/tty/serial/mxs-auart.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-By that i meant, there is no external node which would have stmpe as
-interrupt controller. Because all of them would be its child node.
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 2342b0d..6b51448 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -461,6 +461,8 @@ static void dma_rx_callback(void *arg)
+ 	int count;
+ 	u32 stat;
+ 
++	dma_unmap_sg(s->dev, &s->rx_sgl, 1, DMA_FROM_DEVICE);
++
+ 	stat = readl(s->port.membase + AUART_STAT);
+ 	stat &= ~(AUART_STAT_OERR | AUART_STAT_BERR |
+ 			AUART_STAT_PERR | AUART_STAT_FERR);
+-- 
+1.7.0.4
 
-This is guaranteed because stmpe is an external device is present on board.
-So, it will have its entry in board dts file, and so wouldn't be
-scattered in different
-files.
 
-> The STMPE GPIO controller can't be used by Device Tree yet in any case,
-> because it doesn't have an IRQ domain. This is compulsory, or it won't
-> work. Have you tried to test this functionality yet?
-
-I don't have SPEAr board to test it anymore. I have moved out of ST now and
-working in linaro as ARM asignee. Just pushing these as an part time activity.
-
-Though ST guys would have tested stmpe, but stmpe-gpio, i am not sure about.
-
-> Okay, I've just had a look at my tested bindings.
->
-> We already have these:
->
->   debounce-interval   /* This is a generic binding */
->   st,scan-count       /* These are vendor specific */
->   st,no-autorepeat    /*            "              */
->
-> Vendor specific bindings should be "<vendor>,<binding>", rather than
-> "<type_of_driver>,<binding>"
-
-Will take care of these.
-
->> >> +             reg = <0>;
->> >
->> > You have reg twice here. Also reg should never be '0'.
->>
->> For SPI, there are chip selects and there is no reg offset.
->
-> I understand the addressing issues, but you have 'reg' twice.
->
-> Which one should be used?
-
-I haven't replied on that, because it was accepted. Only one
-definition should be there for reg.
-
-> I didn't go through them, but are you sure that:
->
-> 1. Can I do without them?
->    1.1 Can I derive the configuration from other things?
->    2.2 Are they _really_ required, or am I just blindly copying platform data?
-> 2. Does a similar binding already exist?
-> 3. Can other drivers make use of them?
->    3.1 If so, create a generic binding
->    3.2 If not, prepend the binding with "<vendor>,"
-
-I will go through them again.
-
->> >> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
->> Because i wanted to keep all DT stuff together. Obviously i have seen keypad
->> driver earlier :)
->
-> If you had, you'd realise that these bindings already exist. ;)
-
-Ok. I had seen it during my V1 and missed these bindings. will fix them now.
-
---
-viresh
