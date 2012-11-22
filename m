@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2KVVR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:17:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
+	id S1757625Ab2KVVR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:17:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab2KVSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755279Ab2KVSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ulrich Weber <ulrich.weber@sophos.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 25/38] netfilter: nf_nat: dont check for port change on ICMP tuples
-Date: Wed, 21 Nov 2012 16:40:08 -0800
-Message-Id: <20121122003907.039423598@linuxfoundation.org>
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 024/171] s390/gup: add missing TASK_SIZE check to get_user_pages_fast()
+Date: Wed, 21 Nov 2012 16:39:30 -0800
+Message-Id: <20121122004035.781823221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ulrich Weber <ulrich.weber@sophos.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 38fe36a248ec3228f8e6507955d7ceb0432d2000 upstream.
+commit d55c4c613fc4d4ad2ba0fc6fa2b57176d420f7e4 upstream.
 
-ICMP tuples have id in src and type/code in dst.
-So comparing src.u.all with dst.u.all will always fail here
-and ip_xfrm_me_harder() is called for every ICMP packet,
-even if there was no NAT.
+When walking page tables we need to make sure that everything
+is within bounds of the ASCE limit of the task's address space.
+Otherwise we might calculate e.g. a pud pointer which is not
+within a pud and dereference it.
+So check against TASK_SIZE (which is the ASCE limit) before
+walking page tables.
 
-Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- net/ipv4/netfilter/nf_nat_standalone.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/s390/mm/gup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/netfilter/nf_nat_standalone.c
-+++ b/net/ipv4/netfilter/nf_nat_standalone.c
-@@ -194,7 +194,8 @@ nf_nat_out(unsigned int hooknum,
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -183,7 +183,7 @@ int get_user_pages_fast(unsigned long st
+ 	addr = start;
+ 	len = (unsigned long) nr_pages << PAGE_SHIFT;
+ 	end = start + len;
+-	if (end < start)
++	if ((end < start) || (end > TASK_SIZE))
+ 		goto slow_irqon;
  
- 		if ((ct->tuplehash[dir].tuple.src.u3.ip !=
- 		     ct->tuplehash[!dir].tuple.dst.u3.ip) ||
--		    (ct->tuplehash[dir].tuple.src.u.all !=
-+		    (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+		     ct->tuplehash[dir].tuple.src.u.all !=
- 		     ct->tuplehash[!dir].tuple.dst.u.all)
- 		   )
- 			return ip_xfrm_me_harder(skb) == 0 ? ret : NF_DROP;
-@@ -230,7 +231,8 @@ nf_nat_local_fn(unsigned int hooknum,
- 				ret = NF_DROP;
- 		}
- #ifdef CONFIG_XFRM
--		else if (ct->tuplehash[dir].tuple.dst.u.all !=
-+		else if (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+			 ct->tuplehash[dir].tuple.dst.u.all !=
- 			 ct->tuplehash[!dir].tuple.src.u.all)
- 			if (ip_xfrm_me_harder(skb))
- 				ret = NF_DROP;
+ 	/*
 
 
