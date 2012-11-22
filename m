@@ -1,363 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2KVSmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:42:55 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:22448 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab2KVSmv (ORCPT
+	id S1755393Ab2KVSnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:43:21 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52191 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257Ab2KVSnR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:42:51 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH v4 05/31] iov_iter: hide iovec details behind ops function pointers
-Date: Wed, 21 Nov 2012 16:40:45 -0600
-Message-Id: <1353537671-26284-6-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 22 Nov 2012 13:43:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <50AD8B91.8030104@samsung.com>
+References: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
+	<CAH9JG2VKYSAQ=Og4-fgToV_aNwEV_aH-=UQZDbAOnA-ShfKdYw@mail.gmail.com>
+	<50AC5250.3070203@samsung.com>
+	<000701cdc84a$5602eda0$0208c8e0$%choi@samsung.com>
+	<50AD8B91.8030104@samsung.com>
+Date: Thu, 22 Nov 2012 10:24:19 +0530
+Message-ID: <CAK44p23MzBHEWP=NhKV57nNEw8Nq613hX9y3TpZDqgNG8FVFWQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: jonghwa3.lee@samsung.com
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On 22 November 2012 07:48,  <jonghwa3.lee@samsung.com> wrote:
+> Hi,
+> On 2012년 11월 22일 09:43, Jonghwan Choi wrote:
+>> Hi~
+>>
+>>
+>>>>>                                 data->base + EXYNOS_THD_TEMP_RISE);
+>>>>> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct
+>>> platform_device
+>>>>> *pdev, bool on)
+>>>>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>>>>                 con |= pdata->noise_cancel_mode <<
+>>>>> EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>>>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>>>> +               if (pdata->trigger_levels[3])
+>>>>> +                       con |= EXYNOS_TMU_TRIP_EN;
+>>>>>         }
+>>> Why don't you support trigger_level[3] in exynos4210 either? Even though
+>>> 4210 doesn't support
+>>> hardware tripping,
+>>> I think it can be set in same way. I've done it in my local git with
+>>> following codes.
+>>>
+>>
+>> As follows, TRIP_EN is applied SOC_ARCH_EXYNOS(for exynos4412 & exynos5250).  (SOC_ARCH_EXYNOS4210 for exynos4210)
+>>
+>>         if (data->soc == SOC_ARCH_EXYNOS) {
+>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>                 con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>                 if (pdata->trigger_levels[3])
+>>                         con |= EXYNOS_TMU_TRIP_EN;
+>>         }
+>> And. Trigger_level3_en is not stored in INTEN(only level0~level2en)
+>>
+>> Especially when temperature exceeds a extremely high threshold temperature
+>> denoted as THRES_LEVEL_RISE3 field of THRESHOLD_TEMP_RISE register, then
+>> Exynos5250 should not be damaged by the hot temperature. In this case, TMU
+>> urgently sends active-high signal (THERM_TRIP) to PMU, and thermal tripping
+>> by hardware logic i.e PMU (Power Management Unit) is performed. (From TMU document.)
+>>
+>> Trigger_leves[3] is only used for THERM_TRIP. Trigger_levels3_en doesn't  effect h/w tripping mode.
+>> So i think trigger_levels[3] is better than trigger_level3_en.
+>>
+>> Thanks~~^^
+>>
+>
+> I think you misunderstood what I purposed to. I meant that it's better to support 3rd trigger level
+> in exynos4210 either in this modification. As you can see, there isn't supporting of 3rd trigger
+> level for all SOCs until this moment, and now your code will do this but only for 4x12 and 5250.
+> I know that differences between thermal trip and lower trigger level interrupts. However,
+> To satisfy the compatibility, we have to offer same interface regardless of SOC's type.
+> Maybe 'interface' is not proper word for this situation, anyway what I want to tell you is that it
+> is proper way to use platform data in same way whatever SOC's type is. So, with my former suggestion,
+> it can use 3rd thermal trigger level in both SOC group. And it will activate as THERMAL TRIP in
+> exynos4x12,5250 and as just 3rd Trigger levels in exynos4210. I do not just emphasize the use of
+> Trigger_level3_en, but I recommend you to support 3rd trigger level in exynos4210 either.
 
-This moves the current iov_iter functions behind an ops struct of
-function pointers.  The current iov_iter functions all work with memory
-which is specified by iovec arrays of user space pointers.
+Hi Choi/Lee,
 
-This patch is part of a series that lets us specify memory with bio_vec
-arrays of page pointers.  By moving to an iov_iter operation struct we
-can add that support in later patches in this series by adding another
-set of function pointers.
+It is fine to enable 4th interrupt level in exynos4210 like exynos5
+but the zone will be 3 only. I guess the other parts of code should
+take care of this.
+Choi,
+Please change just the platform data of exynos4210 to support this.
 
-I only came to this after having initialy tried to teach the current
-iov_iter functions about bio_vecs by introducing conditional branches
-that dealt with bio_vecs in all the functions.  It wasn't pretty.  This
-approach seems to be the lesser evil.
-
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- fs/cifs/file.c     |  4 ++--
- include/linux/fs.h | 70 ++++++++++++++++++++++++++++++++++++++++++++----------
- mm/iov-iter.c      | 66 ++++++++++++++++++++++++++++----------------------
- 3 files changed, 97 insertions(+), 43 deletions(-)
-
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index edb25b4..8b5e2aa 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2654,8 +2654,8 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, const struct iovec *iov,
- 		/* go while there's data to be copied and no errors */
- 		if (copy && !rc) {
- 			pdata = kmap(page);
--			rc = memcpy_toiovecend(ii.iov, pdata, ii.iov_offset,
--						(int)copy);
-+			rc = memcpy_toiovecend(iov_iter_iovec(&ii), pdata,
-+					       ii.iov_offset, (int)copy);
- 			kunmap(page);
- 			if (!rc) {
- 				*copied += copy;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 26c1bda..6cece28 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -288,29 +288,68 @@ struct address_space;
- struct writeback_control;
- 
- struct iov_iter {
--	const struct iovec *iov;
-+	struct iov_iter_ops *ops;
-+	unsigned long data;
- 	unsigned long nr_segs;
- 	size_t iov_offset;
- 	size_t count;
- };
- 
--size_t iov_iter_copy_to_user_atomic(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes);
--size_t iov_iter_copy_to_user(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes);
--size_t iov_iter_copy_from_user_atomic(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes);
--size_t iov_iter_copy_from_user(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes);
--void iov_iter_advance(struct iov_iter *i, size_t bytes);
--int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
--size_t iov_iter_single_seg_count(struct iov_iter *i);
-+struct iov_iter_ops {
-+	size_t (*ii_copy_to_user_atomic)(struct page *, struct iov_iter *,
-+					 unsigned long, size_t);
-+	size_t (*ii_copy_to_user)(struct page *, struct iov_iter *,
-+				  unsigned long, size_t);
-+	size_t (*ii_copy_from_user_atomic)(struct page *, struct iov_iter *,
-+					   unsigned long, size_t);
-+	size_t (*ii_copy_from_user)(struct page *, struct iov_iter *,
-+					  unsigned long, size_t);
-+	void (*ii_advance)(struct iov_iter *, size_t);
-+	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
-+	size_t (*ii_single_seg_count)(struct iov_iter *);
-+};
-+
-+static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	return i->ops->ii_copy_to_user_atomic(page, i, offset, bytes);
-+}
-+static inline size_t iov_iter_copy_to_user(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	return i->ops->ii_copy_to_user(page, i, offset, bytes);
-+}
-+static inline size_t iov_iter_copy_from_user_atomic(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	return i->ops->ii_copy_from_user_atomic(page, i, offset, bytes);
-+}
-+static inline size_t iov_iter_copy_from_user(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	return i->ops->ii_copy_from_user(page, i, offset, bytes);
-+}
-+static inline void iov_iter_advance(struct iov_iter *i, size_t bytes)
-+{
-+	return i->ops->ii_advance(i, bytes);
-+}
-+static inline int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return i->ops->ii_fault_in_readable(i, bytes);
-+}
-+static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
-+{
-+	return i->ops->ii_single_seg_count(i);
-+}
-+
-+extern struct iov_iter_ops ii_iovec_ops;
- 
- static inline void iov_iter_init(struct iov_iter *i,
- 			const struct iovec *iov, unsigned long nr_segs,
- 			size_t count, size_t written)
- {
--	i->iov = iov;
-+	i->ops = &ii_iovec_ops;
-+	i->data = (unsigned long)iov;
- 	i->nr_segs = nr_segs;
- 	i->iov_offset = 0;
- 	i->count = count + written;
-@@ -318,6 +357,11 @@ static inline void iov_iter_init(struct iov_iter *i,
- 	iov_iter_advance(i, written);
- }
- 
-+static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
-+{
-+	return (struct iovec *)i->data;
-+}
-+
- static inline size_t iov_iter_count(struct iov_iter *i)
- {
- 	return i->count;
-diff --git a/mm/iov-iter.c b/mm/iov-iter.c
-index d68b67f..bae1553 100644
---- a/mm/iov-iter.c
-+++ b/mm/iov-iter.c
-@@ -36,9 +36,10 @@ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
-  * were sucessfully copied.  If a fault is encountered then return the number of
-  * bytes which were copied.
-  */
--size_t iov_iter_copy_to_user_atomic(struct page *page,
-+static size_t ii_iovec_copy_to_user_atomic(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
-+	struct iovec *iov = (struct iovec *)i->data;
- 	char *kaddr;
- 	size_t copied;
- 
-@@ -46,45 +47,44 @@ size_t iov_iter_copy_to_user_atomic(struct page *page,
- 	kaddr = kmap_atomic(page);
- 	if (likely(i->nr_segs == 1)) {
- 		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		char __user *buf = iov->iov_base + i->iov_offset;
- 		left = __copy_to_user_inatomic(buf, kaddr + offset, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
-+		copied = __iovec_copy_to_user(kaddr + offset, iov,
- 					      i->iov_offset, bytes, 1);
- 	}
- 	kunmap_atomic(kaddr);
- 
- 	return copied;
- }
--EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
- 
- /*
-  * This has the same sideeffects and return value as
-- * iov_iter_copy_to_user_atomic().
-+ * ii_iovec_copy_to_user_atomic().
-  * The difference is that it attempts to resolve faults.
-  * Page must not be locked.
-  */
--size_t iov_iter_copy_to_user(struct page *page,
-+static size_t ii_iovec_copy_to_user(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
-+	struct iovec *iov = (struct iovec *)i->data;
- 	char *kaddr;
- 	size_t copied;
- 
- 	kaddr = kmap(page);
- 	if (likely(i->nr_segs == 1)) {
- 		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		char __user *buf = iov->iov_base + i->iov_offset;
- 		left = copy_to_user(buf, kaddr + offset, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
-+		copied = __iovec_copy_to_user(kaddr + offset, iov,
- 					      i->iov_offset, bytes, 0);
- 	}
- 	kunmap(page);
- 	return copied;
- }
--EXPORT_SYMBOL(iov_iter_copy_to_user);
- 
- static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
- 				     size_t base, size_t bytes, int atomic)
-@@ -116,9 +116,10 @@ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
-  * were successfully copied.  If a fault is encountered then return the number
-  * of bytes which were copied.
-  */
--size_t iov_iter_copy_from_user_atomic(struct page *page,
-+static size_t ii_iovec_copy_from_user_atomic(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
-+	struct iovec *iov = (struct iovec *)i->data;
- 	char *kaddr;
- 	size_t copied;
- 
-@@ -126,11 +127,11 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
- 	kaddr = kmap_atomic(page);
- 	if (likely(i->nr_segs == 1)) {
- 		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		char __user *buf = iov->iov_base + i->iov_offset;
- 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
-+		copied = __iovec_copy_from_user(kaddr + offset, iov,
- 						i->iov_offset, bytes, 1);
- 	}
- 	kunmap_atomic(kaddr);
-@@ -141,32 +142,32 @@ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
- 
- /*
-  * This has the same sideeffects and return value as
-- * iov_iter_copy_from_user_atomic().
-+ * ii_iovec_copy_from_user_atomic().
-  * The difference is that it attempts to resolve faults.
-  * Page must not be locked.
-  */
--size_t iov_iter_copy_from_user(struct page *page,
-+static size_t ii_iovec_copy_from_user(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
-+	struct iovec *iov = (struct iovec *)i->data;
- 	char *kaddr;
- 	size_t copied;
- 
- 	kaddr = kmap(page);
- 	if (likely(i->nr_segs == 1)) {
- 		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		char __user *buf = iov->iov_base + i->iov_offset;
- 		left = __copy_from_user(kaddr + offset, buf, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
-+		copied = __iovec_copy_from_user(kaddr + offset, iov,
- 						i->iov_offset, bytes, 0);
- 	}
- 	kunmap(page);
- 	return copied;
- }
--EXPORT_SYMBOL(iov_iter_copy_from_user);
- 
--void iov_iter_advance(struct iov_iter *i, size_t bytes)
-+static void ii_iovec_advance(struct iov_iter *i, size_t bytes)
- {
- 	BUG_ON(i->count < bytes);
- 
-@@ -174,7 +175,7 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
- 		i->iov_offset += bytes;
- 		i->count -= bytes;
- 	} else {
--		const struct iovec *iov = i->iov;
-+		struct iovec *iov = (struct iovec *)i->data;
- 		size_t base = i->iov_offset;
- 		unsigned long nr_segs = i->nr_segs;
- 
-@@ -196,12 +197,11 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
- 				base = 0;
- 			}
- 		}
--		i->iov = iov;
-+		i->data = (unsigned long)iov;
- 		i->iov_offset = base;
- 		i->nr_segs = nr_segs;
- 	}
- }
--EXPORT_SYMBOL(iov_iter_advance);
- 
- /*
-  * Fault in the first iovec of the given iov_iter, to a maximum length
-@@ -212,23 +212,33 @@ EXPORT_SYMBOL(iov_iter_advance);
-  * would be possible (callers must not rely on the fact that _only_ the
-  * first iovec will be faulted with the current implementation).
-  */
--int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
-+static int ii_iovec_fault_in_readable(struct iov_iter *i, size_t bytes)
- {
--	char __user *buf = i->iov->iov_base + i->iov_offset;
--	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
-+	struct iovec *iov = (struct iovec *)i->data;
-+	char __user *buf = iov->iov_base + i->iov_offset;
-+	bytes = min(bytes, iov->iov_len - i->iov_offset);
- 	return fault_in_pages_readable(buf, bytes);
- }
--EXPORT_SYMBOL(iov_iter_fault_in_readable);
- 
- /*
-  * Return the count of just the current iov_iter segment.
-  */
--size_t iov_iter_single_seg_count(struct iov_iter *i)
-+static size_t ii_iovec_single_seg_count(struct iov_iter *i)
- {
--	const struct iovec *iov = i->iov;
-+	struct iovec *iov = (struct iovec *)i->data;
- 	if (i->nr_segs == 1)
- 		return i->count;
- 	else
- 		return min(i->count, iov->iov_len - i->iov_offset);
- }
--EXPORT_SYMBOL(iov_iter_single_seg_count);
-+
-+struct iov_iter_ops ii_iovec_ops = {
-+	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_iovec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_iovec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_iovec_copy_from_user,
-+	.ii_advance = ii_iovec_advance,
-+	.ii_fault_in_readable = ii_iovec_fault_in_readable,
-+	.ii_single_seg_count = ii_iovec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_iovec_ops);
--- 
-1.8.0
-
+Thanks,
+Amit Daniel
+>
+> Thanks,
+> Jonghwa.
+>
+>>
+>>
+>>> -----Original Message-----
+>>> From: jonghwa3.lee@samsung.com [mailto:jonghwa3.lee@samsung.com]
+>>> Sent: Wednesday, November 21, 2012 1:02 PM
+>>> To: Kyungmin Park
+>>> Cc: Jonghwan Choi; jonghwa3.lee; open list; Amit Daniel Kachhap; Zhang Rui;
+>>> Sachin Kamat
+>>> Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+>>>
+>>> Hi,
+>>> On 2012년 11월 20일 10:40, Kyungmin Park wrote:
+>>>> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+>>>>> TMU urgently sends active-high signal (thermal trip) to PMU,
+>>>>> and thermal tripping by hardware logic i.e PMU is performed.
+>>>>> Thermal tripping means that PMU cut off the whole power of SoC
+>>>>> by controlling external voltage regulator.
+>>>>>
+>>>>> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+>>>> Ackedy-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>> ---
+>>>>>  drivers/thermal/exynos_thermal.c |   10 ++++++++++
+>>>>>  1 files changed, 10 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/thermal/exynos_thermal.c
+>>>>> b/drivers/thermal/exynos_thermal.c
+>>>>> index 129e827..569478d 100644
+>>>>> --- a/drivers/thermal/exynos_thermal.c
+>>>>> +++ b/drivers/thermal/exynos_thermal.c
+>>>>> @@ -58,6 +58,7 @@
+>>>>>  #define EXYNOS_TMU_CORE_ON             BIT(0)
+>>>>>  #define EXYNOS_TMU_CORE_ON_SHIFT       0
+>>>>>  #define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+>>>>> EXYNOS_TMU_CORE_ON_SHIFT)
+>>>>> +#define EXYNOS_TMU_TRIP_EN             BIT(12)
+>>>>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+>>>>>
+>>>>>  /* Exynos4210 specific registers */
+>>>>> @@ -631,6 +632,12 @@ static int exynos_tmu_initialize(struct
+>>>>> platform_device
+>>>>> *pdev)
+>>>>>                         goto out;
+>>>>>                 }
+>>>>>                 rising_threshold |= (threshold_code << 16);
+>>>>> +               threshold_code = temp_to_code(data,
+>>>>> pdata->trigger_levels[3]);
+>>>>> +               if (threshold_code < 0) {
+>>>>> +                       ret = threshold_code;
+>>>>> +                       goto out;
+>>>>> +               }
+>>>>> +               rising_threshold |= (threshold_code << 24);
+>>>>>
+>>>>>                 writel(rising_threshold,
+>>>>>                                 data->base + EXYNOS_THD_TEMP_RISE);
+>>>>> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct
+>>> platform_device
+>>>>> *pdev, bool on)
+>>>>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>>>>                 con |= pdata->noise_cancel_mode <<
+>>>>> EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>>>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>>>> +               if (pdata->trigger_levels[3])
+>>>>> +                       con |= EXYNOS_TMU_TRIP_EN;
+>>>>>         }
+>>> Why don't you support trigger_level[3] in exynos4210 either? Even though
+>>> 4210 doesn't support
+>>> hardware tripping,
+>>> I think it can be set in same way. I've done it in my local git with
+>>> following codes.
+>>>
+>>> if (data->soc == SOC_ARCH_EXYNOS4210)
+>>> interrupt_en |= pdata->trigger_level3_en << 12;
+>>> else
+>>> con |= pdata->trigger_level3_en <<12;
+>>>
+>>> How do you think of it?
+>>>
+>>> Thanks.
+>>>>>         if (on) {
+>>>>> @@ -770,6 +779,7 @@ static struct exynos_tmu_platform_data const
+>>>>> exynos_default_tmu_data = {
+>>>>>         .trigger_levels[0] = 85,
+>>>>>         .trigger_levels[1] = 103,
+>>>>>         .trigger_levels[2] = 110,
+>>>>> +       .trigger_levels[3] = 120,
+>>>>>         .trigger_level0_en = 1,
+>>>>>         .trigger_level1_en = 1,
+>>>>>         .trigger_level2_en = 1,
+>>>>> --
+>>>>> 1.7.4.1
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>
+>>
