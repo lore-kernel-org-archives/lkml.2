@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab2KVWSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:18:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49364 "EHLO mail.kernel.org"
+	id S1758296Ab2KVWSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:18:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49365 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab2KVSid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754568Ab2KVSid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zheng Yan <zheng.z.yan@intel.com>, Alex Elder <elder@inktank.com>
-Subject: [ 085/171] rbd: Clear ceph_msg->bio_iter for retransmitted message
-Date: Wed, 21 Nov 2012 16:40:31 -0800
-Message-Id: <20121122004041.901216074@linuxfoundation.org>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 022/171] UBIFS: introduce categorized lprops counter
+Date: Wed, 21 Nov 2012 16:39:28 -0800
+Message-Id: <20121122004035.577810785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,32 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-(cherry picked from commit 43643528cce60ca184fe8197efa8e8da7c89a037)
-(cherry picked from commit b132cf4c733f91bb4dd2277ea049243cf16e8b66)
+commit 98a1eebda3cb2a84ecf1f219bb3a95769033d1bf upstream.
 
-The bug can cause NULL pointer dereference in write_partial_msg_pages
+This commit is a preparation for a subsequent bugfix. We introduce a
+counter for categorized lprops.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -563,6 +563,10 @@ static void prepare_write_message(struct
- 		m->hdr.seq = cpu_to_le64(++con->out_seq);
- 		m->needs_out_seq = false;
+---
+ fs/ubifs/lprops.c |    6 ++++++
+ fs/ubifs/ubifs.h  |    3 +++
+ 2 files changed, 9 insertions(+)
+
+--- a/fs/ubifs/lprops.c
++++ b/fs/ubifs/lprops.c
+@@ -300,8 +300,11 @@ void ubifs_add_to_cat(struct ubifs_info
+ 	default:
+ 		ubifs_assert(0);
  	}
-+#ifdef CONFIG_BLOCK
-+	else
-+		m->bio_iter = NULL;
-+#endif
++
+ 	lprops->flags &= ~LPROPS_CAT_MASK;
+ 	lprops->flags |= cat;
++	c->in_a_category_cnt += 1;
++	ubifs_assert(c->in_a_category_cnt <= c->main_lebs);
+ }
  
- 	dout("prepare_write_message %p seq %lld type %d len %d+%d+%d %d pgs\n",
- 	     m, con->out_seq, le16_to_cpu(m->hdr.type),
+ /**
+@@ -334,6 +337,9 @@ static void ubifs_remove_from_cat(struct
+ 	default:
+ 		ubifs_assert(0);
+ 	}
++
++	c->in_a_category_cnt -= 1;
++	ubifs_assert(c->in_a_category_cnt >= 0);
+ }
+ 
+ /**
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1184,6 +1184,8 @@ struct ubifs_debug_info;
+  * @freeable_list: list of freeable non-index LEBs (free + dirty == @leb_size)
+  * @frdi_idx_list: list of freeable index LEBs (free + dirty == @leb_size)
+  * @freeable_cnt: number of freeable LEBs in @freeable_list
++ * @in_a_category_cnt: count of lprops which are in a certain category, which
++ *                     basically meants that they were loaded from the flash
+  *
+  * @ltab_lnum: LEB number of LPT's own lprops table
+  * @ltab_offs: offset of LPT's own lprops table
+@@ -1413,6 +1415,7 @@ struct ubifs_info {
+ 	struct list_head freeable_list;
+ 	struct list_head frdi_idx_list;
+ 	int freeable_cnt;
++	int in_a_category_cnt;
+ 
+ 	int ltab_lnum;
+ 	int ltab_offs;
 
 
