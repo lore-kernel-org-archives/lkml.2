@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2KVUal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:30:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39749 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756782Ab2KVT0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:08 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/40] mm: Optimize the TLB flush of sys_mprotect() and change_protection() users
-Date: Thu, 22 Nov 2012 19:25:20 +0000
-Message-Id: <1353612353-1576-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S1756856Ab2KVUau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:30:50 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59267 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756782Ab2KVUaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:30:46 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com
+Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
+Subject: [PATCH 08/10] ASoC: wm8985: Convert to use devm_regmap_init_{spi,i2c}()
+Date: Thu, 22 Nov 2012 09:38:40 +0530
+Message-Id: <1353557322-25353-9-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
-
-Reuse the NUMA code's 'modified page protections' count that
-change_protection() computes and skip the TLB flush if there's
-no changes to a range that sys_mprotect() modifies.
-
-Given that mprotect() already optimizes the same-flags case
-I expected this optimization to dominantly trigger on
-CONFIG_NUMA_BALANCING=y kernels - but even with that feature
-disabled it triggers rather often.
-
-There's two reasons for that:
-
-1)
-
-While sys_mprotect() already optimizes the same-flag case:
-
-        if (newflags == oldflags) {
-                *pprev = vma;
-                return 0;
-        }
-
-and this test works in many cases, but it is too sharp in some
-others, where it differentiates between protection values that the
-underlying PTE format makes no distinction about, such as
-PROT_EXEC == PROT_READ on x86.
-
-2)
-
-Even where the pte format over vma flag changes necessiates a
-modification of the pagetables, there might be no pagetables
-yet to modify: they might not be instantiated yet.
-
-During a regular desktop bootup this optimization hits a couple
-of hundred times. During a Java test I measured thousands of
-hits.
-
-So this optimization improves sys_mprotect() in general, not just
-CONFIG_NUMA_BALANCING=y kernels.
-
-[ We could further increase the efficiency of this optimization if
-  change_pte_range() and change_huge_pmd() was a bit smarter about
-  recognizing exact-same-value protection masks - when the hardware
-  can do that safely. This would probably further speed up mprotect(). ]
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- mm/mprotect.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8985.c |   30 ++++--------------------------
+ 1 files changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 1e265be..7c3628a 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -153,7 +153,9 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
- 				 dirty_accountable);
- 	} while (pgd++, addr = next, addr != end);
+diff --git a/sound/soc/codecs/wm8985.c b/sound/soc/codecs/wm8985.c
+index 14f6663..7b3f409 100644
+--- a/sound/soc/codecs/wm8985.c
++++ b/sound/soc/codecs/wm8985.c
+@@ -1122,33 +1122,22 @@ static int __devinit wm8985_spi_probe(struct spi_device *spi)
  
--	flush_tlb_range(vma, start, end);
-+	/* Only flush the TLB if we actually modified any entries: */
-+	if (pages)
-+		flush_tlb_range(vma, start, end);
+ 	spi_set_drvdata(spi, wm8985);
  
- 	return pages;
+-	wm8985->regmap = regmap_init_spi(spi, &wm8985_regmap);
++	wm8985->regmap = devm_regmap_init_spi(spi, &wm8985_regmap);
+ 	if (IS_ERR(wm8985->regmap)) {
+ 		ret = PTR_ERR(wm8985->regmap);
+ 		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+-		goto err;
++		return ret;
+ 	}
+ 
+ 	ret = snd_soc_register_codec(&spi->dev,
+ 				     &soc_codec_dev_wm8985, &wm8985_dai, 1);
+-	if (ret != 0)
+-		goto err;
+-
+-	return 0;
+-
+-err:
+-	regmap_exit(wm8985->regmap);
+ 	return ret;
  }
+ 
+ static int __devexit wm8985_spi_remove(struct spi_device *spi)
+ {
+-	struct wm8985_priv *wm8985 = spi_get_drvdata(spi);
+-
+ 	snd_soc_unregister_codec(&spi->dev);
+-	regmap_exit(wm8985->regmap);
+-
+ 	return 0;
+ }
+ 
+@@ -1175,33 +1164,22 @@ static __devinit int wm8985_i2c_probe(struct i2c_client *i2c,
+ 
+ 	i2c_set_clientdata(i2c, wm8985);
+ 
+-	wm8985->regmap = regmap_init_i2c(i2c, &wm8985_regmap);
++	wm8985->regmap = devm_regmap_init_i2c(i2c, &wm8985_regmap);
+ 	if (IS_ERR(wm8985->regmap)) {
+ 		ret = PTR_ERR(wm8985->regmap);
+ 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+-		goto err;
++		return ret;
+ 	}
+ 
+ 	ret = snd_soc_register_codec(&i2c->dev,
+ 				     &soc_codec_dev_wm8985, &wm8985_dai, 1);
+-	if (ret != 0)
+-		goto err;
+-
+-	return 0;
+-
+-err:
+-	regmap_exit(wm8985->regmap);
+ 	return ret;
+ }
+ 
+ static __devexit int wm8985_i2c_remove(struct i2c_client *i2c)
+ {
+-	struct wm8985_priv *wm8985 = i2c_get_clientdata(i2c);
+-
+ 	snd_soc_unregister_codec(&i2c->dev);
+-	regmap_exit(wm8985->regmap);
+-
+ 	return 0;
+ }
+ 
 -- 
-1.7.9.2
+1.7.4.1
 
