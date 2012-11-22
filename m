@@ -1,81 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab2KVVXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:23:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
+	id S932251Ab2KVVYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:24:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49645 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755229Ab2KVSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755220Ab2KVSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 042/171] netfilter: Mark SYN/ACK packets as invalid from original direction
-Date: Wed, 21 Nov 2012 16:39:48 -0800
-Message-Id: <20121122004037.584424331@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Chan <mchan@broadcom.com>, Anisse Astier <anisse@astier.eu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [ 67/83] tg3: unconditionally select HWMON support when tg3 is enabled.
+Date: Wed, 21 Nov 2012 16:42:29 -0800
+Message-Id: <20121122004219.912459624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 64f509ce71b08d037998e93dd51180c19b2f464c upstream.
+commit de0a41484c47d783dd4d442914815076aa2caac2 upstream.
 
-Clients should not send such packets. By accepting them, we open
-up a hole by wich ephemeral ports can be discovered in an off-path
-attack.
+There is the seldom used corner case where HWMON=m at the same
+time as TIGON3=y (typically randconfigs) which will cause a link
+fail like:
 
-See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
-http://arxiv.org/abs/1201.2074
+drivers/built-in.o: In function `tg3_close':
+tg3.c:(.text+0x16bd86): undefined reference to `hwmon_device_unregister'
+drivers/built-in.o: In function `tg3_hwmon_open':
+tg3.c:(.text+0x16fc4b): undefined reference to `hwmon_device_register'
+make[1]: *** [vmlinux] Error 1
 
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Fix it as suggested by DaveM[1] by having the Kconfig logic simply
+select HWMON when TIGON3 is selected.  This gets rid of all the
+extra IS_ENABLED ifdeffery in tg3.c as a side benefit.
+
+[1] http://marc.info/?l=linux-netdev&m=134250573718151&w=2
+
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Chan <mchan@broadcom.com>
+Reported-by: Anisse Astier <anisse@astier.eu>
+Suggested-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_proto_tcp.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/broadcom/Kconfig |    1 +
+ drivers/net/ethernet/broadcom/tg3.c   |    9 ---------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
 
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -158,21 +158,18 @@ static const u8 tcp_conntracks[2][6][TCP
-  *	sCL -> sSS
-  */
- /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
--/*synack*/ { sIV, sIV, sIG, sIG, sIG, sIG, sIG, sIG, sIG, sSR },
-+/*synack*/ { sIV, sIV, sSR, sIV, sIV, sIV, sIV, sIV, sIV, sSR },
- /*
-  *	sNO -> sIV	Too late and no reason to do anything
-  *	sSS -> sIV	Client can't send SYN and then SYN/ACK
-  *	sS2 -> sSR	SYN/ACK sent to SYN2 in simultaneous open
-- *	sSR -> sIG
-- *	sES -> sIG	Error: SYNs in window outside the SYN_SENT state
-- *			are errors. Receiver will reply with RST
-- *			and close the connection.
-- *			Or we are not in sync and hold a dead connection.
-- *	sFW -> sIG
-- *	sCW -> sIG
-- *	sLA -> sIG
-- *	sTW -> sIG
-- *	sCL -> sIG
-+ *	sSR -> sSR	Late retransmitted SYN/ACK in simultaneous open
-+ *	sES -> sIV	Invalid SYN/ACK packets sent by the client
-+ *	sFW -> sIV
-+ *	sCW -> sIV
-+ *	sLA -> sIV
-+ *	sTW -> sIV
-+ *	sCL -> sIV
-  */
- /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
- /*fin*/    { sIV, sIV, sFW, sFW, sLA, sLA, sLA, sTW, sCL, sIV },
+--- a/drivers/net/ethernet/broadcom/Kconfig
++++ b/drivers/net/ethernet/broadcom/Kconfig
+@@ -101,6 +101,7 @@ config TIGON3
+ 	tristate "Broadcom Tigon3 support"
+ 	depends on PCI
+ 	select PHYLIB
++	select HWMON
+ 	---help---
+ 	  This driver supports Broadcom Tigon3 based gigabit Ethernet cards.
+ 
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -44,10 +44,8 @@
+ #include <linux/prefetch.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/firmware.h>
+-#if IS_ENABLED(CONFIG_HWMON)
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
+-#endif
+ 
+ #include <net/checksum.h>
+ #include <net/ip.h>
+@@ -9517,7 +9515,6 @@ static int tg3_init_hw(struct tg3 *tp, i
+ 	return tg3_reset_hw(tp, reset_phy);
+ }
+ 
+-#if IS_ENABLED(CONFIG_HWMON)
+ static void tg3_sd_scan_scratchpad(struct tg3 *tp, struct tg3_ocir *ocir)
+ {
+ 	int i;
+@@ -9570,22 +9567,17 @@ static const struct attribute_group tg3_
+ 	.attrs = tg3_attributes,
+ };
+ 
+-#endif
+-
+ static void tg3_hwmon_close(struct tg3 *tp)
+ {
+-#if IS_ENABLED(CONFIG_HWMON)
+ 	if (tp->hwmon_dev) {
+ 		hwmon_device_unregister(tp->hwmon_dev);
+ 		tp->hwmon_dev = NULL;
+ 		sysfs_remove_group(&tp->pdev->dev.kobj, &tg3_group);
+ 	}
+-#endif
+ }
+ 
+ static void tg3_hwmon_open(struct tg3 *tp)
+ {
+-#if IS_ENABLED(CONFIG_HWMON)
+ 	int i, err;
+ 	u32 size = 0;
+ 	struct pci_dev *pdev = tp->pdev;
+@@ -9617,7 +9609,6 @@ static void tg3_hwmon_open(struct tg3 *t
+ 		dev_err(&pdev->dev, "Cannot register hwmon device, aborting\n");
+ 		sysfs_remove_group(&pdev->dev.kobj, &tg3_group);
+ 	}
+-#endif
+ }
+ 
+ 
 
 
