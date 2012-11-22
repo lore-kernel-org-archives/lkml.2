@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab2KVSd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:33:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49007 "EHLO mail.kernel.org"
+	id S1758424Ab2KVW3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:29:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49010 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753568Ab2KVSdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:44 -0500
+	id S1753681Ab2KVSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 075/171] ceph: ensure auth ops are defined before use
-Date: Wed, 21 Nov 2012 16:40:21 -0800
-Message-Id: <20121122004040.900999901@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 116/171] libceph: use con get/put methods
+Date: Wed, 21 Nov 2012 16:41:02 -0800
+Message-Id: <20121122004044.992562410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,102 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-(cherry picked from commit a255651d4cad89f1a606edd36135af892ada4f20)
+(cherry picked from commit 36eb71aa57e6a33d61fd90a2fd87f00c6844bc86)
 
-In the create_authorizer method for both the mds and osd clients,
-the auth_client->ops pointer is blindly dereferenced.  There is no
-obvious guarantee that this pointer has been assigned.  And
-furthermore, even if the ops pointer is non-null there is definitely
-no guarantee that the create_authorizer or destroy_authorizer
-methods are defined.
+The ceph_con_get/put() helpers manipulate the embedded con ref
+count, which isn't used now that ceph_connections are embedded in
+other structures.
 
-Add checks in both routines to make sure they are defined (non-null)
-before use.  Add similar checks in a few other spots in these files
-while we're at it.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/mds_client.c  |   14 ++++++--------
- net/ceph/osd_client.c |   15 ++++++++++-----
- 2 files changed, 16 insertions(+), 13 deletions(-)
+ net/ceph/messenger.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -3406,16 +3406,14 @@ static int get_authorizer(struct ceph_co
- 	int ret = 0;
- 
- 	if (force_new && auth->authorizer) {
--		ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		if (ac->ops && ac->ops->destroy_authorizer)
-+			ac->ops->destroy_authorizer(ac, auth->authorizer);
- 		auth->authorizer = NULL;
- 	}
--	if (auth->authorizer == NULL) {
--		if (ac->ops->create_authorizer) {
--			ret = ac->ops->create_authorizer(ac,
--						CEPH_ENTITY_TYPE_MDS, auth);
--			if (ret)
--				return ret;
--		}
-+	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
-+		ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS, auth);
-+		if (ret)
-+			return ret;
- 	}
- 
- 	*proto = ac->protocol;
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -664,10 +664,10 @@ static void put_osd(struct ceph_osd *osd
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -414,7 +414,7 @@ static void ceph_msg_remove(struct ceph_
  {
- 	dout("put_osd %p %d -> %d\n", osd, atomic_read(&osd->o_ref),
- 	     atomic_read(&osd->o_ref) - 1);
--	if (atomic_dec_and_test(&osd->o_ref)) {
-+	if (atomic_dec_and_test(&osd->o_ref) && osd->o_auth.authorizer) {
- 		struct ceph_auth_client *ac = osd->o_osdc->client->monc.auth;
+ 	list_del_init(&msg->list_head);
+ 	BUG_ON(msg->con == NULL);
+-	ceph_con_put(msg->con);
++	msg->con->ops->put(msg->con);
+ 	msg->con = NULL;
  
--		if (osd->o_auth.authorizer)
-+		if (ac->ops && ac->ops->destroy_authorizer)
- 			ac->ops->destroy_authorizer(ac, osd->o_auth.authorizer);
- 		kfree(osd);
+ 	ceph_msg_put(msg);
+@@ -440,7 +440,7 @@ static void reset_connection(struct ceph
+ 		con->in_msg->con = NULL;
+ 		ceph_msg_put(con->in_msg);
+ 		con->in_msg = NULL;
+-		ceph_con_put(con);
++		con->ops->put(con);
  	}
-@@ -2119,10 +2119,11 @@ static int get_authorizer(struct ceph_co
- 	int ret = 0;
  
- 	if (force_new && auth->authorizer) {
--		ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		if (ac->ops && ac->ops->destroy_authorizer)
-+			ac->ops->destroy_authorizer(ac, auth->authorizer);
- 		auth->authorizer = NULL;
+ 	con->connect_seq = 0;
+@@ -1919,7 +1919,7 @@ static void process_message(struct ceph_
+ 	con->in_msg->con = NULL;
+ 	msg = con->in_msg;
+ 	con->in_msg = NULL;
+-	ceph_con_put(con);
++	con->ops->put(con);
+ 
+ 	/* if first message, set peer_name */
+ 	if (con->peer_name.type == 0)
+@@ -2281,7 +2281,7 @@ static void ceph_fault(struct ceph_conne
+ 		con->in_msg->con = NULL;
+ 		ceph_msg_put(con->in_msg);
+ 		con->in_msg = NULL;
+-		ceph_con_put(con);
++		con->ops->put(con);
  	}
--	if (auth->authorizer == NULL) {
-+	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
- 		ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD, auth);
- 		if (ret)
- 			return ret;
-@@ -2144,6 +2145,10 @@ static int verify_authorizer_reply(struc
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
  
-+	/*
-+	 * XXX If ac->ops or ac->ops->verify_authorizer_reply is null,
-+	 * XXX which do we do:  succeed or fail?
-+	 */
- 	return ac->ops->verify_authorizer_reply(ac, o->o_auth.authorizer, len);
- }
+ 	/* Requeue anything that hasn't been acked */
+@@ -2400,7 +2400,7 @@ void ceph_con_send(struct ceph_connectio
+ 	mutex_lock(&con->mutex);
  
-@@ -2153,7 +2158,7 @@ static int invalidate_authorizer(struct
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
+ 	BUG_ON(msg->con != NULL);
+-	msg->con = ceph_con_get(con);
++	msg->con = con->ops->get(con);
+ 	BUG_ON(msg->con == NULL);
  
--	if (ac->ops->invalidate_authorizer)
-+	if (ac->ops && ac->ops->invalidate_authorizer)
- 		ac->ops->invalidate_authorizer(ac, CEPH_ENTITY_TYPE_OSD);
+ 	BUG_ON(!list_empty(&msg->list_head));
+@@ -2436,7 +2436,7 @@ void ceph_msg_revoke(struct ceph_msg *ms
+ 		dout("%s %p msg %p - was on queue\n", __func__, con, msg);
+ 		list_del_init(&msg->list_head);
+ 		BUG_ON(msg->con == NULL);
+-		ceph_con_put(msg->con);
++		msg->con->ops->put(msg->con);
+ 		msg->con = NULL;
+ 		msg->hdr.seq = 0;
  
- 	return ceph_monc_validate_auth(&osdc->client->monc);
+@@ -2646,7 +2646,7 @@ static bool ceph_con_in_msg_alloc(struct
+ 		con->in_msg = con->ops->alloc_msg(con, hdr, &skip);
+ 		mutex_lock(&con->mutex);
+ 		if (con->in_msg) {
+-			con->in_msg->con = ceph_con_get(con);
++			con->in_msg->con = con->ops->get(con);
+ 			BUG_ON(con->in_msg->con == NULL);
+ 		}
+ 		if (skip)
+@@ -2662,7 +2662,7 @@ static bool ceph_con_in_msg_alloc(struct
+ 			       type, front_len);
+ 			return false;
+ 		}
+-		con->in_msg->con = ceph_con_get(con);
++		con->in_msg->con = con->ops->get(con);
+ 		BUG_ON(con->in_msg->con == NULL);
+ 		con->in_msg->page_alignment = le16_to_cpu(hdr->data_off);
+ 	}
 
 
