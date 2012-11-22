@@ -1,58 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab2KVSmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:42:23 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47419 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab2KVSku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:50 -0500
-Message-ID: <50AD6C4A.4030809@gmail.com>
-Date: Thu, 22 Nov 2012 01:05:30 +0100
-From: Cyril Roelandt <tipecaml@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] acpi_system_write_wakeup_device(): fix error check for
- unsigned variable.
-References: <1353117263-6957-1-git-send-email-tipecaml@gmail.com> <1732852.VDXGV3Ao2T@vostro.rjw.lan>
-In-Reply-To: <1732852.VDXGV3Ao2T@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755517Ab2KVVPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:15:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299Ab2KVSkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Zheng Yan <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [ 092/171] ceph: check PG_Private flag before accessing page->private
+Date: Wed, 21 Nov 2012 16:40:38 -0800
+Message-Id: <20121122004042.591907522@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 01:44 AM, Rafael J. Wysocki wrote:
-> On Saturday, November 17, 2012 02:54:23 AM Cyril Roelandt wrote:
->> The LEN variable is unsigned, therefore checking whether it is less than 0 is
->> useless.
->>
->> Signed-off-by: Cyril Roelandt<tipecaml@gmail.com>
->> ---
->>   drivers/acpi/proc.c |    2 --
->>   1 file changed, 2 deletions(-)
->>
->> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
->> index 27adb09..37871a7 100644
->> --- a/drivers/acpi/proc.c
->> +++ b/drivers/acpi/proc.c
->> @@ -366,8 +366,6 @@ acpi_system_write_wakeup_device(struct file *file,
->>
->>   	if (len>  4)
->>   		len = 4;
->> -	if (len<  0)
->> -		return -EFAULT;
->
-> I would prefer to check if count<  0 instead.
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+
+(cherry picked from commit 28c0254ede13ab575d2df5c6585ed3d4817c3e6b)
+
+I got lots of NULL pointer dereference Oops when compiling kernel on ceph.
+The bug is because the kernel page migration routine replaces some pages
+in the page cache with new pages, these new pages' private can be non-zero.
+
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/ceph/addr.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -54,7 +54,12 @@
+ 	(CONGESTION_ON_THRESH(congestion_kb) -				\
+ 	 (CONGESTION_ON_THRESH(congestion_kb) >> 2))
+ 
+-
++static inline struct ceph_snap_context *page_snap_context(struct page *page)
++{
++	if (PagePrivate(page))
++		return (void *)page->private;
++	return NULL;
++}
+ 
+ /*
+  * Dirty a page.  Optimistically adjust accounting, on the assumption
+@@ -142,10 +147,9 @@ static void ceph_invalidatepage(struct p
+ {
+ 	struct inode *inode;
+ 	struct ceph_inode_info *ci;
+-	struct ceph_snap_context *snapc = (void *)page->private;
++	struct ceph_snap_context *snapc = page_snap_context(page);
+ 
+ 	BUG_ON(!PageLocked(page));
+-	BUG_ON(!page->private);
+ 	BUG_ON(!PagePrivate(page));
+ 	BUG_ON(!page->mapping);
+ 
+@@ -182,7 +186,6 @@ static int ceph_releasepage(struct page
+ 	struct inode *inode = page->mapping ? page->mapping->host : NULL;
+ 	dout("%p releasepage %p idx %lu\n", inode, page, page->index);
+ 	WARN_ON(PageDirty(page));
+-	WARN_ON(page->private);
+ 	WARN_ON(PagePrivate(page));
+ 	return 0;
+ }
+@@ -443,7 +446,7 @@ static int writepage_nounlock(struct pag
+ 	osdc = &fsc->client->osdc;
+ 
+ 	/* verify this is a writeable snap context */
+-	snapc = (void *)page->private;
++	snapc = page_snap_context(page);
+ 	if (snapc == NULL) {
+ 		dout("writepage %p page %p not dirty?\n", inode, page);
+ 		goto out;
+@@ -451,7 +454,7 @@ static int writepage_nounlock(struct pag
+ 	oldest = get_oldest_context(inode, &snap_size);
+ 	if (snapc->seq > oldest->seq) {
+ 		dout("writepage %p page %p snapc %p not writeable - noop\n",
+-		     inode, page, (void *)page->private);
++		     inode, page, snapc);
+ 		/* we should only noop if called by kswapd */
+ 		WARN_ON((current->flags & PF_MEMALLOC) == 0);
+ 		ceph_put_snap_context(oldest);
+@@ -591,7 +594,7 @@ static void writepages_finish(struct cep
+ 			clear_bdi_congested(&fsc->backing_dev_info,
+ 					    BLK_RW_ASYNC);
+ 
+-		ceph_put_snap_context((void *)page->private);
++		ceph_put_snap_context(page_snap_context(page));
+ 		page->private = 0;
+ 		ClearPagePrivate(page);
+ 		dout("unlocking %d %p\n", i, page);
+@@ -795,7 +798,7 @@ get_more_pages:
+ 			}
+ 
+ 			/* only if matching snap context */
+-			pgsnapc = (void *)page->private;
++			pgsnapc = page_snap_context(page);
+ 			if (pgsnapc->seq > snapc->seq) {
+ 				dout("page snapc %p %lld > oldest %p %lld\n",
+ 				     pgsnapc, pgsnapc->seq, snapc, snapc->seq);
+@@ -984,7 +987,7 @@ retry_locked:
+ 	BUG_ON(!ci->i_snap_realm);
+ 	down_read(&mdsc->snap_rwsem);
+ 	BUG_ON(!ci->i_snap_realm->cached_context);
+-	snapc = (void *)page->private;
++	snapc = page_snap_context(page);
+ 	if (snapc && snapc != ci->i_head_snapc) {
+ 		/*
+ 		 * this page is already dirty in another (older) snap
 
 
-count has type size_t, so it is also an unsigned variable. I think that 
-acpi_system_write_wakeup_device really cannot be called with a "count" 
-parameter that is less than 0.
-
-WBR,
-Cyril Roelandt.
