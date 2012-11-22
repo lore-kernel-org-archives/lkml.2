@@ -1,132 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab2KVTLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:11:46 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:60182 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab2KVTLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:11:09 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mmc: dw_mmc: Handle wp-gpios from device tree
-Date: Wed, 21 Nov 2012 14:03:03 -0800
-Message-Id: <1353535387-32106-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1353535387-32106-1-git-send-email-dianders@chromium.org>
-References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
+	id S1756573Ab2KVTLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:11:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:57496 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916Ab2KVTLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:11:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,298,1352102400"; 
+   d="scan'208";a="250943288"
+Subject: [PATCH] watchdog: optimizing the hrtimer interval for power saving
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: akpm@linux-foundation.org, dzickus@redhat.com, mingo@kernel.org,
+        rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Nov 2012 00:48:26 +0800
+Message-ID: <1353602906.15558.1695.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some SoCs (like exynos5250) you need to use an external GPIO for
-write protect.  Add support for wp-gpios to the core dw_mmc driver
-since it could be useful across multiple SoCs.
 
-With this change I am able to make use of the write protect for the
-external SD slot on exynos5250-snow.
+By default, the watchdog threshold is 10, it means every 4s
+every CPU will receive one hrtimer interrupt, for low power
+device, it will cause 4-5mV power impact when device is deep
+sleep.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+So here want to optimize it as below:
+4s + 4s + 4s + 4s + 4s
+== >
+12s + 2s + 2s + 2s + 2s
+3/5   1/10 1/10 1/10 1/10
+
+In 5 chances, once one chance is hit, then we can start the
+hrtimer with a longer period sample(12s). Until the current
+chance is not hit, will start the hrtimer with a shorted
+period sample(2s).
+
+With this patch, in most case the hrtimer will be 12s instead
+of 4s averagely. It can save the device power indeed.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 ---
- drivers/mmc/host/dw_mmc.c |   35 +++++++++++++++++++++++++++++++++++
- 1 files changed, 35 insertions(+), 0 deletions(-)
+ kernel/watchdog.c |   30 ++++++++++++++++++++++++++++--
+ 1 files changed, 28 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 5b41348..9c79870 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -34,6 +34,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/workqueue.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include "dw_mmc.h"
- 
-@@ -74,6 +75,7 @@ struct idmac_desc {
-  * struct dw_mci_slot - MMC slot state
-  * @mmc: The mmc_host representing this slot.
-  * @host: The MMC controller this slot is using.
-+ * @wp_gpio: If gpio_is_valid() we'll use this to read write protect.
-  * @ctype: Card type for this slot.
-  * @mrq: mmc_request currently being processed or waiting to be
-  *	processed, or NULL when the slot is idle.
-@@ -88,6 +90,8 @@ struct dw_mci_slot {
- 	struct mmc_host		*mmc;
- 	struct dw_mci		*host;
- 
-+	int			wp_gpio;
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index dd4b80a..6457e62 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -125,7 +125,24 @@ static u64 get_sample_period(void)
+ 	 * and hard thresholds) to increment before the
+ 	 * hardlockup detector generates a warning
+ 	 */
+-	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
++	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 10);
++}
 +
- 	u32			ctype;
- 
- 	struct mmc_request	*mrq;
-@@ -832,6 +836,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 		read_only = 0;
- 	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
-+	else if (gpio_is_valid(slot->wp_gpio))
-+		read_only = gpio_get_value(slot->wp_gpio);
- 	else
- 		read_only =
- 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
-@@ -1802,6 +1808,29 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- 			       " as 1\n");
- 	return bus_wd;
- }
-+
-+/* find the write protect gpio for a given slot; or -1 if none specified */
-+static u32 dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++static u64 get_long_sample_period(void)
 +{
-+	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
-+	int gpio;
++	/*
++	 * convert watchdog_thresh from seconds to ns
++	 * We want to give 5 chances to detect softlockup,
++	 * for power saving, once one chance is succeeding,
++	 * we can set long period to avoid power consumption.
++	 * Currently, set the long sample period is:
++	 * 20s * 3/5 = 12s, once this 12s chance is not hit,
++	 * we will divide the left 8s into 4 pieces, give every
++	 * chance every 2s, so it will be likely:
++	 * 12s + 2s + 2s + 2s + 2s,
++	 * Anyway, we just use 12s is enough in normal case.
++	 */
++	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC * 3 / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
+@@ -267,6 +284,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	unsigned long touch_ts = __this_cpu_read(watchdog_touch_ts);
+ 	struct pt_regs *regs = get_irq_regs();
+ 	int duration;
++	bool is_touched;
 +
-+	if (!np)
-+		return -1;
-+
-+	gpio = of_get_named_gpio(np, "wp-gpios", 0);
-+
-+	/* Having a missing entry is valid; return silently */
-+	if (!gpio_is_valid(gpio))
-+		return -1;
-+
-+	if (devm_gpio_request(dev, gpio, "dw-mci-wp")) {
-+		dev_warn(dev, "gpio [%d] request failed\n", gpio);
-+		return -1;
++	is_touched = (__this_cpu_read(hrtimer_interrupts) ==
++		__this_cpu_read(soft_lockup_hrtimer_cnt));
+ 
+ 	/* kick the hardlockup detector */
+ 	watchdog_interrupt_count();
+@@ -275,7 +296,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	wake_up_process(__this_cpu_read(softlockup_watchdog));
+ 
+ 	/* .. and repeat */
+-	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
++	if (is_touched) {
++		hrtimer_forward_now(hrtimer,
++			ns_to_ktime(get_long_sample_period()));
++	} else {
++		hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
 +	}
-+
-+	return gpio;
-+}
- #else /* CONFIG_OF */
- static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- {
-@@ -1811,6 +1840,10 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
- {
- 	return NULL;
- }
-+static u32 dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
-+{
-+	return -1;
-+}
- #endif /* CONFIG_OF */
  
- static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
-@@ -1923,6 +1956,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	else
- 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
- 
-+	slot->wp_gpio = dw_mci_of_get_wp_gpio(host->dev, slot->id);
-+
- 	mmc_add_host(mmc);
- 
- #if defined(CONFIG_DEBUG_FS)
+ 	if (touch_ts == 0) {
+ 		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
 -- 
-1.7.7.3
+1.7.0.4
+
+
 
