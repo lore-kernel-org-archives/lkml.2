@@ -1,42 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab2KVUKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:10:12 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55980 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab2KVUKK (ORCPT
+	id S1757386Ab2KVUKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:10:55 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757075Ab2KVTvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:10:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353541372.12585.14.camel@laptop>
-References: <1353541372.12585.14.camel@laptop>
-Date: Wed, 21 Nov 2012 20:08:55 -0800
-Message-ID: <CAN8TOE-10VYTOS8EbPWxs0HyhdeZBzxL_8gmJsMmXPO1ti_6bQ@mail.gmail.com>
-Subject: Re: [PATCH] mtd cs553x_nand: Initialise ecc.strength before nand_scan()
-From: Brian Norris <computersforpeace@gmail.com>
-To: Nathan Williams <nathan@traverse.com.au>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Dunn <mikedunn@newsguy.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:51:21 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 21/46] staging: line6: drop tuner_pitch sysfs attr
+Date: Thu, 22 Nov 2012 20:49:00 +0100
+Message-Id: <1353613765-18690-22-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 3:42 PM, Nathan Williams <nathan@traverse.com.au> wrote:
-> Loading cs553x_nand with Hynix H27U1G8F2BTR NAND flash causes this bug:
->
-> kernel BUG at drivers/mtd/nand/nand_base.c:3345!
-...
-> Initialising ecc.strength before the call to nand_scan() fixes this.
+Dropping this final tuner sysfs attr also leaves the
+POD_GET_SYSTEM_PARAM() macro, pod_get_system_param_string(), and
+pod_get_system_param_int() unused.  Remove them immediately to avoid
+compiler warnings.
 
-Acked-by: Brian Norris <computersforpeace@gmail.com>
+POD_monitor_level is now the only SYSEX value that needs to be watched
+by the driver since the ALSA volume control should reflect the current
+monitor volume level used by the device.  Therefore, drop the switch
+statement entirely and just check for POD_monitor_level, ignoring
+unknown system parameter changes.
 
-BTW, I made a quick read through of the other NAND drivers to look for
-similar errors. I think this is the only one where the only
-ecc.strenght initialization occurred after the nand_scan() or
-nand_scan_tail() call.
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 102 +-------------------------------------------
+ drivers/staging/line6/pod.h |  15 -------
+ 2 files changed, 1 insertion(+), 116 deletions(-)
 
-Thanks,
-Brian
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index df2f37a..052db4a 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -236,28 +236,8 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 								   << 8) |
+ 					    ((int)buf[9] << 4) | (int)buf[10];
+ 
+-#define PROCESS_SYSTEM_PARAM(x) \
+-					case POD_ ## x: \
+-						pod->x.value = value; \
+-						wake_up(&pod->x.wait); \
+-						break;
+-
+-					switch (buf[6]) {
+-					case POD_monitor_level:
++					if (buf[6] == POD_monitor_level)
+ 						pod->monitor_level = value;
+-						break;
+-
+-						PROCESS_SYSTEM_PARAM
+-						    (tuner_pitch);
+-
+-#undef PROCESS_SYSTEM_PARAM
+-
+-					default:
+-						dev_dbg(pod->line6.ifcdev,
+-							"unknown tuner/system response %02X\n",
+-							buf[6]);
+-					}
+-
+ 					break;
+ 				}
+ 
+@@ -363,66 +343,6 @@ static bool pod_is_tuner(int code)
+ }
+ 
+ /*
+-	Get system parameter (as integer).
+-	@param tuner non-zero, if code refers to a tuner parameter
+-*/
+-static int pod_get_system_param_int(struct usb_line6_pod *pod, int *value,
+-				    int code, struct ValueWait *param, int sign)
+-{
+-	char *sysex;
+-	static const int size = 1;
+-	int retval = 0;
+-
+-	if (((pod->prog_data.control[POD_tuner] & 0x40) == 0)
+-	    && pod_is_tuner(code))
+-		return -ENODEV;
+-
+-	/* send value request to device: */
+-	param->value = POD_system_invalid;
+-	sysex = pod_alloc_sysex_buffer(pod, POD_SYSEX_SYSTEMREQ, size);
+-
+-	if (!sysex)
+-		return -ENOMEM;
+-
+-	sysex[SYSEX_DATA_OFS] = code;
+-	line6_send_sysex_message(&pod->line6, sysex, size);
+-	kfree(sysex);
+-
+-	/* wait for device to respond: */
+-	retval =
+-	    wait_event_interruptible(param->wait,
+-				     param->value != POD_system_invalid);
+-
+-	if (retval < 0)
+-		return retval;
+-
+-	*value = sign ? (int)(signed short)param->value : (int)(unsigned short)
+-	    param->value;
+-
+-	if (*value == POD_system_invalid)
+-		*value = 0;	/* don't report uninitialized values */
+-
+-	return 0;
+-}
+-
+-/*
+-	Get system parameter (as string).
+-	@param tuner non-zero, if code refers to a tuner parameter
+-*/
+-static ssize_t pod_get_system_param_string(struct usb_line6_pod *pod, char *buf,
+-					   int code, struct ValueWait *param,
+-					   int sign)
+-{
+-	int retval, value = 0;
+-	retval = pod_get_system_param_int(pod, &value, code, param, sign);
+-
+-	if (retval < 0)
+-		return retval;
+-
+-	return sprintf(buf, "%d\n", value);
+-}
+-
+-/*
+ 	Send system parameter (from integer).
+ 	@param tuner non-zero, if code refers to a tuner parameter
+ */
+@@ -604,20 +524,6 @@ static void pod_startup5(struct work_struct *work)
+ 			       line6->properties->device_bit, line6->ifcdev);
+ }
+ 
+-#define POD_GET_SYSTEM_PARAM(code, sign) \
+-static ssize_t pod_get_ ## code(struct device *dev, \
+-				struct device_attribute *attr, char *buf) \
+-{ \
+-	struct usb_interface *interface = to_usb_interface(dev); \
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface); \
+-	return pod_get_system_param_string(pod, buf, POD_ ## code,	\
+-					   &pod->code, sign);		\
+-}
+-
+-POD_GET_SYSTEM_PARAM(tuner_pitch, 1);
+-
+-#undef GET_SYSTEM_PARAM
+-
+ /* POD special files: */
+ static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
+ static DEVICE_ATTR(finish, S_IWUSR, line6_nop_read, pod_set_finish);
+@@ -627,7 +533,6 @@ static DEVICE_ATTR(midi_postprocess, S_IWUSR | S_IRUGO,
+ 		   pod_get_midi_postprocess, pod_set_midi_postprocess);
+ static DEVICE_ATTR(serial_number, S_IRUGO, pod_get_serial_number,
+ 		   line6_nop_write);
+-static DEVICE_ATTR(tuner_pitch, S_IRUGO, pod_get_tuner_pitch, line6_nop_write);
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+ static DEVICE_ATTR(raw, S_IWUSR, line6_nop_read, line6_set_raw);
+@@ -711,7 +616,6 @@ static int pod_create_files2(struct device *dev)
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_firmware_version));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_serial_number));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_tuner_pitch));
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_raw));
+@@ -735,9 +639,6 @@ static int pod_try_init(struct usb_interface *interface,
+ 	if ((interface == NULL) || (pod == NULL))
+ 		return -ENODEV;
+ 
+-	/* initialize wait queues: */
+-	init_waitqueue_head(&pod->tuner_pitch.wait);
+-
+ 	/* initialize USB buffers: */
+ 	err = line6_dumpreq_init(&pod->dumpreq, pod_request_channel,
+ 				 sizeof(pod_request_channel));
+@@ -830,7 +731,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 			device_remove_file(dev, &dev_attr_firmware_version);
+ 			device_remove_file(dev, &dev_attr_midi_postprocess);
+ 			device_remove_file(dev, &dev_attr_serial_number);
+-			device_remove_file(dev, &dev_attr_tuner_pitch);
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+ 			device_remove_file(dev, &dev_attr_raw);
+diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
+index 4930742..481cce6 100644
+--- a/drivers/staging/line6/pod.h
++++ b/drivers/staging/line6/pod.h
+@@ -15,7 +15,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/usb.h>
+-#include <linux/wait.h>
+ 
+ #include <sound/core.h>
+ 
+@@ -54,15 +53,6 @@ enum {
+ };
+ 
+ /**
+-	Data structure for values that need to be requested explicitly.
+-	This is the case for system and tuner settings.
+-*/
+-struct ValueWait {
+-	int value;
+-	wait_queue_head_t wait;
+-};
+-
+-/**
+ 	Binary PODxt Pro program dump
+ */
+ struct pod_program {
+@@ -99,11 +89,6 @@ struct usb_line6_pod {
+ 	struct pod_program prog_data_buf;
+ 
+ 	/**
+-		Pitch value received from tuner.
+-	*/
+-	struct ValueWait tuner_pitch;
+-
+-	/**
+ 		Instrument monitor level.
+ 	*/
+ 	int monitor_level;
+-- 
+1.8.0
+
