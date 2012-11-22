@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab2KVUIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:08:35 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38375 "EHLO
+	id S1757380Ab2KVTvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:51:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab2KVUIa (ORCPT
+	with ESMTP id S1755980Ab2KVTvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:08:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <000701cdc852$a5e4a130$f1ade390$%jun@samsung.com>
-References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
-	<1353535387-32106-2-git-send-email-dianders@chromium.org>
-	<000701cdc852$a5e4a130$f1ade390$%jun@samsung.com>
-Date: Wed, 21 Nov 2012 20:33:55 -0800
-X-Google-Sender-Auth: 9Xja4oYtxp7hWi9NR1IEV3jf_g4
-Message-ID: <CAD=FV=Xz_nQSLqoR7TSd8vn5No9+TVa9q-hp1i0BpgUK=G3EoQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: dw_mmc: Handle wp-gpios from device tree
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:51:18 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 19/46] staging: line6: drop tuner_note sysfs attr
+Date: Thu, 22 Nov 2012 20:48:58 +0100
+Message-Id: <1353613765-18690-20-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 5:42 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> Hi,
->
-> wp-gpios has been implemented in dw_mmc-exynos.c
-> It can be reused for EXYNOS platform? We need to modify some though.
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 7 -------
+ drivers/staging/line6/pod.h | 5 -----
+ 2 files changed, 12 deletions(-)
 
-Yup, I've seen that.  Patch 1/2 ("mmc: dw_mmc: exynos: Stop claiming
-wp-gpio") addressed that.  For some reason I can't find that on
-LKML.org yet.  Strange.  :-/  I'll forward it on to you shortly.
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 3184570..57fbe27 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -250,8 +250,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 						PROCESS_SYSTEM_PARAM
+ 						    (tuner_mute);
+ 						PROCESS_SYSTEM_PARAM
+-						    (tuner_note);
+-						PROCESS_SYSTEM_PARAM
+ 						    (tuner_pitch);
+ 
+ #undef PROCESS_SYSTEM_PARAM
+@@ -644,7 +642,6 @@ static ssize_t pod_set_ ## code(struct device *dev, \
+ }
+ 
+ POD_GET_SET_SYSTEM_PARAM(tuner_mute, 0x0001, 0);
+-POD_GET_SYSTEM_PARAM(tuner_note, 1);
+ POD_GET_SYSTEM_PARAM(tuner_pitch, 1);
+ 
+ #undef GET_SET_SYSTEM_PARAM
+@@ -661,7 +658,6 @@ static DEVICE_ATTR(serial_number, S_IRUGO, pod_get_serial_number,
+ 		   line6_nop_write);
+ static DEVICE_ATTR(tuner_mute, S_IWUSR | S_IRUGO, pod_get_tuner_mute,
+ 		   pod_set_tuner_mute);
+-static DEVICE_ATTR(tuner_note, S_IRUGO, pod_get_tuner_note, line6_nop_write);
+ static DEVICE_ATTR(tuner_pitch, S_IRUGO, pod_get_tuner_pitch, line6_nop_write);
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+@@ -747,7 +743,6 @@ static int pod_create_files2(struct device *dev)
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_serial_number));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_tuner_mute));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_tuner_note));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_tuner_pitch));
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+@@ -774,7 +769,6 @@ static int pod_try_init(struct usb_interface *interface,
+ 
+ 	/* initialize wait queues: */
+ 	init_waitqueue_head(&pod->tuner_mute.wait);
+-	init_waitqueue_head(&pod->tuner_note.wait);
+ 	init_waitqueue_head(&pod->tuner_pitch.wait);
+ 
+ 	/* initialize USB buffers: */
+@@ -870,7 +864,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 			device_remove_file(dev, &dev_attr_midi_postprocess);
+ 			device_remove_file(dev, &dev_attr_serial_number);
+ 			device_remove_file(dev, &dev_attr_tuner_mute);
+-			device_remove_file(dev, &dev_attr_tuner_note);
+ 			device_remove_file(dev, &dev_attr_tuner_pitch);
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
+index 91f2661..1659120 100644
+--- a/drivers/staging/line6/pod.h
++++ b/drivers/staging/line6/pod.h
+@@ -104,11 +104,6 @@ struct usb_line6_pod {
+ 	struct ValueWait tuner_mute;
+ 
+ 	/**
+-		Note received from tuner.
+-	*/
+-	struct ValueWait tuner_note;
+-
+-	/**
+ 		Pitch value received from tuner.
+ 	*/
+ 	struct ValueWait tuner_pitch;
+-- 
+1.8.0
 
-In any case: I found that the exynos code didn't actually work.  It
-claimed the GPIO but didn't ever look at it.
-
-I have the beginnings of the code to implement this properly in the
-exynos code but I stopped working on it when I decided that other SoCs
-could also benefit from the code and it fit better in the general
-dw_mmc driver.
-
-If you disagree and would like me to cleanup the version of this patch
-that's just in the exynos driver and post that, I will.  Just let me
-know.
-
-
-Thanks for the review!
-
--Doug
