@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2KVSf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:35:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37443 "EHLO mx2.suse.de"
+	id S1754179Ab2KVSgn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:36:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37450 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022Ab2KVSfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:35:55 -0500
-Date: Wed, 21 Nov 2012 22:37:32 +0100
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>, axboe@kernel.dk,
-        tytso@mit.edu, david@fromorbit.com, bpm@sgi.com,
-        viro@zeniv.linux.org.uk, jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 1/9] vfs: Handle O_SYNC AIO DIO in generic code properly
-Message-ID: <20121121213732.GG30250@quack.suse.cz>
-References: <20121120074116.24645.36369.stgit@blackbox.djwong.org>
- <20121120074123.24645.41965.stgit@blackbox.djwong.org>
- <20121121100809.GE23339@infradead.org>
- <x497gpevqoy.fsf@segfault.boston.devel.redhat.com>
- <20121121182901.GA4519@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121182901.GA4519@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753957Ab2KVSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:35:57 -0500
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Thu, 22 Nov 2012 13:48:39 +0100
+Subject: [PATCH] bonding: in balance-rr mode, set curr_active_slave only if it is up
+To: netdev@vger.kernel.org
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        linux-kernel@vger.kernel.org
+Message-Id: <20121122125202.14252C35B8@unicorn.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-11-12 13:29:01, Christoph Hellwig wrote:
-> On Wed, Nov 21, 2012 at 11:58:05AM -0500, Jeff Moyer wrote:
-> > > I'd like to use this as a vehicle to revisit how dio completions work.
-> > 
-> > I don't like the sound of that.  ;-)  It sounds like this bugfix may get
-> > further delayed by the desire for unrelated code cleanup.
-> 
-> I've got a prototype that isn't much more invasive than the current
-> series.  I'll finish it up and run it through QA and will post it
-> tomorrow.
-  Great, I wanted to have a look into it but you beat me to it ;)
+If all slaves of a balance-rr bond with ARP monitor are enslaved
+with down link state, bond keeps down state even after slaves
+go up.
 
-								Honza
+This is caused by bond_enslave() setting curr_active_slave to
+first slave not taking into account its link state. As
+bond_loadbalance_arp_mon() uses curr_active_slave to identify
+whether slave's down->up transition should update bond's link
+state, bond stays down even if slaves are up (until first slave
+goes from up to down at least once).
+
+Before commit f31c7937 "bonding: start slaves with link down for
+ARP monitor", this was masked by slaves always starting in UP
+state with ARP monitor (and MII monitor not relying on
+curr_active_slave being NULL if there is no slave up).
+
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+---
+ drivers/net/bonding/bond_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5f5b69f..c8bff3e 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1838,7 +1838,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 		 * anyway (it holds no special properties of the bond device),
+ 		 * so we can change it without calling change_active_interface()
+ 		 */
+-		if (!bond->curr_active_slave)
++		if (!bond->curr_active_slave && new_slave->link == BOND_LINK_UP)
+ 			bond->curr_active_slave = new_slave;
+ 
+ 		break;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
