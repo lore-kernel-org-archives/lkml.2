@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab2KVWoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:44:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49004 "EHLO mail.kernel.org"
+	id S1758608Ab2KVWoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:44:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49016 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469Ab2KVSdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753473Ab2KVSdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 074/171] ceph: messenger: reduce args to create_authorizer
-Date: Wed, 21 Nov 2012 16:40:20 -0800
-Message-Id: <20121122004040.804710384@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 048/171] s390/signal: set correct address space control
+Date: Wed, 21 Nov 2012 16:39:54 -0800
+Message-Id: <20121122004038.192218386@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,189 +25,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-(cherry picked from commit 74f1869f76d043bad12ec03b4d5f04a8c3d1f157)
+commit fa968ee215c0ca91e4a9c3a69ac2405aae6e5d2f upstream.
 
-Make use of the new ceph_auth_handshake structure in order to reduce
-the number of arguments passed to the create_authorizor method in
-ceph_auth_client_ops.  Use a local variable of that type as a
-shorthand in the get_authorizer method definitions.
+If user space is running in primary mode it can switch to secondary
+or access register mode, this is used e.g. in the clock_gettime code
+of the vdso. If a signal is delivered to the user space process while
+it has been running in access register mode the signal handler is
+executed in access register mode as well which will result in a crash
+most of the time.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Set the address space control bits in the PSW to the default for the
+execution of the signal handler and make sure that the previous
+address space control is restored on signal return. Take care
+that user space can not switch to the kernel address space by
+modifying the registers in the signal frame.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/mds_client.c      |   27 ++++++++++++---------------
- include/linux/ceph/auth.h |    4 +---
- net/ceph/auth_none.c      |   15 +++++++--------
- net/ceph/auth_x.c         |   15 +++++++--------
- net/ceph/osd_client.c     |   26 +++++++++++---------------
- 5 files changed, 38 insertions(+), 49 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -3402,31 +3402,28 @@ static int get_authorizer(struct ceph_co
- 	struct ceph_mds_session *s = con->private;
- 	struct ceph_mds_client *mdsc = s->s_mdsc;
- 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
-+	struct ceph_auth_handshake *auth = &s->s_auth;
- 	int ret = 0;
+---
+ arch/s390/include/asm/compat.h   |    2 +-
+ arch/s390/include/asm/ptrace.h   |    4 ++--
+ arch/s390/kernel/compat_signal.c |   14 ++++++++++++--
+ arch/s390/kernel/signal.c        |   14 ++++++++++++--
+ 4 files changed, 27 insertions(+), 7 deletions(-)
+
+--- a/arch/s390/include/asm/compat.h
++++ b/arch/s390/include/asm/compat.h
+@@ -20,7 +20,7 @@
+ #define PSW32_MASK_CC		0x00003000UL
+ #define PSW32_MASK_PM		0x00000f00UL
  
--	if (force_new && s->s_auth.authorizer) {
--		ac->ops->destroy_authorizer(ac, s->s_auth.authorizer);
--		s->s_auth.authorizer = NULL;
-+	if (force_new && auth->authorizer) {
-+		ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		auth->authorizer = NULL;
- 	}
--	if (s->s_auth.authorizer == NULL) {
-+	if (auth->authorizer == NULL) {
- 		if (ac->ops->create_authorizer) {
--			ret = ac->ops->create_authorizer(
--				ac, CEPH_ENTITY_TYPE_MDS,
--				&s->s_auth.authorizer,
--				&s->s_auth.authorizer_buf,
--				&s->s_auth.authorizer_buf_len,
--				&s->s_auth.authorizer_reply_buf,
--				&s->s_auth.authorizer_reply_buf_len);
-+			ret = ac->ops->create_authorizer(ac,
-+						CEPH_ENTITY_TYPE_MDS, auth);
- 			if (ret)
- 				return ret;
- 		}
- 	}
+-#define PSW32_MASK_USER		0x00003F00UL
++#define PSW32_MASK_USER		0x0000FF00UL
  
- 	*proto = ac->protocol;
--	*buf = s->s_auth.authorizer_buf;
--	*len = s->s_auth.authorizer_buf_len;
--	*reply_buf = s->s_auth.authorizer_reply_buf;
--	*reply_len = s->s_auth.authorizer_reply_buf_len;
-+	*buf = auth->authorizer_buf;
-+	*len = auth->authorizer_buf_len;
-+	*reply_buf = auth->authorizer_reply_buf;
-+	*reply_len = auth->authorizer_reply_buf_len;
-+
- 	return 0;
- }
+ #define PSW32_ADDR_AMODE	0x80000000UL
+ #define PSW32_ADDR_INSN		0x7FFFFFFFUL
+--- a/arch/s390/include/asm/ptrace.h
++++ b/arch/s390/include/asm/ptrace.h
+@@ -240,7 +240,7 @@ typedef struct
+ #define PSW_MASK_EA		0x00000000UL
+ #define PSW_MASK_BA		0x00000000UL
  
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -51,9 +51,7 @@ struct ceph_auth_client_ops {
- 	 * the response to authenticate the service.
- 	 */
- 	int (*create_authorizer)(struct ceph_auth_client *ac, int peer_type,
--				 struct ceph_authorizer **a,
--				 void **buf, size_t *len,
--				 void **reply_buf, size_t *reply_len);
-+				 struct ceph_auth_handshake *auth);
- 	int (*verify_authorizer_reply)(struct ceph_auth_client *ac,
- 				       struct ceph_authorizer *a, size_t len);
- 	void (*destroy_authorizer)(struct ceph_auth_client *ac,
---- a/net/ceph/auth_none.c
-+++ b/net/ceph/auth_none.c
-@@ -59,9 +59,7 @@ static int handle_reply(struct ceph_auth
-  */
- static int ceph_auth_none_create_authorizer(
- 	struct ceph_auth_client *ac, int peer_type,
--	struct ceph_authorizer **a,
--	void **buf, size_t *len,
--	void **reply_buf, size_t *reply_len)
-+	struct ceph_auth_handshake *auth)
- {
- 	struct ceph_auth_none_info *ai = ac->private;
- 	struct ceph_none_authorizer *au = &ai->au;
-@@ -82,11 +80,12 @@ static int ceph_auth_none_create_authori
- 		dout("built authorizer len %d\n", au->buf_len);
- 	}
+-#define PSW_MASK_USER		0x00003F00UL
++#define PSW_MASK_USER		0x0000FF00UL
  
--	*a = (struct ceph_authorizer *)au;
--	*buf = au->buf;
--	*len = au->buf_len;
--	*reply_buf = au->reply_buf;
--	*reply_len = sizeof(au->reply_buf);
-+	auth->authorizer = (struct ceph_authorizer *) au;
-+	auth->authorizer_buf = au->buf;
-+	auth->authorizer_buf_len = au->buf_len;
-+	auth->authorizer_reply_buf = au->reply_buf;
-+	auth->authorizer_reply_buf_len = sizeof (au->reply_buf);
-+
- 	return 0;
+ #define PSW_ADDR_AMODE		0x80000000UL
+ #define PSW_ADDR_INSN		0x7FFFFFFFUL
+@@ -269,7 +269,7 @@ typedef struct
+ #define PSW_MASK_EA		0x0000000100000000UL
+ #define PSW_MASK_BA		0x0000000080000000UL
  
- bad2:
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -526,9 +526,7 @@ static int ceph_x_handle_reply(struct ce
+-#define PSW_MASK_USER		0x00003F0180000000UL
++#define PSW_MASK_USER		0x0000FF0180000000UL
  
- static int ceph_x_create_authorizer(
- 	struct ceph_auth_client *ac, int peer_type,
--	struct ceph_authorizer **a,
--	void **buf, size_t *len,
--	void **reply_buf, size_t *reply_len)
-+	struct ceph_auth_handshake *auth)
- {
- 	struct ceph_x_authorizer *au;
- 	struct ceph_x_ticket_handler *th;
-@@ -548,11 +546,12 @@ static int ceph_x_create_authorizer(
- 		return ret;
- 	}
+ #define PSW_ADDR_AMODE		0x0000000000000000UL
+ #define PSW_ADDR_INSN		0xFFFFFFFFFFFFFFFFUL
+--- a/arch/s390/kernel/compat_signal.c
++++ b/arch/s390/kernel/compat_signal.c
+@@ -313,6 +313,10 @@ static int restore_sigregs32(struct pt_r
+ 	regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
+ 		(__u64)(regs32.psw.mask & PSW32_MASK_USER) << 32 |
+ 		(__u64)(regs32.psw.addr & PSW32_ADDR_AMODE);
++	/* Check for invalid user address space control. */
++	if ((regs->psw.mask & PSW_MASK_ASC) >= (psw_kernel_bits & PSW_MASK_ASC))
++		regs->psw.mask = (psw_user_bits & PSW_MASK_ASC) |
++			(regs->psw.mask & ~PSW_MASK_ASC);
+ 	regs->psw.addr = (__u64)(regs32.psw.addr & PSW32_ADDR_INSN);
+ 	for (i = 0; i < NUM_GPRS; i++)
+ 		regs->gprs[i] = (__u64) regs32.gprs[i];
+@@ -494,7 +498,10 @@ static int setup_frame32(int sig, struct
  
--	*a = (struct ceph_authorizer *)au;
--	*buf = au->buf->vec.iov_base;
--	*len = au->buf->vec.iov_len;
--	*reply_buf = au->reply_buf;
--	*reply_len = sizeof(au->reply_buf);
-+	auth->authorizer = (struct ceph_authorizer *) au;
-+	auth->authorizer_buf = au->buf->vec.iov_base;
-+	auth->authorizer_buf_len = au->buf->vec.iov_len;
-+	auth->authorizer_reply_buf = au->reply_buf;
-+	auth->authorizer_reply_buf_len = sizeof (au->reply_buf);
-+
- 	return 0;
- }
+ 	/* Set up registers for signal handler */
+ 	regs->gprs[15] = (__force __u64) frame;
+-	regs->psw.mask |= PSW_MASK_BA;		/* force amode 31 */
++	/* Force 31 bit amode and default user address space control. */
++	regs->psw.mask = PSW_MASK_BA |
++		(psw_user_bits & PSW_MASK_ASC) |
++		(regs->psw.mask & ~PSW_MASK_ASC);
+ 	regs->psw.addr = (__force __u64) ka->sa.sa_handler;
  
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -2115,29 +2115,25 @@ static int get_authorizer(struct ceph_co
- 	struct ceph_osd *o = con->private;
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
-+	struct ceph_auth_handshake *auth = &o->o_auth;
- 	int ret = 0;
+ 	regs->gprs[2] = map_signal(sig);
+@@ -562,7 +569,10 @@ static int setup_rt_frame32(int sig, str
  
--	if (force_new && o->o_auth.authorizer) {
--		ac->ops->destroy_authorizer(ac, o->o_auth.authorizer);
--		o->o_auth.authorizer = NULL;
-+	if (force_new && auth->authorizer) {
-+		ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		auth->authorizer = NULL;
- 	}
--	if (o->o_auth.authorizer == NULL) {
--		ret = ac->ops->create_authorizer(
--			ac, CEPH_ENTITY_TYPE_OSD,
--			&o->o_auth.authorizer,
--			&o->o_auth.authorizer_buf,
--			&o->o_auth.authorizer_buf_len,
--			&o->o_auth.authorizer_reply_buf,
--			&o->o_auth.authorizer_reply_buf_len);
-+	if (auth->authorizer == NULL) {
-+		ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD, auth);
- 		if (ret)
- 			return ret;
- 	}
+ 	/* Set up registers for signal handler */
+ 	regs->gprs[15] = (__force __u64) frame;
+-	regs->psw.mask |= PSW_MASK_BA;		/* force amode 31 */
++	/* Force 31 bit amode and default user address space control. */
++	regs->psw.mask = PSW_MASK_BA |
++		(psw_user_bits & PSW_MASK_ASC) |
++		(regs->psw.mask & ~PSW_MASK_ASC);
+ 	regs->psw.addr = (__u64) ka->sa.sa_handler;
  
- 	*proto = ac->protocol;
--	*buf = o->o_auth.authorizer_buf;
--	*len = o->o_auth.authorizer_buf_len;
--	*reply_buf = o->o_auth.authorizer_reply_buf;
--	*reply_len = o->o_auth.authorizer_reply_buf_len;
-+	*buf = auth->authorizer_buf;
-+	*len = auth->authorizer_buf_len;
-+	*reply_buf = auth->authorizer_reply_buf;
-+	*reply_len = auth->authorizer_reply_buf_len;
-+
- 	return 0;
- }
+ 	regs->gprs[2] = map_signal(sig);
+--- a/arch/s390/kernel/signal.c
++++ b/arch/s390/kernel/signal.c
+@@ -148,6 +148,10 @@ static int restore_sigregs(struct pt_reg
+ 	/* Use regs->psw.mask instead of psw_user_bits to preserve PER bit. */
+ 	regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
+ 		(user_sregs.regs.psw.mask & PSW_MASK_USER);
++	/* Check for invalid user address space control. */
++	if ((regs->psw.mask & PSW_MASK_ASC) >= (psw_kernel_bits & PSW_MASK_ASC))
++		regs->psw.mask = (psw_user_bits & PSW_MASK_ASC) |
++			(regs->psw.mask & ~PSW_MASK_ASC);
+ 	/* Check for invalid amode */
+ 	if (regs->psw.mask & PSW_MASK_EA)
+ 		regs->psw.mask |= PSW_MASK_BA;
+@@ -294,7 +298,10 @@ static int setup_frame(int sig, struct k
  
+ 	/* Set up registers for signal handler */
+ 	regs->gprs[15] = (unsigned long) frame;
+-	regs->psw.mask |= PSW_MASK_EA | PSW_MASK_BA;	/* 64 bit amode */
++	/* Force default amode and default user address space control. */
++	regs->psw.mask = PSW_MASK_EA | PSW_MASK_BA |
++		(psw_user_bits & PSW_MASK_ASC) |
++		(regs->psw.mask & ~PSW_MASK_ASC);
+ 	regs->psw.addr = (unsigned long) ka->sa.sa_handler | PSW_ADDR_AMODE;
+ 
+ 	regs->gprs[2] = map_signal(sig);
+@@ -367,7 +374,10 @@ static int setup_rt_frame(int sig, struc
+ 
+ 	/* Set up registers for signal handler */
+ 	regs->gprs[15] = (unsigned long) frame;
+-	regs->psw.mask |= PSW_MASK_EA | PSW_MASK_BA;	/* 64 bit amode */
++	/* Force default amode and default user address space control. */
++	regs->psw.mask = PSW_MASK_EA | PSW_MASK_BA |
++		(psw_user_bits & PSW_MASK_ASC) |
++		(regs->psw.mask & ~PSW_MASK_ASC);
+ 	regs->psw.addr = (unsigned long) ka->sa.sa_handler | PSW_ADDR_AMODE;
+ 
+ 	regs->gprs[2] = map_signal(sig);
 
 
