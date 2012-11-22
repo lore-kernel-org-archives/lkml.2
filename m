@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab2KVWG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:06:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
+	id S1758240Ab2KVWH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:07:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754625Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754823Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sylvain Munaut <tnt@246tNt.com>, Sage Weil <sage@inktank.com>,
-        Alex Elder <elder@inktank.com>
-Subject: [ 161/171] libceph: fix crypto key null deref, memory leak
-Date: Wed, 21 Nov 2012 16:41:47 -0800
-Message-Id: <20121122004049.514910817@linuxfoundation.org>
+        Brent Taylor <motobud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 021/171] UBIFS: fix mounting problems after power cuts
+Date: Wed, 21 Nov 2012 16:39:27 -0800
+Message-Id: <20121122004035.481221283@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -26,43 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylvain Munaut <tnt@246tNt.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-(cherry picked from commit f0666b1ac875ff32fe290219b150ec62eebbe10e)
+commit a28ad42a4a0c6f302f488f26488b8b37c9b30024 upstream.
 
-Avoid crashing if the crypto key payload was NULL, as when it was not correctly
-allocated and initialized.  Also, avoid leaking it.
+This is a bugfix for a problem with the following symptoms:
 
-Signed-off-by: Sylvain Munaut <tnt@246tNt.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+1. A power cut happens
+2. After reboot, we try to mount UBIFS
+3. Mount fails with "No space left on device" error message
+
+UBIFS complains like this:
+
+UBIFS error (pid 28225): grab_empty_leb: could not find an empty LEB
+
+The root cause of this problem is that when we mount, not all LEBs are
+categorized. Only those which were read are. However, the
+'ubifs_find_free_leb_for_idx()' function assumes that all LEBs were
+categorized and 'c->freeable_cnt' is valid, which is a false assumption.
+
+This patch fixes the problem by teaching 'ubifs_find_free_leb_for_idx()'
+to always fall back to LPT scanning if no freeable LEBs were found.
+
+This problem was reported by few people in the past, but Brent Taylor
+was able to reproduce it and send me a flash image which cannot be mounted,
+which made it easy to hunt the bug. Kudos to Brent.
+
+Reported-by: Brent Taylor <motobud@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/crypto.c |    1 +
- net/ceph/crypto.h |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/ceph/crypto.c
-+++ b/net/ceph/crypto.c
-@@ -466,6 +466,7 @@ void ceph_key_destroy(struct key *key) {
- 	struct ceph_crypto_key *ckey = key->payload.data;
- 
- 	ceph_crypto_key_destroy(ckey);
-+	kfree(ckey);
- }
- 
- struct key_type key_type_ceph = {
---- a/net/ceph/crypto.h
-+++ b/net/ceph/crypto.h
-@@ -16,7 +16,8 @@ struct ceph_crypto_key {
- 
- static inline void ceph_crypto_key_destroy(struct ceph_crypto_key *key)
- {
--	kfree(key->key);
-+	if (key)
-+		kfree(key->key);
- }
- 
- extern int ceph_crypto_key_clone(struct ceph_crypto_key *dst,
+---
+ fs/ubifs/find.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/fs/ubifs/find.c
++++ b/fs/ubifs/find.c
+@@ -681,8 +681,16 @@ int ubifs_find_free_leb_for_idx(struct u
+ 	if (!lprops) {
+ 		lprops = ubifs_fast_find_freeable(c);
+ 		if (!lprops) {
+-			ubifs_assert(c->freeable_cnt == 0);
+-			if (c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
++			/*
++			 * The first condition means the following: go scan the
++			 * LPT if there are uncategorized lprops, which means
++			 * there may be freeable LEBs there (UBIFS does not
++			 * store the information about freeable LEBs in the
++			 * master node).
++			 */
++			if (c->in_a_category_cnt != c->main_lebs ||
++			    c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
++				ubifs_assert(c->freeable_cnt == 0);
+ 				lprops = scan_for_leb_for_idx(c);
+ 				if (IS_ERR(lprops)) {
+ 					err = PTR_ERR(lprops);
 
 
