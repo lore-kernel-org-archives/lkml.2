@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2KVUau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:30:50 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59267 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab2KVUaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:30:46 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com
-Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
-Subject: [PATCH 08/10] ASoC: wm8985: Convert to use devm_regmap_init_{spi,i2c}()
-Date: Thu, 22 Nov 2012 09:38:40 +0530
-Message-Id: <1353557322-25353-9-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
-References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+	id S1757258Ab2KVUbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:31:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39716 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756780Ab2KVT0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:04 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 04/40] x86/mm: Introduce pte_accessible()
+Date: Thu, 22 Nov 2012 19:25:17 +0000
+Message-Id: <1353612353-1576-5-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- sound/soc/codecs/wm8985.c |   30 ++++--------------------------
- 1 files changed, 4 insertions(+), 26 deletions(-)
+From: Rik van Riel <riel@redhat.com>
 
-diff --git a/sound/soc/codecs/wm8985.c b/sound/soc/codecs/wm8985.c
-index 14f6663..7b3f409 100644
---- a/sound/soc/codecs/wm8985.c
-+++ b/sound/soc/codecs/wm8985.c
-@@ -1122,33 +1122,22 @@ static int __devinit wm8985_spi_probe(struct spi_device *spi)
- 
- 	spi_set_drvdata(spi, wm8985);
- 
--	wm8985->regmap = regmap_init_spi(spi, &wm8985_regmap);
-+	wm8985->regmap = devm_regmap_init_spi(spi, &wm8985_regmap);
- 	if (IS_ERR(wm8985->regmap)) {
- 		ret = PTR_ERR(wm8985->regmap);
- 		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	ret = snd_soc_register_codec(&spi->dev,
- 				     &soc_codec_dev_wm8985, &wm8985_dai, 1);
--	if (ret != 0)
--		goto err;
--
--	return 0;
--
--err:
--	regmap_exit(wm8985->regmap);
- 	return ret;
+We need pte_present to return true for _PAGE_PROTNONE pages, to indicate that
+the pte is associated with a page.
+
+However, for TLB flushing purposes, we would like to know whether the pte
+points to an actually accessible page.  This allows us to skip remote TLB
+flushes for pages that are not actually accessible.
+
+Fill in this method for x86 and provide a safe (but slower) method
+on other architectures.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Fixed-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-66p11te4uj23gevgh4j987ip@git.kernel.org
+[ Added Linus's review fixes. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/pgtable.h |    6 ++++++
+ include/asm-generic/pgtable.h  |    4 ++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index a1f780d..5fe03aa 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -407,6 +407,12 @@ static inline int pte_present(pte_t a)
+ 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
  }
  
- static int __devexit wm8985_spi_remove(struct spi_device *spi)
++#define pte_accessible pte_accessible
++static inline int pte_accessible(pte_t a)
++{
++	return pte_flags(a) & _PAGE_PRESENT;
++}
++
+ static inline int pte_hidden(pte_t pte)
  {
--	struct wm8985_priv *wm8985 = spi_get_drvdata(spi);
--
- 	snd_soc_unregister_codec(&spi->dev);
--	regmap_exit(wm8985->regmap);
--
- 	return 0;
- }
+ 	return pte_flags(pte) & _PAGE_HIDDEN;
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index b36ce40..48fc1dc 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -219,6 +219,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
+ #define move_pte(pte, prot, old_addr, new_addr)	(pte)
+ #endif
  
-@@ -1175,33 +1164,22 @@ static __devinit int wm8985_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm8985);
- 
--	wm8985->regmap = regmap_init_i2c(i2c, &wm8985_regmap);
-+	wm8985->regmap = devm_regmap_init_i2c(i2c, &wm8985_regmap);
- 	if (IS_ERR(wm8985->regmap)) {
- 		ret = PTR_ERR(wm8985->regmap);
- 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
- 				     &soc_codec_dev_wm8985, &wm8985_dai, 1);
--	if (ret != 0)
--		goto err;
--
--	return 0;
--
--err:
--	regmap_exit(wm8985->regmap);
- 	return ret;
- }
- 
- static __devexit int wm8985_i2c_remove(struct i2c_client *i2c)
- {
--	struct wm8985_priv *wm8985 = i2c_get_clientdata(i2c);
--
- 	snd_soc_unregister_codec(&i2c->dev);
--	regmap_exit(wm8985->regmap);
--
- 	return 0;
- }
- 
++#ifndef pte_accessible
++# define pte_accessible(pte)		((void)(pte),1)
++#endif
++
+ #ifndef flush_tlb_fix_spurious_fault
+ #define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
+ #endif
 -- 
-1.7.4.1
+1.7.9.2
 
