@@ -1,82 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab2KVT0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:06 -0500
-Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:46575 "EHLO
-	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab2KVTXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:23:24 -0500
-Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
-To: grant.likely@secretlab.ca (Grant Likely)
-Date: Wed, 21 Nov 2012 20:07:23 -0500
-Cc: gregkh@linuxfoundation.org (Greg KH),
-        akpm@linux-foundation.org (Andrew Morton),
-        linux-kernel@vger.kernel.org
-In-Reply-To: <99207e4d-1982-42da-9a4a-9df91d719eb5@email.android.com>
-X-Mailer: ELM [version 2.5.8.59.gd925]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20121122010723.F111E80150@viridian.itc.virginia.edu>
-From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
+	id S1752376Ab2KVT0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:26:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39736 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754055Ab2KVT0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:07 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 06/40] mm: Count the number of pages affected in change_protection()
+Date: Thu, 22 Nov 2012 19:25:19 +0000
+Message-Id: <1353612353-1576-7-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely writes:
-> 
-> You mean this series wasn't created with a script? You did this by
-> hand? If so then I must say kudos on your dedication!
->
-> But it makes me more nervous about the series. Too easy to fat
-> finger many things when touching that many files.
->
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-No, I didn't do them by hand, it was a script.  Originally, it was a
-couple, all basically the same, but removing each __dev*.  Then I'd do
-a word diff to eyeball them to make sure the script didn't do
-something goofy.
+This will be used for three kinds of purposes:
 
-The whack-a-mole part came along because I was working against
-linux-next and whatever patch series was right for one day wouldn't be
-right for the next day because of some of the faster moving trees.
+ - to optimize mprotect()
 
+ - to speed up working set scanning for working set areas that
+   have not been touched
 
-> Please do write a script and post that for review.
-> 
+ - to more accurately scan per real working set
 
-The all-in-one version of the script:
+No change in functionality from this patch.
 
-#! /usr/bin/perl
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/hugetlb.h |    8 +++++--
+ include/linux/mm.h      |    3 +++
+ mm/hugetlb.c            |   10 ++++++--
+ mm/mprotect.c           |   58 +++++++++++++++++++++++++++++++++++------------
+ 4 files changed, 61 insertions(+), 18 deletions(-)
 
-use strict;
-use IO::InSitu;
-
-sub processfile
-{
-    my $fn = shift;
-
-    my ($in, $out) = open_rw($fn, $fn);
-
-    while (<$in>) {
-	s|__devexit_p\(([^)]+)\)|$1|;
-	s|\s__devexit\b||;
-	s|\s__devinitconst\b||;
-	s|\s__devinitdata\b||;
-	s|\s__devinit\b||;
-
-	print $out $_;
-    }
-
-    close $in;
-    close $out;
-}
-
-foreach my $fn (@ARGV) {
-    processfile($fn);
-}
-
-
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 2251648..06e691b 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -87,7 +87,7 @@ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+ 				pud_t *pud, int write);
+ int pmd_huge(pmd_t pmd);
+ int pud_huge(pud_t pmd);
+-void hugetlb_change_protection(struct vm_area_struct *vma,
++unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 		unsigned long address, unsigned long end, pgprot_t newprot);
+ 
+ #else /* !CONFIG_HUGETLB_PAGE */
+@@ -132,7 +132,11 @@ static inline void copy_huge_page(struct page *dst, struct page *src)
+ {
+ }
+ 
+-#define hugetlb_change_protection(vma, address, end, newprot)
++static inline unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
++		unsigned long address, unsigned long end, pgprot_t newprot)
++{
++	return 0;
++}
+ 
+ static inline void __unmap_hugepage_range_final(struct mmu_gather *tlb,
+ 			struct vm_area_struct *vma, unsigned long start,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bcaab4e..1856c62 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1078,6 +1078,9 @@ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ extern unsigned long do_mremap(unsigned long addr,
+ 			       unsigned long old_len, unsigned long new_len,
+ 			       unsigned long flags, unsigned long new_addr);
++extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
++			      unsigned long end, pgprot_t newprot,
++			      int dirty_accountable);
+ extern int mprotect_fixup(struct vm_area_struct *vma,
+ 			  struct vm_area_struct **pprev, unsigned long start,
+ 			  unsigned long end, unsigned long newflags);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 59a0059..712895e 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3014,7 +3014,7 @@ same_page:
+ 	return i ? i : -EFAULT;
+ }
+ 
+-void hugetlb_change_protection(struct vm_area_struct *vma,
++unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 		unsigned long address, unsigned long end, pgprot_t newprot)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+@@ -3022,6 +3022,7 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
+ 	pte_t *ptep;
+ 	pte_t pte;
+ 	struct hstate *h = hstate_vma(vma);
++	unsigned long pages = 0;
+ 
+ 	BUG_ON(address >= end);
+ 	flush_cache_range(vma, address, end);
+@@ -3032,12 +3033,15 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
+ 		ptep = huge_pte_offset(mm, address);
+ 		if (!ptep)
+ 			continue;
+-		if (huge_pmd_unshare(mm, &address, ptep))
++		if (huge_pmd_unshare(mm, &address, ptep)) {
++			pages++;
+ 			continue;
++		}
+ 		if (!huge_pte_none(huge_ptep_get(ptep))) {
+ 			pte = huge_ptep_get_and_clear(mm, address, ptep);
+ 			pte = pte_mkhuge(pte_modify(pte, newprot));
+ 			set_huge_pte_at(mm, address, ptep, pte);
++			pages++;
+ 		}
+ 	}
+ 	spin_unlock(&mm->page_table_lock);
+@@ -3049,6 +3053,8 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
+ 	 */
+ 	flush_tlb_range(vma, start, end);
+ 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++
++	return pages << h->order;
+ }
+ 
+ int hugetlb_reserve_pages(struct inode *inode,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index a409926..1e265be 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -35,12 +35,13 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ }
+ #endif
+ 
+-static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
++static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable)
+ {
+ 	pte_t *pte, oldpte;
+ 	spinlock_t *ptl;
++	unsigned long pages = 0;
+ 
+ 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+ 	arch_enter_lazy_mmu_mode();
+@@ -60,6 +61,7 @@ static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				ptent = pte_mkwrite(ptent);
+ 
+ 			ptep_modify_prot_commit(mm, addr, pte, ptent);
++			pages++;
+ 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ 
+@@ -72,18 +74,22 @@ static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				set_pte_at(mm, addr, pte,
+ 					swp_entry_to_pte(entry));
+ 			}
++			pages++;
+ 		}
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
+ 	arch_leave_lazy_mmu_mode();
+ 	pte_unmap_unlock(pte - 1, ptl);
++
++	return pages;
+ }
+ 
+-static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
++static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
++	unsigned long pages = 0;
+ 
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+@@ -91,35 +97,42 @@ static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+ 				split_huge_page_pmd(vma->vm_mm, pmd);
+-			else if (change_huge_pmd(vma, pmd, addr, newprot))
++			else if (change_huge_pmd(vma, pmd, addr, newprot)) {
++				pages += HPAGE_PMD_NR;
+ 				continue;
++			}
+ 			/* fall through */
+ 		}
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+-		change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
++		pages += change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
+ 				 dirty_accountable);
+ 	} while (pmd++, addr = next, addr != end);
++
++	return pages;
+ }
+ 
+-static inline void change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
++static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
++	unsigned long pages = 0;
+ 
+ 	pud = pud_offset(pgd, addr);
+ 	do {
+ 		next = pud_addr_end(addr, end);
+ 		if (pud_none_or_clear_bad(pud))
+ 			continue;
+-		change_pmd_range(vma, pud, addr, next, newprot,
++		pages += change_pmd_range(vma, pud, addr, next, newprot,
+ 				 dirty_accountable);
+ 	} while (pud++, addr = next, addr != end);
++
++	return pages;
+ }
+ 
+-static void change_protection(struct vm_area_struct *vma,
++static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable)
+ {
+@@ -127,6 +140,7 @@ static void change_protection(struct vm_area_struct *vma,
+ 	pgd_t *pgd;
+ 	unsigned long next;
+ 	unsigned long start = addr;
++	unsigned long pages = 0;
+ 
+ 	BUG_ON(addr >= end);
+ 	pgd = pgd_offset(mm, addr);
+@@ -135,10 +149,30 @@ static void change_protection(struct vm_area_struct *vma,
+ 		next = pgd_addr_end(addr, end);
+ 		if (pgd_none_or_clear_bad(pgd))
+ 			continue;
+-		change_pud_range(vma, pgd, addr, next, newprot,
++		pages += change_pud_range(vma, pgd, addr, next, newprot,
+ 				 dirty_accountable);
+ 	} while (pgd++, addr = next, addr != end);
++
+ 	flush_tlb_range(vma, start, end);
++
++	return pages;
++}
++
++unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
++		       unsigned long end, pgprot_t newprot,
++		       int dirty_accountable)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	unsigned long pages;
++
++	mmu_notifier_invalidate_range_start(mm, start, end);
++	if (is_vm_hugetlb_page(vma))
++		pages = hugetlb_change_protection(vma, start, end, newprot);
++	else
++		pages = change_protection_range(vma, start, end, newprot, dirty_accountable);
++	mmu_notifier_invalidate_range_end(mm, start, end);
++
++	return pages;
+ }
+ 
+ int
+@@ -213,12 +247,8 @@ success:
+ 		dirty_accountable = 1;
+ 	}
+ 
+-	mmu_notifier_invalidate_range_start(mm, start, end);
+-	if (is_vm_hugetlb_page(vma))
+-		hugetlb_change_protection(vma, start, end, vma->vm_page_prot);
+-	else
+-		change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
+-	mmu_notifier_invalidate_range_end(mm, start, end);
++	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
++
+ 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
+ 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
+ 	perf_event_mmap(vma);
 -- 
-Bill
+1.7.9.2
+
