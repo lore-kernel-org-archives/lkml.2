@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab2KVWJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:09:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
+	id S1758244Ab2KVWKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:10:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754808Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752988Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Stefan Beller <stefanbeller@googlemail.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 045/171] eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
-Date: Wed, 21 Nov 2012 16:39:51 -0800
-Message-Id: <20121122004037.887282324@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Anders Blomdell <anders.blomdell@control.lth.se>,
+        Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 007/171] fanotify: fix missing break
+Date: Wed, 21 Nov 2012 16:39:13 -0800
+Message-Id: <20121122004034.053510771@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -28,64 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
+commit 848561d368751a1c0f679b9f045a02944506a801 upstream.
 
-When the eCryptfs mount options do not include '-o acl', but the lower
-filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
-flipped on in the eCryptfs super block flags. This flag is what the VFS
-checks in do_last() when deciding if the current umask should be applied
-to a newly created inode's mode or not. When a default POSIX ACL mask is
-set on a directory, the current umask is incorrectly applied to new
-inodes created in the directory. This patch ignores the MS_POSIXACL flag
-passed into ecryptfs_mount() and sets the flag on the eCryptfs super
-block depending on the flag's presence on the lower super block.
+Anders Blomdell noted in 2010 that Fanotify lost events and provided a
+test case.  Eric Paris confirmed it was a bug and posted a fix to the
+list
 
-Additionally, it is incorrect to allow a writeable eCryptfs mount on top
-of a read-only lower mount. This missing check did not allow writes to
-the read-only lower mount because permissions checks are still performed
-on the lower filesystem's objects but it is best to simply not allow a
-rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
-mount is valid and still allowed.
+  https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/RrJfTfyW2BE
 
-https://launchpad.net/bugs/1009207
+but never applied it.  Repeated attempts over time to actually get him
+to apply it have never had a reply from anyone who has raised it
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Stefan Beller <stefanbeller@googlemail.com>
-Cc: John Johansen <john.johansen@canonical.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+So apply it anyway
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Anders Blomdell <anders.blomdell@control.lth.se>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/notify/fanotify/fanotify.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -506,7 +506,6 @@ static struct dentry *ecryptfs_mount(str
- 		goto out;
- 	}
- 
--	s->s_flags = flags;
- 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
- 	if (rc)
- 		goto out1;
-@@ -542,6 +541,15 @@ static struct dentry *ecryptfs_mount(str
- 	}
- 
- 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
-+
-+	/**
-+	 * Set the POSIX ACL flag based on whether they're enabled in the lower
-+	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
-+	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-+	 */
-+	s->s_flags = flags & ~MS_POSIXACL;
-+	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-+
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -21,6 +21,7 @@ static bool should_merge(struct fsnotify
+ 			if ((old->path.mnt == new->path.mnt) &&
+ 			    (old->path.dentry == new->path.dentry))
+ 				return true;
++			break;
+ 		case (FSNOTIFY_EVENT_NONE):
+ 			return true;
+ 		default:
 
 
