@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab2KVTDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:03:54 -0500
-Received: from relay.parallels.com ([195.214.232.42]:55375 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756230Ab2KVTDr convert rfc822-to-8bit (ORCPT
+	id S1756251Ab2KVTE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:04:56 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:34082 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756205Ab2KVTEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:03:47 -0500
-Message-ID: <50AE2EF1.4080904@parallels.com>
-Date: Thu, 22 Nov 2012 17:56:01 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 22 Nov 2012 14:04:48 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-2-git-send-email-yinghai@kernel.org>
+	<50AD0E22.3020807@zytor.com>
+	<CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
+	<50AD307C.6060008@zytor.com>
+	<CAE9FiQUaajsWe3854xxUOyPEZ7Dbt3GE0VWs8KvQbtqVrOXQdw@mail.gmail.com>
+	<87d2z6jigs.fsf@xmission.com>
+	<3178cb29-0e9e-44d2-b21f-45c53f38980a@email.android.com>
+Date: Thu, 22 Nov 2012 03:27:58 -0800
+In-Reply-To: <3178cb29-0e9e-44d2-b21f-45c53f38980a@email.android.com>
+	(H. Peter Anvin's message of "Wed, 21 Nov 2012 21:59:49 -0800")
+Message-ID: <874nkh3mip.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-CC: <miklos@szeredi.hu>, <dev@parallels.com>, <xemul@parallels.com>,
-        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <linux-mm@kvack.org>,
-        <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 14/14] mm: Account for WRITEBACK_TEMP in balance_dirty_pages
-References: <20121116171039.3196.92186.stgit@maximpc.sw.ru> <20121121115314.20471.52148.stgit@maximpc.sw.ru> <50AE2842.3060509@gmail.com>
-In-Reply-To: <50AE2842.3060509@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+2EIFKrKF4vrdIRN8jwBj5dZotCpLusfc=
+X-SA-Exim-Connect-IP: 75.135.205.0
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 01/12] x86, boot: move verify_cpu.S after 0x200
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-11/22/2012 05:27 PM, Jaegeuk Hanse пишет:
-> On 11/21/2012 08:01 PM, Maxim Patlasov wrote:
->> Added linux-mm@ to cc:. The patch can stand on it's own.
->>
->>> Make balance_dirty_pages start the throttling when the WRITEBACK_TEMP
->>> counter is high enough. This prevents us from having too many dirty
->>> pages on fuse, thus giving the userspace part of it a chance to write
->>> stuff properly.
->>>
->>> Note, that the existing balance logic is per-bdi, i.e. if the fuse
->>> user task gets stuck in the function this means, that it either
->>> writes to the mountpoint it serves (but it can deadlock even without
->>> the writeback) or it is writing to some _other_ dirty bdi and in the
->>> latter case someone else will free the memory for it.
->> Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
->> Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
->> ---
->>   mm/page-writeback.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index 830893b..499a606 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -1220,7 +1220,8 @@ static void balance_dirty_pages(struct 
->> address_space *mapping,
->>            */
->>           nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
->>                       global_page_state(NR_UNSTABLE_NFS);
->> -        nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
->> +        nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK) +
->> +            global_page_state(NR_WRITEBACK_TEMP);
->
-> Could you explain NR_WRITEBACK_TEMP is used for accounting what? And 
-> when it will increase?
+> Quite certain something depends on it.
 
-The only user of NR_WRITEBACK_TEMP is fuse. Handling .writepage it:
+It would not surprise me at all that there is a dependency, if we have
+not had a better way to report the 64bit entry point.  I just wanted to
+make the context clear as that was confused in the discussion.
 
-1) allocates new page
-2) copies original page (that came to .writepage as argument) to new page
-3) attaches new page to fuse request
-4) increments NR_WRITEBACK_TEMP
-5) does end_page_writeback on original page
-6) schedules fuse request for processing
+Note that having a 32bit entry point at offset 0 is as much of an ABI.
 
-Later, fuse request will be send to userspace, then userspace will 
-process it and ACK it to kernel fuse. Processing this ACK from 
-userspace, in-kernel fuse will free that new page and decrement 
-NR_WRITEBACK_TEMP.
+I am surprised that there are legitimate reasons to bulk up the 32bit
+entry point code before the 0x200.  Everything that we are doing at that
+point is architectural.
 
-So, effectively, NR_WRITEBACK_TEMP keeps track of pages which are under 
-'fuse writeback'.
-
-Thanks,
-Maxim
-
->
->> global_dirty_limits(&background_thresh, &dirty_thresh);
->>
->> -- 
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
->
->
-
+Eric
