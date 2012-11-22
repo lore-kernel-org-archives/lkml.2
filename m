@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965174Ab2KVTUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:20:06 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37875 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727Ab2KVTUB (ORCPT
+	id S1754082Ab2KVTUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:20:16 -0500
+Received: from na3sys010aog103.obsmtp.com ([74.125.245.74]:48371 "HELO
+	na3sys010aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S965176Ab2KVTUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:20:01 -0500
-Message-ID: <50AD723B.60605@gmail.com>
-Date: Thu, 22 Nov 2012 01:30:51 +0100
-From: Cyril Roelandt <tipecaml@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] acpi_system_write_wakeup_device(): fix error check for
- unsigned variable.
-References: <1353117263-6957-1-git-send-email-tipecaml@gmail.com> <1732852.VDXGV3Ao2T@vostro.rjw.lan> <50AD6C4A.4030809@gmail.com> <1645783.2WuR77RKxS@vostro.rjw.lan>
-In-Reply-To: <1645783.2WuR77RKxS@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 14:20:09 -0500
+From: Roland Dreier <roland@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] block: Don't access request after it might be freed
+Date: Thu, 22 Nov 2012 02:00:11 -0800
+Message-Id: <1353578411-23527-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 01:23 AM, Rafael J. Wysocki wrote:
-> On Thursday, November 22, 2012 01:05:30 AM Cyril Roelandt wrote:
->> On 11/21/2012 01:44 AM, Rafael J. Wysocki wrote:
->>> On Saturday, November 17, 2012 02:54:23 AM Cyril Roelandt wrote:
->>>> The LEN variable is unsigned, therefore checking whether it is less than 0 is
->>>> useless.
->>>>
->>>> Signed-off-by: Cyril Roelandt<tipecaml@gmail.com>
->>>> ---
->>>>    drivers/acpi/proc.c |    2 --
->>>>    1 file changed, 2 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
->>>> index 27adb09..37871a7 100644
->>>> --- a/drivers/acpi/proc.c
->>>> +++ b/drivers/acpi/proc.c
->>>> @@ -366,8 +366,6 @@ acpi_system_write_wakeup_device(struct file *file,
->>>>
->>>>    	if (len>   4)
->>>>    		len = 4;
->>>> -	if (len<   0)
->>>> -		return -EFAULT;
->>>
->>> I would prefer to check if count<   0 instead.
->>>
->>
->>
->> count has type size_t, so it is also an unsigned variable. I think that
->> acpi_system_write_wakeup_device really cannot be called with a "count"
->> parameter that is less than 0.
->
-> OK
->
-> So I suppose we can just drop len entirely and replace it with count, right?
-> [And drop the<  0 check too.]
->
+From: Roland Dreier <roland@purestorage.com>
 
-Indeed, I'll resend.
+After we've done __elv_add_request() and __blk_run_queue() in
+blk_execute_rq_nowait(), the request might finish and be freed
+immediately.  Therefore checking if the type is REQ_TYPE_PM_RESUME
+isn't safe afterwards, because if it isn't, rq might be gone.
+Instead, check beforehand and stash the result in a temporary.
 
-Cyril Roelandt.
+This fixes crashes in blk_execute_rq_nowait() I get occasionally when
+running with lots of memory debugging options enabled -- I think this
+race is usually harmless because the window for rq to be reallocated
+is so small.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+ block/blk-exec.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index 8b6dc5b..f71eac3 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -52,11 +52,17 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
+ 			   rq_end_io_fn *done)
+ {
+ 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
++	bool is_pm_resume;
+ 
+ 	WARN_ON(irqs_disabled());
+ 
+ 	rq->rq_disk = bd_disk;
+ 	rq->end_io = done;
++	/*
++	 * need to check this before __blk_run_queue(), because rq can
++	 * be freed before that returns.
++	 */
++	is_pm_resume = rq->cmd_type == REQ_TYPE_PM_RESUME;
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 
+@@ -71,7 +77,7 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
+ 	__elv_add_request(q, rq, where);
+ 	__blk_run_queue(q);
+ 	/* the queue is stopped so it won't be run */
+-	if (rq->cmd_type == REQ_TYPE_PM_RESUME)
++	if (is_pm_resume)
+ 		q->request_fn(q);
+ 	spin_unlock_irq(q->queue_lock);
+ }
+-- 
+1.7.10.4
+
