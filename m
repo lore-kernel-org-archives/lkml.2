@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077Ab2KVTPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:15:36 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51510 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab2KVTPc (ORCPT
+	id S965096Ab2KVTPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:15:54 -0500
+Received: from mga10.intel.com ([192.55.52.92]:38255 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754426Ab2KVTPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:15:32 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
-        kernel-janitors@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>
-Subject: [PATCH v2] acpi_system_write_wakeup_device(): fix error check for unsigned variable.
-Date: Thu, 22 Nov 2012 01:34:55 +0100
-Message-Id: <1353544495-25277-1-git-send-email-tipecaml@gmail.com>
+	Thu, 22 Nov 2012 14:15:47 -0500
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: viro@zeniv.linux.org.uk, fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] vfs: new super block feature flags attribute
+Date: Thu, 22 Nov 2012 14:49:42 +0200
+Message-Id: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1645783.2WuR77RKxS@vostro.rjw.lan>
-References: <1645783.2WuR77RKxS@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LEN variable is unsigned, therefore checking whether it is less than 0 is
-useless. Also drop the LEN variable, since the COUNT parameter can be used
-instead.
+This patch introduces new super block attribute flag s_feature_flags
+and SF_IMA_DISABLED flag. This flag will be used by Integrity Measurement
+Architecture (IMA). Name suggested by Bruce Fields.
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+Certain file system types and partitions will never be measured or
+appraised by IMA depending on the policy. For example, pseudo file
+systems are never measured and appraised. In current implementation
+policy will be checked again and again. It happens thousands times
+per second. That is absolute waste of CPU and may be battery resources.
+
+IMA will set the SF_IMA_DISABLED flag when file system will not be measured
+and appraised and test this flag during subsequent calls to skip policy search.
+
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- drivers/acpi/proc.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ include/linux/fs.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
-index 27adb09..ef98796 100644
---- a/drivers/acpi/proc.c
-+++ b/drivers/acpi/proc.c
-@@ -362,16 +362,13 @@ acpi_system_write_wakeup_device(struct file *file,
- 	struct list_head *node, *next;
- 	char strbuf[5];
- 	char str[5] = "";
--	unsigned int len = count;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b33cfc9..0bef2b2 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1321,6 +1321,8 @@ struct super_block {
  
--	if (len > 4)
--		len = 4;
--	if (len < 0)
--		return -EFAULT;
-+	if (count > 4)
-+		count = 4;
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
++
++	unsigned long s_feature_flags;
+ };
  
--	if (copy_from_user(strbuf, buffer, len))
-+	if (copy_from_user(strbuf, buffer, count))
- 		return -EFAULT;
--	strbuf[len] = '\0';
-+	strbuf[count] = '\0';
- 	sscanf(strbuf, "%s", str);
+ /* superblock cache pruning functions */
+@@ -1746,6 +1748,8 @@ struct super_operations {
  
- 	mutex_lock(&acpi_device_lock);
+ #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
+ 
++#define SF_IMA_DISABLED		0x0001
++
+ extern void __mark_inode_dirty(struct inode *, int);
+ static inline void mark_inode_dirty(struct inode *inode)
+ {
 -- 
 1.7.10.4
 
