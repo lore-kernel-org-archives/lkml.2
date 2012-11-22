@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab2KVWCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:02:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
+	id S1758176Ab2KVWCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:02:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754874Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>
-Subject: [ 147/171] libceph: move msgr clear_standby under con mutex protection
-Date: Wed, 21 Nov 2012 16:41:33 -0800
-Message-Id: <20121122004048.106400097@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 052/171] reiserfs: Protect reiserfs_quota_on() with write lock
+Date: Wed, 21 Nov 2012 16:39:58 -0800
+Message-Id: <20121122004038.591718962@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,57 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Jan Kara <jack@suse.cz>
 
-(cherry picked from commit 00650931e52e97fe64096bec167f5a6780dfd94a)
+commit b9e06ef2e8706fe669b51f4364e3aeed58639eb2 upstream.
 
-Avoid dropping and retaking con->mutex in the ceph_con_send() case by
-leaving locking up to the caller.
+In reiserfs_quota_on() we do quite some work - for example unpacking
+tail of a quota file. Thus we have to hold write lock until a moment
+we call back into the quota code.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2441,12 +2441,10 @@ static void clear_standby(struct ceph_co
- {
- 	/* come back from STANDBY? */
- 	if (test_and_clear_bit(STANDBY, &con->state)) {
--		mutex_lock(&con->mutex);
- 		dout("clear_standby %p and ++connect_seq\n", con);
- 		con->connect_seq++;
- 		WARN_ON(test_bit(WRITE_PENDING, &con->flags));
- 		WARN_ON(test_bit(KEEPALIVE_PENDING, &con->flags));
--		mutex_unlock(&con->mutex);
+---
+ fs/reiserfs/super.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -2170,8 +2170,11 @@ static int reiserfs_quota_on(struct supe
+ 	struct reiserfs_transaction_handle th;
+ 	int opt = type == USRQUOTA ? REISERFS_USRQUOTA : REISERFS_GRPQUOTA;
+ 
+-	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt)))
+-		return -EINVAL;
++	reiserfs_write_lock(sb);
++	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt))) {
++		err = -EINVAL;
++		goto out;
++	}
+ 
+ 	/* Quotafile not on the same filesystem? */
+ 	if (path->dentry->d_sb != sb) {
+@@ -2213,8 +2216,10 @@ static int reiserfs_quota_on(struct supe
+ 		if (err)
+ 			goto out;
  	}
+-	err = dquot_quota_on(sb, type, format_id, path);
++	reiserfs_write_unlock(sb);
++	return dquot_quota_on(sb, type, format_id, path);
+ out:
++	reiserfs_write_unlock(sb);
+ 	return err;
  }
  
-@@ -2483,11 +2481,12 @@ void ceph_con_send(struct ceph_connectio
- 	     le32_to_cpu(msg->hdr.front_len),
- 	     le32_to_cpu(msg->hdr.middle_len),
- 	     le32_to_cpu(msg->hdr.data_len));
-+
-+	clear_standby(con);
- 	mutex_unlock(&con->mutex);
- 
- 	/* if there wasn't anything waiting to send before, queue
- 	 * new work */
--	clear_standby(con);
- 	if (test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
- 		queue_con(con);
- }
-@@ -2574,7 +2573,9 @@ void ceph_msg_revoke_incoming(struct cep
- void ceph_con_keepalive(struct ceph_connection *con)
- {
- 	dout("con_keepalive %p\n", con);
-+	mutex_lock(&con->mutex);
- 	clear_standby(con);
-+	mutex_unlock(&con->mutex);
- 	if (test_and_set_bit(KEEPALIVE_PENDING, &con->flags) == 0 &&
- 	    test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
- 		queue_con(con);
 
 
