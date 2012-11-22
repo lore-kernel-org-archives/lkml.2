@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab2KVU3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:29:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39803 "EHLO mx2.suse.de"
+	id S1756808Ab2KVU3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:29:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39764 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756325Ab2KVT0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:15 -0500
+	id S1756795Ab2KVT0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:10 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/40] mm: numa: define _PAGE_NUMA
-Date: Thu, 22 Nov 2012 19:25:24 +0000
-Message-Id: <1353612353-1576-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/40] mm: compaction: Move migration fail/success stats to migrate.c
+Date: Thu, 22 Nov 2012 19:25:21 +0000
+Message-Id: <1353612353-1576-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,75 +30,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+The compact_pages_moved and compact_pagemigrate_failed events are
+convenient for determining if compaction is active and to what
+degree migration is succeeding but it's at the wrong level. Other
+users of migration may also want to know if migration is working
+properly and this will be particularly true for any automated
+NUMA migration. This patch moves the counters down to migration
+with the new events called pgmigrate_success and pgmigrate_fail.
+The compact_blocks_moved counter is removed because while it was
+useful for debugging initially, it's worthless now as no meaningful
+conclusions can be drawn from its value.
 
-The objective of _PAGE_NUMA is to be able to trigger NUMA hinting page
-faults to identify the per NUMA node working set of the thread at
-runtime.
-
-Arming the NUMA hinting page fault mechanism works similarly to
-setting up a mprotect(PROT_NONE) virtual range: the present bit is
-cleared at the same time that _PAGE_NUMA is set, so when the fault
-triggers we can identify it as a NUMA hinting page fault.
-
-_PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE (but it
-could also use a different bitflag, it's up to the architecture to
-decide).
-
-It would be confusing to call the "NUMA hinting page faults" as
-"do_prot_none faults". They're different events and _PAGE_NUMA doesn't
-alter the semantics of mprotect(PROT_NONE) in any way.
-
-Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
-things: it requires us to ensure the code paths executed by
-_PAGE_PROTNONE remains mutually exclusive to the code paths executed
-by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and _PAGE_PROTNONE to
-step into each other toes.
-
-Because we want to be able to set this bitflag in any established pte
-or pmd (while clearing the present bit at the same time) without
-losing information, this bitflag must never be set when the pte and
-pmd are present, so the bitflag picked for _PAGE_NUMA usage, must not
-be used by the swap entry format.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- arch/x86/include/asm/pgtable_types.h |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ include/linux/vm_event_item.h |    4 +++-
+ mm/compaction.c               |    4 ----
+ mm/migrate.c                  |    6 ++++++
+ mm/vmstat.c                   |    7 ++++---
+ 4 files changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index ec8a1fc..3c32db8 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -64,6 +64,26 @@
- #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
- #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 3d31145..8aa7cb9 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++#ifdef CONFIG_MIGRATION
++		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
++#endif
+ #ifdef CONFIG_COMPACTION
+-		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..00ad883 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
  
-+/*
-+ * _PAGE_NUMA indicates that this page will trigger a numa hinting
-+ * minor page fault to gather numa placement statistics (see
-+ * pte_numa()). The bit picked (8) is within the range between
-+ * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
-+ * require changes to the swp entry format because that bit is always
-+ * zero when the pte is not present.
-+ *
-+ * The bit picked must be always zero when the pmd is present and not
-+ * present, so that we don't lose information when we set it while
-+ * atomically clearing the present bit.
-+ *
-+ * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
-+ * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
-+ * couldn't reach, like handle_mm_fault() (see access_error in
-+ * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
-+ * handle_mm_fault() to be invoked).
-+ */
-+#define _PAGE_NUMA	_PAGE_PROTNONE
-+
- #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
- 			 _PAGE_ACCESSED | _PAGE_DIRTY)
- #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+-		count_vm_event(COMPACTBLOCKS);
+-		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
+-		if (nr_remaining)
+-			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
+ 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+ 						nr_remaining);
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 77ed2d7..04687f6 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
++	int nr_succeeded = 0;
+ 	int pass = 0;
+ 	struct page *page;
+ 	struct page *page2;
+@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
+ 				retry++;
+ 				break;
+ 			case 0:
++				nr_succeeded++;
+ 				break;
+ 			default:
+ 				/* Permanent failure */
+@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
+ 	}
+ 	rc = 0;
+ out:
++	if (nr_succeeded)
++		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
++	if (nr_failed)
++		count_vm_events(PGMIGRATE_FAIL, nr_failed);
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c737057..89a7fd6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
+ 
+ 	"pgrotated",
+ 
++#ifdef CONFIG_MIGRATION
++	"pgmigrate_success",
++	"pgmigrate_fail",
++#endif
+ #ifdef CONFIG_COMPACTION
+-	"compact_blocks_moved",
+-	"compact_pages_moved",
+-	"compact_pagemigrate_failed",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
 -- 
 1.7.9.2
 
