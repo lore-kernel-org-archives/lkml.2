@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965109Ab2KVTQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:16:05 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:36983 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965062Ab2KVTQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:16:03 -0500
-Message-Id: <cc8e118436abe953279c6ff3ca07ba94cdec3ef5.1353518444.git.ecashin@coraid.com>
-In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
-References: <cover.1353518444.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 5/8] aoe: remove call to request handler from I/O completion
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
-From: Ed Cashin <ecashin@coraid.com>
-X-Mailer: nedmail
-Date: Wed, 21 Nov 2012 20:02:16 -0500
+	id S1756667Ab2KVTQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:16:36 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:58260 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab2KVTPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:15:49 -0500
+Message-ID: <50ADF9AB.9030903@vflare.org>
+Date: Thu, 22 Nov 2012 02:08:43 -0800
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Minchan Kim <minchan@kernel.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Lockdep complain for zram
+References: <20121121083737.GB5121@bbox> <50AD1829.7050709@vflare.org> <20121122083110.GC5121@bbox>
+In-Reply-To: <20121122083110.GC5121@bbox>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to call the request handler function in the I/O
-completion routine.  The user impact of not doing it is a more
-"nice" aoe driver that is less susceptible to causing soft
-lockups.
+On 11/22/2012 12:31 AM, Minchan Kim wrote:
+> Hi Nitin,
+>
+> On Wed, Nov 21, 2012 at 10:06:33AM -0800, Nitin Gupta wrote:
+>> On 11/21/2012 12:37 AM, Minchan Kim wrote:
+>>> Hi alls,
+>>>
+>>> Today, I saw below complain of lockdep.
+>>> As a matter of fact, I knew it long time ago but forgot that.
+>>> The reason lockdep complains is that now zram uses GFP_KERNEL
+>>> in reclaim path(ex, __zram_make_request) :(
+>>> I can fix it via replacing GFP_KERNEL with GFP_NOIO.
+>>> But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
+>>> Of course, I can change it with __vmalloc which can receive gfp_t.
+>>> But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
+>>> allocation of GFP_KERNEL. That's why I sent the patch.
+>>> https://lkml.org/lkml/2012/4/23/77
+>>> Since then, I forgot it, saw the bug today and poped the question again.
+>>>
+>>> Yes. Fundamental problem is utter crap API vmalloc.
+>>> If we can fix it, everyone would be happy. But life isn't simple like seeing
+>>> my thread of the patch.
+>>>
+>>> So next option is to move zram_init_device into setting disksize time.
+>>> But it makes unnecessary metadata waste until zram is used really(That's why
+>>> Nitin move zram_init_device from disksize setting time to make_request) and
+>>> it makes user should set the disksize before using, which are behavior change.
+>>>
+>>> I would like to clean up this issue before promoting because it might change
+>>> usage behavior.
+>>>
+>>> Do you have any idea?
+>>>
+>>
+>> Maybe we can alloc_vm_area() right on device creation in
+>> create_device() assuming the default disksize. If user explicitly
+>> sets the disksize, this vm area is deallocated and a new one is
+>> allocated based on the new disksize.  When the device is reset, we
+>> should only free physical pages allocated for the table and the
+>> virtual area should be set back as if disksize is set to the
+>> default.
+>>
+>> At the device init time, all the pages can be allocated with
+>> GFP_NOIO | __GPF_HIGHMEM and since the VM area is preallocated,
+>> map_vm_area() will not hit any of those page-table allocations with
+>> GFP_KERNEL.
+>>
+>> Other allocations made directly from zram, for instance in the
+>> partial I/O case, should also be changed to GFP_NOIO |
+>> __GFP_HIGHMEM.
+>>
+>
+> Yes. It's a good idea and actually I thought about it.
+> My concern about that approach is following as.
+>
+> 1) User of zram normally do mkfs.xxx or mkswap before using
+>     the zram block device(ex, normally, do it at booting time)
+>     It ends up allocating such metadata of zram before real usage so
+>     benefit of lazy initialzation would be mitigated.
+>
+> 2) Some user want to use zram when memory pressure is high.(ie, load zram
+>     dynamically, NOT booting time). It does make sense because people don't
+>     want to waste memory until memory pressure is high(ie, where zram is really
+>     helpful time). In this case, lazy initialzation could be failed easily
+>     because we will use GFP_NOIO instead of GFP_KERNEL due to swap use-case.
+>     So the benefit of lazy initialzation would be mitigated, too.
+>
+> 3) Current zram's documenation is wrong.
+>     Set Disksize isn't optional when we use zram firstly.
+>     Once user set disksize, it could be optional, but NOT optional
+>     at first usage time. It's very odd behavior. So I think user set to disksizes
+>     before using is more safe and clear.
+>
+> So my suggestion is following as.
+>
+>   * Let's change disksize setting to MUST before using for consistent behavior.
+>   * When user set to disksize, let's allocate metadata all at once.
+>     4K : 12 byte(64bit) -> 64G : 192M so 0.3% isn't big overhead.
+>     If insane user use such big zram device up to 20, it could consume 6% of ram
+>     but efficieny of zram will cover the waste.
+>   * If someone has a concern about this, let's guide for him set to disksize
+>     right before zram using.
+>
+> What do you think about it?
+>
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoecmd.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+I agree. This lazy initialization has been a problem since the 
+beginning. So, lets just force user to first set the disksize and 
+document this behavior as such.
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 53b9869..391dd8e 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -1139,8 +1139,6 @@ badrsp:
- 	if (buf && --buf->nframesout == 0 && buf->resid == 0)
- 		aoe_end_buf(d, buf);
- 
--	aoecmd_work(d);
--
- 	spin_unlock_irq(&d->lock);
- 	aoedev_put(d);
- 	dev_kfree_skb(skb);
--- 
-1.7.1
+I plan to reduce struct table to just an array of handles (so getting 
+rid of size, flag, count fields), but for now we could just use existing 
+struct table and do this change later.
+
+Thanks,
+Nitin
+
+
 
