@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2KVV3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:29:54 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63520 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab2KVV3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:29:51 -0500
-Date: Thu, 22 Nov 2012 00:27:15 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/46] Automatic NUMA Balancing V4
-Message-ID: <20121121232715.GA4638@gmail.com>
-References: <1353493312-8069-1-git-send-email-mgorman@suse.de>
- <20121121165342.GH8218@suse.de>
- <20121121170306.GA28811@gmail.com>
- <20121121172011.GI8218@suse.de>
- <20121121173316.GA29311@gmail.com>
- <20121121180200.GK8218@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121180200.GK8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757885Ab2KVV33 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:29:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:39 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Sage Weil <sage@inktank.com>
+Subject: [ 117/171] libceph: drop ceph_con_get/put helpers and nref member
+Date: Wed, 21 Nov 2012 16:41:03 -0800
+Message-Id: <20121122004045.096368181@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-* Mel Gorman <mgorman@suse.de> wrote:
+------------------
 
-> > I did a quick SPECjbb 32-warehouses run as well:
-> > 
-> >                                 numa/core      balancenuma-v4
-> >       SPECjbb  +THP:               655 k/sec      607 k/sec
-> > 
-> 
-> Cool. Lets see what we have here. I have some questions;
-> 
-> You say you ran with 32 warehouses. Was this a single run with 
-> just 32 warehouses or you did a specjbb run up to 32 
-> warehouses and use the figure specjbb spits out? [...]
+From: Sage Weil <sage@inktank.com>
 
-"32 warehouses" obviously means single instance...
+(cherry picked from commit d59315ca8c0de00df9b363f94a2641a30961ca1c)
 
-Any multi-instance configuration is explicitly referred to as 
-multi-instance. In my numbers I sometimes tabulate them as "4x8 
-multi-JVM", that means the obvious as well: 4 instances, 8 
-warehouses each.
+These are no longer used.  Every ceph_connection instance is embedded in
+another structure, and refcounts manipulated via the get/put ops.
 
-Thanks,
+Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/linux/ceph/messenger.h |    1 -
+ net/ceph/messenger.c           |   28 +---------------------------
+ 2 files changed, 1 insertion(+), 28 deletions(-)
 
-	Ingo
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -135,7 +135,6 @@ struct ceph_msg_pos {
+  */
+ struct ceph_connection {
+ 	void *private;
+-	atomic_t nref;
+ 
+ 	const struct ceph_connection_operations *ops;
+ 
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -501,30 +501,6 @@ bool ceph_con_opened(struct ceph_connect
+ }
+ 
+ /*
+- * generic get/put
+- */
+-struct ceph_connection *ceph_con_get(struct ceph_connection *con)
+-{
+-	int nref = __atomic_add_unless(&con->nref, 1, 0);
+-
+-	dout("con_get %p nref = %d -> %d\n", con, nref, nref + 1);
+-
+-	return nref ? con : NULL;
+-}
+-
+-void ceph_con_put(struct ceph_connection *con)
+-{
+-	int nref = atomic_dec_return(&con->nref);
+-
+-	BUG_ON(nref < 0);
+-	if (nref == 0) {
+-		BUG_ON(con->sock);
+-		kfree(con);
+-	}
+-	dout("con_put %p nref = %d -> %d\n", con, nref + 1, nref);
+-}
+-
+-/*
+  * initialize a new connection.
+  */
+ void ceph_con_init(struct ceph_connection *con, void *private,
+@@ -535,7 +511,6 @@ void ceph_con_init(struct ceph_connectio
+ 	memset(con, 0, sizeof(*con));
+ 	con->private = private;
+ 	con->ops = ops;
+-	atomic_set(&con->nref, 1);
+ 	con->msgr = msgr;
+ 
+ 	con_sock_state_init(con);
+@@ -1951,8 +1926,7 @@ static int try_write(struct ceph_connect
+ {
+ 	int ret = 1;
+ 
+-	dout("try_write start %p state %lu nref %d\n", con, con->state,
+-	     atomic_read(&con->nref));
++	dout("try_write start %p state %lu\n", con, con->state);
+ 
+ more:
+ 	dout("try_write out_kvec_bytes %d\n", con->out_kvec_bytes);
+
+
