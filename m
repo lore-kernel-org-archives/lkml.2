@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2KVVtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:49:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
+	id S1758097Ab2KVVs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:48:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754998Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard <richjunk@pacbell.net>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 39/83] USB: keyspan: fix typo causing GPF on open
-Date: Wed, 21 Nov 2012 16:42:01 -0800
-Message-Id: <20121122004216.986739238@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>,
+        Yehuda Sadeh <yehuda@inktank.com>
+Subject: [ 141/171] libceph: fix mutex coverage for ceph_con_close
+Date: Wed, 21 Nov 2012 16:41:27 -0800
+Message-Id: <20121122004047.498885164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Sage Weil <sage@inktank.com>
 
-commit f0e3e35c9049087172c65302b42da8fe7ebb63a8 upstream.
+(cherry picked from commit 8c50c817566dfa4581f82373aac39f3e608a7dc8)
 
-Commit f79b2d0f (USB: keyspan: fix NULL-pointer dereferences and
-memory leaks) had a small typo which made the driver use wrong
-offsets when mapping serial port private data.  This results in
-in a GPF when the port is opened.
+Hold the mutex while twiddling all of the state bits to avoid possible
+races.  While we're here, make not of why we cannot close the socket
+directly.
 
-Reported-by: Richard <richjunk@pacbell.net>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/keyspan.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ceph/messenger.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -2448,7 +2448,7 @@ static void keyspan_release(struct usb_s
- static int keyspan_port_probe(struct usb_serial_port *port)
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -503,6 +503,7 @@ static void reset_connection(struct ceph
+  */
+ void ceph_con_close(struct ceph_connection *con)
  {
- 	struct usb_serial *serial = port->serial;
--	struct keyspan_port_private *s_priv;
-+	struct keyspan_serial_private *s_priv;
- 	struct keyspan_port_private *p_priv;
- 	const struct keyspan_device_details *d_details;
- 	struct callbacks *cback;
-@@ -2463,7 +2463,6 @@ static int keyspan_port_probe(struct usb
- 	if (!p_priv)
- 		return -ENOMEM;
++	mutex_lock(&con->mutex);
+ 	dout("con_close %p peer %s\n", con,
+ 	     ceph_pr_addr(&con->peer_addr.in_addr));
+ 	clear_bit(NEGOTIATING, &con->state);
+@@ -515,11 +516,16 @@ void ceph_con_close(struct ceph_connecti
+ 	clear_bit(KEEPALIVE_PENDING, &con->flags);
+ 	clear_bit(WRITE_PENDING, &con->flags);
  
--	s_priv = usb_get_serial_data(port->serial);
- 	p_priv->device_details = d_details;
- 
- 	/* Setup values for the various callback routines */
+-	mutex_lock(&con->mutex);
+ 	reset_connection(con);
+ 	con->peer_global_seq = 0;
+ 	cancel_delayed_work(&con->work);
+ 	mutex_unlock(&con->mutex);
++
++	/*
++	 * We cannot close the socket directly from here because the
++	 * work threads use it without holding the mutex.  Instead, let
++	 * con_work() do it.
++	 */
+ 	queue_con(con);
+ }
+ EXPORT_SYMBOL(ceph_con_close);
 
 
