@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2KVT0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39887 "EHLO mx2.suse.de"
+	id S932232Ab2KVUZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:25:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39998 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754931Ab2KVT0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:25 -0500
+	id S1756870Ab2KVT0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:38 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/40] mm: mempolicy: Add MPOL_MF_NOOP
-Date: Thu, 22 Nov 2012 19:25:30 +0000
-Message-Id: <1353612353-1576-18-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/40] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+Date: Thu, 22 Nov 2012 19:25:39 +0000
+Message-Id: <1353612353-1576-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,98 +30,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+By accounting against the present PTEs, scanning speed reflects the
+actual present (mapped) memory.
 
-NOTE: I have not yet addressed by own review feedback of this patch. At
-	this point I'm trying to construct a baseline tree and will apply
-	my own review feedback later and then fold it in.
-
-This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
-to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
-flags, mbind() will map the pages PROT_NONE so that they will be
-migrated on the next touch.
-
-This allows an application to prepare for a new phase of operation
-where different regions of shared storage will be assigned to
-worker threads, w/o changing policy.  Note that we could just use
-"default" policy in this case.  However, this also allows an
-application to request that pages be migrated, only if necessary,
-to follow any arbitrary policy that might currently apply to a
-range of pages, without knowing the policy, or without specifying
-multiple mbind()s for ranges with different policies.
-
-[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
-
-Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   11 ++++++-----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c |   36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 3e835c9..d23dca8 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -21,6 +21,7 @@ enum {
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
- 	MPOL_LOCAL,
-+	MPOL_NOOP,		/* retain existing policy for range */
- 	MPOL_MAX,	/* always last member of enum */
- };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 66d8bd2..773ef97 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -827,8 +827,8 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long offset, end;
+-	long length;
++	unsigned long start, end;
++	long pages;
  
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 54bd3e5..c21e914 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
- 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
  
--	if (mode == MPOL_DEFAULT) {
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
- 		if (nodes && !nodes_empty(*nodes))
- 			return ERR_PTR(-EINVAL);
--		return NULL;	/* simply delete any existing policy */
-+		return NULL;
+@@ -858,18 +858,20 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
+-	offset = mm->numa_scan_offset;
+-	length = sysctl_balance_numa_scan_size;
+-	length <<= 20;
++	start = mm->numa_scan_offset;
++	pages = sysctl_balance_numa_scan_size;
++	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!pages)
++		return;
+ 
+ 	down_read(&mm->mmap_sem);
+-	vma = find_vma(mm, offset);
++	vma = find_vma(mm, start);
+ 	if (!vma) {
+ 		reset_ptenuma_scan(p);
+-		offset = 0;
++		start = 0;
+ 		vma = mm->mmap;
  	}
- 	VM_BUG_ON(!nodes);
+-	for (; vma && length > 0; vma = vma->vm_next) {
++	for (; vma; vma = vma->vm_next) {
+ 		if (!vma_migratable(vma))
+ 			continue;
  
-@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (start & ~PAGE_MASK)
- 		return -EINVAL;
+@@ -877,15 +879,19 @@ void task_numa_work(struct callback_head *work)
+ 		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
+ 			continue;
  
--	if (mode == MPOL_DEFAULT)
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
- 		flags &= ~MPOL_MF_STRICT;
+-		offset = max(offset, vma->vm_start);
+-		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-		length -= end - offset;
+-
+-		change_prot_numa(vma, offset, end);
++		do {
++			start = max(start, vma->vm_start);
++			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
++			end = min(end, vma->vm_end);
++			pages -= change_prot_numa(vma, start, end);
  
- 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
-@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
- 	[MPOL_PREFERRED]  = "prefer",
- 	[MPOL_BIND]       = "bind",
- 	[MPOL_INTERLEAVE] = "interleave",
--	[MPOL_LOCAL]      = "local"
-+	[MPOL_LOCAL]      = "local",
-+	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
- };
- 
- 
-@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 			break;
- 		}
+-		offset = end;
++			start = end;
++			if (pages <= 0)
++				goto out;
++		} while (end != vma->vm_end);
  	}
--	if (mode >= MPOL_MAX)
-+	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
- 		goto out;
  
- 	switch (mode) {
++out:
+ 	/*
+ 	 * It is possible to reach the end of the VMA list but the last few VMAs are
+ 	 * not guaranteed to the vma_migratable. If they are not, we would find the
+@@ -893,7 +899,7 @@ void task_numa_work(struct callback_head *work)
+ 	 * so check it now.
+ 	 */
+ 	if (vma)
+-		mm->numa_scan_offset = offset;
++		mm->numa_scan_offset = start;
+ 	else
+ 		reset_ptenuma_scan(p);
+ 	up_read(&mm->mmap_sem);
 -- 
 1.7.9.2
 
