@@ -1,213 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2KVUvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:51:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2KVS6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:38 -0500
-Date: Wed, 21 Nov 2012 18:02:38 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-5c51bdbe4c74dce7996d0bbfa39974775cc3f13c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-25-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-25-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm:
-  Merge alloc_low_page between 64bit and 32bit
-Git-Commit-ID: 5c51bdbe4c74dce7996d0bbfa39974775cc3f13c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932553Ab2KVUvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:51:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47238 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755431Ab2KVUvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:51:35 -0500
+Message-ID: <50AE902D.5090705@zytor.com>
+Date: Thu, 22 Nov 2012 12:50:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:02:43 -0800 (PST)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <CAE9FiQXKgnZyFNujKhMn94+0JQ6jtAHOihmtMOmk_gJi-4_aYQ@mail.gmail.com> <50AE7429.6030308@zytor.com> <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
+In-Reply-To: <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5c51bdbe4c74dce7996d0bbfa39974775cc3f13c
-Gitweb:     http://git.kernel.org/tip/5c51bdbe4c74dce7996d0bbfa39974775cc3f13c
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:39:01 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:23 -0800
+On 11/22/2012 12:18 PM, Yinghai Lu wrote:
+>>
+>> If we can get the sentinel hack to work that would probably be useful, but
+>> we need to understand the exact pathology.
+>
+> for kexec bzImage --real-mode-entry, code after setup_header will be executed.
+>
+> so we could clear value before setup_header after copy 16bit section
+> from bzImage...
+>
+> Index: kexec-tools/kexec/arch/i386/kexec-bzImage.c
+> ===================================================================
+> --- kexec-tools.orig/kexec/arch/i386/kexec-bzImage.c
+> +++ kexec-tools/kexec/arch/i386/kexec-bzImage.c
+> @@ -212,6 +212,16 @@ int do_bzImage_load(struct kexec_info *i
+>   	setup_size = kern16_size + command_line_len + PURGATORY_CMDLINE_SIZE;
+>   	real_mode = xmalloc(setup_size);
+>   	memcpy(real_mode, kernel, kern16_size);
+> +	/*
+> +	 * clear value before header
+> +	 * not not clear value after header, --real-mode-entry
+> +	 * need code after header.
+> +	 */
+> +	memset(real_mode, 0, 0x1f1);
+> +	if (!real_mode_entry) {
+> +		/* clear value after setup_header  */
+> +		memset((unsigned char *)real_mode + 0x290, 0, kern16_size - 0x290);
+> +	}
+>
 
-x86, mm: Merge alloc_low_page between 64bit and 32bit
+You really should move the memset() into the if() clause as well... 
+doesn't matter at the moment, but that is the protocol.
 
-They are almost same except 64 bit need to handle after_bootmem case.
+The limit is 0x280, not 0x290, or -- better -- you can use the byte at 
+0x201 to get the size.
 
-Add mm_internal.h to make that alloc_low_page() only to be accessible
-from arch/x86/mm/init*.c
+	-hpa
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-25-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/init.c        | 34 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/init_32.c     | 26 ++------------------------
- arch/x86/mm/init_64.c     | 32 ++------------------------------
- arch/x86/mm/mm_internal.h |  6 ++++++
- 4 files changed, 44 insertions(+), 54 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 2393d00..8481892 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -17,10 +17,44 @@
- #include <asm/proto.h>
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
- 
-+#include "mm_internal.h"
-+
- unsigned long __initdata pgt_buf_start;
- unsigned long __meminitdata pgt_buf_end;
- unsigned long __meminitdata pgt_buf_top;
- 
-+__ref void *alloc_low_page(void)
-+{
-+	unsigned long pfn;
-+	void *adr;
-+
-+#ifdef CONFIG_X86_64
-+	if (after_bootmem) {
-+		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-+
-+		return adr;
-+	}
-+#endif
-+
-+	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-+		unsigned long ret;
-+		if (min_pfn_mapped >= max_pfn_mapped)
-+			panic("alloc_low_page: ran out of memory");
-+		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
-+					max_pfn_mapped << PAGE_SHIFT,
-+					PAGE_SIZE, PAGE_SIZE);
-+		if (!ret)
-+			panic("alloc_low_page: can not alloc memory");
-+		memblock_reserve(ret, PAGE_SIZE);
-+		pfn = ret >> PAGE_SHIFT;
-+	} else
-+		pfn = pgt_buf_end++;
-+
-+	adr = __va(pfn * PAGE_SIZE);
-+	clear_page(adr);
-+	return adr;
-+}
-+
- /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
- #define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
- RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 7bb1106..a7f2df1 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -53,36 +53,14 @@
- #include <asm/page_types.h>
- #include <asm/init.h>
- 
-+#include "mm_internal.h"
-+
- unsigned long highstart_pfn, highend_pfn;
- 
- static noinline int do_test_wp_bit(void);
- 
- bool __read_mostly __vmalloc_start_set = false;
- 
--static __init void *alloc_low_page(void)
--{
--	unsigned long pfn;
--	void *adr;
--
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
--		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
--		if (!ret)
--			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
--		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
--
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
--}
--
- /*
-  * Creates a middle page table and puts a pointer to it in the
-  * given global directory entry. This only returns the gd entry
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 1960820..1d53def 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -54,6 +54,8 @@
- #include <asm/uv/uv.h>
- #include <asm/setup.h>
- 
-+#include "mm_internal.h"
-+
- static int __init parse_direct_gbpages_off(char *arg)
- {
- 	direct_gbpages = 0;
-@@ -314,36 +316,6 @@ void __init cleanup_highmap(void)
- 	}
- }
- 
--static __ref void *alloc_low_page(void)
--{
--	unsigned long pfn;
--	void *adr;
--
--	if (after_bootmem) {
--		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
--
--		return adr;
--	}
--
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
--		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
--		if (!ret)
--			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
--		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
--
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-new file mode 100644
-index 0000000..b3f993a
---- /dev/null
-+++ b/arch/x86/mm/mm_internal.h
-@@ -0,0 +1,6 @@
-+#ifndef __X86_MM_INTERNAL_H
-+#define __X86_MM_INTERNAL_H
-+
-+void *alloc_low_page(void);
-+
-+#endif	/* __X86_MM_INTERNAL_H */
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
