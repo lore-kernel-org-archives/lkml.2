@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab2KVSkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:40:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
+	id S932843Ab2KVV5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:57:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab2KVSkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:08 -0500
+	id S1754916Ab2KVSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Moore <paul@paul-moore.com>, Eric Paris <eparis@parisplace.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 80/83] selinux: fix sel_netnode_insert() suspicious rcu dereference
-Date: Wed, 21 Nov 2012 16:42:42 -0800
-Message-Id: <20121122004221.197149857@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 48/83] memcg: oom: fix totalpages calculation for memory.swappiness==0
+Date: Wed, 21 Nov 2012 16:42:10 -0800
+Message-Id: <20121122004217.880569840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -29,64 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 88a693b5c1287be4da937699cb82068ce9db0135 upstream.
+commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.5.0-rc1+ #63 Not tainted
--------------------------------
-security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
+oom_badness() takes a totalpages argument which says how many pages are
+available and it uses it as a base for the score calculation.  The value
+is calculated by mem_cgroup_get_limit which considers both limit and
+total_swap_pages (resp.  memsw portion of it).
 
-other info that might help us debug this:
+This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
+with swappiness==0") we do not swap when swappiness is 0 which means
+that we cannot really use up all the totalpages pages.  This in turn
+confuses oom score calculation if the memcg limit is much smaller than
+the available swap because the used memory (capped by the limit) is
+negligible comparing to totalpages so the resulting score is too small
+if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+A wrong process might be selected as result.
 
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by trinity-child1/8750:
- #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
+The problem can be worked around by checking mem_cgroup_swappiness==0
+and not considering swap at all in such a case.
 
-stack backtrace:
-Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
-Call Trace:
- [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
- [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
- [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
- [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
- [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
- [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
- [<ffffffff812c9536>] security_socket_bind+0x16/0x20
- [<ffffffff815550ca>] sys_bind+0x7a/0x100
- [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
- [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
- [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
-
-This patch below does what Paul McKenney suggested in the previous thread.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Paul Moore <paul@paul-moore.com>
-Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/netnode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/cgroups/memory.txt |    4 ++++
+ mm/memcontrol.c                  |   21 +++++++++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -174,7 +174,8 @@ static void sel_netnode_insert(struct se
- 	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
- 		struct sel_netnode *tail;
- 		tail = list_entry(
--			rcu_dereference(sel_netnode_hash[idx].list.prev),
-+			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
-+						  lockdep_is_held(&sel_netnode_lock)),
- 			struct sel_netnode, list);
- 		list_del_rcu(&tail->list);
- 		kfree_rcu(tail, rcu);
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -466,6 +466,10 @@ Note:
+ 5.3 swappiness
+ 
+ Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
++Please note that unlike the global swappiness, memcg knob set to 0
++really prevents from any swapping even if there is a swap storage
++available. This might lead to memcg OOM killer if there are no file
++pages to reclaim.
+ 
+ Following cgroups' swappiness can't be changed.
+ - root cgroup (uses /proc/sys/vm/swappiness).
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1458,17 +1458,26 @@ static int mem_cgroup_count_children(str
+ static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+-	u64 memsw;
+ 
+ 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+ 	/*
+-	 * If memsw is finite and limits the amount of swap space available
+-	 * to this memcg, return that limit.
++	 * Do not consider swap space if we cannot swap due to swappiness
+ 	 */
+-	return min(limit, memsw);
++	if (mem_cgroup_swappiness(memcg)) {
++		u64 memsw;
++
++		limit += total_swap_pages << PAGE_SHIFT;
++		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++
++		/*
++		 * If memsw is finite and limits the amount of swap space
++		 * available to this memcg, return that limit.
++		 */
++		limit = min(limit, memsw);
++	}
++
++	return limit;
+ }
+ 
+ void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
 
 
