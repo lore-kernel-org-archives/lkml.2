@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab2KVUJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:09:06 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33036 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab2KVUI4 (ORCPT
+	id S1757461Ab2KVUJe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:09:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36891 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab2KVUJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:08:56 -0500
+	Thu, 22 Nov 2012 15:09:29 -0500
+Message-ID: <50ADFEC2.8040100@kernel.dk>
+Date: Thu, 22 Nov 2012 11:30:26 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20121122195840.GA26543@kroah.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-	<20121122195840.GA26543@kroah.com>
-Date: Thu, 22 Nov 2012 21:08:55 +0100
-Message-ID: <CAJSP0QUai4O12U7fbrARAZLOig5=10e1WYg7i+OZTDETuDRWoQ@mail.gmail.com>
-Subject: Re: [PATCH 00/46] staging: line6: drop MIDI state sysfs attrs
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Markus Grabner <grabner@icg.tugraz.at>,
-        "line6linux-devel@lists.sourceforge.net" 
-	<line6linux-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Laurent Navet <laurent_navet@yahoo.com>
+To: Roland Dreier <roland@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Don't access request after it might be freed
+References: <1353578411-23527-1-git-send-email-roland@kernel.org>
+In-Reply-To: <1353578411-23527-1-git-send-email-roland@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 8:58 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Nov 22, 2012 at 08:48:39PM +0100, Stefan Hajnoczi wrote:
->> Markus and I have discussed the MIDI processing that currently happens in the
->> line6 driver.  This stuff really belongs in userspace where a library or
->> utility can use ALSA MIDI APIs to control the device.  Moving MIDI processing
->> to userspace has several benefits:
->>
->> 1. The driver only handles PCM and MIDI I/O.  This means less kernel code.
->>
->> 2. A large number of sysfs attributes can be removed.  These attributes exposed
->>    MIDI state and driver code was necessary to sync and manage this state.
->>
->> 3. It's easier for userspace to control the device, try out new MIDI commands,
->>    etc when the driver acts as a dumb transport.
->>
->> This patch series removes the sysfs attributes and then removes the state
->> behind those attributes.  I have tried to make small incremental changes that
->> can be reviewed easily.
->
-> Very nice, I'll queue these up on Monday, very good work, thanks so much
-> for doing this.
+On 2012-11-22 11:00, Roland Dreier wrote:
+> From: Roland Dreier <roland@purestorage.com>
+> 
+> After we've done __elv_add_request() and __blk_run_queue() in
+> blk_execute_rq_nowait(), the request might finish and be freed
+> immediately.  Therefore checking if the type is REQ_TYPE_PM_RESUME
+> isn't safe afterwards, because if it isn't, rq might be gone.
+> Instead, check beforehand and stash the result in a temporary.
+> 
+> This fixes crashes in blk_execute_rq_nowait() I get occasionally when
+> running with lots of memory debugging options enabled -- I think this
+> race is usually harmless because the window for rq to be reallocated
+> is so small.
 
-Thanks!  I hope Markus has a chance to review and/or test these
-changes first - he knows generally what I'm up too but should have the
-final word on details.
+Thanks Roland, that's obviously a bug, not safe to touch the request
+even after insertion, let alone running the queue. Applied.
 
-Stefan
+-- 
+Jens Axboe
+
