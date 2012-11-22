@@ -1,348 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2KVSxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:53:51 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44937 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab2KVSxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:53:43 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v2 3/3] CLK: add more managed APIs
-Date: Wed, 21 Nov 2012 21:34:42 -0800
-Message-Id: <1353562482-12422-4-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
+	id S1755814Ab2KVSyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:54:25 -0500
+Received: from [93.179.225.50] ([93.179.225.50]:56502 "EHLO shrek.podlesie.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab2KVSyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:54:20 -0500
+Date: Thu, 22 Nov 2012 19:54:16 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: daniel.vetter@ffwll.ch
+Cc: dri-devel@lists.freedestop.org, linux-kernel@vger.kernel.org
+Subject: i915: black screen after blank when LID is closed on Linux >= 3.1
+Message-ID: <20121122185416.GA13169@shrek.podlesie.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When converting a driver to managed resources it is desirable to be able to
-manage all resources in the same fashion. This change allows managing clocks
-in the same way we manage all other resources.
+Hi,
 
-This adds the following managed APIs:
+since Linux 3.1 I'm having some problems with i915 driver on HP nc6120
+with 915GM chipset. The display goes black after the kernel tries to
+blank screen while LID is closed (see steps to reproduce to more detailed
+description).
 
-- devm_clk_prepare()/devm_clk_unprepare();
-- devm_clk_enable()/devm_clk_disable();
-- devm_clk_preapre_enable()/devm_clk_diable_unprepare().
+Currently I'm using Linux 3.7-rc6 with KMS enabled and disabled ACPI
+video by something equivalent to (without it the LID, and the whole
+ACPI, does not work):
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/clk/clk-devres.c |  90 +++++++++++++++++++++++++++++++---------
- include/linux/clk.h      | 105 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 176 insertions(+), 19 deletions(-)
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 0230cb6..40e060b 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -1782,6 +1797,10 @@ static int __init intel_opregion_present(void)
+ int acpi_video_register(void)
+ {
+ 	int result = 0;
++	return -ENODEV;
+ 	if (register_count) {
+ 		/*
+ 		 * if the function of acpi_video_register is already called,
 
-diff --git a/drivers/clk/clk-devres.c b/drivers/clk/clk-devres.c
-index 8f57154..3a2286b 100644
---- a/drivers/clk/clk-devres.c
-+++ b/drivers/clk/clk-devres.c
-@@ -9,6 +9,32 @@
- #include <linux/export.h>
- #include <linux/gfp.h>
- 
-+static int devm_clk_match(struct device *dev, void *res, void *data)
-+{
-+	struct clk **c = res;
-+
-+	if (WARN_ON(!c || !*c))
-+		return 0;
-+
-+	return *c == data;
-+}
-+
-+
-+static int devm_clk_create_devres(struct device *dev, struct clk *clk,
-+				  void (*release)(struct device *, void *))
-+{
-+	struct clk **ptr;
-+
-+	ptr = devres_alloc(release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return -ENOMEM;
-+
-+	*ptr = clk;
-+	devres_add(dev, ptr);
-+
-+	return 0;
-+}
-+
- static void devm_clk_release(struct device *dev, void *res)
- {
- 	clk_put(*(struct clk **)res);
-@@ -16,34 +42,22 @@ static void devm_clk_release(struct device *dev, void *res)
- 
- struct clk *devm_clk_get(struct device *dev, const char *id)
- {
--	struct clk **ptr, *clk;
--
--	ptr = devres_alloc(devm_clk_release, sizeof(*ptr), GFP_KERNEL);
--	if (!ptr)
--		return ERR_PTR(-ENOMEM);
-+	struct clk *clk;
-+	int error;
- 
- 	clk = clk_get(dev, id);
- 	if (!IS_ERR(clk)) {
--		*ptr = clk;
--		devres_add(dev, ptr);
--	} else {
--		devres_free(ptr);
-+		error = devm_clk_create_devres(dev, clk, devm_clk_release);
-+		if (error) {
-+			clk_put(clk);
-+			return ERR_PTR(error);
-+		}
- 	}
- 
- 	return clk;
- }
- EXPORT_SYMBOL(devm_clk_get);
- 
--static int devm_clk_match(struct device *dev, void *res, void *data)
--{
--	struct clk **c = res;
--	if (!c || !*c) {
--		WARN_ON(!c || !*c);
--		return 0;
--	}
--	return *c == data;
--}
--
- void devm_clk_put(struct device *dev, struct clk *clk)
- {
- 	int ret;
-@@ -53,3 +67,41 @@ void devm_clk_put(struct device *dev, struct clk *clk)
- 	WARN_ON(ret);
- }
- EXPORT_SYMBOL(devm_clk_put);
-+
-+#define DEFINE_DEVM_CLK_OP(create_op, destroy_op)			\
-+static void devm_##destroy_op##_release(struct device *devm, void *res)	\
-+{									\
-+	destroy_op(*(struct clk **)res);				\
-+}									\
-+									\
-+int devm_##create_op(struct device *dev, struct clk *clk)		\
-+{									\
-+	int error;							\
-+									\
-+	error = devm_clk_create_devres(dev, clk,			\
-+					devm_##destroy_op##_release);	\
-+	if (error)							\
-+		return error;						\
-+									\
-+	error = create_op(clk);						\
-+	if (error) {							\
-+		WARN_ON(devres_destroy(dev,				\
-+					devm_##destroy_op##_release,	\
-+					devm_clk_match, clk));		\
-+		return error;						\
-+	}								\
-+									\
-+	return 0;							\
-+}									\
-+EXPORT_SYMBOL(devm_##create_op);					\
-+									\
-+void devm_##destroy_op(struct device *dev, struct clk *clk)		\
-+{									\
-+	WARN_ON(devres_release(dev, devm_##destroy_op##_release,	\
-+				devm_clk_match, clk));			\
-+}									\
-+EXPORT_SYMBOL(devm_##destroy_op)
-+
-+DEFINE_DEVM_CLK_OP(clk_prepare, clk_unprepare);
-+DEFINE_DEVM_CLK_OP(clk_prepare_enable, clk_disable_unprepare);
-+DEFINE_DEVM_CLK_OP(clk_enable, clk_disable);
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 8bf149e..04b6300 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -133,6 +133,17 @@ struct clk *devm_clk_get(struct device *dev, const char *id);
- int clk_prepare(struct clk *clk);
- 
- /**
-+ * devm_clk_prepare - prepare a clock source as managed resource
-+ * @dev: device owning the resource
-+ * @clk: clock source
-+ *
-+ * This prepares the clock source for use.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+int devm_clk_prepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_unprepare - undo preparation of a clock source
-  * @clk: clock source
-  *
-@@ -144,6 +155,18 @@ int clk_prepare(struct clk *clk);
- void clk_unprepare(struct clk *clk);
- 
- /**
-+ * devm_clk_unprepare - undo preparation of a managed clock source.
-+ * @dev: device used to prepare the clock
-+ * @clk: clock source
-+ *
-+ * This undoes preparation of a clock previously prepared with call
-+ * to devm_clk_pepare().
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+void devm_clk_unprepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_enable - inform the system when the clock source should be running.
-  * @clk: clock source
-  *
-@@ -156,6 +179,19 @@ void clk_unprepare(struct clk *clk);
- int clk_enable(struct clk *clk);
- 
- /**
-+ * devm_clk_enable - enable the clock source as managed resource
-+ * @dev: device owning the resource
-+ * @clk: clock source
-+ *
-+ * If the clock can not be enabled/disabled, this should return success.
-+ *
-+ * May be not called from atomic contexts.
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int devm_clk_enable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_disable - inform the system when the clock source is no longer required.
-  * @clk: clock source
-  *
-@@ -172,6 +208,18 @@ int clk_enable(struct clk *clk);
- void clk_disable(struct clk *clk);
- 
- /**
-+ * devm_clk_disable - disable managed clock source resource
-+ * @dev: device used to enable the clock
-+ * @clk: clock source
-+ *
-+ * Inform the system that a clock source is no longer required by
-+ * a driver and may be shut down.
-+ *
-+ * Must not be called from atomic contexts.
-+ */
-+void devm_clk_disable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_prepare_enable - prepare and enable a clock source
-  * @clk: clock source
-  *
-@@ -182,6 +230,17 @@ void clk_disable(struct clk *clk);
- int clk_prepare_enable(struct clk *clk);
- 
- /**
-+ * devm_clk_prepare_enable - prepare and enable a managed clock source
-+ * @dev: device owning the clock source
-+ * @clk: clock source
-+ *
-+ * This prepares the clock source for use and enables it.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+int devm_clk_prepare_enable(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_disable_unprepare - disable and undo preparation of a clock source
-  * @clk: clock source
-  *
-@@ -192,6 +251,17 @@ int clk_prepare_enable(struct clk *clk);
- void clk_disable_unprepare(struct clk *clk);
- 
- /**
-+ * clk_disable_unprepare - disable and undo preparation of a managed clock source
-+ * @dev: device used to prepare and enable the clock
-+ * @clk: clock source
-+ *
-+ * This disables and undoes a previously prepared clock.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+void devm_clk_disable_unprepare(struct device *dev, struct clk *clk);
-+
-+/**
-  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
-  *		  This is only valid once the clock source has been enabled.
-  * @clk: clock source
-@@ -303,29 +373,64 @@ static inline int clk_prepare(struct clk *clk)
- 	return 0;
- }
- 
-+static inline int devm_clk_prepare(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_unprepare(struct clk *clk)
- {
- 	might_sleep();
- }
- 
-+static inline void devm_clk_unprepare(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+}
-+
- static inline int clk_enable(struct clk *clk)
- {
- 	return 0;
- }
- 
-+static inline int devm_clk_enable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_disable(struct clk *clk) {}
- 
-+static inline void devm_clk_disable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline int clk_prepare_enable(struct clk *clk)
- {
- 	might_sleep();
- 	return 0;
- }
- 
-+static inline int devm_clk_prepare_enable(struct device *dev, struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
- static inline void clk_disable_unprepare(struct clk *clk)
- {
- 	might_sleep();
- }
- 
-+static inline void devm_clk_disable_unprepare(struct device *dev,
-+					      struct clk *clk)
-+{
-+	might_sleep();
-+}
-+
- static inline unsigned long clk_get_rate(struct clk *clk)
- {
- 	return 0;
--- 
-1.7.11.7
+I also tested this kernel with merged
+git://people.freedesktop.org/~danvet/drm-intel drm-intel-next.
 
+Steps to reproduce:
+1. $ setterm -blank 1
+2. close LID
+3. sleep 90
+4. open LID
+5. press key
+6. close LID
+
+nothing happens here, the screen is still turned on, should be turned off
+
+7. open LID
+
+backlight is on, but screen is black, but some artifacts are visible so
+LCD is probably turned off, and the display is not usable anymore
+
+
+I have bisected this problem and it's introduced by commit
+120eced9efe7fdb5123db4ea47e9adee9b66284e
+(drm/i915: Set crtc DPMS mode to ON in intel_crtc_mode_set).
+
+In Linux 3.1 to 3.6 I've been using following workaround:
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 2163818..51ebb77 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6000,10 +6000,12 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+ 					      x, y, old_fb);
+ 	drm_vblank_post_modeset(dev, pipe);
+ 
++#if 0
+ 	if (ret)
+ 		intel_crtc->dpms_mode = DRM_MODE_DPMS_OFF;
+ 	else
+ 		intel_crtc->dpms_mode = DRM_MODE_DPMS_ON;
++#endif
+ 
+ 	return ret;
+ }
+
+Thanks,
+
+Krzysiek
+
+--- 
+# lspci -v
+...
+00:02.0 VGA compatible controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+	Subsystem: Hewlett-Packard Company NX6110/NC6120
+	Flags: bus master, fast devsel, latency 0, IRQ 16
+	Memory at d0400000 (32-bit, non-prefetchable) [size=512K]
+	I/O ports at 7000 [size=8]
+	Memory at c0000000 (32-bit, prefetchable) [size=256M]
+	Memory at d0480000 (32-bit, non-prefetchable) [size=256K]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [d0] Power Management version 2
+	Kernel driver in use: i915
+
+00:02.1 Display controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03)
+	Subsystem: Hewlett-Packard Company NX6110/NC6120
+	Flags: bus master, fast devsel, latency 0
+	Memory at d0500000 (32-bit, non-prefetchable) [size=512K]
+	Capabilities: [d0] Power Management version 2
+
+$ dmesg
+...
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+Hardware name: NC6120(EK094ES)
+active connector not linked to encoder
+Pid: 420, comm: kworker/0:2 Not tainted 3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<8032336f>] ? acpi_lid_open+0x25/0x3e
+ [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+ [<80151fb2>] ? notifier_call_chain+0x42/0x60
+ [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+ [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+ [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+ [<80322e92>] ? acpi_button_notify+0x2f/0xae
+ [<8030511b>] ? acpi_device_notify+0xf/0x11
+ [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+ [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687cc ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+Hardware name: NC6120(EK094ES)
+encoder->connectors_active not set
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<8032336f>] ? acpi_lid_open+0x25/0x3e
+ [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+ [<80151fb2>] ? notifier_call_chain+0x42/0x60
+ [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+ [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+ [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+ [<80322e92>] ? acpi_button_notify+0x2f/0xae
+ [<8030511b>] ? acpi_device_notify+0xf/0x11
+ [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+ [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687cd ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+Hardware name: NC6120(EK094ES)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80131269>] ? warn_slowpath_null+0x19/0x20
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+ [<80151fb2>] ? notifier_call_chain+0x42/0x60
+ [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+ [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+ [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+ [<80322e92>] ? acpi_button_notify+0x2f/0xae
+ [<8030511b>] ? acpi_device_notify+0xf/0x11
+ [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+ [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687ce ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+Hardware name: NC6120(EK094ES)
+encoder's hw state doesn't match sw tracking (expected 0, found 1)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+ [<80151fb2>] ? notifier_call_chain+0x42/0x60
+ [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+ [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+ [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+ [<80322e92>] ? acpi_button_notify+0x2f/0xae
+ [<8030511b>] ? acpi_device_notify+0xf/0x11
+ [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+ [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687cf ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+Hardware name: NC6120(EK094ES)
+pipe A assertion failure (expected off, current on)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+ [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+ [<80151fb2>] ? notifier_call_chain+0x42/0x60
+ [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+ [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+ [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+ [<80322e92>] ? acpi_button_notify+0x2f/0xae
+ [<8030511b>] ? acpi_device_notify+0xf/0x11
+ [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+ [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d0 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+Hardware name: NC6120(EK094ES)
+active connector not linked to encoder
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d1 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+Hardware name: NC6120(EK094ES)
+encoder->connectors_active not set
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d2 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+Hardware name: NC6120(EK094ES)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80131269>] ? warn_slowpath_null+0x19/0x20
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d3 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+Hardware name: NC6120(EK094ES)
+encoder's hw state doesn't match sw tracking (expected 0, found 1)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d4 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+Hardware name: NC6120(EK094ES)
+pipe A assertion failure (expected off, current on)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d5 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+Hardware name: NC6120(EK094ES)
+active connector not linked to encoder
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d6 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+Hardware name: NC6120(EK094ES)
+encoder->connectors_active not set
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d7 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+Hardware name: NC6120(EK094ES)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<80131269>] ? warn_slowpath_null+0x19/0x20
+ [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d8 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+Hardware name: NC6120(EK094ES)
+encoder's hw state doesn't match sw tracking (expected 0, found 1)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687d9 ]---
+------------[ cut here ]------------
+WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+Hardware name: NC6120(EK094ES)
+pipe A assertion failure (expected off, current on)
+Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+Call Trace:
+ [<80131173>] ? warn_slowpath_common+0x73/0xb0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+ [<8038e0d5>] ? assert_pipe+0x95/0xa0
+ [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+ [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+ [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+ [<802f2f04>] ? fb_blank+0x44/0xb0
+ [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+ [<802314b2>] ? flush_commit_list+0x562/0x620
+ [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+ [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+ [<80344ffc>] ? console_callback+0xec/0x110
+ [<80147224>] ? process_one_work+0x104/0x380
+ [<8013d963>] ? internal_add_timer+0x13/0x40
+ [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+ [<80147797>] ? worker_thread+0x107/0x3a0
+ [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+ [<8014bd7c>] ? kthread+0x8c/0xa0
+ [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+---[ end trace 2fa112e1a3f687da ]---
