@@ -1,114 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030209Ab2KVWPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:15:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49369 "EHLO mail.kernel.org"
+	id S1756546Ab2KVWPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:15:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49361 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754587Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [ 59/83] tcp: fix retransmission in repair mode
-Date: Wed, 21 Nov 2012 16:42:21 -0800
-Message-Id: <20121122004219.029751355@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 133/171] libceph: small changes to messenger.c
+Date: Wed, 21 Nov 2012 16:41:19 -0800
+Message-Id: <20121122004046.705780993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Alex Elder <elder@inktank.com>
 
-From: Andrew Vagin <avagin@openvz.org>
+(cherry picked from commit 5821bd8ccdf5d17ab2c391c773756538603838c3)
 
-[ Upstream commit ec34232575083fd0f43d3a101e8ebb041b203761 ]
+This patch gathers a few small changes in "net/ceph/messenger.c":
+  out_msg_pos_next()
+    - small logic change that mostly affects indentation
+  write_partial_msg_pages().
+    - use a local variable trail_off to represent the offset into
+      a message of the trail portion of the data (if present)
+    - once we are in the trail portion we will always be there, so we
+      don't always need to check against our data position
+    - avoid computing len twice after we've reached the trail
+    - get rid of the variable tmpcrc, which is not needed
+    - trail_off and trail_len never change so mark them const
+    - update some comments
+  read_partial_message_bio()
+    - bio_iovec_idx() will never return an error, so don't bother
+      checking for it
 
-Currently if a socket was repaired with a few packet in a write queue,
-a kernel bug may be triggered:
-
-kernel BUG at net/ipv4/tcp_output.c:2330!
-RIP: 0010:[<ffffffff8155784f>] tcp_retransmit_skb+0x5ff/0x610
-
-According to the initial realization v3.4-rc2-963-gc0e88ff,
-all skb-s should look like already posted. This patch fixes code
-according with this sentence.
-
-Here are three points, which were not done in the initial patch:
-1. A tcp send head should not be changed
-2. Initialize TSO state of a skb
-3. Reset the retransmission time
-
-This patch moves logic from tcp_sendmsg to tcp_write_xmit. A packet
-passes the ussual way, but isn't sent to network. This patch solves
-all described problems and handles tcp_sendpages.
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c        |    4 ++--
- net/ipv4/tcp_output.c |    4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ net/ceph/messenger.c |   63 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 31 insertions(+), 32 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1236,7 +1236,7 @@ new_segment:
- wait_for_sndbuf:
- 			set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- wait_for_memory:
--			if (copied && likely(!tp->repair))
-+			if (copied)
- 				tcp_push(sk, flags & ~MSG_MORE, mss_now, TCP_NAGLE_PUSH);
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -907,21 +907,23 @@ static void out_msg_pos_next(struct ceph
  
- 			if ((err = sk_stream_wait_memory(sk, &timeo)) != 0)
-@@ -1247,7 +1247,7 @@ wait_for_memory:
- 	}
- 
- out:
--	if (copied && likely(!tp->repair))
-+	if (copied)
- 		tcp_push(sk, flags, mss_now, tp->nonagle);
- 	release_sock(sk);
- 	return copied + copied_syn;
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1977,6 +1977,9 @@ static bool tcp_write_xmit(struct sock *
- 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
- 		BUG_ON(!tso_segs);
- 
-+		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
-+			goto repair; /* Skip network transmission */
+ 	con->out_msg_pos.data_pos += sent;
+ 	con->out_msg_pos.page_pos += sent;
+-	if (sent == len) {
+-		con->out_msg_pos.page_pos = 0;
+-		con->out_msg_pos.page++;
+-		con->out_msg_pos.did_page_crc = false;
+-		if (in_trail)
+-			list_move_tail(&page->lru,
+-				       &msg->trail->head);
+-		else if (msg->pagelist)
+-			list_move_tail(&page->lru,
+-				       &msg->pagelist->head);
++	if (sent < len)
++		return;
 +
- 		cwnd_quota = tcp_cwnd_test(tp, skb);
- 		if (!cwnd_quota)
- 			break;
-@@ -2017,6 +2020,7 @@ static bool tcp_write_xmit(struct sock *
- 		if (unlikely(tcp_transmit_skb(sk, skb, 1, gfp)))
- 			break;
++	BUG_ON(sent != len);
++	con->out_msg_pos.page_pos = 0;
++	con->out_msg_pos.page++;
++	con->out_msg_pos.did_page_crc = false;
++	if (in_trail)
++		list_move_tail(&page->lru,
++			       &msg->trail->head);
++	else if (msg->pagelist)
++		list_move_tail(&page->lru,
++			       &msg->pagelist->head);
+ #ifdef CONFIG_BLOCK
+-		else if (msg->bio)
+-			iter_bio_next(&msg->bio_iter, &msg->bio_seg);
++	else if (msg->bio)
++		iter_bio_next(&msg->bio_iter, &msg->bio_seg);
+ #endif
+-	}
+ }
  
-+repair:
- 		/* Advance the send_head.  This one is sent out.
- 		 * This call will increment packets_out.
- 		 */
+ /*
+@@ -940,30 +942,31 @@ static int write_partial_msg_pages(struc
+ 	int ret;
+ 	int total_max_write;
+ 	bool in_trail = false;
+-	size_t trail_len = (msg->trail ? msg->trail->length : 0);
++	const size_t trail_len = (msg->trail ? msg->trail->length : 0);
++	const size_t trail_off = data_len - trail_len;
+ 
+ 	dout("write_partial_msg_pages %p msg %p page %d/%d offset %d\n",
+ 	     con, msg, con->out_msg_pos.page, msg->nr_pages,
+ 	     con->out_msg_pos.page_pos);
+ 
++	/*
++	 * Iterate through each page that contains data to be
++	 * written, and send as much as possible for each.
++	 *
++	 * If we are calculating the data crc (the default), we will
++	 * need to map the page.  If we have no pages, they have
++	 * been revoked, so use the zero page.
++	 */
+ 	while (data_len > con->out_msg_pos.data_pos) {
+ 		struct page *page = NULL;
+ 		int max_write = PAGE_SIZE;
+ 		int bio_offset = 0;
+ 
+-		total_max_write = data_len - trail_len -
+-			con->out_msg_pos.data_pos;
+-
+-		/*
+-		 * if we are calculating the data crc (the default), we need
+-		 * to map the page.  if our pages[] has been revoked, use the
+-		 * zero page.
+-		 */
+-
+-		/* have we reached the trail part of the data? */
+-		if (con->out_msg_pos.data_pos >= data_len - trail_len) {
+-			in_trail = true;
++		in_trail = in_trail || con->out_msg_pos.data_pos >= trail_off;
++		if (!in_trail)
++			total_max_write = trail_off - con->out_msg_pos.data_pos;
+ 
++		if (in_trail) {
+ 			total_max_write = data_len - con->out_msg_pos.data_pos;
+ 
+ 			page = list_first_entry(&msg->trail->head,
+@@ -990,14 +993,13 @@ static int write_partial_msg_pages(struc
+ 
+ 		if (do_datacrc && !con->out_msg_pos.did_page_crc) {
+ 			void *base;
+-			u32 crc;
+-			u32 tmpcrc = le32_to_cpu(msg->footer.data_crc);
++			u32 crc = le32_to_cpu(msg->footer.data_crc);
+ 			char *kaddr;
+ 
+ 			kaddr = kmap(page);
+ 			BUG_ON(kaddr == NULL);
+ 			base = kaddr + con->out_msg_pos.page_pos + bio_offset;
+-			crc = crc32c(tmpcrc, base, len);
++			crc = crc32c(crc, base, len);
+ 			msg->footer.data_crc = cpu_to_le32(crc);
+ 			con->out_msg_pos.did_page_crc = true;
+ 		}
+@@ -1702,9 +1704,6 @@ static int read_partial_message_bio(stru
+ 	void *p;
+ 	int ret, left;
+ 
+-	if (IS_ERR(bv))
+-		return PTR_ERR(bv);
+-
+ 	left = min((int)(data_len - con->in_msg_pos.data_pos),
+ 		   (int)(bv->bv_len - con->in_msg_pos.page_pos));
+ 
 
 
