@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2KVVkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:40:49 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63985 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab2KVVkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:40:45 -0500
-Date: Thu, 22 Nov 2012 22:40:21 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
- <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
- <20121120215429.B621F3E1821@localhost>
- <13540495.epaCf4JVn9@percival>
- <20121122133941.24B883E129E@localhost>
+	id S1757868Ab2KVVlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:41:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49646 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755061Ab2KVSk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:27 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        David Binderman <dcb314@hotmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: [ 027/171] drm/radeon: fix logic error in atombios_encoders.c
+Date: Wed, 21 Nov 2012 16:39:33 -0800
+Message-Id: <20121122004036.092080701@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
-Content-Disposition: inline
-In-Reply-To: <20121122133941.24B883E129E@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:+/YfEP1lk3zorfD9mcVhxU9ABxlOWubMNIt0VyrwHC0
- 2XdeBpZQVUzgh9uyfr3tzOue2nPSs+ZLBQVG/2qdMtk/Gn2RKQ
- qcn8W/JaMu1iNqIUiY9y1kpL2kIUYNG4Bv8fcAQAtogdkm0SSQ
- NKnmrOxfiaZyJntDuH0gMceBXefFXL6IToiKuar4LqmRCFUA68
- ueBoz5MPnhI/oSQxLKfOcEOvIU1/HD5ABnUqCoB2y5M2KwEsti
- MTh6ll7+BZVZRv9w3O8zJSmnMWCXXL4FZnfLwEfJ0XZuX6ogUa
- osU+sCHsVtA10qF6hOkf94JwAwBv0PaBG0fgYL6crFtGb3JyPg
- tQWdtgN274u5zhVdtn0P32j/FTh+yP9p6E6AAKtCQ9PT0svVUI
- fMVJT7f9Q0QSSgbjWlDX2GaUqBlBLypWhc=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Thu, Nov 22, 2012 at 01:39:41PM +0000, Grant Likely wrote:
-[...]
-> I do think that each sequence should be contained within a single
-> property, but I'm open to other suggestions.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-IIRC a very early prototype did implement something like that. However
-because of the resource issues this had to be string based, so that the
-sequences looked somewhat like (Alex, correct me if I'm wrong):
+commit b9196395c905edec512dfd6690428084228c16ec upstream.
 
-	power-on = <"REGULATOR", "power", 1, "GPIO", "enable", 1>;
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=50431
 
-Instead we could possibly have something like:
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-	power-on = <0 &reg 1,
-		    1 &gpio 42 0 1>;
+---
+ drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Where the first cell in each entry defines the type (0 = regulator, 1 =
-GPIO) and the rest would be a regular OF specifier for the given type of
-resource along with some defined parameter such as enable/disable,
-voltage, delay in ms, ... I don't know if that sounds any better. It
-looks sort of cryptic but it is more "in the spirit of" DT, right Grant?
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1421,7 +1421,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+ 			/* some early dce3.2 boards have a bug in their transmitter control table */
+-			if ((rdev->family != CHIP_RV710) || (rdev->family != CHIP_RV730))
++			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
-Writing this down, it seems to me like even that proposal was already
-discussed at some point. Again, Alex may remember better.
 
-Thierry
-
---ibTvN161/egqYuK8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrpvFAAoJEN0jrNd/PrOhhywP/AiT0Ylywbi9V9FNnZ6zwngi
-WtclXo/ALSEifXqZxDDw4wxS3rhQpSN34+l75lu5mbYP2FDgglRuKBrdXDGZuy7M
-fcQKA5SDJAypajIijGWSWLzHZCnKVXonfHOUKeVmfq+Oo7LXUSYKYT4W3yYV9LcK
-xJLtxJKJDNpIuxhcI0FaUewXRYjzhB/IFAf1IUWhV3YZ6ZfbR5PXwx/Jg6qvo5Ns
-Z8PDMyth0YY0LWMIJBMpvZZk1xlL3yw8imwNLw+P1seICh0mq8QATXf5zM07DXa1
-Lf8JWn/d8ueto4jCm0gavWLjexpN9baC2PUNkS313hRhbWGcnI+c95bMlpUx8QjI
-PN3WUXF2vPcfrrsgIZrFjr5PrEIS4vQfC9LfrCg44UxM0IlvCRVEiFhEgbyTEeW5
-qiuBaDnUMY6l39pZx7EG/hOU207u9ZaSM+w66COb630WzzpKnJd2ZTsf1H4dZ7w3
-Oyozguikk5Ohw2olOKsNkIncvRZEYa6GYpKIIDhmW3GoNE+/rC/dVSXM2CDBlQWJ
-A/QLnww1K0sKc0VN+m83JK/R7EvslAAv4gKVJ5U3AQbZm02k7bzUqFMw6ZHlNEw7
-CeHgOX35dN+SQHtaVwC5G27hNpBoKSjubd3xzrS+F+65Rdt97If0Q7FgmU1o+b/u
-zQV/10Xw4kMSFyk8raC3
-=8uOp
------END PGP SIGNATURE-----
-
---ibTvN161/egqYuK8--
