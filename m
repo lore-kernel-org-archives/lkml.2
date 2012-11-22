@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab2KVWWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:22:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36842 "EHLO mail.zytor.com"
+	id S1758390Ab2KVWWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:22:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411Ab2KVSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:38:15 -0500
-Message-ID: <50AE70E7.6060204@zytor.com>
-Date: Thu, 22 Nov 2012 10:37:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
-In-Reply-To: <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754408Ab2KVSiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:38:10 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-raid@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        akpm@linux-foundation.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH 2/2 v5] loop: Limit the number of requests in the bio list
+Date: Thu, 22 Nov 2012 09:18:35 +0100
+Message-Id: <1353572315-4508-2-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
+References: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 10:28 AM, Yinghai Lu wrote:
->
-> has problem with old kexec, it only copy header from bzImage include
-> setup_header as boot_param.
->
+Currently there is not limitation of number of requests in the loop bio
+list. This can lead into some nasty situations when the caller spawns
+tons of bio requests taking huge amount of memory. This is even more
+obvious with discard where blkdev_issue_discard() will submit all bios
+for the range and wait for them to finish afterwards. On really big loop
+devices and slow backing file system this can lead to OOM situation as
+reported by Dave Chinner.
 
-How old are we talking here? This is a clear and blatant bug, and it 
-would affect a whole bunch of things, not just this.  In fact, one 
-really has to wonder how it can work at all.
+With this patch we will wait in loop_make_request() if the number of
+bios in the loop bio list would exceed 'nr_congestion_on'.
+We'll wake up the process as we process the bios form the list. Some
+threshold hysteresis is in place to avoid high frequency oscillation.
 
-One option I guess would be to have a sentinel field which, if it is not 
-zero, causes the kernel to zero all of struct setup_info outside of 
-setup_header... however, I have a nasty suspicion that this kexec botch 
-might be initializing some fields and leaving others unmodified, which 
-basically means "there is no hope for sanity and it is just working by 
-pure accident."
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reported-by: Dave Chinner <dchinner@redhat.com>
+---
+v2: add threshold hysteresis
+v3: Wait uninterruptible, use nr_congestion_off/on
+v4: use wait_event_lock_irq()
+v5: no change
 
-Eric, do you have any insight here?
+ drivers/block/loop.c |   10 ++++++++++
+ include/linux/loop.h |    3 +++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-> looks we only can use [0x30,0x3c), [0x1e8, 0x1f0), but in boot_params, they
-> are apm_bios_info, and alt_mem_k...
-
-... which I suspect get set by said kexec botch.
-
-> so looks we still have to use setup_header instead.
-
-We need to dig into this and either say "this is unsupportable" or put 
-in some kind of hack.
-
-	-hpa
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 54046e5..ae12512 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -463,6 +463,7 @@ out:
+  */
+ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+ {
++	lo->lo_bio_count++;
+ 	bio_list_add(&lo->lo_bio_list, bio);
+ }
+ 
+@@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+  */
+ static struct bio *loop_get_bio(struct loop_device *lo)
+ {
++	lo->lo_bio_count--;
+ 	return bio_list_pop(&lo->lo_bio_list);
+ }
+ 
+@@ -489,6 +491,10 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+ 		goto out;
+ 	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+ 		goto out;
++	if (lo->lo_bio_count >= q->nr_congestion_on)
++		wait_event_lock_irq(lo->lo_req_wait,
++				    lo->lo_bio_count < q->nr_congestion_off,
++				    lo->lo_lock);
+ 	loop_add_bio(lo, old_bio);
+ 	wake_up(&lo->lo_event);
+ 	spin_unlock_irq(&lo->lo_lock);
+@@ -546,6 +552,8 @@ static int loop_thread(void *data)
+ 			continue;
+ 		spin_lock_irq(&lo->lo_lock);
+ 		bio = loop_get_bio(lo);
++		if (lo->lo_bio_count < lo->lo_queue->nr_congestion_off)
++			wake_up(&lo->lo_req_wait);
+ 		spin_unlock_irq(&lo->lo_lock);
+ 
+ 		BUG_ON(!bio);
+@@ -873,6 +881,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	lo->transfer = transfer_none;
+ 	lo->ioctl = NULL;
+ 	lo->lo_sizelimit = 0;
++	lo->lo_bio_count = 0;
+ 	lo->old_gfp_mask = mapping_gfp_mask(mapping);
+ 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask & ~(__GFP_IO|__GFP_FS));
+ 
+@@ -1673,6 +1682,7 @@ static int loop_add(struct loop_device **l, int i)
+ 	lo->lo_number		= i;
+ 	lo->lo_thread		= NULL;
+ 	init_waitqueue_head(&lo->lo_event);
++	init_waitqueue_head(&lo->lo_req_wait);
+ 	spin_lock_init(&lo->lo_lock);
+ 	disk->major		= LOOP_MAJOR;
+ 	disk->first_minor	= i << part_shift;
+diff --git a/include/linux/loop.h b/include/linux/loop.h
+index 6492181..460b60f 100644
+--- a/include/linux/loop.h
++++ b/include/linux/loop.h
+@@ -53,10 +53,13 @@ struct loop_device {
+ 
+ 	spinlock_t		lo_lock;
+ 	struct bio_list		lo_bio_list;
++	unsigned int		lo_bio_count;
+ 	int			lo_state;
+ 	struct mutex		lo_ctl_mutex;
+ 	struct task_struct	*lo_thread;
+ 	wait_queue_head_t	lo_event;
++	/* wait queue for incoming requests */
++	wait_queue_head_t	lo_req_wait;
+ 
+ 	struct request_queue	*lo_queue;
+ 	struct gendisk		*lo_disk;
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.7.6
 
