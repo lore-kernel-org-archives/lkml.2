@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab2KVVAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:00:05 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:57472 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab2KVVAA (ORCPT
+	id S964794Ab2KVS6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:58:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932323Ab2KVS6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:00:00 -0500
-Date: Thu, 22 Nov 2012 21:59:44 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
-Subject: Re: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
-Message-ID: <20121122205944.GC16716@avionic-0098.adnet.avionic-design.de>
-References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
- <1353503469-18634-6-git-send-email-avinashphilip@ti.com>
+	Thu, 22 Nov 2012 13:58:10 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
-Content-Disposition: inline
-In-Reply-To: <1353503469-18634-6-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:w5aTnYZrYkw3lnYDTUu1C1jVrF6OpbbGOv8b0518rtq
- 25n2VstPF+m4F4NNo6KMYLH51/+S8YMWcMN6grh5+yXhyYP2oC
- euKpugVC4wwZQxPtLfLZ2FGsETvpLjWRThdl6k8NewCEXS3rQd
- 2hcRSrnGZAlE/FZbpoimb6TEOxajuGo7yKNmiWD/vJFSBT3V4y
- S1vMFpCugXevI7ETMmQh8S1NOAhAfCVBRVwoPTOvlbsBzbOQn/
- +t8ZyKBqm6eDohQwr/w+4jI73QSX1nRJsHK+94yc5wkV0zHDSB
- bLu9D/vlfCf/AfkwN2tNYYiOmkQzjKfJbMFCnQJCroHIn0JZzo
- VC17GX7GS0AJvNUeI1CvIZZIfCeZyr5WKvEt0gdLUjfQ7LuXm1
- IDcsb201j6xZx5xfczY9qyr7jAEKapN6jA=
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage and ramdisk high
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 22 Nov 2012 07:59:07 -0800
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Message-ID: <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Looks good to me.
 
---Izn7cH1Com+I3R9J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-On Wed, Nov 21, 2012 at 06:41:02PM +0530, Philip, Avinash wrote:
-[...]
-> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl))
-> +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
+>On Wed, Nov 21, 2012 at 10:47 PM, Yinghai Lu <yinghai@kernel.org>
+>wrote:
+>> On Wed, Nov 21, 2012 at 9:58 PM, H. Peter Anvin <hpa@zytor.com>
+>wrote:
+>>> Yes, lets...
+>>>
+>>>
+>>>> also do you still think need to move ext_ramdisk...
+>ext_cmd_line_ptr
+>>>> from setup_header to boot_param ?
+>>>
+>
+>how about:
+>
+>diff --git a/arch/x86/include/asm/bootparam.h
+>b/arch/x86/include/asm/bootparam.h
+>index 2ad874c..81b619e 100644
+>--- a/arch/x86/include/asm/bootparam.h
+>+++ b/arch/x86/include/asm/bootparam.h
+>@@ -100,7 +100,10 @@ struct boot_params {
+>        __u8  _pad2[4];                                 /* 0x054 */
+>        __u64  tboot_addr;                              /* 0x058 */
+>        struct ist_info ist_info;                       /* 0x060 */
+>-       __u8  _pad3[16];                                /* 0x070 */
+>+       __u32 ext_ramdisk_image;                        /* 0x070 */
+>+       __u32 ext_ramdisk_size;                         /* 0x074 */
+>+       __u32 ext_cmd_line_ptr;                         /* 0x078 */
+>+       __u8  _pad3[4];                                 /* 0x07C */
+>        __u8  hd0_info[16];     /* obsolete! */         /* 0x080 */
+>        __u8  hd1_info[16];     /* obsolete! */         /* 0x090 */
+>        struct sys_desc_table sys_desc_table;           /* 0x0a0 */
 
-I think we already discussed this, but shouldn't this be a fatal error?
-
-Thierry
-
---Izn7cH1Com+I3R9J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrpJAAAoJEN0jrNd/PrOhWpwP/iUHHBVkmCk5Chr1iJN2CCjy
-hr2gF3YlBQpHpyyvH9+rqtkRzJ0+7iPvq8gaM3pQoW67lgrD5H7nHxqfCqdxghV2
-8ARiatAsfiWHAhHi/O9uNCkJ+NZv9YyPaPsrkJvaSie+O14HEAM5kiHtDOpFDkkd
-STfXFUHIgMtajNMo4MnjON8FTr7dLv4/RmXVymeUskopkpYoD/hvpqlg1ivEz0M6
-UKbbPZ6Z6iiLp5wwGYBEN8dhHA7uHqjFmRfu4dDdD8tKwMLxCVN6EA539VawWmeU
-x2gjBbE2Vi5REBt8G+gDkJqCcSB46Xqzg7beZSb7C96bPuxFcI1cWZKzGnjCeyfM
-pACqZFHbci8+9hqWYkhAJ3PnCfXn9asR5UMfiwVUxRG7v6LaHPzh4dYpNeW2bDGB
-E2RCC2AeFKJ5SqsmM/YOQROHS88RDAFBaXYjly4kPj7Z9dNI+pgoPMVJg3B+tpMI
-Ob9NNyYXP+NNOedGrBYdNhnj8Z+51aYMtKAG/KWYyga4U+1JkHEmIQ2BpAfemh/u
-WMNqWVSFA/y8hf2AT3PH9Vq0GgfpqfOrOIKZLnwdIAeIl9uEDwp0phDMGkB6Nnwg
-ckGRHEo3oQfMzACNUjuXO2vX0TOIig8+rFrThqotrGP+z3wTZNpjevkC1JUImJp4
-9veop7y+AI0mSrvAqmru
-=7YdN
------END PGP SIGNATURE-----
-
---Izn7cH1Com+I3R9J--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
