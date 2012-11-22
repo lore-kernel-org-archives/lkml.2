@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2KVVRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:17:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
+	id S1756511Ab2KVVRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:17:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49627 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755275Ab2KVSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755272Ab2KVSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 073/171] ceph: define ceph_auth_handshake type
-Date: Wed, 21 Nov 2012 16:40:19 -0800
-Message-Id: <20121122004040.707310956@linuxfoundation.org>
+        Josh Durgin <josh.durgin@dreamhost.com>,
+        Alex Elder <elder@dreamhost.com>,
+        Yehuda Sadeh <yehuda@hq.newdream.net>
+Subject: [ 090/171] rbd: store snapshot id instead of index
+Date: Wed, 21 Nov 2012 16:40:36 -0800
+Message-Id: <20121122004042.388435941@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,223 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Josh Durgin <josh.durgin@dreamhost.com>
 
-(cherry picked from commit 6c4a19158b96ea1fb8acbe0c1d5493d9dcd2f147)
+(cherry picked from commit 77dfe99fe3cb0b2b0545e19e2d57b7a9134ee3c0)
 
-The definitions for the ceph_mds_session and ceph_osd both contain
-five fields related only to "authorizers."  Encapsulate those fields
-into their own struct type, allowing for better isolation in some
-upcoming patches.
+When a device was open at a snapshot, and snapshots were deleted or
+added, data from the wrong snapshot could be read. Instead of
+assuming the snap context is constant, store the actual snap id when
+the device is initialized, and rely on the OSDs to signal an error
+if we try reading from a snapshot that was deleted.
 
-Fix the #includes in "linux/ceph/osd_client.h" to lay out their more
-complete canonical path.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Josh Durgin <josh.durgin@dreamhost.com>
+Reviewed-by: Alex Elder <elder@dreamhost.com>
+Reviewed-by: Yehuda Sadeh <yehuda@hq.newdream.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/mds_client.c            |   32 ++++++++++++++++----------------
- fs/ceph/mds_client.h            |    5 ++---
- include/linux/ceph/auth.h       |    8 ++++++++
- include/linux/ceph/osd_client.h |   11 +++++------
- net/ceph/osd_client.c           |   32 ++++++++++++++++----------------
- 5 files changed, 47 insertions(+), 41 deletions(-)
+ drivers/block/rbd.c |   27 +++++----------------------
+ 1 file changed, 5 insertions(+), 22 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -334,10 +334,10 @@ void ceph_put_mds_session(struct ceph_md
- 	dout("mdsc put_session %p %d -> %d\n", s,
- 	     atomic_read(&s->s_ref), atomic_read(&s->s_ref)-1);
- 	if (atomic_dec_and_test(&s->s_ref)) {
--		if (s->s_authorizer)
-+		if (s->s_auth.authorizer)
- 		     s->s_mdsc->fsc->client->monc.auth->ops->destroy_authorizer(
- 			     s->s_mdsc->fsc->client->monc.auth,
--			     s->s_authorizer);
-+			     s->s_auth.authorizer);
- 		kfree(s);
- 	}
- }
-@@ -3404,29 +3404,29 @@ static int get_authorizer(struct ceph_co
- 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
- 	int ret = 0;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -175,8 +175,7 @@ struct rbd_device {
+ 	/* protects updating the header */
+ 	struct rw_semaphore     header_rwsem;
+ 	char                    snap_name[RBD_MAX_SNAP_NAME_LEN];
+-	u32 cur_snap;	/* index+1 of current snapshot within snap context
+-			   0 - for the head */
++	u64                     snap_id;	/* current snapshot id */
+ 	int read_only;
  
--	if (force_new && s->s_authorizer) {
--		ac->ops->destroy_authorizer(ac, s->s_authorizer);
--		s->s_authorizer = NULL;
-+	if (force_new && s->s_auth.authorizer) {
-+		ac->ops->destroy_authorizer(ac, s->s_auth.authorizer);
-+		s->s_auth.authorizer = NULL;
- 	}
--	if (s->s_authorizer == NULL) {
-+	if (s->s_auth.authorizer == NULL) {
- 		if (ac->ops->create_authorizer) {
- 			ret = ac->ops->create_authorizer(
- 				ac, CEPH_ENTITY_TYPE_MDS,
--				&s->s_authorizer,
--				&s->s_authorizer_buf,
--				&s->s_authorizer_buf_len,
--				&s->s_authorizer_reply_buf,
--				&s->s_authorizer_reply_buf_len);
-+				&s->s_auth.authorizer,
-+				&s->s_auth.authorizer_buf,
-+				&s->s_auth.authorizer_buf_len,
-+				&s->s_auth.authorizer_reply_buf,
-+				&s->s_auth.authorizer_reply_buf_len);
- 			if (ret)
- 				return ret;
- 		}
- 	}
- 
- 	*proto = ac->protocol;
--	*buf = s->s_authorizer_buf;
--	*len = s->s_authorizer_buf_len;
--	*reply_buf = s->s_authorizer_reply_buf;
--	*reply_len = s->s_authorizer_reply_buf_len;
-+	*buf = s->s_auth.authorizer_buf;
-+	*len = s->s_auth.authorizer_buf_len;
-+	*reply_buf = s->s_auth.authorizer_reply_buf;
-+	*reply_len = s->s_auth.authorizer_reply_buf_len;
- 	return 0;
+ 	struct list_head	node;
+@@ -552,21 +551,6 @@ err_snapc:
+ 	return -ENOMEM;
  }
  
-@@ -3437,7 +3437,7 @@ static int verify_authorizer_reply(struc
- 	struct ceph_mds_client *mdsc = s->s_mdsc;
- 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
- 
--	return ac->ops->verify_authorizer_reply(ac, s->s_authorizer, len);
-+	return ac->ops->verify_authorizer_reply(ac, s->s_auth.authorizer, len);
- }
- 
- static int invalidate_authorizer(struct ceph_connection *con)
---- a/fs/ceph/mds_client.h
-+++ b/fs/ceph/mds_client.h
-@@ -11,6 +11,7 @@
- #include <linux/ceph/types.h>
- #include <linux/ceph/messenger.h>
- #include <linux/ceph/mdsmap.h>
-+#include <linux/ceph/auth.h>
- 
- /*
-  * Some lock dependencies:
-@@ -113,9 +114,7 @@ struct ceph_mds_session {
- 
- 	struct ceph_connection s_con;
- 
--	struct ceph_authorizer *s_authorizer;
--	void             *s_authorizer_buf, *s_authorizer_reply_buf;
--	size_t            s_authorizer_buf_len, s_authorizer_reply_buf_len;
-+	struct ceph_auth_handshake s_auth;
- 
- 	/* protected by s_gen_ttl_lock */
- 	spinlock_t        s_gen_ttl_lock;
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -14,6 +14,14 @@
- struct ceph_auth_client;
- struct ceph_authorizer;
- 
-+struct ceph_auth_handshake {
-+	struct ceph_authorizer *authorizer;
-+	void *authorizer_buf;
-+	size_t authorizer_buf_len;
-+	void *authorizer_reply_buf;
-+	size_t authorizer_reply_buf_len;
-+};
-+
- struct ceph_auth_client_ops {
- 	const char *name;
- 
---- a/include/linux/ceph/osd_client.h
-+++ b/include/linux/ceph/osd_client.h
-@@ -6,9 +6,10 @@
- #include <linux/mempool.h>
- #include <linux/rbtree.h>
- 
--#include "types.h"
--#include "osdmap.h"
--#include "messenger.h"
-+#include <linux/ceph/types.h>
-+#include <linux/ceph/osdmap.h>
-+#include <linux/ceph/messenger.h>
-+#include <linux/ceph/auth.h>
- 
- /* 
-  * Maximum object name size 
-@@ -40,9 +41,7 @@ struct ceph_osd {
- 	struct list_head o_requests;
- 	struct list_head o_linger_requests;
- 	struct list_head o_osd_lru;
--	struct ceph_authorizer *o_authorizer;
--	void *o_authorizer_buf, *o_authorizer_reply_buf;
--	size_t o_authorizer_buf_len, o_authorizer_reply_buf_len;
-+	struct ceph_auth_handshake o_auth;
- 	unsigned long lru_ttl;
- 	int o_marked_for_keepalive;
- 	struct list_head o_keepalive_item;
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -667,8 +667,8 @@ static void put_osd(struct ceph_osd *osd
- 	if (atomic_dec_and_test(&osd->o_ref)) {
- 		struct ceph_auth_client *ac = osd->o_osdc->client->monc.auth;
- 
--		if (osd->o_authorizer)
--			ac->ops->destroy_authorizer(ac, osd->o_authorizer);
-+		if (osd->o_auth.authorizer)
-+			ac->ops->destroy_authorizer(ac, osd->o_auth.authorizer);
- 		kfree(osd);
- 	}
- }
-@@ -2117,27 +2117,27 @@ static int get_authorizer(struct ceph_co
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
- 	int ret = 0;
- 
--	if (force_new && o->o_authorizer) {
--		ac->ops->destroy_authorizer(ac, o->o_authorizer);
--		o->o_authorizer = NULL;
-+	if (force_new && o->o_auth.authorizer) {
-+		ac->ops->destroy_authorizer(ac, o->o_auth.authorizer);
-+		o->o_auth.authorizer = NULL;
- 	}
--	if (o->o_authorizer == NULL) {
-+	if (o->o_auth.authorizer == NULL) {
- 		ret = ac->ops->create_authorizer(
- 			ac, CEPH_ENTITY_TYPE_OSD,
--			&o->o_authorizer,
--			&o->o_authorizer_buf,
--			&o->o_authorizer_buf_len,
--			&o->o_authorizer_reply_buf,
--			&o->o_authorizer_reply_buf_len);
-+			&o->o_auth.authorizer,
-+			&o->o_auth.authorizer_buf,
-+			&o->o_auth.authorizer_buf_len,
-+			&o->o_auth.authorizer_reply_buf,
-+			&o->o_auth.authorizer_reply_buf_len);
- 		if (ret)
- 			return ret;
+-static int snap_index(struct rbd_image_header *header, int snap_num)
+-{
+-	return header->total_snaps - snap_num;
+-}
+-
+-static u64 cur_snap_id(struct rbd_device *rbd_dev)
+-{
+-	struct rbd_image_header *header = &rbd_dev->header;
+-
+-	if (!rbd_dev->cur_snap)
+-		return 0;
+-
+-	return header->snapc->snaps[snap_index(header, rbd_dev->cur_snap)];
+-}
+-
+ static int snap_by_name(struct rbd_image_header *header, const char *snap_name,
+ 			u64 *seq, u64 *size)
+ {
+@@ -605,7 +589,7 @@ static int rbd_header_set_snap(struct rb
+ 			snapc->seq = header->snap_seq;
+ 		else
+ 			snapc->seq = 0;
+-		dev->cur_snap = 0;
++		dev->snap_id = CEPH_NOSNAP;
+ 		dev->read_only = 0;
+ 		if (size)
+ 			*size = header->image_size;
+@@ -613,8 +597,7 @@ static int rbd_header_set_snap(struct rb
+ 		ret = snap_by_name(header, dev->snap_name, &snapc->seq, size);
+ 		if (ret < 0)
+ 			goto done;
+-
+-		dev->cur_snap = header->total_snaps - ret;
++		dev->snap_id = snapc->seq;
+ 		dev->read_only = 1;
  	}
  
- 	*proto = ac->protocol;
--	*buf = o->o_authorizer_buf;
--	*len = o->o_authorizer_buf_len;
--	*reply_buf = o->o_authorizer_reply_buf;
--	*reply_len = o->o_authorizer_reply_buf_len;
-+	*buf = o->o_auth.authorizer_buf;
-+	*len = o->o_auth.authorizer_buf_len;
-+	*reply_buf = o->o_auth.authorizer_reply_buf;
-+	*reply_len = o->o_auth.authorizer_reply_buf_len;
- 	return 0;
- }
+@@ -1521,7 +1504,7 @@ static void rbd_rq_fn(struct request_que
+ 					      coll, cur_seg);
+ 			else
+ 				rbd_req_read(rq, rbd_dev,
+-					     cur_snap_id(rbd_dev),
++					     rbd_dev->snap_id,
+ 					     ofs,
+ 					     op_size, bio,
+ 					     coll, cur_seg);
+@@ -1656,7 +1639,7 @@ static int rbd_header_add_snap(struct rb
+ 	struct ceph_mon_client *monc;
  
-@@ -2148,7 +2148,7 @@ static int verify_authorizer_reply(struc
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
+ 	/* we should create a snapshot only if we're pointing at the head */
+-	if (dev->cur_snap)
++	if (dev->snap_id != CEPH_NOSNAP)
+ 		return -EINVAL;
  
--	return ac->ops->verify_authorizer_reply(ac, o->o_authorizer, len);
-+	return ac->ops->verify_authorizer_reply(ac, o->o_auth.authorizer, len);
- }
- 
- static int invalidate_authorizer(struct ceph_connection *con)
+ 	monc = &dev->rbd_client->client->monc;
 
 
