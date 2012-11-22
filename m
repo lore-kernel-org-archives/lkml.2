@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2KVWCf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:02:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49630 "EHLO mail.kernel.org"
+	id S1758189Ab2KVWCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:02:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754875Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754871Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Dae S. Kim" <dae@velatum.com>, Colin Cross <ccross@android.com>
-Subject: [ 023/171] Revert "Staging: Android alarm: IOCTL command encoding fix"
-Date: Wed, 21 Nov 2012 16:39:29 -0800
-Message-Id: <20121122004035.687907655@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>
+Subject: [ 147/171] libceph: move msgr clear_standby under con mutex protection
+Date: Wed, 21 Nov 2012 16:41:33 -0800
+Message-Id: <20121122004048.106400097@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,39 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Sage Weil <sage@inktank.com>
 
-commit d38e0e3fed4f58bcddef4dc93a591dfe2f651cb0 upstream.
+(cherry picked from commit 00650931e52e97fe64096bec167f5a6780dfd94a)
 
-Commit 6bd4a5d96c08dc2380f8053b1bd4f879f55cd3c9 changed the
-ANDROID_ALARM_GET_TIME ioctls from IOW to IOR.  While technically
-correct, the _IOC_DIR bits are ignored by alarm_ioctl, so the
-commit breaks a userspace ABI used by all existing Android devices
-for a purely cosmetic reason.  Revert it.
+Avoid dropping and retaking con->mutex in the ceph_con_send() case by
+leaving locking up to the caller.
 
-Cc: Dae S. Kim <dae@velatum.com>
-Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/staging/android/android_alarm.h |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ceph/messenger.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/android/android_alarm.h
-+++ b/drivers/staging/android/android_alarm.h
-@@ -110,12 +110,10 @@ enum android_alarm_return_flags {
- #define ANDROID_ALARM_WAIT                  _IO('a', 1)
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2441,12 +2441,10 @@ static void clear_standby(struct ceph_co
+ {
+ 	/* come back from STANDBY? */
+ 	if (test_and_clear_bit(STANDBY, &con->state)) {
+-		mutex_lock(&con->mutex);
+ 		dout("clear_standby %p and ++connect_seq\n", con);
+ 		con->connect_seq++;
+ 		WARN_ON(test_bit(WRITE_PENDING, &con->flags));
+ 		WARN_ON(test_bit(KEEPALIVE_PENDING, &con->flags));
+-		mutex_unlock(&con->mutex);
+ 	}
+ }
  
- #define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
--#define ALARM_IOR(c, type, size)            _IOR('a', (c) | ((type) << 4), size)
--
- /* Set alarm */
- #define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
- #define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
--#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOR(4, type, struct timespec)
-+#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
- #define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
- #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
- #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+@@ -2483,11 +2481,12 @@ void ceph_con_send(struct ceph_connectio
+ 	     le32_to_cpu(msg->hdr.front_len),
+ 	     le32_to_cpu(msg->hdr.middle_len),
+ 	     le32_to_cpu(msg->hdr.data_len));
++
++	clear_standby(con);
+ 	mutex_unlock(&con->mutex);
+ 
+ 	/* if there wasn't anything waiting to send before, queue
+ 	 * new work */
+-	clear_standby(con);
+ 	if (test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
+ }
+@@ -2574,7 +2573,9 @@ void ceph_msg_revoke_incoming(struct cep
+ void ceph_con_keepalive(struct ceph_connection *con)
+ {
+ 	dout("con_keepalive %p\n", con);
++	mutex_lock(&con->mutex);
+ 	clear_standby(con);
++	mutex_unlock(&con->mutex);
+ 	if (test_and_set_bit(KEEPALIVE_PENDING, &con->flags) == 0 &&
+ 	    test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
 
 
