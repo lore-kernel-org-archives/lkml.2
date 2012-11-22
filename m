@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2KVVw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:52:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
+	id S932759Ab2KVVwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:52:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754957Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 61/83] tmpfs: change final i_blocks BUG to WARNING
-Date: Wed, 21 Nov 2012 16:42:23 -0800
-Message-Id: <20121122004219.283949737@linuxfoundation.org>
+        Alex Elder <elder@dreamhost.com>
+Subject: [ 061/171] ceph: osd_client: fix endianness bug in osd_req_encode_op()
+Date: Wed, 21 Nov 2012 16:40:07 -0800
+Message-Id: <20121122004039.498690039@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Alex Elder <elder@dreawmhost.com>
 
-commit 0f3c42f522dc1ad7e27affc0a4aa8c790bce0a66 upstream.
+(cherry picked from commit 065a68f9167e20f321a62d044cb2c3024393d455)
 
-Under a particular load on one machine, I have hit shmem_evict_inode()'s
-BUG_ON(inode->i_blocks), enough times to narrow it down to a particular
-race between swapout and eviction.
+>From Al Viro <viro@zeniv.linux.org.uk>
 
-It comes from the "if (freed > 0)" asymmetry in shmem_recalc_inode(),
-and the lack of coherent locking between mapping's nrpages and shmem's
-swapped count.  There's a window in shmem_writepage(), between lowering
-nrpages in shmem_delete_from_page_cache() and then raising swapped
-count, when the freed count appears to be +1 when it should be 0, and
-then the asymmetry stops it from being corrected with -1 before hitting
-the BUG.
+Al Viro noticed that we were using a non-cpu-encoded value in
+a switch statement in osd_req_encode_op().  The result would
+clearly not work correctly on a big-endian machine.
 
-One answer is coherent locking: using tree_lock throughout, without
-info->lock; reasonable, but the raw_spin_lock in percpu_counter_add() on
-used_blocks makes that messier than expected.  Another answer may be a
-further effort to eliminate the weird shmem_recalc_inode() altogether,
-but previous attempts at that failed.
-
-So far undecided, but for now change the BUG_ON to WARN_ON: in usual
-circumstances it remains a useful consistency check.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Elder <elder@dreamhost.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/shmem.c |    2 +-
+ net/ceph/osd_client.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -654,7 +654,7 @@ static void shmem_evict_inode(struct ino
- 		kfree(xattr->name);
- 		kfree(xattr);
- 	}
--	BUG_ON(inode->i_blocks);
-+	WARN_ON(inode->i_blocks);
- 	shmem_free_inode(inode->i_sb);
- 	clear_inode(inode);
- }
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -278,7 +278,7 @@ static void osd_req_encode_op(struct cep
+ {
+ 	dst->op = cpu_to_le16(src->op);
+ 
+-	switch (dst->op) {
++	switch (src->op) {
+ 	case CEPH_OSD_OP_READ:
+ 	case CEPH_OSD_OP_WRITE:
+ 		dst->extent.offset =
 
 
