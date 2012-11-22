@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab2KVSjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:39:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49356 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617Ab2KVSif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:38:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Richard Cochran <richard.cochran@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/38] ptp: update adjfreq callback description
-Date: Wed, 21 Nov 2012 16:39:48 -0800
-Message-Id: <20121122003904.841717525@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754771Ab2KVSjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:39:51 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60825 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab2KVSjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:39:49 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Subject: [PATCH 1/2] input: gpio-keys: Disable hardware on suspend
+Date: Thu, 22 Nov 2012 13:23:36 +0000
+Message-Id: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-------------------
+Disable hardware if active when suspending if the hw can not
+wake the system from suspend.
 
-From: Jacob Keller <jacob.e.keller@intel.com>
-
-commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
-
-This patch updates the adjfreq callback description to include a note that the
-delta in ppb is always relative to the base frequency, and not to the current
-frequency of the hardware clock.
-
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-CC: Richard Cochran <richard.cochran@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
+Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 ---
- include/linux/ptp_clock_kernel.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/input/keyboard/gpio_keys.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/include/linux/ptp_clock_kernel.h
-+++ b/include/linux/ptp_clock_kernel.h
-@@ -50,7 +50,8 @@ struct ptp_clock_request {
-  * clock operations
-  *
-  * @adjfreq:  Adjusts the frequency of the hardware clock.
-- *            parameter delta: Desired period change in parts per billion.
-+ *            parameter delta: Desired frequency offset from nominal frequency
-+ *            in parts per billion
-  *
-  * @adjtime:  Shifts the time of the hardware clock.
-  *            parameter delta: Desired change in nanoseconds.
-
+diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+index 6a68041..2cf6757 100644
+--- a/drivers/input/keyboard/gpio_keys.c
++++ b/drivers/input/keyboard/gpio_keys.c
+@@ -46,6 +46,8 @@ struct gpio_keys_drvdata {
+ 	const struct gpio_keys_platform_data *pdata;
+ 	struct input_dev *input;
+ 	struct mutex disable_lock;
++	bool enabled;
++	bool enable_after_suspend;
+ 	struct gpio_button_data data[0];
+ };
+ 
+@@ -531,6 +533,8 @@ static int gpio_keys_open(struct input_dev *input)
+ 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+ 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
+ 
++	ddata->enabled = true;
++
+ 	return pdata->enable ? pdata->enable(input->dev.parent) : 0;
+ }
+ 
+@@ -539,6 +543,8 @@ static void gpio_keys_close(struct input_dev *input)
+ 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+ 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
+ 
++	ddata->enabled = false;
++
+ 	if (pdata->disable)
+ 		pdata->disable(input->dev.parent);
+ }
+@@ -685,6 +691,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
+ 
+ 	ddata->pdata = pdata;
+ 	ddata->input = input;
++	ddata->enabled = false;
+ 	mutex_init(&ddata->disable_lock);
+ 
+ 	platform_set_drvdata(pdev, ddata);
+@@ -796,6 +803,10 @@ static int gpio_keys_suspend(struct device *dev)
+ 			if (bdata->button->wakeup)
+ 				enable_irq_wake(bdata->irq);
+ 		}
++	} else {
++		ddata->enable_after_suspend = ddata->enabled;
++		if (ddata->enabled)
++			gpio_keys_close(ddata->input);
+ 	}
+ 
+ 	return 0;
+@@ -814,6 +825,10 @@ static int gpio_keys_resume(struct device *dev)
+ 		if (gpio_is_valid(bdata->button->gpio))
+ 			gpio_keys_gpio_report_event(bdata);
+ 	}
++
++	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
++		gpio_keys_open(ddata->input);
++
+ 	input_sync(ddata->input);
+ 
+ 	return 0;
+-- 
+1.7.9.5
 
