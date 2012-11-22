@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab2KVVwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:52:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
+	id S932743Ab2KVVw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:52:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49627 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754960Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@dreamhost.com>
-Subject: [ 061/171] ceph: osd_client: fix endianness bug in osd_req_encode_op()
-Date: Wed, 21 Nov 2012 16:40:07 -0800
-Message-Id: <20121122004039.498690039@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 058/171] crush: be more tolerant of nonsensical crush maps
+Date: Wed, 21 Nov 2012 16:40:04 -0800
+Message-Id: <20121122004039.192156219@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,32 +25,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@dreawmhost.com>
+From: Sage Weil <sage@inktank.com>
 
-(cherry picked from commit 065a68f9167e20f321a62d044cb2c3024393d455)
+(cherry picked from commit a1f4895be8bf1ba56c2306b058f51619e9b0e8f8)
 
->From Al Viro <viro@zeniv.linux.org.uk>
+If we get a map that doesn't make sense, error out or ignore the badness
+instead of BUGging out.  This reflects the ceph.git commits
+9895f0bff7dc68e9b49b572613d242315fb11b6c and
+8ded26472058d5205803f244c2f33cb6cb10de79.
 
-Al Viro noticed that we were using a non-cpu-encoded value in
-a switch statement in osd_req_encode_op().  The result would
-clearly not work correctly on a big-endian machine.
-
-Signed-off-by: Alex Elder <elder@dreamhost.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osd_client.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/crush/mapper.c |   33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -278,7 +278,7 @@ static void osd_req_encode_op(struct cep
- {
- 	dst->op = cpu_to_le16(src->op);
+--- a/net/ceph/crush/mapper.c
++++ b/net/ceph/crush/mapper.c
+@@ -152,8 +152,8 @@ static int bucket_list_choose(struct cru
+ 			return bucket->h.items[i];
+ 	}
  
--	switch (dst->op) {
-+	switch (src->op) {
- 	case CEPH_OSD_OP_READ:
- 	case CEPH_OSD_OP_WRITE:
- 		dst->extent.offset =
+-	BUG_ON(1);
+-	return 0;
++	dprintk("bad list sums for bucket %d\n", bucket->h.id);
++	return bucket->h.items[0];
+ }
+ 
+ 
+@@ -239,6 +239,7 @@ static int bucket_straw_choose(struct cr
+ static int crush_bucket_choose(struct crush_bucket *in, int x, int r)
+ {
+ 	dprintk(" crush_bucket_choose %d x=%d r=%d\n", in->id, x, r);
++	BUG_ON(in->size == 0);
+ 	switch (in->alg) {
+ 	case CRUSH_BUCKET_UNIFORM:
+ 		return bucket_uniform_choose((struct crush_bucket_uniform *)in,
+@@ -253,7 +254,7 @@ static int crush_bucket_choose(struct cr
+ 		return bucket_straw_choose((struct crush_bucket_straw *)in,
+ 					   x, r);
+ 	default:
+-		BUG_ON(1);
++		dprintk("unknown bucket %d alg %d\n", in->id, in->alg);
+ 		return in->items[0];
+ 	}
+ }
+@@ -354,7 +355,11 @@ static int crush_choose(const struct cru
+ 					item = bucket_perm_choose(in, x, r);
+ 				else
+ 					item = crush_bucket_choose(in, x, r);
+-				BUG_ON(item >= map->max_devices);
++				if (item >= map->max_devices) {
++					dprintk("   bad item %d\n", item);
++					skip_rep = 1;
++					break;
++				}
+ 
+ 				/* desired type? */
+ 				if (item < 0)
+@@ -365,8 +370,12 @@ static int crush_choose(const struct cru
+ 
+ 				/* keep going? */
+ 				if (itemtype != type) {
+-					BUG_ON(item >= 0 ||
+-					       (-1-item) >= map->max_buckets);
++					if (item >= 0 ||
++					    (-1-item) >= map->max_buckets) {
++						dprintk("   bad item type %d\n", type);
++						skip_rep = 1;
++						break;
++					}
+ 					in = map->buckets[-1-item];
+ 					retry_bucket = 1;
+ 					continue;
+@@ -478,7 +487,10 @@ int crush_do_rule(const struct crush_map
+ 	int numrep;
+ 	int firstn;
+ 
+-	BUG_ON(ruleno >= map->max_rules);
++	if ((__u32)ruleno >= map->max_rules) {
++		dprintk(" bad ruleno %d\n", ruleno);
++		return 0;
++	}
+ 
+ 	rule = map->rules[ruleno];
+ 	result_len = 0;
+@@ -528,7 +540,8 @@ int crush_do_rule(const struct crush_map
+ 			firstn = 1;
+ 		case CRUSH_RULE_CHOOSE_LEAF_INDEP:
+ 		case CRUSH_RULE_CHOOSE_INDEP:
+-			BUG_ON(wsize == 0);
++			if (wsize == 0)
++				break;
+ 
+ 			recurse_to_leaf =
+ 				rule->steps[step].op ==
+@@ -597,7 +610,9 @@ int crush_do_rule(const struct crush_map
+ 			break;
+ 
+ 		default:
+-			BUG_ON(1);
++			dprintk(" unknown op %d at step %d\n",
++				curstep->op, step);
++			break;
+ 		}
+ 	}
+ 	return result_len;
 
 
