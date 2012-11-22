@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab2KVWTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:19:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49363 "EHLO mail.kernel.org"
+	id S1758375Ab2KVWT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:19:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49357 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754554Ab2KVSib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:38:31 -0500
+	id S1754396Ab2KVSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:38:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 34/83] i2c-mux-pinctrl: Fix probe error path
-Date: Wed, 21 Nov 2012 16:41:56 -0800
-Message-Id: <20121122004216.417771635@linuxfoundation.org>
+        Masaki Kimura <masaki.kimura.kz@hitachi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 008/171] module: fix out-by-one error in kallsyms
+Date: Wed, 21 Nov 2012 16:39:14 -0800
+Message-Id: <20121122004034.154752486@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit aa1e3e81e75ceb3d977c3292cefafcd5179eb8b8 upstream.
+commit 59ef28b1f14899b10d6b2682c7057ca00a9a3f47 upstream.
 
-When allocating the memory for i2c busses, the code checked the wrong
-variable and thus never detected if there was a memory error.
+Masaki found and patched a kallsyms issue: the last symbol in a
+module's symtab wasn't transferred.  This is because we manually copy
+the zero'th entry (which is always empty) then copy the rest in a loop
+starting at 1, though from src[0].  His fix was minimal, I prefer to
+rewrite the loops in more standard form.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+There are two loops: one to get the size, and one to copy.  Make these
+identical: always count entry 0 and any defined symbol in an allocated
+non-init section.
+
+This bug exists since the following commit was introduced.
+   module: reduce symbol table for loaded modules (v2)
+   commit: 4a4962263f07d14660849ec134ee42b63e95ea9a
+
+LKML: http://lkml.org/lkml/2012/10/24/27
+Reported-by: Masaki Kimura <masaki.kimura.kz@hitachi.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/muxes/i2c-mux-pinctrl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/module.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
---- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
-+++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-@@ -169,7 +169,7 @@ static int __devinit i2c_mux_pinctrl_pro
- 	mux->busses = devm_kzalloc(&pdev->dev,
- 				   sizeof(mux->busses) * mux->pdata->bus_count,
- 				   GFP_KERNEL);
--	if (!mux->states) {
-+	if (!mux->busses) {
- 		dev_err(&pdev->dev, "Cannot allocate busses\n");
- 		ret = -ENOMEM;
- 		goto err;
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2273,12 +2273,17 @@ static void layout_symtab(struct module
+ 	src = (void *)info->hdr + symsect->sh_offset;
+ 	nsrc = symsect->sh_size / sizeof(*src);
+ 
++	/* strtab always starts with a nul, so offset 0 is the empty string. */
++	strtab_size = 1;
++
+ 	/* Compute total space required for the core symbols' strtab. */
+-	for (ndst = i = strtab_size = 1; i < nsrc; ++i, ++src)
+-		if (is_core_symbol(src, info->sechdrs, info->hdr->e_shnum)) {
+-			strtab_size += strlen(&info->strtab[src->st_name]) + 1;
++	for (ndst = i = 0; i < nsrc; i++) {
++		if (i == 0 ||
++		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
++			strtab_size += strlen(&info->strtab[src[i].st_name])+1;
+ 			ndst++;
+ 		}
++	}
+ 
+ 	/* Append room for core symbols at end of core part. */
+ 	info->symoffs = ALIGN(mod->core_size, symsect->sh_addralign ?: 1);
+@@ -2312,15 +2317,15 @@ static void add_kallsyms(struct module *
+ 	mod->core_symtab = dst = mod->module_core + info->symoffs;
+ 	mod->core_strtab = s = mod->module_core + info->stroffs;
+ 	src = mod->symtab;
+-	*dst = *src;
+ 	*s++ = 0;
+-	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
+-		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
+-			continue;
+-
+-		dst[ndst] = *src;
+-		dst[ndst++].st_name = s - mod->core_strtab;
+-		s += strlcpy(s, &mod->strtab[src->st_name], KSYM_NAME_LEN) + 1;
++	for (ndst = i = 0; i < mod->num_symtab; i++) {
++		if (i == 0 ||
++		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
++			dst[ndst] = src[i];
++			dst[ndst++].st_name = s - mod->core_strtab;
++			s += strlcpy(s, &mod->strtab[src[i].st_name],
++				     KSYM_NAME_LEN) + 1;
++		}
+ 	}
+ 	mod->core_num_syms = ndst;
+ }
 
 
