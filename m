@@ -1,140 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab2KVXT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:19:59 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52672 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab2KVXT6 (ORCPT
+	id S1754077Ab2KVXYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:24:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49155 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab2KVXYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 18:19:58 -0500
-X-AuditID: 9c93016f-b7b42ae000004383-10-50aeb31a083b
-Date: Fri, 23 Nov 2012 08:20:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Lockdep complain for zram
-Message-ID: <20121122232012.GD5121@bbox>
-References: <20121121083737.GB5121@bbox>
- <50AD1829.7050709@vflare.org>
- <20121122083110.GC5121@bbox>
- <50ADF9AB.9030903@vflare.org>
+	Thu, 22 Nov 2012 18:24:10 -0500
+Date: Thu, 22 Nov 2012 15:22:39 -0800
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-5e4bf1a55da976a5ed60901bb8801f1024ef9774@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
+        hannes@cmpxchg.org, hughd@google.com, cl@linux.com, riel@redhat.com,
+        akpm@linux-foundation.org, aarcange@redhat.com,
+        Lee.Schermerhorn@hp.com, mgorman@suse.de, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
+        hannes@cmpxchg.org, cl@linux.com, hughd@google.com, riel@redhat.com,
+        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com,
+        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
+In-Reply-To: <20121120120251.GA15742@gmail.com>
+References: <20121120120251.GA15742@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Don't flush the TLB on #WP pmd fixups
+Git-Commit-ID: 5e4bf1a55da976a5ed60901bb8801f1024ef9774
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <50ADF9AB.9030903@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 22 Nov 2012 15:22:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 02:08:43AM -0800, Nitin Gupta wrote:
-> On 11/22/2012 12:31 AM, Minchan Kim wrote:
-> >Hi Nitin,
-> >
-> >On Wed, Nov 21, 2012 at 10:06:33AM -0800, Nitin Gupta wrote:
-> >>On 11/21/2012 12:37 AM, Minchan Kim wrote:
-> >>>Hi alls,
-> >>>
-> >>>Today, I saw below complain of lockdep.
-> >>>As a matter of fact, I knew it long time ago but forgot that.
-> >>>The reason lockdep complains is that now zram uses GFP_KERNEL
-> >>>in reclaim path(ex, __zram_make_request) :(
-> >>>I can fix it via replacing GFP_KERNEL with GFP_NOIO.
-> >>>But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
-> >>>Of course, I can change it with __vmalloc which can receive gfp_t.
-> >>>But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
-> >>>allocation of GFP_KERNEL. That's why I sent the patch.
-> >>>https://lkml.org/lkml/2012/4/23/77
-> >>>Since then, I forgot it, saw the bug today and poped the question again.
-> >>>
-> >>>Yes. Fundamental problem is utter crap API vmalloc.
-> >>>If we can fix it, everyone would be happy. But life isn't simple like seeing
-> >>>my thread of the patch.
-> >>>
-> >>>So next option is to move zram_init_device into setting disksize time.
-> >>>But it makes unnecessary metadata waste until zram is used really(That's why
-> >>>Nitin move zram_init_device from disksize setting time to make_request) and
-> >>>it makes user should set the disksize before using, which are behavior change.
-> >>>
-> >>>I would like to clean up this issue before promoting because it might change
-> >>>usage behavior.
-> >>>
-> >>>Do you have any idea?
-> >>>
-> >>
-> >>Maybe we can alloc_vm_area() right on device creation in
-> >>create_device() assuming the default disksize. If user explicitly
-> >>sets the disksize, this vm area is deallocated and a new one is
-> >>allocated based on the new disksize.  When the device is reset, we
-> >>should only free physical pages allocated for the table and the
-> >>virtual area should be set back as if disksize is set to the
-> >>default.
-> >>
-> >>At the device init time, all the pages can be allocated with
-> >>GFP_NOIO | __GPF_HIGHMEM and since the VM area is preallocated,
-> >>map_vm_area() will not hit any of those page-table allocations with
-> >>GFP_KERNEL.
-> >>
-> >>Other allocations made directly from zram, for instance in the
-> >>partial I/O case, should also be changed to GFP_NOIO |
-> >>__GFP_HIGHMEM.
-> >>
-> >
-> >Yes. It's a good idea and actually I thought about it.
-> >My concern about that approach is following as.
-> >
-> >1) User of zram normally do mkfs.xxx or mkswap before using
-> >    the zram block device(ex, normally, do it at booting time)
-> >    It ends up allocating such metadata of zram before real usage so
-> >    benefit of lazy initialzation would be mitigated.
-> >
-> >2) Some user want to use zram when memory pressure is high.(ie, load zram
-> >    dynamically, NOT booting time). It does make sense because people don't
-> >    want to waste memory until memory pressure is high(ie, where zram is really
-> >    helpful time). In this case, lazy initialzation could be failed easily
-> >    because we will use GFP_NOIO instead of GFP_KERNEL due to swap use-case.
-> >    So the benefit of lazy initialzation would be mitigated, too.
-> >
-> >3) Current zram's documenation is wrong.
-> >    Set Disksize isn't optional when we use zram firstly.
-> >    Once user set disksize, it could be optional, but NOT optional
-> >    at first usage time. It's very odd behavior. So I think user set to disksizes
-> >    before using is more safe and clear.
-> >
-> >So my suggestion is following as.
-> >
-> >  * Let's change disksize setting to MUST before using for consistent behavior.
-> >  * When user set to disksize, let's allocate metadata all at once.
-> >    4K : 12 byte(64bit) -> 64G : 192M so 0.3% isn't big overhead.
-> >    If insane user use such big zram device up to 20, it could consume 6% of ram
-> >    but efficieny of zram will cover the waste.
-> >  * If someone has a concern about this, let's guide for him set to disksize
-> >    right before zram using.
-> >
-> >What do you think about it?
-> >
-> 
-> I agree. This lazy initialization has been a problem since the
-> beginning. So, lets just force user to first set the disksize and
-> document this behavior as such.
+Commit-ID:  5e4bf1a55da976a5ed60901bb8801f1024ef9774
+Gitweb:     http://git.kernel.org/tip/5e4bf1a55da976a5ed60901bb8801f1024ef9774
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Tue, 20 Nov 2012 13:02:51 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 22 Nov 2012 21:52:06 +0100
 
-Sure.
+x86/mm: Don't flush the TLB on #WP pmd fixups
 
-> 
-> I plan to reduce struct table to just an array of handles (so
-> getting rid of size, flag, count fields), but for now we could just
-> use existing struct table and do this change later.
+If we have a write protection #PF and fix up the pmd then the
+hugetlb code [the only user of pmdp_set_access_flags], in its
+do_huge_pmd_wp_page() page fault resolution function calls
+pmdp_set_access_flags() to mark the pmd permissive again,
+and flushes the TLB.
 
-Good to hear.
+This TLB flush is unnecessary: a flush on #PF is guaranteed on
+most (all?) x86 CPUs, and even in the worst-case we'll generate
+a spurious fault.
 
-Thanks for the quick feedback.
+So remove it.
 
--- 
-Kind regards,
-Minchan Kim
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Link: http://lkml.kernel.org/r/20121120120251.GA15742@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/pgtable.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 8573b83..8a828d7 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -328,7 +328,12 @@ int pmdp_set_access_flags(struct vm_area_struct *vma,
+ 	if (changed && dirty) {
+ 		*pmdp = entry;
+ 		pmd_update_defer(vma->vm_mm, address, pmdp);
+-		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++		/*
++		 * We had a write-protection fault here and changed the pmd
++		 * to to more permissive. No need to flush the TLB for that,
++		 * #PF is architecturally guaranteed to do that and in the
++		 * worst-case we'll generate a spurious fault.
++		 */
+ 	}
+ 
+ 	return changed;
