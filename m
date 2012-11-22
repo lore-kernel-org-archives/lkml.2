@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab2KVWgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:36:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49024 "EHLO mail.kernel.org"
+	id S1758264Ab2KVWhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:37:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49010 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614Ab2KVSdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:49 -0500
+	id S1753605Ab2KVSdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 75/83] reiserfs: Fix lock ordering during remount
-Date: Wed, 21 Nov 2012 16:42:37 -0800
-Message-Id: <20121122004220.713975341@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 54/83] ipv4: avoid undefined behavior in do_ip_setsockopt()
+Date: Wed, 21 Nov 2012 16:42:16 -0800
+Message-Id: <20121122004218.511820450@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -25,113 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
 
-commit 3bb3e1fc47aca554e7e2cc4deeddc24750987ac2 upstream.
+From: Xi Wang <xi.wang@gmail.com>
 
-When remounting reiserfs dquot_suspend() or dquot_resume() can be called.
-These functions take dqonoff_mutex which ranks above write lock so we have
-to drop it before calling into quota code.
+[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+(1<<optname) is undefined behavior in C with a negative optname or
+optname larger than 31.  In those cases the result of the shift is
+not necessarily zero (e.g., on x86).
+
+This patch simplifies the code with a switch statement on optname.
+It also allows the compiler to generate better code (e.g., using a
+64-bit mask).
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/reiserfs/super.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ net/ipv4/ip_sockglue.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1330,7 +1330,7 @@ static int reiserfs_remount(struct super
- 				kfree(qf_names[i]);
- #endif
- 		err = -EINVAL;
--		goto out_err;
-+		goto out_unlock;
- 	}
- #ifdef CONFIG_QUOTA
- 	handle_quota_files(s, qf_names, &qfmt);
-@@ -1374,7 +1374,7 @@ static int reiserfs_remount(struct super
- 	if (blocks) {
- 		err = reiserfs_resize(s, blocks);
- 		if (err != 0)
--			goto out_err;
-+			goto out_unlock;
- 	}
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -457,19 +457,28 @@ static int do_ip_setsockopt(struct sock
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int val = 0, err;
  
- 	if (*mount_flags & MS_RDONLY) {
-@@ -1384,9 +1384,15 @@ static int reiserfs_remount(struct super
- 			/* it is read-only already */
- 			goto out_ok;
- 
-+		/*
-+		 * Drop write lock. Quota will retake it when needed and lock
-+		 * ordering requires calling dquot_suspend() without it.
-+		 */
-+		reiserfs_write_unlock(s);
- 		err = dquot_suspend(s, -1);
- 		if (err < 0)
- 			goto out_err;
-+		reiserfs_write_lock(s);
- 
- 		/* try to remount file system with read-only permissions */
- 		if (sb_umount_state(rs) == REISERFS_VALID_FS
-@@ -1396,7 +1402,7 @@ static int reiserfs_remount(struct super
- 
- 		err = journal_begin(&th, s, 10);
- 		if (err)
--			goto out_err;
-+			goto out_unlock;
- 
- 		/* Mounting a rw partition read-only. */
- 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
-@@ -1411,7 +1417,7 @@ static int reiserfs_remount(struct super
- 
- 		if (reiserfs_is_journal_aborted(journal)) {
- 			err = journal->j_errno;
--			goto out_err;
-+			goto out_unlock;
- 		}
- 
- 		handle_data_mode(s, mount_options);
-@@ -1420,7 +1426,7 @@ static int reiserfs_remount(struct super
- 		s->s_flags &= ~MS_RDONLY;	/* now it is safe to call journal_begin */
- 		err = journal_begin(&th, s, 10);
- 		if (err)
--			goto out_err;
-+			goto out_unlock;
- 
- 		/* Mount a partition which is read-only, read-write */
- 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
-@@ -1437,10 +1443,16 @@ static int reiserfs_remount(struct super
- 	SB_JOURNAL(s)->j_must_wait = 1;
- 	err = journal_end(&th, s, 10);
- 	if (err)
--		goto out_err;
-+		goto out_unlock;
- 
- 	if (!(*mount_flags & MS_RDONLY)) {
-+		/*
-+		 * Drop write lock. Quota will retake it when needed and lock
-+		 * ordering requires calling dquot_resume() without it.
-+		 */
-+		reiserfs_write_unlock(s);
- 		dquot_resume(s, -1);
-+		reiserfs_write_lock(s);
- 		finish_unfinished(s);
- 		reiserfs_xattr_init(s, *mount_flags);
- 	}
-@@ -1450,9 +1462,10 @@ out_ok:
- 	reiserfs_write_unlock(s);
- 	return 0;
- 
-+out_unlock:
-+	reiserfs_write_unlock(s);
- out_err:
- 	kfree(new_opts);
--	reiserfs_write_unlock(s);
- 	return err;
- }
- 
+-	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
+-			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
+-			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
+-			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
+-			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
+-			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
+-			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
+-			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
+-	    optname == IP_UNICAST_IF ||
+-	    optname == IP_MULTICAST_TTL ||
+-	    optname == IP_MULTICAST_ALL ||
+-	    optname == IP_MULTICAST_LOOP ||
+-	    optname == IP_RECVORIGDSTADDR) {
++	switch (optname) {
++	case IP_PKTINFO:
++	case IP_RECVTTL:
++	case IP_RECVOPTS:
++	case IP_RECVTOS:
++	case IP_RETOPTS:
++	case IP_TOS:
++	case IP_TTL:
++	case IP_HDRINCL:
++	case IP_MTU_DISCOVER:
++	case IP_RECVERR:
++	case IP_ROUTER_ALERT:
++	case IP_FREEBIND:
++	case IP_PASSSEC:
++	case IP_TRANSPARENT:
++	case IP_MINTTL:
++	case IP_NODEFRAG:
++	case IP_UNICAST_IF:
++	case IP_MULTICAST_TTL:
++	case IP_MULTICAST_ALL:
++	case IP_MULTICAST_LOOP:
++	case IP_RECVORIGDSTADDR:
+ 		if (optlen >= sizeof(int)) {
+ 			if (get_user(val, (int __user *) optval))
+ 				return -EFAULT;
 
 
