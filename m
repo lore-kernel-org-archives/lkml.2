@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2KWFqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 00:46:14 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:56739 "EHLO
+	id S932307Ab2KWFqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 00:46:19 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:56744 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab2KWFqL (ORCPT
+	with ESMTP id S1751655Ab2KWFqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 00:46:11 -0500
+	Fri, 23 Nov 2012 00:46:16 -0500
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+To: <alsa-devel@alsa-project.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] USB: chipidea: promote error code from ci_role_start() start instead of returning -ENODEV
-Date: Thu, 22 Nov 2012 10:11:31 +0100
-Message-Id: <1353575491-23976-1-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCH] ASoC: mxs-saif: export mxs_saif_put_mclk,mxs_saif_get_mclk
+Date: Thu, 22 Nov 2012 13:31:09 +0100
+Message-Id: <1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
+References: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,21 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- drivers/usb/chipidea/core.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ sound/soc/mxs/mxs-saif.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index b726c49..bd6e7a4 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -479,7 +479,6 @@ static int __devinit ci_hdrc_probe(struct platform_device *pdev)
- 	ret = ci_role_start(ci, ci->role);
- 	if (ret) {
- 		dev_err(dev, "can't start %s role\n", ci_role(ci)->name);
--		ret = -ENODEV;
- 		goto rm_wq;
- 	}
+diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
+index c294fbb..f1d1f9e 100644
+--- a/sound/soc/mxs/mxs-saif.c
++++ b/sound/soc/mxs/mxs-saif.c
+@@ -229,6 +229,7 @@ int mxs_saif_put_mclk(unsigned int saif_id)
+ 	saif->mclk_in_use = 0;
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(mxs_saif_put_mclk);
  
+ /*
+  * Get MCLK and set clock rate, then enable it
+@@ -282,6 +283,7 @@ int mxs_saif_get_mclk(unsigned int saif_id, unsigned int mclk,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(mxs_saif_get_mclk);
+ 
+ /*
+  * SAIF DAI format configuration.
 -- 
 1.7.2.5
 
