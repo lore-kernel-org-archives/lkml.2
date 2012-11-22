@@ -1,59 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab2KVVyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:54:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	id S932805Ab2KVVzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:55:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23470 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935Ab2KVSkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:15 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 020/171] ASoC: dapm: Use card_list during DAPM shutdown
-Date: Wed, 21 Nov 2012 16:39:26 -0800
-Message-Id: <20121122004035.379689728@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754955Ab2KVVzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:55:06 -0500
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ima: skip policy search for never appraised or measured files
+Date: Thu, 22 Nov 2012 23:54:44 +0200
+Message-Id: <73c092fc6b6075244d834a9858dbe049465f614a.1353621075.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Certain file system types and partitions will never be measured or
+appraised by IMA depending on the policy. For example, pseudo file
+systems are never measured and appraised. In current implementation
+policy will be checked again and again. It happens thousands times
+per second. That is absolute waste of CPU and may be battery resources.
 
-------------------
+This patch uses new super block SF_IMA_DISABLED flag. IMA set the
+SF_IMA_DISABLED flag when file system will not be measured and
+appraised and test this flag during subsequent calls to skip policy
+search.
 
-From: Misael Lopez Cruz <misael.lopez@ti.com>
-
-commit 445632ad6dda42f4d3f9df2569a852ca0d4ea608 upstream.
-
-DAPM shutdown incorrectly uses "list" field of codec struct while
-iterating over probed components (codec_dev_list). "list" field
-refers to codecs registered in the system, "card_list" field is
-used for probed components.
-
-Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
-Signed-off-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- sound/soc/soc-dapm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/integrity/ima/ima_api.c    |    8 ++------
+ security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
+ security/integrity/integrity.h      |    3 +++
+ 3 files changed, 22 insertions(+), 9 deletions(-)
 
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -3253,7 +3253,7 @@ void snd_soc_dapm_shutdown(struct snd_so
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index b356884..2156020 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -114,12 +114,8 @@ err_out:
+  */
+ int ima_get_action(struct inode *inode, int mask, int function)
  {
- 	struct snd_soc_codec *codec;
+-	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE;
+-
+-	if (!ima_appraise)
+-		flags &= ~IMA_APPRAISE;
+-
+-	return ima_match_policy(inode, function, mask, flags);
++	return ima_match_policy(inode, function, mask,
++				IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE);
+ }
  
--	list_for_each_entry(codec, &card->codec_dev_list, list) {
-+	list_for_each_entry(codec, &card->codec_dev_list, card_list) {
- 		soc_dapm_shutdown_codec(&codec->dapm);
- 		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY)
- 			snd_soc_dapm_set_bias_level(&codec->dapm,
-
+ int ima_must_measure(struct inode *inode, int mask, int function)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index c7dacd2..a68ea55 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -22,7 +22,6 @@
+ /* flags definitions */
+ #define IMA_FUNC 	0x0001
+ #define IMA_MASK 	0x0002
+-#define IMA_FSMAGIC	0x0004
+ #define IMA_UID		0x0008
+ #define IMA_FOWNER	0x0010
+ 
+@@ -198,7 +197,16 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		     int flags)
+ {
+ 	struct ima_rule_entry *entry;
+-	int action = 0, actmask = flags | (flags << 1);
++	int all_actions = (flags == IMA_DO_MASK);
++	int action = 0, actmask;
++
++	if (inode->i_sb->s_feature_flags & SF_IMA_DISABLED)
++		return 0;
++
++	if (!ima_appraise)
++		flags &= ~IMA_APPRAISE;
++
++	actmask = flags | (flags << 1);
+ 
+ 	list_for_each_entry(entry, ima_rules, list) {
+ 
+@@ -208,6 +216,7 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		if (!ima_match_rules(entry, inode, func, mask))
+ 			continue;
+ 
++		action |= entry->flags & IMA_ACTION_FLAGS;
+ 		action |= entry->action & IMA_DO_MASK;
+ 		if (entry->action & IMA_DO_MASK)
+ 			actmask &= ~(entry->action | entry->action << 1);
+@@ -217,7 +226,12 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		if (!actmask)
+ 			break;
+ 	}
+-
++	if (all_actions && (action & IMA_FS_MASK)) {
++		action &= ~IMA_FS_MASK;
++		/* dont_measure, dont_audit and dont_appraise */
++		if (!action)
++			inode->i_sb->s_feature_flags |= SF_IMA_DISABLED;
++	}
+ 	return action;
+ }
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index e9db763..d67d867 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -26,7 +26,10 @@
+ #define IMA_AUDITED		0x0080
+ 
+ /* iint cache flags */
++#define IMA_ACTION_FLAGS	0xff00
+ #define IMA_DIGSIG		0x0100
++#define IMA_FSMAGIC		0x0200
++#define IMA_FS_MASK		IMA_FSMAGIC
+ 
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT)
+ #define IMA_DONE_MASK		(IMA_MEASURED | IMA_APPRAISED | IMA_AUDITED \
+-- 
+1.7.10.4
 
