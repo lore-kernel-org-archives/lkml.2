@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab2KVTio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:38:44 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:45428 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965070Ab2KVTiT (ORCPT
+	id S1757229Ab2KVTjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:39:08 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37253 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742Ab2KVTjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:38:19 -0500
-Date: Thu, 22 Nov 2012 10:38:17 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: naveen yadav <yad.naveen@gmail.com>
-cc: linux-kernel@vger.kernel.org, <majordomo@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <marcel@holtmann.org>,
-        <padovan@profusion.mobi>
-Subject: Re: USB 2.0: No giveback comes for one submitted URB
-In-Reply-To: <CAJ8eaTwTM3b2wTa9=o3POy-dcP6hkE_DdoAVX06PBuPDhz4W6w@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1211221036030.345-100000@netrider.rowland.org>
+	Thu, 22 Nov 2012 14:39:05 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121122020649.GH4371@opensource.wolfsonmicro.com>
+References: <20121120215429.B621F3E1821@localhost> <13540495.epaCf4JVn9@percival>
+ <50ACB59B.4090404@iki.fi> <20121121114018.GA31576@avionic-0098.adnet.avionic-design.de>
+ <50ACC341.3090204@ti.com> <20121121130039.GA12191@avionic-0098.adnet.avionic-design.de>
+ <50ACD7DC.5060405@ti.com> <CAAVeFuJofYwj926=3v0ApBCq_vNhCdC1PnzDc-B3d=LL_L40Uw@mail.gmail.com>
+ <20121121151209.GA4048@avionic-0098.adnet.avionic-design.de>
+ <CAAVeFuK_V6nb874bygioi35mFNxaWuveKOedLT=YYsP4JfVqgA@mail.gmail.com> <20121122020649.GH4371@opensource.wolfsonmicro.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 22 Nov 2012 12:09:54 +0900
+Message-ID: <CAAVeFu+zxQQ=8fTu1Fp21QrWp6yndsWHjEJ2Gi=LifviNKbvaA@mail.gmail.com>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Tomi Valkeinen <tomba@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012, naveen yadav wrote:
+On Thu, Nov 22, 2012 at 11:06 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Nov 22, 2012 at 11:01:34AM +0900, Alexandre Courbot wrote:
+>
+>> The thing I don't understand here is why would anyone want power
+>> sequences without the DT representation. Guys, that's the whole point! :)
+>
+>> If we are to implement things into drivers, then callback functions
+>> are going to serve us just as well - even better, for they are more
+>> flexible. All we need to do is define a dedicated ops structure and
+>> have the driver plug the right callback functions depending on the
+>> "compatible" property of the DT device node. We don't need a framework
+>> for that.
+>
+> It allows drivers (both board drivers and actual drivers) to write these
+> things in a semi-scripted form instead of having to open code everything
+> each time, it'd save a bunch of tedious stuff with resource requesting
+> for example.
 
-> Hi,
-> 
-> we are using 3.2.2 version of kernel.
-> 
-> When Bluetooth(connected to USB 2.0) is suspended, urb->use_count
-> value does not become zero and eventually there is a continuous wait
-> in wait_event() of usb_kill_urb().
->           wait_event(usb_kill_urb_queue, atomic_read(&urb->use_count) == 0);
-> 
-> urb_count is incremented at only one place in usb_hcd_submit_urb() and
+Mmm, I overlooked that point - that's fair enough. Guess I should
+remove all DT support and stress that point in the documentation. Then
+maybe we'll have a deal.
 
-That's how it is _supposed_ to work.  You have discovered that
-something else increments urb->use_count.
-
-> decremented in usb_hcd_giveback_urb(). (Also, in error case inside
-> usb_hcd_submit_urb()). After taking print of  urb->use_count at all
-> these places, I see, even without connecting the Bluetooth device
-> urb_count is incremented while below execution has never been
-> decremented.
-
-> .....
-> [    3.490000] ====>[usb_hcd_giveback_urb][1626] urb->use_count = 0
-> pipe=2147484032 [vid=0x1d6b] [pid=0x0002][devno=1]
-> [    3.540000] ====>[usb_hcd_submit_urb][1482] urb->use_count = 2
-> pipe=1077969280 [vid=0x1d6b] [pid=0x0002][devno=1]
-> [    3.540000] ====>[usb_hcd_giveback_urb][1626] urb->use_count = 1
-> pipe=1077969280 [vid=0x1d6b] [pid=0x0002][devno=1]
-
-Now you need to find out what other code has changed urb->use_count and
-fix it.
-
-Alan Stern
-
+Alex.
