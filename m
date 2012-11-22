@@ -1,150 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab2KVSuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:50:40 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47166 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932166Ab2KVSu2 (ORCPT
+	id S1755851Ab2KVSvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:51:00 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55183 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755824Ab2KVSu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:50:28 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v2 2/3] CLK: uninline clk_prepare_enable() and clk_disable_unprepare()
-Date: Wed, 21 Nov 2012 21:34:41 -0800
-Message-Id: <1353562482-12422-3-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
+	Thu, 22 Nov 2012 13:50:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121122154612.GC10986@gmail.com>
+References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
+	<b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
+	<20121122112451.GE4328@gmail.com>
+	<CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
+	<20121122154612.GC10986@gmail.com>
+Date: Thu, 22 Nov 2012 22:31:48 +0530
+Message-ID: <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We'll need to invoke clk_disable_unprepare() via a pointer in our devm_*
-conversion so let's uninline the pair.
+On 22 November 2012 21:16, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+>> >> +- irq-over-gpio: bool, true if gpio is used to get irq
+>> >> +- irq-gpios: gpio number over which irq will be requested (significant only if
+>> >> +  irq-over-gpio is true)
+>> >
+>> > You don't need these. Use gpio_to_irq() instead.
+>>
+>> I am passing gpio numbers here and am doing gpio_to_irq() in driver.
+>> Didn't get this one :(
+>
+> For a start you have 'irq-over-gpio' in the binding document and Device Tree
+> and 'irq_over_gpio' in the code. Has it even been tested?
+>
+> GPIOs are used as IRQ lines in many other previously DT:ed drivers. Take a
+> look to see how they are handled without adding unnecessary DT bindings.
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/clk/clk.c   | 23 +++++++++++++++++++++++
- include/linux/clk.h | 53 +++++++++++++++++++++++++++++++----------------------
- 2 files changed, 54 insertions(+), 22 deletions(-)
+I already knew it, should have picked that up. :(
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 56e4495e..92bdafd 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -557,6 +557,29 @@ int clk_enable(struct clk *clk)
- }
- EXPORT_SYMBOL_GPL(clk_enable);
- 
-+int clk_prepare_enable(struct clk *clk)
-+{
-+	int ret;
-+
-+	ret = clk_prepare(clk);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_enable(clk);
-+	if (ret)
-+		clk_unprepare(clk);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(clk_prepare_enable);
-+
-+void clk_disable_unprepare(struct clk *clk)
-+{
-+	clk_disable(clk);
-+	clk_unprepare(clk);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable_unprepare);
-+
- /**
-  * __clk_round_rate - round the given rate for a clk
-  * @clk: round the rate of this clock
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index f8204c3..8bf149e 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -172,6 +172,26 @@ int clk_enable(struct clk *clk);
- void clk_disable(struct clk *clk);
- 
- /**
-+ * clk_prepare_enable - prepare and enable a clock source
-+ * @clk: clock source
-+ *
-+ * This prepares the clock source for use and enables it.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+int clk_prepare_enable(struct clk *clk);
-+
-+/**
-+ * clk_disable_unprepare - disable and undo preparation of a clock source
-+ * @clk: clock source
-+ *
-+ * This disables and undoes a previously prepared clock.
-+ *
-+ * Must not be called from within atomic context.
-+ */
-+void clk_disable_unprepare(struct clk *clk);
-+
-+/**
-  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
-  *		  This is only valid once the clock source has been enabled.
-  * @clk: clock source
-@@ -295,6 +315,17 @@ static inline int clk_enable(struct clk *clk)
- 
- static inline void clk_disable(struct clk *clk) {}
- 
-+static inline int clk_prepare_enable(struct clk *clk)
-+{
-+	might_sleep();
-+	return 0;
-+}
-+
-+static inline void clk_disable_unprepare(struct clk *clk)
-+{
-+	might_sleep();
-+}
-+
- static inline unsigned long clk_get_rate(struct clk *clk)
- {
- 	return 0;
-@@ -322,28 +353,6 @@ static inline struct clk *clk_get_parent(struct clk *clk)
- 
- #endif
- 
--/* clk_prepare_enable helps cases using clk_enable in non-atomic context. */
--static inline int clk_prepare_enable(struct clk *clk)
--{
--	int ret;
--
--	ret = clk_prepare(clk);
--	if (ret)
--		return ret;
--	ret = clk_enable(clk);
--	if (ret)
--		clk_unprepare(clk);
--
--	return ret;
--}
--
--/* clk_disable_unprepare helps cases using clk_disable in non-atomic context. */
--static inline void clk_disable_unprepare(struct clk *clk)
--{
--	clk_disable(clk);
--	clk_unprepare(clk);
--}
--
- /**
-  * clk_add_alias - add a new clock alias
-  * @alias: name for clock alias
--- 
-1.7.11.7
+>> stmpe is an interrupt controller for the IP's which are present inside
+>> it: gpio, adc.
+>> But interrupt lines for them are managed by stmpe driver internally. So should
+>> we really add interrupt-controller for it?
+>
+> You can't manage IRQ lines internally, you have to go through
+> the IRQ subsystem. When you request an IRQ via device tree you
+> will do so like this:
 
+By that i meant, there is no external node which would have stmpe as
+interrupt controller. Because all of them would be its child node.
+
+This is guaranteed because stmpe is an external device is present on board.
+So, it will have its entry in board dts file, and so wouldn't be
+scattered in different
+files.
+
+> The STMPE GPIO controller can't be used by Device Tree yet in any case,
+> because it doesn't have an IRQ domain. This is compulsory, or it won't
+> work. Have you tried to test this functionality yet?
+
+I don't have SPEAr board to test it anymore. I have moved out of ST now and
+working in linaro as ARM asignee. Just pushing these as an part time activity.
+
+Though ST guys would have tested stmpe, but stmpe-gpio, i am not sure about.
+
+> Okay, I've just had a look at my tested bindings.
+>
+> We already have these:
+>
+>   debounce-interval   /* This is a generic binding */
+>   st,scan-count       /* These are vendor specific */
+>   st,no-autorepeat    /*            "              */
+>
+> Vendor specific bindings should be "<vendor>,<binding>", rather than
+> "<type_of_driver>,<binding>"
+
+Will take care of these.
+
+>> >> +             reg = <0>;
+>> >
+>> > You have reg twice here. Also reg should never be '0'.
+>>
+>> For SPI, there are chip selects and there is no reg offset.
+>
+> I understand the addressing issues, but you have 'reg' twice.
+>
+> Which one should be used?
+
+I haven't replied on that, because it was accepted. Only one
+definition should be there for reg.
+
+> I didn't go through them, but are you sure that:
+>
+> 1. Can I do without them?
+>    1.1 Can I derive the configuration from other things?
+>    2.2 Are they _really_ required, or am I just blindly copying platform data?
+> 2. Does a similar binding already exist?
+> 3. Can other drivers make use of them?
+>    3.1 If so, create a generic binding
+>    3.2 If not, prepend the binding with "<vendor>,"
+
+I will go through them again.
+
+>> >> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+>> Because i wanted to keep all DT stuff together. Obviously i have seen keypad
+>> driver earlier :)
+>
+> If you had, you'd realise that these bindings already exist. ;)
+
+Ok. I had seen it during my V1 and missed these bindings. will fix them now.
+
+--
+viresh
