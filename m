@@ -1,318 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965036Ab2KVS65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab2KVS6t (ORCPT
+	id S1756188Ab2KVS7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:59:23 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34019 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab2KVS7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:49 -0500
-Date: Wed, 21 Nov 2012 17:53:01 -0800
-From: tip-bot for Jacob Shin <jacob.shin@amd.com>
-Message-ID: <tip-66520ebc2df3fe52eb4792f8101fac573b766baf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-16-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-16-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm:
-  Only direct map addresses that are marked as E820_RAM
-Git-Commit-ID: 66520ebc2df3fe52eb4792f8101fac573b766baf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:53:07 -0800 (PST)
+	Thu, 22 Nov 2012 13:59:19 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 4/4] staging/rtl8187se: Use dev_ or pr_ printks in r8180_core.c
+Date: Thu, 22 Nov 2012 09:07:04 +0900
+Message-Id: <1353542824-21093-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
+References: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  66520ebc2df3fe52eb4792f8101fac573b766baf
-Gitweb:     http://git.kernel.org/tip/66520ebc2df3fe52eb4792f8101fac573b766baf
-Author:     Jacob Shin <jacob.shin@amd.com>
-AuthorDate: Fri, 16 Nov 2012 19:38:52 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:14 -0800
+The following warnings fixed. 
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ... 
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ... 
+- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
 
-x86, mm: Only direct map addresses that are marked as E820_RAM
-
-Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
-and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
-backed by actual DRAM. This is fine for holes under 4GB which are covered
-by fixed and variable range MTRRs to be UC. However, we run into trouble
-on higher memory addresses which cannot be covered by MTRRs.
-
-Our system with 1TB of RAM has an e820 that looks like this:
-
- BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
- BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
- BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
- BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
- BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
- BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
- BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
- BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
- BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
- BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
- BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
- BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
- BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
-
-and so direct mappings are created for huge memory hole between
-0x000000e038000000 to 0x0000010000000000. Even though the kernel never
-generates memory accesses in that region, since the page tables mark
-them incorrectly as being WB, our (AMD) processor ends up causing a MCE
-while doing some memory bookkeeping/optimizations around that area.
-
-This patch iterates through e820 and only direct maps ranges that are
-marked as E820_RAM, and keeps track of those pfn ranges. Depending on
-the alignment of E820 ranges, this may possibly result in using smaller
-size (i.e. 4K instead of 2M or 1G) page tables.
-
--v2: move changes from setup.c to mm/init.c, also use for_each_mem_pfn_range
-	instead.  - Yinghai Lu
--v3: add calculate_all_table_space_size() to get correct needed page table
-	size. - Yinghai Lu
--v4: fix add_pfn_range_mapped() to get correct max_low_pfn_mapped when
-     mem map does have hole under 4g that is found by Konard on xen
-     domU with 8g ram. - Yinghai
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Link: http://lkml.kernel.org/r/1353123563-3103-16-git-send-email-yinghai@kernel.org
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- arch/x86/include/asm/page_types.h |   8 +--
- arch/x86/kernel/setup.c           |   8 ++-
- arch/x86/mm/init.c                | 120 ++++++++++++++++++++++++++++++++++----
- arch/x86/mm/init_64.c             |   6 +-
- 4 files changed, 117 insertions(+), 25 deletions(-)
+ drivers/staging/rtl8187se/r8180_core.c |   23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index 45aae6e..54c9787 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -51,13 +51,7 @@ static inline phys_addr_t get_max_mapped(void)
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
- }
+diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+index 3119fe6..0aa2a78 100644
+--- a/drivers/staging/rtl8187se/r8180_core.c
++++ b/drivers/staging/rtl8187se/r8180_core.c
+@@ -27,6 +27,8 @@
+    Written by Mariusz Matuszek.
+ */
  
--static inline bool pfn_range_is_mapped(unsigned long start_pfn,
--					unsigned long end_pfn)
--{
--	return end_pfn <= max_low_pfn_mapped ||
--	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
--		end_pfn <= max_pfn_mapped);
--}
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #undef RX_DONT_PASS_UL
+ #undef DUMMY_RX
  
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index bd52f9d..68dffec 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -116,9 +116,11 @@
- #include <asm/prom.h>
+@@ -116,8 +118,7 @@ static int rtl8180_resume(struct pci_dev *pdev)
  
- /*
-- * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-- * The direct mapping extends to max_pfn_mapped, so that we can directly access
-- * apertures, ACPI and other tables without having to play with fixmaps.
-+ * max_low_pfn_mapped: highest direct mapped pfn under 4GB
-+ * max_pfn_mapped:     highest direct mapped pfn over 4GB
-+ *
-+ * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
-+ * represented by pfn_mapped
-  */
- unsigned long max_low_pfn_mapped;
- unsigned long max_pfn_mapped;
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 7b961d0..bb44e9f 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -243,6 +243,38 @@ static unsigned long __init calculate_table_space_size(unsigned long start, unsi
- 	return tables;
- }
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+-				dev->name);
++		dev_err(&pdev->dev, "pci_enable_device failed on resume\n");
  
-+static unsigned long __init calculate_all_table_space_size(void)
-+{
-+	unsigned long start_pfn, end_pfn;
-+	unsigned long tables;
-+	int i;
-+
-+	/* the ISA range is always mapped regardless of memory holes */
-+	tables = calculate_table_space_size(0, ISA_END_ADDRESS);
-+
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-+		u64 start = start_pfn << PAGE_SHIFT;
-+		u64 end = end_pfn << PAGE_SHIFT;
-+
-+		if (end <= ISA_END_ADDRESS)
-+			continue;
-+
-+		if (start < ISA_END_ADDRESS)
-+			start = ISA_END_ADDRESS;
-+#ifdef CONFIG_X86_32
-+		/* on 32 bit, we only map up to max_low_pfn */
-+		if ((start >> PAGE_SHIFT) >= max_low_pfn)
-+			continue;
-+
-+		if ((end >> PAGE_SHIFT) > max_low_pfn)
-+			end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+		tables += calculate_table_space_size(start, end);
-+	}
-+
-+	return tables;
-+}
-+
- static void __init find_early_table_space(unsigned long start,
- 					  unsigned long good_end,
- 					  unsigned long tables)
-@@ -258,6 +290,34 @@ static void __init find_early_table_space(unsigned long start,
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
- }
+ 		return err;
+ 	}
+@@ -2154,7 +2155,8 @@ void rtl8180_wmm_param_update(struct work_struct *work)
+ 					write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
+ 					break;
+ 				default:
+-					printk(KERN_WARNING "SetHwReg8185():invalid ACI: %d!\n", eACI);
++					pr_warn("SetHwReg8185():invalid ACI: %d!\n",
++						eACI);
+ 					break;
+ 				}
+ 			}
+@@ -2193,7 +2195,8 @@ void rtl8180_wmm_param_update(struct work_struct *work)
+ 				write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
+ 				break;
+ 			default:
+-				printk(KERN_WARNING "SetHwReg8185(): invalid ACI: %d !\n", eACI);
++				pr_warn("SetHwReg8185(): invalid ACI: %d !\n",
++					eACI);
+ 				break;
+ 			}
+ 		}
+@@ -3339,27 +3342,27 @@ static int __init rtl8180_pci_module_init(void)
  
-+static struct range pfn_mapped[E820_X_MAX];
-+static int nr_pfn_mapped;
-+
-+static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
-+					     nr_pfn_mapped, start_pfn, end_pfn);
-+	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
-+
-+	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
-+
-+	if (start_pfn < (1UL<<(32-PAGE_SHIFT)))
-+		max_low_pfn_mapped = max(max_low_pfn_mapped,
-+					 min(end_pfn, 1UL<<(32-PAGE_SHIFT)));
-+}
-+
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	int i;
-+
-+	for (i = 0; i < nr_pfn_mapped; i++)
-+		if ((start_pfn >= pfn_mapped[i].start) &&
-+		    (end_pfn <= pfn_mapped[i].end))
-+			return true;
-+
-+	return false;
-+}
-+
- /*
-  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-  * This runs before bootmem is initialized and gets pages directly from
-@@ -288,9 +348,55 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	ret = ieee80211_crypto_init();
+ 	if (ret) {
+-		printk(KERN_ERR "ieee80211_crypto_init() failed %d\n", ret);
++		pr_err("ieee80211_crypto_init() failed %d\n", ret);
+ 		return ret;
+ 	}
+ 	ret = ieee80211_crypto_tkip_init();
+ 	if (ret) {
+-		printk(KERN_ERR "ieee80211_crypto_tkip_init() failed %d\n", ret);
++		pr_err("ieee80211_crypto_tkip_init() failed %d\n", ret);
+ 		return ret;
+ 	}
+ 	ret = ieee80211_crypto_ccmp_init();
+ 	if (ret) {
+-		printk(KERN_ERR "ieee80211_crypto_ccmp_init() failed %d\n", ret);
++		pr_err("ieee80211_crypto_ccmp_init() failed %d\n", ret);
+ 		return ret;
+ 	}
+ 	ret = ieee80211_crypto_wep_init();
+ 	if (ret) {
+-		printk(KERN_ERR "ieee80211_crypto_wep_init() failed %d\n", ret);
++		pr_err("ieee80211_crypto_wep_init() failed %d\n", ret);
+ 		return ret;
+ 	}
  
- 	__flush_tlb_all();
- 
-+	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
-+
- 	return ret >> PAGE_SHIFT;
- }
- 
-+/*
-+ * Iterate through E820 memory map and create direct mappings for only E820_RAM
-+ * regions. We cannot simply create direct mappings for all pfns from
-+ * [0 to max_low_pfn) and [4GB to max_pfn) because of possible memory holes in
-+ * high addresses that cannot be marked as UC by fixed/variable range MTRRs.
-+ * Depending on the alignment of E820 ranges, this may possibly result in using
-+ * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-+ */
-+static void __init init_all_memory_mapping(void)
-+{
-+	unsigned long start_pfn, end_pfn;
-+	int i;
-+
-+	/* the ISA range is always mapped regardless of memory holes */
-+	init_memory_mapping(0, ISA_END_ADDRESS);
-+
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-+		u64 start = (u64)start_pfn << PAGE_SHIFT;
-+		u64 end = (u64)end_pfn << PAGE_SHIFT;
-+
-+		if (end <= ISA_END_ADDRESS)
-+			continue;
-+
-+		if (start < ISA_END_ADDRESS)
-+			start = ISA_END_ADDRESS;
-+#ifdef CONFIG_X86_32
-+		/* on 32 bit, we only map up to max_low_pfn */
-+		if ((start >> PAGE_SHIFT) >= max_low_pfn)
-+			continue;
-+
-+		if ((end >> PAGE_SHIFT) > max_low_pfn)
-+			end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+		init_memory_mapping(start, end);
-+	}
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
-+}
-+
- void __init init_mem_mapping(void)
- {
- 	unsigned long tables, good_end, end;
-@@ -311,23 +417,15 @@ void __init init_mem_mapping(void)
- 	end = max_low_pfn << PAGE_SHIFT;
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
--	tables = calculate_table_space_size(0, end);
-+	tables = calculate_all_table_space_size();
- 	find_early_table_space(0, good_end, tables);
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
- 		end - 1, pgt_buf_start << PAGE_SHIFT,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- 
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	max_pfn_mapped = 0; /* will get exact value next */
-+	init_all_memory_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 3baff25..32c7e38 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -662,13 +662,11 @@ int arch_add_memory(int nid, u64 start, u64 size)
- {
- 	struct pglist_data *pgdat = NODE_DATA(nid);
- 	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
--	unsigned long last_mapped_pfn, start_pfn = start >> PAGE_SHIFT;
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long nr_pages = size >> PAGE_SHIFT;
- 	int ret;
- 
--	last_mapped_pfn = init_memory_mapping(start, start + size);
--	if (last_mapped_pfn > max_pfn_mapped)
--		max_pfn_mapped = last_mapped_pfn;
-+	init_memory_mapping(start, start + size);
- 
- 	ret = __add_pages(nid, zone, start_pfn, nr_pages);
- 	WARN_ON_ONCE(ret);
+-	printk(KERN_INFO "\nLinux kernel driver for RTL8180 / RTL8185 based WLAN cards\n");
+-	printk(KERN_INFO "Copyright (c) 2004-2005, Andrea Merello\n");
++	pr_info("\nLinux kernel driver for RTL8180 / RTL8185 based WLAN cards\n");
++	pr_info("Copyright (c) 2004-2005, Andrea Merello\n");
+ 	DMESG("Initializing module");
+ 	DMESG("Wireless extensions version %d", WIRELESS_EXT);
+ 	rtl8180_proc_module_init();
+-- 
+1.7.9.5
+
