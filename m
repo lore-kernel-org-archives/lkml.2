@@ -1,71 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab2KVUvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:51:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47238 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755431Ab2KVUvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:51:35 -0500
-Message-ID: <50AE902D.5090705@zytor.com>
-Date: Thu, 22 Nov 2012 12:50:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S932436Ab2KVUvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:51:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897Ab2KVS6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:58:37 -0500
+Date: Wed, 21 Nov 2012 18:07:49 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-719272c45b821d38608fc333700bde1a89c56c59@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-30-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-30-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm:
+  only call early_ioremap_page_table_range_init() once
+Git-Commit-ID: 719272c45b821d38608fc333700bde1a89c56c59
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <CAE9FiQXKgnZyFNujKhMn94+0JQ6jtAHOihmtMOmk_gJi-4_aYQ@mail.gmail.com> <50AE7429.6030308@zytor.com> <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
-In-Reply-To: <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:07:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 12:18 PM, Yinghai Lu wrote:
->>
->> If we can get the sentinel hack to work that would probably be useful, but
->> we need to understand the exact pathology.
->
-> for kexec bzImage --real-mode-entry, code after setup_header will be executed.
->
-> so we could clear value before setup_header after copy 16bit section
-> from bzImage...
->
-> Index: kexec-tools/kexec/arch/i386/kexec-bzImage.c
-> ===================================================================
-> --- kexec-tools.orig/kexec/arch/i386/kexec-bzImage.c
-> +++ kexec-tools/kexec/arch/i386/kexec-bzImage.c
-> @@ -212,6 +212,16 @@ int do_bzImage_load(struct kexec_info *i
->   	setup_size = kern16_size + command_line_len + PURGATORY_CMDLINE_SIZE;
->   	real_mode = xmalloc(setup_size);
->   	memcpy(real_mode, kernel, kern16_size);
-> +	/*
-> +	 * clear value before header
-> +	 * not not clear value after header, --real-mode-entry
-> +	 * need code after header.
-> +	 */
-> +	memset(real_mode, 0, 0x1f1);
-> +	if (!real_mode_entry) {
-> +		/* clear value after setup_header  */
-> +		memset((unsigned char *)real_mode + 0x290, 0, kern16_size - 0x290);
-> +	}
->
+Commit-ID:  719272c45b821d38608fc333700bde1a89c56c59
+Gitweb:     http://git.kernel.org/tip/719272c45b821d38608fc333700bde1a89c56c59
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:39:06 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:29 -0800
 
-You really should move the memset() into the if() clause as well... 
-doesn't matter at the moment, but that is the protocol.
+x86, mm: only call early_ioremap_page_table_range_init() once
 
-The limit is 0x280, not 0x290, or -- better -- you can use the byte at 
-0x201 to get the size.
+On 32bit, before patcheset that only set page table for ram, we only
+call that one time.
 
-	-hpa
+Now, we are calling that during every init_memory_mapping if we have holes
+under max_low_pfn.
 
+We should only call it one time after all ranges under max_low_page get
+mapped just like we did before.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Also that could avoid the risk to run out of pgt_buf in BRK.
 
+Need to update page_table_range_init() to count the pages for kmap page table
+at first, and use new added alloc_low_pages() to get pages in sequence.
+That will conform to the requirement that pages need to be in low to high order.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-30-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init.c    | 13 +++++--------
+ arch/x86/mm/init_32.c | 47 +++++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 46 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index cb4f8ba..bed4888 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -343,14 +343,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+ 						   mr[i].page_size_mask);
+ 
+-#ifdef CONFIG_X86_32
+-	early_ioremap_page_table_range_init();
+-
+-	load_cr3(swapper_pg_dir);
+-#endif
+-
+-	__flush_tlb_all();
+-
+ 	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
+ 
+ 	return ret >> PAGE_SHIFT;
+@@ -447,7 +439,12 @@ void __init init_mem_mapping(void)
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
++#else
++	early_ioremap_page_table_range_init();
++	load_cr3(swapper_pg_dir);
++	__flush_tlb_all();
+ #endif
++
+ 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+ }
+ 
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index a7f2df1..0ae1ba8 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -135,8 +135,39 @@ pte_t * __init populate_extra_pte(unsigned long vaddr)
+ 	return one_page_table_init(pmd) + pte_idx;
+ }
+ 
++static unsigned long __init
++page_table_range_init_count(unsigned long start, unsigned long end)
++{
++	unsigned long count = 0;
++#ifdef CONFIG_HIGHMEM
++	int pmd_idx_kmap_begin = fix_to_virt(FIX_KMAP_END) >> PMD_SHIFT;
++	int pmd_idx_kmap_end = fix_to_virt(FIX_KMAP_BEGIN) >> PMD_SHIFT;
++	int pgd_idx, pmd_idx;
++	unsigned long vaddr;
++
++	if (pmd_idx_kmap_begin == pmd_idx_kmap_end)
++		return 0;
++
++	vaddr = start;
++	pgd_idx = pgd_index(vaddr);
++
++	for ( ; (pgd_idx < PTRS_PER_PGD) && (vaddr != end); pgd_idx++) {
++		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
++							pmd_idx++) {
++			if ((vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin &&
++			    (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end)
++				count++;
++			vaddr += PMD_SIZE;
++		}
++		pmd_idx = 0;
++	}
++#endif
++	return count;
++}
++
+ static pte_t *__init page_table_kmap_check(pte_t *pte, pmd_t *pmd,
+-					   unsigned long vaddr, pte_t *lastpte)
++					   unsigned long vaddr, pte_t *lastpte,
++					   void **adr)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	/*
+@@ -150,16 +181,15 @@ static pte_t *__init page_table_kmap_check(pte_t *pte, pmd_t *pmd,
+ 
+ 	if (pmd_idx_kmap_begin != pmd_idx_kmap_end
+ 	    && (vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin
+-	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end
+-	    && ((__pa(pte) >> PAGE_SHIFT) < pgt_buf_start
+-		|| (__pa(pte) >> PAGE_SHIFT) >= pgt_buf_end)) {
++	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end) {
+ 		pte_t *newpte;
+ 		int i;
+ 
+ 		BUG_ON(after_bootmem);
+-		newpte = alloc_low_page();
++		newpte = *adr;
+ 		for (i = 0; i < PTRS_PER_PTE; i++)
+ 			set_pte(newpte + i, pte[i]);
++		*adr = (void *)(((unsigned long)(*adr)) + PAGE_SIZE);
+ 
+ 		paravirt_alloc_pte(&init_mm, __pa(newpte) >> PAGE_SHIFT);
+ 		set_pmd(pmd, __pmd(__pa(newpte)|_PAGE_TABLE));
+@@ -193,6 +223,11 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
+ 	pgd_t *pgd;
+ 	pmd_t *pmd;
+ 	pte_t *pte = NULL;
++	unsigned long count = page_table_range_init_count(start, end);
++	void *adr = NULL;
++
++	if (count)
++		adr = alloc_low_pages(count);
+ 
+ 	vaddr = start;
+ 	pgd_idx = pgd_index(vaddr);
+@@ -205,7 +240,7 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
+ 		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
+ 							pmd++, pmd_idx++) {
+ 			pte = page_table_kmap_check(one_page_table_init(pmd),
+-			                            pmd, vaddr, pte);
++						    pmd, vaddr, pte, &adr);
+ 
+ 			vaddr += PMD_SIZE;
+ 		}
