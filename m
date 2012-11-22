@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab2KVWjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:39:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49016 "EHLO mail.kernel.org"
+	id S1758679Ab2KVWjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:39:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49021 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559Ab2KVSdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:43 -0500
+	id S1753545Ab2KVSdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 41/83] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
-Date: Wed, 21 Nov 2012 16:42:03 -0800
-Message-Id: <20121122004217.187899511@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 100/171] libceph: provide osd number when creating osd
+Date: Wed, 21 Nov 2012 16:40:46 -0800
+Message-Id: <20121122004043.398590304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Alex Elder <elder@inktank.com>
 
-commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
+(cherry picked from commit e10006f807ffc4d5b1d861305d18d9e8145891ca)
 
-The Dell 5800 appears to be a simple rebrand of the Novatel E362.
+Pass the osd number to the create_osd() routine, and move the
+initialization of fields that depend on it therein.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/ceph/osd_client.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -158,6 +158,7 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
-+#define NOVATELWIRELESS_PRODUCT_E362		0x9010
- #define NOVATELWIRELESS_PRODUCT_G1		0xA001
- #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
-@@ -193,6 +194,9 @@ static void option_instat_callback(struc
- #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
- #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -624,7 +624,7 @@ static void osd_reset(struct ceph_connec
+ /*
+  * Track open sessions with osds.
+  */
+-static struct ceph_osd *create_osd(struct ceph_osd_client *osdc)
++static struct ceph_osd *create_osd(struct ceph_osd_client *osdc, int onum)
+ {
+ 	struct ceph_osd *osd;
  
-+#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
-+#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
-+
- #define KYOCERA_VENDOR_ID			0x0c88
- #define KYOCERA_PRODUCT_KPC650			0x17da
- #define KYOCERA_PRODUCT_KPC680			0x180a
-@@ -706,6 +710,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
+@@ -634,6 +634,7 @@ static struct ceph_osd *create_osd(struc
  
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
-@@ -728,6 +733,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
+ 	atomic_set(&osd->o_ref, 1);
+ 	osd->o_osdc = osdc;
++	osd->o_osd = onum;
+ 	INIT_LIST_HEAD(&osd->o_requests);
+ 	INIT_LIST_HEAD(&osd->o_linger_requests);
+ 	INIT_LIST_HEAD(&osd->o_osd_lru);
+@@ -643,6 +644,7 @@ static struct ceph_osd *create_osd(struc
+ 	osd->o_con.private = osd;
+ 	osd->o_con.ops = &osd_con_ops;
+ 	osd->o_con.peer_name.type = CEPH_ENTITY_TYPE_OSD;
++	osd->o_con.peer_name.num = cpu_to_le64(onum);
+ 
+ 	INIT_LIST_HEAD(&osd->o_keepalive_item);
+ 	return osd;
+@@ -998,15 +1000,13 @@ static int __map_request(struct ceph_osd
+ 	req->r_osd = __lookup_osd(osdc, o);
+ 	if (!req->r_osd && o >= 0) {
+ 		err = -ENOMEM;
+-		req->r_osd = create_osd(osdc);
++		req->r_osd = create_osd(osdc, o);
+ 		if (!req->r_osd) {
+ 			list_move(&req->r_req_lru_item, &osdc->req_notarget);
+ 			goto out;
+ 		}
+ 
+ 		dout("map_request osd %p is osd%d\n", req->r_osd, o);
+-		req->r_osd->o_osd = o;
+-		req->r_osd->o_con.peer_name.num = cpu_to_le64(o);
+ 		__insert_osd(osdc, req->r_osd);
+ 
+ 		ceph_con_open(&req->r_osd->o_con, &osdc->osdmap->osd_addr[o]);
 
 
