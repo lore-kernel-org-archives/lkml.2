@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2KVSrp (ORCPT <rfc822;w@1wt.eu>);
+	id S932136Ab2KVSrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:47:49 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52829 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755718Ab2KVSrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:47:45 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:18845 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab2KVSrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:47:41 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH v4 28/31] udf: convert file ops from aio_read/write to read/write_iter
-Date: Wed, 21 Nov 2012 16:41:08 -0600
-Message-Id: <1353537671-26284-29-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,297,1352102400"; 
+   d="scan'208";a="250834305"
+Message-ID: <1353547324.2172.1.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
+Date: Thu, 22 Nov 2012 09:22:04 +0800
+In-Reply-To: <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
----
- fs/udf/file.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
+> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
+> jump to the upper or lower cooling level instead of incremental increase
+> or decrease. This is needed for temperature sensors which support rising/falling
+> threshold interrupts and polling can be totally avoided.
+> 
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> ---
+>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+>  include/linux/thermal.h     |    2 ++
+>  2 files changed, 17 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> index 1242cff..0d2d8d6 100644
+> --- a/drivers/thermal/step_wise.c
+> +++ b/drivers/thermal/step_wise.c
+> @@ -35,6 +35,10 @@
+>   *       state for this trip point
+>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+>   *       state for this trip point
+> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+> + *       state for this trip point
+> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+> + *       state for this trip point
+>   */
+>  static unsigned long get_target_state(struct thermal_instance *instance,
+>  					enum thermal_trend trend)
+> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>  	} else if (trend == THERMAL_TREND_DROPPING) {
+>  		cur_state = cur_state > instance->lower ?
+>  			    (cur_state - 1) : instance->lower;
+> -	}
+> +	} else if (trend == THERMAL_TREND_RAISE_FULL)
+> +		cur_state = instance->upper;
+> +	else if (trend == THERMAL_TREND_DROP_FULL)
+> +		cur_state = instance->lower;
+>  
+>  	return cur_state;
+>  }
+> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
+>  }
+>  
+>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> -				int trip, enum thermal_trip_type trip_type)
+> +				int trip, enum thermal_trip_type trip_type,
+> +				enum thermal_trend trend)
+>  {
+>  	struct thermal_instance *instance;
+>  	struct thermal_cooling_device *cdev;
+> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+>  		cdev = instance->cdev;
+>  		cdev->ops->get_cur_state(cdev, &cur_state);
+>  
+> -		instance->target = cur_state > instance->lower ?
+> +		if (trend == THERMAL_TREND_DROP_FULL)
+> +			instance->target = instance->lower;
+> +		else
+> +			instance->target = cur_state > instance->lower ?
+>  			    (cur_state - 1) : THERMAL_NO_TARGET;
+>  
+what do you expect to happen if the trend is THERMAL_TREND_RAISE_FULL at
+this time?
 
-diff --git a/fs/udf/file.c b/fs/udf/file.c
-index c4164dc..a5d69c0 100644
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -133,8 +133,8 @@ const struct address_space_operations udf_adinicb_aops = {
- 	.direct_IO	= udf_adinicb_direct_IO,
- };
- 
--static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
--				  unsigned long nr_segs, loff_t ppos)
-+static ssize_t udf_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+				   loff_t ppos)
- {
- 	ssize_t retval;
- 	struct file *file = iocb->ki_filp;
-@@ -168,7 +168,7 @@ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	} else
- 		up_write(&iinfo->i_data_sem);
- 
--	retval = generic_file_aio_write(iocb, iov, nr_segs, ppos);
-+	retval = generic_file_write_iter(iocb, iter, ppos);
- 	if (retval > 0)
- 		mark_inode_dirty(inode);
- 
-@@ -242,12 +242,12 @@ static int udf_release_file(struct inode *inode, struct file *filp)
- 
- const struct file_operations udf_file_operations = {
- 	.read			= do_sync_read,
--	.aio_read		= generic_file_aio_read,
-+	.read_iter		= generic_file_read_iter,
- 	.unlocked_ioctl		= udf_ioctl,
- 	.open			= generic_file_open,
- 	.mmap			= generic_file_mmap,
- 	.write			= do_sync_write,
--	.aio_write		= udf_file_aio_write,
-+	.write_iter		= udf_file_write_iter,
- 	.release		= udf_release_file,
- 	.fsync			= generic_file_fsync,
- 	.splice_read		= generic_file_splice_read,
--- 
-1.8.0
+thanks,
+rui
 
