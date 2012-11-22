@@ -1,105 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2KVXPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:15:22 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:46991 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750815Ab2KVXPT (ORCPT
+	id S1757236Ab2KVXT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:19:59 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52672 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2KVXT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 18:15:19 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscIAJewrlB5LKAf/2dsb2JhbABEhT22MoV5F3OCHgEBBScTHCMQCAMYLhQlAyETiAy/bBSMIyiEGQOWAJBDgwOBTR4
-Date: Fri, 23 Nov 2012 10:15:15 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>, axboe@kernel.dk,
-        lucho@ionkov.net, ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
- page writes
-Message-ID: <20121122231515.GW2591@dastard>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
- <20121122014755.GH8740@blackbox.djwong.org>
+	Thu, 22 Nov 2012 18:19:58 -0500
+X-AuditID: 9c93016f-b7b42ae000004383-10-50aeb31a083b
+Date: Fri, 23 Nov 2012 08:20:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Lockdep complain for zram
+Message-ID: <20121122232012.GD5121@bbox>
+References: <20121121083737.GB5121@bbox>
+ <50AD1829.7050709@vflare.org>
+ <20121122083110.GC5121@bbox>
+ <50ADF9AB.9030903@vflare.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121122014755.GH8740@blackbox.djwong.org>
+In-Reply-To: <50ADF9AB.9030903@vflare.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 05:47:55PM -0800, Darrick J. Wong wrote:
-> On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
-> > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
-> > 
-> > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
-> > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > > > > > tries to mount in write mode.
-> > > > > > 
-> > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > > > > ---
-> > > > > >  fs/ext3/super.c |    8 ++++++++
-> > > > > >  1 file changed, 8 insertions(+)
-> > > > > > 
-> > > > > > 
-> > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > > > > > index 5366393..5b3725d 100644
-> > > > > > --- a/fs/ext3/super.c
-> > > > > > +++ b/fs/ext3/super.c
-> > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> > > > > >  			"forcing read-only mode");
-> > > > > >  		res = MS_RDONLY;
-> > > > > >  	}
-> > > > > > +	if (!read_only &&
-> > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > > > > > +		ext3_msg(sb, KERN_ERR,
-> > > > > > +			"error: ext3 cannot safely write data to a disk "
-> > > > > > +			"requiring stable pages writes; forcing read-only "
-> > > > > > +			"mode.  Upgrading to ext4 is recommended.");
-> > > > > > +		res = MS_RDONLY;
-> > > > > > +	}
-> > > > > >  	if (read_only)
-> > > > > >  		return res;
-> > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
-> > > > >   Why this? ext3 should be fixed by your change to
-> > > > > filemap_page_mkwrite()... Or does testing show otherwise?
-> > > > 
-> > > > Yes, it's still broken even with this new set of changes.  Now that I think
-> > > > about it a little more, I recall that writeback mode was actually fine, so this
-> > > > is a little harsh.
-> > > > 
-> > > > Hm... looking at the ordered code a little more, it looks like
-> > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-> > > > to write mapped buffers back through the journal?  Taking it out seems to fix
-> > > > ordered mode, though I have a suspicion that it might very well break ordered
-> > > > mode too.
-> > >   Oh, right. kjournald writing buffers directly (without setting
-> > > PageWriteback) will break things. So please, change warning to:
+On Thu, Nov 22, 2012 at 02:08:43AM -0800, Nitin Gupta wrote:
+> On 11/22/2012 12:31 AM, Minchan Kim wrote:
+> >Hi Nitin,
+> >
+> >On Wed, Nov 21, 2012 at 10:06:33AM -0800, Nitin Gupta wrote:
+> >>On 11/21/2012 12:37 AM, Minchan Kim wrote:
+> >>>Hi alls,
+> >>>
+> >>>Today, I saw below complain of lockdep.
+> >>>As a matter of fact, I knew it long time ago but forgot that.
+> >>>The reason lockdep complains is that now zram uses GFP_KERNEL
+> >>>in reclaim path(ex, __zram_make_request) :(
+> >>>I can fix it via replacing GFP_KERNEL with GFP_NOIO.
+> >>>But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
+> >>>Of course, I can change it with __vmalloc which can receive gfp_t.
+> >>>But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
+> >>>allocation of GFP_KERNEL. That's why I sent the patch.
+> >>>https://lkml.org/lkml/2012/4/23/77
+> >>>Since then, I forgot it, saw the bug today and poped the question again.
+> >>>
+> >>>Yes. Fundamental problem is utter crap API vmalloc.
+> >>>If we can fix it, everyone would be happy. But life isn't simple like seeing
+> >>>my thread of the patch.
+> >>>
+> >>>So next option is to move zram_init_device into setting disksize time.
+> >>>But it makes unnecessary metadata waste until zram is used really(That's why
+> >>>Nitin move zram_init_device from disksize setting time to make_request) and
+> >>>it makes user should set the disksize before using, which are behavior change.
+> >>>
+> >>>I would like to clean up this issue before promoting because it might change
+> >>>usage behavior.
+> >>>
+> >>>Do you have any idea?
+> >>>
+> >>
+> >>Maybe we can alloc_vm_area() right on device creation in
+> >>create_device() assuming the default disksize. If user explicitly
+> >>sets the disksize, this vm area is deallocated and a new one is
+> >>allocated based on the new disksize.  When the device is reset, we
+> >>should only free physical pages allocated for the table and the
+> >>virtual area should be set back as if disksize is set to the
+> >>default.
+> >>
+> >>At the device init time, all the pages can be allocated with
+> >>GFP_NOIO | __GPF_HIGHMEM and since the VM area is preallocated,
+> >>map_vm_area() will not hit any of those page-table allocations with
+> >>GFP_KERNEL.
+> >>
+> >>Other allocations made directly from zram, for instance in the
+> >>partial I/O case, should also be changed to GFP_NOIO |
+> >>__GFP_HIGHMEM.
+> >>
+> >
+> >Yes. It's a good idea and actually I thought about it.
+> >My concern about that approach is following as.
+> >
+> >1) User of zram normally do mkfs.xxx or mkswap before using
+> >    the zram block device(ex, normally, do it at booting time)
+> >    It ends up allocating such metadata of zram before real usage so
+> >    benefit of lazy initialzation would be mitigated.
+> >
+> >2) Some user want to use zram when memory pressure is high.(ie, load zram
+> >    dynamically, NOT booting time). It does make sense because people don't
+> >    want to waste memory until memory pressure is high(ie, where zram is really
+> >    helpful time). In this case, lazy initialzation could be failed easily
+> >    because we will use GFP_NOIO instead of GFP_KERNEL due to swap use-case.
+> >    So the benefit of lazy initialzation would be mitigated, too.
+> >
+> >3) Current zram's documenation is wrong.
+> >    Set Disksize isn't optional when we use zram firstly.
+> >    Once user set disksize, it could be optional, but NOT optional
+> >    at first usage time. It's very odd behavior. So I think user set to disksizes
+> >    before using is more safe and clear.
+> >
+> >So my suggestion is following as.
+> >
+> >  * Let's change disksize setting to MUST before using for consistent behavior.
+> >  * When user set to disksize, let's allocate metadata all at once.
+> >    4K : 12 byte(64bit) -> 64G : 192M so 0.3% isn't big overhead.
+> >    If insane user use such big zram device up to 20, it could consume 6% of ram
+> >    but efficieny of zram will cover the waste.
+> >  * If someone has a concern about this, let's guide for him set to disksize
+> >    right before zram using.
+> >
+> >What do you think about it?
+> >
 > 
-> Maybe we should just fix this anyway?
+> I agree. This lazy initialization has been a problem since the
+> beginning. So, lets just force user to first set the disksize and
+> document this behavior as such.
+
+Sure.
+
 > 
-> I still have the patch that adds PG_stable (and changes the
+> I plan to reduce struct table to just an array of handles (so
+> getting rid of size, flag, count fields), but for now we could just
+> use existing struct table and do this change later.
 
-Page flags are in short supply. If you need a page flag to fix a bug
-in a single filesytem, there's a couple of reserved private page
-flags that can be used. i.e PG_owner_priv_1. I don't think using a
-glbal page flag for just this purpose will fly, though...
+Good to hear.
 
-Cheers,
+Thanks for the quick feedback.
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Kind regards,
+Minchan Kim
