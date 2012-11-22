@@ -1,181 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab2KVTgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:36:33 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:33640 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab2KVTga (ORCPT
+	id S1757208Ab2KVThG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:37:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42059 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756993Ab2KVTc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:36:30 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH v4 17/31] fs: create file_readable() and file_writable() functions
-Date: Wed, 21 Nov 2012 16:40:57 -0600
-Message-Id: <1353537671-26284-18-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 22 Nov 2012 14:32:26 -0500
+Date: Thu, 22 Nov 2012 10:18:37 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: add an AS3711 PMIC MFD driver
+Message-ID: <20121122011835.GD4371@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.64.1211211916160.842@axis700.grange>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7DO5AaGCk89r4vaK"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211211916160.842@axis700.grange>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create functions to simplify if file_ops contain either a read
-or aio_read op, or likewise write or aio_write. We will be adding
-read_iter and write_iter and don't need to be complicating the code
-in multiple places.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
----
- drivers/mtd/nand/nandsim.c           |  4 ++--
- drivers/staging/ccg/storage_common.c |  4 ++--
- drivers/usb/gadget/storage_common.c  |  4 ++--
- fs/compat.c                          |  4 ++--
- fs/read_write.c                      |  8 ++++----
- include/linux/fs.h                   | 10 ++++++++++
- 6 files changed, 22 insertions(+), 12 deletions(-)
+--7DO5AaGCk89r4vaK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index a932c48..7f88863 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -462,12 +462,12 @@ static int alloc_device(struct nandsim *ns)
- 		cfile = filp_open(cache_file, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
- 		if (IS_ERR(cfile))
- 			return PTR_ERR(cfile);
--		if (!cfile->f_op || (!cfile->f_op->read && !cfile->f_op->aio_read)) {
-+		if (!file_readable(cfile)) {
- 			NS_ERR("alloc_device: cache file not readable\n");
- 			err = -EINVAL;
- 			goto err_close;
- 		}
--		if (!cfile->f_op->write && !cfile->f_op->aio_write) {
-+		if (!file_writable(cfile)) {
- 			NS_ERR("alloc_device: cache file not writeable\n");
- 			err = -EINVAL;
- 			goto err_close;
-diff --git a/drivers/staging/ccg/storage_common.c b/drivers/staging/ccg/storage_common.c
-index 8d9bcd8..d431eff 100644
---- a/drivers/staging/ccg/storage_common.c
-+++ b/drivers/staging/ccg/storage_common.c
-@@ -666,11 +666,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 	 * If we can't read the file, it's no good.
- 	 * If we can't write the file, use it read-only.
- 	 */
--	if (!(filp->f_op->read || filp->f_op->aio_read)) {
-+	if (!file_readable(filp)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
- 	}
--	if (!(filp->f_op->write || filp->f_op->aio_write))
-+	if (!file_writable(filp))
- 		ro = 1;
- 
- 	size = i_size_read(inode->i_mapping->host);
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 8d9bcd8..d431eff 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -666,11 +666,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 	 * If we can't read the file, it's no good.
- 	 * If we can't write the file, use it read-only.
- 	 */
--	if (!(filp->f_op->read || filp->f_op->aio_read)) {
-+	if (!file_readable(filp)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
- 	}
--	if (!(filp->f_op->write || filp->f_op->aio_write))
-+	if (!file_writable(filp))
- 		ro = 1;
- 
- 	size = i_size_read(inode->i_mapping->host);
-diff --git a/fs/compat.c b/fs/compat.c
-index 015e1e1..7411d66 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1132,7 +1132,7 @@ static size_t compat_readv(struct file *file,
- 		goto out;
- 
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		goto out;
- 
- 	ret = compat_do_readv_writev(READ, file, vec, vlen, pos);
-@@ -1198,7 +1198,7 @@ static size_t compat_writev(struct file *file,
- 		goto out;
- 
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		goto out;
- 
- 	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos);
-diff --git a/fs/read_write.c b/fs/read_write.c
-index d065348..266e172 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -360,7 +360,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
- 
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->read && !file->f_op->aio_read))
-+	if (!file_readable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
- 		return -EFAULT;
-@@ -416,7 +416,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
- 
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
- 		return -EFAULT;
-@@ -749,7 +749,7 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
- {
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		return -EINVAL;
- 
- 	return do_readv_writev(READ, file, vec, vlen, pos);
-@@ -762,7 +762,7 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
- {
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 
- 	return do_readv_writev(WRITE, file, vec, vlen, pos);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3d04570..5871910 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1636,6 +1636,16 @@ struct file_operations {
- 			  loff_t len);
- };
- 
-+static inline int file_readable(struct file *filp)
-+{
-+	return filp && (filp->f_op->read || filp->f_op->aio_read);
-+}
-+
-+static inline int file_writable(struct file *filp)
-+{
-+	return filp && (filp->f_op->write || filp->f_op->aio_write);
-+}
-+
- struct inode_operations {
- 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
- 	void * (*follow_link) (struct dentry *, struct nameidata *);
--- 
-1.8.0
+On Wed, Nov 21, 2012 at 07:21:02PM +0100, Guennadi Liakhovetski wrote:
 
+> +	regmap_read(as3711->regmap, AS3711_ASIC_ID_1, &id1);
+> +	regmap_read(as3711->regmap, AS3711_ASIC_ID_2, &id2);
+> +	dev_info(as3711->dev, "AS3711 detected: %x:%x\n", id1, id2);
+> +	if (id1 != 0x8b)
+> +		return -ENODEV;
+
+This looks odd - you're printing the "AS3711 detected" message prior to
+checking the device ID which will be a bit confusing if there's a
+problem.  Should probably do this after the ID check (and ideally also
+check the return value of regmap_read(), it's especially important
+during device identification where someone might've typoed the address).
+
+Otherwise this looks good.
+
+--7DO5AaGCk89r4vaK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQrX1dAAoJELSic+t+oim9268P/2zkPRJh/OBdom9tIQmYAVTr
+JTnDjK7GDfpJn3cSRGx5mW+uAhvpF/QhVaGnIfygH/67ST94uDfmH+tugTYG7C8q
+q5pS9TQkRrnaRjAa4y4g4EGnMxGTEfyYUDBUZVb7ka0KqZacdqYxuL1NcbqTA5oG
+CbAqsTSwJsGCfpi2o82ExbfsrJlXATdGpOXEgHmiZV3i2bYTfMokTW6HZzbqyHU5
+zzY3OSKZKaNR/JgeoQVQO7hlYs59eTBlJuHcyhSgc9PvlPQiHBRpd4xjaUOvJI7U
+mnKH4aw0NuCZUYcxbyLf3jkmilBg7Vg3HoRDN849E3eV3uFNw9lXZpKDBNdG4m61
+MuItU+Aa/xfaEun/M7ltCu8ri4A5PgmjHyV8taRoFYppmu5C/5TKUvDDJ/yWwd/T
+5kjJcTn7vZBLBJNu7BQBuBOF0HQIkIso/3xHbj79SgVChzCZ0yH/KIaBmBuOvUJr
+DNoy5yEubSroyUkRk55n683WArz1DKgGiQW/u45pNiy9cB5v5LSxnAIGDs1P6RYi
+PG0dwxc7mK0kRNc6kBcnMpBKFPYv1NrNDnKgT3+uR47n+4IGOxeq2miBckg/lBQY
+D4rwgve8+CFb4MYgjeW9Wch/UpiELPx7wy+iSVQ18spe+Av+kHjsuwL2DYTXPcq5
+ZcVzXBXZzOeZQ5HB05uI
+=qs9B
+-----END PGP SIGNATURE-----
+
+--7DO5AaGCk89r4vaK--
