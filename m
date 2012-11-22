@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab2KVWGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:06:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	id S932513Ab2KVWHB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:07:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49632 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754841Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 32/38] reiserfs: Fix lock ordering during remount
-Date: Wed, 21 Nov 2012 16:40:15 -0800
-Message-Id: <20121122003907.856848609@linuxfoundation.org>
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 23/38] netfilter: Validate the sequence number of dataless ACK packets as well
+Date: Wed, 21 Nov 2012 16:40:06 -0800
+Message-Id: <20121122003906.773774229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
 References: <20121122003904.262382971@linuxfoundation.org>
@@ -25,114 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit 3bb3e1fc47aca554e7e2cc4deeddc24750987ac2 upstream.
+commit 4a70bbfaef0361d27272629d1a250a937edcafe4 upstream.
 
-When remounting reiserfs dquot_suspend() or dquot_resume() can be called.
-These functions take dqonoff_mutex which ranks above write lock so we have
-to drop it before calling into quota code.
+We spare nothing by not validating the sequence number of dataless
+ACK packets and enabling it makes harder off-path attacks.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
+http://arxiv.org/abs/1201.2074
+
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/super.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ net/netfilter/nf_conntrack_proto_tcp.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1207,7 +1207,7 @@ static int reiserfs_remount(struct super
- 				kfree(qf_names[i]);
- #endif
- 		err = -EINVAL;
--		goto out_err;
-+		goto out_unlock;
- 	}
- #ifdef CONFIG_QUOTA
- 	handle_quota_files(s, qf_names, &qfmt);
-@@ -1250,7 +1250,7 @@ static int reiserfs_remount(struct super
- 	if (blocks) {
- 		err = reiserfs_resize(s, blocks);
- 		if (err != 0)
--			goto out_err;
-+			goto out_unlock;
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -628,15 +628,9 @@ static bool tcp_in_window(const struct n
+ 		ack = sack = receiver->td_end;
  	}
  
- 	if (*mount_flags & MS_RDONLY) {
-@@ -1260,9 +1260,15 @@ static int reiserfs_remount(struct super
- 			/* it is read-only already */
- 			goto out_ok;
- 
-+		/*
-+		 * Drop write lock. Quota will retake it when needed and lock
-+		 * ordering requires calling dquot_suspend() without it.
-+		 */
-+		reiserfs_write_unlock(s);
- 		err = dquot_suspend(s, -1);
- 		if (err < 0)
- 			goto out_err;
-+		reiserfs_write_lock(s);
- 
- 		/* try to remount file system with read-only permissions */
- 		if (sb_umount_state(rs) == REISERFS_VALID_FS
-@@ -1272,7 +1278,7 @@ static int reiserfs_remount(struct super
- 
- 		err = journal_begin(&th, s, 10);
- 		if (err)
--			goto out_err;
-+			goto out_unlock;
- 
- 		/* Mounting a rw partition read-only. */
- 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
-@@ -1287,7 +1293,7 @@ static int reiserfs_remount(struct super
- 
- 		if (reiserfs_is_journal_aborted(journal)) {
- 			err = journal->j_errno;
--			goto out_err;
-+			goto out_unlock;
- 		}
- 
- 		handle_data_mode(s, mount_options);
-@@ -1296,7 +1302,7 @@ static int reiserfs_remount(struct super
- 		s->s_flags &= ~MS_RDONLY;	/* now it is safe to call journal_begin */
- 		err = journal_begin(&th, s, 10);
- 		if (err)
--			goto out_err;
-+			goto out_unlock;
- 
- 		/* Mount a partition which is read-only, read-write */
- 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
-@@ -1313,11 +1319,17 @@ static int reiserfs_remount(struct super
- 	SB_JOURNAL(s)->j_must_wait = 1;
- 	err = journal_end(&th, s, 10);
- 	if (err)
--		goto out_err;
-+		goto out_unlock;
- 	s->s_dirt = 0;
- 
- 	if (!(*mount_flags & MS_RDONLY)) {
-+		/*
-+		 * Drop write lock. Quota will retake it when needed and lock
-+		 * ordering requires calling dquot_resume() without it.
-+		 */
-+		reiserfs_write_unlock(s);
- 		dquot_resume(s, -1);
-+		reiserfs_write_lock(s);
- 		finish_unfinished(s);
- 		reiserfs_xattr_init(s, *mount_flags);
- 	}
-@@ -1327,9 +1339,10 @@ out_ok:
- 	reiserfs_write_unlock(s);
- 	return 0;
- 
-+out_unlock:
-+	reiserfs_write_unlock(s);
- out_err:
- 	kfree(new_opts);
--	reiserfs_write_unlock(s);
- 	return err;
- }
+-	if (seq == end
+-	    && (!tcph->rst
+-		|| (seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)))
++	if (tcph->rst && seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)
+ 		/*
+-		 * Packets contains no data: we assume it is valid
+-		 * and check the ack value only.
+-		 * However RST segments are always validated by their
+-		 * SEQ number, except when seq == 0 (reset sent answering
+-		 * SYN.
++		 * RST sent answering SYN.
+ 		 */
+ 		seq = end = sender->td_end;
  
 
 
