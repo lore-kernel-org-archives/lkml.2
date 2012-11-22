@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343Ab2KVWTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:19:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49360 "EHLO mail.kernel.org"
+	id S964821Ab2KVWVB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:21:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49356 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab2KVSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:38:30 -0500
+	id S1754539Ab2KVSi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:38:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 42/83] USB: option: add Alcatel X220/X500D USB IDs
-Date: Wed, 21 Nov 2012 16:42:04 -0800
-Message-Id: <20121122004217.287967167@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 060/171] crush: fix memory leak when destroying tree buckets
+Date: Wed, 21 Nov 2012 16:40:06 -0800
+Message-Id: <20121122004039.391768141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Sage Weil <sage@inktank.com>
 
-commit c0bc3098871dd9b964f6b45ec1e4d70d87811744 upstream.
+(cherry picked from commit 6eb43f4b5a2a74599b4ff17a97c03a342327ca65)
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Reflects ceph.git commit 46d63d98434b3bc9dad2fc9ab23cbaedc3bcb0e4.
+
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    2 ++
+ net/ceph/crush/crush.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -287,6 +287,7 @@ static void option_instat_callback(struc
- /* ALCATEL PRODUCTS */
- #define ALCATEL_VENDOR_ID			0x1bbb
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
-+#define ALCATEL_PRODUCT_X220_X500D		0x0017
+--- a/net/ceph/crush/crush.c
++++ b/net/ceph/crush/crush.c
+@@ -85,6 +85,8 @@ void crush_destroy_bucket_list(struct cr
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1164,6 +1165,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ void crush_destroy_bucket_tree(struct crush_bucket_tree *b)
+ {
++	kfree(b->h.perm);
++	kfree(b->h.items);
+ 	kfree(b->node_weights);
+ 	kfree(b);
+ }
 
 
