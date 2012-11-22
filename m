@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab2KVWEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:04:35 -0500
-Received: from mga06.intel.com ([134.134.136.21]:43050 "EHLO
+	id S1758209Ab2KVWEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:04:53 -0500
+Received: from mga06.intel.com ([134.134.136.21]:1831 "EHLO
 	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757568Ab2KVWEb (ORCPT
+	with ESMTP id S1755056Ab2KVWEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:04:31 -0500
+	Thu, 22 Nov 2012 17:04:20 -0500
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 17:04:20 EST
 From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
         linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] ima: policy search speedup
-Date: Thu, 22 Nov 2012 23:54:42 +0200
-Message-Id: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+Subject: [PATCH 1/2] vfs: new super block feature flags attribute
+Date: Thu, 22 Nov 2012 23:54:43 +0200
+Message-Id: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353621075.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch introduces new super block attribute flag s_feature_flags
+and SF_IMA_DISABLED flag. This flag will be used by Integrity Measurement
+Architecture (IMA). Name suggested by Bruce Fields.
 
-Here is two patches for policy search speedup.
+Certain file system types and partitions will never be measured or
+appraised by IMA depending on the policy. For example, pseudo file
+systems are never measured and appraised. In current implementation
+policy will be checked again and again. It happens thousands times
+per second. That is absolute waste of CPU and may be battery resources.
 
-First patch adds additional features flags to superblock.
-Second - implementation for IMA.
+IMA will set the SF_IMA_DISABLED flag when file system will not be measured
+and appraised and test this flag during subsequent calls to skip policy search.
 
-Two months ago I was asking about it on mailing lists.
-Suggestion was not to use s_flags, but e.g. s_feature_flags.
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+---
+ include/linux/fs.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Any objections about such approach?
-
-Thanks,
-Dmitry
-
-Dmitry Kasatkin (2):
-  vfs: new super block feature flags attribute
-  ima: skip policy search for never appraised or measured files
-
- include/linux/fs.h                  |    4 ++++
- security/integrity/ima/ima_api.c    |    8 ++------
- security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
- security/integrity/integrity.h      |    3 +++
- 4 files changed, 26 insertions(+), 9 deletions(-)
-
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b33cfc9..0bef2b2 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1321,6 +1321,8 @@ struct super_block {
+ 
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
++
++	unsigned long s_feature_flags;
+ };
+ 
+ /* superblock cache pruning functions */
+@@ -1746,6 +1748,8 @@ struct super_operations {
+ 
+ #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
+ 
++#define SF_IMA_DISABLED		0x0001
++
+ extern void __mark_inode_dirty(struct inode *, int);
+ static inline void mark_inode_dirty(struct inode *inode)
+ {
 -- 
 1.7.10.4
 
