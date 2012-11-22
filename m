@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab2KVS6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:43 -0500
+	id S932492Ab2KVUsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:48:39 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964860Ab2KVS6k (ORCPT
+	with ESMTP id S964939Ab2KVS6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:40 -0500
-Date: Wed, 21 Nov 2012 18:05:45 -0800
+	Thu, 22 Nov 2012 13:58:43 -0500
+Date: Wed, 21 Nov 2012 17:54:03 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-22c8ca2ac256bb681be791858b35502b5d37e73b@git.kernel.org>
+Message-ID: <tip-74f27655dda84604d8bab47872020dcce5c88731@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-28-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-28-git-send-email-yinghai@kernel.org>
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-17-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-17-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm: Add alloc_low_pages(num)
-Git-Commit-ID: 22c8ca2ac256bb681be791858b35502b5d37e73b
+Subject: [tip:x86/mm2] x86, mm: relocate initrd under all mem for 64bit
+Git-Commit-ID: 74f27655dda84604d8bab47872020dcce5c88731
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,119 +27,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:05:50 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:54:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22c8ca2ac256bb681be791858b35502b5d37e73b
-Gitweb:     http://git.kernel.org/tip/22c8ca2ac256bb681be791858b35502b5d37e73b
+Commit-ID:  74f27655dda84604d8bab47872020dcce5c88731
+Gitweb:     http://git.kernel.org/tip/74f27655dda84604d8bab47872020dcce5c88731
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:39:04 -0800
+AuthorDate: Fri, 16 Nov 2012 19:38:53 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:27 -0800
+CommitDate: Sat, 17 Nov 2012 11:59:15 -0800
 
-x86, mm: Add alloc_low_pages(num)
+x86, mm: relocate initrd under all mem for 64bit
 
-32bit kmap mapping needs pages to be used for low to high.
-At this point those pages are still from pgt_buf_* from BRK, so it is
-ok now.
-But we want to move early_ioremap_page_table_range_init() out of
-init_memory_mapping() and only call it one time later, that will
-make page_table_range_init/page_table_kmap_check/alloc_low_page to
-use memblock to get page.
+instead of under 4g.
 
-memblock allocation for pages are from high to low.
-So will get panic from page_table_kmap_check() that has BUG_ON to do
-ordering checking.
-
-This patch add alloc_low_pages to make it possible to allocate serveral
-pages at first, and hand out pages one by one from low to high.
+For 64bit, we can use any mapped mem instead of low mem.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-28-git-send-email-yinghai@kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-17-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/init.c        | 33 +++++++++++++++++++++------------
- arch/x86/mm/mm_internal.h |  6 +++++-
- 2 files changed, 26 insertions(+), 13 deletions(-)
+ arch/x86/kernel/setup.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 21173fc..02cea14 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 68dffec..94f922a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -324,7 +324,7 @@ static void __init relocate_initrd(void)
+ 	char *p, *q;
  
- static unsigned long min_pfn_mapped;
+ 	/* We need to move the initrd down into directly mapped mem */
+-	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_low_pfn_mapped),
++	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
+ 						 area_size, PAGE_SIZE);
  
--__ref void *alloc_low_page(void)
-+__ref void *alloc_low_pages(unsigned int num)
- {
- 	unsigned long pfn;
--	void *adr;
-+	int i;
+ 	if (!ramdisk_here)
+@@ -392,7 +392,7 @@ static void __init reserve_initrd(void)
  
- #ifdef CONFIG_X86_64
- 	if (after_bootmem) {
--		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-+		unsigned int order;
+ 	initrd_start = 0;
  
--		return adr;
-+		order = get_order((unsigned long)num << PAGE_SHIFT);
-+		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
-+						__GFP_ZERO, order);
- 	}
- #endif
+-	mapped_size = get_mem_size(max_low_pfn_mapped);
++	mapped_size = get_mem_size(max_pfn_mapped);
+ 	if (ramdisk_size >= (mapped_size>>1))
+ 		panic("initrd too large to handle, "
+ 		       "disabling initrd (%lld needed, %lld available)\n",
+@@ -401,8 +401,7 @@ static void __init reserve_initrd(void)
+ 	printk(KERN_INFO "RAMDISK: [mem %#010llx-%#010llx]\n", ramdisk_image,
+ 			ramdisk_end - 1);
  
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-+	if ((pgt_buf_end + num) >= pgt_buf_top) {
- 		unsigned long ret;
- 		if (min_pfn_mapped >= max_pfn_mapped)
- 			panic("alloc_low_page: ran out of memory");
- 		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
- 					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
-+					PAGE_SIZE * num , PAGE_SIZE);
- 		if (!ret)
- 			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
-+		memblock_reserve(ret, PAGE_SIZE * num);
- 		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
-+	} else {
-+		pfn = pgt_buf_end;
-+		pgt_buf_end += num;
-+	}
-+
-+	for (i = 0; i < num; i++) {
-+		void *adr;
-+
-+		adr = __va((pfn + i) << PAGE_SHIFT);
-+		clear_page(adr);
-+	}
- 
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
-+	return __va(pfn << PAGE_SHIFT);
- }
- 
- /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-index b3f993a..7e3b88e 100644
---- a/arch/x86/mm/mm_internal.h
-+++ b/arch/x86/mm/mm_internal.h
-@@ -1,6 +1,10 @@
- #ifndef __X86_MM_INTERNAL_H
- #define __X86_MM_INTERNAL_H
- 
--void *alloc_low_page(void);
-+void *alloc_low_pages(unsigned int num);
-+static inline void *alloc_low_page(void)
-+{
-+	return alloc_low_pages(1);
-+}
- 
- #endif	/* __X86_MM_INTERNAL_H */
+-	if (ramdisk_end <= (max_low_pfn_mapped<<PAGE_SHIFT) &&
+-	    pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
++	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
+ 				PFN_DOWN(ramdisk_end))) {
+ 		/* All are mapped, easy case */
+ 		/*
