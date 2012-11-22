@@ -1,46 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab2KVSuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:50:24 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56357 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab2KVSuO (ORCPT
+	id S932294Ab2KVSuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:50:40 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47166 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166Ab2KVSu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:50:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1211220431150.14614@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1211220431150.14614@skynet.skynet.ie>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 21 Nov 2012 18:50:52 -1000
-X-Google-Sender-Auth: n87865JfpUNPYxwdSKyBcBMvxcM
-Message-ID: <CA+55aFw3yqWRamfe3tn4Lh9G2BsuNd1RsST05=fc4jOoTLWsmw@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-To: Dave Airlie <airlied@linux.ie>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 13:50:28 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH v2 2/3] CLK: uninline clk_prepare_enable() and clk_disable_unprepare()
+Date: Wed, 21 Nov 2012 21:34:41 -0800
+Message-Id: <1353562482-12422-3-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 6:34 PM, Dave Airlie <airlied@linux.ie> wrote:
->
-> its vmware/nouveua/radeon/intel/ttm scattered.
+We'll need to invoke clk_disable_unprepare() via a pointer in our devm_*
+conversion so let's uninline the pair.
 
-Hmm. That's not what I see. I just see nouveau and soem PCI ID addition.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/clk/clk.c   | 23 +++++++++++++++++++++++
+ include/linux/clk.h | 53 +++++++++++++++++++++++++++++++----------------------
+ 2 files changed, 54 insertions(+), 22 deletions(-)
 
->  21 files changed, 108 insertions(+), 31 deletions(-)
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 56e4495e..92bdafd 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -557,6 +557,29 @@ int clk_enable(struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(clk_enable);
+ 
++int clk_prepare_enable(struct clk *clk)
++{
++	int ret;
++
++	ret = clk_prepare(clk);
++	if (ret)
++		return ret;
++
++	ret = clk_enable(clk);
++	if (ret)
++		clk_unprepare(clk);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_prepare_enable);
++
++void clk_disable_unprepare(struct clk *clk)
++{
++	clk_disable(clk);
++	clk_unprepare(clk);
++}
++EXPORT_SYMBOL_GPL(clk_disable_unprepare);
++
+ /**
+  * __clk_round_rate - round the given rate for a clk
+  * @clk: round the rate of this clock
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index f8204c3..8bf149e 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -172,6 +172,26 @@ int clk_enable(struct clk *clk);
+ void clk_disable(struct clk *clk);
+ 
+ /**
++ * clk_prepare_enable - prepare and enable a clock source
++ * @clk: clock source
++ *
++ * This prepares the clock source for use and enables it.
++ *
++ * Must not be called from within atomic context.
++ */
++int clk_prepare_enable(struct clk *clk);
++
++/**
++ * clk_disable_unprepare - disable and undo preparation of a clock source
++ * @clk: clock source
++ *
++ * This disables and undoes a previously prepared clock.
++ *
++ * Must not be called from within atomic context.
++ */
++void clk_disable_unprepare(struct clk *clk);
++
++/**
+  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
+  *		  This is only valid once the clock source has been enabled.
+  * @clk: clock source
+@@ -295,6 +315,17 @@ static inline int clk_enable(struct clk *clk)
+ 
+ static inline void clk_disable(struct clk *clk) {}
+ 
++static inline int clk_prepare_enable(struct clk *clk)
++{
++	might_sleep();
++	return 0;
++}
++
++static inline void clk_disable_unprepare(struct clk *clk)
++{
++	might_sleep();
++}
++
+ static inline unsigned long clk_get_rate(struct clk *clk)
+ {
+ 	return 0;
+@@ -322,28 +353,6 @@ static inline struct clk *clk_get_parent(struct clk *clk)
+ 
+ #endif
+ 
+-/* clk_prepare_enable helps cases using clk_enable in non-atomic context. */
+-static inline int clk_prepare_enable(struct clk *clk)
+-{
+-	int ret;
+-
+-	ret = clk_prepare(clk);
+-	if (ret)
+-		return ret;
+-	ret = clk_enable(clk);
+-	if (ret)
+-		clk_unprepare(clk);
+-
+-	return ret;
+-}
+-
+-/* clk_disable_unprepare helps cases using clk_disable in non-atomic context. */
+-static inline void clk_disable_unprepare(struct clk *clk)
+-{
+-	clk_disable(clk);
+-	clk_unprepare(clk);
+-}
+-
+ /**
+  * clk_add_alias - add a new clock alias
+  * @alias: name for clock alias
+-- 
+1.7.11.7
 
-I get
-
- 14 files changed, 70 insertions(+), 21 deletions(-)
-
-probably due to this.
-
-Forgot to push? The tip of your tree that I see is 452f19201f35d
-("Merge branch 'drm-fixes-3.7' of
-git://people.freedesktop.org/~agd5f/linux into drm-fixes")
-
-Or is it because you already sent me the intel fixes earlier?
-
-                  Linus
