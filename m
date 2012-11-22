@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab2KVVsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:48:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49643 "EHLO mail.kernel.org"
+	id S1758072Ab2KVVsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:48:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab2KVSkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:22 -0500
+	id S1755004Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>,
-        Yehuda Sadeh <yehuda@inktank.com>
-Subject: [ 142/171] libceph: resubmit linger ops when pg mapping changes
-Date: Wed, 21 Nov 2012 16:41:28 -0800
-Message-Id: <20121122004047.601668963@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 079/171] ceph: rename prepare_connect_authorizer()
+Date: Wed, 21 Nov 2012 16:40:25 -0800
+Message-Id: <20121122004041.301741564@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -26,82 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 6194ea895e447fdf4adfd23f67873a32bf4f15ae)
+(cherry picked from commit dac1e716c60161867a47745bca592987ca3a9cb2)
 
-The linger op registration (i.e., watch) modifies the object state.  As
-such, the OSD will reply with success if it has already applied without
-doing the associated side-effects (setting up the watch session state).
-If we lose the ACK and resubmit, we will see success but the watch will not
-be correctly registered and we won't get notifies.
+Change the name of prepare_connect_authorizer().  The next
+patch is going to make this function no longer add anything to the
+connection's out_kvec, so it will no longer fit the pattern of
+the rest of the prepare_connect_*() functions.
 
-To fix this, always resubmit the linger op with a new tid.  We accomplish
-this by re-registering as a linger (i.e., 'registered') if we are not yet
-registered.  Then the second loop will treat this just like a normal
-case of re-registering.
+In addition, pass the address of a variable that will hold the
+authorization protocol to use.  Move the assignment of that to the
+connection's out_connect structure into prepare_write_connect().
 
-This mirrors a similar fix on the userland ceph.git, commit 5dd68b95, and
-ceph bug #2796.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osd_client.c |   26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
+ net/ceph/messenger.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -888,7 +888,9 @@ static void __register_linger_request(st
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -653,11 +653,11 @@ static void prepare_write_keepalive(stru
+  * Connection negotiation.
+  */
+ 
+-static struct ceph_auth_handshake *prepare_connect_authorizer(struct ceph_connection *con)
++static struct ceph_auth_handshake *get_connect_authorizer(struct ceph_connection *con,
++						int *auth_proto)
  {
- 	dout("__register_linger_request %p\n", req);
- 	list_add_tail(&req->r_linger_item, &osdc->req_linger);
--	list_add_tail(&req->r_linger_osd, &req->r_osd->o_linger_requests);
-+	if (req->r_osd)
-+		list_add_tail(&req->r_linger_osd,
-+			      &req->r_osd->o_linger_requests);
- }
+ 	void *auth_buf;
+ 	int auth_len;
+-	int auth_protocol;
+ 	struct ceph_auth_handshake *auth;
  
- static void __unregister_linger_request(struct ceph_osd_client *osdc,
-@@ -1302,8 +1304,9 @@ static void kick_requests(struct ceph_os
+ 	if (!con->ops->get_authorizer) {
+@@ -671,8 +671,7 @@ static struct ceph_auth_handshake *prepa
  
- 	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
- 	mutex_lock(&osdc->request_mutex);
--	for (p = rb_first(&osdc->requests); p; p = rb_next(p)) {
-+	for (p = rb_first(&osdc->requests); p; ) {
- 		req = rb_entry(p, struct ceph_osd_request, r_node);
-+		p = rb_next(p);
- 		err = __map_request(osdc, req, force_resend);
- 		if (err < 0)
- 			continue;  /* error */
-@@ -1311,10 +1314,23 @@ static void kick_requests(struct ceph_os
- 			dout("%p tid %llu maps to no osd\n", req, req->r_tid);
- 			needmap++;  /* request a newer map */
- 		} else if (err > 0) {
--			dout("%p tid %llu requeued on osd%d\n", req, req->r_tid,
--			     req->r_osd ? req->r_osd->o_osd : -1);
--			if (!req->r_linger)
-+			if (!req->r_linger) {
-+				dout("%p tid %llu requeued on osd%d\n", req,
-+				     req->r_tid,
-+				     req->r_osd ? req->r_osd->o_osd : -1);
- 				req->r_flags |= CEPH_OSD_FLAG_RETRY;
-+			}
-+		}
-+		if (req->r_linger && list_empty(&req->r_linger_item)) {
-+			/*
-+			 * register as a linger so that we will
-+			 * re-submit below and get a new tid
-+			 */
-+			dout("%p tid %llu restart on osd%d\n",
-+			     req, req->r_tid,
-+			     req->r_osd ? req->r_osd->o_osd : -1);
-+			__register_linger_request(osdc, req);
-+			__unregister_request(osdc, req);
- 		}
- 	}
+ 	mutex_unlock(&con->mutex);
  
+-	auth_protocol = CEPH_AUTH_UNKNOWN;
+-	auth = con->ops->get_authorizer(con, &auth_protocol, con->auth_retry);
++	auth = con->ops->get_authorizer(con, auth_proto, con->auth_retry);
+ 
+ 	mutex_lock(&con->mutex);
+ 
+@@ -686,7 +685,6 @@ static struct ceph_auth_handshake *prepa
+ 	con->auth_reply_buf = auth->authorizer_reply_buf;
+ 	con->auth_reply_buf_len = auth->authorizer_reply_buf_len;
+ 
+-	con->out_connect.authorizer_protocol = cpu_to_le32(auth_protocol);
+ 	con->out_connect.authorizer_len = cpu_to_le32(auth_len);
+ 
+ 	if (auth_len)
+@@ -712,6 +710,7 @@ static int prepare_write_connect(struct
+ {
+ 	unsigned global_seq = get_global_seq(con->msgr, 0);
+ 	int proto;
++	int auth_proto;
+ 	struct ceph_auth_handshake *auth;
+ 
+ 	switch (con->peer_name.type) {
+@@ -739,9 +738,11 @@ static int prepare_write_connect(struct
+ 	con->out_connect.flags = 0;
+ 
+ 	ceph_con_out_kvec_add(con, sizeof (con->out_connect), &con->out_connect);
+-	auth = prepare_connect_authorizer(con);
++	auth_proto = CEPH_AUTH_UNKNOWN;
++	auth = get_connect_authorizer(con, &auth_proto);
+ 	if (IS_ERR(auth))
+ 		return PTR_ERR(auth);
++	con->out_connect.authorizer_protocol = cpu_to_le32(auth_proto);
+ 
+ 	con->out_more = 0;
+ 	set_bit(WRITE_PENDING, &con->state);
 
 
