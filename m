@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab2KVWiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:38:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49021 "EHLO mail.kernel.org"
+	id S1758597Ab2KVWjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:39:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49016 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753603Ab2KVSdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:46 -0500
+	id S1753559Ab2KVSdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 64/83] r8169: use unlimited DMA burst for TX
-Date: Wed, 21 Nov 2012 16:42:26 -0800
-Message-Id: <20121122004219.611443501@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>
+Subject: [ 41/83] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
+Date: Wed, 21 Nov 2012 16:42:03 -0800
+Message-Id: <20121122004217.187899511@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -27,65 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
+commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
 
-The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
-a box where this prevents the interface from using the gigabit line to its full
-potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
+The Dell 5800 appears to be a simple rebrand of the Novatel E362.
 
-The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
-(XID 0c900880). TSO is enabled.
-
-I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
-on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
-'7'=unlimited). This chart shows the results:
-http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
-
-Interesting points:
- - With the current DMA burst limit (1024):
-   - at the default MTU=1500 I get only 842 Mbit/s.
-   - when going from small MTU, the performance rises monotonically with
-     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
-     a sudden drop to 762 MBit/s from which the throughput rises monotonically
-     again with further MTU increases.
- - With a smaller DMA burst limit (512):
-   - there's a similar peak at MTU=1076 and another one at MTU=564.
- - With unlimited DMA burst:
-   - at the default MTU=1500 I get nice 940 Mbit/s.
-   - the throughput rises monotonically with increasing MTU with no strange
-     peaks.
-
-Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
-limit plus 52. Why 52? Because:
-  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
-
-The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
-except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
-CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
-i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
-the smaller burst limit, or if any other versions have similar requirements.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/realtek/r8169.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -77,7 +77,7 @@
- static const int multicast_filter_limit = 32;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -158,6 +158,7 @@ static void option_instat_callback(struc
+ #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
++#define NOVATELWIRELESS_PRODUCT_E362		0x9010
+ #define NOVATELWIRELESS_PRODUCT_G1		0xA001
+ #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+@@ -193,6 +194,9 @@ static void option_instat_callback(struc
+ #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
+ #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
  
- #define MAX_READ_REQUEST_SHIFT	12
--#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
-+#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
- #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
- #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
++#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
++#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
++
+ #define KYOCERA_VENDOR_ID			0x0c88
+ #define KYOCERA_PRODUCT_KPC650			0x17da
+ #define KYOCERA_PRODUCT_KPC680			0x180a
+@@ -706,6 +710,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
  
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+@@ -728,6 +733,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 
 
