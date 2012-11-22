@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab2KVWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:36:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49012 "EHLO mail.kernel.org"
+	id S1758589Ab2KVWgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:36:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49005 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab2KVSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753613Ab2KVSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        George Spelvin <linux@horizon.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 83/83] ext4: fix metadata checksum calculation for the superblock
-Date: Wed, 21 Nov 2012 16:42:45 -0800
-Message-Id: <20121122004221.501680953@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 124/171] libceph: SOCK_CLOSED is a flag, not a state
+Date: Wed, 21 Nov 2012 16:41:10 -0800
+Message-Id: <20121122004045.794702722@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Alex Elder <elder@inktank.com>
 
-commit 06db49e68ae70cf16819b85a14057acb2820776a upstream.
+(cherry picked from commit a8d00e3cdef4c1c4f194414b72b24cd995439a05)
 
-The function ext4_handle_dirty_super() was calculating the superblock
-on the wrong block data.  As a result, when the superblock is modified
-while it is mounted (most commonly, when inodes are added or removed
-from the orphan list), the superblock checksum would be wrong.  We
-didn't notice because the superblock *was* being correctly calculated
-in ext4_commit_super(), and this would get called when the file system
-was unmounted.  So the problem only became obvious if the system
-crashed while the file system was mounted.
+The following commit changed it so SOCK_CLOSED bit was stored in
+a connection's new "flags" field rather than its "state" field.
 
-Fix this by removing the poorly designed function signature for
-ext4_superblock_csum_set(); if it only took a single argument, the
-pointer to a struct superblock, the ambiguity which caused this
-mistake would have been impossible.
+    libceph: start separating connection flags from state
+    commit 928443cd
 
-Reported-by: George Spelvin <linux@horizon.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Tested-by: George Spelvin <linux@horizon.com>
+That bit is used in con_close_socket() to protect against setting an
+error message more than once in the socket event handler function.
 
+Unfortunately, the field being operated on in that function was not
+updated to be "flags" as it should have been.  This fixes that
+error.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ext4/ext4.h      |    3 +--
- fs/ext4/ext4_jbd2.c |    8 ++------
- fs/ext4/resize.c    |    2 +-
- fs/ext4/super.c     |    7 ++++---
- 4 files changed, 8 insertions(+), 12 deletions(-)
+ net/ceph/messenger.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2046,8 +2046,7 @@ extern int ext4_resize_fs(struct super_b
- extern int ext4_calculate_overhead(struct super_block *sb);
- extern int ext4_superblock_csum_verify(struct super_block *sb,
- 				       struct ext4_super_block *es);
--extern void ext4_superblock_csum_set(struct super_block *sb,
--				     struct ext4_super_block *es);
-+extern void ext4_superblock_csum_set(struct super_block *sb);
- extern void *ext4_kvmalloc(size_t size, gfp_t flags);
- extern void *ext4_kvzalloc(size_t size, gfp_t flags);
- extern void ext4_kvfree(void *ptr);
---- a/fs/ext4/ext4_jbd2.c
-+++ b/fs/ext4/ext4_jbd2.c
-@@ -143,17 +143,13 @@ int __ext4_handle_dirty_super(const char
- 	struct buffer_head *bh = EXT4_SB(sb)->s_sbh;
- 	int err = 0;
- 
-+	ext4_superblock_csum_set(sb);
- 	if (ext4_handle_valid(handle)) {
--		ext4_superblock_csum_set(sb,
--				(struct ext4_super_block *)bh->b_data);
- 		err = jbd2_journal_dirty_metadata(handle, bh);
- 		if (err)
- 			ext4_journal_abort_handle(where, line, __func__,
- 						  bh, handle, err);
--	} else {
--		ext4_superblock_csum_set(sb,
--				(struct ext4_super_block *)bh->b_data);
-+	} else
- 		mark_buffer_dirty(bh);
--	}
- 	return err;
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -397,11 +397,11 @@ static int con_close_socket(struct ceph_
+ 	dout("con_close_socket on %p sock %p\n", con, con->sock);
+ 	if (!con->sock)
+ 		return 0;
+-	set_bit(SOCK_CLOSED, &con->state);
++	set_bit(SOCK_CLOSED, &con->flags);
+ 	rc = con->sock->ops->shutdown(con->sock, SHUT_RDWR);
+ 	sock_release(con->sock);
+ 	con->sock = NULL;
+-	clear_bit(SOCK_CLOSED, &con->state);
++	clear_bit(SOCK_CLOSED, &con->flags);
+ 	con_sock_state_closed(con);
+ 	return rc;
  }
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -979,7 +979,7 @@ static void update_backups(struct super_
- 		goto exit_err;
- 	}
- 
--	ext4_superblock_csum_set(sb, (struct ext4_super_block *)data);
-+	ext4_superblock_csum_set(sb);
- 
- 	while ((group = ext4_list_backups(sb, &three, &five, &seven)) < last) {
- 		struct buffer_head *bh;
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -143,9 +143,10 @@ int ext4_superblock_csum_verify(struct s
- 	return es->s_checksum == ext4_superblock_csum(sb, es);
- }
- 
--void ext4_superblock_csum_set(struct super_block *sb,
--			      struct ext4_super_block *es)
-+void ext4_superblock_csum_set(struct super_block *sb)
- {
-+	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
-+
- 	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
- 		return;
-@@ -4343,7 +4344,7 @@ static int ext4_commit_super(struct supe
- 		cpu_to_le32(percpu_counter_sum_positive(
- 				&EXT4_SB(sb)->s_freeinodes_counter));
- 	BUFFER_TRACE(sbh, "marking dirty");
--	ext4_superblock_csum_set(sb, es);
-+	ext4_superblock_csum_set(sb);
- 	mark_buffer_dirty(sbh);
- 	if (sync) {
- 		error = sync_dirty_buffer(sbh);
 
 
