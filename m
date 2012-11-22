@@ -1,155 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab2KVT6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:58:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030261Ab2KVTvs (ORCPT
+	id S1757420Ab2KVT63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:58:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45283 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab2KVT6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:48 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 37/46] staging: line6: drop variax raw sysfs attrs
-Date: Thu, 22 Nov 2012 20:49:16 +0100
-Message-Id: <1353613765-18690-38-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 14:58:06 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com
+Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
+Subject: [PATCH 10/10] ASoC: wm8995: Convert to use devm_regmap_init_{spi,i2c}()
+Date: Thu, 22 Nov 2012 09:38:42 +0530
+Message-Id: <1353557322-25353-11-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that VARIAX_SYSEX_ACTIVATE was never used so drop it along with the
-other VARIAX_SYSEX_* constants which are now unused.
-
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- drivers/staging/line6/variax.c | 73 ------------------------------------------
- 1 file changed, 73 deletions(-)
+ sound/soc/codecs/wm8995.c |   26 +++-----------------------
+ 1 files changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index 4db21a3..ff55ad37 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -16,9 +16,6 @@
- #include "driver.h"
- #include "variax.h"
+diff --git a/sound/soc/codecs/wm8995.c b/sound/soc/codecs/wm8995.c
+index 2eb68c1..f1a7cf1 100644
+--- a/sound/soc/codecs/wm8995.c
++++ b/sound/soc/codecs/wm8995.c
+@@ -2267,7 +2267,7 @@ static int __devinit wm8995_spi_probe(struct spi_device *spi)
  
--#define VARIAX_SYSEX_CODE 7
--#define VARIAX_SYSEX_PARAM 0x3b
--#define VARIAX_SYSEX_ACTIVATE 0x2a
- #define VARIAX_MODEL_HEADER_LENGTH 7
- #define VARIAX_MODEL_MESSAGE_LENGTH 199
- #define VARIAX_OFFSET_ACTIVATE 7
-@@ -70,7 +67,6 @@ static const char variax_request_model2[] = {
- };
+ 	spi_set_drvdata(spi, wm8995);
  
- /* forward declarations: */
--static int variax_create_files2(struct device *dev);
- static void variax_startup2(unsigned long data);
- static void variax_startup4(unsigned long data);
- static void variax_startup5(unsigned long data);
-@@ -187,7 +183,6 @@ static void variax_startup7(struct work_struct *work)
- 
- 	/* device files: */
- 	line6_variax_create_files(0, 0, line6->ifcdev);
--	variax_create_files2(line6->ifcdev);
+-	wm8995->regmap = regmap_init_spi(spi, &wm8995_regmap);
++	wm8995->regmap = devm_regmap_init_spi(spi, &wm8995_regmap);
+ 	if (IS_ERR(wm8995->regmap)) {
+ 		ret = PTR_ERR(wm8995->regmap);
+ 		dev_err(&spi->dev, "Failed to register regmap: %d\n", ret);
+@@ -2277,22 +2277,12 @@ static int __devinit wm8995_spi_probe(struct spi_device *spi)
+ 	ret = snd_soc_register_codec(&spi->dev,
+ 				     &soc_codec_dev_wm8995, wm8995_dai,
+ 				     ARRAY_SIZE(wm8995_dai));
+-	if (ret < 0)
+-		goto err_regmap;
+-
+-	return ret;
+-
+-err_regmap:
+-	regmap_exit(wm8995->regmap);
+-
+ 	return ret;
  }
  
- /*
-@@ -270,58 +265,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 	}
+ static int __devexit wm8995_spi_remove(struct spi_device *spi)
+ {
+-	struct wm8995_priv *wm8995 = spi_get_drvdata(spi);
+ 	snd_soc_unregister_codec(&spi->dev);
+-	regmap_exit(wm8995->regmap);
+ 	return 0;
  }
  
--#ifdef CONFIG_LINE6_USB_RAW
--
--static char *variax_alloc_sysex_buffer(struct usb_line6_variax *variax,
--				       int code, int size)
--{
--	return line6_alloc_sysex_buffer(&variax->line6, VARIAX_SYSEX_CODE, code,
--					size);
--}
--
--/*
--	"write" request on "raw" special file.
--*/
--static ssize_t variax_set_raw2(struct device *dev,
--			       struct device_attribute *attr,
--			       const char *buf, size_t count)
--{
--	struct usb_line6_variax *variax =
--	    usb_get_intfdata(to_usb_interface(dev));
--	int size;
--	int i;
--	char *sysex;
--
--	count -= count % 3;
--	size = count * 2;
--	sysex = variax_alloc_sysex_buffer(variax, VARIAX_SYSEX_PARAM, size);
--
--	if (!sysex)
--		return 0;
--
--	for (i = 0; i < count; i += 3) {
--		const unsigned char *p1 = buf + i;
--		char *p2 = sysex + SYSEX_DATA_OFS + i * 2;
--		p2[0] = p1[2] & 0x0f;
--		p2[1] = p1[2] >> 4;
--		p2[2] = p1[1] & 0x0f;
--		p2[3] = p1[1] >> 4;
--		p2[4] = p1[0] & 0x0f;
--		p2[5] = p1[0] >> 4;
+@@ -2319,7 +2309,7 @@ static __devinit int wm8995_i2c_probe(struct i2c_client *i2c,
+ 
+ 	i2c_set_clientdata(i2c, wm8995);
+ 
+-	wm8995->regmap = regmap_init_i2c(i2c, &wm8995_regmap);
++	wm8995->regmap = devm_regmap_init_i2c(i2c, &wm8995_regmap);
+ 	if (IS_ERR(wm8995->regmap)) {
+ 		ret = PTR_ERR(wm8995->regmap);
+ 		dev_err(&i2c->dev, "Failed to register regmap: %d\n", ret);
+@@ -2329,25 +2319,15 @@ static __devinit int wm8995_i2c_probe(struct i2c_client *i2c,
+ 	ret = snd_soc_register_codec(&i2c->dev,
+ 				     &soc_codec_dev_wm8995, wm8995_dai,
+ 				     ARRAY_SIZE(wm8995_dai));
+-	if (ret < 0) {
++	if (ret < 0)
+ 		dev_err(&i2c->dev, "Failed to register CODEC: %d\n", ret);
+-		goto err_regmap;
 -	}
 -
--	line6_send_sysex_message(&variax->line6, sysex, size);
--	kfree(sysex);
--	return count;
--}
+-	return ret;
 -
--#endif
--
--#ifdef CONFIG_LINE6_USB_RAW
--static DEVICE_ATTR(raw, S_IWUSR, line6_nop_read, line6_set_raw);
--static DEVICE_ATTR(raw2, S_IWUSR, line6_nop_read, variax_set_raw2);
--#endif
--
- /*
- 	Variax destructor.
- */
-@@ -346,18 +289,6 @@ static void variax_destruct(struct usb_interface *interface)
+-err_regmap:
+-	regmap_exit(wm8995->regmap);
+ 
+ 	return ret;
  }
  
- /*
--	Create sysfs entries.
--*/
--static int variax_create_files2(struct device *dev)
--{
--#ifdef CONFIG_LINE6_USB_RAW
--	CHECK_RETURN(device_create_file(dev, &dev_attr_raw));
--	CHECK_RETURN(device_create_file(dev, &dev_attr_raw2));
--#endif
--	return 0;
--}
+ static __devexit int wm8995_i2c_remove(struct i2c_client *client)
+ {
+-	struct wm8995_priv *wm8995 = i2c_get_clientdata(client);
 -
--/*
- 	 Try to init workbench device.
- */
- static int variax_try_init(struct usb_interface *interface,
-@@ -448,10 +379,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
- 	if (dev != NULL) {
- 		/* remove sysfs entries: */
- 		line6_variax_remove_files(0, 0, dev);
--#ifdef CONFIG_LINE6_USB_RAW
--		device_remove_file(dev, &dev_attr_raw);
--		device_remove_file(dev, &dev_attr_raw2);
--#endif
- 	}
+ 	snd_soc_unregister_codec(&client->dev);
+-	regmap_exit(wm8995->regmap);
+ 	return 0;
+ }
  
- 	variax_destruct(interface);
 -- 
-1.8.0
+1.7.4.1
 
