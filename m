@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab2KVWvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:51:35 -0500
+	id S1758871Ab2KVWvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:51:46 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab2KVWv3 (ORCPT
+	with ESMTP id S1758859Ab2KVWvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:51:29 -0500
+	Thu, 22 Nov 2012 17:51:41 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 22/33] sched: Implement slow start for working set sampling
-Date: Thu, 22 Nov 2012 23:49:43 +0100
-Message-Id: <1353624594-1118-23-git-send-email-mingo@kernel.org>
+Subject: [PATCH 27/33] sched: Track groups of shared tasks
+Date: Thu, 22 Nov 2012 23:49:48 +0100
+Message-Id: <1353624594-1118-28-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
 References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
@@ -28,157 +28,267 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To be able to cluster memory-related tasks more efficiently, introduce
+a new metric that tracks the 'best' buddy task
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
+Track our "memory buddies": the tasks we actively share memory with.
 
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
+Firstly we establish the identity of some other task that we are
+sharing memory with by looking at rq[page::last_cpu].curr - i.e.
+we check the task that is running on that CPU right now.
 
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
+This is not entirely correct as this task might have scheduled or
+migrate ther - but statistically there will be correlation to the
+tasks that we share memory with, and correlation is all we need.
 
-In practice this change fixes an observable kbuild regression:
+We map out the relation itself by filtering out the highest address
+ask that is below our own task address, per working set scan
+iteration.
 
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
+This creates a natural ordering relation between groups of tasks:
 
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
+    t1 < t2 < t3 < t4
 
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
+    t1->memory_buddy == NULL
+    t2->memory_buddy == t1
+    t3->memory_buddy == t2
+    t4->memory_buddy == t3
 
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
+The load-balancer can then use this information to speed up NUMA
+convergence, by moving such tasks together if capacity and load
+constraints allow it.
 
-and it also fixes an observable perf bench (hackbench) regression:
+(This is all statistical so there are no preemption or locking worries.)
 
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/sched_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
-Link: http://lkml.kernel.org/n/tip-vn7p3ynbwqt3qqewhdlvjltc@git.kernel.org
-[ Wrote the changelog, ran measurements, tuned the default. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/core.c   |  2 +-
- kernel/sched/fair.c   | 16 ++++++++++------
- kernel/sysctl.c       |  7 +++++++
- 4 files changed, 19 insertions(+), 7 deletions(-)
+ include/linux/sched.h |   5 ++
+ kernel/sched/core.c   |   5 ++
+ kernel/sched/fair.c   | 144 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 151 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3372aac..8f65323 100644
+index 92b41b4..be73297 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -2045,6 +2045,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+@@ -1513,6 +1513,11 @@ struct task_struct {
+ 	unsigned long *numa_faults;
+ 	unsigned long *numa_faults_curr;
+ 	struct callback_head numa_work;
++
++	struct task_struct *shared_buddy, *shared_buddy_curr;
++	unsigned long shared_buddy_faults, shared_buddy_faults_curr;
++	int ideal_cpu, ideal_cpu_curr;
++
+ #endif /* CONFIG_NUMA_BALANCING */
  
-+extern unsigned int sysctl_sched_numa_scan_delay;
- extern unsigned int sysctl_sched_numa_scan_period_min;
- extern unsigned int sysctl_sched_numa_scan_period_max;
- extern unsigned int sysctl_sched_numa_scan_size;
+ 	struct rcu_head rcu;
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7b58366..af0602f 100644
+index ec3cc74..39cf991 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1556,7 +1556,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = 2;
+@@ -1558,6 +1558,11 @@ static void __sched_fork(struct task_struct *p)
  	p->numa_faults = NULL;
--	p->numa_scan_period = sysctl_sched_numa_scan_period_min;
-+	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+ 	p->numa_scan_period = sysctl_sched_numa_scan_delay;
  	p->numa_work.next = &p->numa_work;
++
++	p->shared_buddy = NULL;
++	p->shared_buddy_faults = 0;
++	p->ideal_cpu = -1;
++	p->ideal_cpu_curr = -1;
  #endif /* CONFIG_NUMA_BALANCING */
  }
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index da28315..8f0e6ba 100644
+index 1ab11be..67f7fd2 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -823,11 +823,12 @@ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+@@ -840,6 +840,43 @@ static void task_numa_migrate(struct task_struct *p, int next_cpu)
+ 	p->numa_migrate_seq = 0;
+ }
+ 
++/*
++ * Called for every full scan - here we consider switching to a new
++ * shared buddy, if the one we found during this scan is good enough:
++ */
++static void shared_fault_full_scan_done(struct task_struct *p)
++{
++	/*
++	 * If we have a new maximum rate buddy task then pick it
++	 * as our new best friend:
++	 */
++	if (p->shared_buddy_faults_curr > p->shared_buddy_faults) {
++		WARN_ON_ONCE(!p->shared_buddy_curr);
++		p->shared_buddy			= p->shared_buddy_curr;
++		p->shared_buddy_faults		= p->shared_buddy_faults_curr;
++		p->ideal_cpu			= p->ideal_cpu_curr;
++
++		goto clear_buddy;
++	}
++	/*
++	 * If the new buddy is lower rate than the previous average
++	 * fault rate then don't switch buddies yet but lower the average by
++	 * averaging in the new rate, with a 1/3 weight.
++	 *
++	 * Eventually, if the current buddy is not a buddy anymore
++	 * then we'll switch away from it: a higher rate buddy will
++	 * replace it.
++	 */
++	p->shared_buddy_faults *= 3;
++	p->shared_buddy_faults += p->shared_buddy_faults_curr;
++	p->shared_buddy_faults /= 4;
++
++clear_buddy:
++	p->shared_buddy_curr		= NULL;
++	p->shared_buddy_faults_curr	= 0;
++	p->ideal_cpu_curr		= -1;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+@@ -852,6 +889,8 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	p->numa_scan_seq = seq;
+ 
++	shared_fault_full_scan_done(p);
++
+ 	/*
+ 	 * Update the fault average with the result of the latest
+ 	 * scan:
+@@ -906,23 +945,122 @@ out_backoff:
  }
  
  /*
-- * numa task sample period in ms: 5s
-+ * Scan @scan_size MB every @scan_period after an initial @scan_delay.
++ * Track our "memory buddies" the tasks we actively share memory with.
++ *
++ * Firstly we establish the identity of some other task that we are
++ * sharing memory with by looking at rq[page::last_cpu].curr - i.e.
++ * we check the task that is running on that CPU right now.
++ *
++ * This is not entirely correct as this task might have scheduled or
++ * migrate ther - but statistically there will be correlation to the
++ * tasks that we share memory with, and correlation is all we need.
++ *
++ * We map out the relation itself by filtering out the highest address
++ * ask that is below our own task address, per working set scan
++ * iteration.
++ *
++ * This creates a natural ordering relation between groups of tasks:
++ *
++ *     t1 < t2 < t3 < t4
++ *
++ *     t1->memory_buddy == NULL
++ *     t2->memory_buddy == t1
++ *     t3->memory_buddy == t2
++ *     t4->memory_buddy == t3
++ *
++ * The load-balancer can then use this information to speed up NUMA
++ * convergence, by moving such tasks together if capacity and load
++ * constraints allow it.
++ *
++ * (This is all statistical so there are no preemption or locking worries.)
++ */
++static void shared_fault_tick(struct task_struct *this_task, int node, int last_cpu, int pages)
++{
++	struct task_struct *last_task;
++	struct rq *last_rq;
++	int last_node;
++	int this_node;
++	int this_cpu;
++
++	last_node = cpu_to_node(last_cpu);
++	this_cpu  = raw_smp_processor_id();
++	this_node = cpu_to_node(this_cpu);
++
++	/* Ignore private memory access faults: */
++	if (last_cpu == this_cpu)
++		return;
++
++	/*
++	 * Ignore accesses from foreign nodes to our memory.
++	 *
++	 * Yet still recognize tasks accessing a third node - i.e. one that is
++	 * remote to both of them.
++	 */
++	if (node != this_node)
++		return;
++
++	/* We are in a shared fault - see which task we relate to: */
++	last_rq = cpu_rq(last_cpu);
++	last_task = last_rq->curr;
++
++	/* Task might be gone from that runqueue already: */
++	if (!last_task || last_task == last_rq->idle)
++		return;
++
++	if (last_task == this_task->shared_buddy_curr)
++		goto out_hit;
++
++	/* Order our memory buddies by address: */
++	if (last_task >= this_task)
++		return;
++
++	if (this_task->shared_buddy_curr > last_task)
++		return;
++
++	/* New shared buddy! */
++	this_task->shared_buddy_curr = last_task;
++	this_task->shared_buddy_faults_curr = 0;
++	this_task->ideal_cpu_curr = last_rq->cpu;
++
++out_hit:
++	/*
++	 * Give threads that we share a process with an advantage,
++	 * but don't stop the discovery of process level sharing
++	 * either:
++	 */
++	if (this_task->mm == last_task->mm)
++		pages *= 2;
++
++	this_task->shared_buddy_faults_curr += pages;
++}
++
++/*
+  * Got a PROT_NONE fault for a page on @node.
   */
--unsigned int sysctl_sched_numa_scan_period_min = 100;
--unsigned int sysctl_sched_numa_scan_period_max = 100*16;
--unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
-+unsigned int sysctl_sched_numa_scan_delay = 1000;	/* ms */
-+unsigned int sysctl_sched_numa_scan_period_min = 100;	/* ms */
-+unsigned int sysctl_sched_numa_scan_period_max = 100*16;/* ms */
-+unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
+ void task_numa_fault(int node, int last_cpu, int pages)
+ {
+ 	struct task_struct *p = current;
+ 	int priv = (task_cpu(p) == last_cpu);
++	int idx = 2*node + priv;
+ 
+ 	if (unlikely(!p->numa_faults)) {
+-		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
++		int entries = 2*nr_node_ids;
++		int size = sizeof(*p->numa_faults) * entries;
+ 
+-		p->numa_faults = kzalloc(size, GFP_KERNEL);
++		p->numa_faults = kzalloc(2*size, GFP_KERNEL);
+ 		if (!p->numa_faults)
+ 			return;
++		/*
++		 * For efficiency reasons we allocate ->numa_faults[]
++		 * and ->numa_faults_curr[] at once and split the
++		 * buffer we get. They are separate otherwise.
++		 */
++		p->numa_faults_curr = p->numa_faults + entries;
+ 	}
+ 
++	p->numa_faults_curr[idx] += pages;
++	shared_fault_tick(p, node, last_cpu, pages);
+ 	task_numa_placement(p);
+-	p->numa_faults[2*node + priv] += pages;
+ }
  
  /*
-  * Wait for the 2-sample stuff to settle before migrating again
-@@ -938,10 +939,12 @@ void task_numa_work(struct callback_head *work)
- 	if (time_before(now, migrate))
- 		return;
- 
--	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
-+	next_scan = now + msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
-+	current->numa_scan_period += jiffies_to_msecs(2);
-+
- 	start = mm->numa_scan_offset;
- 	pages = sysctl_sched_numa_scan_size;
- 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
-@@ -998,7 +1001,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
- 
- 	if (now - curr->node_stamp > period) {
--		curr->node_stamp = now;
-+		curr->node_stamp += period;
-+		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
- 
- 		/*
- 		 * We are comparing runtime to wall clock time here, which
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index a14b8a4..6d2fe5b 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_NUMA_BALANCING
- 	{
-+		.procname	= "sched_numa_scan_delay_ms",
-+		.data		= &sysctl_sched_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_numa_scan_period_min_ms",
- 		.data		= &sysctl_sched_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
 -- 
 1.7.11.7
 
