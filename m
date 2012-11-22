@@ -1,129 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab2KVWZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:25:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37444 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab2KVSfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:35:55 -0500
-Date: Thu, 22 Nov 2012 10:12:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>, axboe@kernel.dk,
-        lucho@ionkov.net, ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring
- stable page writes
-Message-ID: <20121122091240.GA11154@quack.suse.cz>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
- <20121122014755.GH8740@blackbox.djwong.org>
+	id S1754013Ab2KVSfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:35:54 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41236 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2KVSfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:35:34 -0500
+Message-ID: <50AE397A.8080000@gmail.com>
+Date: Thu, 22 Nov 2012 22:40:58 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122014755.GH8740@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: kswapd endless loop for compaction
+References: <20121120190440.GA24381@cmpxchg.org>
+In-Reply-To: <20121120190440.GA24381@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-11-12 17:47:55, Darrick J. Wong wrote:
-> On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
-> > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
-> > 
-> > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
-> > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > > > > > tries to mount in write mode.
-> > > > > > 
-> > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > > > > ---
-> > > > > >  fs/ext3/super.c |    8 ++++++++
-> > > > > >  1 file changed, 8 insertions(+)
-> > > > > > 
-> > > > > > 
-> > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > > > > > index 5366393..5b3725d 100644
-> > > > > > --- a/fs/ext3/super.c
-> > > > > > +++ b/fs/ext3/super.c
-> > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> > > > > >  			"forcing read-only mode");
-> > > > > >  		res = MS_RDONLY;
-> > > > > >  	}
-> > > > > > +	if (!read_only &&
-> > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > > > > > +		ext3_msg(sb, KERN_ERR,
-> > > > > > +			"error: ext3 cannot safely write data to a disk "
-> > > > > > +			"requiring stable pages writes; forcing read-only "
-> > > > > > +			"mode.  Upgrading to ext4 is recommended.");
-> > > > > > +		res = MS_RDONLY;
-> > > > > > +	}
-> > > > > >  	if (read_only)
-> > > > > >  		return res;
-> > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
-> > > > >   Why this? ext3 should be fixed by your change to
-> > > > > filemap_page_mkwrite()... Or does testing show otherwise?
-> > > > 
-> > > > Yes, it's still broken even with this new set of changes.  Now that I think
-> > > > about it a little more, I recall that writeback mode was actually fine, so this
-> > > > is a little harsh.
-> > > > 
-> > > > Hm... looking at the ordered code a little more, it looks like
-> > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-> > > > to write mapped buffers back through the journal?  Taking it out seems to fix
-> > > > ordered mode, though I have a suspicion that it might very well break ordered
-> > > > mode too.
-> > >   Oh, right. kjournald writing buffers directly (without setting
-> > > PageWriteback) will break things. So please, change warning to:
-> 
-> Maybe we should just fix this anyway?
-> 
-> I still have the patch that adds PG_stable (and changes the
-> wait_for_page_stable() test to use this flag instead of PG_writeback) kicking
-> around in my tree.  I wrote a patch to jbd that changes journal_do_submit_data
-> to set PG_stable, call clear_page_dirty_for_io(), and unsets the stable bit in
-> the end_io processing.
-> 
-> It seems to get rid of the checksum-after-write errors, though I'm not
-> convinced it's correct.  But, I'll send both patches along.
-  I'll check the patches. Fixing PageWriteback logic for ext3 is not easily
-doable due to lock ranking constraints - PageWriteback has to be set under
-PageLocked but that ranks above transaction start so kjournald cannot grab
-page locks so it cannot set PageWriteback... And changing the lock ordering
-is a major surgery.
+On 11/21/2012 03:04 AM, Johannes Weiner wrote:
+> Hi guys,
+>
+> while testing a 3.7-rc5ish kernel, I noticed that kswapd can drop into
+> a busy spin state without doing reclaim.  printk-style debugging told
+> me that this happens when the distance between a zone's high watermark
+> and its low watermark is less than two huge pages (DMA zone).
+>
+> 1. The first loop in balance_pgdat() over the zones finds all zones to
+> be above their high watermark and only does goto out (all_zones_ok).
+>
+> 2. pgdat_balanced() at the out: label also just checks the high
+> watermark, so the node is considered balanced and the order is not
+> reduced.
+>
+> 3. In the `if (order)' block after it, compaction_suitable() checks if
+> the zone's low watermark + twice the huge page size is okay, which
+> it's not necessarily in a small zone, and so COMPACT_SKIPPED makes it
+> it go back to loop_again:.
+>
+> This will go on until somebody else allocates and breaches the high
+> watermark and then hopefully goes on to reclaim the zone above low
+> watermark + 2 * THP.
+>
+> I'm not really sure what the correct solution is.  Should we modify
+> the zone_watermark_ok() checks in balance_pgdat() to take into account
+> the higher watermark requirements for reclaim on behalf of compaction?
+> Change the check in compaction_suitable() / not use it directly?
+>
 
-What could be doable is waiting for buffer locks from ext3's ->write_begin
-and ->page_mkwrite implementations in case stable writes are required. If
-your approach with a separate page bit doesn't work out (and I have some
-doubts about that as mm people are *really* thrifty with page bits).
+Hi Johannes,
 
-> > > 	/*
-> > > 	 * In data=ordered mode, kjournald writes buffers without setting
-> > > 	 * PageWriteback bit thus generic code does not properly wait for
-> > > 	 * writeback of those buffers to finish.
-> > > 	 */
-> > > 	if (!read_only &&
-> > > 	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
-> 
-> test_opt(sb, DATA_FLAGS) != EXT3_MOUNT_WRITEBACK_DATA
-> 
-> since I bet data=journal mode is also borken wrt PageWriteback.
-  It is broken wrt PageWriteback but it actually waits for buffer locks in
-->write_begin() so at least write path should be properly protected. But
-mmap is not handled properly there (although that wouldn't be that hard to
-fix). So I agree the condition should rather be what you suggest.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+- If all zones meet high watermark, goto out, then why go to `if 
+(order)' block?
+
+- If depend on compaction get enough contigous pages, why
+
+
+if (CONPACT_BUILD && order &&
+
+     compaction_suitable(zone, order) !=
+
+         COMPACTION_SKIPPED)
+
+     testorder = 0;
+
+
+can't guarantee low watermark + twice the huge page size is okay?
+
+
+Regards,
+
+Jaegeuk
+
+>
+> Thanks,
+> Johannes
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
