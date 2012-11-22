@@ -1,293 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2KVS3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:29:22 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37528 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab2KVS3M (ORCPT
+	id S1752556Ab2KVS3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:29:34 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:30530 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab2KVS3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:29:12 -0500
-Date: Thu, 22 Nov 2012 15:46:12 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
-Message-ID: <20121122154612.GC10986@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
- <b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
- <20121122112451.GE4328@gmail.com>
- <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Nov 2012 13:29:21 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61a-b7fa66d0000004cf-bf-50ad8b92c0f9
+Message-id: <50AD8B91.8030104@samsung.com>
+Date: Thu, 22 Nov 2012 11:18:57 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>,
+        "'Amit Daniel Kachhap'" <amit.kachhap@linaro.org>,
+        "'Zhang Rui'" <rui.zhang@intel.com>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+References: <007401cdc6ba$0742d6d0$15c88470$%choi@samsung.com>
+ <CAH9JG2VKYSAQ=Og4-fgToV_aNwEV_aH-=UQZDbAOnA-ShfKdYw@mail.gmail.com>
+ <50AC5250.3070203@samsung.com>
+ <000701cdc84a$5602eda0$0208c8e0$%choi@samsung.com>
+In-reply-to: <000701cdc84a$5602eda0$0208c8e0$%choi@samsung.com>
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t8zbd3J3WsDDFadZbS4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZvy68YCxYblGx/cBvlgbGh1pdjJwcEgImEste3WSHsMUkLtxb
+	z9bFyMUhJLCMUWLd9ntACQ6Iosu1EPFFjBLdd9uYQRp4BQQlfky+xwJSwywgL3HkUjZImFlA
+	XWLSvEVgJUICXUwSR1daQJRrSVz9NxEsziKgKtF8v4sJxGYTkJN42/SNEWSMqECExK9+DpCw
+	iIC2RN/TWawQI28xShx9lQViCwu4Suye+pEF4pzbjBILFz8BK+IUsJe4/hDiFxYBAYlvkw+x
+	QJwvK7HpADNIvYRAO7vE7OanTBD/SkocXHGDZQKj2Cwk38xC+GYWkm8WMDKvYhRNLUguKE5K
+	zzXUK07MLS7NS9dLzs/dxAiJBqkdjCsbLA4xCnAwKvHwajqvDRBiTSwrrsw9xCjBwawkwruo
+	ACjEm5JYWZValB9fVJqTWnyI0Qfo2InMUqLJ+cBIzSuJNzQ2MDY0tDQ0M7U0NcAhrCTO2+yR
+	EiAkkJ5YkpqdmlqQWgQzjomDU6qBUV2Et1iP7+t8wdld90P63hz48cmz+e8nc9ETDQ+Pzk99
+	ODegz2++/r0VN4ulPt7SX/VltYgb40nzFJe9hZ/ynDbbGtlN84hYUhxm0LRN8Ht2iYj3px03
+	lskaNtZu//bnmIL8mYsd1i935Pz+LPj2jk2AEU/X5Yy3enbnD7uuiL984Zk/V6yijhJLcUai
+	oRZzUXEiABxeIyyzAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t9jAd1J3WsDDG5dsLC4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGb8uvGAsWG5Rsf3Ab5YG
+	xodaXYwcHBICJhLLLtd2MXICmWISF+6tZ+ti5OIQEljEKNF9t40ZJMErICjxY/I9FpB6ZgF5
+	iSOXskHCzALqEpPmLQIrERLoYpI4utIColxL4uq/iWBxFgFVieb7XUwgNpuAnMTbpm+MIGNE
+	BSIkfvVzgIRFBLQl+p7OYoUYeYtR4uirLBBbWMBVYvfUjywQ59xmlFi4+AlYEaeAvcT1hzfZ
+	JzAKzEJy3SyE62YhuW4BI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBYeya1g3Flg8Uh
+	RgEORiUeXk3ntQFCrIllxZW5hxglOJiVRHgXFQCFeFMSK6tSi/Lji0pzUosPMfoAPTeRWUo0
+	OR+YBvJK4g2NTcyMLI3MjE3MjY1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYJzqmfp1
+	3rOdOfWxWvxluewdnx6Yn5630C37+FTd40fevOr/wf0jxMFaVW1mDJPGXK2dD/3LIy7ePyru
+	FrPX3Ge2xGKTZQ/k3gjFKPioreMydn0/7yCLl2uYm7G+8/IJCkU39avPbzrtrh8Resn4sfit
+	vp8Wxrtaf17MmiXe1Lk+4V351Acd7UosxRmJhlrMRcWJAIf+woriAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Big fat NACK.
-> >
-> > You've just overwritten the current implementation with your own.
-> > Please take time to understand the mechanisms in place before
-> > you submit any changes or additions to it.
+Hi,
+On 2012년 11월 22일 09:43, Jonghwan Choi wrote:
+> Hi~
 > 
-> :)
 > 
-> My fault. Comments on all overwritten stuff accepted
-
-Okay, great.
-
-> >> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-> >> +- irq-over-gpio: bool, true if gpio is used to get irq
-> >> +- irq-gpios: gpio number over which irq will be requested (significant only if
-> >> +  irq-over-gpio is true)
-> >
-> > You don't need these. Use gpio_to_irq() instead.
+>>>>                                 data->base + EXYNOS_THD_TEMP_RISE);
+>>>> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct
+>> platform_device
+>>>> *pdev, bool on)
+>>>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>>>                 con |= pdata->noise_cancel_mode <<
+>>>> EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>>> +               if (pdata->trigger_levels[3])
+>>>> +                       con |= EXYNOS_TMU_TRIP_EN;
+>>>>         }
+>> Why don't you support trigger_level[3] in exynos4210 either? Even though
+>> 4210 doesn't support
+>> hardware tripping,
+>> I think it can be set in same way. I've done it in my local git with
+>> following codes.
+>>
 > 
-> I am passing gpio numbers here and am doing gpio_to_irq() in driver.
-> Didn't get this one :(
-
-For a start you have 'irq-over-gpio' in the binding document and Device Tree
-and 'irq_over_gpio' in the code. Has it even been tested?
-
-GPIOs are used as IRQ lines in many other previously DT:ed drivers. Take a
-look to see how they are handled without adding unnecessary DT bindings. 
-
-> >>  Optional properties:
-> >> - - interrupts                   : The interrupt outputs from the controller
-> >> - - interrupt-controller         : Marks the device node as an interrupt controller
-> >> - - interrupt-parent             : Specifies which IRQ controller we're connected to
-> >> - - i2c-client-wake              : Marks the input device as wakable
-> >> - - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
-> >
-> > And you've removed these why?
+> As follows, TRIP_EN is applied SOC_ARCH_EXYNOS(for exynos4412 & exynos5250).  (SOC_ARCH_EXYNOS4210 for exynos4210)
 > 
-> No. They are readjusted...
-
-Please don't readjust them.
-
-They are clear and easily readable in their current state. In the new
-implementation they are messy and hard to decipher.
-
-> One thing removed is interrupt-controller. I had a doubt on this.
-> stmpe, by itself doesn't give any interrupt lines to SoC to freely use
-> them. Instead
-> gpio controller driver part of it does. And so adding
-> interrupt-controller for that is
-> the right option.
-
-That's fine, I don't have an issue with that.
-
-> stmpe is an interrupt controller for the IP's which are present inside
-> it: gpio, adc.
-> But interrupt lines for them are managed by stmpe driver internally. So should
-> we really add interrupt-controller for it?
-
-You can't manage IRQ lines internally, you have to go through
-the IRQ subsystem. When you request an IRQ via device tree you
-will do so like this:
-
- interrupts = <25 0x1>;
- interrupt-parent = <&stmpe-gpio>;
-
-In this example the stmpe-gpio node must advertise itself using
-the interrupt-controller property.
-
-The STMPE GPIO controller can't be used by Device Tree yet in any case,
-because it doesn't have an IRQ domain. This is compulsory, or it won't
-work. Have you tried to test this functionality yet?
-
-> >> +- keypad,scan-count: number of key scanning cycles to confirm key data. Maximum
-> >> +  is STMPE_KEYPAD_MAX_SCAN_COUNT.
-> >> +- keypad,debounce-ms: debounce interval, in ms. Maximum is
-> >> +  STMPE_KEYPAD_MAX_DEBOUNCE.
-> >> +- keypad,no-autorepeat: bool, disable key autorepeat
-> >
-> > See "When adding new bindings, ask yourself" above.
+>         if (data->soc == SOC_ARCH_EXYNOS) {
+>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>                 con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
+>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>                 if (pdata->trigger_levels[3])
+>                         con |= EXYNOS_TMU_TRIP_EN;
+>         }
+> And. Trigger_level3_en is not stored in INTEN(only level0~level2en)
 > 
-> Yes, these are required. This is part of platform data it expects.
-
-Okay, I've just had a look at my tested bindings.
-
-We already have these:
-
-  debounce-interval   /* This is a generic binding */
-  st,scan-count       /* These are vendor specific */
-  st,no-autorepeat    /*            "              */
-
-Vendor specific bindings should be "<vendor>,<binding>", rather than
-"<type_of_driver>,<binding>"
-
-> >> +             reg = <0>;
-> >
-> > You have reg twice here. Also reg should never be '0'.
+> Especially when temperature exceeds a extremely high threshold temperature
+> denoted as THRES_LEVEL_RISE3 field of THRESHOLD_TEMP_RISE register, then
+> Exynos5250 should not be damaged by the hot temperature. In this case, TMU
+> urgently sends active-high signal (THERM_TRIP) to PMU, and thermal tripping
+> by hardware logic i.e PMU (Power Management Unit) is performed. (From TMU document.) 
 > 
-> For SPI, there are chip selects and there is no reg offset.
-
-I understand the addressing issues, but you have 'reg' twice.
-
-Which one should be used?
-
-> >> +             stmpe610-ts {
-> >> +                     compatible = "stmpe,ts";
-> >> +                     ts,sample-time = <4>;
-> >> +                     ts,mod-12b = <1>;
-> >> +                     ts,ref-sel = <0>;
-> >> +                     ts,adc-freq = <1>;
-> >> +                     ts,ave-ctrl = <1>;
-> >> +                     ts,touch-det-delay = <2>;
-> >> +                     ts,settling = <2>;
-> >> +                     ts,fraction-z = <7>;
-> >> +                     ts,i-drive = <1>;
-> >
-> > Wow! See "When adding new bindings, ask yourself" above.
+> Trigger_leves[3] is only used for THERM_TRIP. Trigger_levels3_en doesn't  effect h/w tripping mode.
+> So i think trigger_levels[3] is better than trigger_level3_en.
 > 
-> :)
-> They are required. I didn't get your point, sorry.
-
-I didn't go through them, but are you sure that:
-
-1. Can I do without them?
-   1.1 Can I derive the configuration from other things?
-   2.2 Are they _really_ required, or am I just blindly copying platform data?
-2. Does a similar binding already exist?
-3. Can other drivers make use of them?
-   3.1 If so, create a generic binding
-   3.2 If not, prepend the binding with "<vendor>,"
-
-There looks like a lot there. So each of those values vary, or can
-any of them be hard-coded? Just because they're in platform code,
-it doesn't mean they should be in the DT binding. A lot of platform
-code is actually crap.
-
-> >> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> >> +static struct stmpe_keypad_platform_data *
-> >> +get_keyboard_pdata_dt(struct device *dev, struct device_node *np)
-> >> +{
-> >> +     struct stmpe_keypad_platform_data *pdata;
-> >> +     u32 val;
-> >> +
-> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> >> +     if (!pdata) {
-> >> +             dev_warn(dev, "stmpe keypad kzalloc fail\n");
-> >> +             return NULL;
-> >> +     }
-> >> +
-> >> +     if (!of_property_read_u32(np, "keypad,scan-count", &val))
-> >> +             pdata->scan_count = val;
-> >> +     if (!of_property_read_u32(np, "keypad,debounce-ms", &val))
-> >> +             pdata->debounce_ms = val;
-> >> +     if (of_property_read_bool(np, "keypad,no-autorepeat"))
-> >> +             pdata->no_autorepeat = true;
-> >
-> > Why are you (re)adding these here? Have you even looked in the driver?
+> Thanks~~^^
 > 
-> Because i wanted to keep all DT stuff together. Obviously i have seen keypad
-> driver earlier :)
 
-If you had, you'd realise that these bindings already exist. ;)
+I think you misunderstood what I purposed to. I meant that it's better to support 3rd trigger level
+in exynos4210 either in this modification. As you can see, there isn't supporting of 3rd trigger
+level for all SOCs until this moment, and now your code will do this but only for 4x12 and 5250.
+I know that differences between thermal trip and lower trigger level interrupts. However,
+To satisfy the compatibility, we have to offer same interface regardless of SOC's type.
+Maybe 'interface' is not proper word for this situation, anyway what I want to tell you is that it
+is proper way to use platform data in same way whatever SOC's type is. So, with my former suggestion,
+it can use 3rd thermal trigger level in both SOC group. And it will activate as THERMAL TRIP in
+exynos4x12,5250 and as just 3rd Trigger levels in exynos4210. I do not just emphasize the use of
+Trigger_level3_en, but I recommend you to support 3rd trigger level in exynos4210 either.
 
-I appreciate that the patches haven't landed yet, but they've been
-on the MLs for some time now, and already have some important Acks.
+Thanks,
+Jonghwa.
 
-> I am not setting pdata of stmpe here, but pdata of keypad.
-
-Exactly, so why are you doing it in the STMPE driver?
-
-It's keypad data, set it up in the keypad driver.
-
-> >> +static struct stmpe_gpio_platform_data *get_gpio_pdata_dt(struct device *dev,
-> >> +             struct device_node *np)
-> >> +{
-> >> +     struct stmpe_gpio_platform_data *pdata;
-> >> +     u32 val;
-> >> +
-> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> >> +     if (!pdata) {
-> >> +             dev_warn(dev, "stmpe gpio kzalloc fail\n");
-> >> +             return NULL;
-> >> +     }
-> >> +
-> >> +     if (!of_property_read_u32(np, "gpio,norequest-mask", &val))
-> >> +             pdata->norequest_mask = val;
-> >> +
-> >> +     /* assign gpio numbers dynamically */
-> >> +     pdata->gpio_base = -1;
-> >> +
-> >> +     return pdata;
-> >> +}
-> >
-> > Is this function really required? Even if is is, should it live here
-> > or in the STMPE driver?
 > 
-> As said earlier, either i can do DT parsing of sub-modules of stmpe in
-> their specific files or in stmpe driver itself. Because currently platform
-> data of those sub-modules is passed from stmpe, i kept them here only.
-> stmpe sub modules can't live without stmpe driver and so keeping all
-> binding stuff here isn't that bad of an idea.
-
-Yes, don't do that.
-
-Do DT parsing in the driver it references, not in the most common denominator.
-
-> >> +static struct stmpe_ts_platform_data *get_ts_pdata_dt(struct device *dev,
-> >> +             struct device_node *np)
-> >> +{
-> >> +     struct stmpe_ts_platform_data *pdata;
-> >> +     u32 val;
-> >> +
-> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> >> +     if (!pdata) {
-> >> +             dev_warn(dev, "stmpe ts kzalloc fail\n");
-> >> +             return NULL;
-> >> +     }
-> >> +
-> >> +     if (!of_property_read_u32(np, "ts,sample-time", &val))
-> >> +             pdata->sample_time = val;
-> >> +     if (!of_property_read_u32(np, "ts,mod-12b", &val))
-> >> +             pdata->mod_12b = val;
-> >> +     if (!of_property_read_u32(np, "ts,ref-sel", &val))
-> >> +             pdata->ref_sel = val;
-> >> +     if (!of_property_read_u32(np, "ts,adc-freq", &val))
-> >> +             pdata->adc_freq = val;
-> >> +     if (!of_property_read_u32(np, "ts,ave-ctrl", &val))
-> >> +             pdata->ave_ctrl = val;
-> >> +     if (!of_property_read_u32(np, "ts,touch-det-delay", &val))
-> >> +             pdata->touch_det_delay = val;
-> >> +     if (!of_property_read_u32(np, "ts,settling", &val))
-> >> +             pdata->settling = val;
-> >> +     if (!of_property_read_u32(np, "ts,fraction-z", &val))
-> >> +             pdata->fraction_z = val;
-> >> +     if (!of_property_read_u32(np, "ts,i-drive", &val))
-> >> +             pdata->i_drive = val;
-> >> +
-> >> +     return pdata;
-> >> +}
-> >
-> > As above.
-> >
-> > I'm going to stop my review here. I think you get the idea.
 > 
-> I got most of your worries, but couldn't understand the issue of passing
-> all pdata fields as DT bindings.
-
-It's a really big issue with DT enablement. Platform data has been filled
-with lots of junk over the years, to blindly move it all over to DT would
-be foolish. Now is the time to go through each of them and pull out the
-ones that we can do without, can be hard-coded or derived in the driver.
-I'm more than sure that at least some of the above can be removed with
-some thoughtful coding.
-
-> Thanks for your review though. :)
-
-No problem.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> -----Original Message-----
+>> From: jonghwa3.lee@samsung.com [mailto:jonghwa3.lee@samsung.com]
+>> Sent: Wednesday, November 21, 2012 1:02 PM
+>> To: Kyungmin Park
+>> Cc: Jonghwan Choi; jonghwa3.lee; open list; Amit Daniel Kachhap; Zhang Rui;
+>> Sachin Kamat
+>> Subject: Re: [PATCH v3 2/2] therma: exynos: Supports thermal tripping
+>>
+>> Hi,
+>> On 2012년 11월 20일 10:40, Kyungmin Park wrote:
+>>> On 11/20/12, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+>>>> TMU urgently sends active-high signal (thermal trip) to PMU,
+>>>> and thermal tripping by hardware logic i.e PMU is performed.
+>>>> Thermal tripping means that PMU cut off the whole power of SoC
+>>>> by controlling external voltage regulator.
+>>>>
+>>>> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+>>> Ackedy-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>> ---
+>>>>  drivers/thermal/exynos_thermal.c |   10 ++++++++++
+>>>>  1 files changed, 10 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/thermal/exynos_thermal.c
+>>>> b/drivers/thermal/exynos_thermal.c
+>>>> index 129e827..569478d 100644
+>>>> --- a/drivers/thermal/exynos_thermal.c
+>>>> +++ b/drivers/thermal/exynos_thermal.c
+>>>> @@ -58,6 +58,7 @@
+>>>>  #define EXYNOS_TMU_CORE_ON             BIT(0)
+>>>>  #define EXYNOS_TMU_CORE_ON_SHIFT       0
+>>>>  #define EXYNOS_TMU_CORE_ON_MASK                (0x1 <<
+>>>> EXYNOS_TMU_CORE_ON_SHIFT)
+>>>> +#define EXYNOS_TMU_TRIP_EN             BIT(12)
+>>>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+>>>>
+>>>>  /* Exynos4210 specific registers */
+>>>> @@ -631,6 +632,12 @@ static int exynos_tmu_initialize(struct
+>>>> platform_device
+>>>> *pdev)
+>>>>                         goto out;
+>>>>                 }
+>>>>                 rising_threshold |= (threshold_code << 16);
+>>>> +               threshold_code = temp_to_code(data,
+>>>> pdata->trigger_levels[3]);
+>>>> +               if (threshold_code < 0) {
+>>>> +                       ret = threshold_code;
+>>>> +                       goto out;
+>>>> +               }
+>>>> +               rising_threshold |= (threshold_code << 24);
+>>>>
+>>>>                 writel(rising_threshold,
+>>>>                                 data->base + EXYNOS_THD_TEMP_RISE);
+>>>> @@ -665,6 +672,8 @@ static void exynos_tmu_control(struct
+>> platform_device
+>>>> *pdev, bool on)
+>>>>                 con &= ~(EXYNOS_TMU_TRIP_MODE_MASK | EXYNOS_MUX_ADDR_MASK);
+>>>>                 con |= pdata->noise_cancel_mode <<
+>>>> EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>>>                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>>> +               if (pdata->trigger_levels[3])
+>>>> +                       con |= EXYNOS_TMU_TRIP_EN;
+>>>>         }
+>> Why don't you support trigger_level[3] in exynos4210 either? Even though
+>> 4210 doesn't support
+>> hardware tripping,
+>> I think it can be set in same way. I've done it in my local git with
+>> following codes.
+>>
+>> if (data->soc == SOC_ARCH_EXYNOS4210)
+>> interrupt_en |= pdata->trigger_level3_en << 12;
+>> else
+>> con |= pdata->trigger_level3_en <<12;
+>>
+>> How do you think of it?
+>>
+>> Thanks.
+>>>>         if (on) {
+>>>> @@ -770,6 +779,7 @@ static struct exynos_tmu_platform_data const
+>>>> exynos_default_tmu_data = {
+>>>>         .trigger_levels[0] = 85,
+>>>>         .trigger_levels[1] = 103,
+>>>>         .trigger_levels[2] = 110,
+>>>> +       .trigger_levels[3] = 120,
+>>>>         .trigger_level0_en = 1,
+>>>>         .trigger_level1_en = 1,
+>>>>         .trigger_level2_en = 1,
+>>>> --
+>>>> 1.7.4.1
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+> 
+> 
