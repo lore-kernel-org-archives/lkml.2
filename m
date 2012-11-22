@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814Ab2KVVrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:47:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49645 "EHLO mail.kernel.org"
+	id S1757838Ab2KVVrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:47:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49646 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab2KVSkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755024Ab2KVSkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eddie Chapman <eddie@ehuk.net>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 15/38] wireless: allow 40 MHz on world roaming channels 12/13
-Date: Wed, 21 Nov 2012 16:39:58 -0800
-Message-Id: <20121122003905.868063059@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>, Alex Elder <elder@inktank.com>
+Subject: [ 112/171] libceph: fix overflow in osdmap_decode()
+Date: Wed, 21 Nov 2012 16:40:58 -0800
+Message-Id: <20121122004044.590722021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 43c771a1963ab461a2f194e3c97fded1d5fe262f upstream.
+(cherry picked from commit e91a9b639a691e0982088b5954eaafb5a25c8f1c)
 
-When in world roaming mode, allow 40 MHz to be used
-on channels 12 and 13 so that an AP that is, e.g.,
-using HT40+ on channel 9 (in the UK) can be used.
+On 32-bit systems, a large `n' would overflow `n * sizeof(u32)' and bypass
+the check ceph_decode_need(p, end, n * sizeof(u32), bad).  It would also
+overflow the subsequent kmalloc() size, leading to out-of-bounds write.
 
-Reported-by: Eddie Chapman <eddie@ehuk.net>
-Tested-by: Eddie Chapman <eddie@ehuk.net>
-Acked-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/wireless/reg.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/ceph/osdmap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -125,9 +125,8 @@ static const struct ieee80211_regdomain
- 	.reg_rules = {
- 		/* IEEE 802.11b/g, channels 1..11 */
- 		REG_RULE(2412-10, 2462+10, 40, 6, 20, 0),
--		/* IEEE 802.11b/g, channels 12..13. No HT40
--		 * channel fits here. */
--		REG_RULE(2467-10, 2472+10, 20, 6, 20,
-+		/* IEEE 802.11b/g, channels 12..13. */
-+		REG_RULE(2467-10, 2472+10, 40, 6, 20,
- 			NL80211_RRF_PASSIVE_SCAN |
- 			NL80211_RRF_NO_IBSS),
- 		/* IEEE 802.11 channel 14 - Only JP enables
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -674,6 +674,9 @@ struct ceph_osdmap *osdmap_decode(void *
+ 		ceph_decode_need(p, end, sizeof(u32) + sizeof(u64), bad);
+ 		ceph_decode_copy(p, &pgid, sizeof(pgid));
+ 		n = ceph_decode_32(p);
++		err = -EINVAL;
++		if (n > (UINT_MAX - sizeof(*pg)) / sizeof(u32))
++			goto bad;
+ 		ceph_decode_need(p, end, n * sizeof(u32), bad);
+ 		err = -ENOMEM;
+ 		pg = kmalloc(sizeof(*pg) + n*sizeof(u32), GFP_NOFS);
 
 
