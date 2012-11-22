@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab2KVVoE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:44:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
+	id S1758043Ab2KVVoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:44:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755045Ab2KVSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755046Ab2KVSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mirko Lindner <mlindner@marvell.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 047/171] sky2: Fix for interrupt handler
-Date: Wed, 21 Nov 2012 16:39:53 -0800
-Message-Id: <20121122004038.088905943@linuxfoundation.org>
+        Mohamed Pakkeer <pakkeer.mohideen@realimage.com>,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 169/171] ceph: avoid 32-bit page index overflow
+Date: Wed, 21 Nov 2012 16:41:55 -0800
+Message-Id: <20121122004050.310082749@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,34 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mirko Lindner <mlindner@marvell.com>
+From: Alex Elder <elder@inktank.com>
 
-commit d663d181b9e92d80c2455e460e932d34e7a2a7ae upstream.
+(cherry picked from commit 6285bc231277419255f3498d3eb5ddc9f8e7fe79)
 
-Re-enable interrupts if it is not our interrupt
+A pgoff_t is defined (by default) to have type (unsigned long).  On
+architectures such as i686 that's a 32-bit type.  The ceph address
+space code was attempting to produce 64 bit offsets by shifting a
+page's index by PAGE_CACHE_SHIFT, but the result was not what was
+desired because the shift occurred before the result got promoted
+to 64 bits.
 
-Signed-off-by: Mirko Lindner <mlindner@marvell.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Fix this by converting all uses of page->index used in this way to
+use the page_offset() macro, which ensures the 64-bit result has the
+intended value.
+
+This fixes http://tracker.newdream.net/issues/3112
+
+Reported-by:  Mohamed Pakkeer <pakkeer.mohideen@realimage.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/marvell/sky2.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ceph/addr.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -3079,8 +3079,10 @@ static irqreturn_t sky2_intr(int irq, vo
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -205,7 +205,7 @@ static int readpage_nounlock(struct file
+ 	dout("readpage inode %p file %p page %p index %lu\n",
+ 	     inode, filp, page, page->index);
+ 	err = ceph_osdc_readpages(osdc, ceph_vino(inode), &ci->i_layout,
+-				  page->index << PAGE_CACHE_SHIFT, &len,
++				  (u64) page_offset(page), &len,
+ 				  ci->i_truncate_seq, ci->i_truncate_size,
+ 				  &page, 1, 0);
+ 	if (err == -ENOENT)
+@@ -286,7 +286,7 @@ static int start_read(struct inode *inod
+ 	int nr_pages = 0;
+ 	int ret;
  
- 	/* Reading this mask interrupts as side effect */
- 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
--	if (status == 0 || status == ~0)
-+	if (status == 0 || status == ~0) {
-+		sky2_write32(hw, B0_Y2_SP_ICR, 2);
- 		return IRQ_NONE;
-+	}
+-	off = page->index << PAGE_CACHE_SHIFT;
++	off = (u64) page_offset(page);
  
- 	prefetch(&hw->st_le[hw->st_idx]);
+ 	/* count pages */
+ 	next_index = page->index;
+@@ -426,7 +426,7 @@ static int writepage_nounlock(struct pag
+ 	struct ceph_inode_info *ci;
+ 	struct ceph_fs_client *fsc;
+ 	struct ceph_osd_client *osdc;
+-	loff_t page_off = page->index << PAGE_CACHE_SHIFT;
++	loff_t page_off = page_offset(page);
+ 	int len = PAGE_CACHE_SIZE;
+ 	loff_t i_size;
+ 	int err = 0;
+@@ -817,8 +817,7 @@ get_more_pages:
+ 			/* ok */
+ 			if (locked_pages == 0) {
+ 				/* prepare async write request */
+-				offset = (unsigned long long)page->index
+-					<< PAGE_CACHE_SHIFT;
++				offset = (u64) page_offset(page);
+ 				len = wsize;
+ 				req = ceph_osdc_new_request(&fsc->client->osdc,
+ 					    &ci->i_layout,
+@@ -1180,7 +1179,7 @@ static int ceph_page_mkwrite(struct vm_a
+ 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
+ 	struct page *page = vmf->page;
+ 	struct ceph_mds_client *mdsc = ceph_inode_to_client(inode)->mdsc;
+-	loff_t off = page->index << PAGE_CACHE_SHIFT;
++	loff_t off = page_offset(page);
+ 	loff_t size, len;
+ 	int ret;
  
 
 
