@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965208Ab2KVTvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:51:44 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
+	id S1757391Ab2KVT7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:59:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53550 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965107Ab2KVTv1 (ORCPT
+	with ESMTP id S1030251Ab2KVTvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:27 -0500
+	Thu, 22 Nov 2012 14:51:43 -0500
 From: Stefan Hajnoczi <stefanha@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: Markus Grabner <grabner@icg.tugraz.at>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
         laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 25/46] staging: line6: drop midi_mask_transmit
-Date: Thu, 22 Nov 2012 20:49:04 +0100
-Message-Id: <1353613765-18690-26-git-send-email-stefanha@gmail.com>
+Subject: [PATCH 34/46] staging: line6: drop variax dump sysfs attr
+Date: Thu, 22 Nov 2012 20:49:13 +0100
+Message-Id: <1353613765-18690-35-git-send-email-stefanha@gmail.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
@@ -23,127 +23,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The midi_mask_transmit sysfs attribute selects the MIDI channels on
-which to transmit messages.  If ALSA wants to transmit a message that
-does not match an allowed channel, the message will be dropped.  This
-driver feature is not really used and applications don't know how to
-take advantage of it.  Therefore we drop it and rely on applications or
-MIDI sequencers to select the channels used for communication.
-
 Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
 ---
- drivers/staging/line6/midi.c | 56 --------------------------------------------
- drivers/staging/line6/midi.h |  5 ----
- 2 files changed, 61 deletions(-)
+ drivers/staging/line6/variax.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
 
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index f0f3e59..8261875 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -72,10 +72,6 @@ static void line6_midi_transmit(struct snd_rawmidi_substream *substream)
- 		if (done == 0)
- 			break;
- 
--		if (line6_midibuf_skip_message
--		    (mb, line6midi->midi_mask_transmit))
--			continue;
--
- 		send_midi_async(line6, chunk, done);
- 	}
- 
-@@ -287,47 +283,10 @@ static int snd_line6_new_midi(struct snd_line6_midi *line6midi)
- 	return 0;
+diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
+index 8eec139..0f1846e 100644
+--- a/drivers/staging/line6/variax.c
++++ b/drivers/staging/line6/variax.c
+@@ -308,23 +308,6 @@ static ssize_t variax_set_active(struct device *dev,
  }
  
--/*
--	"read" request on "midi_mask_transmit" special file.
+ /*
+-	"read" request on "dump" special file.
 -*/
--static ssize_t midi_get_midi_mask_transmit(struct device *dev,
--					   struct device_attribute *attr,
--					   char *buf)
+-static ssize_t variax_get_dump(struct device *dev,
+-			       struct device_attribute *attr, char *buf)
 -{
--	struct usb_interface *interface = to_usb_interface(dev);
--	struct usb_line6 *line6 = usb_get_intfdata(interface);
--	return sprintf(buf, "%d\n", line6->line6midi->midi_mask_transmit);
+-	struct usb_line6_variax *variax =
+-	    usb_get_intfdata(to_usb_interface(dev));
+-	int retval;
+-	retval = line6_dump_wait_interruptible(&variax->dumpreq);
+-	if (retval < 0)
+-		return retval;
+-	memcpy(buf, &variax->model_data.control,
+-	       sizeof(variax->model_data.control));
+-	return sizeof(variax->model_data.control);
 -}
 -
 -/*
--	"write" request on "midi_mask" special file.
--*/
--static ssize_t midi_set_midi_mask_transmit(struct device *dev,
--					   struct device_attribute *attr,
--					   const char *buf, size_t count)
--{
--	struct usb_interface *interface = to_usb_interface(dev);
--	struct usb_line6 *line6 = usb_get_intfdata(interface);
--	unsigned short value;
--	int ret;
--
--	ret = kstrtou16(buf, 10, &value);
--	if (ret)
--		return ret;
--
--	line6->line6midi->midi_mask_transmit = value;
--	return count;
--}
--
--static DEVICE_ATTR(midi_mask_transmit, S_IWUSR | S_IRUGO,
--		   midi_get_midi_mask_transmit, midi_set_midi_mask_transmit);
--
- /* MIDI device destructor */
- static int snd_line6_midi_free(struct snd_device *device)
+ 	"read" request on "guitar" special file.
+ */
+ static ssize_t variax_get_guitar(struct device *dev,
+@@ -383,7 +366,6 @@ static ssize_t variax_set_raw2(struct device *dev,
+ #endif
+ 
+ /* Variax workbench special files: */
+-static DEVICE_ATTR(dump, S_IRUGO, variax_get_dump, line6_nop_write);
+ static DEVICE_ATTR(active, S_IWUSR | S_IRUGO, variax_get_active,
+ 		   variax_set_active);
+ static DEVICE_ATTR(guitar, S_IRUGO, variax_get_guitar, line6_nop_write);
+@@ -422,7 +404,6 @@ static void variax_destruct(struct usb_interface *interface)
+ static int variax_create_files2(struct device *dev)
  {
- 	struct snd_line6_midi *line6midi = device->device_data;
--	device_remove_file(line6midi->line6->ifcdev,
--			   &dev_attr_midi_mask_transmit);
- 	line6_midibuf_destroy(&line6midi->midibuf_in);
- 	line6_midibuf_destroy(&line6midi->midibuf_out);
- 	return 0;
-@@ -369,17 +328,6 @@ int line6_init_midi(struct usb_line6 *line6)
- 	}
- 
- 	line6midi->line6 = line6;
--
--	switch (line6->product) {
--	case LINE6_DEVID_PODHD300:
--	case LINE6_DEVID_PODHD500:
--		line6midi->midi_mask_transmit = 1;
--		break;
--
--	default:
--		line6midi->midi_mask_transmit = 1;
--	}
--
- 	line6->line6midi = line6midi;
- 
- 	err = snd_device_new(line6->card, SNDRV_DEV_RAWMIDI, line6midi,
-@@ -393,10 +341,6 @@ int line6_init_midi(struct usb_line6 *line6)
- 	if (err < 0)
- 		return err;
- 
--	err = device_create_file(line6->ifcdev, &dev_attr_midi_mask_transmit);
--	if (err < 0)
--		return err;
--
- 	init_waitqueue_head(&line6midi->send_wait);
- 	spin_lock_init(&line6midi->send_urb_lock);
- 	spin_lock_init(&line6midi->midi_transmit_lock);
-diff --git a/drivers/staging/line6/midi.h b/drivers/staging/line6/midi.h
-index cf32d77..19dabd5 100644
---- a/drivers/staging/line6/midi.h
-+++ b/drivers/staging/line6/midi.h
-@@ -55,11 +55,6 @@ struct snd_line6_midi {
- 	wait_queue_head_t send_wait;
- 
- 	/**
--		 Bit mask for output MIDI channels.
--	*/
--	unsigned short midi_mask_transmit;
--
--	/**
- 		 Buffer for incoming MIDI stream.
- 	*/
- 	struct MidiBuffer midibuf_in;
+ 	int err;
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_dump));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_active));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_guitar));
+ #ifdef CONFIG_LINE6_USB_RAW
+@@ -523,7 +504,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
+ 	if (dev != NULL) {
+ 		/* remove sysfs entries: */
+ 		line6_variax_remove_files(0, 0, dev);
+-		device_remove_file(dev, &dev_attr_dump);
+ 		device_remove_file(dev, &dev_attr_active);
+ 		device_remove_file(dev, &dev_attr_guitar);
+ #ifdef CONFIG_LINE6_USB_RAW
 -- 
 1.8.0
 
