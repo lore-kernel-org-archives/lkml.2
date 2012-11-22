@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2KVTyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:54:33 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:28352 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab2KVTyZ (ORCPT
+	id S932484Ab2KVTym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:54:42 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:32922 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756686Ab2KVTyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:54:25 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-e7-50add7d2335e
-From: Chanwoo Choi <cw00.choi@samsung.com>
+	Thu, 22 Nov 2012 14:54:37 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-de-50add7e207e9
+From: y@samsung.com
 To: anton.vorontsov@linaro.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 0/3] charger-manager: Bug fix and split _probe function
-Date: Thu, 22 Nov 2012 16:44:03 +0900
-Message-id: <1353570243-18920-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 2/3] charger-manager: Fix bug when check dropped voltage after
+ fullbatt event
+Date: Thu, 22 Nov 2012 16:44:24 +0900
+Message-id: <1353570264-18990-1-git-send-email-y@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t8zLd1L19cGGPzZo2lxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyZi2/xlLwl7ni4KHVzA2Mc5m7GDk5JARMJPZt/8EEYYtJXLi3
-	nq2LkYtDSGAZo8SN02dYuhg5wIp2tIhDxBcxSjTMWwBVtJRJ4s+9pWCT2AS0JPa/uMEGYosI
-	yEm8XvsXbCqzQK3EvmtNrCC2sIC7xMYPx9lBbBYBVYkjd64xgti8Aq4SRzuXMkJcoSDRuuwQ
-	VI2AxLfJh6COkJXYdIAZZK+EwB42iQ0f/rJB1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpuUZ6
-	xYm5xaV56XrJ+bmbGCEhJb2DcVWDxSFGAQ5GJR7eDIO1AUKsiWXFlbmHGCU4mJVEeBcVAIV4
-	UxIrq1KL8uOLSnNSiw8x+gBdMpFZSjQ5HxjueSXxhsYGxoaGloZmppamBjiElcR5mz1SAoQE
-	0hNLUrNTUwtSi2DGMXFwSjUw8t1/+lV2otdFjq8zO1U3F7y+bFc6e9dE3103d4jv8dh3Yl+V
-	s7af7yPNbdyy2heLj560TRWylZgVyv7p07E9Xb9qXWQNntzJiFFeK7+S+cFWzRN7pbw8KnS/
-	8s9kcAs6K5Hy6f+Einfbnz7zk/Gsiq/Pu6E5W9o3aUvUbrOflhf4nll17Lt2XImlOCPRUIu5
-	qDgRADQjLFhWAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jAd1L19cGGLw/IG9xedccNgdGj8+b
-	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM2Ytv8ZS8Je54uCh1cwN
-	jHOZuxg5OCQETCR2tIh3MXICmWISF+6tZ+ti5OIQEljEKNEwbwGUs5RJ4s+9pcwgVWwCWhL7
-	X9xgA7FFBOQkXq/9ywRiMwvUSuy71sQKYgsLuEts/HCcHcRmEVCVOHLnGiOIzSvgKnG0cykj
-	xDYFidZlh9gnMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcsM+kdzCuarA4xCjA
-	wajEw5thsDZAiDWxrLgy9xCjBAezkgjvogKgEG9KYmVValF+fFFpTmrxIUYfoO0TmaVEk/OB
-	0ZRXEm9obGJmZGlkZmxibmyMQ1hJnLfZIyVASCA9sSQ1OzW1ILUIZhwTB6dUA2MUz/nTaQ1a
-	rAk/OqTfi//TztF44B/YvkaGacm+ief6jp7+qcqrovHYedpUhl8Xm3Nur2l0tV1j8HbpnkR/
-	v0sro7+e4k2TnPrFNnlZf3N/3MH591eqhWp+XWX/IfnslYw7kqqzn5iryXEkVFaeeKW+d/PJ
-	FhtvruZUfzsL1SlHthf2Hixacl2JpTgj0VCLuag4EQCj618yhQIAAA==
-X-CFilter-Loop: Reflected
+In-reply-to: <y@samsung.com>
+References: <y@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPJMWRmVeSWpSXmKPExsVy+t9jAd3H19cGGDwvtLi8aw6bA6PH501y
+	AYxRXDYpqTmZZalF+nYJXBl3Lh5jLbjGXdHzvq6B8S5nFyMnh4SAicTVhnssELaYxIV769m6
+	GLk4hAQWMUp8uvOJGcJZyiSxd/FN1i5GDg42AWGJqQe0QBpEBOQkXq/9ywRiMwvUSuy71sQK
+	YgsLxEvsXnwYbCiLgKrEjs7r7CA2r4CtxMyLp6GWKUi0LjsEFucUkJGYM3sVmC0kIC1xv7uH
+	ZQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwd5+JrWDcWWDxSFGAQ5GJR5eTee1
+	AUKsiWXFlbmHGCU4mJVEeBcVAIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzNnukBAgJpCeWpGan
+	phakFsFkmTg4pRoYQ6wqGU03xVi7rOo7GDjZumCe+tKWS9tW1KnMruGfcUPvUfjE4n2v/Xbf
+	zLg5YdndiQYFbBV2KR+svA/91XO9HsiZwbHkkF1oidTBEhPJFanTfnAqViouqLGIvnvrih/3
+	TgPbb4L7ivNesIRKPZE/0HanyDPs4D5tQ75nnH5b22cJu5b0NPApsRRnJBpqMRcVJwIAm6G7
+	WfIBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset include bug fix patch and code clean to split _probe function
-because _probe function is longer than 400 line.
+From: Chanwoo Choi <cw00.choi@samsung.com>
 
-Chanwoo Choi (3):
-  charger-manager: Fix bug related to checking fully charged state of
-    battery
-  charger-manager: Fix bug when check dropped voltage after fullbatt
-    event
-  charger-manager: Split _probe funtion for code clean
+This patch check difference value between current voltage of battery
+and desc->fullbatt_uV whether positve or negative number. If difference
+value is negative number when current voltage of battery is larger than
+desc->fullbatt_uV, charger-manager return immediately because battery
+is fully charged.
 
- drivers/power/charger-manager.c |  321 +++++++++++++++++++++++----------------
- 1 files changed, 187 insertions(+), 134 deletions(-)
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/power/charger-manager.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index ee039b9..17130c7 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -468,7 +468,9 @@ static void fullbatt_vchk(struct work_struct *work)
+ 	struct charger_manager *cm = container_of(dwork,
+ 			struct charger_manager, fullbatt_vchk_work);
+ 	struct charger_desc *desc = cm->desc;
+-	int batt_uV, err, diff;
++	int batt_uV;
++	int err;
++	int diff;
+ 
+ 	/* remove the appointment for fullbatt_vchk */
+ 	cm->fullbatt_vchk_jiffies_at = 0;
+@@ -482,8 +484,9 @@ static void fullbatt_vchk(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	diff = desc->fullbatt_uV;
+-	diff -= batt_uV;
++	diff = desc->fullbatt_uV - batt_uV;
++	if (diff < 0)
++		return;
+ 
+ 	dev_info(cm->dev, "VBATT dropped %duV after full-batt.\n", diff);
+ 
+-- 
+1.7.0.4
 
