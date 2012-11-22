@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab2KVUlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:41:25 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39747 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932275Ab2KVUlU (ORCPT
+	id S1756312Ab2KVUmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:42:08 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:45127 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756270Ab2KVUmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:41:20 -0500
-Message-ID: <50ADEF2B.4030106@googlemail.com>
-Date: Thu, 22 Nov 2012 09:23:55 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 22 Nov 2012 15:42:05 -0500
 MIME-Version: 1.0
-To: Chris Clayton <chris2553@googlemail.com>
-CC: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v1 0/5] fix up inaccurate zone->present_pages
-References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <50A946BC.7010308@googlemail.com>
-In-Reply-To: <50A946BC.7010308@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 22 Nov 2012 14:52:35 +0530
+Message-ID: <CAA_L+UPNOLg=ZuZofc-uhybXKuBO37XBSGa2vDLYZ7wLkgAb=A@mail.gmail.com>
+Subject: [PATCH 3.6.6 0/3] i82975x_edac: fatal bug fixed
+From: Arvind R <arvino55@gmail.com>
+To: linux-edac@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This patchset has only been tested on x86_64 with nobootmem.c. So need
->> help to test this patchset on machines:
->> 1) use bootmem.c
->> 2) have highmem
->>
->> This patchset applies to "f4a75d2e Linux 3.7-rc6" from
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->>
->
-> I've applied the five patches to Linus' 3.7.0-rc6 and can confirm that
-> the kernel allows my system to resume from a suspend to disc. Although
-> my laptop is 64 bit, I run a 32 bit kernel with HIGHMEM (I have 8GB RAM):
->
-> [chris:~/kernel/tmp/linux-3.7-rc6-resume]$ grep -E HIGHMEM\|X86_32 .config
-> CONFIG_X86_32=y
-> CONFIG_X86_32_SMP=y
-> CONFIG_X86_32_LAZY_GS=y
-> # CONFIG_X86_32_IRIS is not set
-> # CONFIG_NOHIGHMEM is not set
-> # CONFIG_HIGHMEM4G is not set
-> CONFIG_HIGHMEM64G=y
-> CONFIG_HIGHMEM=y
->
-> I can also say that a quick browse of the output of dmesg, shows nothing
-> out of the ordinary. I have insufficient knowledge to comment on the
-> patches, but I will run the kernel over the next few days and report
-> back later in the week.
->
+Subject: [PATCH 3.6.6 0/3] i82975x_edac: fatal bug fixed
 
-Well, I've been running the kernel since Sunday and have had no problems 
-with my normal work mix of browsing, browsing the internet, video 
-editing, listening to music and building software. I'm now running a 
-kernel that build with the new patches 1 and 4 from yesterday (plus the 
-original 1, 2 and 5). All seems OK so far, including a couple of resumes 
-from suspend to disk.
+This patchset fixes fatal crash caused by i82975x_edac driver.
+It consists of 3 parts:
+1. Move the debug code to conform to the edac_core standard
+   instead of using hardcoded ifdefs. Also add some more dram
+   info outputs in the debug output.
+2. Cleanup the long lines and other format errors found. Use
+   defines for numeric constants used repeatedly in code.
+3. Fix the crash caused by wrong memory_layer initialisation
+   and dimm_label initialisation. Almost total, but cleaner
+   rewrite of csrow_info initialisation. And a terser error
+   reporting function.
+The patch has been applied to linux-3.6.6 and tested on
+on Asus P5WDG2 WS Pro mobo with 7 memory configurations,
+3 symmetric and 4 assymmetric:
+Symmetric:
+ 1. 2 ECC DIMMS, one on slot A1 and other on slot B1
+ 2. 2 ECC DIMMS, one on slot A2 and other on slot B2
+ 3. 4 ECC DIMMS, mobo fully populated.
+Assymmetric:
+ 1. 1 ECC DIMM on A1
+ 2. 1 ECC DIMM on B1
+ 3. 2 ECC DIMMS on A1 and B2
+ 4. 3 ECC DIMMS on A1, B2, B2
+Size, label values in /sys/devices/system/edac/mc/mc0 found
+consistent.
+
+Tested-by: Arvind R. <arvino55@gmail.com>
+Signed-off-by: Arvind R. <arvino55@gmail.com>
+---
+ drivers/edac/i82975x_edac.c |  361 +++++++++++++++++-----------------
+ 1 file changed, 185 insertions(+), 176 deletions(-)
