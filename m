@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab2KVUrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:47:17 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53234 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2KVUrM (ORCPT
+	id S1756909Ab2KVUr2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:47:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:51928 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756512Ab2KVUrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:47:12 -0500
+	Thu, 22 Nov 2012 15:47:23 -0500
+Date: Thu, 22 Nov 2012 21:47:04 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
+Subject: Re: [PATCH v4 01/11] PWMSS: Add PWM Subsystem driver for
+ parent<->child relationship
+Message-ID: <20121122204704.GA16716@avionic-0098.adnet.avionic-design.de>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <1353503469-18634-2-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20121121200144.GD15213@quad.lixom.net>
-References: <CAHTX3d+bqMnsWxQp3GAmprSDzNB18otT3SrPi5MkA+d8006Aww@mail.gmail.com>
-	<20121121200144.GD15213@quad.lixom.net>
-Date: Thu, 22 Nov 2012 08:05:48 +0100
-X-Google-Sender-Auth: qjQmDEK1cITLciigjCgkzHkqaL4
-Message-ID: <CAHTX3dKm_=VaL=14vRr6+jGO2wrDXfW1asjXuZz0yeO0axZnbw@mail.gmail.com>
-Subject: Re: [GIT PULL] arm-soc: Xilinx zynq multiplatform changes for v3.8
-From: Michal Simek <michal.simek@xilinx.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        John Linn <John.Linn@xilinx.com>, John Williams <jwilliams@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <1353503469-18634-2-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:efcDxKB/Su72cTeqs12fr3J+Hg1/lRET7jMJzwhZVqy
+ hL4T/b3WJboVIlpDG8fimtPUtphOs2xscVDs32JbSXFoc+w6v2
+ Hfg/xKa+8Sr+tgJwPw1OA2oa28AgmWM1gd7vuUx/s1jFgdTTlD
+ 3P/PrSgNvDvPJzkJ4Lr1Oa45Z9WxnSa36G0+Vp75WW+Yi/sYDL
+ T3xUNt0FWgeGOfNn1b8Y4Ju1S6UyXjZJoZSW57hCNh+zQHZOnO
+ vvQ5fWIwhwYRgoxCus68jUZGQ7V2x4QUlZrlH/J1i0ovsMokWO
+ IywPBWp9pQOqHaVM7f9BWrApAITkcXhs3bHAOm/PXXZMGwwFJG
+ HBRcOUDwnubpAaFfjfABjanMGdNLMIB47/bIU8WFAbVTq/GyJi
+ MGWUQFys2dZopk8npPH43rjl8itQbyq4J55y3+IXrGuXJbGLYL
+ gKnGb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-2012/11/21 Olof Johansson <olof@lixom.net>:
-> Hi,
->
-> On Wed, Nov 21, 2012 at 04:51:07PM +0100, Michal Simek wrote:
->> Hi Olof and Arnd,
->>
->> based on my chat with Olof today I have created new branch
->> with 4 patches which move zynq to multiplatform.
->>
->> This branch depends on arm-soc devel/debug_ll_init branch because
->> we needed Rob's "ARM: implement debug_ll_io_init()"
->> (sha1: afaee03511ba8002b26a9c6b1fe7d6baf33eac86)
->> patch.
->>
->> This branch also depends on zynq/dt branch because of previous major
->> zynq changes.
->> zynq/cleanup branch is subset of zynq/dt.
->>
->> That's why I have merged devel/debug_ll_init branch with zynq/dt and
->> add 4 patches
->> on the top of it.
->
-> Nice work.
->
-> This looks quite reasonable, is small and self-contained and doesn't really
-> affect anyone outside of zynq. So I've pulled into next/multiplatform for 3.8.
->
-> As part of this, the next/* branches have been somewhat reordered, since
-> multiplatform now includes next/dt contents I've moved it down below there. It
-> shouldn't affect much since no other branch pulls in next/multiplatform
-> contents.
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks a lot,
-Michal
+On Wed, Nov 21, 2012 at 06:40:58PM +0530, Philip, Avinash wrote:
+[...]
+> +static const struct of_device_id pwmss_of_match[] = {
+> +	{
+> +		.compatible	= "ti,am33xx-pwmss",
+> +	},
+
+For consistency with other drivers this should be all on one line.
+
+> +static const struct dev_pm_ops pwmss_pm_ops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(pwmss_suspend, pwmss_resume)
+> +};
+
+This could be even shorter:
+
+static SIMPLE_DEV_PM_OPS(pwmss_pm_ops, pwmss_suspend, pwmss_resume);
+
+Thierry
+
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQro9IAAoJEN0jrNd/PrOhYCAQAIcrU+FUhnK62NOazWRsB27c
+vwcg05hwGy0qGCLP8fjkHCAR7bjvbuXTUAT9K7XsEP2bdvs3XfQrgX3LT6lGiTkO
+8DwHgHmKmpUxPIclKx/8FFGyGP/lPO/Z1lvvim7q1LSb0B0Se59WkjMZVC3eH4CH
+nEMVAKJSjFR51DceEiSMSVTJ/Lwd5hv9JR70SDEsfdDR2TV5Wai7X+2O8+Yt4dbl
+FAi/7TDdzsaukmKncabuNkPhxJrwZXFKvXdzcYAmoK3SeSxneW1yzkhd62vVOPTO
+DtlujllVm738iBeK5iSVt0Ec1/Jj4Gwe1nDHBcSHMLVu6vn2iKVB79i2RFmZTRVa
+Id4U+/h1AuRJwmI13pE75RO+N7z1H3EgBWKrkN5ALDq2m0Bf9egzdQzQbwBbhqJs
+59/3MwxYtxhDJ4GBQPDK9HA/uH0MZsnHy5q4mUk7Cza01tOPAhPpT7bCEFQ6wn/N
+txipuErF9H8T0Q+HcALXE/eIo9DIX1LCQ+MHN0rDMPQ1U73Yrilkk8ZQIQOAGASn
+IAnLHEePOJkvPWVbheaRVFKNHT27MA70EzmOdbP5wY4jx2fTSrBofFAk9bHzzc19
+6LOtY1kua91Ct7XIMAjGQ3aRD2lskNxYkU8zFRZY0V5Cbxo8sGHSQMAbT1pN7jrc
+ZUk3CkVlkrdSp++356xw
+=k8vX
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
