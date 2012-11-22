@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab2KVT0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39918 "EHLO mx2.suse.de"
+	id S1756950Ab2KVT0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:26:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40096 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab2KVT02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:28 -0500
+	id S1756936Ab2KVT0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:49 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 19/40] mm: migrate: Introduce migrate_misplaced_page()
-Date: Thu, 22 Nov 2012 19:25:32 +0000
-Message-Id: <1353612353-1576-20-git-send-email-mgorman@suse.de>
+Subject: [PATCH 33/40] mm: numa: Rate limit setting of pte_numa if node is saturated
+Date: Thu, 22 Nov 2012 19:25:46 +0000
+Message-Id: <1353612353-1576-34-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,183 +30,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+If there are a large number of NUMA hinting faults and all of them
+are resulting in migrations it may indicate that memory is just
+bouncing uselessly around. NUMA balancing cost is likely exceeding
+any benefit from locality. Rate limit the PTE updates if the node
+is migration rate-limited. As noted in the comments, this distorts
+the NUMA faulting statistics.
 
-Note: This was originally based on Peter's patch "mm/migrate: Introduce
-	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
-	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
-	collection". The end result is barely recognisable so signed-offs
-	had to be dropped. If original authors are ok with it, I'll
-	re-add the signed-off-bys.
-
-Add migrate_misplaced_page() which deals with migrating pages from
-faults.
-
-Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/migrate.h |    8 ++++
- mm/migrate.c            |  108 ++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 114 insertions(+), 2 deletions(-)
+ include/linux/migrate.h |    6 ++++++
+ kernel/sched/fair.c     |    9 +++++++++
+ mm/migrate.c            |   20 ++++++++++++++++++++
+ 3 files changed, 35 insertions(+)
 
 diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 9d1c159..69f60b5 100644
+index 69f60b5..0d4ee94 100644
 --- a/include/linux/migrate.h
 +++ b/include/linux/migrate.h
-@@ -13,6 +13,7 @@ enum migrate_reason {
- 	MR_MEMORY_HOTPLUG,
- 	MR_SYSCALL,		/* also applies to cpusets */
- 	MR_MEMPOLICY_MBIND,
-+	MR_NUMA_MISPLACED,
- 	MR_CMA
- };
- 
-@@ -39,6 +40,7 @@ extern int migrate_vmas(struct mm_struct *mm,
- extern void migrate_page_copy(struct page *newpage, struct page *page);
+@@ -41,6 +41,7 @@ extern void migrate_page_copy(struct page *newpage, struct page *page);
  extern int migrate_huge_page_move_mapping(struct address_space *mapping,
  				  struct page *newpage, struct page *page);
-+extern int migrate_misplaced_page(struct page *page, int node);
+ extern int migrate_misplaced_page(struct page *page, int node);
++extern bool migrate_ratelimited(int node);
  #else
  
  static inline void putback_lru_pages(struct list_head *l) {}
-@@ -72,5 +74,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #define migrate_page NULL
- #define fail_migrate_page NULL
- 
-+static inline
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	return -EAGAIN; /* can't migrate now */
-+}
- #endif /* CONFIG_MIGRATION */
-+
- #endif /* _LINUX_MIGRATE_H */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 27be9c9..a2c4567 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 		struct page *newpage, struct page *page,
- 		struct buffer_head *head, enum migrate_mode mode)
+@@ -79,6 +80,11 @@ int migrate_misplaced_page(struct page *page, int node)
  {
--	int expected_count;
-+	int expected_count = 0;
- 	void **pslot;
- 
- 	if (!mapping) {
-@@ -1415,4 +1415,108 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
-  	}
-  	return err;
+ 	return -EAGAIN; /* can't migrate now */
  }
--#endif
-+
-+#ifdef CONFIG_BALANCE_NUMA
-+/*
-+ * Returns true if this is a safe migration target node for misplaced NUMA
-+ * pages. Currently it only checks the watermarks which crude
-+ */
-+static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
-+				   int nr_migrate_pages)
++static inline
++bool migrate_ratelimited(int node)
 +{
-+	int z;
-+	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
-+		struct zone *zone = pgdat->node_zones + z;
-+
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		if (zone->all_unreclaimable)
-+			continue;
-+
-+		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
-+		if (!zone_watermark_ok(zone, 0,
-+				       high_wmark_pages(zone) +
-+				       nr_migrate_pages,
-+				       0, 0))
-+			continue;
-+		return true;
-+	}
 +	return false;
 +}
-+
-+static struct page *alloc_misplaced_dst_page(struct page *page,
-+					   unsigned long data,
-+					   int **result)
-+{
-+	int nid = (int) data;
-+	struct page *newpage;
-+
-+	newpage = alloc_pages_exact_node(nid,
-+					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
-+					  __GFP_NOMEMALLOC | __GFP_NORETRY |
-+					  __GFP_NOWARN) &
-+					 ~GFP_IOFS, 0);
-+	return newpage;
-+}
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node. Caller is expected to have an elevated reference count on
-+ * the page that will be dropped by this function before returning.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	int isolated = 0;
-+	LIST_HEAD(migratepages);
-+
+ #endif /* CONFIG_MIGRATION */
+ 
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2e65f44..357057c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -27,6 +27,7 @@
+ #include <linux/profile.h>
+ #include <linux/interrupt.h>
+ #include <linux/mempolicy.h>
++#include <linux/migrate.h>
+ #include <linux/task_work.h>
+ 
+ #include <trace/events/sched.h>
+@@ -861,6 +862,14 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
 +	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
++	 * Do not set pte_numa if the current running node is rate-limited.
++	 * This loses statistics on the fault but if we are unwilling to
++	 * migrate to this node, it is less likely we can do useful work
 +	 */
-+	if (page_mapcount(page) != 1) {
-+		put_page(page);
-+		goto out;
-+	}
++	if (migrate_ratelimited(numa_node_id()))
++		return;
 +
-+	/* Avoid migrating to a node that is nearly full */
-+	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
-+		int page_lru;
+ 	start = mm->numa_scan_offset;
+ 	pages = sysctl_balance_numa_scan_size;
+ 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index cf0970f..3033669 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1464,10 +1464,30 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
+  * page migration rate limiting control.
+  * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
+  * window of time. Default here says do not migrate more than 1280M per second.
++ * If a node is rate-limited then PTE NUMA updates are also rate-limited. However
++ * as it is faults that reset the window, pte updates will happen unconditionally
++ * if there has not been a fault since @pteupdate_interval_millisecs after the
++ * throttle window closed.
+  */
+ static unsigned int migrate_interval_millisecs __read_mostly = 100;
++static unsigned int pteupdate_interval_millisecs __read_mostly = 1000;
+ static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
+ 
++/* Returns true if NUMA migration is currently rate limited */
++bool migrate_ratelimited(int node)
++{
++	pg_data_t *pgdat = NODE_DATA(node);
 +
-+		if (isolate_lru_page(page)) {
-+			put_page(page);
-+			goto out;
-+		}
-+		isolated = 1;
++	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window +
++				msecs_to_jiffies(pteupdate_interval_millisecs)))
++		return false;
 +
-+		/*
-+		 * Page is isolated which takes a reference count so now the
-+		 * callers reference can be safely dropped without the page
-+		 * disappearing underneath us during migration
-+		 */
-+		put_page(page);
++	if (pgdat->balancenuma_migrate_nr_pages < ratelimit_pages)
++		return false;
 +
-+		page_lru = page_is_file_cache(page);
-+		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+		list_add(&page->lru, &migratepages);
-+	}
-+
-+	if (isolated) {
-+		int nr_remaining;
-+
-+		nr_remaining = migrate_pages(&migratepages,
-+				alloc_misplaced_dst_page,
-+				node, false, MIGRATE_ASYNC,
-+				MR_NUMA_MISPLACED);
-+		if (nr_remaining) {
-+			putback_lru_pages(&migratepages);
-+			isolated = 0;
-+		}
-+	}
-+	BUG_ON(!list_empty(&migratepages));
-+out:
-+	return isolated;
++	return true;
 +}
-+#endif /* CONFIG_BALANCE_NUMA */
 +
-+#endif /* CONFIG_NUMA */
+ /*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
 -- 
 1.7.9.2
 
