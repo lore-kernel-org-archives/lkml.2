@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab2KVV2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:28:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
+	id S1757903Ab2KVV2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:28:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab2KVSkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754950Ab2KVSkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 158/171] libceph: avoid dropping con mutex before fault
-Date: Wed, 21 Nov 2012 16:41:44 -0800
-Message-Id: <20121122004049.212668349@linuxfoundation.org>
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 18/38] ipv6: setsockopt(IPIPPROTO_IPV6, IPV6_MINHOPCOUNT) forgot to set return value
+Date: Wed, 21 Nov 2012 16:40:01 -0800
+Message-Id: <20121122003906.188429579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
 
-(cherry picked from commit 8636ea672f0c5ab7478c42c5b6705ebd1db7eb6a)
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-The ceph_fault() function takes the con mutex, so we should avoid
-dropping it before calling it.  This fixes a potential race with
-another thread calling ceph_con_close(), or _open(), or similar (we
-don't reverify con->state after retaking the lock).
+[ Upstream commit d4596bad2a713fcd0def492b1960e6d899d5baa8 ]
 
-Add annotation so that lockdep realizes we will drop the mutex before
-returning.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/messenger.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv6/ipv6_sockglue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2336,7 +2336,6 @@ done_unlocked:
- 	return;
- 
- fault:
--	mutex_unlock(&con->mutex);
- 	ceph_fault(con);     /* error/fault path */
- 	goto done_unlocked;
- }
-@@ -2347,9 +2346,8 @@ fault:
-  * exponential backoff
-  */
- static void ceph_fault(struct ceph_connection *con)
-+	__releases(con->mutex)
- {
--	mutex_lock(&con->mutex);
--
- 	pr_err("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
- 	       ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
- 	dout("fault %p state %lu to peer %s\n",
+--- a/net/ipv6/ipv6_sockglue.c
++++ b/net/ipv6/ipv6_sockglue.c
+@@ -798,6 +798,7 @@ pref_skip_coa:
+ 		if (val < 0 || val > 255)
+ 			goto e_inval;
+ 		np->min_hopcount = val;
++		retv = 0;
+ 		break;
+ 	case IPV6_DONTFRAG:
+ 		np->dontfrag = valbool;
 
 
