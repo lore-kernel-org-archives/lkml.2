@@ -1,235 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab2KVWrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:47:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49004 "EHLO mail.kernel.org"
+	id S1758719Ab2KVWrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:47:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49009 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753376Ab2KVSda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753397Ab2KVSda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tang Chen <tangchen@cn.fujitsu.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 49/83] memcg: fix hotplugged memory zone oops
-Date: Wed, 21 Nov 2012 16:42:11 -0800
-Message-Id: <20121122004217.979865059@linuxfoundation.org>
+        Sage Weil <sage@newdream.net>, Alex Elder <elder@inktank.com>
+Subject: [ 103/171] libceph: drop connection refcounting for mon_client
+Date: Wed, 21 Nov 2012 16:40:49 -0800
+Message-Id: <20121122004043.700214272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Sage Weil <sage@inktank.com>
 
-commit bea8c150a7efbc0f204e709b7274fe273f55e0d3 upstream.
+(cherry picked from commit ec87ef4309d33bd9c87a53bb5152a86ae7a65f25)
 
-When MEMCG is configured on (even when it's disabled by boot option),
-when adding or removing a page to/from its lru list, the zone pointer
-used for stats updates is nowadays taken from the struct lruvec.  (On
-many configurations, calculating zone from page is slower.)
+All references to the embedded ceph_connection come from the msgr
+workqueue, which is drained prior to mon_client destruction.  That
+means we can ignore con refcounting entirely.
 
-But we have no code to update all the lruvecs (per zone, per memcg) when
-a memory node is hotadded.  Here's an extract from the oops which
-results when running numactl to bind a program to a newly onlined node:
-
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000f60
-  IP:  __mod_zone_page_state+0x9/0x60
-  Pid: 1219, comm: numactl Not tainted 3.6.0-rc5+ #180 Bochs Bochs
-  Process numactl (pid: 1219, threadinfo ffff880039abc000, task ffff8800383c4ce0)
-  Call Trace:
-    __pagevec_lru_add_fn+0xdf/0x140
-    pagevec_lru_move_fn+0xb1/0x100
-    __pagevec_lru_add+0x1c/0x30
-    lru_add_drain_cpu+0xa3/0x130
-    lru_add_drain+0x2f/0x40
-   ...
-
-The natural solution might be to use a memcg callback whenever memory is
-hotadded; but that solution has not been scoped out, and it happens that
-we do have an easy location at which to update lruvec->zone.  The lruvec
-pointer is discovered either by mem_cgroup_zone_lruvec() or by
-mem_cgroup_page_lruvec(), and both of those do know the right zone.
-
-So check and set lruvec->zone in those; and remove the inadequate
-attempt to set lruvec->zone from lruvec_init(), which is called before
-NODE_DATA(node) has been allocated in such cases.
-
-Ah, there was one exceptionr.  For no particularly good reason,
-mem_cgroup_force_empty_list() has its own code for deciding lruvec.
-Change it to use the standard mem_cgroup_zone_lruvec() and
-mem_cgroup_get_lru_size() too.  In fact it was already safe against such
-an oops (the lru lists in danger could only be empty), but we're better
-proofed against future changes this way.
-
-I've marked this for stable (3.6) since we introduced the problem in 3.5
-(now closed to stable); but I have no idea if this is the only fix
-needed to get memory hotadd working with memcg in 3.6, and received no
-answer when I enquired twice before.
-
-Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sage Weil <sage@newdream.net>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/mmzone.h |    2 +-
- mm/memcontrol.c        |   46 +++++++++++++++++++++++++++++++++++-----------
- mm/mmzone.c            |    6 +-----
- mm/page_alloc.c        |    2 +-
- 4 files changed, 38 insertions(+), 18 deletions(-)
+ net/ceph/mon_client.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -744,7 +744,7 @@ extern int init_currently_empty_zone(str
- 				     unsigned long size,
- 				     enum memmap_context context);
- 
--extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
-+extern void lruvec_init(struct lruvec *lruvec);
- 
- static inline struct zone *lruvec_zone(struct lruvec *lruvec)
- {
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1061,12 +1061,24 @@ struct lruvec *mem_cgroup_zone_lruvec(st
- 				      struct mem_cgroup *memcg)
- {
- 	struct mem_cgroup_per_zone *mz;
-+	struct lruvec *lruvec;
- 
--	if (mem_cgroup_disabled())
--		return &zone->lruvec;
-+	if (mem_cgroup_disabled()) {
-+		lruvec = &zone->lruvec;
-+		goto out;
-+	}
- 
- 	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
--	return &mz->lruvec;
-+	lruvec = &mz->lruvec;
-+out:
-+	/*
-+	 * Since a node can be onlined after the mem_cgroup was created,
-+	 * we have to be prepared to initialize lruvec->zone here;
-+	 * and if offlined then reonlined, we need to reinitialize it.
-+	 */
-+	if (unlikely(lruvec->zone != zone))
-+		lruvec->zone = zone;
-+	return lruvec;
+--- a/net/ceph/mon_client.c
++++ b/net/ceph/mon_client.c
+@@ -1037,9 +1037,23 @@ out:
+ 	mutex_unlock(&monc->mutex);
  }
  
- /*
-@@ -1093,9 +1105,12 @@ struct lruvec *mem_cgroup_page_lruvec(st
- 	struct mem_cgroup_per_zone *mz;
- 	struct mem_cgroup *memcg;
- 	struct page_cgroup *pc;
-+	struct lruvec *lruvec;
- 
--	if (mem_cgroup_disabled())
--		return &zone->lruvec;
-+	if (mem_cgroup_disabled()) {
-+		lruvec = &zone->lruvec;
-+		goto out;
-+	}
- 
- 	pc = lookup_page_cgroup(page);
- 	memcg = pc->mem_cgroup;
-@@ -1113,7 +1128,16 @@ struct lruvec *mem_cgroup_page_lruvec(st
- 		pc->mem_cgroup = memcg = root_mem_cgroup;
- 
- 	mz = page_cgroup_zoneinfo(memcg, page);
--	return &mz->lruvec;
-+	lruvec = &mz->lruvec;
-+out:
-+	/*
-+	 * Since a node can be onlined after the mem_cgroup was created,
-+	 * we have to be prepared to initialize lruvec->zone here;
-+	 * and if offlined then reonlined, we need to reinitialize it.
-+	 */
-+	if (unlikely(lruvec->zone != zone))
-+		lruvec->zone = zone;
-+	return lruvec;
- }
- 
- /**
-@@ -3703,17 +3727,17 @@ unsigned long mem_cgroup_soft_limit_recl
- static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- 				int node, int zid, enum lru_list lru)
- {
--	struct mem_cgroup_per_zone *mz;
-+	struct lruvec *lruvec;
- 	unsigned long flags, loop;
- 	struct list_head *list;
- 	struct page *busy;
- 	struct zone *zone;
- 
- 	zone = &NODE_DATA(node)->node_zones[zid];
--	mz = mem_cgroup_zoneinfo(memcg, node, zid);
--	list = &mz->lruvec.lists[lru];
-+	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-+	list = &lruvec->lists[lru];
- 
--	loop = mz->lru_size[lru];
-+	loop = mem_cgroup_get_lru_size(lruvec, lru);
- 	/* give some margin against EBUSY etc...*/
- 	loop += 256;
- 	busy = NULL;
-@@ -4751,7 +4775,7 @@ static int alloc_mem_cgroup_per_zone_inf
- 
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
--		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
-+		lruvec_init(&mz->lruvec);
- 		mz->usage_in_excess = 0;
- 		mz->on_tree = false;
- 		mz->memcg = memcg;
---- a/mm/mmzone.c
-+++ b/mm/mmzone.c
-@@ -87,7 +87,7 @@ int memmap_valid_within(unsigned long pf
- }
- #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
- 
--void lruvec_init(struct lruvec *lruvec, struct zone *zone)
-+void lruvec_init(struct lruvec *lruvec)
- {
- 	enum lru_list lru;
- 
-@@ -95,8 +95,4 @@ void lruvec_init(struct lruvec *lruvec,
- 
- 	for_each_lru(lru)
- 		INIT_LIST_HEAD(&lruvec->lists[lru]);
--
--#ifdef CONFIG_MEMCG
--	lruvec->zone = zone;
--#endif
- }
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4456,7 +4456,7 @@ static void __paginginit free_area_init_
- 		zone->zone_pgdat = pgdat;
- 
- 		zone_pcp_init(zone);
--		lruvec_init(&zone->lruvec, zone);
-+		lruvec_init(&zone->lruvec);
- 		if (!size)
- 			continue;
- 
++/*
++ * We can ignore refcounting on the connection struct, as all references
++ * will come from the messenger workqueue, which is drained prior to
++ * mon_client destruction.
++ */
++static struct ceph_connection *con_get(struct ceph_connection *con)
++{
++	return con;
++}
++
++static void con_put(struct ceph_connection *con)
++{
++}
++
+ static const struct ceph_connection_operations mon_con_ops = {
+-	.get = ceph_con_get,
+-	.put = ceph_con_put,
++	.get = con_get,
++	.put = con_put,
+ 	.dispatch = dispatch,
+ 	.fault = mon_fault,
+ 	.alloc_msg = mon_alloc_msg,
 
 
