@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab2KVT7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:59:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53550 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030243Ab2KVTvk (ORCPT
+	id S1030233Ab2KVUAF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:00:05 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190Ab2KVUAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:40 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 32/46] staging: line6: drop variax name sysfs attr
-Date: Thu, 22 Nov 2012 20:49:11 +0100
-Message-Id: <1353613765-18690-33-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 15:00:02 -0500
+From: Luca Clementi <luca.clementi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Luca Clementi <luca.clementi@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Brian Swetland <swetland@google.com>, Robert Love <rlove@google.com>
+Subject: [PATCH] Staging: Android: logger: module_exit implementation
+Date: Wed, 21 Nov 2012 19:43:17 -0800
+Message-Id: <1353555797-4284-1-git-send-email-luca.clementi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/variax.c | 27 ---------------------------
- 1 file changed, 27 deletions(-)
+This patch creates the module_exit for the android logger
+so that it can be loaded and unloaded as a module.
 
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index 31ece34..94a9f71 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -218,17 +218,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 			    VARIAX_MODEL_MESSAGE_LENGTH) {
- 				switch (variax->dumpreq.in_progress) {
- 				case VARIAX_DUMP_PASS1:
--					variax_decode(buf +
--						      VARIAX_MODEL_HEADER_LENGTH,
--						      (unsigned char *)
--						      &variax->model_data,
--						      (sizeof
--						       (variax->model_data.
--							name) +
--						       sizeof(variax->
--							      model_data.
--							      control)
--						       / 2) * 2);
- 					line6_dump_request_async
- 					    (&variax->dumpreq, &variax->line6,
- 					     1, VARIAX_DUMP_PASS2);
-@@ -338,19 +327,6 @@ static ssize_t get_string(char *buf, const char *data, int length)
+The android logger is already declared as a tristate in the
+Kconfig but the module_exit function was missing.
+
+device_initcall works also with modprobe since include/linux/init.h:
+
+ #define module_init(x)  __initcall(x);
+ ...
+ #define __initcall(fn) device_initcall(fn)
+
+Tested against f4a75d2eb7b1e2206094b901be09adb31ba63681 Linux 3.7-rc6
+
+Signed-off-by: Luca Clementi <luca.clementi@gmail.com>
+---
+ drivers/staging/android/logger.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index 1d5ed47..dbc63cb 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -676,4 +676,25 @@ static int __init logger_init(void)
+ out:
+ 	return ret;
  }
- 
- /*
--	"read" request on "name" special file.
--*/
--static ssize_t variax_get_name(struct device *dev,
--			       struct device_attribute *attr, char *buf)
--{
--	struct usb_line6_variax *variax =
--	    usb_get_intfdata(to_usb_interface(dev));
--	line6_dump_wait_interruptible(&variax->dumpreq);
--	return get_string(buf, variax->model_data.name,
--			  sizeof(variax->model_data.name));
--}
--
--/*
- 	"read" request on "bank" special file.
- */
- static ssize_t variax_get_bank(struct device *dev,
-@@ -438,7 +414,6 @@ static ssize_t variax_set_raw2(struct device *dev,
- #endif
- 
- /* Variax workbench special files: */
--static DEVICE_ATTR(name, S_IRUGO, variax_get_name, line6_nop_write);
- static DEVICE_ATTR(bank, S_IRUGO, variax_get_bank, line6_nop_write);
- static DEVICE_ATTR(dump, S_IRUGO, variax_get_dump, line6_nop_write);
- static DEVICE_ATTR(active, S_IWUSR | S_IRUGO, variax_get_active,
-@@ -479,7 +454,6 @@ static void variax_destruct(struct usb_interface *interface)
- static int variax_create_files2(struct device *dev)
- {
- 	int err;
--	CHECK_RETURN(device_create_file(dev, &dev_attr_name));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_bank));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_dump));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_active));
-@@ -582,7 +556,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
- 	if (dev != NULL) {
- 		/* remove sysfs entries: */
- 		line6_variax_remove_files(0, 0, dev);
--		device_remove_file(dev, &dev_attr_name);
- 		device_remove_file(dev, &dev_attr_bank);
- 		device_remove_file(dev, &dev_attr_dump);
- 		device_remove_file(dev, &dev_attr_active);
++
++static void __exit logger_exit(void)
++{
++	struct logger_log *current_log, *next_log;
++
++	list_for_each_entry_safe(current_log, next_log, &log_list, logs) {
++		/* we have to delete all the entry inside log_list */
++		misc_deregister(&current_log->misc);
++		vfree(current_log->buffer);
++		kfree(current_log->misc.name);
++		list_del(&current_log->logs);
++		kfree(current_log);
++	}
++}
++
++
+ device_initcall(logger_init);
++module_exit(logger_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Robert Love, <rlove@google.com>");
++MODULE_DESCRIPTION("Android Logger");
 -- 
-1.8.0
+1.7.9.5
 
