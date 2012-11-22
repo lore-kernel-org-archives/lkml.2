@@ -1,185 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab2KVVvX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:51:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
+	id S1755148Ab2KVVw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:52:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977Ab2KVSkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:18 -0500
+	id S1754967Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>
-Subject: [ 162/171] libceph: delay debugfs initialization until we learn global_id
-Date: Wed, 21 Nov 2012 16:41:48 -0800
-Message-Id: <20121122004049.609517165@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 61/83] tmpfs: change final i_blocks BUG to WARNING
+Date: Wed, 21 Nov 2012 16:42:23 -0800
+Message-Id: <20121122004219.283949737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Hugh Dickins <hughd@google.com>
 
-(cherry picked from commit d1c338a509cea5378df59629ad47382810c38623)
+commit 0f3c42f522dc1ad7e27affc0a4aa8c790bce0a66 upstream.
 
-The debugfs directory includes the cluster fsid and our unique global_id.
-We need to delay the initialization of the debug entry until we have
-learned both the fsid and our global_id from the monitor or else the
-second client can't create its debugfs entry and will fail (and multiple
-client instances aren't properly reflected in debugfs).
+Under a particular load on one machine, I have hit shmem_evict_inode()'s
+BUG_ON(inode->i_blocks), enough times to narrow it down to a particular
+race between swapout and eviction.
 
-Reported by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
+It comes from the "if (freed > 0)" asymmetry in shmem_recalc_inode(),
+and the lack of coherent locking between mapping's nrpages and shmem's
+swapped count.  There's a window in shmem_writepage(), between lowering
+nrpages in shmem_delete_from_page_cache() and then raising swapped
+count, when the freed count appears to be +1 when it should be 0, and
+then the asymmetry stops it from being corrected with -1 before hitting
+the BUG.
+
+One answer is coherent locking: using tree_lock throughout, without
+info->lock; reasonable, but the raw_spin_lock in percpu_counter_add() on
+used_blocks makes that messier than expected.  Another answer may be a
+further effort to eliminate the weird shmem_recalc_inode() altogether,
+but previous attempts at that failed.
+
+So far undecided, but for now change the BUG_ON to WARN_ON: in usual
+circumstances it remains a useful consistency check.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/debugfs.c      |    1 
- net/ceph/ceph_common.c |    1 
- net/ceph/debugfs.c     |    4 +++
- net/ceph/mon_client.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++-----
- 4 files changed, 51 insertions(+), 6 deletions(-)
 
---- a/fs/ceph/debugfs.c
-+++ b/fs/ceph/debugfs.c
-@@ -201,6 +201,7 @@ int ceph_fs_debugfs_init(struct ceph_fs_
- 	int err = -ENOMEM;
- 
- 	dout("ceph_fs_debugfs_init\n");
-+	BUG_ON(!fsc->client->debugfs_dir);
- 	fsc->debugfs_congestion_kb =
- 		debugfs_create_file("writeback_congestion_kb",
- 				    0600,
---- a/net/ceph/ceph_common.c
-+++ b/net/ceph/ceph_common.c
-@@ -83,7 +83,6 @@ int ceph_check_fsid(struct ceph_client *
- 			return -1;
- 		}
- 	} else {
--		pr_info("client%lld fsid %pU\n", ceph_client_id(client), fsid);
- 		memcpy(&client->fsid, fsid, sizeof(*fsid));
+---
+ mm/shmem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -654,7 +654,7 @@ static void shmem_evict_inode(struct ino
+ 		kfree(xattr->name);
+ 		kfree(xattr);
  	}
- 	return 0;
---- a/net/ceph/debugfs.c
-+++ b/net/ceph/debugfs.c
-@@ -189,6 +189,9 @@ int ceph_debugfs_client_init(struct ceph
- 	snprintf(name, sizeof(name), "%pU.client%lld", &client->fsid,
- 		 client->monc.auth->global_id);
- 
-+	dout("ceph_debugfs_client_init %p %s\n", client, name);
-+
-+	BUG_ON(client->debugfs_dir);
- 	client->debugfs_dir = debugfs_create_dir(name, ceph_debugfs_dir);
- 	if (!client->debugfs_dir)
- 		goto out;
-@@ -234,6 +237,7 @@ out:
- 
- void ceph_debugfs_client_cleanup(struct ceph_client *client)
- {
-+	dout("ceph_debugfs_client_cleanup %p\n", client);
- 	debugfs_remove(client->debugfs_osdmap);
- 	debugfs_remove(client->debugfs_monmap);
- 	debugfs_remove(client->osdc.debugfs_file);
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -311,6 +311,17 @@ int ceph_monc_open_session(struct ceph_m
- EXPORT_SYMBOL(ceph_monc_open_session);
- 
- /*
-+ * We require the fsid and global_id in order to initialize our
-+ * debugfs dir.
-+ */
-+static bool have_debugfs_info(struct ceph_mon_client *monc)
-+{
-+	dout("have_debugfs_info fsid %d globalid %lld\n",
-+	     (int)monc->client->have_fsid, monc->auth->global_id);
-+	return monc->client->have_fsid && monc->auth->global_id > 0;
-+}
-+
-+/*
-  * The monitor responds with mount ack indicate mount success.  The
-  * included client ticket allows the client to talk to MDSs and OSDs.
-  */
-@@ -320,9 +331,12 @@ static void ceph_monc_handle_map(struct
- 	struct ceph_client *client = monc->client;
- 	struct ceph_monmap *monmap = NULL, *old = monc->monmap;
- 	void *p, *end;
-+	int had_debugfs_info, init_debugfs = 0;
- 
- 	mutex_lock(&monc->mutex);
- 
-+	had_debugfs_info = have_debugfs_info(monc);
-+
- 	dout("handle_monmap\n");
- 	p = msg->front.iov_base;
- 	end = p + msg->front.iov_len;
-@@ -344,12 +358,22 @@ static void ceph_monc_handle_map(struct
- 
- 	if (!client->have_fsid) {
- 		client->have_fsid = true;
-+		if (!had_debugfs_info && have_debugfs_info(monc)) {
-+			pr_info("client%lld fsid %pU\n",
-+				ceph_client_id(monc->client),
-+				&monc->client->fsid);
-+			init_debugfs = 1;
-+		}
- 		mutex_unlock(&monc->mutex);
--		/*
--		 * do debugfs initialization without mutex to avoid
--		 * creating a locking dependency
--		 */
--		ceph_debugfs_client_init(client);
-+
-+		if (init_debugfs) {
-+			/*
-+			 * do debugfs initialization without mutex to avoid
-+			 * creating a locking dependency
-+			 */
-+			ceph_debugfs_client_init(monc->client);
-+		}
-+
- 		goto out_unlocked;
- 	}
- out:
-@@ -865,8 +889,10 @@ static void handle_auth_reply(struct cep
- {
- 	int ret;
- 	int was_auth = 0;
-+	int had_debugfs_info, init_debugfs = 0;
- 
- 	mutex_lock(&monc->mutex);
-+	had_debugfs_info = have_debugfs_info(monc);
- 	if (monc->auth->ops)
- 		was_auth = monc->auth->ops->is_authenticated(monc->auth);
- 	monc->pending_auth = 0;
-@@ -889,7 +915,22 @@ static void handle_auth_reply(struct cep
- 		__send_subscribe(monc);
- 		__resend_generic_request(monc);
- 	}
-+
-+	if (!had_debugfs_info && have_debugfs_info(monc)) {
-+		pr_info("client%lld fsid %pU\n",
-+			ceph_client_id(monc->client),
-+			&monc->client->fsid);
-+		init_debugfs = 1;
-+	}
- 	mutex_unlock(&monc->mutex);
-+
-+	if (init_debugfs) {
-+		/*
-+		 * do debugfs initialization without mutex to avoid
-+		 * creating a locking dependency
-+		 */
-+		ceph_debugfs_client_init(monc->client);
-+	}
+-	BUG_ON(inode->i_blocks);
++	WARN_ON(inode->i_blocks);
+ 	shmem_free_inode(inode->i_sb);
+ 	clear_inode(inode);
  }
- 
- static int __validate_auth(struct ceph_mon_client *monc)
 
 
