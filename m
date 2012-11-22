@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965018Ab2KVTOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:14:44 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46513 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab2KVTOl (ORCPT
+	id S1756610Ab2KVTOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:14:53 -0500
+Received: from mga10.intel.com ([192.55.52.92]:23466 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752962Ab2KVTOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:14:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353585161.9806.37.camel@jlt4.sipsolutions.net>
-References: <1353541455.20173.10.camel@jlt4.sipsolutions.net>
-	<CAC5umyibe0tb+HLxx3dbT7gF_nVAAHso1Y0Qb4Q_+y0KNrnvFg@mail.gmail.com>
-	<1353585161.9806.37.camel@jlt4.sipsolutions.net>
-Date: Thu, 22 Nov 2012 22:29:42 +0900
-Message-ID: <CAC5umyj07UmPtoFowqquoOBERaVa4KngJ=cOa8_AgkcJ_EksSw@mail.gmail.com>
-Subject: Re: [POC] recoverable fault injection
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:14:49 -0500
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: viro@zeniv.linux.org.uk, fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ima: skip policy search for never appraised or measured files
+Date: Thu, 22 Nov 2012 14:49:43 +0200
+Message-Id: <73c092fc6b6075244d834a9858dbe049465f614a.1353588575.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
+References: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
+In-Reply-To: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
+References: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/22 Johannes Berg <johannes@sipsolutions.net>:
+Certain file system types and partitions will never be measured or
+appraised by IMA depending on the policy. For example, pseudo file
+systems are never measured and appraised. In current implementation
+policy will be checked again and again. It happens thousands times
+per second. That is absolute waste of CPU and may be battery resources.
 
-> I thought about something like that, I actually initially played with
-> macros like this:
->
-> #define FAULT_RECOVERABLE_START(ids)    \
->         /* set up the task state */     \
->  fault_recovery_retry:
->
-> #define FAULT_RECOVERABLE_END(ids)      \
->         if (current->encountered_fault) \
->                 goto fault_recovery_retry;
->
-> or so. However, the problem is that if you exit the function between
-> these points, and this is true for your functions as well, you leave the
-> task's fault injection enabled which isn't what you want. So adding
-> functions or macros like this didn't really seem right. Also, functions
-> (rather than macros) have the problem that the retry can't be
-> encapsulated -- note how my macro calls the function again if it failed.
-> So with functions like that, you introduce new manually-coded error and
-> retry paths, that seemed undesirable.
->
-> As you can see in my macro, it's also possible for an allocation to fail
-> but the function to succeed, so the function that is called must have a
-> return value indicating success or failure. I ran into this with debug
-> objects, their allocation failed all the time but obviously the function
-> succeeded as debug objects fail gracefully if they can't allocate
-> memory.
+This patch uses new super block SF_IMA_DISABLED flag. IMA set the
+SF_IMA_DISABLED flag when file system will not be measured and
+appraised and test this flag during subsequent calls to skip policy
+search.
 
-Oh, I completely missed retrying part in your macro.
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+---
+ security/integrity/ima/ima_api.c    |    8 ++------
+ security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
+ security/integrity/integrity.h      |    3 +++
+ 3 files changed, 22 insertions(+), 9 deletions(-)
 
-I looked into FAULT_INJECT_CALL_RECOVERABLE_FUNCTION again,
-then I realized that it is not necessary to be variadic macro.
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index b356884..2156020 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -114,12 +114,8 @@ err_out:
+  */
+ int ima_get_action(struct inode *inode, int mask, int function)
+ {
+-	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE;
+-
+-	if (!ima_appraise)
+-		flags &= ~IMA_APPRAISE;
+-
+-	return ima_match_policy(inode, function, mask, flags);
++	return ima_match_policy(inode, function, mask,
++				IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE);
+ }
+ 
+ int ima_must_measure(struct inode *inode, int mask, int function)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index c7dacd2..a68ea55 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -22,7 +22,6 @@
+ /* flags definitions */
+ #define IMA_FUNC 	0x0001
+ #define IMA_MASK 	0x0002
+-#define IMA_FSMAGIC	0x0004
+ #define IMA_UID		0x0008
+ #define IMA_FOWNER	0x0010
+ 
+@@ -198,7 +197,16 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		     int flags)
+ {
+ 	struct ima_rule_entry *entry;
+-	int action = 0, actmask = flags | (flags << 1);
++	int all_actions = (flags == IMA_DO_MASK);
++	int action = 0, actmask;
++
++	if (inode->i_sb->s_feature_flags & SF_IMA_DISABLED)
++		return 0;
++
++	if (!ima_appraise)
++		flags &= ~IMA_APPRAISE;
++
++	actmask = flags | (flags << 1);
+ 
+ 	list_for_each_entry(entry, ima_rules, list) {
+ 
+@@ -208,6 +216,7 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		if (!ima_match_rules(entry, inode, func, mask))
+ 			continue;
+ 
++		action |= entry->flags & IMA_ACTION_FLAGS;
+ 		action |= entry->action & IMA_DO_MASK;
+ 		if (entry->action & IMA_DO_MASK)
+ 			actmask &= ~(entry->action | entry->action << 1);
+@@ -217,7 +226,12 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		if (!actmask)
+ 			break;
+ 	}
+-
++	if (all_actions && (action & IMA_FS_MASK)) {
++		action &= ~IMA_FS_MASK;
++		/* dont_measure, dont_audit and dont_appraise */
++		if (!action)
++			inode->i_sb->s_feature_flags |= SF_IMA_DISABLED;
++	}
+ 	return action;
+ }
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index e9db763..d67d867 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -26,7 +26,10 @@
+ #define IMA_AUDITED		0x0080
+ 
+ /* iint cache flags */
++#define IMA_ACTION_FLAGS	0xff00
+ #define IMA_DIGSIG		0x0100
++#define IMA_FSMAGIC		0x0200
++#define IMA_FS_MASK		IMA_FSMAGIC
+ 
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT)
+ #define IMA_DONE_MASK		(IMA_MEASURED | IMA_APPRAISED | IMA_AUDITED \
+-- 
+1.7.10.4
 
-You can define macro like wait_event() family and use it like below:
-
-        return FAULT_INJECT_CALL_RECOVERABLE_FUNCTION(
-                BIT(FAULT_ATTR_SLAB) | BIT(FAULT_ATTR_PAGE_ALLOC),
-                _nl80211_remain_on_channel(skb, info));
