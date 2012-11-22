@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab2KVV2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:28:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
+	id S1757914Ab2KVV2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:28:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755205Ab2KVSkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755202Ab2KVSkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Colin Ian King <colin.king@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [ 32/83] pstore: Fix NULL pointer dereference in console writes
-Date: Wed, 21 Nov 2012 16:41:54 -0800
-Message-Id: <20121122004216.176580674@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 158/171] libceph: avoid dropping con mutex before fault
+Date: Wed, 21 Nov 2012 16:41:44 -0800
+Message-Id: <20121122004049.212668349@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 70a6f46d7b0ec03653b9ab3f8063a9717a4a53ef upstream.
+(cherry picked from commit 8636ea672f0c5ab7478c42c5b6705ebd1db7eb6a)
 
-Passing a NULL id causes a NULL pointer deference in writers such as
-erst_writer and efi_pstore_write because they expect to update this id.
-Pass a dummy id instead.
+The ceph_fault() function takes the con mutex, so we should avoid
+dropping it before calling it.  This fixes a potential race with
+another thread calling ceph_con_close(), or _open(), or similar (we
+don't reverify con->state after retaking the lock).
 
-This avoids a cascade of oopses caused when the initial
-pstore_console_write passes a null which in turn causes writes to the
-console causing further oopses in subsequent pstore_console_write calls.
+Add annotation so that lockdep realizes we will drop the mutex before
+returning.
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/pstore/platform.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ceph/messenger.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -161,12 +161,13 @@ static void pstore_console_write(struct
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2336,7 +2336,6 @@ done_unlocked:
+ 	return;
  
- 	while (s < e) {
- 		unsigned long flags;
-+		u64 id;
- 
- 		if (c > psinfo->bufsize)
- 			c = psinfo->bufsize;
- 		spin_lock_irqsave(&psinfo->buf_lock, flags);
- 		memcpy(psinfo->buf, s, c);
--		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-+		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 		s += c;
- 		c = e - s;
+ fault:
+-	mutex_unlock(&con->mutex);
+ 	ceph_fault(con);     /* error/fault path */
+ 	goto done_unlocked;
+ }
+@@ -2347,9 +2346,8 @@ fault:
+  * exponential backoff
+  */
+ static void ceph_fault(struct ceph_connection *con)
++	__releases(con->mutex)
+ {
+-	mutex_lock(&con->mutex);
+-
+ 	pr_err("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
+ 	       ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
+ 	dout("fault %p state %lu to peer %s\n",
 
 
