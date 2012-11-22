@@ -1,137 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab2KVWyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:54:32 -0500
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:42589 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758813Ab2KVWy1 (ORCPT
+	id S1758914Ab2KVWzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:55:08 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757235Ab2KVWvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:54:27 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>
-Subject: [PATCH v2 2/2] mmc: dw_mmc: Handle wp-gpios from device tree
-Date: Thu, 22 Nov 2012 14:53:50 -0800
-Message-Id: <1353624835-19137-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1353624835-19137-1-git-send-email-dianders@chromium.org>
-References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
- <1353624835-19137-1-git-send-email-dianders@chromium.org>
+	Thu, 22 Nov 2012 17:51:33 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 24/33] sched: Implement NUMA scanning backoff
+Date: Thu, 22 Nov 2012 23:49:45 +0100
+Message-Id: <1353624594-1118-25-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some SoCs (like exynos5250) you need to use an external GPIO for
-write protect.  Add support for wp-gpios to the core dw_mmc driver
-since it could be useful across multiple SoCs.
+Back off slowly from scanning, up to sysctl_sched_numa_scan_period_max
+(1.6 seconds). Scan faster again if we were forced to switch to
+another node.
 
-With this change I am able to make use of the write protect for the
-external SD slot on exynos5250-snow.
+This makes sure that workload in equilibrium don't get scanned as often
+as workloads that are still converging.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-Changes in v2:
-- Fixed return type from u32 to int
-- Return -EINVAL instead of -1
+ kernel/sched/core.c | 6 ++++++
+ kernel/sched/fair.c | 8 +++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
- drivers/mmc/host/dw_mmc.c |   35 +++++++++++++++++++++++++++++++++++
- 1 files changed, 35 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 5b41348..42d4f19 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -34,6 +34,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/workqueue.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include "dw_mmc.h"
- 
-@@ -74,6 +75,7 @@ struct idmac_desc {
-  * struct dw_mci_slot - MMC slot state
-  * @mmc: The mmc_host representing this slot.
-  * @host: The MMC controller this slot is using.
-+ * @wp_gpio: If gpio_is_valid() we'll use this to read write protect.
-  * @ctype: Card type for this slot.
-  * @mrq: mmc_request currently being processed or waiting to be
-  *	processed, or NULL when the slot is idle.
-@@ -88,6 +90,8 @@ struct dw_mci_slot {
- 	struct mmc_host		*mmc;
- 	struct dw_mci		*host;
- 
-+	int			wp_gpio;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index af0602f..ec3cc74 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6024,6 +6024,12 @@ void sched_setnuma(struct task_struct *p, int node, int shared)
+ 	if (on_rq)
+ 		enqueue_task(rq, p, 0);
+ 	task_rq_unlock(rq, p, &flags);
 +
- 	u32			ctype;
- 
- 	struct mmc_request	*mrq;
-@@ -832,6 +836,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 		read_only = 0;
- 	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
-+	else if (gpio_is_valid(slot->wp_gpio))
-+		read_only = gpio_get_value(slot->wp_gpio);
- 	else
- 		read_only =
- 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
-@@ -1802,6 +1808,29 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- 			       " as 1\n");
- 	return bus_wd;
++	/*
++	 * Reset the scanning period. If the task converges
++	 * on this node then we'll back off again:
++	 */
++	p->numa_scan_period = sysctl_sched_numa_scan_period_min;
  }
-+
-+/* find the write protect gpio for a given slot; or -1 if none specified */
-+static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
-+	int gpio;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	gpio = of_get_named_gpio(np, "wp-gpios", 0);
-+
-+	/* Having a missing entry is valid; return silently */
-+	if (!gpio_is_valid(gpio))
-+		return -EINVAL;
-+
-+	if (devm_gpio_request(dev, gpio, "dw-mci-wp")) {
-+		dev_warn(dev, "gpio [%d] request failed\n", gpio);
-+		return -EINVAL;
+ 
+ #endif /* CONFIG_NUMA_BALANCING */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8f0e6ba..59fea2e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -865,8 +865,10 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
+ 
+-	if (max_node != p->numa_max_node)
++	if (max_node != p->numa_max_node) {
+ 		sched_setnuma(p, max_node, task_numa_shared(p));
++		goto out_backoff;
 +	}
-+
-+	return gpio;
-+}
- #else /* CONFIG_OF */
- static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- {
-@@ -1811,6 +1840,10 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
- {
- 	return NULL;
+ 
+ 	p->numa_migrate_seq++;
+ 	if (sched_feat(NUMA_SETTLE) &&
+@@ -882,7 +884,11 @@ static void task_numa_placement(struct task_struct *p)
+ 	if (shared != task_numa_shared(p)) {
+ 		sched_setnuma(p, p->numa_max_node, shared);
+ 		p->numa_migrate_seq = 0;
++		goto out_backoff;
+ 	}
++	return;
++out_backoff:
++	p->numa_scan_period = min(p->numa_scan_period * 2, sysctl_sched_numa_scan_period_max);
  }
-+static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
-+{
-+	return -EINVAL;
-+}
- #endif /* CONFIG_OF */
  
- static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
-@@ -1923,6 +1956,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	else
- 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
- 
-+	slot->wp_gpio = dw_mci_of_get_wp_gpio(host->dev, slot->id);
-+
- 	mmc_add_host(mmc);
- 
- #if defined(CONFIG_DEBUG_FS)
+ /*
 -- 
-1.7.7.3
+1.7.11.7
 
