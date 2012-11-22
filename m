@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab2KWFZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 00:25:01 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1873 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2KWFZA (ORCPT
+	id S1751989Ab2KWFqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 00:46:11 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:56738 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab2KWFqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 00:25:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 22 Nov 2012 21:24:57 -0800
-Message-ID: <50AF08A7.8060308@nvidia.com>
-Date: Fri, 23 Nov 2012 10:54:55 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 23 Nov 2012 00:46:10 -0500
+X-Greylist: delayed 24480 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 00:46:10 EST
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [BUGFIX PATCH] USB: chipidea: fix use after free bug
+Date: Thu, 22 Nov 2012 10:11:25 +0100
+Message-Id: <1353575485-23941-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: tps80031: Implement list_voltage and set n_voltages
- = 1 for fixed regulators
-References: <1353633954.7586.1.camel@phoenix>
-In-Reply-To: <1353633954.7586.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 November 2012 06:55 AM, Axel Lin wrote:
-> Implement list_voltage for fixed regulators, otherwise
-> regulator_is_supported_voltage() returns 0.
->
+The pointer to a platform_device struct must not be dereferenced after
+the device has been unregistered.
 
-This rail is used for vbus only which is 5V or 0. I don't see any use 
-for using this rail for other purpose. It just need enable/disable.
+This bug produces a crash when unloading the ci13xxx kernel module
+compiled with CONFIG_PAGE_POISONING enabled.
 
-But this change does not hurt anything on my usage.
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/usb/chipidea/core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index f69d029..b726c49 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -385,8 +385,9 @@ EXPORT_SYMBOL_GPL(ci13xxx_add_device);
+ 
+ void ci13xxx_remove_device(struct platform_device *pdev)
+ {
++	int id = pdev->id;
+ 	platform_device_unregister(pdev);
+-	ida_simple_remove(&ci_ida, pdev->id);
++	ida_simple_remove(&ci_ida, id);
+ }
+ EXPORT_SYMBOL_GPL(ci13xxx_remove_device);
+ 
+-- 
+1.7.2.5
 
