@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab2KVVbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:31:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49627 "EHLO mail.kernel.org"
+	id S1757937Ab2KVVbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:31:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755056Ab2KVSki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755180Ab2KVSki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@dreamhost.com>, Sage Weil <sage@newdream.net>
-Subject: [ 088/171] rbd: dont hold spinlock during messenger flush
-Date: Wed, 21 Nov 2012 16:40:34 -0800
-Message-Id: <20121122004042.200738895@linuxfoundation.org>
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 041/171] netfilter: Validate the sequence number of dataless ACK packets as well
+Date: Wed, 21 Nov 2012 16:39:47 -0800
+Message-Id: <20121122004037.483723325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,51 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@dreamhost.com>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-(cherry picked from commit cd9d9f5df6098c50726200d4185e9e8da32785b3)
+commit 4a70bbfaef0361d27272629d1a250a937edcafe4 upstream.
 
-A recent change made changes to the rbd_client_list be protected by
-a spinlock.  Unfortunately in rbd_put_client(), the lock is taken
-before possibly dropping the last reference to an rbd_client, and on
-the last reference that eventually calls flush_workqueue() which can
-sleep.
+We spare nothing by not validating the sequence number of dataless
+ACK packets and enabling it makes harder off-path attacks.
 
-The problem was flagged by a debug spinlock warning:
-    BUG: spinlock wrong CPU on CPU#3, rbd/27814
+See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
+http://arxiv.org/abs/1201.2074
 
-The solution is to move the spinlock acquisition and release inside
-rbd_client_release(), which is the spot where it's really needed for
-protecting the removal of the rbd_client from the client list.
-
-Signed-off-by: Alex Elder <elder@dreamhost.com>
-Reviewed-by: Sage Weil <sage@newdream.net>
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/rbd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -450,7 +450,9 @@ static void rbd_client_release(struct kr
- 	struct rbd_client *rbdc = container_of(kref, struct rbd_client, kref);
+---
+ net/netfilter/nf_conntrack_proto_tcp.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -627,15 +627,9 @@ static bool tcp_in_window(const struct n
+ 		ack = sack = receiver->td_end;
+ 	}
  
- 	dout("rbd_release_client %p\n", rbdc);
-+	spin_lock(&rbd_client_list_lock);
- 	list_del(&rbdc->node);
-+	spin_unlock(&rbd_client_list_lock);
- 
- 	ceph_destroy_client(rbdc->client);
- 	kfree(rbdc->rbd_opts);
-@@ -463,9 +465,7 @@ static void rbd_client_release(struct kr
-  */
- static void rbd_put_client(struct rbd_device *rbd_dev)
- {
--	spin_lock(&rbd_client_list_lock);
- 	kref_put(&rbd_dev->rbd_client->kref, rbd_client_release);
--	spin_unlock(&rbd_client_list_lock);
- 	rbd_dev->rbd_client = NULL;
- }
+-	if (seq == end
+-	    && (!tcph->rst
+-		|| (seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)))
++	if (tcph->rst && seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)
+ 		/*
+-		 * Packets contains no data: we assume it is valid
+-		 * and check the ack value only.
+-		 * However RST segments are always validated by their
+-		 * SEQ number, except when seq == 0 (reset sent answering
+-		 * SYN.
++		 * RST sent answering SYN.
+ 		 */
+ 		seq = end = sender->td_end;
  
 
 
