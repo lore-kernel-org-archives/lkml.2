@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2KVS6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:33 -0500
+	id S932560Ab2KVUz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:55:27 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964786Ab2KVS6Z (ORCPT
+	with ESMTP id S1756158Ab2KVS6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:25 -0500
-Date: Wed, 21 Nov 2012 18:24:28 -0800
+	Thu, 22 Nov 2012 13:58:33 -0500
+Date: Wed, 21 Nov 2012 18:08:52 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-600cc5b7f6371706679490d7ee108015ae57ac2f@git.kernel.org>
+Message-ID: <tip-cf47065961b48727b4e47bc3e2e67f4996878437@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-46-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-46-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1353123563-3103-31-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-31-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] mm: Kill NO_BOOTMEM version free_all_bootmem_node()
-Git-Commit-ID: 600cc5b7f6371706679490d7ee108015ae57ac2f
+Subject: [tip:x86/mm2] x86, mm: Move back pgt_buf_* to mm/init.c
+Git-Commit-ID: cf47065961b48727b4e47bc3e2e67f4996878437
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,58 +27,57 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:24:34 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:08:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  600cc5b7f6371706679490d7ee108015ae57ac2f
-Gitweb:     http://git.kernel.org/tip/600cc5b7f6371706679490d7ee108015ae57ac2f
+Commit-ID:  cf47065961b48727b4e47bc3e2e67f4996878437
+Gitweb:     http://git.kernel.org/tip/cf47065961b48727b4e47bc3e2e67f4996878437
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:39:22 -0800
+AuthorDate: Fri, 16 Nov 2012 19:39:07 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:50 -0800
+CommitDate: Sat, 17 Nov 2012 11:59:36 -0800
 
-mm: Kill NO_BOOTMEM version free_all_bootmem_node()
+x86, mm: Move back pgt_buf_* to mm/init.c
 
-Now NO_BOOTMEM version free_all_bootmem_node() does not really
-do free_bootmem at all, and it only call register_page_bootmem_info_node
-for online nodes instead.
-
-That is confusing.
-
-We can kill that free_all_bootmem_node(), after we kill two callings
-in x86 and sparc.
+Also change them to static.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-46-git-send-email-yinghai@kernel.org
+Link: http://lkml.kernel.org/r/1353123563-3103-31-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- mm/nobootmem.c | 14 --------------
- 1 file changed, 14 deletions(-)
+ arch/x86/include/asm/init.h | 4 ----
+ arch/x86/mm/init.c          | 6 +++---
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index bd82f6b..ecc2f13 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -138,20 +138,6 @@ unsigned long __init free_low_memory_core_early(int nodeid)
- }
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 4f13998..626ea8d 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,8 +12,4 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
  
- /**
-- * free_all_bootmem_node - release a node's free pages to the buddy allocator
-- * @pgdat: node to be released
-- *
-- * Returns the number of pages actually released.
-- */
--unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
--{
--	register_page_bootmem_info_node(pgdat);
+-extern unsigned long __initdata pgt_buf_start;
+-extern unsigned long __meminitdata pgt_buf_end;
+-extern unsigned long __meminitdata pgt_buf_top;
 -
--	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
--	return 0;
--}
--
--/**
-  * free_all_bootmem - release free pages to the buddy allocator
-  *
-  * Returns the number of pages actually released.
+ #endif /* _ASM_X86_INIT_32_H */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index bed4888..3cadf10 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -19,9 +19,9 @@
+ 
+ #include "mm_internal.h"
+ 
+-unsigned long __initdata pgt_buf_start;
+-unsigned long __meminitdata pgt_buf_end;
+-unsigned long __meminitdata pgt_buf_top;
++static unsigned long __initdata pgt_buf_start;
++static unsigned long __initdata pgt_buf_end;
++static unsigned long __initdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
+ 
