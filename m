@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965167Ab2KVTal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:30:41 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58507 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2KVTah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:30:37 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 3/4] staging/rtl8187se: Fix spacing coding style in r8180_core.c
-Date: Thu, 22 Nov 2012 09:06:50 +0900
-Message-Id: <1353542810-21059-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
-References: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
+	id S1756915Ab2KVTb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:31:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab2KVTbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:31:23 -0500
+Subject: Re: [PATCH v4 27/31] gfs2: Convert aio_read/write ops to
+ read/write_iter
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        cluster-devel@redhat.com
+In-Reply-To: <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+	 <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 22 Nov 2012 09:51:33 +0000
+Message-ID: <1353577893.2757.14.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following errors fixed.
--ERROR: "foo * bar" should be "foo *bar"
--ERROR: "(foo*)" should be "(foo *)"
+Hi,
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/rtl8187se/r8180_core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On Wed, 2012-11-21 at 16:41 -0600, Dave Kleikamp wrote:
+> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> ---
+>  fs/gfs2/file.c | 21 ++++++++++-----------
+>  1 file changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index e056b4c..bcea69e 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>  }
+>  
+>  /**
+> - * gfs2_file_aio_write - Perform a write to a file
+> + * gfs2_file_write_iter - Perform a write to a file
+>   * @iocb: The io context
+> - * @iov: The data to write
+> - * @nr_segs: Number of @iov segments
+> + * @iter: The data to write
+>   * @pos: The file position
+>   *
+>   * We have to do a lock/unlock here to refresh the inode size for
+> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>   *
+>   */
+>  
+> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> -				   unsigned long nr_segs, loff_t pos)
+> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+> +				    loff_t pos)
+>  {
+>  	struct file *file = iocb->ki_filp;
+> -	size_t writesize = iov_length(iov, nr_segs);
+> +	size_t writesize = iov_iter_count(iter);
+Hmm, I'm not sure that length isn't a better name than count for this
+function. What we want is the total length of the i/o request and count
+sounds to me as if it would refer to the number of segments. So could we
+have a iov_iter_length() function instead perhaps?
 
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index 8c8b09d..3119fe6 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -1699,7 +1699,7 @@ void rtl8180_prepare_beacon(struct net_device *dev)
-  * descriptor in the ring buffer, copyes the frame in a TX buffer
-  * and kicks the NIC to ensure it does the DMA transfer.
-  */
--short rtl8180_tx(struct net_device *dev, u8* txbuf, int len, int priority,
-+short rtl8180_tx(struct net_device *dev, u8 *txbuf, int len, int priority,
- 		 short morefrag, short descfrag, int rate)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-@@ -2211,7 +2211,7 @@ void rtl8180_watch_dog(struct net_device *dev);
- 
- void watch_dog_adaptive(unsigned long data)
- {
--	struct r8180_priv* priv = ieee80211_priv((struct net_device *)data);
-+	struct r8180_priv *priv = ieee80211_priv((struct net_device *)data);
- 
- 	if (!priv->up) {
- 		DMESG("<----watch_dog_adaptive():driver is not up!\n");
-@@ -3462,7 +3462,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
- 		return ;
- 	}
- 
--	nicv = (u32 *)((nic - nicbegin) + (u8*)begin);
-+	nicv = (u32 *)((nic - nicbegin) + (u8 *)begin);
- 	if ((head <= tail && (nicv > tail || nicv < head)) ||
- 		(head > tail && (nicv > tail && nicv < head))) {
- 			DMESGW("nic has lost pointer");
--- 
-1.7.9.5
+Otherwise this looks good from a GFS2 perspective,
+
+Steve.
+
+>  	struct dentry *dentry = file->f_dentry;
+>  	struct gfs2_inode *ip = GFS2_I(dentry->d_inode);
+>  	int ret;
+> @@ -692,7 +691,7 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  		gfs2_glock_dq_uninit(&gh);
+>  	}
+>  
+> -	return generic_file_aio_write(iocb, iov, nr_segs, pos);
+> +	return generic_file_write_iter(iocb, iter, pos);
+>  }
+>  
+>  static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
+> @@ -1021,9 +1020,9 @@ static int gfs2_flock(struct file *file, int cmd, struct file_lock *fl)
+>  const struct file_operations gfs2_file_fops = {
+>  	.llseek		= gfs2_llseek,
+>  	.read		= do_sync_read,
+> -	.aio_read	= generic_file_aio_read,
+> +	.read_iter	= generic_file_read_iter,
+>  	.write		= do_sync_write,
+> -	.aio_write	= gfs2_file_aio_write,
+> +	.write_iter	= gfs2_file_write_iter,
+>  	.unlocked_ioctl	= gfs2_ioctl,
+>  	.mmap		= gfs2_mmap,
+>  	.open		= gfs2_open,
+> @@ -1053,9 +1052,9 @@ const struct file_operations gfs2_dir_fops = {
+>  const struct file_operations gfs2_file_fops_nolock = {
+>  	.llseek		= gfs2_llseek,
+>  	.read		= do_sync_read,
+> -	.aio_read	= generic_file_aio_read,
+> +	.read_iter	= generic_file_read_iter,
+>  	.write		= do_sync_write,
+> -	.aio_write	= gfs2_file_aio_write,
+> +	.write_iter	= gfs2_file_write_iter,
+>  	.unlocked_ioctl	= gfs2_ioctl,
+>  	.mmap		= gfs2_mmap,
+>  	.open		= gfs2_open,
+
 
