@@ -1,42 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab2KVUV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:21:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46923 "EHLO mail.zytor.com"
+	id S1756440Ab2KVUVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:21:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40081 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756110Ab2KVUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:21:26 -0500
-Message-ID: <50AE8914.1020507@zytor.com>
-Date: Thu, 22 Nov 2012 12:20:36 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <CAE9FiQXKgnZyFNujKhMn94+0JQ6jtAHOihmtMOmk_gJi-4_aYQ@mail.gmail.com> <50AE7429.6030308@zytor.com> <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
-In-Reply-To: <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756927Ab2KVT0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:48 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 32/40] mm: numa: Rate limit the amount of memory that is migrated between nodes
+Date: Thu, 22 Nov 2012 19:25:45 +0000
+Message-Id: <1353612353-1576-33-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 12:18 PM, Yinghai Lu wrote:
- >
-> for kexec bzImage --real-mode-entry, code after setup_header will be executed.
->
+NOTE: This is very heavily based on similar logic in autonuma. It should
+	be signed off by Andrea but because there was no standalone
+	patch and it's sufficiently different from what he did that
+	the signed-off is omitted. Will be added back if requested.
 
-For real mode entry we go through the real mode path which takes care of 
-this.  What matters is the 32/64-bit entry point.
+If a large number of pages are misplaced then the memory bus can be
+saturated just migrating pages between nodes. This patch rate-limits
+the amount of memory that can be migrating between nodes.
 
-	-hpa
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/migrate.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 4b876d2..cf0970f 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1461,12 +1461,21 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
+ }
+ 
+ /*
++ * page migration rate limiting control.
++ * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
++ * window of time. Default here says do not migrate more than 1280M per second.
++ */
++static unsigned int migrate_interval_millisecs __read_mostly = 100;
++static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
++
++/*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
+  * the page that will be dropped by this function before returning.
+  */
+ int migrate_misplaced_page(struct page *page, int node)
+ {
++	pg_data_t *pgdat = NODE_DATA(node);
+ 	int isolated = 0;
+ 	LIST_HEAD(migratepages);
+ 
+@@ -1479,8 +1488,27 @@ int migrate_misplaced_page(struct page *page, int node)
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Rate-limit the amount of data that is being migrated to a node.
++	 * Optimal placement is no good if the memory bus is saturated and
++	 * all the time is being spent migrating!
++	 */
++	spin_lock(&pgdat->balancenuma_migrate_lock);
++	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window)) {
++		pgdat->balancenuma_migrate_nr_pages = 0;
++		pgdat->balancenuma_migrate_next_window = jiffies +
++			msecs_to_jiffies(migrate_interval_millisecs);
++	}
++	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages) {
++		spin_unlock(&pgdat->balancenuma_migrate_lock);
++		put_page(page);
++		goto out;
++	}
++	pgdat->balancenuma_migrate_nr_pages++;
++	spin_unlock(&pgdat->balancenuma_migrate_lock);
++
+ 	/* Avoid migrating to a node that is nearly full */
+-	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++	if (migrate_balanced_pgdat(pgdat, 1)) {
+ 		int page_lru;
+ 
+ 		if (isolate_lru_page(page)) {
+@@ -1515,6 +1543,7 @@ int migrate_misplaced_page(struct page *page, int node)
+ 			count_vm_numa_event(NUMA_PAGE_MIGRATE);
+ 	}
+ 	BUG_ON(!list_empty(&migratepages));
++
+ out:
+ 	return isolated;
+ }
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.9.2
 
