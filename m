@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab2KVTrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:47:13 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59763 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab2KVTrJ (ORCPT
+	id S1757300Ab2KVTrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:47:36 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33752
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755492Ab2KVTre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:47:09 -0500
-From: Kumar Amit Mehta <gmate.amit@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: dan.carpenter@oracle.com, alan@lxorguk.ukuu.org.uk, wfp5p@virginia.edu,
-        geert@linux-m68k.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/2] staging: dgrp: dgrp_tty.c: Audit the return values of get/put_user()
-Date: Fri, 23 Nov 2012 01:16:35 +0530
-Message-Id: <1353613595-8505-3-git-send-email-gmate.amit@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353613595-8505-1-git-send-email-gmate.amit@gmail.com>
-References: <1353613595-8505-1-git-send-email-gmate.amit@gmail.com>
+	Thu, 22 Nov 2012 14:47:34 -0500
+Date: Thu, 22 Nov 2012 14:47:31 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH v4 00/31] loop: Issue O_DIRECT aio using bio_vec
+Message-ID: <20121122194731.GA12057@infradead.org>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix for missing audits for return values of get_user() and put_user().
-Inspecting the return values of get/put_user() would make the access_ok()
-redundant, hence removing calls to access_ok() in such scenarios.
+On Wed, Nov 21, 2012 at 04:40:40PM -0600, Dave Kleikamp wrote:
+> It introduces new file ops, read_iter() and write_iter(), that replace the
+> aio_read() and aio_write() operations. The iov_iter structure can now contain
+> either a user-space iovec or a kernel-space bio_vec. Since it would be
+> overly complicated to replace every instance of aio_read() and aio_write(),
+> the old operations are not removed, but file systems implementing the new
+> ones need not keep the old ones.
 
-Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
----
- drivers/staging/dgrp/dgrp_tty.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/staging/dgrp/dgrp_tty.c b/drivers/staging/dgrp/dgrp_tty.c
-index b46f56f..f4fdadc 100644
---- a/drivers/staging/dgrp/dgrp_tty.c
-+++ b/drivers/staging/dgrp/dgrp_tty.c
-@@ -2265,9 +2265,7 @@ static int get_modem_info(struct ch_struct *ch, unsigned int *value)
- 		| ((mlast & DM_RI)  ? TIOCM_RNG : 0)
- 		| ((mlast & DM_DSR) ? TIOCM_DSR : 0)
- 		| ((mlast & DM_CTS) ? TIOCM_CTS : 0);
--	put_user(mlast, (unsigned int __user *) value);
--
--	return 0;
-+	return put_user(mlast, (unsigned int __user *) value);
- }
- 
- /*
-@@ -2285,7 +2283,8 @@ static int set_modem_info(struct ch_struct *ch, unsigned int command,
- 	if (error == 0)
- 		return -EFAULT;
- 
--	get_user(arg, (unsigned int __user *) value);
-+	if (get_user(arg, (unsigned int __user *) value))
-+		return -EFAULT;
- 	mval |= ((arg & TIOCM_RTS) ? DM_RTS : 0)
- 		| ((arg & TIOCM_DTR) ? DM_DTR : 0);
- 
-@@ -2616,12 +2615,8 @@ static int dgrp_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
- 		return 0;
- 
- 	case TIOCGSOFTCAR:
--		rc = access_ok(VERIFY_WRITE, (void __user *) arg,
--			       sizeof(long));
--		if (rc == 0)
--			return -EFAULT;
--		put_user(C_CLOCAL(tty) ? 1 : 0, (unsigned long __user *) arg);
--		return 0;
-+		return put_user(C_CLOCAL(tty) ? 1 : 0,
-+				(unsigned long __user *) arg);
- 
- 	case TIOCMGET:
- 		rc = access_ok(VERIFY_WRITE, (void __user *) arg,
-@@ -2844,17 +2839,16 @@ static int dgrp_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
- 		break;
- 
- 	case DIGI_GETCUSTOMBAUD:
--		rc = access_ok(VERIFY_WRITE, (void __user *) arg, sizeof(int));
--		if (rc == 0)
-+		if (put_user(ch->ch_custom_speed, (unsigned int __user *) arg))
- 			return -EFAULT;
--		put_user(ch->ch_custom_speed, (unsigned int __user *) arg);
- 		break;
- 
- 	case DIGI_SETCUSTOMBAUD:
- 	{
- 		int new_rate;
- 
--		get_user(new_rate, (unsigned int __user *) arg);
-+		if (get_user(new_rate, (unsigned int __user *) arg))
-+			return -EFAULT;
- 		dgrp_set_custom_speed(ch, new_rate);
- 
- 		break;
--- 
-1.7.9.5
+How many instance of the old ones are left?  I'd really prefer to make
+the full transition very quickly, even if not nessecarily in a single
+patchset.
 
