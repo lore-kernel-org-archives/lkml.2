@@ -1,127 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2KVUCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:02:36 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965120Ab2KVTve (ORCPT
+	id S965298Ab2KVUC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:02:57 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33852
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965120Ab2KVUCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:34 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 29/46] staging: line6: drop variax model sysfs attr
-Date: Thu, 22 Nov 2012 20:49:08 +0100
-Message-Id: <1353613765-18690-30-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 15:02:55 -0500
+Date: Thu, 22 Nov 2012 02:08:22 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: NeilBrown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, rminnich@sandia.gov, viro@zeniv.linux.org.uk,
+        martin.petersen@oracle.com, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] bdi: Track users that require stable page writes
+Message-ID: <20121122070822.GA8231@infradead.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020034.10225.51692.stgit@blackbox.djwong.org>
+ <20121121105624.GA19050@infradead.org>
+ <20121121215207.GB32202@blackbox.djwong.org>
+ <20121122090643.7c9551dc@notabene.brown>
+ <20121122023343.GC32202@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122023343.GC32202@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/variax.c | 38 --------------------------------------
- drivers/staging/line6/variax.h |  5 -----
- 2 files changed, 43 deletions(-)
+On Wed, Nov 21, 2012 at 06:33:43PM -0800, Darrick J. Wong wrote:
+> How's this look to everyone?  No more user-writable flag, and most of the
+> helper functions are gone.
 
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index 8df529f..e76255b 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -212,7 +212,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 
- 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_DEVICE:
- 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_HOST:
--		variax->model = buf[1];
- 		line6_dump_request_async(&variax->dumpreq, &variax->line6, 0,
- 					 VARIAX_DUMP_PASS1);
- 		break;
-@@ -334,39 +333,6 @@ static ssize_t variax_set_volume(struct device *dev,
- }
- 
- /*
--	"read" request on "model" special file.
--*/
--static ssize_t variax_get_model(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct usb_line6_variax *variax =
--	    usb_get_intfdata(to_usb_interface(dev));
--	return sprintf(buf, "%d\n", variax->model);
--}
--
--/*
--	"write" request on "model" special file.
--*/
--static ssize_t variax_set_model(struct device *dev,
--				struct device_attribute *attr,
--				const char *buf, size_t count)
--{
--	struct usb_line6_variax *variax =
--	    usb_get_intfdata(to_usb_interface(dev));
--	u8 value;
--	int ret;
--
--	ret = kstrtou8(buf, 10, &value);
--	if (ret)
--		return ret;
--
--	if (line6_send_program(&variax->line6, value) == 0)
--		variax->model = value;
--
--	return count;
--}
--
--/*
- 	"read" request on "active" special file.
- */
- static ssize_t variax_get_active(struct device *dev,
-@@ -549,8 +515,6 @@ static ssize_t variax_set_raw2(struct device *dev,
- #endif
- 
- /* Variax workbench special files: */
--static DEVICE_ATTR(model, S_IWUSR | S_IRUGO, variax_get_model,
--		   variax_set_model);
- static DEVICE_ATTR(volume, S_IWUSR | S_IRUGO, variax_get_volume,
- 		   variax_set_volume);
- static DEVICE_ATTR(tone, S_IWUSR | S_IRUGO, variax_get_tone, variax_set_tone);
-@@ -595,7 +559,6 @@ static void variax_destruct(struct usb_interface *interface)
- static int variax_create_files2(struct device *dev)
- {
- 	int err;
--	CHECK_RETURN(device_create_file(dev, &dev_attr_model));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_volume));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_tone));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_name));
-@@ -701,7 +664,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
- 	if (dev != NULL) {
- 		/* remove sysfs entries: */
- 		line6_variax_remove_files(0, 0, dev);
--		device_remove_file(dev, &dev_attr_model);
- 		device_remove_file(dev, &dev_attr_volume);
- 		device_remove_file(dev, &dev_attr_tone);
- 		device_remove_file(dev, &dev_attr_name);
-diff --git a/drivers/staging/line6/variax.h b/drivers/staging/line6/variax.h
-index e2999ab..4151c14 100644
---- a/drivers/staging/line6/variax.h
-+++ b/drivers/staging/line6/variax.h
-@@ -78,11 +78,6 @@ struct usb_line6_variax {
- 	unsigned char *buffer_activate;
- 
- 	/**
--		Model number.
--	*/
--	int model;
--
--	/**
- 		Current model settings.
- 	*/
- 	struct variax_model model_data;
--- 
-1.8.0
+Now fix up the subject line as well and we might have a deal :)
+
+> (Are these emails even getting through?)
+
+At least this one is.
 
