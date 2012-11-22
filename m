@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab2KVV2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:28:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	id S1757921Ab2KVV3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:29:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2KVSkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:42 -0500
+	id S1755189Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@newdream.net>, Alex Elder <elder@inktank.com>
-Subject: [ 084/171] libceph: use con get/put ops from osd_client
-Date: Wed, 21 Nov 2012 16:40:30 -0800
-Message-Id: <20121122004041.798943811@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 064/171] ceph: messenger: change read_partial() to take "end" arg
+Date: Wed, 21 Nov 2012 16:40:10 -0800
+Message-Id: <20121122004039.798760009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,69 +25,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 0d47766f14211a73eaf54cab234db134ece79f49)
+(cherry picked from commit fd51653f78cf40a0516e521b6de22f329c5bad8d)
 
-There were a few direct calls to ceph_con_{get,put}() instead of the con
-ops from osd_client.c.  This is a bug since those ops aren't defined to
-be ceph_con_get/put.
+Make the second argument to read_partial() be the ending input byte
+position rather than the beginning offset it now represents.  This
+amounts to moving the addition "to + size" into the caller.
 
-This breaks refcounting on the ceph_osd structs that contain the
-ceph_connections, and could lead to all manner of strangeness.
-
-The purpose of the ->get and ->put methods in a ceph connection are
-to allow the connection to indicate it has a reference to something
-external to the messaging system, *not* to indicate something
-external has a reference to the connection.
-
-[elder@inktank.com: added that last sentence]
-
-Signed-off-by: Sage Weil <sage@newdream.net>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-(cherry picked from commit 88ed6ea0b295f8e2383d599a04027ec596cdf97b)
 ---
- net/ceph/osd_client.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/ceph/messenger.c |   60 ++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 38 insertions(+), 22 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -144,7 +144,7 @@ void ceph_osdc_release_request(struct kr
- 		     req->r_pages, req->r_con_filling_msg);
- 		ceph_con_revoke_message(req->r_con_filling_msg,
- 				      req->r_reply);
--		ceph_con_put(req->r_con_filling_msg);
-+		req->r_con_filling_msg->ops->put(req->r_con_filling_msg);
- 	}
- 	if (req->r_reply)
- 		ceph_msg_put(req->r_reply);
-@@ -1216,7 +1216,7 @@ static void handle_reply(struct ceph_osd
- 	if (req->r_con_filling_msg == con && req->r_reply == msg) {
- 		dout(" dropping con_filling_msg ref %p\n", con);
- 		req->r_con_filling_msg = NULL;
--		ceph_con_put(con);
-+		con->ops->put(con);
- 	}
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -992,10 +992,8 @@ static int prepare_read_message(struct c
  
- 	if (!req->r_got_reply) {
-@@ -2028,7 +2028,7 @@ static struct ceph_msg *get_reply(struct
- 		dout("get_reply revoking msg %p from old con %p\n",
- 		     req->r_reply, req->r_con_filling_msg);
- 		ceph_con_revoke_message(req->r_con_filling_msg, req->r_reply);
--		ceph_con_put(req->r_con_filling_msg);
-+		req->r_con_filling_msg->ops->put(req->r_con_filling_msg);
- 		req->r_con_filling_msg = NULL;
- 	}
  
-@@ -2063,7 +2063,7 @@ static struct ceph_msg *get_reply(struct
- #endif
- 	}
- 	*skip = 0;
--	req->r_con_filling_msg = ceph_con_get(con);
-+	req->r_con_filling_msg = con->ops->get(con);
- 	dout("get_reply tid %lld %p\n", tid, m);
+ static int read_partial(struct ceph_connection *con,
+-			int to, int size, void *object)
++			int end, int size, void *object)
+ {
+-	int end = to + size;
+-
+ 	while (con->in_base_pos < end) {
+ 		int left = end - con->in_base_pos;
+ 		int have = size - left;
+@@ -1013,40 +1011,52 @@ static int read_partial(struct ceph_conn
+  */
+ static int read_partial_banner(struct ceph_connection *con)
+ {
+-	int ret, to = 0;
++	int size;
++	int end;
++	int ret;
  
+ 	dout("read_partial_banner %p at %d\n", con, con->in_base_pos);
+ 
+ 	/* peer's banner */
+-	ret = read_partial(con, to, strlen(CEPH_BANNER), con->in_banner);
++	size = strlen(CEPH_BANNER);
++	end = size;
++	ret = read_partial(con, end, size, con->in_banner);
+ 	if (ret <= 0)
+ 		goto out;
+-	to += strlen(CEPH_BANNER);
+-	ret = read_partial(con, to, sizeof(con->actual_peer_addr),
+-			   &con->actual_peer_addr);
++
++	size = sizeof (con->actual_peer_addr);
++	end += size;
++	ret = read_partial(con, end, size, &con->actual_peer_addr);
+ 	if (ret <= 0)
+ 		goto out;
+-	to += sizeof(con->actual_peer_addr);
+-	ret = read_partial(con, to, sizeof(con->peer_addr_for_me),
+-			   &con->peer_addr_for_me);
++
++	size = sizeof (con->peer_addr_for_me);
++	end += size;
++	ret = read_partial(con, end, size, &con->peer_addr_for_me);
+ 	if (ret <= 0)
+ 		goto out;
++
  out:
+ 	return ret;
+ }
+ 
+ static int read_partial_connect(struct ceph_connection *con)
+ {
+-	int ret, to = 0;
++	int size;
++	int end;
++	int ret;
+ 
+ 	dout("read_partial_connect %p at %d\n", con, con->in_base_pos);
+ 
+-	ret = read_partial(con, to, sizeof(con->in_reply), &con->in_reply);
++	size = sizeof (con->in_reply);
++	end = size;
++	ret = read_partial(con, end, size, &con->in_reply);
+ 	if (ret <= 0)
+ 		goto out;
+-	to += sizeof(con->in_reply);
+-	ret = read_partial(con, to, le32_to_cpu(con->in_reply.authorizer_len),
+-			   con->auth_reply_buf);
++
++	size = le32_to_cpu(con->in_reply.authorizer_len);
++	end += size;
++	ret = read_partial(con, end, size, con->auth_reply_buf);
+ 	if (ret <= 0)
+ 		goto out;
+ 
+@@ -1495,8 +1505,10 @@ static int process_connect(struct ceph_c
+  */
+ static int read_partial_ack(struct ceph_connection *con)
+ {
+-	return read_partial(con, 0, sizeof(con->in_temp_ack),
+-			    &con->in_temp_ack);
++	int size = sizeof (con->in_temp_ack);
++	int end = size;
++
++	return read_partial(con, end, size, &con->in_temp_ack);
+ }
+ 
+ 
+@@ -1629,8 +1641,9 @@ static int read_partial_message_bio(stru
+ static int read_partial_message(struct ceph_connection *con)
+ {
+ 	struct ceph_msg *m = con->in_msg;
++	int size;
++	int end;
+ 	int ret;
+-	int to;
+ 	unsigned front_len, middle_len, data_len;
+ 	bool do_datacrc = !con->msgr->nocrc;
+ 	int skip;
+@@ -1640,7 +1653,9 @@ static int read_partial_message(struct c
+ 	dout("read_partial_message con %p msg %p\n", con, m);
+ 
+ 	/* header */
+-	ret = read_partial(con, 0, sizeof (con->in_hdr), &con->in_hdr);
++	size = sizeof (con->in_hdr);
++	end = size;
++	ret = read_partial(con, end, size, &con->in_hdr);
+ 	if (ret <= 0)
+ 		return ret;
+ 
+@@ -1755,8 +1770,9 @@ static int read_partial_message(struct c
+ 	}
+ 
+ 	/* footer */
+-	to = sizeof (m->hdr);
+-	ret = read_partial(con, to, sizeof (m->footer), &m->footer);
++	size = sizeof (m->footer);
++	end += size;
++	ret = read_partial(con, end, size, &m->footer);
+ 	if (ret <= 0)
+ 		return ret;
+ 
 
 
