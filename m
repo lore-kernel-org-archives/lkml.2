@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab2KVVEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:04:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:65526 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab2KVVEr (ORCPT
+	id S1756033Ab2KVS41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:56:27 -0500
+Received: from mga14.intel.com ([143.182.124.37]:44678 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752308Ab2KVS4X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:04:47 -0500
-Date: Thu, 22 Nov 2012 22:04:32 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
-Subject: Re: [PATCH v4 07/11] pwm: pwm-tiehrpwm: pinctrl support
-Message-ID: <20121122210432.GE16716@avionic-0098.adnet.avionic-design.de>
-References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
- <1353503469-18634-8-git-send-email-avinashphilip@ti.com>
+	Thu, 22 Nov 2012 13:56:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
+   d="scan'208";a="221020224"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: Re: [BUGFIX PATCH] USB: chipidea: fix use after free bug
+In-Reply-To: <1353575485-23941-1-git-send-email-LW@KARO-electronics.de>
+References: <1353575485-23941-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 22 Nov 2012 11:29:33 +0200
+Message-ID: <87vccy3s02.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WBsA/oQW3eTA3LlM"
-Content-Disposition: inline
-In-Reply-To: <1353503469-18634-8-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tFxJD09O2PufQFvHqs0IrXTzteOTmn4WLQ7lLXluBeM
- 4WqiGGYJ6zLuRJCR/3ddhd9jq2X30ElvlNDn3Eh0VEuyJkw0EP
- MhWET8oqDLgc3mjoIX0azokn9orXBXPMenHb8ag+jwT5pegl7b
- LOcBMeVI+ERYJPXZaz4sTbQZMS5Lv+SHBbKq2sVDfU4S/YwOLv
- 8VpqqlceruYL3HsmjN0w/W4IqCg6YKIg0oU++V1dVqUBCIcd5b
- Np3c+aeLad9X428NdpjAeAY7OOwEhL0eQIbFX+hJ71pPsz0pM7
- bhVB7P+hBd4tVealcOegb1NkOqt270i1HS6TQUVUhIF0DTSTM+
- THDSacsNrIuRReIztQyI6pGuvjMQDqX+5Xkve92e3ZlQfhieDn
- TnfVduV2rRQDn0AiYqUv9n3JNOOkSXfk+mQtl1YB8GSsK0+LqT
- /Q88q
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Lothar Waßmann <LW@KARO-electronics.de> writes:
 
---WBsA/oQW3eTA3LlM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> The pointer to a platform_device struct must not be dereferenced after
+> the device has been unregistered.
+>
+> This bug produces a crash when unloading the ci13xxx kernel module
+> compiled with CONFIG_PAGE_POISONING enabled.
+>
+> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 
-On Wed, Nov 21, 2012 at 06:41:04PM +0530, Philip, Avinash wrote:
-[...]
-> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl))
-> +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
+Good one, thanks.
 
-Same comment as for patch 5.
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 
-Thierry
+Greg, this is -stable material, applicable starting from v3.6.
 
---WBsA/oQW3eTA3LlM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrpNgAAoJEN0jrNd/PrOh8hoQAK1okFVk06Y/rIQ6/Gyd45Yd
-pWNCh8L2I9PKJ2E3xYkhR6EPlExITW+3Upw7rtpgON4mem6QibzG/gyEPc+5pyQ8
-AZWfnM0FSIG1dRU+6+zVJFLqdPvoR4EmJ0k6NJj/wbLrDKg9A0as3xjp73MRvw7J
-YkMss1MR6XQIJTojf5Widcm/AZKB/XuZblU7EujRAdxM4CCK58fStk9KWWTxFT/+
-IO8iSScctteUYX5K6x1SmTvM/QnEjgwj3goCY+JXIaIOHtKcQ6LcdMs6K5w6h5Of
-wP1h1LjGHims7NCGqtZ/h3q6LReyjUhjUyQJPITVBcW7iDWM/DMSh9vEjOlKzk4p
-qOO/WUB+lB//vadYdsnpjfVa8/eXCD3pnFPacdX126+8UjfcLVT7nMJ20CJEIVy2
-Fs7eI7fl/gJJOqkTpcRct3GU2fLnaxf4+2vPhmAlOM10I89J/7sukZIzMz1m6PfD
-RrHLjeBGSSDs/p5Z7q/B1WdDpR/eW2AF7OR1mXjYnDWPEFzAk1WbwuV5i52XMl9H
-tokvgd7SCRU8LYttcLEJRoSeC0PnYDybpxOnI/VQr1qNEJURbS3n1Tn6yP428/U/
-zRYfc99EiXdqR54x0xicebCpU+BZjE4C3PihGUmuZ73B6jxeIAguso74IGzukiRb
-6VDES05+rDscYxiOrWNF
-=76o5
------END PGP SIGNATURE-----
-
---WBsA/oQW3eTA3LlM--
+> ---
+>  drivers/usb/chipidea/core.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index f69d029..b726c49 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -385,8 +385,9 @@ EXPORT_SYMBOL_GPL(ci13xxx_add_device);
+>  
+>  void ci13xxx_remove_device(struct platform_device *pdev)
+>  {
+> +	int id = pdev->id;
+>  	platform_device_unregister(pdev);
+> -	ida_simple_remove(&ci_ida, pdev->id);
+> +	ida_simple_remove(&ci_ida, id);
+>  }
+>  EXPORT_SYMBOL_GPL(ci13xxx_remove_device);
+>  
+> -- 
+> 1.7.2.5
