@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab2KVWf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:35:59 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:33705 "EHLO ogre.sisk.pl"
+	id S1758610Ab2KVWg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:36:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49023 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756239Ab2KVWf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:35:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Cyril Roelandt <tipecaml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] acpi_system_write_wakeup_device(): fix error check for unsigned variable.
-Date: Thu, 22 Nov 2012 23:40:26 +0100
-Message-ID: <27097726.Soe6qubrSj@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1353544495-25277-1-git-send-email-tipecaml@gmail.com>
-References: <1645783.2WuR77RKxS@vostro.rjw.lan> <1353544495-25277-1-git-send-email-tipecaml@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753608Ab2KVSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 16/38] m68k: fix sigset_t accessor functions
+Date: Wed, 21 Nov 2012 16:39:59 -0800
+Message-Id: <20121122003905.961895460@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 22, 2012 01:34:55 AM Cyril Roelandt wrote:
-> The LEN variable is unsigned, therefore checking whether it is less than 0 is
-> useless. Also drop the LEN variable, since the COUNT parameter can be used
-> instead.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Applied (under a different subject).
+------------------
 
-Thanks,
-Rafael
+From: Andreas Schwab <schwab@linux-m68k.org>
+
+commit 34fa78b59c52d1db3513db4c1a999db26b2e9ac2 upstream.
+
+The sigaddset/sigdelset/sigismember functions that are implemented with
+bitfield insn cannot allow the sigset argument to be placed in a data
+register since the sigset is wider than 32 bits.  Remove the "d"
+constraint from the asm statements.
+
+The effect of the bug is that sending RT signals does not work, the signal
+number is truncated modulo 32.
+
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/m68k/include/asm/signal.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/m68k/include/asm/signal.h
++++ b/arch/m68k/include/asm/signal.h
+@@ -156,7 +156,7 @@ typedef struct sigaltstack {
+ static inline void sigaddset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfset %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
+ }
+@@ -164,7 +164,7 @@ static inline void sigaddset(sigset_t *s
+ static inline void sigdelset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfclr %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
+ }
+@@ -180,7 +180,7 @@ static inline int __gen_sigismember(sigs
+ 	int ret;
+ 	asm ("bfextu %1{%2,#1},%0"
+ 		: "=d" (ret)
+-		: "od" (*set), "id" ((_sig-1) ^ 31)
++		: "o" (*set), "id" ((_sig-1) ^ 31)
+ 		: "cc");
+ 	return ret;
+ }
 
 
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> ---
->  drivers/acpi/proc.c |   11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
-> index 27adb09..ef98796 100644
-> --- a/drivers/acpi/proc.c
-> +++ b/drivers/acpi/proc.c
-> @@ -362,16 +362,13 @@ acpi_system_write_wakeup_device(struct file *file,
->  	struct list_head *node, *next;
->  	char strbuf[5];
->  	char str[5] = "";
-> -	unsigned int len = count;
->  
-> -	if (len > 4)
-> -		len = 4;
-> -	if (len < 0)
-> -		return -EFAULT;
-> +	if (count > 4)
-> +		count = 4;
->  
-> -	if (copy_from_user(strbuf, buffer, len))
-> +	if (copy_from_user(strbuf, buffer, count))
->  		return -EFAULT;
-> -	strbuf[len] = '\0';
-> +	strbuf[count] = '\0';
->  	sscanf(strbuf, "%s", str);
->  
->  	mutex_lock(&acpi_device_lock);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
