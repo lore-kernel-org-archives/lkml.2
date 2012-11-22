@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab2KVWEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:04:53 -0500
-Received: from mga06.intel.com ([134.134.136.21]:1831 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755056Ab2KVWEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:04:20 -0500
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 17:04:20 EST
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] vfs: new super block feature flags attribute
-Date: Thu, 22 Nov 2012 23:54:43 +0200
-Message-Id: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353621075.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	id S1758192Ab2KVWEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:04:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754859Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 118/171] libceph: encapsulate out message data setup
+Date: Wed, 21 Nov 2012 16:41:04 -0800
+Message-Id: <20121122004045.197933052@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces new super block attribute flag s_feature_flags
-and SF_IMA_DISABLED flag. This flag will be used by Integrity Measurement
-Architecture (IMA). Name suggested by Bruce Fields.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Certain file system types and partitions will never be measured or
-appraised by IMA depending on the policy. For example, pseudo file
-systems are never measured and appraised. In current implementation
-policy will be checked again and again. It happens thousands times
-per second. That is absolute waste of CPU and may be battery resources.
+------------------
 
-IMA will set the SF_IMA_DISABLED flag when file system will not be measured
-and appraised and test this flag during subsequent calls to skip policy search.
+From: Alex Elder <elder@inktank.com>
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+(cherry picked from commit 739c905baa018c99003564ebc367d93aa44d4861)
+
+Move the code that prepares to write the data portion of a message
+into its own function.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/fs.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ceph/messenger.c |   37 +++++++++++++++++++++++--------------
+ 1 file changed, 23 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b33cfc9..0bef2b2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1321,6 +1321,8 @@ struct super_block {
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -565,6 +565,24 @@ static void con_out_kvec_add(struct ceph
+ 	con->out_kvec_bytes += size;
+ }
  
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
++static void prepare_write_message_data(struct ceph_connection *con)
++{
++	struct ceph_msg *msg = con->out_msg;
 +
-+	unsigned long s_feature_flags;
- };
- 
- /* superblock cache pruning functions */
-@@ -1746,6 +1748,8 @@ struct super_operations {
- 
- #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
- 
-+#define SF_IMA_DISABLED		0x0001
++	BUG_ON(!msg);
++	BUG_ON(!msg->hdr.data_len);
 +
- extern void __mark_inode_dirty(struct inode *, int);
- static inline void mark_inode_dirty(struct inode *inode)
- {
--- 
-1.7.10.4
++	/* initialize page iterator */
++	con->out_msg_pos.page = 0;
++	if (msg->pages)
++		con->out_msg_pos.page_pos = msg->page_alignment;
++	else
++		con->out_msg_pos.page_pos = 0;
++	con->out_msg_pos.data_pos = 0;
++	con->out_msg_pos.did_page_crc = false;
++	con->out_more = 1;  /* data + footer will follow */
++}
++
+ /*
+  * Prepare footer for currently outgoing message, and finish things
+  * off.  Assumes out_kvec* are already valid.. we just add on to the end.
+@@ -657,26 +675,17 @@ static void prepare_write_message(struct
+ 		con->out_msg->footer.middle_crc = cpu_to_le32(crc);
+ 	} else
+ 		con->out_msg->footer.middle_crc = 0;
+-	con->out_msg->footer.data_crc = 0;
+-	dout("prepare_write_message front_crc %u data_crc %u\n",
++	dout("%s front_crc %u middle_crc %u\n", __func__,
+ 	     le32_to_cpu(con->out_msg->footer.front_crc),
+ 	     le32_to_cpu(con->out_msg->footer.middle_crc));
+ 
+ 	/* is there a data payload? */
+-	if (le32_to_cpu(m->hdr.data_len) > 0) {
+-		/* initialize page iterator */
+-		con->out_msg_pos.page = 0;
+-		if (m->pages)
+-			con->out_msg_pos.page_pos = m->page_alignment;
+-		else
+-			con->out_msg_pos.page_pos = 0;
+-		con->out_msg_pos.data_pos = 0;
+-		con->out_msg_pos.did_page_crc = false;
+-		con->out_more = 1;  /* data + footer will follow */
+-	} else {
++	con->out_msg->footer.data_crc = 0;
++	if (m->hdr.data_len)
++		prepare_write_message_data(con);
++	else
+ 		/* no, queue up footer too and be done */
+ 		prepare_write_message_footer(con);
+-	}
+ 
+ 	set_bit(WRITE_PENDING, &con->flags);
+ }
+
 
