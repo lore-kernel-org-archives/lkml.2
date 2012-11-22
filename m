@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2KVSdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:33:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5756 "EHLO mga11.intel.com"
+	id S1753528Ab2KVSdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:33:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48999 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab2KVSdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
-   d="asc'?scan'208";a="251013710"
-Message-ID: <1353582575.2701.40.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd cs553x_nand: Initialise ecc.strength before
- nand_scan()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Nathan Williams <nathan@traverse.com.au>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Nov 2012 13:09:35 +0200
-In-Reply-To: <1353541372.12585.14.camel@laptop>
-References: <1353541372.12585.14.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-AJLtNBYWMPGfI3eUi58P"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1752285Ab2KVSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 28/83] ASoC: dapm: Use card_list during DAPM shutdown
+Date: Wed, 21 Nov 2012 16:41:50 -0800
+Message-Id: <20121122004215.689005057@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
---=-AJLtNBYWMPGfI3eUi58P
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Thu, 2012-11-22 at 10:42 +1100, Nathan Williams wrote:
-> Loading cs553x_nand with Hynix H27U1G8F2BTR NAND flash causes this bug:
->=20
-> kernel BUG at drivers/mtd/nand/nand_base.c:3345!
+From: Misael Lopez Cruz <misael.lopez@ti.com>
 
-Pushed to l2-mtd.git, added
+commit 445632ad6dda42f4d3f9df2569a852ca0d4ea608 upstream.
 
-Cc: stable@vgen.kernel.org [3.4+]
+DAPM shutdown incorrectly uses "list" field of codec struct while
+iterating over probed components (codec_dev_list). "list" field
+refers to codecs registered in the system, "card_list" field is
+used for probed components.
 
-Thanks!
+Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+Signed-off-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---=20
-Best Regards,
-Artem Bityutskiy
+---
+ sound/soc/soc-dapm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---=-AJLtNBYWMPGfI3eUi58P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -3710,7 +3710,7 @@ void snd_soc_dapm_shutdown(struct snd_so
+ {
+ 	struct snd_soc_codec *codec;
+ 
+-	list_for_each_entry(codec, &card->codec_dev_list, list) {
++	list_for_each_entry(codec, &card->codec_dev_list, card_list) {
+ 		soc_dapm_shutdown_codec(&codec->dapm);
+ 		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY)
+ 			snd_soc_dapm_set_bias_level(&codec->dapm,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQrgfvAAoJECmIfjd9wqK0iv8QAJ45xmmUBmwrUWPhwa2txCtq
-lcAAh3sUpcRFZCJnu79UKweqYES/TKVpS/+Z1HR0sMzAOXRujFYqEGT1enXMXpfh
-Z3zrLijzDpVrc2543u2g4gppOjEYvY5ax0hCAR27Rc1lq1Y58QVpN64cepHVpJ6p
-uMiQhQE4s0bMecPCaT4fD/f6Fc6SkSewCEmeusK+OTLoIDyjD5z9yVviZSBhEk9r
-UFPTxp+P8zPUQzuRCdtBGnjTcXgil+SXYUPzfsaVDVbvprNSjJY2UvsveVfSZLeL
-oOg/YL61qJdEXp7q4vStZgwRH/brr39I39MuNXnVZQjdJa2z8dgouc4XP1S41kND
-AIhbsKpZPF8WCUGN2bNhf6r2VdNeQZU5/jiDyCRHQy4H7q5Hwb3JDIKzPIP7T15N
-Z5n35NAA7lh5pB5CDzdp8KeXt30p60+G0Gk7oNcdQwL1hTxpe0m30M00i3lBCa5p
-eshNZb9kwh80p1UnHaS2Oj6Zd2Fvarn+1yewugZZ+H/X9vqAcLvPfdAIa6g5fJXz
-Ps2B9G6UpBnAsZl8q3MH10SC73NJrB8mIde2iHVWUvppEC1n7AHcQnDbt9IwH/VU
-sF87EqZnC5fUzmg3GycaBNjhc5AIe0pRA9h/4bqe3TWkN3KV8/ukvb22x4mc4QXT
-2gLo3++NBN45eenDEw5b
-=ESjF
------END PGP SIGNATURE-----
-
---=-AJLtNBYWMPGfI3eUi58P--
 
