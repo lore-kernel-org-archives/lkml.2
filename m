@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab2KVTLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:11:09 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52083 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756534Ab2KVTLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756547Ab2KVTLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:11:11 -0500
+Received: from dupo.coraid.com ([208.71.232.133]:35315 "EHLO coraid.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756516Ab2KVTLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 14:11:03 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: balbi@ti.com
-Cc: walter harms <wharms@bfs.de>, Cyril Roelandt <tipecaml@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] UVC: use GFP_ATOMIC under spin lock.
-Date: Thu, 22 Nov 2012 13:38:20 +0100
-Message-ID: <1906481.9XLFQBE7QO@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121122122223.GC18022@arwen.pp.htv.fi>
-References: <1353360842-18384-1-git-send-email-tipecaml@gmail.com> <50ADDDD5.1080709@bfs.de> <20121122122223.GC18022@arwen.pp.htv.fi>
+Message-Id: <56cf0b754292e4d58421964d5ae07358bbb4f996.1353518444.git.ecashin@coraid.com>
+In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
+References: <cover.1353518444.git.ecashin@coraid.com>
+From: Ed Cashin <ecashin@coraid.com>
+Subject: [PATCH 4/8] aoe: cleanup: correct comment for aoetgt nout
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
+From: Ed Cashin <ecashin@coraid.com>
+X-Mailer: nedmail
+Date: Wed, 21 Nov 2012 20:00:16 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart4560873.UUymmdTJiz"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A misplaced comment was attached to the nout member of the
+aoetgt.  This change corrects the comment.
 
---nextPart4560873.UUymmdTJiz
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ drivers/block/aoe/aoe.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Thursday 22 November 2012 14:22:23 Felipe Balbi wrote:
-> On Thu, Nov 22, 2012 at 09:09:57AM +0100, walter harms wrote:
-> > Am 19.11.2012 22:34, schrieb Cyril Roelandt:
-> > > Found using the following semantic patch:
-> > > <spml>
-> > > @@
-> > > @@
-> > > spin_lock_irqsave(...);
-> > > ... when != spin_unlock_irqrestore(...);
-> > > * GFP_KERNEL
-> > > </spml>
-> > > 
-> > > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> > > ---
-> > > 
-> > >  drivers/usb/gadget/uvc_video.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/usb/gadget/uvc_video.c
-> > > b/drivers/usb/gadget/uvc_video.c index b0e53a8..79b4132 100644
-> > > --- a/drivers/usb/gadget/uvc_video.c
-> > > +++ b/drivers/usb/gadget/uvc_video.c
-> > > @@ -309,7 +309,7 @@ uvc_video_pump(struct uvc_video *video)
-> > > 
-> > >  		video->encode(req, video, buf);
-> > >  		
-> > >  		/* Queue the USB request */
-> > > 
-> > > -		if ((ret = usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
-> > > +		if ((ret = usb_ep_queue(video->ep, req, GFP_ATOMIC)) < 0) {
-> > > 
-> > >  			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
-> > >  			usb_ep_set_halt(video->ep);
-> > >  			spin_unlock_irqrestore(&video->queue.irqlock, flags);
-> > 
-> > IMHO, this should be two lines, aka:
-> > 
-> > ret = usb_ep_queue(video->ep, req, GFP_KERNEL);
-> > if (ret<0)
-> 
-> correct, please resend with the fix.
-
-I agree as well.
-
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index 9655ce3..bfd765c 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -133,7 +133,7 @@ struct aoetgt {
+ 	struct list_head ffree;			/* list of free frames */
+ 	struct aoeif ifs[NAOEIFS];
+ 	struct aoeif *ifp;	/* current aoeif in use */
+-	ushort nout;		/* value of nout when skb was sent */
++	ushort nout;		/* number of AoE commands outstanding */
+ 	ushort maxout;		/* current value for max outstanding */
+ 	ushort next_cwnd;	/* incr maxout after decrementing to zero */
+ 	ushort ssthresh;	/* slow start threshold */
 -- 
-Regards,
-
-Laurent Pinchart
-
---nextPart4560873.UUymmdTJiz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABAgAGBQJQrhzCAAoJEIkPb2GL7hl1NX8IAJIE8YqFtr7qIZepw63hbv4a
-GE3Y1eC61aYxXyVCukv73SImYVCa1TUPk69cP3pHctkeh72Wylzofgov1yN8blZH
-VniHH/owMCbzUmmrUSDqhOGpA9jZAM70iFMA84feht5E09Gm4w4BQgMnNVVIvSPf
-2IXFayGFFL6Kv5mPwUh1mRTgFoWY/RgCap0BICYxQrpT1cKryLfLxLXU+753iTKf
-r1CpXy0u9IQOkLMZVT5r48kuXIdw/Dn/PBGEN/na/NSnSCfSX/5wWFVpJxYSqiQI
-81gI4eHXHfANTlu1w1Tqx9Ch4nGDqeKXwqnjhhqiBToEuFlDqMgguQw2EWtVnMM=
-=GeEF
------END PGP SIGNATURE-----
-
---nextPart4560873.UUymmdTJiz--
+1.7.1
 
