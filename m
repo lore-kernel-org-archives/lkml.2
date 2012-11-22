@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab2KVVxo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:53:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
+	id S1758061Ab2KVVxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:53:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49643 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab2KVSkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754946Ab2KVSkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, Alex Elder <elder@inktank.com>
-Subject: [ 113/171] libceph: fix overflow in osdmap_apply_incremental()
-Date: Wed, 21 Nov 2012 16:40:59 -0800
-Message-Id: <20121122004044.694499787@linuxfoundation.org>
+        Jim Schutt <jaschut@sandia.gov>, Alex Elder <elder@inktank.com>
+Subject: [ 163/171] libceph: avoid truncation due to racing banners
+Date: Wed, 21 Nov 2012 16:41:49 -0800
+Message-Id: <20121122004049.706286143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,34 +25,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Jim Schutt <jaschut@sandia.gov>
 
-(cherry picked from commit a5506049500b30dbc5edb4d07a3577477c1f3643)
+(cherry picked from commit 6d4221b53707486dfad3f5bfe568d2ce7f4c9863)
 
-On 32-bit systems, a large `pglen' would overflow `pglen*sizeof(u32)'
-and bypass the check ceph_decode_need(p, end, pglen*sizeof(u32), bad).
-It would also overflow the subsequent kmalloc() size, leading to
-out-of-bounds write.
+Because the Ceph client messenger uses a non-blocking connect, it is
+possible for the sending of the client banner to race with the
+arrival of the banner sent by the peer.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+When ceph_sock_state_change() notices the connect has completed, it
+schedules work to process the socket via con_work().  During this
+time the peer is writing its banner, and arrival of the peer banner
+races with con_work().
+
+If con_work() calls try_read() before the peer banner arrives, there
+is nothing for it to do, after which con_work() calls try_write() to
+send the client's banner.  In this case Ceph's protocol negotiation
+can complete succesfully.
+
+The server-side messenger immediately sends its banner and addresses
+after accepting a connect request, *before* actually attempting to
+read or verify the banner from the client.  As a result, it is
+possible for the banner from the server to arrive before con_work()
+calls try_read().  If that happens, try_read() will read the banner
+and prepare protocol negotiation info via prepare_write_connect().
+prepare_write_connect() calls con_out_kvec_reset(), which discards
+the as-yet-unsent client banner.  Next, con_work() calls
+try_write(), which sends the protocol negotiation info rather than
+the banner that the peer is expecting.
+
+The result is that the peer sees an invalid banner, and the client
+reports "negotiation failed".
+
+Fix this by moving con_out_kvec_reset() out of
+prepare_write_connect() to its callers at all locations except the
+one where the banner might still need to be sent.
+
+[elder@inktak.com: added note about server-side behavior]
+
+Signed-off-by: Jim Schutt <jaschut@sandia.gov>
 Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osdmap.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ceph/messenger.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/net/ceph/osdmap.c
-+++ b/net/ceph/osdmap.c
-@@ -900,6 +900,10 @@ struct ceph_osdmap *osdmap_apply_increme
- 			(void) __remove_pg_mapping(&map->pg_temp, pgid);
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -911,7 +911,6 @@ static int prepare_write_connect(struct
+ 	con->out_connect.authorizer_len = auth ?
+ 		cpu_to_le32(auth->authorizer_buf_len) : 0;
  
- 			/* insert */
-+			if (pglen > (UINT_MAX - sizeof(*pg)) / sizeof(u32)) {
-+				err = -EINVAL;
-+				goto bad;
-+			}
- 			pg = kmalloc(sizeof(*pg) + sizeof(u32)*pglen, GFP_NOFS);
- 			if (!pg) {
- 				err = -ENOMEM;
+-	con_out_kvec_reset(con);
+ 	con_out_kvec_add(con, sizeof (con->out_connect),
+ 					&con->out_connect);
+ 	if (auth && auth->authorizer_buf_len)
+@@ -1553,6 +1552,7 @@ static int process_connect(struct ceph_c
+ 			return -1;
+ 		}
+ 		con->auth_retry = 1;
++		con_out_kvec_reset(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			return ret;
+@@ -1573,6 +1573,7 @@ static int process_connect(struct ceph_c
+ 		       ENTITY_NAME(con->peer_name),
+ 		       ceph_pr_addr(&con->peer_addr.in_addr));
+ 		reset_connection(con);
++		con_out_kvec_reset(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			return ret;
+@@ -1597,6 +1598,7 @@ static int process_connect(struct ceph_c
+ 		     le32_to_cpu(con->out_connect.connect_seq),
+ 		     le32_to_cpu(con->in_reply.connect_seq));
+ 		con->connect_seq = le32_to_cpu(con->in_reply.connect_seq);
++		con_out_kvec_reset(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			return ret;
+@@ -1613,6 +1615,7 @@ static int process_connect(struct ceph_c
+ 		     le32_to_cpu(con->in_reply.global_seq));
+ 		get_global_seq(con->msgr,
+ 			       le32_to_cpu(con->in_reply.global_seq));
++		con_out_kvec_reset(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			return ret;
+@@ -2131,7 +2134,11 @@ more:
+ 		BUG_ON(con->state != CON_STATE_CONNECTING);
+ 		con->state = CON_STATE_NEGOTIATING;
+ 
+-		/* Banner is good, exchange connection info */
++		/*
++		 * Received banner is good, exchange connection info.
++		 * Do not reset out_kvec, as sending our banner raced
++		 * with receiving peer banner after connect completed.
++		 */
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			goto out;
 
 
