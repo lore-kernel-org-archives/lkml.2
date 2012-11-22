@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab2KVTIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:08:21 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25178 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab2KVTIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:08:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
-   d="scan'208";a="221003689"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ACPI: add SDHCI to ACPI platform devices
-Date: Thu, 22 Nov 2012 10:43:49 +0200
-Message-Id: <1353573830-13006-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
-References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756481Ab2KVTIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:08:42 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56278 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2KVTIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:08:39 -0500
+Message-ID: <50AE5007.2000702@gmail.com>
+Date: Fri, 23 Nov 2012 00:17:11 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 4/5] mm: provide more accurate estimation of pages
+ occupied by memmap
+References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <1353254850-27336-5-git-send-email-jiang.liu@huawei.com> <20121119154240.91efcc53.akpm@linux-foundation.org> <50AB9F4A.5050500@gmail.com> <20121120111942.c9596d3f.akpm@linux-foundation.org> <50ACEAAD.60306@gmail.com> <20121121113515.3fa5a60c.akpm@linux-foundation.org>
+In-Reply-To: <20121121113515.3fa5a60c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- drivers/acpi/scan.c | 2 ++
- 1 file changed, 2 insertions(+)
+On 11/22/2012 03:35 AM, Andrew Morton wrote:
+> On Wed, 21 Nov 2012 22:52:29 +0800
+> Jiang Liu <liuj97@gmail.com> wrote:
+> 
+>> On 11/21/2012 03:19 AM, Andrew Morton wrote:
+>>> On Tue, 20 Nov 2012 23:18:34 +0800
+>>> Jiang Liu <liuj97@gmail.com> wrote:
+>>>
+>>>>>> +static unsigned long calc_memmap_size(unsigned long spanned_pages,
+>>>>>> +				      unsigned long present_pages)
+>>>>>> +{
+>>>>>> +	unsigned long pages = spanned_pages;
+>>>>>> +
+>>>>>> +	/*
+>>>>>> +	 * Provide a more accurate estimation if there are big holes within
+>>>>>> +	 * the zone and SPARSEMEM is in use.
+>>>>>> +	 */
+>>>>>> +	if (spanned_pages > present_pages + (present_pages >> 4) &&
+>>>>>> +	    IS_ENABLED(CONFIG_SPARSEMEM))
+>>>>>> +		pages = present_pages;
+>>>>>> +
+>>>>>> +	return PAGE_ALIGN(pages * sizeof(struct page)) >> PAGE_SHIFT;
+>>>>>> +}
+>>>>>
+>>>>> Please explain the ">> 4" heuristc more completely - preferably in both
+>>>>> the changelog and code comments.  Why can't we calculate this
+>>>>> requirement exactly?  That might require a second pass, but that's OK for
+>>>>> code like this?
+>>>> Hi Andrew,
+>>>> 	A normal x86 platform always have some holes within the DMA ZONE,
+>>>> so the ">> 4" heuristic is to avoid applying this adjustment to the DMA
+>>>> ZONE on x86 platforms. 
+>>>> 	Because the memmap_size is just an estimation, I feel it's OK to
+>>>> remove the ">> 4" heuristic, that shouldn't affect much.
+>>>
+>>> Again: why can't we calculate this requirement exactly?  That might
+>>> require a second pass, but that's OK for code like this?
+>>
+>> Hi Andrew,
+>> 	If there are holes within a zone, it may cost us one or two extra pages
+>> for each populated region within the zone due to alignment because memmap for 
+>> each populated regions may not naturally aligned on page boundary.
+> 
+> Right.  So with an additional pass across the zone and a bit of
+> arithmetic, we can calculate the exact space requirement for memmap?
+> No need for kludgy heuristics?
+Hi Andrew:
+	Happy Thanksgiving!
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 8c4ac6d..67a7fa6 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -35,6 +35,8 @@ static const char *dummy_hid = "device";
-  */
- static const struct acpi_device_id acpi_platform_device_ids[] = {
- 
-+	{ "PNP0D40" },
-+
- 	{ }
- };
- 
--- 
-1.7.11.7
+The way to calculate the exact space requirement for memmap seems a little
+complex, it depends on:
+CONFIG_SPARSEMEM_VMEMMAP
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
+arch implemenation of alloc_remap()
 
+Actually the original motivation is to reduce the deviation on a platform
+such as:
+node 0: 0-2G,4G-255G (a 2G hole between 2-4G)
+node 1: 256G - 511G
+node 2: 512G - 767G
+node 3: 768G - 1023G
+node 0: 1024G - 1026G (memory recovered from the hole)
+
+So I just tried to reduce the deviation instead of accurate calculation of memmap.
+
+Regards!
+Gerry
