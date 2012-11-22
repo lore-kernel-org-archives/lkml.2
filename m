@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab2KVVv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:51:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
+	id S932727Ab2KVVvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:51:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49630 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754974Ab2KVSkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754976Ab2KVSkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vit Zahradka <vit.zahradka@tiscali.cz>,
-        Sachin Prabhu <sprabhu@redhat.com>
-Subject: [ 14/83] cifs: Do not lookup hashed negative dentry in cifs_atomic_open
-Date: Wed, 21 Nov 2012 16:41:36 -0800
-Message-Id: <20121122004214.037973534@linuxfoundation.org>
+        Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        "Dorau, Lukasz" <lukasz.dorau@intel.com>
+Subject: [ 66/83] SCSI: isci: Allow SSP tasks into the task management path.
+Date: Wed, 21 Nov 2012 16:42:28 -0800
+Message-Id: <20121122004219.813989862@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -26,46 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
 
-commit 3798f47aa276b332c30da499cb4df4577e2f8872 upstream.
+commit 54b46677757ff8d6c282305fc7710f466b63d6dc upstream.
 
-We do not need to lookup a hashed negative directory since we have
-already revalidated it before and have found it to be fine.
+This commit fixes a driver bug for SSP tasks that require task management
+in the target after they complete in the SCU hardware.  The problem was
+manifested in the function "isci_task_abort_task", which tests
+to see if the sas_task.lldd_task is non-NULL before allowing task
+management; this bug would always NULL lldd_task in the SCU I/O completion
+path even if target management was required, which would prevent
+task / target manangement from happening.
 
-This also prevents a crash in cifs_lookup() when it attempts to rehash
-the already hashed negative lookup dentry.
+Note that in the case of SATA/STP targets, error recovery is provided by
+the libata error handler which is why SATA/STP device recovery worked
+correctly even though SSP handling did not.
 
-The patch has been tested using the reproducer at
-https://bugzilla.redhat.com/show_bug.cgi?id=867344#c28
-
-Reported-by: Vit Zahradka <vit.zahradka@tiscali.cz>
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: "Dorau, Lukasz" <lukasz.dorau@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/dir.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/scsi/isci/host.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -392,7 +392,16 @@ cifs_atomic_open(struct inode *inode, st
- 	 * in network traffic in the other paths.
- 	 */
- 	if (!(oflags & O_CREAT)) {
--		struct dentry *res = cifs_lookup(inode, direntry, 0);
-+		struct dentry *res;
+--- a/drivers/scsi/isci/host.c
++++ b/drivers/scsi/isci/host.c
+@@ -1079,7 +1079,6 @@ static void sci_controller_completion_ha
+ 
+ void ireq_done(struct isci_host *ihost, struct isci_request *ireq, struct sas_task *task)
+ {
+-	task->lldd_task = NULL;
+ 	if (!test_bit(IREQ_ABORT_PATH_ACTIVE, &ireq->flags) &&
+ 	    !(task->task_state_flags & SAS_TASK_STATE_ABORTED)) {
+ 		if (test_bit(IREQ_COMPLETE_IN_TARGET, &ireq->flags)) {
+@@ -1087,16 +1086,19 @@ void ireq_done(struct isci_host *ihost,
+ 			dev_dbg(&ihost->pdev->dev,
+ 				"%s: Normal - ireq/task = %p/%p\n",
+ 				__func__, ireq, task);
+-
++			task->lldd_task = NULL;
+ 			task->task_done(task);
+ 		} else {
+ 			dev_dbg(&ihost->pdev->dev,
+ 				"%s: Error - ireq/task = %p/%p\n",
+ 				__func__, ireq, task);
+-
++			if (sas_protocol_ata(task->task_proto))
++				task->lldd_task = NULL;
+ 			sas_task_abort(task);
+ 		}
+-	}
++	} else
++		task->lldd_task = NULL;
 +
-+		/*
-+		 * Check for hashed negative dentry. We have already revalidated
-+		 * the dentry and it is fine. No need to perform another lookup.
-+		 */
-+		if (!d_unhashed(direntry))
-+			return -ENOENT;
-+
-+		res = cifs_lookup(inode, direntry, 0);
- 		if (IS_ERR(res))
- 			return PTR_ERR(res);
+ 	if (test_and_clear_bit(IREQ_ABORT_PATH_ACTIVE, &ireq->flags))
+ 		wake_up_all(&ihost->eventq);
  
 
 
