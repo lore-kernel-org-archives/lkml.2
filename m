@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2KVWJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:09:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49610 "EHLO mail.kernel.org"
+	id S1758229Ab2KVWJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:09:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754812Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754813Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arik Nemtsov <arik@wizery.com>, Ido Yariv <ido@wizery.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 003/171] mac80211: sync acccess to tx_filtered/ps_tx_buf queues
-Date: Wed, 21 Nov 2012 16:39:09 -0800
-Message-Id: <20121122004033.648209810@linuxfoundation.org>
+        Zhao Yakui <yakui.zhao@intel.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 028/171] ttm: Clear the ttm page allocated from high memory zone correctly
+Date: Wed, 21 Nov 2012 16:39:34 -0800
+Message-Id: <20121122004036.192338093@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -26,51 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Zhao Yakui <yakui.zhao@intel.com>
 
-commit 987c285c2ae2e4e32aca3a9b3252d28171c75711 upstream.
+commit ac207ed2471150e06af0afc76e4becc701fa2733 upstream.
 
-These are accessed without a lock when ending STA PSM. If the
-sta_cleanup timer accesses these lists at the same time, we might crash.
+The TTM page can be allocated from high memory. In such case it is
+wrong to use the page_address(page) as the virtual address for the high memory
+page.
 
-This may fix some mysterious crashes we had during
-ieee80211_sta_ps_deliver_wakeup.
+bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50241
 
-Signed-off-by: Arik Nemtsov <arik@wizery.com>
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/sta_info.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -959,6 +959,7 @@ void ieee80211_sta_ps_deliver_wakeup(str
- 	struct ieee80211_local *local = sdata->local;
- 	struct sk_buff_head pending;
- 	int filtered = 0, buffered = 0, ac;
-+	unsigned long flags;
- 
- 	clear_sta_flag(sta, WLAN_STA_SP);
- 
-@@ -974,12 +975,16 @@ void ieee80211_sta_ps_deliver_wakeup(str
- 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
- 		int count = skb_queue_len(&pending), tmp;
- 
-+		spin_lock_irqsave(&sta->tx_filtered[ac].lock, flags);
- 		skb_queue_splice_tail_init(&sta->tx_filtered[ac], &pending);
-+		spin_unlock_irqrestore(&sta->tx_filtered[ac].lock, flags);
- 		tmp = skb_queue_len(&pending);
- 		filtered += tmp - count;
- 		count = tmp;
- 
-+		spin_lock_irqsave(&sta->ps_tx_buf[ac].lock, flags);
- 		skb_queue_splice_tail_init(&sta->ps_tx_buf[ac], &pending);
-+		spin_unlock_irqrestore(&sta->ps_tx_buf[ac].lock, flags);
- 		tmp = skb_queue_len(&pending);
- 		buffered += tmp - count;
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -749,7 +749,10 @@ static int ttm_get_pages(struct page **p
+ 	/* clear the pages coming from the pool if requested */
+ 	if (flags & TTM_PAGE_FLAG_ZERO_ALLOC) {
+ 		list_for_each_entry(p, &plist, lru) {
+-			clear_page(page_address(p));
++			if (PageHighMem(p))
++				clear_highpage(p);
++			else
++				clear_page(page_address(p));
+ 		}
  	}
+ 
 
 
