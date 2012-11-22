@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2KVW1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:27:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48228 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836Ab2KVW1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:27:11 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <50AE69EF.4060909@citrix.com>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com> <50AE69EF.4060909@citrix.com>
+	id S1754027Ab2KVW1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:27:35 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40370 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab2KVW1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:27:32 -0500
+X-Originating-IP: 217.70.178.144
+X-Originating-IP: 83.160.107.163
+Date: Thu, 22 Nov 2012 23:26:14 +0100
+From: Matthias Kaehlcke <matthias@kaehlcke.net>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] misc/st_kim: Free resources in the error path of probe()
+Message-ID: <20121122222613.GC19316@darwin>
+Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
+	Pavan Savoy <pavan_savoy@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 22 Nov 2012 14:26:10 -0800
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Message-ID: <09b41677-c9e7-4cd4-84a0-a1cb483d551d@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bullshit.  This should be a separate domain.
 
-Andrew Cooper <andrew.cooper3@citrix.com> wrote:
+Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+---
+ drivers/misc/ti-st/st_kim.c |   30 +++++++++++++++++++++---------
+ 1 file changed, 21 insertions(+), 9 deletions(-)
 
->On 22/11/12 17:47, H. Peter Anvin wrote:
->> The other thing that should be considered here is how utterly 
->> preposterous the notion of doing in-guest crash dumping is in a
->system 
->> that contains a hypervisor.  The reason for kdump is that on bare
->metal 
->> there are no other options, but in a hypervisor system the right
->thing 
->> should be for the hypervisor to do the dump (possibly spawning a
->clean 
->> I/O domain if the I/O domain is necessary to access the media.)
->>
->> There is absolutely no reason to have a crashkernel sitting around in
->
->> each guest, consuming memory, and possibly get corrupt.
->>
->> 	-hpa
->>
->
->I agree that regular guests should not be using the kexec/kdump. 
->However, this patch series is required for allowing a pvops kernel to
->be
->a crash kernel for Xen, which is very important from dom0/Xen's point
->of
->view.
-
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 04a8199..9ff942a 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -705,9 +705,9 @@ static const struct file_operations list_debugfs_fops = {
+ static struct dentry *kim_debugfs_dir;
+ static int kim_probe(struct platform_device *pdev)
+ {
+-	long status;
+ 	struct kim_data_s	*kim_gdata;
+ 	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
++	int err;
+ 
+ 	if ((pdev->id != -1) && (pdev->id < MAX_ST_DEVICES)) {
+ 		/* multiple devices could exist */
+@@ -724,10 +724,11 @@ static int kim_probe(struct platform_device *pdev)
+ 	}
+ 	dev_set_drvdata(&pdev->dev, kim_gdata);
+ 
+-	status = st_core_init(&kim_gdata->core_data);
+-	if (status != 0) {
++	err = st_core_init(&kim_gdata->core_data);
++	if (err != 0) {
+ 		pr_err(" ST core init failed");
+-		return -EIO;
++		err = -EIO;
++		goto err_core_init;
+ 	}
+ 	/* refer to itself */
+ 	kim_gdata->core_data->kim_data = kim_gdata;
+@@ -738,10 +739,10 @@ static int kim_probe(struct platform_device *pdev)
+ 	init_completion(&kim_gdata->kim_rcvd);
+ 	init_completion(&kim_gdata->ldisc_installed);
+ 
+-	status = sysfs_create_group(&pdev->dev.kobj, &uim_attr_grp);
+-	if (status) {
++	err = sysfs_create_group(&pdev->dev.kobj, &uim_attr_grp);
++	if (err) {
+ 		pr_err("failed to create sysfs entries");
+-		return status;
++		goto err_sysfs_group;
+ 	}
+ 
+ 	/* copying platform data */
+@@ -753,8 +754,8 @@ static int kim_probe(struct platform_device *pdev)
+ 	kim_debugfs_dir = debugfs_create_dir("ti-st", NULL);
+ 	if (IS_ERR(kim_debugfs_dir)) {
+ 		pr_err(" debugfs entries creation failed ");
+-		kim_debugfs_dir = NULL;
+-		return -EIO;
++		err = -EIO;
++		goto err_debugfs_dir;
+ 	}
+ 
+ 	debugfs_create_file("version", S_IRUGO, kim_debugfs_dir,
+@@ -763,6 +764,17 @@ static int kim_probe(struct platform_device *pdev)
+ 				kim_gdata, &list_debugfs_fops);
+ 	pr_info(" debugfs entries created ");
+ 	return 0;
++
++err_debugfs_dir:
++	sysfs_remove_group(&pdev->dev.kobj, &uim_attr_grp);
++
++err_sysfs_group:
++	st_core_exit(kim_gdata->core_data);
++
++err_core_init:
++	kfree(kim_gdata);
++
++	return err;
+ }
+ 
+ static int kim_remove(struct platform_device *pdev)
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.10
+
