@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab2KVVLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:11:52 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:38817 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766Ab2KVVLt (ORCPT
+	id S932096Ab2KVVMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:12:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60923 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab2KVVMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:11:49 -0500
-Message-ID: <50AE5D79.8040803@oracle.com>
-Date: Thu, 22 Nov 2012 12:14:33 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121112 Thunderbird/16.0.1
+	Thu, 22 Nov 2012 16:12:05 -0500
+Date: Thu, 22 Nov 2012 22:11:47 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
+Subject: Re: [PATCH v4 10/11] ARM: dts: AM33XX: Add PWM backlight DT data to
+ am335x-evm
+Message-ID: <20121122211147.GI16716@avionic-0098.adnet.avionic-design.de>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <1353503469-18634-11-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Is augmented rbtree propagation broken?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G3juXO9GfR42w+sw"
+Content-Disposition: inline
+In-Reply-To: <1353503469-18634-11-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:NVzJoxOGPlhCu7fGuz80V3AcWF4aFE8otz6+l1RJXnS
+ OHGH2yKjzipCu+NnxD6EcDmI4yzCUyvCEyEKSw9V0fkKN45E1p
+ ZWcddr/auTXQO/2AHX6+UraT8AvTZWb12dmIKLtFpICKEUlPWm
+ Q61TItuOq1lBClO50/A6lkx596mAVy5PtAQx5MkriH5PboYW4s
+ edzrAnwiO7M8duCj5RNwLUXC6hhSNplSo07p1X6V6eU5CVokoJ
+ xu7qMz2xRie8e+3E7t+kmu6Aw56eBl4HWsLEsTIMK5dMMoZzjj
+ W1qmamXZqHxRYCCOzV+cEz9ahu9m/1udEEd26pk1fwoeoQWkYd
+ T8vRwaEpPNPhJa3Lyy1rQGMX4HYSr26wX6FDjcxANnpf89w1dW
+ rUC4t+dxiuUINYPCUoMftWC8IvfcslYgbOwwG84I6gfeTCcnAo
+ CUC5Q
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michel,
 
-I've noticed a bug regarding search of ioports in the KVM tool. Since the KVM tool is
-using kernel's augmented rbtree implementation to represent an interval rbtree I dug a
-bit into the new implementation in the kernel, and noticed the following odd behaviour.
+--G3juXO9GfR42w+sw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Let's take a simple case where we have 2 intervals with the 3rd parameter being the
-'max_high' field used by interval rbtrees: (1,2,0) , (3,4,0). Let's add them one by one:
+On Wed, Nov 21, 2012 at 06:41:07PM +0530, Philip, Avinash wrote:
+[...]
+> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+> index 9f65f17..4178ba4 100644
+> --- a/arch/arm/boot/dts/am335x-evm.dts
+> +++ b/arch/arm/boot/dts/am335x-evm.dts
+> @@ -44,6 +44,12 @@
+>  				0x154 0x27	/* spi0_d0.gpio0_3, INPUT | MODE7 */
+>  			>;
+>  		};
+> +
+> +		ecap0_pins: backlight_pins {
+> +			pinctrl-single,pins = <
+> +				0x164 0x0	/* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
+> +			>;
 
-1.		 (1,2,2)
-		/	\
-	     NULL	NULL
+This looks kind of funky, but I see the rest of the file uses similar
+formatting, so I guess it's okay.
 
-2.		 (1,2,4)
-		/	\
-	     NULL	(3,4,4)
+> @@ -158,6 +174,13 @@
+>  			gpio-key,wakeup;
+>  		};
+>  	};
+> +
+> +	backlight {
+> +		compatible	= "pwm-backlight";
 
-On the 2nd stage we'd expect that the new (3,4) interval will be added to the right
-subtree (which happens correctly), and that the insertion will be propagated to the
-root of the tree to update max_high (which doesn't happen).
+Maybe you don't want a tab between "compatible" and "=", but a space
+instead.
 
-Basically, at stage 2, the tree we're left with is:
+Other than that, looks good:
 
-		 (1,2,2)
-		/	\
-	     NULL	(3,4,4)
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Which is wrong.
+--G3juXO9GfR42w+sw
+Content-Type: application/pgp-signature
 
-I suspect that this happens because we never propagate upon insertion, which sounds
-quite odd to me, but I might be missing something.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-The following patch fixed the problem for me:
+iQIcBAEBAgAGBQJQrpUTAAoJEN0jrNd/PrOhIGMQAIBi9n7xA6obUrKlYLDKFdBe
+t983odhwp0g+V7xp0qTRgTITCLdwYtjhHxb4hnQBUw222ZZzTh9xv+XCdd1JpLGp
+vO9UVY2M2l6YLfIcDfRhjvjnmyvpsxAQ5ADMsVs1KTmJtBO221u7CZVJQVzfdHKh
+CJ1DlEv/qkoSUkiUKjBw/+Eu4grwLOuBbbzBBxzoSf154jZM7HhOX2XVWzR8wkGG
+pNq7daPfPuq5XIpkcR1/gl3sINb9A3wbIMTNm7Tg7DoZB4ihCjEAOUpHCiGK42ns
+3XLZkXfsaL5D0KRhFsqJUHQcRG/7+HWJy3ByVHJK7X2lH6W1DSroFXjWuKllRzr7
+Pm22CVK1CdSPOo88IuomRxI/5TOMetX1BONpMWzNMF5FkyvFTD/l8gsxut5EmO7Q
++QB5HOhR2s8SqioRHTuuIeBujhDkYEsuOzd5Cyi5FPsdF824aNfv4jgRAFMLZg4k
+2l2V3+aXF/U6/ITwjUbNNqT/8VvD7qFPjl4ha5Sw02FMSCh/Bj4gzIWvU9IcAFY6
+7/2LmOAazxS3mdjHNy31whbaPG8jp47Kr2sVrPovAWAN4lPG4TyL8Gy561zDTeR0
+6bp0hSf7gZd6Wzn9i1yn7EIjOS5gK1K1mFjX0+72MfYcWtf10i+sqnlFaE78lAYQ
+TMmWWcc3hw5UtFVL4JlR
+=XTbD
+-----END PGP SIGNATURE-----
 
-diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-index 214caa3..5cfdca6 100644
---- a/include/linux/rbtree_augmented.h
-+++ b/include/linux/rbtree_augmented.h
-@@ -47,6 +47,7 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-                    const struct rb_augment_callbacks *augment)
- {
-        __rb_insert_augmented(node, root, augment->rotate);
-+       augment->propagate(node, NULL);
- }
-
-
-Thanks,
-Sasha
+--G3juXO9GfR42w+sw--
