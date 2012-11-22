@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab2KVTvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:51:24 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59089 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab2KVTvT (ORCPT
+	id S1030218Ab2KVTv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:51:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394Ab2KVTvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:19 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com
-Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
-Subject: [PATCH 06/10] ASoC: wm8753: Convert to use devm_regmap_init_{spi,i2c}()
-Date: Thu, 22 Nov 2012 09:38:38 +0530
-Message-Id: <1353557322-25353-7-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
-References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+	Thu, 22 Nov 2012 14:51:24 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 23/46] staging: line6: drop midi_postprocess sysfs attr
+Date: Thu, 22 Nov 2012 20:49:02 +0100
+Message-Id: <1353613765-18690-24-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
 ---
- sound/soc/codecs/wm8753.c |   32 ++++++--------------------------
- 1 files changed, 6 insertions(+), 26 deletions(-)
+ drivers/staging/line6/pod.c | 36 ------------------------------------
+ 1 file changed, 36 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8753.c b/sound/soc/codecs/wm8753.c
-index 9914215..50a5dc7 100644
---- a/sound/soc/codecs/wm8753.c
-+++ b/sound/soc/codecs/wm8753.c
-@@ -1562,35 +1562,25 @@ static int __devinit wm8753_spi_probe(struct spi_device *spi)
- 
- 	spi_set_drvdata(spi, wm8753);
- 
--	wm8753->regmap = regmap_init_spi(spi, &wm8753_regmap);
-+	wm8753->regmap = devm_regmap_init_spi(spi, &wm8753_regmap);
- 	if (IS_ERR(wm8753->regmap)) {
- 		ret = PTR_ERR(wm8753->regmap);
- 		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	ret = snd_soc_register_codec(&spi->dev, &soc_codec_dev_wm8753,
- 				     wm8753_dai, ARRAY_SIZE(wm8753_dai));
--	if (ret != 0) {
-+	if (ret != 0)
- 		dev_err(&spi->dev, "Failed to register CODEC: %d\n", ret);
--		goto err_regmap;
--	}
- 
--	return 0;
--
--err_regmap:
--	regmap_exit(wm8753->regmap);
--err:
- 	return ret;
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 797f6e0..37b20d7 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -371,38 +371,6 @@ static int pod_set_system_param_int(struct usb_line6_pod *pod, int value,
  }
  
- static int __devexit wm8753_spi_remove(struct spi_device *spi)
- {
--	struct wm8753_priv *wm8753 = spi_get_drvdata(spi);
+ /*
+-	"read" request on "midi_postprocess" special file.
+-*/
+-static ssize_t pod_get_midi_postprocess(struct device *dev,
+-					struct device_attribute *attr,
+-					char *buf)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	return sprintf(buf, "%d\n", pod->midi_postprocess);
+-}
 -
- 	snd_soc_unregister_codec(&spi->dev);
--	regmap_exit(wm8753->regmap);
- 	return 0;
- }
- 
-@@ -1619,35 +1609,25 @@ static __devinit int wm8753_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm8753);
- 
--	wm8753->regmap = regmap_init_i2c(i2c, &wm8753_regmap);
-+	wm8753->regmap = devm_regmap_init_i2c(i2c, &wm8753_regmap);
- 	if (IS_ERR(wm8753->regmap)) {
- 		ret = PTR_ERR(wm8753->regmap);
- 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_wm8753,
- 				     wm8753_dai, ARRAY_SIZE(wm8753_dai));
--	if (ret != 0) {
-+	if (ret != 0)
- 		dev_err(&i2c->dev, "Failed to register CODEC: %d\n", ret);
--		goto err_regmap;
--	}
- 
--	return 0;
+-/*
+-	"write" request on "midi_postprocess" special file.
+-*/
+-static ssize_t pod_set_midi_postprocess(struct device *dev,
+-					struct device_attribute *attr,
+-					const char *buf, size_t count)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	u8 value;
+-	int ret;
 -
--err_regmap:
--	regmap_exit(wm8753->regmap);
--err:
- 	return ret;
- }
- 
- static __devexit int wm8753_i2c_remove(struct i2c_client *client)
- {
--	struct wm8753_priv *wm8753 = i2c_get_clientdata(client);
+-	ret = kstrtou8(buf, 10, &value);
+-	if (ret)
+-		return ret;
 -
- 	snd_soc_unregister_codec(&client->dev);
--	regmap_exit(wm8753->regmap);
- 	return 0;
- }
+-	pod->midi_postprocess = value ? 1 : 0;
+-	return count;
+-}
+-
+-/*
+ 	"read" request on "serial_number" special file.
+ */
+ static ssize_t pod_get_serial_number(struct device *dev,
+@@ -510,8 +478,6 @@ static void pod_startup5(struct work_struct *work)
+ static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
+ static DEVICE_ATTR(firmware_version, S_IRUGO, pod_get_firmware_version,
+ 		   line6_nop_write);
+-static DEVICE_ATTR(midi_postprocess, S_IWUSR | S_IRUGO,
+-		   pod_get_midi_postprocess, pod_set_midi_postprocess);
+ static DEVICE_ATTR(serial_number, S_IRUGO, pod_get_serial_number,
+ 		   line6_nop_write);
  
+@@ -594,7 +560,6 @@ static int pod_create_files2(struct device *dev)
+ 
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_device_id));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_firmware_version));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_serial_number));
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
+@@ -708,7 +673,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 
+ 			device_remove_file(dev, &dev_attr_device_id);
+ 			device_remove_file(dev, &dev_attr_firmware_version);
+-			device_remove_file(dev, &dev_attr_midi_postprocess);
+ 			device_remove_file(dev, &dev_attr_serial_number);
+ 
+ #ifdef CONFIG_LINE6_USB_RAW
 -- 
-1.7.4.1
+1.8.0
 
