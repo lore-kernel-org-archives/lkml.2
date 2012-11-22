@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab2KVV3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:29:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
+	id S1757908Ab2KVV3a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:29:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49630 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755189Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752892Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 064/171] ceph: messenger: change read_partial() to take "end" arg
-Date: Wed, 21 Nov 2012 16:40:10 -0800
-Message-Id: <20121122004039.798760009@linuxfoundation.org>
+Subject: [ 102/171] libceph: embed ceph connection structure in mon_client
+Date: Wed, 21 Nov 2012 16:40:48 -0800
+Message-Id: <20121122004043.591883929@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,145 +27,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit fd51653f78cf40a0516e521b6de22f329c5bad8d)
+(cherry picked from commit 67130934fb579fdf0f2f6d745960264378b57dc8)
 
-Make the second argument to read_partial() be the ending input byte
-position rather than the beginning offset it now represents.  This
-amounts to moving the addition "to + size" into the caller.
+A monitor client has a pointer to a ceph connection structure in it.
+This is the only one of the three ceph client types that do it this
+way; the OSD and MDS clients embed the connection into their main
+structures.  There is always exactly one ceph connection for a
+monitor client, so there is no need to allocate it separate from the
+monitor client structure.
+
+So switch the ceph_mon_client structure to embed its
+ceph_connection structure.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/messenger.c |   60 ++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 38 insertions(+), 22 deletions(-)
+ include/linux/ceph/mon_client.h |    2 -
+ net/ceph/mon_client.c           |   47 +++++++++++++++++-----------------------
+ 2 files changed, 21 insertions(+), 28 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -992,10 +992,8 @@ static int prepare_read_message(struct c
+--- a/include/linux/ceph/mon_client.h
++++ b/include/linux/ceph/mon_client.h
+@@ -70,7 +70,7 @@ struct ceph_mon_client {
+ 	bool hunting;
+ 	int cur_mon;                       /* last monitor i contacted */
+ 	unsigned long sub_sent, sub_renew_after;
+-	struct ceph_connection *con;
++	struct ceph_connection con;
+ 	bool have_fsid;
  
- 
- static int read_partial(struct ceph_connection *con,
--			int to, int size, void *object)
-+			int end, int size, void *object)
- {
--	int end = to + size;
--
- 	while (con->in_base_pos < end) {
- 		int left = end - con->in_base_pos;
- 		int have = size - left;
-@@ -1013,40 +1011,52 @@ static int read_partial(struct ceph_conn
-  */
- static int read_partial_banner(struct ceph_connection *con)
- {
--	int ret, to = 0;
-+	int size;
-+	int end;
-+	int ret;
- 
- 	dout("read_partial_banner %p at %d\n", con, con->in_base_pos);
- 
- 	/* peer's banner */
--	ret = read_partial(con, to, strlen(CEPH_BANNER), con->in_banner);
-+	size = strlen(CEPH_BANNER);
-+	end = size;
-+	ret = read_partial(con, end, size, con->in_banner);
- 	if (ret <= 0)
- 		goto out;
--	to += strlen(CEPH_BANNER);
--	ret = read_partial(con, to, sizeof(con->actual_peer_addr),
--			   &con->actual_peer_addr);
-+
-+	size = sizeof (con->actual_peer_addr);
-+	end += size;
-+	ret = read_partial(con, end, size, &con->actual_peer_addr);
- 	if (ret <= 0)
- 		goto out;
--	to += sizeof(con->actual_peer_addr);
--	ret = read_partial(con, to, sizeof(con->peer_addr_for_me),
--			   &con->peer_addr_for_me);
-+
-+	size = sizeof (con->peer_addr_for_me);
-+	end += size;
-+	ret = read_partial(con, end, size, &con->peer_addr_for_me);
- 	if (ret <= 0)
- 		goto out;
-+
- out:
- 	return ret;
+ 	/* pending generic requests */
+--- a/net/ceph/mon_client.c
++++ b/net/ceph/mon_client.c
+@@ -106,9 +106,9 @@ static void __send_prepared_auth_request
+ 	monc->pending_auth = 1;
+ 	monc->m_auth->front.iov_len = len;
+ 	monc->m_auth->hdr.front_len = cpu_to_le32(len);
+-	ceph_con_revoke(monc->con, monc->m_auth);
++	ceph_con_revoke(&monc->con, monc->m_auth);
+ 	ceph_msg_get(monc->m_auth);  /* keep our ref */
+-	ceph_con_send(monc->con, monc->m_auth);
++	ceph_con_send(&monc->con, monc->m_auth);
  }
  
- static int read_partial_connect(struct ceph_connection *con)
+ /*
+@@ -117,8 +117,8 @@ static void __send_prepared_auth_request
+ static void __close_session(struct ceph_mon_client *monc)
  {
--	int ret, to = 0;
-+	int size;
-+	int end;
-+	int ret;
+ 	dout("__close_session closing mon%d\n", monc->cur_mon);
+-	ceph_con_revoke(monc->con, monc->m_auth);
+-	ceph_con_close(monc->con);
++	ceph_con_revoke(&monc->con, monc->m_auth);
++	ceph_con_close(&monc->con);
+ 	monc->cur_mon = -1;
+ 	monc->pending_auth = 0;
+ 	ceph_auth_reset(monc->auth);
+@@ -142,9 +142,9 @@ static int __open_session(struct ceph_mo
+ 		monc->want_next_osdmap = !!monc->want_next_osdmap;
  
- 	dout("read_partial_connect %p at %d\n", con, con->in_base_pos);
+ 		dout("open_session mon%d opening\n", monc->cur_mon);
+-		monc->con->peer_name.type = CEPH_ENTITY_TYPE_MON;
+-		monc->con->peer_name.num = cpu_to_le64(monc->cur_mon);
+-		ceph_con_open(monc->con,
++		monc->con.peer_name.type = CEPH_ENTITY_TYPE_MON;
++		monc->con.peer_name.num = cpu_to_le64(monc->cur_mon);
++		ceph_con_open(&monc->con,
+ 			      &monc->monmap->mon_inst[monc->cur_mon].addr);
  
--	ret = read_partial(con, to, sizeof(con->in_reply), &con->in_reply);
-+	size = sizeof (con->in_reply);
-+	end = size;
-+	ret = read_partial(con, end, size, &con->in_reply);
- 	if (ret <= 0)
- 		goto out;
--	to += sizeof(con->in_reply);
--	ret = read_partial(con, to, le32_to_cpu(con->in_reply.authorizer_len),
--			   con->auth_reply_buf);
-+
-+	size = le32_to_cpu(con->in_reply.authorizer_len);
-+	end += size;
-+	ret = read_partial(con, end, size, con->auth_reply_buf);
- 	if (ret <= 0)
- 		goto out;
+ 		/* initiatiate authentication handshake */
+@@ -226,8 +226,8 @@ static void __send_subscribe(struct ceph
  
-@@ -1495,8 +1505,10 @@ static int process_connect(struct ceph_c
-  */
- static int read_partial_ack(struct ceph_connection *con)
- {
--	return read_partial(con, 0, sizeof(con->in_temp_ack),
--			    &con->in_temp_ack);
-+	int size = sizeof (con->in_temp_ack);
-+	int end = size;
-+
-+	return read_partial(con, end, size, &con->in_temp_ack);
- }
+ 		msg->front.iov_len = p - msg->front.iov_base;
+ 		msg->hdr.front_len = cpu_to_le32(msg->front.iov_len);
+-		ceph_con_revoke(monc->con, msg);
+-		ceph_con_send(monc->con, ceph_msg_get(msg));
++		ceph_con_revoke(&monc->con, msg);
++		ceph_con_send(&monc->con, ceph_msg_get(msg));
  
- 
-@@ -1629,8 +1641,9 @@ static int read_partial_message_bio(stru
- static int read_partial_message(struct ceph_connection *con)
- {
- 	struct ceph_msg *m = con->in_msg;
-+	int size;
-+	int end;
- 	int ret;
--	int to;
- 	unsigned front_len, middle_len, data_len;
- 	bool do_datacrc = !con->msgr->nocrc;
- 	int skip;
-@@ -1640,7 +1653,9 @@ static int read_partial_message(struct c
- 	dout("read_partial_message con %p msg %p\n", con, m);
- 
- 	/* header */
--	ret = read_partial(con, 0, sizeof (con->in_hdr), &con->in_hdr);
-+	size = sizeof (con->in_hdr);
-+	end = size;
-+	ret = read_partial(con, end, size, &con->in_hdr);
- 	if (ret <= 0)
- 		return ret;
- 
-@@ -1755,8 +1770,9 @@ static int read_partial_message(struct c
+ 		monc->sub_sent = jiffies | 1;  /* never 0 */
  	}
+@@ -247,7 +247,7 @@ static void handle_subscribe_ack(struct
+ 	if (monc->hunting) {
+ 		pr_info("mon%d %s session established\n",
+ 			monc->cur_mon,
+-			ceph_pr_addr(&monc->con->peer_addr.in_addr));
++			ceph_pr_addr(&monc->con.peer_addr.in_addr));
+ 		monc->hunting = false;
+ 	}
+ 	dout("handle_subscribe_ack after %d seconds\n", seconds);
+@@ -461,7 +461,7 @@ static int do_generic_request(struct cep
+ 	req->request->hdr.tid = cpu_to_le64(req->tid);
+ 	__insert_generic_request(monc, req);
+ 	monc->num_generic_requests++;
+-	ceph_con_send(monc->con, ceph_msg_get(req->request));
++	ceph_con_send(&monc->con, ceph_msg_get(req->request));
+ 	mutex_unlock(&monc->mutex);
  
- 	/* footer */
--	to = sizeof (m->hdr);
--	ret = read_partial(con, to, sizeof (m->footer), &m->footer);
-+	size = sizeof (m->footer);
-+	end += size;
-+	ret = read_partial(con, end, size, &m->footer);
- 	if (ret <= 0)
- 		return ret;
+ 	err = wait_for_completion_interruptible(&req->completion);
+@@ -684,8 +684,8 @@ static void __resend_generic_request(str
  
+ 	for (p = rb_first(&monc->generic_request_tree); p; p = rb_next(p)) {
+ 		req = rb_entry(p, struct ceph_mon_generic_request, node);
+-		ceph_con_revoke(monc->con, req->request);
+-		ceph_con_send(monc->con, ceph_msg_get(req->request));
++		ceph_con_revoke(&monc->con, req->request);
++		ceph_con_send(&monc->con, ceph_msg_get(req->request));
+ 	}
+ }
+ 
+@@ -705,7 +705,7 @@ static void delayed_work(struct work_str
+ 		__close_session(monc);
+ 		__open_session(monc);  /* continue hunting */
+ 	} else {
+-		ceph_con_keepalive(monc->con);
++		ceph_con_keepalive(&monc->con);
+ 
+ 		__validate_auth(monc);
+ 
+@@ -760,19 +760,16 @@ int ceph_monc_init(struct ceph_mon_clien
+ 		goto out;
+ 
+ 	/* connection */
+-	monc->con = kmalloc(sizeof(*monc->con), GFP_KERNEL);
+-	if (!monc->con)
+-		goto out_monmap;
+-	ceph_con_init(&monc->client->msgr, monc->con);
+-	monc->con->private = monc;
+-	monc->con->ops = &mon_con_ops;
++	ceph_con_init(&monc->client->msgr, &monc->con);
++	monc->con.private = monc;
++	monc->con.ops = &mon_con_ops;
+ 
+ 	/* authentication */
+ 	monc->auth = ceph_auth_init(cl->options->name,
+ 				    cl->options->key);
+ 	if (IS_ERR(monc->auth)) {
+ 		err = PTR_ERR(monc->auth);
+-		goto out_con;
++		goto out_monmap;
+ 	}
+ 	monc->auth->want_keys =
+ 		CEPH_ENTITY_TYPE_AUTH | CEPH_ENTITY_TYPE_MON |
+@@ -824,8 +821,6 @@ out_subscribe_ack:
+ 	ceph_msg_put(monc->m_subscribe_ack);
+ out_auth:
+ 	ceph_auth_destroy(monc->auth);
+-out_con:
+-	monc->con->ops->put(monc->con);
+ out_monmap:
+ 	kfree(monc->monmap);
+ out:
+@@ -841,9 +836,7 @@ void ceph_monc_stop(struct ceph_mon_clie
+ 	mutex_lock(&monc->mutex);
+ 	__close_session(monc);
+ 
+-	monc->con->private = NULL;
+-	monc->con->ops->put(monc->con);
+-	monc->con = NULL;
++	monc->con.private = NULL;
+ 
+ 	mutex_unlock(&monc->mutex);
+ 
+@@ -1029,7 +1022,7 @@ static void mon_fault(struct ceph_connec
+ 	if (!monc->hunting)
+ 		pr_info("mon%d %s session lost, "
+ 			"hunting for new mon\n", monc->cur_mon,
+-			ceph_pr_addr(&monc->con->peer_addr.in_addr));
++			ceph_pr_addr(&monc->con.peer_addr.in_addr));
+ 
+ 	__close_session(monc);
+ 	if (!monc->hunting) {
 
 
