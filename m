@@ -1,383 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab2KVTFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:05:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:44347 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab2KVTFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:05:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
-   d="scan'208";a="221003708"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mmc: sdhci-acpi: add SDHCI ACPI driver
-Date: Thu, 22 Nov 2012 10:43:50 +0200
-Message-Id: <1353573830-13006-4-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
-References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756385Ab2KVTFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:05:31 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:47090 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab2KVTF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:05:26 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: trace filemap add and del
+References: <1352404450-30100-1-git-send-email-robert.jarzmik@free.fr>
+	<20121120155735.905bbf9e.akpm@linux-foundation.org>
+	<20121121035924.GO2591@dastard>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 22 Nov 2012 12:51:00 +0100
+In-Reply-To: <20121121035924.GO2591@dastard> (Dave Chinner's message of "Wed,
+	21 Nov 2012 14:59:24 +1100")
+Message-ID: <87vccx500r.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- drivers/mmc/host/Kconfig      |  12 ++
- drivers/mmc/host/Makefile     |   1 +
- drivers/mmc/host/sdhci-acpi.c | 304 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 317 insertions(+)
- create mode 100644 drivers/mmc/host/sdhci-acpi.c
+Dave Chinner <david@fromorbit.com> writes:
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 9bf10e7..56eac10 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -81,6 +81,18 @@ config MMC_RICOH_MMC
- 
- 	  If unsure, say Y.
- 
-+config MMC_SDHCI_ACPI
-+	tristate "SDHCI support for ACPI enumerated SDHCI controllers"
-+	depends on MMC_SDHCI && ACPI
-+	help
-+	  This selects support for ACPI enumerated SDHCI controllers,
-+	  identified by ACPI Compatibility ID PNP0D40 or specific
-+	  ACPI Hardware IDs.
-+
-+	  If you have a controller with this interface, say Y or M here.
-+
-+	  If unsure, say N.
-+
- config MMC_SDHCI_PLTFM
- 	tristate "SDHCI platform and OF driver helper"
- 	depends on MMC_SDHCI
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 17ad0a7..0e4960a 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_MMC_MXS)		+= mxs-mmc.o
- obj-$(CONFIG_MMC_SDHCI)		+= sdhci.o
- obj-$(CONFIG_MMC_SDHCI_PCI)	+= sdhci-pci.o
- obj-$(subst m,y,$(CONFIG_MMC_SDHCI_PCI))	+= sdhci-pci-data.o
-+obj-$(CONFIG_MMC_SDHCI_ACPI)	+= sdhci-acpi.o
- obj-$(CONFIG_MMC_SDHCI_PXAV3)	+= sdhci-pxav3.o
- obj-$(CONFIG_MMC_SDHCI_PXAV2)	+= sdhci-pxav2.o
- obj-$(CONFIG_MMC_SDHCI_S3C)	+= sdhci-s3c.o
-diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-new file mode 100644
-index 0000000..f582fe7
---- /dev/null
-+++ b/drivers/mmc/host/sdhci-acpi.c
-@@ -0,0 +1,304 @@
-+/*
-+ * Secure Digital Host Controller Interface ACPI driver.
-+ *
-+ * Copyright (c) 2012, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc., 
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/export.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/ioport.h>
-+#include <linux/io.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/compiler.h>
-+#include <linux/stddef.h>
-+#include <linux/bitops.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/interrupt.h>
-+#include <linux/acpi.h>
-+#include <linux/pm.h>
-+#include <linux/pm_runtime.h>
-+
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/pm.h>
-+#include <linux/mmc/sdhci.h>
-+
-+#include "sdhci.h"
-+
-+enum {
-+	SDHCI_ACPI_SD_CD	= BIT(0),
-+	SDHCI_ACPI_RUNTIME_PM	= BIT(1),
-+};
-+
-+struct sdhci_acpi_chip {
-+	const struct	sdhci_ops *ops;
-+	unsigned int	quirks;
-+	unsigned int	quirks2;
-+	unsigned long	caps;
-+	unsigned int	caps2;
-+	mmc_pm_flag_t	pm_caps;
-+};
-+
-+struct sdhci_acpi_slot {
-+	const struct	sdhci_acpi_chip *chip;
-+	unsigned int	quirks;
-+	unsigned int	quirks2;
-+	unsigned long	caps;
-+	unsigned int	caps2;
-+	mmc_pm_flag_t	pm_caps;
-+	unsigned int	flags;
-+};
-+
-+struct sdhci_acpi_host {
-+	struct sdhci_host		*host;
-+	const struct sdhci_acpi_slot	*slot;
-+	struct platform_device		*pdev;
-+	bool				use_runtime_pm;
-+};
-+
-+static inline bool sdhci_acpi_flag(struct sdhci_acpi_host *c, unsigned int flag)
-+{
-+	return c->slot && (c->slot->flags & flag);
-+}
-+
-+static int sdhci_acpi_enable_dma(struct sdhci_host *host)
-+{
-+	return 0;
-+}
-+
-+static const struct sdhci_ops sdhci_acpi_ops_dflt = {
-+	.enable_dma = sdhci_acpi_enable_dma,
-+};
-+
-+static const struct acpi_device_id sdhci_acpi_ids[] = {
-+	{ "PNP0D40" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, sdhci_acpi_ids);
-+
-+static const struct sdhci_acpi_slot *sdhci_acpi_get_slot(const char *hid)
-+{
-+	const struct acpi_device_id *id;
-+
-+	for (id = sdhci_acpi_ids; id->id[0]; id++)
-+		if (!strcmp(id->id, hid))
-+			return (const struct sdhci_acpi_slot *)id->driver_data;
-+	return NULL;
-+}
-+
-+static int __devinit sdhci_acpi_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	acpi_handle handle = dev->acpi_handle;
-+	struct acpi_device *device;
-+	struct sdhci_acpi_host *c;
-+	struct sdhci_host *host;
-+	struct resource *iomem;
-+	resource_size_t len;
-+	const char *hid;
-+	int err;
-+
-+	if (acpi_bus_get_device(handle, &device))
-+		return -ENODEV;
-+
-+	if (acpi_bus_get_status(device) || !device->status.present)
-+		return -ENODEV;
-+
-+	hid = acpi_device_hid(device);
-+
-+	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!iomem)
-+		return -ENOMEM;
-+
-+	len = resource_size(iomem);
-+	if (len < 0x100)
-+		dev_err(dev, "Invalid iomem size!\n");
-+
-+	if (!devm_request_mem_region(dev, iomem->start, len, dev_name(dev)))
-+		return -ENOMEM;
-+
-+	host = sdhci_alloc_host(dev, sizeof(struct sdhci_acpi_host));
-+	if (IS_ERR(host))
-+		return PTR_ERR(host);
-+
-+	c = sdhci_priv(host);
-+	c->host = host;
-+	c->slot = sdhci_acpi_get_slot(hid);
-+	c->pdev = pdev;
-+	c->use_runtime_pm = sdhci_acpi_flag(c, SDHCI_ACPI_RUNTIME_PM);
-+
-+	platform_set_drvdata(pdev, c);
-+
-+	host->hw_name	= "ACPI";
-+	host->ops	= &sdhci_acpi_ops_dflt;
-+	host->irq	= platform_get_irq(pdev, 0);
-+
-+	host->ioaddr = devm_ioremap_nocache(dev, iomem->start,
-+					    resource_size(iomem));
-+	if (host->ioaddr == NULL) {
-+		err = -ENOMEM;
-+		goto err_free;
-+	}
-+
-+	if (!dev->dma_mask) {
-+		u64 dma_mask;
-+
-+		if (sdhci_readl(host, SDHCI_CAPABILITIES) & SDHCI_CAN_64BIT) {
-+			/* 64-bit DMA is not supported at present */
-+			dma_mask = DMA_BIT_MASK(32);
-+		} else {
-+			dma_mask = DMA_BIT_MASK(32);
-+		}
-+
-+		dev->dma_mask = &dev->coherent_dma_mask;
-+		dev->coherent_dma_mask = dma_mask;
-+	}
-+
-+	if (c->slot) {
-+		if (c->slot->chip) {
-+			host->ops            = c->slot->chip->ops;
-+			host->quirks        |= c->slot->chip->quirks;
-+			host->quirks2       |= c->slot->chip->quirks2;
-+			host->mmc->caps     |= c->slot->chip->caps;
-+			host->mmc->caps2    |= c->slot->chip->caps2;
-+			host->mmc->pm_caps  |= c->slot->chip->pm_caps;
-+		}
-+		host->quirks        |= c->slot->quirks;
-+		host->quirks2       |= c->slot->quirks2;
-+		host->mmc->caps     |= c->slot->caps;
-+		host->mmc->caps2    |= c->slot->caps2;
-+		host->mmc->pm_caps  |= c->slot->pm_caps;
-+	}
-+
-+	err = sdhci_add_host(host);
-+	if (err)
-+		goto err_free;
-+
-+	if (c->use_runtime_pm) {
-+		pm_suspend_ignore_children(dev, 1);
-+		pm_runtime_set_autosuspend_delay(dev, 50);
-+		pm_runtime_use_autosuspend(dev);
-+		pm_runtime_enable(dev);
-+	}
-+
-+	return 0;
-+
-+err_free:
-+	platform_set_drvdata(pdev, NULL);
-+	sdhci_free_host(c->host);
-+	return err;
-+}
-+
-+static int __devexit sdhci_acpi_remove(struct platform_device *pdev)
-+{
-+	struct sdhci_acpi_host *c = platform_get_drvdata(pdev);
-+	struct device *dev = &pdev->dev;
-+	int dead;
-+
-+	if (c->use_runtime_pm) {
-+		pm_runtime_get_sync(dev);
-+		pm_runtime_disable(dev);
-+		pm_runtime_put_noidle(dev);
-+	}
-+
-+	dead = (sdhci_readl(c->host, SDHCI_INT_STATUS) == ~0);
-+	sdhci_remove_host(c->host, dead);
-+	platform_set_drvdata(pdev, NULL);
-+	sdhci_free_host(c->host);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int sdhci_acpi_suspend(struct device *dev)
-+{
-+	struct sdhci_acpi_host *c = dev_get_drvdata(dev);
-+
-+	return sdhci_suspend_host(c->host);
-+}
-+
-+static int sdhci_acpi_resume(struct device *dev)
-+{
-+	struct sdhci_acpi_host *c = dev_get_drvdata(dev);
-+
-+	return sdhci_resume_host(c->host);
-+}
-+
-+#else
-+
-+#define sdhci_acpi_suspend	NULL
-+#define sdhci_acpi_resume	NULL
-+
-+#endif
-+
-+#ifdef CONFIG_PM_RUNTIME
-+
-+static int sdhci_acpi_runtime_suspend(struct device *dev)
-+{
-+	struct sdhci_acpi_host *c = dev_get_drvdata(dev);
-+
-+	return sdhci_runtime_suspend_host(c->host);
-+}
-+
-+static int sdhci_acpi_runtime_resume(struct device *dev)
-+{
-+	struct sdhci_acpi_host *c = dev_get_drvdata(dev);
-+
-+	return sdhci_runtime_resume_host(c->host);
-+}
-+
-+static int sdhci_acpi_runtime_idle(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+#else
-+
-+#define sdhci_acpi_runtime_suspend	NULL
-+#define sdhci_acpi_runtime_resume	NULL
-+#define sdhci_acpi_runtime_idle		NULL
-+
-+#endif
-+
-+static const struct dev_pm_ops sdhci_acpi_pm_ops = {
-+	.suspend		= sdhci_acpi_suspend,
-+	.resume			= sdhci_acpi_resume,
-+	.runtime_suspend	= sdhci_acpi_runtime_suspend,
-+	.runtime_resume		= sdhci_acpi_runtime_resume,
-+	.runtime_idle		= sdhci_acpi_runtime_idle,
-+};
-+
-+static struct platform_driver sdhci_acpi_driver = {
-+	.driver = {
-+		.name			= "sdhci-acpi",
-+		.owner			= THIS_MODULE,
-+		.acpi_match_table	= sdhci_acpi_ids,
-+		.pm			= &sdhci_acpi_pm_ops,
-+	},
-+	.probe	= sdhci_acpi_probe,
-+	.remove	= __devexit_p(sdhci_acpi_remove),
-+};
-+
-+module_platform_driver(sdhci_acpi_driver);
-+
-+MODULE_DESCRIPTION("Secure Digital Host Controller Interface ACPI driver");
-+MODULE_AUTHOR("Adrian Hunter");
-+MODULE_LICENSE("GPL v2");
+> We actually have an informal convention for formating filesystem
+> trace events, and that is to use the device number....
+>
+>> 
+>> > +	),
+>> > +
+>> > +	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
+>
+> ... and to prefix messages like:
+>
+> 	TP_printk("dev %d:%d ino 0x%llx ....
+> 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+>
+> i.e. the start of the event message has all the identifying
+> information where it is easy to grep for and get all the events for
+> a specific dev/inode combination without even having to think about
+> it.
+
+I cross-checked your proposition.
+The "ino 0x%llx" looks wrong to me, because :
+ - i_ino is "unsigned long", not "(unsigned) long long"
+
+ - triggers a printk where "ino" looks really awfull (on a 32bits LE arm)
+>  mm_filemap_add_to_page_cache: dev 0:2 ino 0xc05186e000000000 page=000a0737
+>  pfn=0 ofs=3283861504
+
+ - why print the inode number in hexadecimal format ???
+   Doing a "ls -i" returns decimal format, "debugfs" returns decimal. What is
+   the rational behind hexadecimal ?
+
+I'd rather have : "dev %d:%d ino %lu page=0x%p pfn=%lu ofs=%lu".
+
 -- 
-1.7.11.7
-
+Robert
