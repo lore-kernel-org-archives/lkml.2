@@ -1,512 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965200Ab2KVT27 (ORCPT <rfc822;w@1wt.eu>);
+	id S965214Ab2KVT3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:29:03 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58755 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965183Ab2KVT27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 14:28:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40158 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755479Ab2KVT04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:56 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 37/40] mm: numa: Add THP migration for the NUMA working set scanning fault case.
-Date: Thu, 22 Nov 2012 19:25:50 +0000
-Message-Id: <1353612353-1576-38-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+X-Greylist: delayed 3611 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 14:28:59 EST
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50AD713F.9030909@jp.fujitsu.com>
+Date: Thu, 22 Nov 2012 09:26:39 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: azurIt <azurit@pobox.sk>
+CC: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: memory-cgroup bug
+References: <20121121200207.01068046@pobox.sk>
+In-Reply-To: <20121121200207.01068046@pobox.sk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: This is very heavily based on a patch from Peter Zijlstra with
-	fixes from Ingo Molnar, Hugh Dickins and Johannes Weiner.  That patch
-	put a lot of migration logic into mm/huge_memory.c where it does
-	not belong. This version puts tries to share some of the migration
-	logic with migrate_misplaced_page.  However, it should be noted
-	that now migrate.c is doing more with the pagetable manipulation
-	than is preferred. The end result is barely recognisable so as
-	before, the signed-offs had to be removed but will be re-added if
-	the original authors are ok with it.
+(2012/11/22 4:02), azurIt wrote:
+> Hi,
+>
+> i'm using memory cgroup for limiting our users and having a really strange problem when a cgroup gets out of its memory limit. It's very strange because it happens only sometimes (about once per week on random user), out of memory is usually handled ok. This happens when problem occures:
+>   - no new processes can be started for this cgroup
+>   - current processes are freezed and taking 100% of CPU
+>   - when i try to 'strace' any of current processes, the whole strace freezes until process is killed (strace cannot be terminated by CTRL-c)
+>   - problem can be resolved by raising memory limit for cgroup or killing of few processes inside cgroup so some memory is freed
+>
+> I also garbbed the content of /proc/<pid>/stack of freezed process:
+> [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> [<ffffffff8110ba56>] mem_cgroup_charge_common+0x56/0xa0
+> [<ffffffff8110bae5>] mem_cgroup_newpage_charge+0x45/0x50
+> [<ffffffff810ec54e>] do_wp_page+0x14e/0x800
+> [<ffffffff810eda34>] handle_pte_fault+0x264/0x940
+> [<ffffffff810ee248>] handle_mm_fault+0x138/0x260
+> [<ffffffff810270ed>] do_page_fault+0x13d/0x460
+> [<ffffffff815b53ff>] page_fault+0x1f/0x30
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> I'm currently using kernel 3.2.34 but i'm having this problem since 2.6.32.
+>
+> Any ideas? Thnx.
+>
 
-Add THP migration for the NUMA working set scanning fault case.
+Under OOM in memcg, only one process is allowed to work. Because processes tends to use up
+CPU at memory shortage. other processes are freezed.
 
-It uses the page lock to serialize. No migration pte dance is
-necessary because the pte is already unmapped when we decide
-to migrate.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/migrate.h |   16 ++++
- mm/huge_memory.c        |   55 +++++++-----
- mm/internal.h           |    7 +-
- mm/memcontrol.c         |    7 +-
- mm/migrate.c            |  212 ++++++++++++++++++++++++++++++++++++++---------
- 5 files changed, 234 insertions(+), 63 deletions(-)
+Then, the problem here is the one process which uses CPU. IIUC, 'freezed' threads are
+in sleep and never use CPU. It's expected oom-killer or memory-reclaim can solve the probelm.
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 0d4ee94..23dc324 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -41,6 +41,11 @@ extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
- extern int migrate_misplaced_page(struct page *page, int node);
-+extern int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, pmd_t entry,
-+			unsigned long address,
-+			struct page *page, int node);
- extern bool migrate_ratelimited(int node);
- #else
- 
-@@ -80,6 +85,17 @@ int migrate_misplaced_page(struct page *page, int node)
- {
- 	return -EAGAIN; /* can't migrate now */
- }
-+
-+static inline
-+int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, pmd_t entry,
-+			unsigned long address,
-+			struct page *page, int node)
-+{
-+	return -EAGAIN;
-+}
-+
- static inline
- bool migrate_ratelimited(int node)
- {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8f89a98..e74cb93 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -600,7 +600,7 @@ out:
- }
- __setup("transparent_hugepage=", setup_transparent_hugepage);
- 
--static inline pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
-+pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
- {
- 	if (likely(vma->vm_flags & VM_WRITE))
- 		pmd = pmd_mkwrite(pmd);
-@@ -1022,9 +1022,11 @@ out:
- int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
- {
--	struct page *page = NULL;
-+	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
- 	int target_nid;
-+	bool migrated;
-+	bool page_locked = false;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
-@@ -1032,39 +1034,54 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	page = pmd_page(pmd);
- 	get_page(page);
--	spin_unlock(&mm->page_table_lock);
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
- 
- 	target_nid = mpol_misplaced(page, vma, haddr);
--	if (target_nid == -1)
-+	if (target_nid == -1) {
-+		put_page(page);
- 		goto clear_pmdnuma;
-+	}
- 
--	/*
--	 * Due to lacking code to migrate thp pages, we'll split
--	 * (which preserves the special PROT_NONE) and re-take the
--	 * fault on the normal pages.
--	 */
--	split_huge_page(page);
--	put_page(page);
--
--	return 0;
-+	/* Acquire the page lock to serialise THP migrations */
-+	spin_unlock(&mm->page_table_lock);
-+	lock_page(page);
-+	page_locked = true;
- 
--clear_pmdnuma:
-+	/* Confirm the PTE did not while locked */
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp)))
-+	if (unlikely(!pmd_same(pmd, *pmdp))) {
-+		unlock_page(page);
-+		put_page(page);
- 		goto out_unlock;
-+	}
-+	spin_unlock(&mm->page_table_lock);
-+
-+	/* Migrate the THP to the requested node */
-+	migrated = migrate_misplaced_transhuge_page(mm, vma,
-+				pmdp, pmd, addr,
-+				page, target_nid);
-+	if (!migrated) {
-+		spin_lock(&mm->page_table_lock);
-+		if (unlikely(!pmd_same(pmd, *pmdp))) {
-+			unlock_page(page);
-+			goto out_unlock;
-+		}
-+		goto clear_pmdnuma;
-+	}
-+
-+	task_numa_fault(target_nid, HPAGE_PMD_NR);
-+	return 0;
- 
-+clear_pmdnuma:
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
-+	if (page_locked)
-+		unlock_page(page);
- 
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
--	if (page) {
--		put_page(page);
--		task_numa_fault(numa_node_id(), HPAGE_PMD_NR);
--	}
- 	return 0;
- }
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index a4fa284..7e60ac8 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -212,15 +212,18 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
- {
- 	if (TestClearPageMlocked(page)) {
- 		unsigned long flags;
-+		int nr_pages = hpage_nr_pages(page);
- 
- 		local_irq_save(flags);
--		__dec_zone_page_state(page, NR_MLOCK);
-+		__mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
- 		SetPageMlocked(newpage);
--		__inc_zone_page_state(newpage, NR_MLOCK);
-+		__mod_zone_page_state(page_zone(newpage), NR_MLOCK, nr_pages);
- 		local_irq_restore(flags);
- 	}
- }
- 
-+extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
-+
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern unsigned long vma_address(struct page *page,
- 				 struct vm_area_struct *vma);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index dd39ba0..d97af96 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3288,15 +3288,18 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
- 				  struct mem_cgroup **memcgp)
- {
- 	struct mem_cgroup *memcg = NULL;
-+	unsigned int nr_pages = 1;
- 	struct page_cgroup *pc;
- 	enum charge_type ctype;
- 
- 	*memcgp = NULL;
- 
--	VM_BUG_ON(PageTransHuge(page));
- 	if (mem_cgroup_disabled())
- 		return;
- 
-+	if (PageTransHuge(page))
-+		nr_pages <<= compound_order(page);
-+
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
-@@ -3358,7 +3361,7 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
- 	 * charged to the res_counter since we plan on replacing the
- 	 * old one and only one page is going to be left afterwards.
- 	 */
--	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
-+	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
- }
- 
- /* remove redundant charge if migration failed*/
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 3033669..d7c5bdf 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -410,7 +410,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
-  */
- void migrate_page_copy(struct page *newpage, struct page *page)
- {
--	if (PageHuge(page))
-+	if (PageHuge(page) || PageTransHuge(page))
- 		copy_huge_page(newpage, page);
- 	else
- 		copy_highpage(newpage, page);
-@@ -1488,25 +1488,10 @@ bool migrate_ratelimited(int node)
- 	return true;
- }
- 
--/*
-- * Attempt to migrate a misplaced page to the specified destination
-- * node. Caller is expected to have an elevated reference count on
-- * the page that will be dropped by this function before returning.
-- */
--int migrate_misplaced_page(struct page *page, int node)
-+/* Returns true if the node is migrate rate-limited after the update */
-+bool numamigrate_update_ratelimit(pg_data_t *pgdat)
- {
--	pg_data_t *pgdat = NODE_DATA(node);
--	int isolated = 0;
--	LIST_HEAD(migratepages);
--
--	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
--	 */
--	if (page_mapcount(page) != 1) {
--		put_page(page);
--		goto out;
--	}
-+	bool rate_limited = false;
- 
- 	/*
- 	 * Rate-limit the amount of data that is being migrated to a node.
-@@ -1519,23 +1504,25 @@ int migrate_misplaced_page(struct page *page, int node)
- 		pgdat->balancenuma_migrate_next_window = jiffies +
- 			msecs_to_jiffies(migrate_interval_millisecs);
- 	}
--	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages) {
--		spin_unlock(&pgdat->balancenuma_migrate_lock);
--		put_page(page);
--		goto out;
--	}
--	pgdat->balancenuma_migrate_nr_pages++;
-+	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages)
-+		rate_limited = true;
-+	else
-+		pgdat->balancenuma_migrate_nr_pages++;
- 	spin_unlock(&pgdat->balancenuma_migrate_lock);
-+	
-+	return rate_limited;
-+}
- 
-+int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
-+{
- 	/* Avoid migrating to a node that is nearly full */
- 	if (migrate_balanced_pgdat(pgdat, 1)) {
- 		int page_lru;
- 
- 		if (isolate_lru_page(page)) {
- 			put_page(page);
--			goto out;
-+			return 0;
- 		}
--		isolated = 1;
- 
- 		/*
- 		 * Page is isolated which takes a reference count so now the
-@@ -1546,27 +1533,172 @@ int migrate_misplaced_page(struct page *page, int node)
- 
- 		page_lru = page_is_file_cache(page);
- 		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
--		list_add(&page->lru, &migratepages);
- 	}
- 
--	if (isolated) {
--		int nr_remaining;
--
--		nr_remaining = migrate_pages(&migratepages,
--				alloc_misplaced_dst_page,
--				node, false, MIGRATE_ASYNC,
--				MR_NUMA_MISPLACED);
--		if (nr_remaining) {
--			putback_lru_pages(&migratepages);
--			isolated = 0;
--		} else
--			count_vm_numa_event(NUMA_PAGE_MIGRATE);
-+	return 1;
-+}
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node. Caller is expected to have an elevated reference count on
-+ * the page that will be dropped by this function before returning.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	pg_data_t *pgdat = NODE_DATA(node);
-+	int isolated = 0;
-+	int nr_remaining;
-+	LIST_HEAD(migratepages);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1) {
-+		put_page(page);
-+		goto out;
- 	}
-+
-+	/*
-+	 * Rate-limit the amount of data that is being migrated to a node.
-+	 * Optimal placement is no good if the memory bus is saturated and
-+	 * all the time is being spent migrating!
-+	 */
-+	if (numamigrate_update_ratelimit(pgdat)) {
-+		put_page(page);
-+		goto out;
-+	}
-+
-+	isolated = numamigrate_isolate_page(pgdat, page);
-+	if (!isolated)
-+		goto out;
-+
-+	list_add(&page->lru, &migratepages);
-+	nr_remaining = migrate_pages(&migratepages,
-+			alloc_misplaced_dst_page,
-+			node, false, MIGRATE_ASYNC,
-+			MR_NUMA_MISPLACED);
-+	if (nr_remaining) {
-+		putback_lru_pages(&migratepages);
-+		isolated = 0;
-+	} else
-+		count_vm_numa_event(NUMA_PAGE_MIGRATE);
- 	BUG_ON(!list_empty(&migratepages));
- 
- out:
- 	return isolated;
- }
-+
-+int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+				struct vm_area_struct *vma,
-+				pmd_t *pmd, pmd_t entry,
-+				unsigned long address,
-+				struct page *page, int node)
-+{
-+	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	pg_data_t *pgdat = NODE_DATA(node);
-+	int isolated = 0;
-+	LIST_HEAD(migratepages);
-+	struct page *new_page = NULL;
-+	struct mem_cgroup *memcg = NULL;
-+	int page_lru = page_is_file_cache(page);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1)
-+		goto out_dropref;
-+
-+	/*
-+	 * Rate-limit the amount of data that is being migrated to a node.
-+	 * Optimal placement is no good if the memory bus is saturated and
-+	 * all the time is being spent migrating!
-+	 */
-+	if (numamigrate_update_ratelimit(pgdat))
-+		goto out_dropref;
-+
-+	new_page = alloc_pages_node(node,
-+		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
-+	if (!new_page)
-+		goto out_dropref;
-+
-+	isolated = numamigrate_isolate_page(pgdat, page);
-+	if (!isolated)
-+		goto out_keep_locked;
-+	list_add(&page->lru, &migratepages);
-+
-+	/* Prepare a page as a migration target */
-+	__set_page_locked(new_page);
-+	SetPageSwapBacked(new_page);
-+
-+	/* anon mapping, we can simply copy page->mapping to the new page: */
-+	new_page->mapping = page->mapping;
-+	new_page->index = page->index;
-+	migrate_page_copy(new_page, page);
-+	WARN_ON(PageLRU(new_page));
-+
-+	/* Recheck the target PMD */
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry))) {
-+		spin_unlock(&mm->page_table_lock);
-+
-+		/* Reverse changes made by migrate_page_copy() */
-+		if (TestClearPageActive(new_page))
-+			SetPageActive(page);
-+		if (TestClearPageUnevictable(new_page))
-+			SetPageUnevictable(page);
-+		mlock_migrate_page(page, new_page);
-+
-+		unlock_page(new_page);
-+		put_page(new_page);		/* Free it */
-+
-+		unlock_page(page);
-+		putback_lru_page(page);
-+		goto out;
-+	}
-+
-+	/*
-+	 * Traditional migration needs to prepare the memcg charge
-+	 * transaction early to prevent the old page from being
-+	 * uncharged when installing migration entries.  Here we can
-+	 * save the potential rollback and start the charge transfer
-+	 * only when migration is already known to end successfully.
-+	 */
-+	mem_cgroup_prepare_migration(page, new_page, &memcg);
-+
-+	entry = mk_pmd(new_page, vma->vm_page_prot);
-+	entry = pmd_mknonnuma(entry);
-+	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-+	entry = pmd_mkhuge(entry);
-+
-+	page_add_new_anon_rmap(new_page, vma, haddr);
-+
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
-+	page_remove_rmap(page);
-+	/*
-+	 * Finish the charge transaction under the page table lock to
-+	 * prevent split_huge_page() from dividing up the charge
-+	 * before it's fully transferred to the new page.
-+	 */
-+	mem_cgroup_end_migration(memcg, page, new_page, true);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	unlock_page(new_page);
-+	unlock_page(page);
-+	put_page(page);			/* Drop the rmap reference */
-+	put_page(page);			/* Drop the LRU isolation reference */
-+
-+out:
-+	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+	return isolated;
-+
-+out_dropref:
-+	put_page(page);
-+out_keep_locked:
-+	return 0;
-+}
- #endif /* CONFIG_BALANCE_NUMA */
- 
- #endif /* CONFIG_NUMA */
--- 
-1.7.9.2
+What is your memcg's
+
+  memory.oom_control
+
+value ?
+
+and process's oom_adj values ? (/proc/<pid>/oom_adj, /proc/<pid>/oom_score_adj)
+
+Thanks,
+-Kame
+
+
+
+
+
+
+> azurIt
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
 
