@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab2KVUpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:45:15 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:49899 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756273Ab2KVUoc (ORCPT
+	id S1757375Ab2KVUpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:45:25 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33123 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756928Ab2KVUpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:44:32 -0500
-Message-ID: <1353585161.9806.37.camel@jlt4.sipsolutions.net>
-Subject: Re: [POC] recoverable fault injection
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Date: Thu, 22 Nov 2012 12:52:41 +0100
-In-Reply-To: <CAC5umyibe0tb+HLxx3dbT7gF_nVAAHso1Y0Qb4Q_+y0KNrnvFg@mail.gmail.com> (sfid-20121122_124034_444494_4D7B6C5A)
-References: <1353541455.20173.10.camel@jlt4.sipsolutions.net>
-	 <CAC5umyibe0tb+HLxx3dbT7gF_nVAAHso1Y0Qb4Q_+y0KNrnvFg@mail.gmail.com>
-	 (sfid-20121122_124034_444494_4D7B6C5A)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 15:45:19 -0500
+Date: Thu, 22 Nov 2012 02:21:22 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: numa/core regressions fixed - more testers wanted
+Message-ID: <20121122012122.GA7938@gmail.com>
+References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
+ <20121119162909.GL8218@suse.de>
+ <20121119191339.GA11701@gmail.com>
+ <20121119211804.GM8218@suse.de>
+ <20121119223604.GA13470@gmail.com>
+ <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
+ <20121120071704.GA14199@gmail.com>
+ <20121120152933.GA17996@gmail.com>
+ <20121120175647.GA23532@gmail.com>
+ <CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-22 at 20:40 +0900, Akinobu Mita wrote:
 
-> > I was thinking: what if we could do fault injection during regular
-> > testing, at least on those code paths that are not supposed to have side
-> > effects when they fail? Now obviously this isn't all code paths, and
-> > many probably erroneously *do* have side effects even if they're not
-> > supposed to, but it does apply to a number of code paths.
+* Alex Shi <lkml.alex@gmail.com> wrote:
+
+> >
+> > Those of you who would like to test all the latest patches are
+> > welcome to pick up latest bits at tip:master:
+> >
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
+> >
 > 
-> It sounds interesting. I have never thought of this idea.
-
-:-)
-It also occurred to me that if the function is defined to not have side
-effects when failing, this actually also lets you test that in a way.
-Anyway, it's really just an idea at this point.
-
-> > So I decided to play with this, and the result it the patch below. It
-> > adds a new knob "recoverable-only" to the slab and page_alloc fault
-> > attributes. If enabled, then a single fault can be injected if the task
-> > executing it is in a "recoverable section", this is implemented by some
-> > new fields in struct task_struct and the (very ugly!) macro
-> > FAULT_INJECT_CALL_RECOVERABLE_FUNCTION.
+> I am wondering if it is a problem, but it still exists on HEAD: c418de93e39891
+> http://article.gmane.org/gmane.linux.kernel.mm/90131/match=compiled+with+name+pl+and+start+it+on+my
 > 
-> I suggest introducing a pair of function like:
-> 
-> void fault_recoverable_enable(unsigned long fault_ids);
-> void fault_recoverable_disable();
-> [...]
+> like when just start 4 pl tasks, often 3 were running on node 
+> 0, and 1 was running on node 1. The old balance will average 
+> assign tasks to different node, different core.
 
-I thought about something like that, I actually initially played with
-macros like this:
+This is "normal" in the sense that the current mainline 
+scheduler is (supposed to be) doing something similar: if the 
+node is still within capacity, then there's no reason to move 
+those threads.
 
-#define FAULT_RECOVERABLE_START(ids)	\
-	/* set up the task state */	\
- fault_recovery_retry:
+OTOH, I think with NUMA balancing we indeed want to spread them 
+better, if those tasks do not share memory with each other but 
+use their own memory. If they share memory then they should 
+remain on the same node if possible.
 
-#define FAULT_RECOVERABLE_END(ids)	\
-	if (current->encountered_fault)	\
-		goto fault_recovery_retry;
+Thanks,
 
-or so. However, the problem is that if you exit the function between
-these points, and this is true for your functions as well, you leave the
-task's fault injection enabled which isn't what you want. So adding
-functions or macros like this didn't really seem right. Also, functions
-(rather than macros) have the problem that the retry can't be
-encapsulated -- note how my macro calls the function again if it failed.
-So with functions like that, you introduce new manually-coded error and
-retry paths, that seemed undesirable.
-
-As you can see in my macro, it's also possible for an allocation to fail
-but the function to succeed, so the function that is called must have a
-return value indicating success or failure. I ran into this with debug
-objects, their allocation failed all the time but obviously the function
-succeeded as debug objects fail gracefully if they can't allocate
-memory.
-
-Now, I'm not saying I'm happy with this, but I haven't found a better
-solution yet, but I'll admit that I haven't thought about it for long.
-If this was python I'd add a decorator to the function ;-)
-
-Oh another thing I realized: when a fault is injected, I currently set
-current->fail_recoverable = 0, but I could just unset the failed bit
-instead which would allow multiple different failures. Not sure which is
-better though.
-
-Thanks for looking at this :-)
-
-johannes
-
+	Ingo
