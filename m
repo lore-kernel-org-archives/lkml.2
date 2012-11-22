@@ -1,60 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab2KVW3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:29:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49022 "EHLO mail.kernel.org"
+	id S1758172Ab2KVW3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:29:43 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49013 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683Ab2KVSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753688Ab2KVSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>
-Subject: [ 166/171] libceph: avoid NULL kref_put when osd reset races with alloc_msg
-Date: Wed, 21 Nov 2012 16:41:52 -0800
-Message-Id: <20121122004050.001251870@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Bernhard Walle <bernhard@bwalle.de>, Michal Marek <mmarek@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [ 22/38] kbuild: Fix gcc -x syntax
+Date: Wed, 21 Nov 2012 16:40:05 -0800
+Message-Id: <20121122003906.656202485@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-(cherry picked from commit 9bd952615a42d7e2ce3fa2c632e808e804637a1a)
+commit b1e0d8b70fa31821ebca3965f2ef8619d7c5e316 upstream.
 
-The ceph_on_in_msg_alloc() method drops con->mutex while it allocates a
-message.  If that races with a timeout that resends a zillion messages and
-resets the connection, and the ->alloc_msg() method returns a NULL message,
-it will call ceph_msg_put(NULL) and BUG.
+The correct syntax for gcc -x is "gcc -x assembler", not
+"gcc -xassembler". Even though the latter happens to work, the former
+is what is documented in the manual page and thus what gcc wrappers
+such as icecream do expect.
 
-Fix by only calling put if msg is non-NULL.
+This isn't a cosmetic change. The missing space prevents icecream from
+recognizing compilation tasks it can't handle, leading to silent kernel
+miscompilations.
 
-Fixes http://tracker.newdream.net/issues/3142
+Besides me, credits go to Michael Matz and Dirk Mueller for
+investigating the miscompilation issue and tracking it down to this
+incorrect -x parameter syntax.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Bernhard Walle <bernhard@bwalle.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2746,7 +2746,8 @@ static int ceph_con_in_msg_alloc(struct
- 		msg = con->ops->alloc_msg(con, hdr, skip);
- 		mutex_lock(&con->mutex);
- 		if (con->state != CON_STATE_OPEN) {
--			ceph_msg_put(msg);
-+			if (msg)
-+				ceph_msg_put(msg);
- 			return -EAGAIN;
- 		}
- 		con->in_msg = msg;
+
+---
+ arch/mips/Makefile                         |    2 +-
+ arch/mips/kernel/Makefile                  |    2 +-
+ scripts/Kbuild.include                     |   12 ++++++------
+ scripts/gcc-version.sh                     |    6 +++---
+ scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
+ scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
+ scripts/kconfig/check.sh                   |    2 +-
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
+ tools/perf/Makefile                        |    2 +-
+ 9 files changed, 16 insertions(+), 16 deletions(-)
+
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -236,7 +236,7 @@ KBUILD_CPPFLAGS += -D"DATAOFFSET=$(if $(
+ LDFLAGS			+= -m $(ld-emul)
+ 
+ ifdef CONFIG_MIPS
+-CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
++CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
+ 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
+ 	sed -e 's/^\#define /-D/' -e "s/ /='/" -e "s/$$/'/")
+ ifdef CONFIG_64BIT
+--- a/arch/mips/kernel/Makefile
++++ b/arch/mips/kernel/Makefile
+@@ -100,7 +100,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
+ 
+ obj-$(CONFIG_OF)		+= prom.o
+ 
+-CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
++CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
+ 
+ obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
+ 
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -94,24 +94,24 @@ try-run = $(shell set -e;		\
+ # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
+ 
+ as-option = $(call try-run,\
+-	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # as-instr
+ # Usage: cflags-y += $(call as-instr,instr,option1,option2)
+ 
+ as-instr = $(call try-run,\
+-	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
++	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
+ 
+ # cc-option
+ # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+ 
+ cc-option = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # cc-option-yn
+ # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
+ cc-option-yn = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
+ 
+ # cc-option-align
+ # Prefix align with either -falign or -malign
+@@ -121,7 +121,7 @@ cc-option-align = $(subst -functions=0,,
+ # cc-disable-warning
+ # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
+ cc-disable-warning = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
+ 
+ # cc-version
+ # Usage gcc-ver := $(call cc-version)
+@@ -139,7 +139,7 @@ cc-ifversion = $(shell [ $(call cc-versi
+ # cc-ldoption
+ # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
+ cc-ldoption = $(call try-run,\
+-	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # ld-option
+ # Usage: LDFLAGS += $(call ld-option, -X)
+--- a/scripts/gcc-version.sh
++++ b/scripts/gcc-version.sh
+@@ -22,10 +22,10 @@ if [ ${#compiler} -eq 0 ]; then
+ 	exit 1
+ fi
+ 
+-MAJOR=$(echo __GNUC__ | $compiler -E -xc - | tail -n 1)
+-MINOR=$(echo __GNUC_MINOR__ | $compiler -E -xc - | tail -n 1)
++MAJOR=$(echo __GNUC__ | $compiler -E -x c - | tail -n 1)
++MINOR=$(echo __GNUC_MINOR__ | $compiler -E -x c - | tail -n 1)
+ if [ "x$with_patchlevel" != "x" ] ; then
+-	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -xc - | tail -n 1)
++	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -x c - | tail -n 1)
+ 	printf "%02d%02d%02d\\n" $MAJOR $MINOR $PATCHLEVEL
+ else
+ 	printf "%02d%02d\\n" $MAJOR $MINOR
+--- a/scripts/gcc-x86_32-has-stack-protector.sh
++++ b/scripts/gcc-x86_32-has-stack-protector.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- a/scripts/gcc-x86_64-has-stack-protector.sh
++++ b/scripts/gcc-x86_64-has-stack-protector.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- a/scripts/kconfig/check.sh
++++ b/scripts/kconfig/check.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ # Needed for systems without gettext
+-$* -xc -o /dev/null - > /dev/null 2>&1 << EOF
++$* -x c -o /dev/null - > /dev/null 2>&1 << EOF
+ #include <libintl.h>
+ int main()
+ {
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -38,7 +38,7 @@ trap "rm -f $tmp" 0 1 2 3 15
+ 
+ # Check if we can link to ncurses
+ check() {
+-        $cc -xc - -o $tmp 2>/dev/null <<'EOF'
++        $cc -x c - -o $tmp 2>/dev/null <<'EOF'
+ #include CURSES_LOC
+ main() {}
+ EOF
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -54,7 +54,7 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+ 	IS_X86_64 := 0
+ 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+ 	endif
+ 	ifeq (${IS_X86_64}, 1)
+ 		RAW_ARCH := x86_64
 
 
