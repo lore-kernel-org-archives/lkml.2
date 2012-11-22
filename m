@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521Ab2KVWe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:34:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49006 "EHLO mail.kernel.org"
+	id S1758546Ab2KVWf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:35:59 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:33705 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab2KVSdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:50 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florent Fourcot <florent.fourcot@enst-bretagne.fr>,
-        Cyril Brulebois <kibi@debian.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 68/83] r8169: Fix WoL on RTL8168d/8111d.
-Date: Wed, 21 Nov 2012 16:42:30 -0800
-Message-Id: <20121122004220.004474940@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1756239Ab2KVWf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:35:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Cyril Roelandt <tipecaml@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] acpi_system_write_wakeup_device(): fix error check for unsigned variable.
+Date: Thu, 22 Nov 2012 23:40:26 +0100
+Message-ID: <27097726.Soe6qubrSj@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1353544495-25277-1-git-send-email-tipecaml@gmail.com>
+References: <1645783.2WuR77RKxS@vostro.rjw.lan> <1353544495-25277-1-git-send-email-tipecaml@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Thursday, November 22, 2012 01:34:55 AM Cyril Roelandt wrote:
+> The LEN variable is unsigned, therefore checking whether it is less than 0 is
+> useless. Also drop the LEN variable, since the COUNT parameter can be used
+> instead.
 
-------------------
+Applied (under a different subject).
 
-From: Cyril Brulebois <kibi@debian.org>
-
-commit b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd upstream.
-
-This regression was spotted between Debian squeeze and Debian wheezy
-kernels (respectively based on 2.6.32 and 3.2). More info about
-Wake-on-LAN issues with Realtek's 816x chipsets can be found in the
-following thread: http://marc.info/?t=132079219400004
-
-Probable regression from d4ed95d796e5126bba51466dc07e287cebc8bd19;
-more chipsets are likely affected.
-
-Tested on top of a 3.2.23 kernel.
-
-Reported-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
-Tested-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
-Hinted-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: Cyril Brulebois <kibi@debian.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/ethernet/realtek/r8169.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3832,6 +3832,8 @@ static void rtl_wol_suspend_quirk(struct
- 	void __iomem *ioaddr = tp->mmio_addr;
- 
- 	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_25:
-+	case RTL_GIGA_MAC_VER_26:
- 	case RTL_GIGA_MAC_VER_29:
- 	case RTL_GIGA_MAC_VER_30:
- 	case RTL_GIGA_MAC_VER_32:
+Thanks,
+Rafael
 
 
+> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> ---
+>  drivers/acpi/proc.c |   11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
+> index 27adb09..ef98796 100644
+> --- a/drivers/acpi/proc.c
+> +++ b/drivers/acpi/proc.c
+> @@ -362,16 +362,13 @@ acpi_system_write_wakeup_device(struct file *file,
+>  	struct list_head *node, *next;
+>  	char strbuf[5];
+>  	char str[5] = "";
+> -	unsigned int len = count;
+>  
+> -	if (len > 4)
+> -		len = 4;
+> -	if (len < 0)
+> -		return -EFAULT;
+> +	if (count > 4)
+> +		count = 4;
+>  
+> -	if (copy_from_user(strbuf, buffer, len))
+> +	if (copy_from_user(strbuf, buffer, count))
+>  		return -EFAULT;
+> -	strbuf[len] = '\0';
+> +	strbuf[count] = '\0';
+>  	sscanf(strbuf, "%s", str);
+>  
+>  	mutex_lock(&acpi_device_lock);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
