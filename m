@@ -1,92 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab2KVUXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:23:33 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35665 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab2KVUX0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:23:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ3W3YfJLwfmg41oM4HvM+JnH2qiwmDN6Yhf3G8KnBFRhw@mail.gmail.com>
-References: <CAPnjgZ0+8MbjmW7XKsSW0O0n2ob7XcUZokLd8b=1LkSUJ+tQEA@mail.gmail.com>
- <CACxGe6t-ROJe+KXZh-nah50M2buM4yjncs=7musv39=C+73_FQ@mail.gmail.com>
- <CAPnjgZ3jF7bdwqDCNzJXvSrwoP0PZVjcFO+nGOiLACLDX07Z7A@mail.gmail.com>
- <20121121154758.93CE43E0AE2@localhost> <CAPnjgZ3W3YfJLwfmg41oM4HvM+JnH2qiwmDN6Yhf3G8KnBFRhw@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 21 Nov 2012 23:07:06 +0000
-X-Google-Sender-Auth: 69vDeXhZTj-6aOl1zCHijzkSoyY
-Message-ID: <CACxGe6tm_7wwZDNexUCJhLsKMM12iYQJ2Yi0=M7fU1z5YLhvRA@mail.gmail.com>
-Subject: Re: Device tree node to major/minor?
-To: Simon Glass <sjg@chromium.org>
-Cc: lk <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Che-liang Chiou <clchiou@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756746Ab2KVUXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:23:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40025 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756889Ab2KVT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:42 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 28/40] mm: numa: Add pte updates, hinting and migration stats
+Date: Thu, 22 Nov 2012 19:25:41 +0000
+Message-Id: <1353612353-1576-29-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 8:48 PM, Simon Glass <sjg@chromium.org> wrote:
-> Hi Grant,
->
-> On Wed, Nov 21, 2012 at 7:47 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Tue, 20 Nov 2012 15:48:24 -0800, Simon Glass <sjg@chromium.org> wrote:
->>> Hi Grant,
->>>
->>> On Tue, Nov 20, 2012 at 2:32 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> > On Tue, Nov 20, 2012 at 10:23 PM, Simon Glass <sjg@chromium.org> wrote:
->>> >> Hi,
->>> >>
->>> >> I hope this is a stupid question with an easy answer, but I cannot find it.
->>> >>
->>> >> I have a device tree node for an mmc block device and I want to use
->>> >> that block device from another driver. I have a phandle which lets me
->>> >> get the node of the mmc device, but I am not sure how to convert that
->>> >> into a block_device. In order to do so, I think I need a major/minor
->>> >> number. Of course the phandle might in fact point to a SCSI driver and
->>> >> I want that to work correctly also.
->>> >>
->>> >> I imagine I might be able to search through the wonders of sysfs in
->>> >> user space, but is there a better way?
->>> >
->>> > Do you /want/ to do it from userspace? What is your use case? Mounting
->>> > the rootfs?
->>>
->>> The use case is storing some raw data on a block device from within a
->>> driver in the kernel. It is used to keep track of the verified boot
->>> state.
->>>
->>> >
->>> > Regardless, userspace can monitor the uevents when devices are added
->>> > (that's what udev does) and watch for the full path of the node you
->>> > want in the uevent attribute. Then you can look for the child device
->>> > with the block major/minor numbers in it.
->>>
->>> So is there a way to do this entirely in the kernel ex post? It might
->>> need to happen during kernel boot, before user space.
->>
->> Yes, it is certainly doable within the kernel. First, you'll need to use
->> a notifier to get called back whenever a new device is created. Then
->> you'll need to look at the dev->of_node(->full_name) to see if it is the
->> node you actually want. You might need/want to resolve it from an alias
->> or something, but I presume you already have a way to find the
->> device_node before seaching for a struct device.
->
-> OK thank you. Was hoping to find a simple way to find a block device
-> from a device tree node (yes I know the right one) but I suppose in
-> general this is impossible, since nodes may create more than one
-> device, and each has its own data structures leading to the block
-> device.
->
-> So it seems like a notifier is the best way. Thanks for looking at this Grant.
+It is tricky to quantify the basic cost of automatic NUMA placement in a
+meaningful manner. This patch adds some vmstats that can be used as part
+of a basic costing model.
 
-It's certainly the least invasive way. Otherwise you need to hook into
-the DT device creation code.
+u    = basic unit = sizeof(void *)
+Ca   = cost of struct page access = sizeof(struct page) / u
+Cpte = Cost PTE access = Ca
+Cupdate = Cost PTE update = (2 * Cpte) + (2 * Wlock)
+	where Cpte is incurred twice for a read and a write and Wlock
+	is a constant representing the cost of taking or releasing a
+	lock
+Cnumahint = Cost of a minor page fault = some high constant e.g. 1000
+Cpagerw = Cost to read or write a full page = Ca + PAGE_SIZE/u
+Ci = Cost of page isolation = Ca + Wi
+	where Wi is a constant that should reflect the approximate cost
+	of the locking operation
+Cpagecopy = Cpagerw + (Cpagerw * Wnuma) + Ci + (Ci * Wnuma)
+	where Wnuma is the approximate NUMA factor. 1 is local. 1.2
+	would imply that remote accesses are 20% more expensive
 
-g.
+Balancing cost = Cpte * numa_pte_updates +
+		Cnumahint * numa_hint_faults +
+		Ci * numa_pages_migrated +
+		Cpagecopy * numa_pages_migrated
 
+Note that numa_pages_migrated is used as a measure of how many pages
+were isolated even though it would miss pages that failed to migrate. A
+vmstat counter could have been added for it but the isolation cost is
+pretty marginal in comparison to the overall cost so it seemed overkill.
 
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+The ideal way to measure automatic placement benefit would be to count
+the number of remote accesses versus local accesses and do something like
+
+	benefit = (remote_accesses_before - remove_access_after) * Wnuma
+
+but the information is not readily available. As a workload converges, the
+expection would be that the number of remote numa hints would reduce to 0.
+
+	convergence = numa_hint_faults_local / numa_hint_faults
+		where this is measured for the last N number of
+		numa hints recorded. When the workload is fully
+		converged the value is 1.
+
+This can measure if the placement policy is converging and how fast it is
+doing it.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/vm_event_item.h |    6 ++++++
+ include/linux/vmstat.h        |    8 ++++++++
+ mm/huge_memory.c              |    1 +
+ mm/memory.c                   |   12 ++++++++++++
+ mm/mempolicy.c                |    2 ++
+ mm/migrate.c                  |    3 ++-
+ mm/vmstat.c                   |    6 ++++++
+ 7 files changed, 37 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index a1f750b..dded0af 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -38,6 +38,12 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++#ifdef CONFIG_BALANCE_NUMA
++		NUMA_PTE_UPDATES,
++		NUMA_HINT_FAULTS,
++		NUMA_HINT_FAULTS_LOCAL,
++		NUMA_PAGE_MIGRATE,
++#endif
+ #ifdef CONFIG_MIGRATION
+ 		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
+ #endif
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 92a86b2..dffccfa 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -80,6 +80,14 @@ static inline void vm_events_fold_cpu(int cpu)
+ 
+ #endif /* CONFIG_VM_EVENT_COUNTERS */
+ 
++#ifdef CONFIG_BALANCE_NUMA
++#define count_vm_numa_event(x)     count_vm_event(x)
++#define count_vm_numa_events(x, y) count_vm_events(x, y)
++#else
++#define count_vm_numa_event(x) do {} while (0)
++#define count_vm_numa_events(x, y) do {} while (0)
++#endif /* CONFIG_BALANCE_NUMA */
++
+ #define __count_zone_vm_events(item, zone, delta) \
+ 		__count_vm_events(item##_NORMAL - ZONE_NORMAL + \
+ 		zone_idx(zone), delta)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index b3d4c4b..8f89a98 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1033,6 +1033,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page = pmd_page(pmd);
+ 	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
++	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1)
+diff --git a/mm/memory.c b/mm/memory.c
+index b23b081..8367142 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3477,6 +3477,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	set_pte_at(mm, addr, ptep, pte);
+ 	update_mmu_cache(vma, addr, ptep);
+ 
++	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	page = vm_normal_page(vma, addr, pte);
+ 	if (!page) {
+ 		pte_unmap_unlock(ptep, ptl);
+@@ -3485,6 +3486,8 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	get_page(page);
+ 	current_nid = page_to_nid(page);
++	if (current_nid == numa_node_id())
++		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 	target_nid = mpol_misplaced(page, vma, addr);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+@@ -3516,6 +3519,9 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
++	int local_nid = numa_node_id();
++	unsigned long nr_faults = 0;
++	unsigned long nr_faults_local = 0;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3564,10 +3570,16 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		curr_nid = page_to_nid(page);
+ 		task_numa_fault(curr_nid, 1);
+ 
++		nr_faults++;
++		if (curr_nid == local_nid)
++			nr_faults_local++;
++
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
+ 	pte_unmap_unlock(orig_pte, ptl);
+ 
++	count_vm_numa_events(NUMA_HINT_FAULTS, nr_faults);
++	count_vm_numa_events(NUMA_HINT_FAULTS_LOCAL, nr_faults_local);
+ 	return 0;
+ }
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index a7a62fe..516491f 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -583,6 +583,8 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 	BUILD_BUG_ON(_PAGE_NUMA != _PAGE_PROTNONE);
+ 
+ 	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
++	if (nr_updated)
++		count_vm_numa_events(NUMA_PTE_UPDATES, nr_updated);
+ 
+ 	return nr_updated;
+ }
+diff --git a/mm/migrate.c b/mm/migrate.c
+index a2c4567..4b876d2 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1511,7 +1511,8 @@ int migrate_misplaced_page(struct page *page, int node)
+ 		if (nr_remaining) {
+ 			putback_lru_pages(&migratepages);
+ 			isolated = 0;
+-		}
++		} else
++			count_vm_numa_event(NUMA_PAGE_MIGRATE);
+ 	}
+ 	BUG_ON(!list_empty(&migratepages));
+ out:
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 3a067fa..cfa386da 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -774,6 +774,12 @@ const char * const vmstat_text[] = {
+ 
+ 	"pgrotated",
+ 
++#ifdef CONFIG_BALANCE_NUMA
++	"numa_pte_updates",
++	"numa_hint_faults",
++	"numa_hint_faults_local",
++	"numa_pages_migrated",
++#endif
+ #ifdef CONFIG_MIGRATION
+ 	"pgmigrate_success",
+ 	"pgmigrate_fail",
+-- 
+1.7.9.2
+
