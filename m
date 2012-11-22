@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab2KVV5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:57:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
+	id S932876Ab2KVV61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:58:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754924Ab2KVSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:14 -0500
+	id S1754898Ab2KVSkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nathan Walp <faceprint@faceprint.com>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 69/83] r8169: allow multicast packets on sub-8168f chipset.
-Date: Wed, 21 Nov 2012 16:42:31 -0800
-Message-Id: <20121122004220.102634235@linuxfoundation.org>
+        Massimo Del Fedele <max@veneto.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 015/171] ALSA: hda - Fix empty DAC filling in patch_via.c
+Date: Wed, 21 Nov 2012 16:39:21 -0800
+Message-Id: <20121122004034.863056907@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nathan Walp <faceprint@faceprint.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0481776b7a70f09acf7d9d97c288c3a8403fbfe4 upstream.
+commit 5b3761954dac2d1393beef8210eb8cee81d16b8d upstream.
 
-RTL_GIGA_MAC_VER_35 includes no multicast hardware filter.
+In via_auto_fill_adc_nids(), the parser tries to fill dac_nids[] at
+the point of the current line-out (i).  When no valid path is found
+for this output, this results in dac = 0, thus it creates a hole in
+dac_nids[].  This confuses is_empty_dac() and trims the detected DAC
+in later reference.
 
-Signed-off-by: Nathan Walp <faceprint@faceprint.com>
-Suggested-by: Hayes Wang <hayeswang@realtek.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch fixes the bug by appending DAC properly to dac_nids[] in
+via_auto_fill_adc_nids().
+
+Reported-by: Massimo Del Fedele <max@veneto.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/realtek/r8169.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/pci/hda/patch_via.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4526,6 +4526,9 @@ static void rtl_set_rx_mode(struct net_d
- 		mc_filter[1] = swab32(data);
- 	}
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -1868,11 +1868,11 @@ static int via_auto_fill_dac_nids(struct
+ {
+ 	struct via_spec *spec = codec->spec;
+ 	const struct auto_pin_cfg *cfg = &spec->autocfg;
+-	int i, dac_num;
++	int i;
+ 	hda_nid_t nid;
  
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_35)
-+		mc_filter[1] = mc_filter[0] = 0xffffffff;
-+
- 	RTL_W32(MAR0 + 4, mc_filter[1]);
- 	RTL_W32(MAR0 + 0, mc_filter[0]);
++	spec->multiout.num_dacs = 0;
+ 	spec->multiout.dac_nids = spec->private_dac_nids;
+-	dac_num = 0;
+ 	for (i = 0; i < cfg->line_outs; i++) {
+ 		hda_nid_t dac = 0;
+ 		nid = cfg->line_out_pins[i];
+@@ -1883,16 +1883,13 @@ static int via_auto_fill_dac_nids(struct
+ 		if (!i && parse_output_path(codec, nid, dac, 1,
+ 					    &spec->out_mix_path))
+ 			dac = spec->out_mix_path.path[0];
+-		if (dac) {
+-			spec->private_dac_nids[i] = dac;
+-			dac_num++;
+-		}
++		if (dac)
++			spec->private_dac_nids[spec->multiout.num_dacs++] = dac;
+ 	}
+ 	if (!spec->out_path[0].depth && spec->out_mix_path.depth) {
+ 		spec->out_path[0] = spec->out_mix_path;
+ 		spec->out_mix_path.depth = 0;
+ 	}
+-	spec->multiout.num_dacs = dac_num;
+ 	return 0;
+ }
  
 
 
