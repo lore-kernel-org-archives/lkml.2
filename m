@@ -1,69 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2KVSws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:52:48 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56290 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab2KVSwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:52:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121151209.GA4048@avionic-0098.adnet.avionic-design.de>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
- <1353149747-31871-2-git-send-email-acourbot@nvidia.com> <20121120215429.B621F3E1821@localhost>
- <13540495.epaCf4JVn9@percival> <50ACB59B.4090404@iki.fi> <20121121114018.GA31576@avionic-0098.adnet.avionic-design.de>
- <50ACC341.3090204@ti.com> <20121121130039.GA12191@avionic-0098.adnet.avionic-design.de>
- <50ACD7DC.5060405@ti.com> <CAAVeFuJofYwj926=3v0ApBCq_vNhCdC1PnzDc-B3d=LL_L40Uw@mail.gmail.com>
- <20121121151209.GA4048@avionic-0098.adnet.avionic-design.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 22 Nov 2012 13:39:57 +0000
-X-Google-Sender-Auth: vcr7Q-2_d7l6rIUr0nGFEz4r74c
-Message-ID: <CACxGe6tSp=YDDO28Edu4ZO1y96mdnK69ujM=dC=9LExw_FKrbQ@mail.gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Tomi Valkeinen <tomba@iki.fi>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, Mark Zhang <markz@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1755888Ab2KVSxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:53:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34490 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755890Ab2KVSvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:51:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,301,1352102400"; 
+   d="scan'208";a="251105653"
+Date: Thu, 22 Nov 2012 23:26:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+Cc: metin d <metdos@yahoo.com>, Jan Kara <jack@suse.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Problem in Page Cache Replacement
+Message-ID: <20121122152611.GA11736@localhost>
+References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
+ <20121120182500.GH1408@quack.suse.cz>
+ <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com>
+ <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
+ <50AC9220.70202@gmail.com>
+ <20121121090204.GA9064@localhost>
+ <50ACA209.9000101@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50ACA209.9000101@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 3:12 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> On Thu, Nov 22, 2012 at 12:02:47AM +0900, Alexandre Courbot wrote:
->> Mmmm so maybe I am misinterpreting things, but it looks like we
->> have just buried the power sequences here, haven't we?
->
-> I don't think so. In fact I was just starting to think that maybe for
-> Tegra we could have a generic panel driver which used power sequences
-> to abstract away the pin differences for powering up the panel. Since
-> most likely that will be where the differences are there is a lot of
-> potential to factor things out into sequences.
->
-> Perhaps what we may want to postpone for now is the DT representation
-> since that's what Tomi and Grant seem to be mostly opposed to.
+Hi Jaegeuk,
 
-Don't give up. I'm am being cautions and trying to think of all the
-implications because that is what I have to do as a maintainer. I'm
-not opposed to the feature but I need a good level of confidence that
-it has been fully thought out.
+Sorry for the delay. I'm traveling these days..
 
-g.
+On Wed, Nov 21, 2012 at 05:42:33PM +0800, Jaegeuk Hanse wrote:
+> On 11/21/2012 05:02 PM, Fengguang Wu wrote:
+> >On Wed, Nov 21, 2012 at 04:34:40PM +0800, Jaegeuk Hanse wrote:
+> >>Cc Fengguang Wu.
+> >>
+> >>On 11/21/2012 04:13 PM, metin d wrote:
+> >>>>   Curious. Added linux-mm list to CC to catch more attention. If you run
+> >>>>echo 1 >/proc/sys/vm/drop_caches does it evict data-1 pages from memory?
+> >>>I'm guessing it'd evict the entries, but am wondering if we could run any more diagnostics before trying this.
+> >>>
+> >>>We regularly use a setup where we have two databases; one gets used frequently and the other one about once a month. It seems like the memory manager keeps unused pages in memory at the expense of frequently used database's performance.
+> >>>My understanding was that under memory pressure from heavily
+> >>>accessed pages, unused pages would eventually get evicted. Is there
+> >>>anything else we can try on this host to understand why this is
+> >>>happening?
+> >We may debug it this way.
+> >
+> >1) run 'fadvise data-2 0 0 dontneed' to drop data-2 cached pages
+> >    (please double check via /proc/vmstat whether it does the expected work)
+> >
+> >2) run 'page-types -r' with root, to view the page status for the
+> >    remaining pages of data-1
+> >
+> >The fadvise tool comes from Andrew Morton's ext3-tools. (source code attached)
+> >Please compile them with options "-Dlinux -I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
+> >
+> >page-types can be found in the kernel source tree tools/vm/page-types.c
+> >
+> >Sorry that sounds a bit twisted.. I do have a patch to directly dump
+> >page cache status of a user specified file, however it's not
+> >upstreamed yet.
+> 
+> Hi Fengguang,
+> 
+> Thanks for you detail steps, I think metin can have a try.
+> 
+>         flags    page-count       MB  symbolic-flags long-symbolic-flags
+> 0x0000000000000000        607699     2373
+> ___________________________________
+> 0x0000000100000000        343227     1340
+> _______________________r___________    reserved
+ 
+We don't need to care about the above two pages states actually.
+Page cache pages will never be in the special reserved or
+all-flags-cleared state.
 
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+> But I have some questions of the print of page-type:
+> 
+> Is 2373MB here mean total memory in used include page cache? I don't
+> think so.
+> Which kind of pages will be marked reserved?
+> Which line of long-symbolic-flags is for page cache?
+
+The (lru && !anonymous) pages are page cache pages.
+
+Thanks,
+Fengguang
+
+> >>>On Tue 20-11-12 09:42:42, metin d wrote:
+> >>>>I have two PostgreSQL databases named data-1 and data-2 that sit on the
+> >>>>same machine. Both databases keep 40 GB of data, and the total memory
+> >>>>available on the machine is 68GB.
+> >>>>
+> >>>>I started data-1 and data-2, and ran several queries to go over all their
+> >>>>data. Then, I shut down data-1 and kept issuing queries against data-2.
+> >>>>For some reason, the OS still holds on to large parts of data-1's pages
+> >>>>in its page cache, and reserves about 35 GB of RAM to data-2's files. As
+> >>>>a result, my queries on data-2 keep hitting disk.
+> >>>>
+> >>>>I'm checking page cache usage with fincore. When I run a table scan query
+> >>>>against data-2, I see that data-2's pages get evicted and put back into
+> >>>>the cache in a round-robin manner. Nothing happens to data-1's pages,
+> >>>>although they haven't been touched for days.
+> >>>>
+> >>>>Does anybody know why data-1's pages aren't evicted from the page cache?
+> >>>>I'm open to all kind of suggestions you think it might relate to problem.
+> >>>   Curious. Added linux-mm list to CC to catch more attention. If you run
+> >>>echo 1 >/proc/sys/vm/drop_caches
+> >>>   does it evict data-1 pages from memory?
+> >>>
+> >>>>This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
+> >>>>swap space. The kernel version is:
+> >>>>
+> >>>>$ uname -r
+> >>>>3.2.28-45.62.amzn1.x86_64
+> >>>>Edit:
+> >>>>
+> >>>>and it seems that I use one NUMA instance, if  you think that it can a problem.
+> >>>>
+> >>>>$ numactl --hardware
+> >>>>available: 1 nodes (0)
+> >>>>node 0 cpus: 0 1 2 3 4 5 6 7
+> >>>>node 0 size: 70007 MB
+> >>>>node 0 free: 360 MB
+> >>>>node distances:
+> >>>>node   0
+> >>>>    0:  10
