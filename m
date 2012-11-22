@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab2KVVTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:19:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
+	id S1756200Ab2KVVTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:19:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49610 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755261Ab2KVSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755264Ab2KVSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 050/171] NFS: Wait for session recovery to finish before returning
-Date: Wed, 21 Nov 2012 16:39:56 -0800
-Message-Id: <20121122004038.393048473@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>,
+        Yehuda Sadeh <yehuda@inktank.com>
+Subject: [ 140/171] libceph: report socket read/write error message
+Date: Wed, 21 Nov 2012 16:41:26 -0800
+Message-Id: <20121122004047.400544934@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,48 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 399f11c3d872bd748e1575574de265a6304c7c43 upstream.
+(cherry picked from commit 3a140a0d5c4b9e35373b016e41dfc85f1e526bdb)
 
-Currently, we will schedule session recovery and then return to the
-caller of nfs4_handle_exception.  This works for most cases, but causes
-a hang on the following test case:
+We need to set error_msg to something useful before calling ceph_fault();
+do so here for try_{read,write}().  This is more informative than
 
-	Client				Server
-	------				------
-	Open file over NFS v4.1
-	Write to file
-					Expire client
-	Try to lock file
+libceph: osd0 192.168.106.220:6801 (null)
 
-The server will return NFS4ERR_BADSESSION, prompting the client to
-schedule recovery.  However, the client will continue placing lock
-attempts and the open recovery never seems to be scheduled.  The
-simplest solution is to wait for session recovery to run before retrying
-the lock.
-
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/nfs4proc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ceph/messenger.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -307,8 +307,7 @@ static int nfs4_handle_exception(struct
- 			dprintk("%s ERROR: %d Reset session\n", __func__,
- 				errorcode);
- 			nfs4_schedule_session_recovery(clp->cl_session);
--			exception->retry = 1;
--			break;
-+			goto wait_on_recovery;
- #endif /* defined(CONFIG_NFS_V4_1) */
- 		case -NFS4ERR_FILE_OPEN:
- 			if (exception->timeout > HZ) {
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2287,14 +2287,18 @@ restart:
+ 	ret = try_read(con);
+ 	if (ret == -EAGAIN)
+ 		goto restart;
+-	if (ret < 0)
++	if (ret < 0) {
++		con->error_msg = "socket error on read";
+ 		goto fault;
++	}
+ 
+ 	ret = try_write(con);
+ 	if (ret == -EAGAIN)
+ 		goto restart;
+-	if (ret < 0)
++	if (ret < 0) {
++		con->error_msg = "socket error on write";
+ 		goto fault;
++	}
+ 
+ done:
+ 	mutex_unlock(&con->mutex);
 
 
