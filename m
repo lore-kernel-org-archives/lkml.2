@@ -1,500 +1,602 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab2KVURe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:17:34 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:59549 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab2KVTpq (ORCPT
+	id S1757536Ab2KVUSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:18:04 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65070 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530Ab2KVUR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:45:46 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-44-50ae0d91cf1e
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>, sw0312.kim@samsung.com,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        prathyush.k@samsung.com, rahul.sharma@samsung.com
-Subject: [PATCH v4 10/12] iommu/exynos: add support for System MMU 3.2 and 3.3
-Date: Thu, 22 Nov 2012 20:33:37 +0900
-Message-id: <002b01cdc8a5$368c8430$a3a58c90$%cho@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3IpTZr/7iJo290SUiw9C4S548cyA==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zfd2JvOsCDE6+07W4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4t8OooCGroqXbsIHxc3AXIyeHhICJxIebU9kgbDGJ
-	C/fWA9lcHEICyxglts+9ygJTdKXxIgtEYjqjxKQ3D8A6hAT+MUq8m8ULYrMJaEmsnnucEaRI
-	RKCXUeJC/1cmEIdZ4AejxPTNv4DaOTiEBfwk2s5UgzSwCKhKtBw7BLaBV8BWYkVbEyuELSjx
-	Y/I9sDgz0ND1O48zQdjyEpvXvGUGGSMhoC7x6K8uiCkioCdx7IgsRIWIxL4X7xghpgtIfJt8
-	iAWiWlZi0wFmkGMkBPrZJSYvXgb1l6TEwRU3WCYwis1CsngWksWzkCyehWTFAkaWVYyiqQXJ
-	BcVJ6bmGesWJucWleel6yfm5mxgh8SK1g3Flg8UhRgEORiUeXk3ntQFCrIllxZW5hxglOJiV
-	RHjvca8LEOJNSaysSi3Kjy8qzUktPsToA3T5RGYp0eR8YCznlcQbGhubmJmYmphbmpqb4hBW
-	Eudt9kgJEBJITyxJzU5NLUgtghnHxMEp1cCYnS/1zfyz1K8tN09dXHrfcsaKFDM3098P+jMX
-	J93sTbi40r3hfbfZ6UTRrUv7qm1ndGZy7PnPcP7vW+W6+2cDt586/58j86yV2JMmveT/UTN6
-	Iu5KzNn583FJ7/FU60kLRBKP8X6Sk2XKb2PcP+t8ZVdxyN7F5mq2T0OUQ/4KHXwqvE7Knf+z
-	EktxRqKhFnNRcSIArlMZv8QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQd2JvOsCDL42aFpc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm/NthVNCQVdHS
-	bdjA+Dm4i5GTQ0LAROJK40UWCFtM4sK99WxdjFwcQgLTGSUmvXnABpIQEvjHKPFuFi+IzSag
-	JbF67nFGkCIRgV5GiQv9X5lAHGaBH4wS0zf/AhrFwSEs4CfRdqYapIFFQFWi5dghsA28ArYS
-	K9qaWCFsQYkfk++BxZmBhq7feZwJwpaX2LzmLTPIGAkBdYlHf3VBTBEBPYljR2QhKkQk9r14
-	xziBUWAWkkGzkAyahWTQLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER+MzqR2M
-	KxssDjEKcDAq8fBqOq8NEGJNLCuuzD3EKMHBrCTCe497XYAQb0piZVVqUX58UWlOavEhRh+g
-	PycyS4km5wMTRV5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFIN
-	jEZ/9VU9fv85sHSlX9iCY7I/+4PuSKsmrq41iVsolH3MdE7Y+qy9OScCHxYHHHLY9FK4sq/2
-	TPEeLYXvl7nqhdbKee7n3h0YJSvN7LCtduHyLJMSpdRombO/eFzMlVOeWKf45Zed4rQIPbK2
-	/9u9/PQ/YW/OX/l1t5+7NXWFiLapigJb1pqVSizFGYmGWsxFxYkAWH/E/vMCAAA=
-X-CFilter-Loop: Reflected
+	Thu, 22 Nov 2012 15:17:56 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20121122185416.GA13169@shrek.podlesie.net>
+References: <20121122185416.GA13169@shrek.podlesie.net>
+Date: Thu, 22 Nov 2012 21:17:54 +0100
+Message-ID: <CAKMK7uGBSwBeW=hCJi1sZgahQQSKdSy8K=i+M53hF3vDuNzDDQ@mail.gmail.com>
+Subject: Re: i915: black screen after blank when LID is closed on Linux >= 3.1
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: dri-devel@lists.freedestop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since System MMU 3.2 and 3.3 have more prefetch buffers than 2, the
-existing function to set prefetch buffers, exynos_sysmmu_set_prefbuf()
-is not able to support them.
-This commit removes exynos_sysmmu_set_prefbuf() and introduces new
-interface, exynos_sysmmu_set_pbuf() that can pass information of
-more buffers than 2. It is safe to remove the existing function
-because there is no device driver in the kernel yet that calls the
-removed function.
+Hi,
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- drivers/iommu/exynos-iommu.c | 336 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 290 insertions(+), 46 deletions(-)
+Thanks for the report. Now this smells like something which could take
+a bit longer to track down, so can you please file this on
+bugs.freedesktop.org against DRM -> DRI/Intel to ensure that we dont'
+loose track of it?
 
-diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index c2525ed..985d317 100644
---- a/drivers/iommu/exynos-iommu.c
-+++ b/drivers/iommu/exynos-iommu.c
-@@ -80,6 +80,13 @@
- #define CTRL_BLOCK	0x7
- #define CTRL_DISABLE	0x0
- 
-+#define CFG_LRU		0x1
-+#define CFG_QOS(n)	((n & 0xF) << 7)
-+#define CFG_MASK	0x0050FFFF /* Selecting bit 0-15, 20, 22 */
-+#define CFG_SYSSEL	(1 << 22) /* System MMU 3.2 only */
-+#define CFG_FLPDCACHE	(1 << 20) /* System MMU 3.2+ only */
-+#define CFG_SHAREABLE	(1 << 12) /* System MMU 3.x only */
-+
- #define REG_MMU_CTRL		0x000
- #define REG_MMU_CFG		0x004
- #define REG_MMU_STATUS		0x008
-@@ -88,6 +95,10 @@
- #define REG_PT_BASE_ADDR	0x014
- #define REG_INT_STATUS		0x018
- #define REG_INT_CLEAR		0x01C
-+#define REG_PB_INFO		0x400
-+#define REG_PB_LMM		0x404
-+#define REG_PB_INDICATE		0x408
-+#define REG_PB_CFG		0x40C
- 
- #define REG_PAGE_FAULT_ADDR	0x024
- #define REG_AW_FAULT_ADDR	0x028
-@@ -99,10 +110,9 @@
- #define MMU_MAJ_VER(reg)	(reg >> 28)
- #define MMU_MIN_VER(reg)	((reg >> 21) & 0x7F)
- 
--#define REG_PB0_SADDR		0x04C
--#define REG_PB0_EADDR		0x050
--#define REG_PB1_SADDR		0x054
--#define REG_PB1_EADDR		0x058
-+#define MAX_NUM_PBUF		6
-+
-+#define NUM_MINOR_OF_SYSMMU_V3	4
- 
- static void *sysmmu_placeholder; /* Inidcate if a device is System MMU */
- 
-@@ -197,6 +207,19 @@ struct sysmmu_version {
- 	unsigned char minor;
- };
- 
-+#define SYSMMU_PBUFCFG_TLB_UPDATE	(1 << 16)
-+#define SYSMMU_PBUFCFG_ASCENDING	(1 << 12)
-+#define SYSMMU_PBUFCFG_DSECENDING	(0 << 12) /* default */
-+#define SYSMMU_PBUFCFG_PREFETCH		(1 << 8)
-+#define SYSMMU_PBUFCFG_WRITE		(1 << 4)
-+#define SYSMMU_PBUFCFG_READ		(0 << 4) /* default */
-+
-+struct sysmmu_prefbuf {
-+	unsigned long base;
-+	unsigned long size;
-+	unsigned long config;
-+};
-+
- struct sysmmu_drvdata {
- 	struct device *sysmmu;	/* System MMU's device descriptor */
- 	struct device *master;	/* Client device that needs System MMU */
-@@ -205,6 +228,8 @@ struct sysmmu_drvdata {
- 	int activations;
- 	struct sysmmu_version ver;
- 	spinlock_t lock;
-+	struct sysmmu_prefbuf pbufs[MAX_NUM_PBUF];
-+	int num_pbufs;
- 	struct iommu_domain *domain;
- 	sysmmu_fault_handler_t fault_handler;
- 	unsigned long pgtable;
-@@ -291,59 +316,277 @@ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
- 	__sysmmu_tlb_invalidate(sfrbase);
- }
- 
--static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
--						unsigned long size, int idx)
-+static void __sysmmu_set_prefbuf(void __iomem *pbufbase, unsigned long base,
-+					unsigned long size, int idx)
-+{
-+	__raw_writel(base, pbufbase + idx * 8);
-+	__raw_writel(size - 1 + base,  pbufbase + 4 + idx * 8);
-+}
-+
-+/*
-+ * Offset of prefetch buffer setting registers are different
-+ * between SysMMU 3.1 and 3.2. 3.3 has a single prefetch buffer setting.
-+ */
-+static unsigned short
-+	pbuf_offset[NUM_MINOR_OF_SYSMMU_V3] = {0x04C, 0x04C, 0x070, 0x410};
-+
-+/**
-+ * __sysmmu_sort_prefbuf - sort the given @prefbuf in descending order.
-+ * @prefbuf: array of buffer information
-+ * @nbufs: number of elements of @prefbuf
-+ * @check_size: whether to compare buffer sizes. See below description.
-+ *
-+ * return value is valid if @check_size is ture. If the size of first buffer
-+ * in @prefbuf is larger than or equal to the sum of the sizes of the other
-+ * buffers, returns 1. If the size of the first buffer is smaller than the
-+ * sum of other sizes, returns -1. Returns 0, otherwise.
-+ */
-+static int __sysmmu_sort_prefbuf(struct sysmmu_prefbuf prefbuf[],
-+						int nbufs, bool check_size)
-+{
-+	int i;
-+
-+	for (i = 0; i < nbufs; i++) {
-+		int j;
-+		for (j = i + 1; j < nbufs; j++)
-+			if (prefbuf[i].size < prefbuf[j].size)
-+				swap(prefbuf[i], prefbuf[j]);
-+	}
-+
-+	if (check_size) {
-+		unsigned long sum = 0;
-+		for (i = 1; i < nbufs; i++)
-+			sum += prefbuf[i].size;
-+
-+		if (prefbuf[0].size < sum)
-+			i = -1;
-+		else if (prefbuf[0].size >= (sum * 2))
-+			i = 1;
-+		else
-+			i = 0;
-+	}
-+
-+	return i;
-+}
-+
-+static void __exynos_sysmmu_set_pbuf_ver31(struct sysmmu_drvdata *drvdata,
-+			int idx, int nbufs, struct sysmmu_prefbuf prefbuf[])
- {
--	__raw_writel(base, sfrbase + REG_PB0_SADDR + idx * 8);
--	__raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
-+	unsigned long cfg =
-+		__raw_readl(drvdata->sfrbases[idx] + REG_MMU_CFG) & CFG_MASK;
-+
-+	if (nbufs > 1) {
-+		unsigned long base = prefbuf[1].base;
-+		unsigned long end = prefbuf[1].base + prefbuf[1].size;
-+
-+		/* merging buffers from the second to the last */
-+		while (nbufs-- > 2) {
-+			base = min(base, prefbuf[nbufs - 1].base);
-+			end = max(end, prefbuf[nbufs - 1].base +
-+					prefbuf[nbufs - 1].size);
-+		}
-+
-+		/* Separate PB mode */
-+		cfg |= 2 << 28;
-+
-+		__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[1],
-+					base, end - base, 1);
-+
-+		drvdata->num_pbufs = 2;
-+		drvdata->pbufs[0] = prefbuf[0];
-+		drvdata->pbufs[1] = prefbuf[1];
-+
-+	} else {
-+		/* Combined PB mode */
-+		cfg |= 3 << 28;
-+		drvdata->num_pbufs = 1;
-+		drvdata->pbufs[0] = prefbuf[0];
-+	}
-+
-+	__raw_writel(cfg, drvdata->sfrbases[idx] + REG_MMU_CFG);
-+
-+	__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[1],
-+				prefbuf[0].base, prefbuf[0].size, 0);
- }
- 
--void exynos_sysmmu_set_prefbuf(struct device *dev,
--				unsigned long base0, unsigned long size0,
--				unsigned long base1, unsigned long size1)
-+static void __exynos_sysmmu_set_pbuf_ver32(struct sysmmu_drvdata *drvdata,
-+			int idx, int nbufs, struct sysmmu_prefbuf prefbuf[])
-+{
-+	int i;
-+	unsigned long cfg =
-+		__raw_readl(drvdata->sfrbases[idx] + REG_MMU_CFG) & CFG_MASK;
-+
-+	cfg |= 7 << 16; /* enabling PB0 ~ PB2 */
-+
-+	/* This is common to all cases below */
-+	drvdata->pbufs[0] = prefbuf[0];
-+
-+	switch (nbufs) {
-+	case 1:
-+		/* Combined PB mode (0 ~ 2) */
-+		cfg |= 1 << 19;
-+		drvdata->num_pbufs = 1;
-+		break;
-+	case 2:
-+		/* Combined PB mode (0 ~ 1) */
-+		cfg |= 1 << 21;
-+		drvdata->num_pbufs = 2;
-+		drvdata->pbufs[1] = prefbuf[1];
-+		break;
-+	case 3:
-+		drvdata->num_pbufs = 3;
-+		drvdata->pbufs[1] = prefbuf[1];
-+		drvdata->pbufs[2] = prefbuf[2];
-+
-+		__sysmmu_sort_prefbuf(drvdata->pbufs, 3, false);
-+		swap(drvdata->pbufs[0], drvdata->pbufs[2]);
-+
-+		break;
-+	default:
-+		drvdata->pbufs[2].base = prefbuf[2].base;
-+		/* drvdata->size is used for end address temporarily */
-+		drvdata->pbufs[2].size = prefbuf[2].base + prefbuf[2].size;
-+
-+		/* Merging all buffers from the third to the last */
-+		while (nbufs-- > 3) {
-+			drvdata->pbufs[2].base = min(drvdata->pbufs[2].base,
-+						prefbuf[nbufs - 1].base);
-+			drvdata->pbufs[2].size = max(drvdata->pbufs[2].size,
-+						prefbuf[nbufs - 1].base +
-+						prefbuf[nbufs - 1].size);
-+		}
-+
-+		drvdata->num_pbufs = 3;
-+		drvdata->pbufs[1] = prefbuf[1];
-+		drvdata->pbufs[2].size = drvdata->pbufs[2].size -
-+					drvdata->pbufs[2].base;
-+	}
-+
-+	for (i = 0; i < drvdata->num_pbufs; i++)
-+		__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[2],
-+			drvdata->pbufs[i].base, drvdata->pbufs[i].size, i);
-+
-+	__raw_writel(cfg, drvdata->sfrbases[idx] + REG_MMU_CFG);
-+}
-+
-+static void __exynos_sysmmu_set_pbuf_ver33(struct sysmmu_drvdata *drvdata,
-+			int idx, int nbufs, struct sysmmu_prefbuf prefbuf[])
-+{
-+	static char pbcfg[6][6] = {
-+		{7, 7, 7, 7, 7, 7}, {7, 7, 7, 7, 7, 7}, {2, 2, 3, 7, 7, 7},
-+		{1, 2, 3, 4, 7, 7}, {7, 7, 7, 7, 7, 7}, {2, 3, 3, 4, 5, 6}
-+		};
-+	int pbselect;
-+	int cmp, i;
-+	long num_pb = __raw_readl(drvdata->sfrbases[idx] + REG_PB_INFO) &
-+							((1 << 8) - 1);
-+
-+	if (nbufs > num_pb)
-+		nbufs = num_pb; /* ignoring the rest of buffers */
-+
-+	for (i = 0; i < nbufs; i++)
-+		drvdata->pbufs[i] = prefbuf[i];
-+	drvdata->num_pbufs = nbufs;
-+
-+	cmp = __sysmmu_sort_prefbuf(drvdata->pbufs, nbufs, true);
-+
-+	pbselect = num_pb - nbufs;
-+	if (num_pb == 6) {
-+		if ((nbufs == 3) && (cmp == 1))
-+			pbselect = 4;
-+		else if (nbufs < 3)
-+			pbselect = 5;
-+	} else if ((num_pb == 3) && (nbufs < 3)) {
-+			pbselect = 1;
-+	}
-+
-+	__raw_writel(pbselect, drvdata->sfrbases[idx] + REG_PB_LMM);
-+
-+	/* Configure prefech buffers */
-+	for (i = 0; i < nbufs; i++) {
-+		__raw_writel(i, drvdata->sfrbases[idx] + REG_PB_INDICATE);
-+		__raw_writel(drvdata->pbufs[i].config | 1,
-+				drvdata->sfrbases[idx] + REG_PB_CFG);
-+		__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[3],
-+			drvdata->pbufs[i].base, drvdata->pbufs[i].size, 0);
-+	}
-+
-+	/* Disable prefetch buffers that is not set */
-+	for (cmp = pbcfg[num_pb - 1][nbufs - 1] - nbufs; cmp > 0; cmp--) {
-+		__raw_writel(cmp + nbufs - 1,
-+				drvdata->sfrbases[idx] + REG_PB_INDICATE);
-+		__raw_writel(0, drvdata->sfrbases[idx] + REG_PB_CFG);
-+	}
-+}
-+
-+static void (*func_set_pbuf[NUM_MINOR_OF_SYSMMU_V3])
-+	(struct sysmmu_drvdata *, int, int, struct sysmmu_prefbuf []) = {
-+		__exynos_sysmmu_set_pbuf_ver31,
-+		__exynos_sysmmu_set_pbuf_ver31,
-+		__exynos_sysmmu_set_pbuf_ver32,
-+		__exynos_sysmmu_set_pbuf_ver33,
-+};
-+
-+void exynos_sysmmu_set_pbuf(struct device *dev, int nbufs,
-+				struct sysmmu_prefbuf prefbuf[])
- {
- 	struct device *sysmmu;
-+	int nsfrs;
-+
-+	if (WARN_ON(nbufs < 1))
-+		return;
- 
- 	for_each_sysmmu(dev, sysmmu) {
--		int i;
- 		unsigned long flags;
--		struct sysmmu_drvdata *data = dev_get_drvdata(sysmmu);
-+		struct sysmmu_drvdata *drvdata;
- 
--		BUG_ON((base0 + size0) <= base0);
--		BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
-+		drvdata = dev_get_drvdata(sysmmu);
- 
--		spin_lock_irqsave(&data->lock, flags);
--		if (!is_sysmmu_active(data)) {
--			spin_unlock_irqrestore(&data->lock, flags);
-+		spin_lock_irqsave(&drvdata->lock, flags);
-+		if (!is_sysmmu_active(drvdata)) {
-+			spin_unlock_irqrestore(&drvdata->lock, flags);
- 			continue;
- 		}
- 
--		for (i = 0; i < data->nsfrs; i++) {
--			if (__sysmmu_version(data, i, NULL) == 3) {
--				if (!sysmmu_block(data->sfrbases[i]))
--					continue;
--
--				if (size1 == 0) {
--					if (size0 <= SZ_128K) {
--						base1 = base0;
--						size1 = size0;
--					} else {
--						size1 = size0 -
--						ALIGN(size0 / 2, SZ_64K);
--						size0 = size0 - size1;
--						base1 = base0 + size0;
--					}
--				}
-+		for (nsfrs = 0; nsfrs < drvdata->nsfrs; nsfrs++) {
-+			unsigned int maj, min;
-+
-+			maj = __sysmmu_version(drvdata, nsfrs, &min);
- 
--				__sysmmu_set_prefbuf(
--					data->sfrbases[i], base0, size0, 0);
--				__sysmmu_set_prefbuf(
--					data->sfrbases[i], base1, size1, 1);
-+			BUG_ON(min > 3);
- 
--				sysmmu_unblock(data->sfrbases[i]);
-+			if (sysmmu_block(drvdata->sfrbases[nsfrs])) {
-+				func_set_pbuf[min](drvdata, nsfrs,
-+							nbufs, prefbuf);
-+				sysmmu_unblock(drvdata->sfrbases[nsfrs]);
-+			}
-+		} /* while (nsfrs < drvdata->nsfrs) */
-+		spin_unlock_irqrestore(&drvdata->lock, flags);
-+	}
-+}
-+
-+static void __sysmmu_init_prefbuf(struct sysmmu_drvdata *drvdata, int idx,
-+							int maj, int min)
-+{
-+	if (maj == 3) {
-+		struct sysmmu_prefbuf pbuf[1] = { {0, ~0} };
-+
-+		func_set_pbuf[min](drvdata, idx, 1, pbuf);
-+	}
-+}
-+
-+static void __sysmmu_restore_state(struct sysmmu_drvdata *drvdata)
-+{
-+	int i, min;
-+
-+	for (i = 0; i < drvdata->nsfrs; i++) {
-+		if (__sysmmu_version(drvdata, i, &min) == 3) {
-+			if (sysmmu_block(drvdata->sfrbases[i])) {
-+				func_set_pbuf[min](drvdata, i,
-+					drvdata->num_pbufs, drvdata->pbufs);
-+				sysmmu_unblock(drvdata->sfrbases[i]);
- 			}
- 		}
--		spin_unlock_irqrestore(&data->lock, flags);
- 	}
- }
- 
-@@ -500,7 +743,7 @@ static void __sysmmu_enable_nocount(struct sysmmu_drvdata *drvdata)
- 
- 	for (i = 0; i < drvdata->nsfrs; i++) {
- 		int maj, min;
--		unsigned long cfg = 1;
-+		unsigned long cfg = CFG_LRU | CFG_QOS(15);
- 
- 		__sysmmu_set_ptbase(drvdata->sfrbases[i], drvdata->pgtable);
- 
-@@ -508,15 +751,15 @@ static void __sysmmu_enable_nocount(struct sysmmu_drvdata *drvdata)
- 		   call to __sysmmu_init_prefbuf() */
- 		maj = __sysmmu_version(drvdata, i, &min);
- 		if (maj == 3) {
--			/* System MMU version is 3.x */
--			__raw_writel((1 << 12) | (2 << 28),
--					drvdata->sfrbases[i] + REG_MMU_CFG);
--			__sysmmu_set_prefbuf(drvdata->sfrbases[i], 0, -1, 0);
--			__sysmmu_set_prefbuf(drvdata->sfrbases[i], 0, -1, 1);
-+			cfg |= CFG_SHAREABLE;
-+			if (min == 2)
-+				cfg |= CFG_FLPDCACHE | CFG_SYSSEL;
- 		}
- 
- 		__raw_writel(cfg, drvdata->sfrbases[i] + REG_MMU_CFG);
- 
-+		__sysmmu_init_prefbuf(drvdata, i, maj, min);
-+
- 		__raw_writel(CTRL_ENABLE, drvdata->sfrbases[i] + REG_MMU_CTRL);
- 	}
- }
-@@ -900,6 +1143,7 @@ static int sysmmu_resume(struct device *dev)
- 	if (is_sysmmu_active(drvdata) &&
- 		(!pm_runtime_enabled(dev) || drvdata->runtime_active)) {
- 		__sysmmu_enable_nocount(drvdata);
-+		__sysmmu_restore_state(drvdata);
- 	}
- 	spin_unlock_irqrestore(&drvdata->lock, flags);
- 	return 0;
+A few questions and things to test below.
+
+On Thu, Nov 22, 2012 at 7:54 PM, Krzysztof Mazur <krzysiek@podlesie.net> wrote:
+> since Linux 3.1 I'm having some problems with i915 driver on HP nc6120
+> with 915GM chipset. The display goes black after the kernel tries to
+> blank screen while LID is closed (see steps to reproduce to more detailed
+> description).
+>
+> Currently I'm using Linux 3.7-rc6 with KMS enabled and disabled ACPI
+> video by something equivalent to (without it the LID, and the whole
+> ACPI, does not work):
+
+Can you be more specific about what does not work? Do the lid events
+no longer function, or is something else broken?
+
+>
+> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> index 0230cb6..40e060b 100644
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -1782,6 +1797,10 @@ static int __init intel_opregion_present(void)
+>  int acpi_video_register(void)
+>  {
+>         int result = 0;
+> +       return -ENODEV;
+>         if (register_count) {
+>                 /*
+>                  * if the function of acpi_video_register is already called,
+>
+> I also tested this kernel with merged
+> git://people.freedesktop.org/~danvet/drm-intel drm-intel-next.
+>
+> Steps to reproduce:
+> 1. $ setterm -blank 1
+> 2. close LID
+> 3. sleep 90
+> 4. open LID
+> 5. press key
+> 6. close LID
+>
+> nothing happens here, the screen is still turned on, should be turned off
+>
+> 7. open LID
+>
+> backlight is on, but screen is black, but some artifacts are visible so
+> LCD is probably turned off, and the display is not usable anymore
+>
+>
+> I have bisected this problem and it's introduced by commit
+> 120eced9efe7fdb5123db4ea47e9adee9b66284e
+> (drm/i915: Set crtc DPMS mode to ON in intel_crtc_mode_set).
+>
+> In Linux 3.1 to 3.6 I've been using following workaround:
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 2163818..51ebb77 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -6000,10 +6000,12 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+>                                               x, y, old_fb);
+>         drm_vblank_post_modeset(dev, pipe);
+>
+> +#if 0
+>         if (ret)
+>                 intel_crtc->dpms_mode = DRM_MODE_DPMS_OFF;
+>         else
+>                 intel_crtc->dpms_mode = DRM_MODE_DPMS_ON;
+> +#endif
+>
+>         return ret;
+>  }
+
+Since a dpms ioctl call tends to follow a modeset, this likely only
+results in that dpms call enabling the hw again. Can you please add
+drm.debug=0xe to your kernel cmdline and boot into a 3.6 with this
+hack applied, reproduce the issue and the attach the complete dmesg?
+
+The below WARNs from 3.7 support that, we've simply improved the
+code's ability to detect such problems. Can you please boot into a
+kernel with the latest drm-intel-next-queued branch merged in, but no
+other patches applied. Again please append drm.debug=0xe and then
+attach the complete dmesg after you've reproduced the issue.
+
+Please also compile your kernels with CONFIG_PRINTK_TIME=y, the
+timestamps in dmesg help a lot in figuring things out.
+
+Yours, Daniel
+
+>
+> Thanks,
+>
+> Krzysiek
+>
+> ---
+> # lspci -v
+> ...
+> 00:02.0 VGA compatible controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+>         Subsystem: Hewlett-Packard Company NX6110/NC6120
+>         Flags: bus master, fast devsel, latency 0, IRQ 16
+>         Memory at d0400000 (32-bit, non-prefetchable) [size=512K]
+>         I/O ports at 7000 [size=8]
+>         Memory at c0000000 (32-bit, prefetchable) [size=256M]
+>         Memory at d0480000 (32-bit, non-prefetchable) [size=256K]
+>         Expansion ROM at <unassigned> [disabled]
+>         Capabilities: [d0] Power Management version 2
+>         Kernel driver in use: i915
+>
+> 00:02.1 Display controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03)
+>         Subsystem: Hewlett-Packard Company NX6110/NC6120
+>         Flags: bus master, fast devsel, latency 0
+>         Memory at d0500000 (32-bit, non-prefetchable) [size=512K]
+>         Capabilities: [d0] Power Management version 2
+>
+> $ dmesg
+> ...
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+> Hardware name: NC6120(EK094ES)
+> active connector not linked to encoder
+> Pid: 420, comm: kworker/0:2 Not tainted 3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<8032336f>] ? acpi_lid_open+0x25/0x3e
+>  [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+>  [<80151fb2>] ? notifier_call_chain+0x42/0x60
+>  [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+>  [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+>  [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+>  [<80322e92>] ? acpi_button_notify+0x2f/0xae
+>  [<8030511b>] ? acpi_device_notify+0xf/0x11
+>  [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+>  [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687cc ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder->connectors_active not set
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<8032336f>] ? acpi_lid_open+0x25/0x3e
+>  [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+>  [<80151fb2>] ? notifier_call_chain+0x42/0x60
+>  [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+>  [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+>  [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+>  [<80322e92>] ? acpi_button_notify+0x2f/0xae
+>  [<8030511b>] ? acpi_device_notify+0xf/0x11
+>  [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+>  [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687cd ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+> Hardware name: NC6120(EK094ES)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80131269>] ? warn_slowpath_null+0x19/0x20
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+>  [<80151fb2>] ? notifier_call_chain+0x42/0x60
+>  [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+>  [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+>  [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+>  [<80322e92>] ? acpi_button_notify+0x2f/0xae
+>  [<8030511b>] ? acpi_device_notify+0xf/0x11
+>  [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+>  [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687ce ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder's hw state doesn't match sw tracking (expected 0, found 1)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+>  [<80151fb2>] ? notifier_call_chain+0x42/0x60
+>  [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+>  [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+>  [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+>  [<80322e92>] ? acpi_button_notify+0x2f/0xae
+>  [<8030511b>] ? acpi_device_notify+0xf/0x11
+>  [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+>  [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687cf ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+> Hardware name: NC6120(EK094ES)
+> pipe A assertion failure (expected off, current on)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+>  [<8039962d>] ? intel_lid_notify+0x8d/0xb0
+>  [<80151fb2>] ? notifier_call_chain+0x42/0x60
+>  [<801522b4>] ? __blocking_notifier_call_chain+0x44/0x60
+>  [<801522e7>] ? blocking_notifier_call_chain+0x17/0x20
+>  [<80322e2a>] ? acpi_lid_send_state+0x7e/0xa2
+>  [<80322e92>] ? acpi_button_notify+0x2f/0xae
+>  [<8030511b>] ? acpi_device_notify+0xf/0x11
+>  [<8030f5eb>] ? acpi_ev_notify_dispatch+0x2b/0x40
+>  [<80302f08>] ? acpi_os_execute_deferred+0x18/0x21
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80302ef0>] ? acpi_os_wait_events_complete+0x14/0x14
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d0 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+> Hardware name: NC6120(EK094ES)
+> active connector not linked to encoder
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d1 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder->connectors_active not set
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d2 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+> Hardware name: NC6120(EK094ES)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80131269>] ? warn_slowpath_null+0x19/0x20
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80393728>] ? intel_crtc_update_dpms+0x78/0x90
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d3 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder's hw state doesn't match sw tracking (expected 0, found 1)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d4 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+> Hardware name: NC6120(EK094ES)
+> pipe A assertion failure (expected off, current on)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d5 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3588 intel_modeset_check_state+0x612/0x640()
+> Hardware name: NC6120(EK094ES)
+> active connector not linked to encoder
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394cc2>] ? intel_modeset_check_state+0x612/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d6 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3590 intel_modeset_check_state+0x5ef/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder->connectors_active not set
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394c9f>] ? intel_modeset_check_state+0x5ef/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d7 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:3594 intel_modeset_check_state+0x5a9/0x640()
+> Hardware name: NC6120(EK094ES)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<80131269>] ? warn_slowpath_null+0x19/0x20
+>  [<80394c59>] ? intel_modeset_check_state+0x5a9/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d8 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:6968 intel_modeset_check_state+0x4c8/0x640()
+> Hardware name: NC6120(EK094ES)
+> encoder's hw state doesn't match sw tracking (expected 0, found 1)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<80394b78>] ? intel_modeset_check_state+0x4c8/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687d9 ]---
+> ------------[ cut here ]------------
+> WARNING: at /home/krzysiek/src/linux-2.6/drivers/gpu/drm/i915/intel_display.c:1225 assert_pipe+0x95/0xa0()
+> Hardware name: NC6120(EK094ES)
+> pipe A assertion failure (expected off, current on)
+> Pid: 420, comm: kworker/0:2 Tainted: G        W    3.7.0-rc6-00003-gddba8b4 #83
+> Call Trace:
+>  [<80131173>] ? warn_slowpath_common+0x73/0xb0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80131203>] ? warn_slowpath_fmt+0x33/0x40
+>  [<8038e0d5>] ? assert_pipe+0x95/0xa0
+>  [<80394a4e>] ? intel_modeset_check_state+0x39e/0x640
+>  [<803570d7>] ? drm_fb_helper_dpms.isra.11+0x77/0xc0
+>  [<8035755d>] ? drm_fb_helper_blank+0x4d/0x70
+>  [<802f2f04>] ? fb_blank+0x44/0xb0
+>  [<802fba09>] ? fbcon_blank+0x1d9/0x2d0
+>  [<802314b2>] ? flush_commit_list+0x562/0x620
+>  [<8014683a>] ? __queue_delayed_work+0xaa/0x140
+>  [<801581c9>] ? dequeue_task_fair+0x29/0x1a0
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344ad5>] ? do_unblank_screen+0x95/0x1b0
+>  [<80344ffc>] ? console_callback+0xec/0x110
+>  [<80147224>] ? process_one_work+0x104/0x380
+>  [<8013d963>] ? internal_add_timer+0x13/0x40
+>  [<80344f10>] ? poke_blanked_console+0xb0/0xb0
+>  [<80147797>] ? worker_thread+0x107/0x3a0
+>  [<80147690>] ? rescuer_thread+0x1c0/0x1c0
+>  [<8014bd7c>] ? kthread+0x8c/0xa0
+>  [<806097b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<8014bcf0>] ? __kthread_parkme+0x60/0x60
+> ---[ end trace 2fa112e1a3f687da ]---
+
+
+
 -- 
-1.8.0
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
