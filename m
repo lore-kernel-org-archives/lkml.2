@@ -1,96 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2KVXYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:24:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49155 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2KVXYK (ORCPT
+	id S1751899Ab2KVXe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:34:29 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48084 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab2KVXe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 18:24:10 -0500
-Date: Thu, 22 Nov 2012 15:22:39 -0800
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-5e4bf1a55da976a5ed60901bb8801f1024ef9774@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        hannes@cmpxchg.org, hughd@google.com, cl@linux.com, riel@redhat.com,
-        akpm@linux-foundation.org, aarcange@redhat.com,
-        Lee.Schermerhorn@hp.com, mgorman@suse.de, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        hannes@cmpxchg.org, cl@linux.com, hughd@google.com, riel@redhat.com,
-        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com,
-        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
-In-Reply-To: <20121120120251.GA15742@gmail.com>
-References: <20121120120251.GA15742@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm: Don't flush the TLB on #WP pmd fixups
-Git-Commit-ID: 5e4bf1a55da976a5ed60901bb8801f1024ef9774
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 22 Nov 2012 18:34:28 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-33-50aeb6826c7c
+Date: Fri, 23 Nov 2012 08:34:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Lockdep complain for zram
+Message-ID: <20121122233444.GE5121@bbox>
+References: <20121121083737.GB5121@bbox>
+ <50AE08D4.7040602@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 22 Nov 2012 15:22:48 -0800 (PST)
+In-Reply-To: <50AE08D4.7040602@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5e4bf1a55da976a5ed60901bb8801f1024ef9774
-Gitweb:     http://git.kernel.org/tip/5e4bf1a55da976a5ed60901bb8801f1024ef9774
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Tue, 20 Nov 2012 13:02:51 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 Nov 2012 21:52:06 +0100
+On Thu, Nov 22, 2012 at 12:13:24PM +0100, Jerome Marchand wrote:
+> On 11/21/2012 09:37 AM, Minchan Kim wrote:
+> > Hi alls,
+> > 
+> > Today, I saw below complain of lockdep.
+> > As a matter of fact, I knew it long time ago but forgot that.
+> > The reason lockdep complains is that now zram uses GFP_KERNEL
+> > in reclaim path(ex, __zram_make_request) :(
+> > I can fix it via replacing GFP_KERNEL with GFP_NOIO.
+> > But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
+> > Of course, I can change it with __vmalloc which can receive gfp_t.
+> > But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
+> > allocation of GFP_KERNEL. That's why I sent the patch.
+> > https://lkml.org/lkml/2012/4/23/77
+> > Since then, I forgot it, saw the bug today and poped the question again.
+> > 
+> > Yes. Fundamental problem is utter crap API vmalloc.
+> > If we can fix it, everyone would be happy. But life isn't simple like seeing
+> > my thread of the patch.
+> > 
+> > So next option is to move zram_init_device into setting disksize time.
+> > But it makes unnecessary metadata waste until zram is used really(That's why
+> > Nitin move zram_init_device from disksize setting time to make_request) and
+> > it makes user should set the disksize before using, which are behavior change.
+> > 
+> > I would like to clean up this issue before promoting because it might change
+> > usage behavior.
+> > 
+> > Do you have any idea?
+> 
+> This is a false positive due to the memory allocation in
+> zram_init_device() called from zram_make_request(). It appears to
+> lockdep that the allocation might trigger a request on the device that
+> would try to take init_lock again, but in fact it doesn't. The device
+> is not initialized yet, even less swapped on.
 
-x86/mm: Don't flush the TLB on #WP pmd fixups
+That's not a only swap case.
+Let's think following usecase.
 
-If we have a write protection #PF and fix up the pmd then the
-hugetlb code [the only user of pmdp_set_access_flags], in its
-do_huge_pmd_wp_page() page fault resolution function calls
-pmdp_set_access_flags() to mark the pmd permissive again,
-and flushes the TLB.
+1) Booting
+2) echo $((DISKSIZE)) > /sys/block/zram0/disksize
+3) dd if=/dev/zero of=/dev/zram0 bs=4K count=1
+4) Written 4K page(page-A) is still page cache and isn't submitted
+   to zram block device.
+5) Memory pressure happen by some memory hogger.
+6) VM start to reclaim and write page-A to zram0.
+7) zram_init_device is called at last.
+8) allocate GFP_KERNEL in zram_init_device
+9) goto reclaim path again.
+10) deadlock.
 
-This TLB flush is unnecessary: a flush on #PF is guaranteed on
-most (all?) x86 CPUs, and even in the worst-case we'll generate
-a spurious fault.
+So I think it's not false positive.
+Even if it is, I think lock split isn't a good idea to just avoid
+lockdep warn. It makes code unnecessary complicated and it would be more
+error-prone. Let's not add another lock without performance trouble report
+by the lock.
 
-So remove it.
+As I discussed with Nitin in this thread, lazy initialization don't have
+much point and disksize setting option isn't consistent for user behavior.
+And I expect Nitin will send patch "diet of table" soonish.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Link: http://lkml.kernel.org/r/20121120120251.GA15742@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/pgtable.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+So just moving the initialzation part from reclaim context to process's one
+is simple and clear solution, I believe.
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 8573b83..8a828d7 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -328,7 +328,12 @@ int pmdp_set_access_flags(struct vm_area_struct *vma,
- 	if (changed && dirty) {
- 		*pmdp = entry;
- 		pmd_update_defer(vma->vm_mm, address, pmdp);
--		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-+		/*
-+		 * We had a write-protection fault here and changed the pmd
-+		 * to to more permissive. No need to flush the TLB for that,
-+		 * #PF is architecturally guaranteed to do that and in the
-+		 * worst-case we'll generate a spurious fault.
-+		 */
- 	}
- 
- 	return changed;
+> 
+> The following (quickly tested) patch should prevent lockdep complain.  
+> 
+> Jerome
+> 
+> ---
+> >From ebb3514c4ee18276da7c5ca08025991b493ac204 Mon Sep 17 00:00:00 2001
+> From: Jerome Marchand <jmarchan@redhat.com>
+> Date: Thu, 22 Nov 2012 09:07:40 +0100
+> Subject: [PATCH] staging: zram: Avoid lockdep warning
+> 
+> zram triggers a lockdep warning. The cause of it is the call to
+> zram_init_device() from zram_make_request(). The memory allocation in
+> zram_init_device() could start a memory reclaim which in turn could
+> cause swapout and (as it appears to lockdep) a call to
+> zram_make_request(). However this is a false positive: an
+> unititialized device can't be used as swap.
+> A solution is to split init_lock in two lock. One mutex that protects
+> init, reset and size setting and a rw_semaphore that protects requests
+> and reset. Thus init and request would be protected by different locks
+> and lockdep will be happy.
+> 
+> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+> ---
+>  drivers/staging/zram/zram_drv.c   |   41 +++++++++++++++++++-----------------
+>  drivers/staging/zram/zram_drv.h   |   16 ++++++++++---
+>  drivers/staging/zram/zram_sysfs.c |   20 +++++++++---------
+>  3 files changed, 44 insertions(+), 33 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index fb4a7c9..b3bc3c4 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -470,11 +470,11 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>  {
+>  	struct zram *zram = queue->queuedata;
+>  
+> -	if (unlikely(!zram->init_done) && zram_init_device(zram))
+> +	if (unlikely(!is_initialized(zram)) && zram_init_device(zram))
+>  		goto error;
+>  
+> -	down_read(&zram->init_lock);
+> -	if (unlikely(!zram->init_done))
+> +	down_read(&zram->req_lock);
+> +	if (unlikely(!is_initialized(zram)))
+>  		goto error_unlock;
+>  
+>  	if (!valid_io_request(zram, bio)) {
+> @@ -483,12 +483,12 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>  	}
+>  
+>  	__zram_make_request(zram, bio, bio_data_dir(bio));
+> -	up_read(&zram->init_lock);
+> +	up_read(&zram->req_lock);
+>  
+>  	return;
+>  
+>  error_unlock:
+> -	up_read(&zram->init_lock);
+> +	up_read(&zram->req_lock);
+>  error:
+>  	bio_io_error(bio);
+>  }
+> @@ -497,7 +497,7 @@ void __zram_reset_device(struct zram *zram)
+>  {
+>  	size_t index;
+>  
+> -	zram->init_done = 0;
+> +	atomic_set(&zram->init_done, 0);
+>  
+>  	/* Free various per-device buffers */
+>  	kfree(zram->compress_workmem);
+> @@ -529,9 +529,12 @@ void __zram_reset_device(struct zram *zram)
+>  
+>  void zram_reset_device(struct zram *zram)
+>  {
+> -	down_write(&zram->init_lock);
+> -	__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+> +	mutex_lock(&zram->init_lock);
+> +	down_write(&zram->req_lock);
+> +	if (is_initialized(zram))
+> +		__zram_reset_device(zram);
+> +	up_write(&zram->req_lock);
+> +	mutex_unlock(&zram->init_lock);
+>  }
+>  
+>  int zram_init_device(struct zram *zram)
+> @@ -539,10 +542,10 @@ int zram_init_device(struct zram *zram)
+>  	int ret;
+>  	size_t num_pages;
+>  
+> -	down_write(&zram->init_lock);
+> +	mutex_lock(&zram->init_lock);
+>  
+> -	if (zram->init_done) {
+> -		up_write(&zram->init_lock);
+> +	if (is_initialized(zram)) {
+> +		mutex_unlock(&zram->init_lock);
+>  		return 0;
+>  	}
+>  
+> @@ -583,8 +586,8 @@ int zram_init_device(struct zram *zram)
+>  		goto fail;
+>  	}
+>  
+> -	zram->init_done = 1;
+> -	up_write(&zram->init_lock);
+> +	atomic_set(&zram->init_done, 1);
+> +	mutex_unlock(&zram->init_lock);
+>  
+>  	pr_debug("Initialization done!\n");
+>  	return 0;
+> @@ -594,7 +597,7 @@ fail_no_table:
+>  	zram->disksize = 0;
+>  fail:
+>  	__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+> +	mutex_unlock(&zram->init_lock);
+>  	pr_err("Initialization failed: err=%d\n", ret);
+>  	return ret;
+>  }
+> @@ -619,7 +622,8 @@ static int create_device(struct zram *zram, int device_id)
+>  	int ret = 0;
+>  
+>  	init_rwsem(&zram->lock);
+> -	init_rwsem(&zram->init_lock);
+> +	mutex_init(&zram->init_lock);
+> +	init_rwsem(&zram->req_lock);
+>  	spin_lock_init(&zram->stat64_lock);
+>  
+>  	zram->queue = blk_alloc_queue(GFP_KERNEL);
+> @@ -672,7 +676,7 @@ static int create_device(struct zram *zram, int device_id)
+>  		goto out;
+>  	}
+>  
+> -	zram->init_done = 0;
+> +	atomic_set(&zram->init_done, 0);
+>  
+>  out:
+>  	return ret;
+> @@ -755,8 +759,7 @@ static void __exit zram_exit(void)
+>  		zram = &zram_devices[i];
+>  
+>  		destroy_device(zram);
+> -		if (zram->init_done)
+> -			zram_reset_device(zram);
+> +		zram_reset_device(zram);
+>  	}
+>  
+>  	unregister_blkdev(zram_major, "zram");
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index df2eec4..f6bcead 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -96,9 +96,12 @@ struct zram {
+>  				   * against concurrent read and writes */
+>  	struct request_queue *queue;
+>  	struct gendisk *disk;
+> -	int init_done;
+> -	/* Prevent concurrent execution of device init, reset and R/W request */
+> -	struct rw_semaphore init_lock;
+> +	atomic_t init_done;
+> +	/* Prevent concurrent execution of device init, reset and
+> +	 * disksize_store */
+> +	struct mutex init_lock;
+> +	/* Prevent concurent execution device reset and R/W requests */
+> +	struct rw_semaphore req_lock;
+>  	/*
+>  	 * This is the limit on amount of *uncompressed* worth of data
+>  	 * we can store in a disk.
+> @@ -108,6 +111,11 @@ struct zram {
+>  	struct zram_stats stats;
+>  };
+>  
+> +static inline int is_initialized(struct zram *zram)
+> +{
+> +	return atomic_read(&zram->init_done);
+> +}
+> +
+>  extern struct zram *zram_devices;
+>  unsigned int zram_get_num_devices(void);
+>  #ifdef CONFIG_SYSFS
+> @@ -115,6 +123,6 @@ extern struct attribute_group zram_disk_attr_group;
+>  #endif
+>  
+>  extern int zram_init_device(struct zram *zram);
+> -extern void __zram_reset_device(struct zram *zram);
+> +extern void zram_reset_device(struct zram *zram);
+>  
+>  #endif
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index de1eacf..b300881 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -62,16 +62,19 @@ static ssize_t disksize_store(struct device *dev,
+>  	if (!disksize)
+>  		return -EINVAL;
+>  
+> -	down_write(&zram->init_lock);
+> -	if (zram->init_done) {
+> -		up_write(&zram->init_lock);
+> +	mutex_lock(&zram->init_lock);
+> +	down_write(&zram->req_lock);
+> +	if (is_initialized(zram)) {
+> +		up_write(&zram->req_lock);
+> +		mutex_unlock(&zram->init_lock);
+>  		pr_info("Cannot change disksize for initialized device\n");
+>  		return -EBUSY;
+>  	}
+>  
+>  	zram->disksize = PAGE_ALIGN(disksize);
+>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> -	up_write(&zram->init_lock);
+> +	up_write(&zram->req_lock);
+> +	mutex_unlock(&zram->init_lock);
+>  
+>  	return len;
+>  }
+> @@ -81,7 +84,7 @@ static ssize_t initstate_show(struct device *dev,
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+> -	return sprintf(buf, "%u\n", zram->init_done);
+> +	return sprintf(buf, "%u\n", atomic_read(&zram->init_done));
+>  }
+>  
+>  static ssize_t reset_store(struct device *dev,
+> @@ -110,10 +113,7 @@ static ssize_t reset_store(struct device *dev,
+>  	if (bdev)
+>  		fsync_bdev(bdev);
+>  
+> -	down_write(&zram->init_lock);
+> -	if (zram->init_done)
+> -		__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+> +	zram_reset_device(zram);
+>  
+>  	return len;
+>  }
+> @@ -186,7 +186,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  	u64 val = 0;
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+> -	if (zram->init_done)
+> +	if (is_initialized(zram))
+>  		val = zs_get_total_size_bytes(zram->mem_pool);
+>  
+>  	return sprintf(buf, "%llu\n", val);
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
