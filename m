@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab2KVVfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:35:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49646 "EHLO mail.kernel.org"
+	id S1757963Ab2KVVgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:36:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49610 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990Ab2KVSkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:31 -0500
+	id S1755114Ab2KVSka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [ 096/171] libceph: rename kvec_reset and kvec_add functions
-Date: Wed, 21 Nov 2012 16:40:42 -0800
-Message-Id: <20121122004042.995866543@linuxfoundation.org>
+        Daniel J Blueman <daniel@quora.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 013/171] ALSA: HDA: Fix digital microphone on CS420x
+Date: Wed, 21 Nov 2012 16:39:19 -0800
+Message-Id: <20121122004034.660686095@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -26,183 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Daniel J Blueman <daniel@quora.org>
 
-(cherry picked from commit e22004235a900213625acd6583ac913d5a30c155)
+commit 16337e028a6dae9fbdd718c0d42161540a668ff3 upstream.
 
-The functions ceph_con_out_kvec_reset() and ceph_con_out_kvec_add()
-are entirely private functions, so drop the "ceph_" prefix in their
-name to make them slightly more wieldy.
+Correctly enable the digital microphones with the right bits in the
+right coeffecient registers on Cirrus CS4206/7 codecs. It also
+prevents misconfiguring ADC1/2.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+This fixes the digital mic on the Macbook Pro 10,1/Retina.
+
+Based-on-patch-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -486,14 +486,14 @@ static u32 get_global_seq(struct ceph_me
- 	return ret;
- }
+---
+ sound/pci/hda/patch_cirrus.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -95,8 +95,8 @@ enum {
+ #define CS420X_VENDOR_NID	0x11
+ #define CS_DIG_OUT1_PIN_NID	0x10
+ #define CS_DIG_OUT2_PIN_NID	0x15
+-#define CS_DMIC1_PIN_NID	0x12
+-#define CS_DMIC2_PIN_NID	0x0e
++#define CS_DMIC1_PIN_NID	0x0e
++#define CS_DMIC2_PIN_NID	0x12
  
--static void ceph_con_out_kvec_reset(struct ceph_connection *con)
-+static void con_out_kvec_reset(struct ceph_connection *con)
- {
- 	con->out_kvec_left = 0;
- 	con->out_kvec_bytes = 0;
- 	con->out_kvec_cur = &con->out_kvec[0];
- }
+ /* coef indices */
+ #define IDX_SPDIF_STAT		0x0000
+@@ -1084,14 +1084,18 @@ static void init_input(struct hda_codec
+ 			cs_automic(codec);
  
--static void ceph_con_out_kvec_add(struct ceph_connection *con,
-+static void con_out_kvec_add(struct ceph_connection *con,
- 				size_t size, void *data)
- {
- 	int index;
-@@ -534,7 +534,7 @@ static void prepare_write_message(struct
- 	struct ceph_msg *m;
- 	u32 crc;
- 
--	ceph_con_out_kvec_reset(con);
-+	con_out_kvec_reset(con);
- 	con->out_kvec_is_msg = true;
- 	con->out_msg_done = false;
- 
-@@ -542,9 +542,9 @@ static void prepare_write_message(struct
- 	 * TCP packet that's a good thing. */
- 	if (con->in_seq > con->in_seq_acked) {
- 		con->in_seq_acked = con->in_seq;
--		ceph_con_out_kvec_add(con, sizeof (tag_ack), &tag_ack);
-+		con_out_kvec_add(con, sizeof (tag_ack), &tag_ack);
- 		con->out_temp_ack = cpu_to_le64(con->in_seq_acked);
--		ceph_con_out_kvec_add(con, sizeof (con->out_temp_ack),
-+		con_out_kvec_add(con, sizeof (con->out_temp_ack),
- 			&con->out_temp_ack);
- 	}
- 
-@@ -576,12 +576,12 @@ static void prepare_write_message(struct
- 	BUG_ON(le32_to_cpu(m->hdr.front_len) != m->front.iov_len);
- 
- 	/* tag + hdr + front + middle */
--	ceph_con_out_kvec_add(con, sizeof (tag_msg), &tag_msg);
--	ceph_con_out_kvec_add(con, sizeof (m->hdr), &m->hdr);
--	ceph_con_out_kvec_add(con, m->front.iov_len, m->front.iov_base);
-+	con_out_kvec_add(con, sizeof (tag_msg), &tag_msg);
-+	con_out_kvec_add(con, sizeof (m->hdr), &m->hdr);
-+	con_out_kvec_add(con, m->front.iov_len, m->front.iov_base);
- 
- 	if (m->middle)
--		ceph_con_out_kvec_add(con, m->middle->vec.iov_len,
-+		con_out_kvec_add(con, m->middle->vec.iov_len,
- 			m->middle->vec.iov_base);
- 
- 	/* fill in crc (except data pages), footer */
-@@ -630,12 +630,12 @@ static void prepare_write_ack(struct cep
- 	     con->in_seq_acked, con->in_seq);
- 	con->in_seq_acked = con->in_seq;
- 
--	ceph_con_out_kvec_reset(con);
-+	con_out_kvec_reset(con);
- 
--	ceph_con_out_kvec_add(con, sizeof (tag_ack), &tag_ack);
-+	con_out_kvec_add(con, sizeof (tag_ack), &tag_ack);
- 
- 	con->out_temp_ack = cpu_to_le64(con->in_seq_acked);
--	ceph_con_out_kvec_add(con, sizeof (con->out_temp_ack),
-+	con_out_kvec_add(con, sizeof (con->out_temp_ack),
- 				&con->out_temp_ack);
- 
- 	con->out_more = 1;  /* more will follow.. eventually.. */
-@@ -648,8 +648,8 @@ static void prepare_write_ack(struct cep
- static void prepare_write_keepalive(struct ceph_connection *con)
- {
- 	dout("prepare_write_keepalive %p\n", con);
--	ceph_con_out_kvec_reset(con);
--	ceph_con_out_kvec_add(con, sizeof (tag_keepalive), &tag_keepalive);
-+	con_out_kvec_reset(con);
-+	con_out_kvec_add(con, sizeof (tag_keepalive), &tag_keepalive);
- 	set_bit(WRITE_PENDING, &con->state);
- }
- 
-@@ -694,8 +694,8 @@ static struct ceph_auth_handshake *get_c
-  */
- static void prepare_write_banner(struct ceph_connection *con)
- {
--	ceph_con_out_kvec_add(con, strlen(CEPH_BANNER), CEPH_BANNER);
--	ceph_con_out_kvec_add(con, sizeof (con->msgr->my_enc_addr),
-+	con_out_kvec_add(con, strlen(CEPH_BANNER), CEPH_BANNER);
-+	con_out_kvec_add(con, sizeof (con->msgr->my_enc_addr),
- 					&con->msgr->my_enc_addr);
- 
- 	con->out_more = 0;
-@@ -742,10 +742,10 @@ static int prepare_write_connect(struct
- 	con->out_connect.authorizer_len = auth ?
- 		cpu_to_le32(auth->authorizer_buf_len) : 0;
- 
--	ceph_con_out_kvec_add(con, sizeof (con->out_connect),
-+	con_out_kvec_add(con, sizeof (con->out_connect),
- 					&con->out_connect);
- 	if (auth && auth->authorizer_buf_len)
--		ceph_con_out_kvec_add(con, auth->authorizer_buf_len,
-+		con_out_kvec_add(con, auth->authorizer_buf_len,
- 					auth->authorizer_buf);
- 
- 	con->out_more = 0;
-@@ -939,7 +939,7 @@ static int write_partial_msg_pages(struc
- 	/* prepare and queue up footer, too */
- 	if (!do_datacrc)
- 		con->out_msg->footer.flags |= CEPH_MSG_FOOTER_NOCRC;
--	ceph_con_out_kvec_reset(con);
-+	con_out_kvec_reset(con);
- 	prepare_write_message_footer(con);
- 	ret = 1;
- out:
-@@ -1402,7 +1402,7 @@ static int process_connect(struct ceph_c
- 			return -1;
- 		}
- 		con->auth_retry = 1;
--		ceph_con_out_kvec_reset(con);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1423,7 +1423,7 @@ static int process_connect(struct ceph_c
- 		       ENTITY_NAME(con->peer_name),
- 		       ceph_pr_addr(&con->peer_addr.in_addr));
- 		reset_connection(con);
--		ceph_con_out_kvec_reset(con);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1449,7 +1449,7 @@ static int process_connect(struct ceph_c
- 		     le32_to_cpu(con->out_connect.connect_seq),
- 		     le32_to_cpu(con->in_reply.connect_seq));
- 		con->connect_seq = le32_to_cpu(con->in_reply.connect_seq);
--		ceph_con_out_kvec_reset(con);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1466,7 +1466,7 @@ static int process_connect(struct ceph_c
- 		     le32_to_cpu(con->in_reply.global_seq));
- 		get_global_seq(con->msgr,
- 			       le32_to_cpu(con->in_reply.global_seq));
--		ceph_con_out_kvec_reset(con);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1873,7 +1873,7 @@ more:
- 
- 	/* open the socket first? */
- 	if (con->sock == NULL) {
--		ceph_con_out_kvec_reset(con);
-+		con_out_kvec_reset(con);
- 		prepare_write_banner(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
+ 		coef = 0x000a; /* ADC1/2 - Digital and Analog Soft Ramp */
++		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		coef = cs_vendor_coef_get(codec, IDX_BEEP_CFG);
+ 		if (is_active_pin(codec, CS_DMIC2_PIN_NID))
+-			coef |= 0x0500; /* DMIC2 2 chan on, GPIO1 off */
++			coef |= 1 << 4; /* DMIC2 2 chan on, GPIO1 off */
+ 		if (is_active_pin(codec, CS_DMIC1_PIN_NID))
+-			coef |= 0x1800; /* DMIC1 2 chan on, GPIO0 off
++			coef |= 1 << 3; /* DMIC1 2 chan on, GPIO0 off
+ 					 * No effect if SPDIF_OUT2 is
+ 					 * selected in IDX_SPDIF_CTL.
+ 					*/
+-		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		cs_vendor_coef_set(codec, IDX_BEEP_CFG, coef);
+ 	} else {
+ 		if (spec->mic_detect)
+ 			cs_automic(codec);
 
 
