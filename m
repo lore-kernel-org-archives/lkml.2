@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2KVS6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:35 -0500
+	id S932594Ab2KVUyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:54:18 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964814Ab2KVS63 (ORCPT
+	with ESMTP id S964869Ab2KVS6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:29 -0500
-Date: Wed, 21 Nov 2012 18:16:08 -0800
+	Thu, 22 Nov 2012 13:58:35 -0500
+Date: Wed, 21 Nov 2012 17:56:08 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-1829ae9ad7380bf17333ab9ad1610631d9cb8664@git.kernel.org>
+Message-ID: <tip-aeebe84cc96cde4181807bc67c300c550d0ef123@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-38-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-38-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1353123563-3103-19-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-19-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm: use pfn instead of pos in split_mem_range
-Git-Commit-ID: 1829ae9ad7380bf17333ab9ad1610631d9cb8664
+Subject: [tip:x86/mm2] x86, mm: Use big page size for small memory range
+Git-Commit-ID: aeebe84cc96cde4181807bc67c300c550d0ef123
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,117 +27,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:16:14 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:56:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1829ae9ad7380bf17333ab9ad1610631d9cb8664
-Gitweb:     http://git.kernel.org/tip/1829ae9ad7380bf17333ab9ad1610631d9cb8664
+Commit-ID:  aeebe84cc96cde4181807bc67c300c550d0ef123
+Gitweb:     http://git.kernel.org/tip/aeebe84cc96cde4181807bc67c300c550d0ef123
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:39:14 -0800
+AuthorDate: Fri, 16 Nov 2012 19:38:55 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:41 -0800
+CommitDate: Sat, 17 Nov 2012 11:59:16 -0800
 
-x86, mm: use pfn instead of pos in split_mem_range
+x86, mm: Use big page size for small memory range
 
-could save some bit shifting operations.
+We could map small range in the middle of big range at first, so should use
+big page size at first to avoid using small page size to break down page table.
+
+Only can set big page bit when that range has ram area around it.
+
+-v2: fix 32bit boundary checking. We can not count ram above max_low_pfn
+	for 32 bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-38-git-send-email-yinghai@kernel.org
+Link: http://lkml.kernel.org/r/1353123563-3103-19-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/init.c | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/mm/init.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 1cca052..4bf1c53 100644
+index bb44e9f..da591eb 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -204,12 +204,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+@@ -88,6 +88,40 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
+ 
++/*
++ * adjust the page_size_mask for small range to go with
++ *	big page size instead small one if nearby are ram too.
++ */
++static void __init_refok adjust_range_page_size_mask(struct map_range *mr,
++							 int nr_range)
++{
++	int i;
++
++	for (i = 0; i < nr_range; i++) {
++		if ((page_size_mask & (1<<PG_LEVEL_2M)) &&
++		    !(mr[i].page_size_mask & (1<<PG_LEVEL_2M))) {
++			unsigned long start = round_down(mr[i].start, PMD_SIZE);
++			unsigned long end = round_up(mr[i].end, PMD_SIZE);
++
++#ifdef CONFIG_X86_32
++			if ((end >> PAGE_SHIFT) > max_low_pfn)
++				continue;
++#endif
++
++			if (memblock_is_region_memory(start, end - start))
++				mr[i].page_size_mask |= 1<<PG_LEVEL_2M;
++		}
++		if ((page_size_mask & (1<<PG_LEVEL_1G)) &&
++		    !(mr[i].page_size_mask & (1<<PG_LEVEL_1G))) {
++			unsigned long start = round_down(mr[i].start, PUD_SIZE);
++			unsigned long end = round_up(mr[i].end, PUD_SIZE);
++
++			if (memblock_is_region_memory(start, end - start))
++				mr[i].page_size_mask |= 1<<PG_LEVEL_1G;
++		}
++	}
++}
++
+ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 				     unsigned long start,
  				     unsigned long end)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long pos;
-+	unsigned long pfn;
- 	int i;
- 
- 	/* head if not big page alignment ? */
--	start_pfn = PFN_DOWN(start);
--	pos = PFN_PHYS(start_pfn);
-+	pfn = start_pfn = PFN_DOWN(start);
- #ifdef CONFIG_X86_32
- 	/*
- 	 * Don't use a large page for the first 2/4MB of memory
-@@ -217,26 +216,26 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * and overlapping MTRRs into large pages can cause
- 	 * slowdowns.
- 	 */
--	if (pos == 0)
-+	if (pfn == 0)
- 		end_pfn = PFN_DOWN(PMD_SIZE);
- 	else
--		end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+		end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #endif
- 	if (end_pfn > PFN_DOWN(end))
- 		end_pfn = PFN_DOWN(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
+@@ -182,6 +216,9 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 		nr_range--;
  	}
  
- 	/* big page (2M) range */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #ifdef CONFIG_X86_32
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
- 		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #endif
-@@ -244,32 +243,32 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- 
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
- 				 ((1<<PG_LEVEL_2M)|(1<<PG_LEVEL_1G)));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- 
- 	/* tail is not big page (1G) alignment */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- #endif
- 
- 	/* tail is not big page (2M) alignment */
--	start_pfn = PFN_DOWN(pos);
-+	start_pfn = pfn;
- 	end_pfn = PFN_DOWN(end);
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 
++	if (!after_bootmem)
++		adjust_range_page_size_mask(mr, nr_range);
++
+ 	for (i = 0; i < nr_range; i++)
+ 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
+ 				mr[i].start, mr[i].end - 1,
