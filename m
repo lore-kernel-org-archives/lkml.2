@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758625Ab2KVWrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:47:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49008 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab2KVSda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758697Ab2KVWsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:48:17 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43453 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab2KVSda (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:30 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tom Herbert <therbert@google.com>, Eric Dumazet <edumazet@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 58/83] net-rps: Fix brokeness causing OOO packets
-Date: Wed, 21 Nov 2012 16:42:20 -0800
-Message-Id: <20121122004218.929160966@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+Message-ID: <50AE2842.3060509@gmail.com>
+Date: Thu, 22 Nov 2012 21:27:30 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Maxim Patlasov <mpatlasov@parallels.com>
+CC: miklos@szeredi.hu, dev@parallels.com, xemul@parallels.com,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, linux-mm@kvack.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/14] mm: Account for WRITEBACK_TEMP in balance_dirty_pages
+References: <20121116171039.3196.92186.stgit@maximpc.sw.ru> <20121121115314.20471.52148.stgit@maximpc.sw.ru>
+In-Reply-To: <20121121115314.20471.52148.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 11/21/2012 08:01 PM, Maxim Patlasov wrote:
+> Added linux-mm@ to cc:. The patch can stand on it's own.
+>
+>> Make balance_dirty_pages start the throttling when the WRITEBACK_TEMP
+>> counter is high enough. This prevents us from having too many dirty
+>> pages on fuse, thus giving the userspace part of it a chance to write
+>> stuff properly.
+>>
+>> Note, that the existing balance logic is per-bdi, i.e. if the fuse
+>> user task gets stuck in the function this means, that it either
+>> writes to the mountpoint it serves (but it can deadlock even without
+>> the writeback) or it is writing to some _other_ dirty bdi and in the
+>> latter case someone else will free the memory for it.
+> Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
+> Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+> ---
+>   mm/page-writeback.c |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 830893b..499a606 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1220,7 +1220,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+>   		 */
+>   		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+>   					global_page_state(NR_UNSTABLE_NFS);
+> -		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
+> +		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK) +
+> +			global_page_state(NR_WRITEBACK_TEMP);
+>   
 
-------------------
+Could you explain NR_WRITEBACK_TEMP is used for accounting what? And 
+when it will increase?
 
-
-From: Tom Herbert <therbert@google.com>
-
-[ Upstream commit baefa31db2f2b13a05d1b81bdf2d20d487f58b0a ]
-
-In commit c445477d74ab3779 which adds aRFS to the kernel, the CPU
-selected for RFS is not set correctly when CPU is changing.
-This is causing OOO packets and probably other issues.
-
-Signed-off-by: Tom Herbert <therbert@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2793,8 +2793,10 @@ static int get_rps_cpu(struct net_device
- 		if (unlikely(tcpu != next_cpu) &&
- 		    (tcpu == RPS_NO_CPU || !cpu_online(tcpu) ||
- 		     ((int)(per_cpu(softnet_data, tcpu).input_queue_head -
--		      rflow->last_qtail)) >= 0))
-+		      rflow->last_qtail)) >= 0)) {
-+			tcpu = next_cpu;
- 			rflow = set_rps_cpu(dev, skb, rflow, next_cpu);
-+		}
- 
- 		if (tcpu != RPS_NO_CPU && cpu_online(tcpu)) {
- 			*rflowp = rflow;
-
+>   		global_dirty_limits(&background_thresh, &dirty_thresh);
+>   
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
