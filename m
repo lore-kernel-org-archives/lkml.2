@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2KVSfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:35:54 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41236 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2KVSfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:35:34 -0500
-Message-ID: <50AE397A.8080000@gmail.com>
-Date: Thu, 22 Nov 2012 22:40:58 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: kswapd endless loop for compaction
-References: <20121120190440.GA24381@cmpxchg.org>
-In-Reply-To: <20121120190440.GA24381@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753856Ab2KVSeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:34:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49006 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753592Ab2KVSd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:59 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 120/171] libceph: dont mark footer complete before it is
+Date: Wed, 21 Nov 2012 16:41:06 -0800
+Message-Id: <20121122004045.394241870@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 03:04 AM, Johannes Weiner wrote:
-> Hi guys,
->
-> while testing a 3.7-rc5ish kernel, I noticed that kswapd can drop into
-> a busy spin state without doing reclaim.  printk-style debugging told
-> me that this happens when the distance between a zone's high watermark
-> and its low watermark is less than two huge pages (DMA zone).
->
-> 1. The first loop in balance_pgdat() over the zones finds all zones to
-> be above their high watermark and only does goto out (all_zones_ok).
->
-> 2. pgdat_balanced() at the out: label also just checks the high
-> watermark, so the node is considered balanced and the order is not
-> reduced.
->
-> 3. In the `if (order)' block after it, compaction_suitable() checks if
-> the zone's low watermark + twice the huge page size is okay, which
-> it's not necessarily in a small zone, and so COMPACT_SKIPPED makes it
-> it go back to loop_again:.
->
-> This will go on until somebody else allocates and breaches the high
-> watermark and then hopefully goes on to reclaim the zone above low
-> watermark + 2 * THP.
->
-> I'm not really sure what the correct solution is.  Should we modify
-> the zone_watermark_ok() checks in balance_pgdat() to take into account
-> the higher watermark requirements for reclaim on behalf of compaction?
-> Change the check in compaction_suitable() / not use it directly?
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Johannes,
+------------------
 
+From: Alex Elder <elder@inktank.com>
 
-- If all zones meet high watermark, goto out, then why go to `if 
-(order)' block?
+(cherry picked from commit fd154f3c75465abd83b7a395033e3755908a1e6e)
 
-- If depend on compaction get enough contigous pages, why
+This is a nit, but prepare_write_message() sets the FOOTER_COMPLETE
+flag before the CRC for the data portion (recorded in the footer)
+has been completely computed.  Hold off setting the complete flag
+until we've decided it's ready to send.
 
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ceph/messenger.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-if (CONPACT_BUILD && order &&
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -592,6 +592,8 @@ static void prepare_write_message_footer
+ 	struct ceph_msg *m = con->out_msg;
+ 	int v = con->out_kvec_left;
+ 
++	m->footer.flags |= CEPH_MSG_FOOTER_COMPLETE;
++
+ 	dout("prepare_write_message_footer %p\n", con);
+ 	con->out_kvec_is_msg = true;
+ 	con->out_kvec[v].iov_base = &m->footer;
+@@ -665,7 +667,7 @@ static void prepare_write_message(struct
+ 	/* fill in crc (except data pages), footer */
+ 	crc = crc32c(0, &m->hdr, offsetof(struct ceph_msg_header, crc));
+ 	con->out_msg->hdr.crc = cpu_to_le32(crc);
+-	con->out_msg->footer.flags = CEPH_MSG_FOOTER_COMPLETE;
++	con->out_msg->footer.flags = 0;
+ 
+ 	crc = crc32c(0, m->front.iov_base, m->front.iov_len);
+ 	con->out_msg->footer.front_crc = cpu_to_le32(crc);
 
-     compaction_suitable(zone, order) !=
-
-         COMPACTION_SKIPPED)
-
-     testorder = 0;
-
-
-can't guarantee low watermark + twice the huge page size is okay?
-
-
-Regards,
-
-Jaegeuk
-
->
-> Thanks,
-> Johannes
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
