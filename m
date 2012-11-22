@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab2KVU5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:57:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131Ab2KVS6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:30 -0500
-Date: Wed, 21 Nov 2012 18:18:13 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-4e37a890474b89ca49ad6b3651b1709a17d7c216@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-40-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-40-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm: Unifying after_bootmem for 32bit and 64bit
-Git-Commit-ID: 4e37a890474b89ca49ad6b3651b1709a17d7c216
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756756Ab2KVU5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:57:25 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:35350 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756131Ab2KVU5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:57:21 -0500
+Message-ID: <50AE91AD.1090709@parallels.com>
+Date: Fri, 23 Nov 2012 00:57:17 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:18:19 -0800 (PST)
+To: Oleg Nesterov <oleg@redhat.com>, Amnon Shiloh <u3557@miso.sublimeip.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: vdso && cr (Was: arch_check_bp_in_kernelspace: fix the range
+ check)
+References: <20121121141627.GB21030@redhat.com> <20121121173043.F0319592076@miso.sublimeip.com> <20121122161238.GA27078@redhat.com>
+In-Reply-To: <20121122161238.GA27078@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4e37a890474b89ca49ad6b3651b1709a17d7c216
-Gitweb:     http://git.kernel.org/tip/4e37a890474b89ca49ad6b3651b1709a17d7c216
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:39:16 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:44 -0800
+On 11/22/2012 08:12 PM, Oleg Nesterov wrote:
+> On 11/22, Amnon Shiloh wrote:
+>>
+>> Now however, that "vsyscall" was effectively replaced by vdso, it
+>> creates a new problem for me and probably for anyone else who uses
+>> some form of checkpoint/restore:
+> 
+> Oh, sorry, I can't help here. I can only add Cyrill and Pavel, they
+> seem to enjoy trying to solve the c/r problems.
 
-x86, mm: Unifying after_bootmem for 32bit and 64bit
+Thank you :)
 
-after_bootmem has different meaning in 32bit and 64bit.
-        32bit: after bootmem is ready
-        64bit: after bootmem is distroyed
-Let's merget them make 32bit the same as 64bit.
+>> Suppose a process is checkpointed because the system needs to reboot
+>> for a kernel-upgrade, then restored on the new and different kernel.
+>> The new VDSO page may no longer match the new kernel - it could for
+>> example fetch data from addresses in the vsyscall page that now
+>> contain different things; or in case the hardware also was changed,
+>> it may use machine-instructions that are now illegal.
 
-for 32bit, it is mixing alloc_bootmem_pages, and alloc_low_page under
-after_bootmem is set or not set.
+If we could make VDSO entry points not move across the kernels (iow, make
+them looks as yet another syscall table) this would help, I suppose.
 
-alloc_bootmem is just wrapper for memblock for x86.
+> Sure. You shouldn't try to save/restore this page(s) directly. But
+> I do not really understand why do you need. IOW, I don't really
+> understand the problem, it depends on what c/r actually does.
 
-Now we have alloc_low_page() with memblock too. We can drop bootmem path
-now, and only alloc_low_page only.
+Think about it like this -- you stop a process, then change the kern^w VDSO
+page. Everything should work as it used to be :)
 
-At the same time, we make alloc_low_page could handle real after_bootmem
-for 32bit, because alloc_bootmem_pages could fallback to use slab too.
+>> As I don't mind to forego the "fast" sys_time(), my obvious solution
+>> is to disable the vdso for traced processes that may be checkpointed.
 
-At last move after_bootmem set position for 32bit the same as 64bit.
+This is very poor solution from my POV. Nobody wants to have their applications
+work fast only until it's checkpointed.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-40-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/init.c    |  2 --
- arch/x86/mm/init_32.c | 21 ++++-----------------
- 2 files changed, 4 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index f410dc6..2a27e5a 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -39,7 +39,6 @@ __ref void *alloc_low_pages(unsigned int num)
- 	unsigned long pfn;
- 	int i;
- 
--#ifdef CONFIG_X86_64
- 	if (after_bootmem) {
- 		unsigned int order;
- 
-@@ -47,7 +46,6 @@ __ref void *alloc_low_pages(unsigned int num)
- 		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
- 						__GFP_ZERO, order);
- 	}
--#endif
- 
- 	if ((pgt_buf_end + num) >= pgt_buf_top) {
- 		unsigned long ret;
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 19ef9f0..f4fc4a2 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -73,10 +73,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
- 
- #ifdef CONFIG_X86_PAE
- 	if (!(pgd_val(*pgd) & _PAGE_PRESENT)) {
--		if (after_bootmem)
--			pmd_table = (pmd_t *)alloc_bootmem_pages(PAGE_SIZE);
--		else
--			pmd_table = (pmd_t *)alloc_low_page();
-+		pmd_table = (pmd_t *)alloc_low_page();
- 		paravirt_alloc_pmd(&init_mm, __pa(pmd_table) >> PAGE_SHIFT);
- 		set_pgd(pgd, __pgd(__pa(pmd_table) | _PAGE_PRESENT));
- 		pud = pud_offset(pgd, 0);
-@@ -98,17 +95,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
- static pte_t * __init one_page_table_init(pmd_t *pmd)
- {
- 	if (!(pmd_val(*pmd) & _PAGE_PRESENT)) {
--		pte_t *page_table = NULL;
--
--		if (after_bootmem) {
--#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
--			page_table = (pte_t *) alloc_bootmem_pages(PAGE_SIZE);
--#endif
--			if (!page_table)
--				page_table =
--				(pte_t *)alloc_bootmem_pages(PAGE_SIZE);
--		} else
--			page_table = (pte_t *)alloc_low_page();
-+		pte_t *page_table = (pte_t *)alloc_low_page();
- 
- 		paravirt_alloc_pte(&init_mm, __pa(page_table) >> PAGE_SHIFT);
- 		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
-@@ -708,8 +695,6 @@ void __init setup_bootmem_allocator(void)
- 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
- 		 max_pfn_mapped<<PAGE_SHIFT);
- 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
--
--	after_bootmem = 1;
- }
- 
- /*
-@@ -795,6 +780,8 @@ void __init mem_init(void)
- 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
- 			reservedpages++;
- 
-+	after_bootmem = 1;
-+
- 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
- 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
- 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+Thanks,
+Pavel
