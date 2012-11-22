@@ -1,178 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab2KVVca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:32:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
+	id S932286Ab2KVVc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:32:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755167Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755172Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 107/171] libceph: have messages point to their connection
-Date: Wed, 21 Nov 2012 16:40:53 -0800
-Message-Id: <20121122004044.100528709@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 05/83] mac80211: dont send null data packet when not associated
+Date: Wed, 21 Nov 2012 16:41:27 -0800
+Message-Id: <20121122004212.988444025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-(cherry picked from commit 38941f8031bf042dba3ced6394ba3a3b16c244ea)
+commit 20f544eea03db4b498942558b882d463ce575c3e upstream.
 
-When a ceph message is queued for sending it is placed on a list of
-pending messages (ceph_connection->out_queue).  When they are
-actually sent over the wire, they are moved from that list to
-another (ceph_connection->out_sent).  When acknowledgement for the
-message is received, it is removed from the sent messages list.
+On resume or firmware recovery, mac80211 sends a null
+data packet to see if the AP is still around and hasn't
+disconnected us. However, it always does this even if
+it wasn't even connected before, leading to a warning
+in the new channel context code. Fix this by checking
+that it's associated.
 
-During that entire time the message is "in the possession" of a
-single ceph connection.  Keep track of that connection in the
-message.  This will be used in the next patch (and is a helpful
-bit of information for debugging anyway).
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ceph/messenger.h |    3 +++
- net/ceph/messenger.c           |   27 +++++++++++++++++++++++++--
- 2 files changed, 28 insertions(+), 2 deletions(-)
 
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -77,7 +77,10 @@ struct ceph_msg {
- 	unsigned nr_pages;              /* size of page array */
- 	unsigned page_alignment;        /* io offset in first page */
- 	struct ceph_pagelist *pagelist; /* instead of pages */
-+
-+	struct ceph_connection *con;
- 	struct list_head list_head;
-+
- 	struct kref kref;
- 	struct bio  *bio;		/* instead of pages/pagelist */
- 	struct bio  *bio_iter;		/* bio iterator */
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -414,6 +414,9 @@ static int con_close_socket(struct ceph_
- static void ceph_msg_remove(struct ceph_msg *msg)
- {
- 	list_del_init(&msg->list_head);
-+	BUG_ON(msg->con == NULL);
-+	msg->con = NULL;
-+
- 	ceph_msg_put(msg);
- }
- static void ceph_msg_remove_list(struct list_head *head)
-@@ -433,6 +436,8 @@ static void reset_connection(struct ceph
- 	ceph_msg_remove_list(&con->out_sent);
+---
+ net/mac80211/util.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -1434,6 +1434,8 @@ int ieee80211_reconfig(struct ieee80211_
+ 		list_for_each_entry(sdata, &local->interfaces, list) {
+ 			if (sdata->vif.type != NL80211_IFTYPE_STATION)
+ 				continue;
++			if (!sdata->u.mgd.associated)
++				continue;
  
- 	if (con->in_msg) {
-+		BUG_ON(con->in_msg->con != con);
-+		con->in_msg->con = NULL;
- 		ceph_msg_put(con->in_msg);
- 		con->in_msg = NULL;
- 	}
-@@ -625,8 +630,10 @@ static void prepare_write_message(struct
- 			&con->out_temp_ack);
- 	}
- 
-+	BUG_ON(list_empty(&con->out_queue));
- 	m = list_first_entry(&con->out_queue, struct ceph_msg, list_head);
- 	con->out_msg = m;
-+	BUG_ON(m->con != con);
- 
- 	/* put message on sent list */
- 	ceph_msg_get(m);
-@@ -1810,6 +1817,8 @@ static int read_partial_message(struct c
- 				"error allocating memory for incoming message";
- 			return -ENOMEM;
+ 			ieee80211_send_nullfunc(local, sdata, 0);
  		}
-+
-+		BUG_ON(con->in_msg->con != con);
- 		m = con->in_msg;
- 		m->front.iov_len = 0;    /* haven't read it yet */
- 		if (m->middle)
-@@ -1905,6 +1914,8 @@ static void process_message(struct ceph_
- {
- 	struct ceph_msg *msg;
- 
-+	BUG_ON(con->in_msg->con != con);
-+	con->in_msg->con = NULL;
- 	msg = con->in_msg;
- 	con->in_msg = NULL;
- 
-@@ -2264,6 +2275,8 @@ static void ceph_fault(struct ceph_conne
- 	con_close_socket(con);
- 
- 	if (con->in_msg) {
-+		BUG_ON(con->in_msg->con != con);
-+		con->in_msg->con = NULL;
- 		ceph_msg_put(con->in_msg);
- 		con->in_msg = NULL;
- 	}
-@@ -2382,6 +2395,8 @@ void ceph_con_send(struct ceph_connectio
- 
- 	/* queue */
- 	mutex_lock(&con->mutex);
-+	BUG_ON(msg->con != NULL);
-+	msg->con = con;
- 	BUG_ON(!list_empty(&msg->list_head));
- 	list_add_tail(&msg->list_head, &con->out_queue);
- 	dout("----- %p to %s%lld %d=%s len %d+%d+%d -----\n", msg,
-@@ -2407,13 +2422,16 @@ void ceph_con_revoke(struct ceph_connect
- {
- 	mutex_lock(&con->mutex);
- 	if (!list_empty(&msg->list_head)) {
--		dout("con_revoke %p msg %p - was on queue\n", con, msg);
-+		dout("%s %p msg %p - was on queue\n", __func__, con, msg);
- 		list_del_init(&msg->list_head);
-+		BUG_ON(msg->con == NULL);
-+		msg->con = NULL;
-+
- 		ceph_msg_put(msg);
- 		msg->hdr.seq = 0;
- 	}
- 	if (con->out_msg == msg) {
--		dout("con_revoke %p msg %p - was sending\n", con, msg);
-+		dout("%s %p msg %p - was sending\n", __func__, con, msg);
- 		con->out_msg = NULL;
- 		if (con->out_kvec_is_msg) {
- 			con->out_skip = con->out_kvec_bytes;
-@@ -2482,6 +2500,8 @@ struct ceph_msg *ceph_msg_new(int type,
- 	if (m == NULL)
- 		goto out;
- 	kref_init(&m->kref);
-+
-+	m->con = NULL;
- 	INIT_LIST_HEAD(&m->list_head);
- 
- 	m->hdr.tid = 0;
-@@ -2602,6 +2622,8 @@ static bool ceph_con_in_msg_alloc(struct
- 		mutex_unlock(&con->mutex);
- 		con->in_msg = con->ops->alloc_msg(con, hdr, &skip);
- 		mutex_lock(&con->mutex);
-+		if (con->in_msg)
-+			con->in_msg->con = con;
- 		if (skip)
- 			con->in_msg = NULL;
- 
-@@ -2615,6 +2637,7 @@ static bool ceph_con_in_msg_alloc(struct
- 			       type, front_len);
- 			return false;
- 		}
-+		con->in_msg->con = con;
- 		con->in_msg->page_alignment = le16_to_cpu(hdr->data_off);
- 	}
- 	memcpy(&con->in_msg->hdr, &con->in_hdr, sizeof(con->in_hdr));
 
 
