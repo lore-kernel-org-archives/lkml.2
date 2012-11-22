@@ -1,41 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965311Ab2KVUBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:01:36 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16269 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964983Ab2KVUBa (ORCPT
+	id S1756758Ab2KVUCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:02:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53550 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965162Ab2KVTvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:01:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 22 Nov 2012 00:41:15 -0800
-Message-ID: <50ADE529.6020000@nvidia.com>
-Date: Thu, 22 Nov 2012 14:11:13 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: tps80031: Trivial cleanups
-References: <1353573044.18426.1.camel@phoenix>
-In-Reply-To: <1353573044.18426.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 14:51:36 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 30/46] staging: line6: drop variax volume sysfs attr
+Date: Thu, 22 Nov 2012 20:49:09 +0100
+Message-Id: <1353613765-18690-31-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 November 2012 02:00 PM, Axel Lin wrote:
-> This patch includes below cleanups:
->
-> - Fix typo in comment
-> - Fix showing wrong register in dev_err
-> - Remove unnecessary rinfo variable
-> - Add TPS80032 to MODULE_DESCRIPTION
->
-> Signed-off-by: Axel Lin<axel.lin@ingics.com>
-> ---
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/variax.c | 42 ------------------------------------------
+ drivers/staging/line6/variax.h |  5 -----
+ 2 files changed, 47 deletions(-)
 
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
+index e76255b..ef78f5a 100644
+--- a/drivers/staging/line6/variax.c
++++ b/drivers/staging/line6/variax.c
+@@ -200,10 +200,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
+ 	switch (buf[0]) {
+ 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_HOST:
+ 		switch (buf[1]) {
+-		case VARIAXMIDI_volume:
+-			variax->volume = buf[2];
+-			break;
+-
+ 		case VARIAXMIDI_tone:
+ 			variax->tone = buf[2];
+ 		}
+@@ -299,40 +295,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
+ }
+ 
+ /*
+-	"read" request on "volume" special file.
+-*/
+-static ssize_t variax_get_volume(struct device *dev,
+-				 struct device_attribute *attr, char *buf)
+-{
+-	struct usb_line6_variax *variax =
+-	    usb_get_intfdata(to_usb_interface(dev));
+-	return sprintf(buf, "%d\n", variax->volume);
+-}
+-
+-/*
+-	"write" request on "volume" special file.
+-*/
+-static ssize_t variax_set_volume(struct device *dev,
+-				 struct device_attribute *attr,
+-				 const char *buf, size_t count)
+-{
+-	struct usb_line6_variax *variax =
+-	    usb_get_intfdata(to_usb_interface(dev));
+-	u8 value;
+-	int ret;
+-
+-	ret = kstrtou8(buf, 10, &value);
+-	if (ret)
+-		return ret;
+-
+-	if (line6_transmit_parameter(&variax->line6, VARIAXMIDI_volume,
+-				     value) == 0)
+-		variax->volume = value;
+-
+-	return count;
+-}
+-
+-/*
+ 	"read" request on "active" special file.
+ */
+ static ssize_t variax_get_active(struct device *dev,
+@@ -515,8 +477,6 @@ static ssize_t variax_set_raw2(struct device *dev,
+ #endif
+ 
+ /* Variax workbench special files: */
+-static DEVICE_ATTR(volume, S_IWUSR | S_IRUGO, variax_get_volume,
+-		   variax_set_volume);
+ static DEVICE_ATTR(tone, S_IWUSR | S_IRUGO, variax_get_tone, variax_set_tone);
+ static DEVICE_ATTR(name, S_IRUGO, variax_get_name, line6_nop_write);
+ static DEVICE_ATTR(bank, S_IRUGO, variax_get_bank, line6_nop_write);
+@@ -559,7 +519,6 @@ static void variax_destruct(struct usb_interface *interface)
+ static int variax_create_files2(struct device *dev)
+ {
+ 	int err;
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_volume));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_tone));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_name));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_bank));
+@@ -664,7 +623,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
+ 	if (dev != NULL) {
+ 		/* remove sysfs entries: */
+ 		line6_variax_remove_files(0, 0, dev);
+-		device_remove_file(dev, &dev_attr_volume);
+ 		device_remove_file(dev, &dev_attr_tone);
+ 		device_remove_file(dev, &dev_attr_name);
+ 		device_remove_file(dev, &dev_attr_bank);
+diff --git a/drivers/staging/line6/variax.h b/drivers/staging/line6/variax.h
+index 4151c14..426c90c 100644
+--- a/drivers/staging/line6/variax.h
++++ b/drivers/staging/line6/variax.h
+@@ -93,11 +93,6 @@ struct usb_line6_variax {
+ 	unsigned char bank[18];
+ 
+ 	/**
+-		Position of volume dial.
+-	*/
+-	int volume;
+-
+-	/**
+ 		Position of tone control dial.
+ 	*/
+ 	int tone;
+-- 
+1.8.0
+
