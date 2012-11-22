@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab2KVVc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:32:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	id S1757880Ab2KVVca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:32:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755171Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755167Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>
-Subject: [ 094/171] libceph: kill bad_proto ceph connection op
-Date: Wed, 21 Nov 2012 16:40:40 -0800
-Message-Id: <20121122004042.793773136@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 107/171] libceph: have messages point to their connection
+Date: Wed, 21 Nov 2012 16:40:53 -0800
+Message-Id: <20121122004044.100528709@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,44 +27,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 6384bb8b8e88a9c6bf2ae0d9517c2c0199177c34)
+(cherry picked from commit 38941f8031bf042dba3ced6394ba3a3b16c244ea)
 
-No code sets a bad_proto method in its ceph connection operations
-vector, so just get rid of it.
+When a ceph message is queued for sending it is placed on a list of
+pending messages (ceph_connection->out_queue).  When they are
+actually sent over the wire, they are moved from that list to
+another (ceph_connection->out_sent).  When acknowledgement for the
+message is received, it is removed from the sent messages list.
+
+During that entire time the message is "in the possession" of a
+single ceph connection.  Keep track of that connection in the
+message.  This will be used in the next patch (and is a helpful
+bit of information for debugging anyway).
 
 Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/ceph/messenger.h |    3 ---
- net/ceph/messenger.c           |    5 -----
- 2 files changed, 8 deletions(-)
+ include/linux/ceph/messenger.h |    3 +++
+ net/ceph/messenger.c           |   27 +++++++++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 2 deletions(-)
 
 --- a/include/linux/ceph/messenger.h
 +++ b/include/linux/ceph/messenger.h
-@@ -31,9 +31,6 @@ struct ceph_connection_operations {
- 	int (*verify_authorizer_reply) (struct ceph_connection *con, int len);
- 	int (*invalidate_authorizer)(struct ceph_connection *con);
- 
--	/* protocol version mismatch */
--	void (*bad_proto) (struct ceph_connection *con);
--
- 	/* there was some error on the socket (disconnect, whatever) */
- 	void (*fault) (struct ceph_connection *con);
- 
+@@ -77,7 +77,10 @@ struct ceph_msg {
+ 	unsigned nr_pages;              /* size of page array */
+ 	unsigned page_alignment;        /* io offset in first page */
+ 	struct ceph_pagelist *pagelist; /* instead of pages */
++
++	struct ceph_connection *con;
+ 	struct list_head list_head;
++
+ 	struct kref kref;
+ 	struct bio  *bio;		/* instead of pages/pagelist */
+ 	struct bio  *bio_iter;		/* bio iterator */
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -1360,11 +1360,6 @@ static void fail_protocol(struct ceph_co
+@@ -414,6 +414,9 @@ static int con_close_socket(struct ceph_
+ static void ceph_msg_remove(struct ceph_msg *msg)
  {
- 	reset_connection(con);
- 	set_bit(CLOSED, &con->state);  /* in case there's queued work */
--
--	mutex_unlock(&con->mutex);
--	if (con->ops->bad_proto)
--		con->ops->bad_proto(con);
--	mutex_lock(&con->mutex);
+ 	list_del_init(&msg->list_head);
++	BUG_ON(msg->con == NULL);
++	msg->con = NULL;
++
+ 	ceph_msg_put(msg);
  }
+ static void ceph_msg_remove_list(struct list_head *head)
+@@ -433,6 +436,8 @@ static void reset_connection(struct ceph
+ 	ceph_msg_remove_list(&con->out_sent);
  
- static int process_connect(struct ceph_connection *con)
+ 	if (con->in_msg) {
++		BUG_ON(con->in_msg->con != con);
++		con->in_msg->con = NULL;
+ 		ceph_msg_put(con->in_msg);
+ 		con->in_msg = NULL;
+ 	}
+@@ -625,8 +630,10 @@ static void prepare_write_message(struct
+ 			&con->out_temp_ack);
+ 	}
+ 
++	BUG_ON(list_empty(&con->out_queue));
+ 	m = list_first_entry(&con->out_queue, struct ceph_msg, list_head);
+ 	con->out_msg = m;
++	BUG_ON(m->con != con);
+ 
+ 	/* put message on sent list */
+ 	ceph_msg_get(m);
+@@ -1810,6 +1817,8 @@ static int read_partial_message(struct c
+ 				"error allocating memory for incoming message";
+ 			return -ENOMEM;
+ 		}
++
++		BUG_ON(con->in_msg->con != con);
+ 		m = con->in_msg;
+ 		m->front.iov_len = 0;    /* haven't read it yet */
+ 		if (m->middle)
+@@ -1905,6 +1914,8 @@ static void process_message(struct ceph_
+ {
+ 	struct ceph_msg *msg;
+ 
++	BUG_ON(con->in_msg->con != con);
++	con->in_msg->con = NULL;
+ 	msg = con->in_msg;
+ 	con->in_msg = NULL;
+ 
+@@ -2264,6 +2275,8 @@ static void ceph_fault(struct ceph_conne
+ 	con_close_socket(con);
+ 
+ 	if (con->in_msg) {
++		BUG_ON(con->in_msg->con != con);
++		con->in_msg->con = NULL;
+ 		ceph_msg_put(con->in_msg);
+ 		con->in_msg = NULL;
+ 	}
+@@ -2382,6 +2395,8 @@ void ceph_con_send(struct ceph_connectio
+ 
+ 	/* queue */
+ 	mutex_lock(&con->mutex);
++	BUG_ON(msg->con != NULL);
++	msg->con = con;
+ 	BUG_ON(!list_empty(&msg->list_head));
+ 	list_add_tail(&msg->list_head, &con->out_queue);
+ 	dout("----- %p to %s%lld %d=%s len %d+%d+%d -----\n", msg,
+@@ -2407,13 +2422,16 @@ void ceph_con_revoke(struct ceph_connect
+ {
+ 	mutex_lock(&con->mutex);
+ 	if (!list_empty(&msg->list_head)) {
+-		dout("con_revoke %p msg %p - was on queue\n", con, msg);
++		dout("%s %p msg %p - was on queue\n", __func__, con, msg);
+ 		list_del_init(&msg->list_head);
++		BUG_ON(msg->con == NULL);
++		msg->con = NULL;
++
+ 		ceph_msg_put(msg);
+ 		msg->hdr.seq = 0;
+ 	}
+ 	if (con->out_msg == msg) {
+-		dout("con_revoke %p msg %p - was sending\n", con, msg);
++		dout("%s %p msg %p - was sending\n", __func__, con, msg);
+ 		con->out_msg = NULL;
+ 		if (con->out_kvec_is_msg) {
+ 			con->out_skip = con->out_kvec_bytes;
+@@ -2482,6 +2500,8 @@ struct ceph_msg *ceph_msg_new(int type,
+ 	if (m == NULL)
+ 		goto out;
+ 	kref_init(&m->kref);
++
++	m->con = NULL;
+ 	INIT_LIST_HEAD(&m->list_head);
+ 
+ 	m->hdr.tid = 0;
+@@ -2602,6 +2622,8 @@ static bool ceph_con_in_msg_alloc(struct
+ 		mutex_unlock(&con->mutex);
+ 		con->in_msg = con->ops->alloc_msg(con, hdr, &skip);
+ 		mutex_lock(&con->mutex);
++		if (con->in_msg)
++			con->in_msg->con = con;
+ 		if (skip)
+ 			con->in_msg = NULL;
+ 
+@@ -2615,6 +2637,7 @@ static bool ceph_con_in_msg_alloc(struct
+ 			       type, front_len);
+ 			return false;
+ 		}
++		con->in_msg->con = con;
+ 		con->in_msg->page_alignment = le16_to_cpu(hdr->data_off);
+ 	}
+ 	memcpy(&con->in_msg->hdr, &con->in_hdr, sizeof(con->in_hdr));
 
 
