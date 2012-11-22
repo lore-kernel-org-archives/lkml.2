@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2KVWe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:34:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49004 "EHLO mail.kernel.org"
+	id S1758553Ab2KVWe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:34:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49016 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753618Ab2KVSdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:49 -0500
+	id S1753623Ab2KVSdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Millbrandt <emillbrandt@dekaresearch.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 08/38] ASoC: wm8978: pll incorrectly configured when codec is master
-Date: Wed, 21 Nov 2012 16:39:51 -0800
-Message-Id: <20121122003905.132611222@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Mark Tinguely <tinguely@sgi.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [ 002/171] xfs: drop buffer io reference when a bad bio is built
+Date: Wed, 21 Nov 2012 16:39:08 -0800
+Message-Id: <20121122004033.549410073@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Millbrandt <emillbrandt@dekaresearch.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 55c6f4cb6ef49afbb86222c6a3ff85329199c729 upstream.
+commit d69043c42d8c6414fa28ad18d99973aa6c1c2e24 upstream.
 
-When MCLK is supplied externally and BCLK and LRC are configured as outputs
-(codec is master), the PLL values are only calculated correctly on the first
-transmission.  On subsequent transmissions, at differenct sample rates, the
-wrong PLL values are used.  Test for f_opclk instead of f_pllout to determine
-if the PLL values are needed.
+Error handling in xfs_buf_ioapply_map() does not handle IO reference
+counts correctly. We increment the b_io_remaining count before
+building the bio, but then fail to decrement it in the failure case.
+This leads to the buffer never running IO completion and releasing
+the reference that the IO holds, so at unmount we can leak the
+buffer. This leak is captured by this assert failure during unmount:
 
-Signed-off-by: Eric Millbrandt <emillbrandt@dekaresearch.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+XFS: Assertion failed: atomic_read(&pag->pag_ref) == 0, file: fs/xfs/xfs_mount.c, line: 273
+
+This is not a new bug - the b_io_remaining accounting has had this
+problem for a long, long time - it's just very hard to get a
+zero length bio being built by this code...
+
+Further, the buffer IO error can be overwritten on a multi-segment
+buffer by subsequent bio completions for partial sections of the
+buffer. Hence we should only set the buffer error status if the
+buffer is not already carrying an error status. This ensures that a
+partial IO error on a multi-segment buffer will not be lost. This
+part of the problem is a regression, however.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8978.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/xfs_buf.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8978.c
-+++ b/sound/soc/codecs/wm8978.c
-@@ -750,7 +750,7 @@ static int wm8978_hw_params(struct snd_p
- 		wm8978->mclk_idx = -1;
- 		f_sel = wm8978->f_mclk;
+--- a/fs/xfs/xfs_buf.c
++++ b/fs/xfs/xfs_buf.c
+@@ -1165,9 +1165,14 @@ xfs_buf_bio_end_io(
+ {
+ 	xfs_buf_t		*bp = (xfs_buf_t *)bio->bi_private;
+ 
+-	xfs_buf_ioerror(bp, -error);
++	/*
++	 * don't overwrite existing errors - otherwise we can lose errors on
++	 * buffers that require multiple bios to complete.
++	 */
++	if (!bp->b_error)
++		xfs_buf_ioerror(bp, -error);
+ 
+-	if (!error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
++	if (!bp->b_error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
+ 		invalidate_kernel_vmap_range(bp->b_addr, xfs_buf_vmap_len(bp));
+ 
+ 	_xfs_buf_ioend(bp, 1);
+@@ -1243,6 +1248,11 @@ next_chunk:
+ 		if (size)
+ 			goto next_chunk;
  	} else {
--		if (!wm8978->f_pllout) {
-+		if (!wm8978->f_opclk) {
- 			/* We only enter here, if OPCLK is not used */
- 			int ret = wm8978_configure_pll(codec);
- 			if (ret < 0)
++		/*
++		 * This is guaranteed not to be the last io reference count
++		 * because the caller (xfs_buf_iorequest) holds a count itself.
++		 */
++		atomic_dec(&bp->b_io_remaining);
+ 		xfs_buf_ioerror(bp, EIO);
+ 		bio_put(bio);
+ 	}
 
 
