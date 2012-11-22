@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab2KVWgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:36:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49005 "EHLO mail.kernel.org"
+	id S1754806Ab2KVWhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:37:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46453 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab2KVSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:48 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 124/171] libceph: SOCK_CLOSED is a flag, not a state
-Date: Wed, 21 Nov 2012 16:41:10 -0800
-Message-Id: <20121122004045.794702722@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754404Ab2KVWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:37:00 -0500
+Date: Thu, 22 Nov 2012 23:36:58 +0100
+From: Jan Kara <jack@suse.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Message-ID: <20121122223658.GB20326@quack.suse.cz>
+References: <20121122175824.19604.qmail@science.horizon.com>
+ <20121122220600.GA20326@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122220600.GA20326@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu 22-11-12 23:06:00, Jan Kara wrote:
+> On Thu 22-11-12 12:58:24, George Spelvin wrote:
+> > I'm having an interesting issue with a uniprocessor Pentium 4 machine
+> > locking up overnight.  3.6.5 didn't do that, but 3.7-rc6 is not doing
+> > so well.
+>   I've added some CCs which are hopefully relevant. Specifially I remember
+> Mel fixing some -mm lockup recently although after googling for a while
+> that is likely something different.
+  Actually, https://lkml.org/lkml/2012/11/20/567 looks more relevant to
+your problem...
 
-------------------
-
-From: Alex Elder <elder@inktank.com>
-
-(cherry picked from commit a8d00e3cdef4c1c4f194414b72b24cd995439a05)
-
-The following commit changed it so SOCK_CLOSED bit was stored in
-a connection's new "flags" field rather than its "state" field.
-
-    libceph: start separating connection flags from state
-    commit 928443cd
-
-That bit is used in con_close_socket() to protect against setting an
-error message more than once in the socket event handler function.
-
-Unfortunately, the field being operated on in that function was not
-updated to be "flags" as it should have been.  This fixes that
-error.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -397,11 +397,11 @@ static int con_close_socket(struct ceph_
- 	dout("con_close_socket on %p sock %p\n", con, con->sock);
- 	if (!con->sock)
- 		return 0;
--	set_bit(SOCK_CLOSED, &con->state);
-+	set_bit(SOCK_CLOSED, &con->flags);
- 	rc = con->sock->ops->shutdown(con->sock, SHUT_RDWR);
- 	sock_release(con->sock);
- 	con->sock = NULL;
--	clear_bit(SOCK_CLOSED, &con->state);
-+	clear_bit(SOCK_CLOSED, &con->flags);
- 	con_sock_state_closed(con);
- 	return rc;
- }
-
-
+> > It's kind of a funny lockup.  Some things work:
+> > 
+> > - TCP SYN handshake
+> > - Alt-SysRq
+> > 
+> > And others don't:
+> > 
+> > - Caps lock
+> > - Shift-PgUp
+> > - Alt-Fn
+> > - Screen unblanking
+> > - Actually talking to a daemon
+> > 
+> > This is a "headless" machine that boots to a text console and has zero
+> > console activity until the lockup.
+> > 
+> > This has happened overnight, three nights in a row.  I had to turn screen
+> > blanking off to see anything on the screen.  Running the daily cron jobs
+> > manually just now didn't trigger it, so I haven't found a proximate cause.
+> > 
+> > The *first* error has scrolled off the screen, but what I can see
+> > an infinite stream (at about 20s intervals) of:
+> > 
+> > BUG: soft lockup - CPU#0 stuck for 22s! [kswapd0:317]
+> > Pid: 317, comm: kswapd0 Not tainted 3.7.0-RC6 #224 HP Pavilion 04 P6319A-ABA 750N/P4B266LA
+> > EIP: 0060:[<c10571f7>] EFLAGS: 00000202 CPU: 0
+> > EIP is at __zone_watermark_ok+0x5f/7e, 0x67/7e, 0x6e/0x7e, or 0x74/7e
+> > (Didn't type registers & stack)
+> > Call Trace:
+> >  [<c105774f>] ? zone_watermark_ok_safe+0x34/0x3a
+> >  [<c105ec7e>] ? kswapd+0x2fa/0x6f6
+> >  [<c105e984>] ? try_to_free_pages+0x4b8/0x4b8
+> >  [<c103106b>] ? kthread+0x67/0x6c
+> >  [<c12559b7>] ? ret_from_kernel_thread+0x1b/0x28
+> >  [<c1031004>] ? -_kthread_parkme+0x4c.0x4c
+> > Code: (didn't type in first line)
+> >                                 5f                        67                     6e                  74                             7e
+> >  c9 39 d6 7f 14 eb 1c 6b c1 2c <8b> 44 05 60 d3 e0 29 c6 <d1> fb 39 de 7e 09 41 <39> f9 7c ea b0 01 <eb> 02 31 c0 5a 5b 5e 5f 5d c3 01 14 85 7c 16
+>   Taking picture of the screen with a digital camera can usually save you
+> some typing :)
+> 
+> > The lack of scrollback limits me to 49 lines of SysRq output, and usually the most interesting
+> > part disappears off the screen.  Two things I can see:
+> > 
+> > - SysRq-W shows no blocked tasks
+> > - SysRq-M shows zero swap in use, and apparently adequate free memory
+> > 	DMA: <various segments> = 9048kB
+> > 	Normal: <various> = 116312kB
+> > 	HighMem: <various> = 41660kB
+> > 	416557 total pagecache pages
+> > 	0 pages in swap cache
+> > 	Swap cache stats: add 0, delete 0, find 0/0
+> > 	Free swap  = 4883724kB
+> > 	Total swap = 4883724kB
+> > 	524260 pages RAM
+> > 	296958 pages HighMem
+> > 	5221 pages reserved
+> > 	406417 pages shared
+> > 	351419 pages non-shared
+> > 
+> > Does anyone have any debugging suggestions?  Waiting overnight to
+> > make a good/bad decision makes bisecting pretty slow...
+> 
+> 							Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
