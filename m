@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab2KVWiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:38:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49011 "EHLO mail.kernel.org"
+	id S1758331Ab2KVWiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:38:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49021 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab2KVSdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753603Ab2KVSdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 026/171] USB: option: add Alcatel X220/X500D USB IDs
-Date: Wed, 21 Nov 2012 16:39:32 -0800
-Message-Id: <20121122004035.993837861@linuxfoundation.org>
+        Michal Schmidt <mschmidt@redhat.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 64/83] r8169: use unlimited DMA burst for TX
+Date: Wed, 21 Nov 2012 16:42:26 -0800
+Message-Id: <20121122004219.611443501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit c0bc3098871dd9b964f6b45ec1e4d70d87811744 upstream.
+commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
+a box where this prevents the interface from using the gigabit line to its full
+potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
+
+The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
+(XID 0c900880). TSO is enabled.
+
+I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
+on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
+'7'=unlimited). This chart shows the results:
+http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
+
+Interesting points:
+ - With the current DMA burst limit (1024):
+   - at the default MTU=1500 I get only 842 Mbit/s.
+   - when going from small MTU, the performance rises monotonically with
+     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
+     a sudden drop to 762 MBit/s from which the throughput rises monotonically
+     again with further MTU increases.
+ - With a smaller DMA burst limit (512):
+   - there's a similar peak at MTU=1076 and another one at MTU=564.
+ - With unlimited DMA burst:
+   - at the default MTU=1500 I get nice 940 Mbit/s.
+   - the throughput rises monotonically with increasing MTU with no strange
+     peaks.
+
+Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
+limit plus 52. Why 52? Because:
+  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
+
+The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
+except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
+CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
+i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
+the smaller burst limit, or if any other versions have similar requirements.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/realtek/r8169.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -286,6 +286,7 @@ static void option_instat_callback(struc
- /* ALCATEL PRODUCTS */
- #define ALCATEL_VENDOR_ID			0x1bbb
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
-+#define ALCATEL_PRODUCT_X220_X500D		0x0017
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -77,7 +77,7 @@
+ static const int multicast_filter_limit = 32;
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1163,6 +1164,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ #define MAX_READ_REQUEST_SHIFT	12
+-#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
++#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
+ #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+ 
 
 
