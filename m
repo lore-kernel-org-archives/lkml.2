@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab2KVVsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:48:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
+	id S932705Ab2KVVtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:49:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754997Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 079/171] ceph: rename prepare_connect_authorizer()
-Date: Wed, 21 Nov 2012 16:40:25 -0800
-Message-Id: <20121122004041.301741564@linuxfoundation.org>
+        Richard <richjunk@pacbell.net>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 39/83] USB: keyspan: fix typo causing GPF on open
+Date: Wed, 21 Nov 2012 16:42:01 -0800
+Message-Id: <20121122004216.986739238@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-(cherry picked from commit dac1e716c60161867a47745bca592987ca3a9cb2)
+commit f0e3e35c9049087172c65302b42da8fe7ebb63a8 upstream.
 
-Change the name of prepare_connect_authorizer().  The next
-patch is going to make this function no longer add anything to the
-connection's out_kvec, so it will no longer fit the pattern of
-the rest of the prepare_connect_*() functions.
+Commit f79b2d0f (USB: keyspan: fix NULL-pointer dereferences and
+memory leaks) had a small typo which made the driver use wrong
+offsets when mapping serial port private data.  This results in
+in a GPF when the port is opened.
 
-In addition, pass the address of a variable that will hold the
-authorization protocol to use.  Move the assignment of that to the
-connection's out_connect structure into prepare_write_connect().
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reported-by: Richard <richjunk@pacbell.net>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -653,11 +653,11 @@ static void prepare_write_keepalive(stru
-  * Connection negotiation.
-  */
- 
--static struct ceph_auth_handshake *prepare_connect_authorizer(struct ceph_connection *con)
-+static struct ceph_auth_handshake *get_connect_authorizer(struct ceph_connection *con,
-+						int *auth_proto)
+---
+ drivers/usb/serial/keyspan.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -2448,7 +2448,7 @@ static void keyspan_release(struct usb_s
+ static int keyspan_port_probe(struct usb_serial_port *port)
  {
- 	void *auth_buf;
- 	int auth_len;
--	int auth_protocol;
- 	struct ceph_auth_handshake *auth;
+ 	struct usb_serial *serial = port->serial;
+-	struct keyspan_port_private *s_priv;
++	struct keyspan_serial_private *s_priv;
+ 	struct keyspan_port_private *p_priv;
+ 	const struct keyspan_device_details *d_details;
+ 	struct callbacks *cback;
+@@ -2463,7 +2463,6 @@ static int keyspan_port_probe(struct usb
+ 	if (!p_priv)
+ 		return -ENOMEM;
  
- 	if (!con->ops->get_authorizer) {
-@@ -671,8 +671,7 @@ static struct ceph_auth_handshake *prepa
+-	s_priv = usb_get_serial_data(port->serial);
+ 	p_priv->device_details = d_details;
  
- 	mutex_unlock(&con->mutex);
- 
--	auth_protocol = CEPH_AUTH_UNKNOWN;
--	auth = con->ops->get_authorizer(con, &auth_protocol, con->auth_retry);
-+	auth = con->ops->get_authorizer(con, auth_proto, con->auth_retry);
- 
- 	mutex_lock(&con->mutex);
- 
-@@ -686,7 +685,6 @@ static struct ceph_auth_handshake *prepa
- 	con->auth_reply_buf = auth->authorizer_reply_buf;
- 	con->auth_reply_buf_len = auth->authorizer_reply_buf_len;
- 
--	con->out_connect.authorizer_protocol = cpu_to_le32(auth_protocol);
- 	con->out_connect.authorizer_len = cpu_to_le32(auth_len);
- 
- 	if (auth_len)
-@@ -712,6 +710,7 @@ static int prepare_write_connect(struct
- {
- 	unsigned global_seq = get_global_seq(con->msgr, 0);
- 	int proto;
-+	int auth_proto;
- 	struct ceph_auth_handshake *auth;
- 
- 	switch (con->peer_name.type) {
-@@ -739,9 +738,11 @@ static int prepare_write_connect(struct
- 	con->out_connect.flags = 0;
- 
- 	ceph_con_out_kvec_add(con, sizeof (con->out_connect), &con->out_connect);
--	auth = prepare_connect_authorizer(con);
-+	auth_proto = CEPH_AUTH_UNKNOWN;
-+	auth = get_connect_authorizer(con, &auth_proto);
- 	if (IS_ERR(auth))
- 		return PTR_ERR(auth);
-+	con->out_connect.authorizer_protocol = cpu_to_le32(auth_proto);
- 
- 	con->out_more = 0;
- 	set_bit(WRITE_PENDING, &con->state);
+ 	/* Setup values for the various callback routines */
 
 
