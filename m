@@ -1,61 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab2KVTWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:22:07 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55147 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab2KVTWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:22:04 -0500
+	id S1756195Ab2KVTWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:22:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35593 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756101Ab2KVTRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:17:38 -0500
+Message-ID: <50ADD30F.2060408@redhat.com>
+Date: Thu, 22 Nov 2012 15:23:59 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Nov 2012 09:21:43 -1000
-X-Google-Sender-Auth: fbzQ30WS5R6JwiKxLduSX35_QR8
-Message-ID: <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-Subject: Re: Recent kernel "mount" slow
-To: Jeff Chua <jeff.chua.linux@gmail.com>, Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
+References: <1353315222-27685-1-git-send-email-asias@redhat.com> <20121119202641.GB12283@redhat.com> <50AB25AC.2070606@redhat.com> <20121120133714.GC3448@redhat.com> <50AC5797.1060604@redhat.com> <20121121115734.GC31911@redhat.com>
+In-Reply-To: <20121121115734.GC31911@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doesn't sound like a fsdevel issue since it seems to be independent of
-filesystems. More like some generic block layer thing. Adding Jens
-(and quoting the whole thing)
-
-Jens, any ideas? Most of your stuff came in after -rc2, which would
-fit with the fact that most of the slowdown seems to be after -rc2
-according to Jeff.
-
-Jeff, more bisecting would be good, though.
-
-                 Linus
-
-On Thu, Nov 22, 2012 at 4:30 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Wed, Nov 21, 2012 at 11:46 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->> On Wed, Nov 21, 2012 at 2:09 AM, Jan Kara <jack@suse.cz> wrote:
->>>   I haven't heard about such problem so far. What filesystem are you using?
+On 11/21/2012 07:57 PM, Michael S. Tsirkin wrote:
+> On Wed, Nov 21, 2012 at 12:24:55PM +0800, Asias He wrote:
+>> On 11/20/2012 09:37 PM, Michael S. Tsirkin wrote:
+>>> On Tue, Nov 20, 2012 at 02:39:40PM +0800, Asias He wrote:
+>>>> On 11/20/2012 04:26 AM, Michael S. Tsirkin wrote:
+>>>>> On Mon, Nov 19, 2012 at 04:53:42PM +0800, Asias He wrote:
+>>>>>> vhost-blk is an in-kernel virito-blk device accelerator.
+>>>>>>
+>>>>>> Due to lack of proper in-kernel AIO interface, this version converts
+>>>>>> guest's I/O request to bio and use submit_bio() to submit I/O directly.
+>>>>>> So this version any supports raw block device as guest's disk image,
+>>>>>> e.g. /dev/sda, /dev/ram0. We can add file based image support to
+>>>>>> vhost-blk once we have in-kernel AIO interface. There are some work in
+>>>>>> progress for in-kernel AIO interface from Dave Kleikamp and Zach Brown:
+>>>>>>
+>>>>>>    http://marc.info/?l=linux-fsdevel&m=133312234313122
+>>>>>>
+>>>>>> Performance evaluation:
+>>>>>> -----------------------------
+>>>>>> 1) LKVM
+>>>>>> Fio with libaio ioengine on Fusion IO device using kvm tool
+>>>>>> IOPS(k)    Before       After   Improvement
+>>>>>> seq-read   107          121     +13.0%
+>>>>>> seq-write  130          179     +37.6%
+>>>>>> rnd-read   102          122     +19.6%
+>>>>>> rnd-write  125          159     +27.0%
+>>>>>>
+>>>>>> 2) QEMU
+>>>>>> Fio with libaio ioengine on Fusion IO device using QEMU
+>>>>>> IOPS(k)    Before       After   Improvement
+>>>>>> seq-read   76           123     +61.8%
+>>>>>> seq-write  139          173     +24.4%
+>>>>>> rnd-read   73           120     +64.3%
+>>>>>> rnd-write  75           156     +108.0%
+>>>>>
+>>>>> Could you compare with dataplane qemu as well please?
+>>>>
+>>>>
+>>>> Well, I will try to collect it.
+>>>>
+>>>>>
+>>>>>>
+>>>>>> Userspace bits:
+>>>>>> -----------------------------
+>>>>>> 1) LKVM
+>>>>>> The latest vhost-blk userspace bits for kvm tool can be found here:
+>>>>>> git@github.com:asias/linux-kvm.git blk.vhost-blk
+>>>>>>
+>>>>>> 2) QEMU
+>>>>>> The latest vhost-blk userspace prototype for QEMU can be found here:
+>>>>>> git@github.com:asias/qemu.git blk.vhost-blk
+>>>>>>
+>>>>>> Changes in v5:
+>>>>>> - Do not assume the buffer layout
+>>>>>> - Fix wakeup race
+>>>>>>
+>>>>>> Changes in v4:
+>>>>>> - Mark req->status as userspace pointer
+>>>>>> - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
+>>>>>> - Add if (need_resched()) schedule() in blk thread
+>>>>>> - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
+>>>>>> - Use vq_err() instead of pr_warn()
+>>>>>> - Fail un Unsupported request
+>>>>>> - Add flush in vhost_blk_set_features()
+>>>>>>
+>>>>>> Changes in v3:
+>>>>>> - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
+>>>>>> - Check file passed by user is a raw block device file
+>>>>>>
+>>>>>> Signed-off-by: Asias He <asias@redhat.com>
+>>>>>
+>>>>> Since there are files shared by this and vhost net
+>>>>> it's easiest for me to merge this all through the
+>>>>> vhost tree.
+>>>>>
+>>>>> Jens, could you ack this and the bio usage in this driver
+>>>>> please?
+>>>>>
+>>>>>> ---
+>>>>>>  drivers/vhost/Kconfig     |   1 +
+>>>>>>  drivers/vhost/Kconfig.blk |  10 +
+>>>>>>  drivers/vhost/Makefile    |   2 +
+>>>>>>  drivers/vhost/blk.c       | 697 ++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>>  drivers/vhost/blk.h       |   8 +
+>>>>>>  5 files changed, 718 insertions(+)
+>>>>>>  create mode 100644 drivers/vhost/Kconfig.blk
+>>>>>>  create mode 100644 drivers/vhost/blk.c
+>>>>>>  create mode 100644 drivers/vhost/blk.h
+>>>>>>
+>>>>>> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+>>>>>> index 202bba6..acd8038 100644
+>>>>>> --- a/drivers/vhost/Kconfig
+>>>>>> +++ b/drivers/vhost/Kconfig
+>>>>>> @@ -11,4 +11,5 @@ config VHOST_NET
+>>>>>>  
+>>>>>>  if STAGING
+>>>>>>  source "drivers/vhost/Kconfig.tcm"
+>>>>>> +source "drivers/vhost/Kconfig.blk"
+>>>>>>  endif
+>>>>>> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
+>>>>>> new file mode 100644
+>>>>>> index 0000000..ff8ab76
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/vhost/Kconfig.blk
+>>>>>> @@ -0,0 +1,10 @@
+>>>>>> +config VHOST_BLK
+>>>>>> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
+>>>>>> +	depends on BLOCK &&  EXPERIMENTAL && m
+>>>>>> +	---help---
+>>>>>> +	  This kernel module can be loaded in host kernel to accelerate
+>>>>>> +	  guest block with virtio_blk. Not to be confused with virtio_blk
+>>>>>> +	  module itself which needs to be loaded in guest kernel.
+>>>>>> +
+>>>>>> +	  To compile this driver as a module, choose M here: the module will
+>>>>>> +	  be called vhost_blk.
+>>>>>> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
+>>>>>> index a27b053..1a8a4a5 100644
+>>>>>> --- a/drivers/vhost/Makefile
+>>>>>> +++ b/drivers/vhost/Makefile
+>>>>>> @@ -2,3 +2,5 @@ obj-$(CONFIG_VHOST_NET) += vhost_net.o
+>>>>>>  vhost_net-y := vhost.o net.o
+>>>>>>  
+>>>>>>  obj-$(CONFIG_TCM_VHOST) += tcm_vhost.o
+>>>>>> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
+>>>>>> +vhost_blk-y := blk.o
+>>>>>> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
+>>>>>> new file mode 100644
+>>>>>> index 0000000..f0f118a
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/vhost/blk.c
+>>>>>> @@ -0,0 +1,697 @@
+>>>>>> +/*
+>>>>>> + * Copyright (C) 2011 Taobao, Inc.
+>>>>>> + * Author: Liu Yuan <tailai.ly@taobao.com>
+>>>>>> + *
+>>>>>> + * Copyright (C) 2012 Red Hat, Inc.
+>>>>>> + * Author: Asias He <asias@redhat.com>
+>>>>>> + *
+>>>>>> + * This work is licensed under the terms of the GNU GPL, version 2.
+>>>>>> + *
+>>>>>> + * virtio-blk server in host kernel.
+>>>>>> + */
+>>>>>> +
+>>>>>> +#include <linux/miscdevice.h>
+>>>>>> +#include <linux/module.h>
+>>>>>> +#include <linux/vhost.h>
+>>>>>> +#include <linux/virtio_blk.h>
+>>>>>> +#include <linux/mutex.h>
+>>>>>> +#include <linux/file.h>
+>>>>>> +#include <linux/kthread.h>
+>>>>>> +#include <linux/blkdev.h>
+>>>>>> +#include <linux/llist.h>
+>>>>>> +
+>>>>>> +#include "vhost.c"
+>>>>>> +#include "vhost.h"
+>>>>>> +#include "blk.h"
+>>>>>> +
+>>>>>> +static DEFINE_IDA(vhost_blk_index_ida);
+>>>>>> +
+>>>>>> +enum {
+>>>>>> +	VHOST_BLK_VQ_REQ = 0,
+>>>>>> +	VHOST_BLK_VQ_MAX = 1,
+>>>>>> +};
+>>>>>> +
+>>>>>> +struct req_page_list {
+>>>>>> +	struct page **pages;
+>>>>>> +	int pages_nr;
+>>>>>> +};
+>>>>>> +
+>>>>>> +struct vhost_blk_req {
+>>>>>> +	struct llist_node llnode;
+>>>>>> +	struct req_page_list *pl;
+>>>>>> +	struct vhost_blk *blk;
+>>>>>> +
+>>>>>> +	struct iovec *iov;
+>>>>>> +	int iov_nr;
+>>>>>> +
+>>>>>> +	struct bio **bio;
+>>>>>> +	atomic_t bio_nr;
+>>>>>> +
+>>>>>> +	struct iovec status[1];
+>>>>>> +
+>>>>>> +	sector_t sector;
+>>>>>> +	int write;
+>>>>>> +	u16 head;
+>>>>>> +	long len;
+>>>>>> +};
+>>>>>> +
+>>>>>> +struct vhost_blk {
+>>>>>> +	struct task_struct *host_kick;
+>>>>>
+>>>>> Could you please add a comment here explaining why
+>>>>> is this better than using the builtin vhost thread?
+>>>>
+>>>> With separate thread model, the request submit and request completion
+>>>> can be handled in parallel. I have measured significant performance
+>>>> improvement with this model.
+>>>> In the long term, It would be nice if the
+>>>> vhost core can provide multiple thread support.
+>>>
+>>> Strange, all completion does it write out the used ring.
+>>> I am guessing you didn't complete requests
+>>> in a timely manner which was what caused the issue.
 >>
->> I've tried ext2/ext3/ext4/reiserfs/btrfs ... all seems to be slower
->> than before. Seems to be fs independent.
+>> Previously, there was two 'struct vhost_work' work which poll on the
+>> guest kick eventfd and host aio eventfd. The vhost thread is handling
+>> the works when there are data in eventfd, either guest kick or aio
+>> completion.
+> 
+> See VHOST_NET_WEIGHT in how in -net we prevent starvation
+> between tx and rx.
+
+Looks interesting.
+
+>>> OTOH I'm not sure how increasing the number of threads
+>>> scales with # of VMs. Increased scheduler pressure is
+>>> also a concern.
 >>
->>> Can you quantify 'is slower'? Bisecting would be welcome of course.
+>> Agree, this is also my concern. However, this is a trade-off. we have a
+>> price to pay for the parallelism.
+> 
+> If the work offloaded is trivial in size then the gain is likely
+> to be marginal.
+> 
+>> Also, one thread per vhost device
+>> might not scale with # of VMs too, compared to e.g. per cpu thread.
+> 
+> I'e no idea how to do QoS with a per cpu thread otherwise
+> 
+>>> Did you try checking completion after each
+>>> submitted request to address this?
 >>
->> Haven't measure, but it seems to be 1 sec instead of .3 sec to mount.
->> I'll start bisecting:(
->> So, since I've 6 mounts on start up, now it takes 4 seconds longer to boot up.
->
-> I started bisecting, and it seems to have multiple points of slowing
-> down. The latest kernel is really slow mounting /dev/sda1 (fs
-> independent) ... 0.529sec. Kernel 3.6.0 took 0.012sec, Kernel
-> 3.7.0-rc2 took 0.168sec. Again, these are very early results. I'm
-> verifying them again.
->
->
-> Jeff
+>> Isn't this a sync operation? We can not only account on the checking the
+>> completion in the submit path. Another polling on the completion is
+>> needed anyway. Mixing the completion in submit path, 1) makes the submit
+>> delay longer 2) does not help with the case where a single request takes
+>> relatively long time to finish. IMHO, I do not think mixing the submit
+>> and completion is a good idea.
+> 
+> To clarify, you would
+> 1. do llist_del_all in handle_kick -
+>    the delay this adds should be trivial
+> 2. for completion queue work on vhost thread -
+>    this can be as simple as waking up the regular
+>    kick handler
+
+I am trying the one thread model. If it works fine, I will switch to it
+in v6.
+
+> You can further reduce overhead by batching
+> the wakeups in 2. See my patch
+> vhost-net: reduce vq polling on tx zerocopy
+> that does this for -net.
+
+okay. thanks!
+
+-- 
+Asias
