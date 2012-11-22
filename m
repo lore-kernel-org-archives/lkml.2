@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab2KVUQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:16:05 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55363 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2KVUQC (ORCPT
+	id S1757506Ab2KVUQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:16:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48963 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab2KVUQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:16:02 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com
-Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
-Subject: [PATCH 00/10] ASoC: codec: devm_ related modifications
-Date: Thu, 22 Nov 2012 09:38:32 +0530
-Message-Id: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 22 Nov 2012 15:16:13 -0500
+Date: Wed, 21 Nov 2012 20:31:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/27] Latest numa/core release, v16
+In-Reply-To: <20121121172046.GA28975@gmail.com>
+Message-ID: <alpine.DEB.2.00.1211212021030.12667@chino.kir.corp.google.com>
+References: <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com> <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com> <20121120060014.GA14065@gmail.com> <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
+ <20121120074445.GA14539@gmail.com> <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com> <20121120090637.GA14873@gmail.com> <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com> <20121121171047.GA28875@gmail.com>
+ <20121121172046.GA28975@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset includes devm_ related modifications for sound codecs.
+On Wed, 21 Nov 2012, Ingo Molnar wrote:
 
-First 2 patches fix warning for freeing of devm_ allocated data.
-The next patch introduces usage of devm_kzalloc() in wm8995 codec.
-Following 7 patches introduce usage of devm_regmap_init_xxx() in
-remaining codecs.
+> Btw., what I did was to simply look at David's profile on the 
+> regressing system and I compared it to the profile I got on a 
+> pretty similar (but unfortunately not identical and not 
+> regressing) system. I saw 3 differences:
+> 
+>  - the numa emulation faults
+>  - the higher TLB miss cost
+>  - numa/core's failure to handle 4K pages properly
+> 
+> And addressed those, in the hope of one of them making a
+> difference.
+> 
 
-Tushar Behera (10):
-  ASoC: wm8510: remove invalid free of devm_ allocated data
-  ASoC: wm8753: remove invalid free of devm_ allocated data
-  ASoC: wm8995: Convert to use devm_kzalloc()
-  ASoC: ak4104: Convert to use devm_regmap_init_spi()
-  ASoC: wm8741: Convert to use devm_regmap_init_{spi,i2c}()
-  ASoC: wm8753: Convert to use devm_regmap_init_{spi,i2c}()
-  ASoC: wm8804: Convert to use devm_regmap_init_{spi,i2c}()
-  ASoC: wm8985: Convert to use devm_regmap_init_{spi,i2c}()
-  ASoC: wm8988: Convert to use devm_regmap_init_{spi,i2c}()
-  ASoC: wm8995: Convert to use devm_regmap_init_{spi,i2c}()
+I agree that it's worth a try and if it's helpful to your debugging then 
+I'll always commit to trying things out.  I've pulled tip#master at 
+9f7b91a96bb6 ("Merge branch 'x86/urgent'") and performance improves 0.3% 
+with 16 warehouses with vsyscall=emulate, i.e. a revert of 01e9c2441eee 
+("x86/vsyscall: Add Kconfig option to use native vsyscalls and switch to 
+it") so I'd recommend that gets dropped based on my results and Andy's 
+feedback unless anybody can demonstrate it's better (which very well may 
+be the case on some systems, but then again that's why its configurable 
+from the command line).
 
- sound/soc/codecs/ak4104.c |   19 ++++---------------
- sound/soc/codecs/wm8510.c |    3 ---
- sound/soc/codecs/wm8741.c |    4 ++--
- sound/soc/codecs/wm8753.c |   33 ++++++---------------------------
- sound/soc/codecs/wm8804.c |   17 ++---------------
- sound/soc/codecs/wm8985.c |   30 ++++--------------------------
- sound/soc/codecs/wm8988.c |   14 ++------------
- sound/soc/codecs/wm8995.c |   40 +++++++---------------------------------
- 8 files changed, 27 insertions(+), 133 deletions(-)
+You're also completely right about the old glibc, mine is seven years old; 
+I can upgrade that since I need to install libnuma as well on this box 
+since you asked for the autonuma topology information that I haven't 
+forgotten about but will definitely get around to doing.
 
--- 
-1.7.4.1
+> There's a fourth line of inquiry I'm pursuing as well: the node 
+> assymetry that David and Paul mentioned could have a performance 
+> effect as well - resulting from non-ideal placement under 
+> numa/core.
+> 
+> That is not easy to cure - I have written a patch to take the 
+> node assymetry into consideration, I'm still testing it with 
+> David's topology simulated on a testbox:
+> 
+>    numa=fake=4:10,20,20,30,20,10,20,20,20,20,10,20,30,20,20,10
+> 
 
+This very much may be the case and that characteristic of this box is why 
+I picked it to test with first.  Just curious what types of topologies 
+you've benchmarked on for your results if you have that available?  An 
+early version of sched/numa used to panic on this machine and Peter was 
+interested in its topology (see https://lkml.org/lkml/2012/5/25/89) so 
+perhaps I'm the only one testing with such a thing thus far?
