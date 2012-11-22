@@ -1,202 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab2KVV3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:29:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49630 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:39 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 102/171] libceph: embed ceph connection structure in mon_client
-Date: Wed, 21 Nov 2012 16:40:48 -0800
-Message-Id: <20121122004043.591883929@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1757930Ab2KVV3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:29:48 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55945 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab2KVV3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:29:46 -0500
+Date: Thu, 22 Nov 2012 22:29:41 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com
+Subject: Re: [PATCH v3] pwm: Device tree support for PWM polarity.
+Message-ID: <20121122212941.GL16716@avionic-0098.adnet.avionic-design.de>
+References: <1353483644-32711-1-git-send-email-avinashphilip@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9JSHP372f+2dzJ8X"
+Content-Disposition: inline
+In-Reply-To: <1353483644-32711-1-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:jswfbo9ANbeeVEwr86uaCs3L9DxBZDVwgwcwSJcBm9I
+ xzswg6MDuEsPCYXjDdO0YgcErozoOJcb2Fxhn6OtenrWajIuSD
+ P0g7T1V8CbC8OeETY/GQffaS72ERl8NpI6YKk8sRbFozoz+ebf
+ SEmQcmGdTy8yqzN32o4+vGoTAVoVcxsfH0CtKaDTuHPuBEmmq5
+ phx7XCBT6hGZbB27bQgX5YyPJgzRpvseLWgJ/GUZx2dRsINz8f
+ IggwPPWBPh1uSsXp8GWpU+lFMZQB9VgVFfC0L+gaxD6Myb3yI+
+ /z7frQZaeg09LnswH80uV0PcG/rMSsSntjmN8EZDjKoPNnAETk
+ sdQv0Iqq3B8/tcuqGZim3TfjPY+BrzW2/VAPo7FrD2XRTVRfri
+ TWWlu0ZI2peg0G6MUJQr5dhadsBO1/Kacv9iYZI2vKfNbSGwts
+ ZD/+X
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--9JSHP372f+2dzJ8X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Alex Elder <elder@inktank.com>
+On Wed, Nov 21, 2012 at 01:10:44PM +0530, Philip, Avinash wrote:
+> Add support for encoding PWM properties in bit encoded form with
+> of_pwm_xlate_with_flags() function support. Platforms require platform
+> specific PWM properties has to populate in 3rd cell of the pwm-specifier
+> and PWM driver should also set .of_xlate support with this function.
+> Currently PWM property polarity encoded in bit position 0 of the third
+> cell in pwm-specifier.
+>=20
+> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 
-(cherry picked from commit 67130934fb579fdf0f2f6d745960264378b57dc8)
+Applied with two minor stylistic cleanups, thanks.
 
-A monitor client has a pointer to a ceph connection structure in it.
-This is the only one of the three ceph client types that do it this
-way; the OSD and MDS clients embed the connection into their main
-structures.  There is always exactly one ceph connection for a
-monitor client, so there is no need to allocate it separate from the
-monitor client structure.
+Thierry
 
-So switch the ceph_mon_client structure to embed its
-ceph_connection structure.
+--9JSHP372f+2dzJ8X
+Content-Type: application/pgp-signature
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ceph/mon_client.h |    2 -
- net/ceph/mon_client.c           |   47 +++++++++++++++++-----------------------
- 2 files changed, 21 insertions(+), 28 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
---- a/include/linux/ceph/mon_client.h
-+++ b/include/linux/ceph/mon_client.h
-@@ -70,7 +70,7 @@ struct ceph_mon_client {
- 	bool hunting;
- 	int cur_mon;                       /* last monitor i contacted */
- 	unsigned long sub_sent, sub_renew_after;
--	struct ceph_connection *con;
-+	struct ceph_connection con;
- 	bool have_fsid;
- 
- 	/* pending generic requests */
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -106,9 +106,9 @@ static void __send_prepared_auth_request
- 	monc->pending_auth = 1;
- 	monc->m_auth->front.iov_len = len;
- 	monc->m_auth->hdr.front_len = cpu_to_le32(len);
--	ceph_con_revoke(monc->con, monc->m_auth);
-+	ceph_con_revoke(&monc->con, monc->m_auth);
- 	ceph_msg_get(monc->m_auth);  /* keep our ref */
--	ceph_con_send(monc->con, monc->m_auth);
-+	ceph_con_send(&monc->con, monc->m_auth);
- }
- 
- /*
-@@ -117,8 +117,8 @@ static void __send_prepared_auth_request
- static void __close_session(struct ceph_mon_client *monc)
- {
- 	dout("__close_session closing mon%d\n", monc->cur_mon);
--	ceph_con_revoke(monc->con, monc->m_auth);
--	ceph_con_close(monc->con);
-+	ceph_con_revoke(&monc->con, monc->m_auth);
-+	ceph_con_close(&monc->con);
- 	monc->cur_mon = -1;
- 	monc->pending_auth = 0;
- 	ceph_auth_reset(monc->auth);
-@@ -142,9 +142,9 @@ static int __open_session(struct ceph_mo
- 		monc->want_next_osdmap = !!monc->want_next_osdmap;
- 
- 		dout("open_session mon%d opening\n", monc->cur_mon);
--		monc->con->peer_name.type = CEPH_ENTITY_TYPE_MON;
--		monc->con->peer_name.num = cpu_to_le64(monc->cur_mon);
--		ceph_con_open(monc->con,
-+		monc->con.peer_name.type = CEPH_ENTITY_TYPE_MON;
-+		monc->con.peer_name.num = cpu_to_le64(monc->cur_mon);
-+		ceph_con_open(&monc->con,
- 			      &monc->monmap->mon_inst[monc->cur_mon].addr);
- 
- 		/* initiatiate authentication handshake */
-@@ -226,8 +226,8 @@ static void __send_subscribe(struct ceph
- 
- 		msg->front.iov_len = p - msg->front.iov_base;
- 		msg->hdr.front_len = cpu_to_le32(msg->front.iov_len);
--		ceph_con_revoke(monc->con, msg);
--		ceph_con_send(monc->con, ceph_msg_get(msg));
-+		ceph_con_revoke(&monc->con, msg);
-+		ceph_con_send(&monc->con, ceph_msg_get(msg));
- 
- 		monc->sub_sent = jiffies | 1;  /* never 0 */
- 	}
-@@ -247,7 +247,7 @@ static void handle_subscribe_ack(struct
- 	if (monc->hunting) {
- 		pr_info("mon%d %s session established\n",
- 			monc->cur_mon,
--			ceph_pr_addr(&monc->con->peer_addr.in_addr));
-+			ceph_pr_addr(&monc->con.peer_addr.in_addr));
- 		monc->hunting = false;
- 	}
- 	dout("handle_subscribe_ack after %d seconds\n", seconds);
-@@ -461,7 +461,7 @@ static int do_generic_request(struct cep
- 	req->request->hdr.tid = cpu_to_le64(req->tid);
- 	__insert_generic_request(monc, req);
- 	monc->num_generic_requests++;
--	ceph_con_send(monc->con, ceph_msg_get(req->request));
-+	ceph_con_send(&monc->con, ceph_msg_get(req->request));
- 	mutex_unlock(&monc->mutex);
- 
- 	err = wait_for_completion_interruptible(&req->completion);
-@@ -684,8 +684,8 @@ static void __resend_generic_request(str
- 
- 	for (p = rb_first(&monc->generic_request_tree); p; p = rb_next(p)) {
- 		req = rb_entry(p, struct ceph_mon_generic_request, node);
--		ceph_con_revoke(monc->con, req->request);
--		ceph_con_send(monc->con, ceph_msg_get(req->request));
-+		ceph_con_revoke(&monc->con, req->request);
-+		ceph_con_send(&monc->con, ceph_msg_get(req->request));
- 	}
- }
- 
-@@ -705,7 +705,7 @@ static void delayed_work(struct work_str
- 		__close_session(monc);
- 		__open_session(monc);  /* continue hunting */
- 	} else {
--		ceph_con_keepalive(monc->con);
-+		ceph_con_keepalive(&monc->con);
- 
- 		__validate_auth(monc);
- 
-@@ -760,19 +760,16 @@ int ceph_monc_init(struct ceph_mon_clien
- 		goto out;
- 
- 	/* connection */
--	monc->con = kmalloc(sizeof(*monc->con), GFP_KERNEL);
--	if (!monc->con)
--		goto out_monmap;
--	ceph_con_init(&monc->client->msgr, monc->con);
--	monc->con->private = monc;
--	monc->con->ops = &mon_con_ops;
-+	ceph_con_init(&monc->client->msgr, &monc->con);
-+	monc->con.private = monc;
-+	monc->con.ops = &mon_con_ops;
- 
- 	/* authentication */
- 	monc->auth = ceph_auth_init(cl->options->name,
- 				    cl->options->key);
- 	if (IS_ERR(monc->auth)) {
- 		err = PTR_ERR(monc->auth);
--		goto out_con;
-+		goto out_monmap;
- 	}
- 	monc->auth->want_keys =
- 		CEPH_ENTITY_TYPE_AUTH | CEPH_ENTITY_TYPE_MON |
-@@ -824,8 +821,6 @@ out_subscribe_ack:
- 	ceph_msg_put(monc->m_subscribe_ack);
- out_auth:
- 	ceph_auth_destroy(monc->auth);
--out_con:
--	monc->con->ops->put(monc->con);
- out_monmap:
- 	kfree(monc->monmap);
- out:
-@@ -841,9 +836,7 @@ void ceph_monc_stop(struct ceph_mon_clie
- 	mutex_lock(&monc->mutex);
- 	__close_session(monc);
- 
--	monc->con->private = NULL;
--	monc->con->ops->put(monc->con);
--	monc->con = NULL;
-+	monc->con.private = NULL;
- 
- 	mutex_unlock(&monc->mutex);
- 
-@@ -1029,7 +1022,7 @@ static void mon_fault(struct ceph_connec
- 	if (!monc->hunting)
- 		pr_info("mon%d %s session lost, "
- 			"hunting for new mon\n", monc->cur_mon,
--			ceph_pr_addr(&monc->con->peer_addr.in_addr));
-+			ceph_pr_addr(&monc->con.peer_addr.in_addr));
- 
- 	__close_session(monc);
- 	if (!monc->hunting) {
+iQIcBAEBAgAGBQJQrplFAAoJEN0jrNd/PrOhaTgP/iAnnHegKeb2v0YdYpEA4an/
+zfxRMvbrDpkuZzx2G08WRL/nNdx6kl0nO/iKV/20X7dFoueedb/cr1ZFHj6V0sQj
+ArT1EmGNQewLvdj2w9Jwmwc+V7dtxeh4NsWWZbk1veJm5chIoUK+lJEFYcltLgD0
+GaQ6OkYaGvNI9aQwj7I722ypH0AYXD9CGrl+l1ULyx5nOosg8FTQE5vd9aCFx6mY
+lUcwiAWs2t52o848XhjRsMXIt4VJ+9W50UeETtAwyneGkDpHXm/n6Gp3RpIEEsmK
+jPGv2CWr/lr6aS7hd+jTfv48eOrIu2zMI3Heu/vSv5nJFdPFf21c6KHo0CI58/ib
+7Xl1LbUO3mhFK4evd024jEZW4rQaUVnQGJPVmQYvDhpST3F+2oa6EXj2hmPsPpHP
+gvW8G72LvNNfSeCX5qtDV2TbdHBoOeR+tpMq3WyAygPbRUd7AjKdPjk4V7IwhrJs
+5ZAq6g7lcO4FuY/yOXyq5GQcz9694w5BsWmdsIjYi7kSOx5BHEHwNy5Sh+ldeoUC
+TOjVsZdSPBjFhiLAlFno4FqvFygE7xIo4MPBzEX9ba+Z59fUYN4xhWo2qDQhqDKt
+T1y5eg+sBxi+P/LpJ0V7nUT4tc4ZjWs7ok5xRGqzDo4klTW881uqqN8fwZyw21sf
+kmfm7uuRsWCajTpj5zKZ
+=2ipj
+-----END PGP SIGNATURE-----
 
-
+--9JSHP372f+2dzJ8X--
