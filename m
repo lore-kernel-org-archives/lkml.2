@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab2KVSeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:34:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49017 "EHLO mail.kernel.org"
+	id S1753936Ab2KVSew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:34:52 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:37943 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753639Ab2KVSd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:59 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 160/171] libceph: recheck con state after allocating incoming message
-Date: Wed, 21 Nov 2012 16:41:46 -0800
-Message-Id: <20121122004049.411749694@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1753915Ab2KVSer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:34:47 -0500
+Date: Thu, 22 Nov 2012 10:30:20 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH] of: Have of_device_add call platform_device_add rather
+ than device_add
+Message-ID: <20121122173020.GA8473@obsidianresearch.com>
+References: <20121121072448.GG19837@obsidianresearch.com>
+ <20121121155104.726B83E0AE2@localhost>
+ <20121121174453.GD6406@obsidianresearch.com>
+ <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com>
+ <20121121181430.GE6406@obsidianresearch.com>
+ <20121122153621.452CA3E129E@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122153621.452CA3E129E@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Nov 22, 2012 at 03:36:21PM +0000, Grant Likely wrote:
 
-------------------
+> Hmm... I've not tried it with assigned-address. I tried with two sibling
+> platform devices using just the 'reg' property. That the kernel will
+> complain about. For powerpc-only, the patch I posted allows the device
+> to get registered anyway even though the range incorrectly overlaps.
 
-From: Sage Weil <sage@inktank.com>
+My second example was done with the reg property..
 
-(cherry picked from commit 6139919133377652992a5fe134e22abce3e9c25e)
-
-We drop the lock when calling the ->alloc_msg() con op, which means
-we need to (a) not clobber con->in_msg without the mutex held, and (b)
-we need to verify that we are still in the OPEN state when we retake
-it to avoid causing any mayhem.  If the state does change, -EAGAIN
-will get us back to con_work() and loop.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2735,9 +2735,16 @@ static int ceph_con_in_msg_alloc(struct
- 	BUG_ON(con->in_msg != NULL);
- 
- 	if (con->ops->alloc_msg) {
-+		struct ceph_msg *msg;
-+
- 		mutex_unlock(&con->mutex);
--		con->in_msg = con->ops->alloc_msg(con, hdr, skip);
-+		msg = con->ops->alloc_msg(con, hdr, skip);
- 		mutex_lock(&con->mutex);
-+		if (con->state != CON_STATE_OPEN) {
-+			ceph_msg_put(msg);
-+			return -EAGAIN;
-+		}
-+		con->in_msg = msg;
- 		if (con->in_msg) {
- 			con->in_msg->con = con->ops->get(con);
- 			BUG_ON(con->in_msg->con == NULL);
+                gpio0: gpio@10100 {
+                        compatible = "marvell,orion-gpio";
+                        #gpio-cells = <2>;
+                        gpio-controller;
+                        reg = <0x10100 0x40>;
+                }
+                chip_cfg@0 {
+                        compatible = "orc,chip_config";
+                        // Doubles up on gpio0
+                        reg = <0x10100 0x4>;
+                };
 
 
+f1010100-f101013f : /internal@f1000000/gpio@10100
+  f1010100-f1010103 : /internal@f1000000/chip_cfg@0
+
+What did you try? Maybe order matters?
+
+Regards,
+Jason
