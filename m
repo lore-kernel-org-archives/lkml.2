@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab2KVS4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:56:35 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63222 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab2KVS4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:56:30 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: sameo@linux.intel.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V1 1/3] mfd: stmpe: Arrange #include <header files> in alphabetical order
-Date: Fri, 23 Nov 2012 00:26:18 +0530
-Message-Id: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1756097Ab2KVS4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:56:52 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:60337 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756081Ab2KVS4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:56:49 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: w.sang@pengutronix.de, Mika Westerberg <mika.westerberg@linux.intel.com>,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, broonie@opensource.wolfsonmicro.com,
+        khali@linux-fr.org, ben-linux@fluff.org, bhelgaas@google.com,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v4 0/3] ACPI 5 support for GPIO, SPI and I2C
+Date: Thu, 22 Nov 2012 11:03:26 +0100
+Message-ID: <12328820.crXDTeuliY@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CACRpkdZ_GT_k13wfihRp2=nSdf8bkJGt6SSQETBG7AouBzYXgg@mail.gmail.com>
+References: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com> <79636467.nuLQX2FqW5@vostro.rjw.lan> <CACRpkdZ_GT_k13wfihRp2=nSdf8bkJGt6SSQETBG7AouBzYXgg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helps managing them better and also reduces chances of adding an header
-file twice.
+On Thursday, November 22, 2012 10:43:28 AM Linus Walleij wrote:
+> On Wed, Nov 21, 2012 at 10:31 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+> > This patchset has been around for quite a while and went through a few
+> > iterations, so I think it's as good as it gets at this point.
+> >
+> > I wonder if the GPIO / SPI / I2C maintainers have any objections against it or
+> > would like the patches to be modified somehow?
+> >
+> > If not, then I'd like to take it for v3.8 into the linux-pm.git tree, because
+> > the patches depend on some changes already in that tree.  Hopefully, that's OK.
+> 
+> For GPIO I want Grant to ACK this.
+> 
+> He has experience with both Device Tree and GPIO, knows what ACPI and
+> UEFI is and is way better suited than me to give feedback on this kind of
+> stuff.
+> 
+> So from my stance it's "neutral, whatever Grant says goes".
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/mfd/stmpe-spi.c | 2 +-
- drivers/mfd/stmpe.c     | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+OK, we're waiting for a word from Grant, then. :-)
 
-diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
-index 9edfe86..f86e3fc 100644
---- a/drivers/mfd/stmpe-spi.c
-+++ b/drivers/mfd/stmpe-spi.c
-@@ -7,10 +7,10 @@
-  * Author: Viresh Kumar <viresh.linux@gmail.com> for ST Microelectronics
-  */
- 
--#include <linux/spi/spi.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/spi/spi.h>
- #include <linux/types.h>
- #include "stmpe.h"
- 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 8a4247b..6086481 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -7,15 +7,15 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
--#include <linux/gpio.h>
- #include <linux/export.h>
--#include <linux/kernel.h>
-+#include <linux/gpio.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/core.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
--#include <linux/mfd/core.h>
- #include "stmpe.h"
- 
- static int __stmpe_enable(struct stmpe *stmpe, unsigned int blocks)
+Thanks,
+Rafael
+
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
