@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab2KVUrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:47:00 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33143 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab2KVUq6 (ORCPT
+	id S932536Ab2KVUrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:47:17 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53234 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2KVUrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:46:58 -0500
-Message-ID: <1353548828.9090.1.camel@phoenix>
-Subject: [PATCH] regulator: max8973: Fix callback setting for
- max8973_dcdc_ops.enable
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Nov 2012 09:47:08 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 22 Nov 2012 15:47:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121121200144.GD15213@quad.lixom.net>
+References: <CAHTX3d+bqMnsWxQp3GAmprSDzNB18otT3SrPi5MkA+d8006Aww@mail.gmail.com>
+	<20121121200144.GD15213@quad.lixom.net>
+Date: Thu, 22 Nov 2012 08:05:48 +0100
+X-Google-Sender-Auth: qjQmDEK1cITLciigjCgkzHkqaL4
+Message-ID: <CAHTX3dKm_=VaL=14vRr6+jGO2wrDXfW1asjXuZz0yeO0axZnbw@mail.gmail.com>
+Subject: Re: [GIT PULL] arm-soc: Xilinx zynq multiplatform changes for v3.8
+From: Michal Simek <michal.simek@xilinx.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        John Linn <John.Linn@xilinx.com>, John Williams <jwilliams@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/max8973-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi,
 
-diff --git a/drivers/regulator/max8973-regulator.c b/drivers/regulator/max8973-regulator.c
-index e6328f9..140ff9d 100644
---- a/drivers/regulator/max8973-regulator.c
-+++ b/drivers/regulator/max8973-regulator.c
-@@ -401,7 +401,7 @@ static int __devinit max8973_probe(struct i2c_client *client,
- 	if (pdata->enable_ext_control) {
- 		max->desc.enable_reg = MAX8973_VOUT;
- 		max->desc.enable_mask = MAX8973_VOUT_ENABLE;
--		max8973_dcdc_ops.enable = regulator_is_enabled_regmap;
-+		max8973_dcdc_ops.enable = regulator_enable_regmap;
- 		max8973_dcdc_ops.disable = regulator_disable_regmap;
- 		max8973_dcdc_ops.is_enabled = regulator_is_enabled_regmap;
- 	}
--- 
-1.7.9.5
+2012/11/21 Olof Johansson <olof@lixom.net>:
+> Hi,
+>
+> On Wed, Nov 21, 2012 at 04:51:07PM +0100, Michal Simek wrote:
+>> Hi Olof and Arnd,
+>>
+>> based on my chat with Olof today I have created new branch
+>> with 4 patches which move zynq to multiplatform.
+>>
+>> This branch depends on arm-soc devel/debug_ll_init branch because
+>> we needed Rob's "ARM: implement debug_ll_io_init()"
+>> (sha1: afaee03511ba8002b26a9c6b1fe7d6baf33eac86)
+>> patch.
+>>
+>> This branch also depends on zynq/dt branch because of previous major
+>> zynq changes.
+>> zynq/cleanup branch is subset of zynq/dt.
+>>
+>> That's why I have merged devel/debug_ll_init branch with zynq/dt and
+>> add 4 patches
+>> on the top of it.
+>
+> Nice work.
+>
+> This looks quite reasonable, is small and self-contained and doesn't really
+> affect anyone outside of zynq. So I've pulled into next/multiplatform for 3.8.
+>
+> As part of this, the next/* branches have been somewhat reordered, since
+> multiplatform now includes next/dt contents I've moved it down below there. It
+> shouldn't affect much since no other branch pulls in next/multiplatform
+> contents.
 
-
-
+Thanks a lot,
+Michal
