@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab2KVWEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:04:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
+	id S1758141Ab2KVWGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:06:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45625 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:09 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, Alex Elder <elder@inktank.com>
-Subject: [ 111/171] libceph: fix overflow in __decode_pool_names()
-Date: Wed, 21 Nov 2012 16:40:57 -0800
-Message-Id: <20121122004044.492086863@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754867Ab2KVWGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:06:04 -0500
+Date: Thu, 22 Nov 2012 23:06:00 +0100
+From: Jan Kara <jack@suse.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, linux-mm@kvack.org
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Message-ID: <20121122220600.GA20326@quack.suse.cz>
+References: <20121122175824.19604.qmail@science.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122175824.19604.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu 22-11-12 12:58:24, George Spelvin wrote:
+> I'm having an interesting issue with a uniprocessor Pentium 4 machine
+> locking up overnight.  3.6.5 didn't do that, but 3.7-rc6 is not doing
+> so well.
+  I've added some CCs which are hopefully relevant. Specifially I remember
+Mel fixing some -mm lockup recently although after googling for a while
+that is likely something different.
 
-------------------
+> It's kind of a funny lockup.  Some things work:
+> 
+> - TCP SYN handshake
+> - Alt-SysRq
+> 
+> And others don't:
+> 
+> - Caps lock
+> - Shift-PgUp
+> - Alt-Fn
+> - Screen unblanking
+> - Actually talking to a daemon
+> 
+> This is a "headless" machine that boots to a text console and has zero
+> console activity until the lockup.
+> 
+> This has happened overnight, three nights in a row.  I had to turn screen
+> blanking off to see anything on the screen.  Running the daily cron jobs
+> manually just now didn't trigger it, so I haven't found a proximate cause.
+> 
+> The *first* error has scrolled off the screen, but what I can see
+> an infinite stream (at about 20s intervals) of:
+> 
+> BUG: soft lockup - CPU#0 stuck for 22s! [kswapd0:317]
+> Pid: 317, comm: kswapd0 Not tainted 3.7.0-RC6 #224 HP Pavilion 04 P6319A-ABA 750N/P4B266LA
+> EIP: 0060:[<c10571f7>] EFLAGS: 00000202 CPU: 0
+> EIP is at __zone_watermark_ok+0x5f/7e, 0x67/7e, 0x6e/0x7e, or 0x74/7e
+> (Didn't type registers & stack)
+> Call Trace:
+>  [<c105774f>] ? zone_watermark_ok_safe+0x34/0x3a
+>  [<c105ec7e>] ? kswapd+0x2fa/0x6f6
+>  [<c105e984>] ? try_to_free_pages+0x4b8/0x4b8
+>  [<c103106b>] ? kthread+0x67/0x6c
+>  [<c12559b7>] ? ret_from_kernel_thread+0x1b/0x28
+>  [<c1031004>] ? -_kthread_parkme+0x4c.0x4c
+> Code: (didn't type in first line)
+>                                 5f                        67                     6e                  74                             7e
+>  c9 39 d6 7f 14 eb 1c 6b c1 2c <8b> 44 05 60 d3 e0 29 c6 <d1> fb 39 de 7e 09 41 <39> f9 7c ea b0 01 <eb> 02 31 c0 5a 5b 5e 5f 5d c3 01 14 85 7c 16
+  Taking picture of the screen with a digital camera can usually save you
+some typing :)
 
-From: Xi Wang <xi.wang@gmail.com>
+> The lack of scrollback limits me to 49 lines of SysRq output, and usually the most interesting
+> part disappears off the screen.  Two things I can see:
+> 
+> - SysRq-W shows no blocked tasks
+> - SysRq-M shows zero swap in use, and apparently adequate free memory
+> 	DMA: <various segments> = 9048kB
+> 	Normal: <various> = 116312kB
+> 	HighMem: <various> = 41660kB
+> 	416557 total pagecache pages
+> 	0 pages in swap cache
+> 	Swap cache stats: add 0, delete 0, find 0/0
+> 	Free swap  = 4883724kB
+> 	Total swap = 4883724kB
+> 	524260 pages RAM
+> 	296958 pages HighMem
+> 	5221 pages reserved
+> 	406417 pages shared
+> 	351419 pages non-shared
+> 
+> Does anyone have any debugging suggestions?  Waiting overnight to
+> make a good/bad decision makes bisecting pretty slow...
 
-(cherry picked from commit ad3b904c07dfa88603689bf9a67bffbb9b99beb5)
-
-`len' is read from network and thus needs validation.  Otherwise a
-large `len' would cause out-of-bounds access via the memcpy() call.
-In addition, len = 0xffffffff would overflow the kmalloc() size,
-leading to out-of-bounds write.
-
-This patch adds a check of `len' via ceph_decode_need().  Also use
-kstrndup rather than kmalloc/memcpy.
-
-[elder@inktank.com: added -ENOMEM return for null kstrndup() result]
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/osdmap.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
---- a/net/ceph/osdmap.c
-+++ b/net/ceph/osdmap.c
-@@ -495,15 +495,16 @@ static int __decode_pool_names(void **p,
- 		ceph_decode_32_safe(p, end, pool, bad);
- 		ceph_decode_32_safe(p, end, len, bad);
- 		dout("  pool %d len %d\n", pool, len);
-+		ceph_decode_need(p, end, len, bad);
- 		pi = __lookup_pg_pool(&map->pg_pools, pool);
- 		if (pi) {
-+			char *name = kstrndup(*p, len, GFP_NOFS);
-+
-+			if (!name)
-+				return -ENOMEM;
- 			kfree(pi->name);
--			pi->name = kmalloc(len + 1, GFP_NOFS);
--			if (pi->name) {
--				memcpy(pi->name, *p, len);
--				pi->name[len] = '\0';
--				dout("  name is %s\n", pi->name);
--			}
-+			pi->name = name;
-+			dout("  name is %s\n", pi->name);
- 		}
- 		*p += len;
- 	}
-
-
+							Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
