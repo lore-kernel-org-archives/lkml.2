@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab2KVXAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:00:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab2KVWu0 (ORCPT
+	id S1753172Ab2KVXCD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:02:03 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51929 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab2KVSag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:50:26 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 01/33] mm/generic: Only flush the local TLB in ptep_set_access_flags()
-Date: Thu, 22 Nov 2012 23:49:22 +0100
-Message-Id: <1353624594-1118-2-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+	Thu, 22 Nov 2012 13:30:36 -0500
+Message-ID: <50AD85C0.1010407@huawei.com>
+Date: Thu, 22 Nov 2012 09:54:08 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Betty Dall <betty.dall@hp.com>
+CC: <bhelgaas@google.com>, <jbarnes@virtuousgeek.org>,
+        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] PCI: add PCIe 8.0 GT/s supported link speed define
+References: <1353437939-29210-1-git-send-email-betty.dall@hp.com>
+In-Reply-To: <1353437939-29210-1-git-send-email-betty.dall@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.84]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+> index 20ae747..0cf8abb 100644
+> --- a/include/uapi/linux/pci_regs.h
+> +++ b/include/uapi/linux/pci_regs.h
+> @@ -469,6 +469,7 @@
+>  #define  PCI_EXP_LNKSTA_CLS	0x000f	/* Current Link Speed */
+>  #define  PCI_EXP_LNKSTA_CLS_2_5GB 0x01	/* Current Link Speed 2.5GT/s */
+>  #define  PCI_EXP_LNKSTA_CLS_5_0GB 0x02	/* Current Link Speed 5.0GT/s */
+> +#define  PCI_EXP_LNKSTA_CLS_8_0GB 0x04	/* Current Link Speed 8.0GT/s */
+>  #define  PCI_EXP_LNKSTA_NLW	0x03f0	/* Nogotiated Link Width */
+>  #define  PCI_EXP_LNKSTA_NLW_SHIFT 4	/* start of NLW mask in link status */
+>  #define  PCI_EXP_LNKSTA_LT	0x0800	/* Link Training */
+> 
 
-The function ptep_set_access_flags() is only ever used to upgrade
-access permissions to a page - i.e. they make it less restrictive.
+Hi Betty,
+   There is another patch uses this PCI_EXP_LNKSTA_CLS_8_0GB ? I think maybe move this change to
+the patch uses this symbol is better.
 
-That means the only negative side effect of not flushing remote
-TLBs in this function is that other CPUs may incur spurious page
-faults, if they happen to access the same address, and still have
-a PTE with the old permissions cached in their TLB caches.
-
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
-
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
-
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault() to actually flush the TLB entry.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Hugh Dickins <hughd@google.com>
-[ Changelog massage. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/pgtable-generic.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e642627..d8397da 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -12,8 +12,8 @@
- 
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-- * Only sets the access flags (dirty, accessed, and
-- * writable). Furthermore, we know it always gets set to a "more
-+ * Only sets the access flags (dirty, accessed), as well as write 
-+ * permission. Furthermore, we know it always gets set to a "more
-  * permissive" setting, which allows most architectures to optimize
-  * this. We return whether the PTE actually changed, which in turn
-  * instructs the caller to do things like update__mmu_cache.  This
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
- 	}
- 	return changed;
- }
 -- 
-1.7.11.7
+Thanks!
+Yijing
 
