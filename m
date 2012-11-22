@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab2KVVcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:32:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49610 "EHLO mail.kernel.org"
+	id S1757998Ab2KVVcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:32:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755175Ab2KVSkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755173Ab2KVSkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Stefan Beller <stefanbeller@googlemail.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 27/38] eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
-Date: Wed, 21 Nov 2012 16:40:10 -0800
-Message-Id: <20121122003907.262728908@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
+        Sage Weil <sage@inktank.com>
+Subject: [ 095/171] libceph: rename socket callbacks
+Date: Wed, 21 Nov 2012 16:40:41 -0800
+Message-Id: <20121122004042.890168786@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Alex Elder <elder@inktank.com>
 
-commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
+(cherry picked from commit 327800bdc2cb9b71f4b458ca07aa9d522668dde0)
 
-When the eCryptfs mount options do not include '-o acl', but the lower
-filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
-flipped on in the eCryptfs super block flags. This flag is what the VFS
-checks in do_last() when deciding if the current umask should be applied
-to a newly created inode's mode or not. When a default POSIX ACL mask is
-set on a directory, the current umask is incorrectly applied to new
-inodes created in the directory. This patch ignores the MS_POSIXACL flag
-passed into ecryptfs_mount() and sets the flag on the eCryptfs super
-block depending on the flag's presence on the lower super block.
+Change the names of the three socket callback functions to make it
+more obvious they're specifically associated with a connection's
+socket (not the ceph connection that uses it).
 
-Additionally, it is incorrect to allow a writeable eCryptfs mount on top
-of a read-only lower mount. This missing check did not allow writes to
-the read-only lower mount because permissions checks are still performed
-on the lower filesystem's objects but it is best to simply not allow a
-rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
-mount is valid and still allowed.
-
-https://launchpad.net/bugs/1009207
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Stefan Beller <stefanbeller@googlemail.com>
-Cc: John Johansen <john.johansen@canonical.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ecryptfs/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ net/ceph/messenger.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -505,7 +505,6 @@ static struct dentry *ecryptfs_mount(str
- 		goto out;
- 	}
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -153,46 +153,46 @@ EXPORT_SYMBOL(ceph_msgr_flush);
+  */
  
--	s->s_flags = flags;
- 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
- 	if (rc)
- 		goto out1;
-@@ -541,6 +540,15 @@ static struct dentry *ecryptfs_mount(str
- 	}
+ /* data available on socket, or listen socket received a connect */
+-static void ceph_data_ready(struct sock *sk, int count_unused)
++static void ceph_sock_data_ready(struct sock *sk, int count_unused)
+ {
+ 	struct ceph_connection *con = sk->sk_user_data;
  
- 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
-+
-+	/**
-+	 * Set the POSIX ACL flag based on whether they're enabled in the lower
-+	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
-+	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-+	 */
-+	s->s_flags = flags & ~MS_POSIXACL;
-+	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-+
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
+ 	if (sk->sk_state != TCP_CLOSE_WAIT) {
+-		dout("ceph_data_ready on %p state = %lu, queueing work\n",
++		dout("%s on %p state = %lu, queueing work\n", __func__,
+ 		     con, con->state);
+ 		queue_con(con);
+ 	}
+ }
+ 
+ /* socket has buffer space for writing */
+-static void ceph_write_space(struct sock *sk)
++static void ceph_sock_write_space(struct sock *sk)
+ {
+ 	struct ceph_connection *con = sk->sk_user_data;
+ 
+ 	/* only queue to workqueue if there is data we want to write,
+ 	 * and there is sufficient space in the socket buffer to accept
+-	 * more data.  clear SOCK_NOSPACE so that ceph_write_space()
++	 * more data.  clear SOCK_NOSPACE so that ceph_sock_write_space()
+ 	 * doesn't get called again until try_write() fills the socket
+ 	 * buffer. See net/ipv4/tcp_input.c:tcp_check_space()
+ 	 * and net/core/stream.c:sk_stream_write_space().
+ 	 */
+ 	if (test_bit(WRITE_PENDING, &con->state)) {
+ 		if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk)) {
+-			dout("ceph_write_space %p queueing write work\n", con);
++			dout("%s %p queueing write work\n", __func__, con);
+ 			clear_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+ 			queue_con(con);
+ 		}
+ 	} else {
+-		dout("ceph_write_space %p nothing to write\n", con);
++		dout("%s %p nothing to write\n", __func__, con);
+ 	}
+ }
+ 
+ /* socket's state has changed */
+-static void ceph_state_change(struct sock *sk)
++static void ceph_sock_state_change(struct sock *sk)
+ {
+ 	struct ceph_connection *con = sk->sk_user_data;
+ 
+-	dout("ceph_state_change %p state = %lu sk_state = %u\n",
++	dout("%s %p state = %lu sk_state = %u\n", __func__,
+ 	     con, con->state, sk->sk_state);
+ 
+ 	if (test_bit(CLOSED, &con->state))
+@@ -200,9 +200,9 @@ static void ceph_state_change(struct soc
+ 
+ 	switch (sk->sk_state) {
+ 	case TCP_CLOSE:
+-		dout("ceph_state_change TCP_CLOSE\n");
++		dout("%s TCP_CLOSE\n", __func__);
+ 	case TCP_CLOSE_WAIT:
+-		dout("ceph_state_change TCP_CLOSE_WAIT\n");
++		dout("%s TCP_CLOSE_WAIT\n", __func__);
+ 		if (test_and_set_bit(SOCK_CLOSED, &con->state) == 0) {
+ 			if (test_bit(CONNECTING, &con->state))
+ 				con->error_msg = "connection failed";
+@@ -212,7 +212,7 @@ static void ceph_state_change(struct soc
+ 		}
+ 		break;
+ 	case TCP_ESTABLISHED:
+-		dout("ceph_state_change TCP_ESTABLISHED\n");
++		dout("%s TCP_ESTABLISHED\n", __func__);
+ 		queue_con(con);
+ 		break;
+ 	default:	/* Everything else is uninteresting */
+@@ -228,9 +228,9 @@ static void set_sock_callbacks(struct so
+ {
+ 	struct sock *sk = sock->sk;
+ 	sk->sk_user_data = con;
+-	sk->sk_data_ready = ceph_data_ready;
+-	sk->sk_write_space = ceph_write_space;
+-	sk->sk_state_change = ceph_state_change;
++	sk->sk_data_ready = ceph_sock_data_ready;
++	sk->sk_write_space = ceph_sock_write_space;
++	sk->sk_state_change = ceph_sock_state_change;
+ }
+ 
+ 
 
 
