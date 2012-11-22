@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab2KVUrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:47:47 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53234 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab2KVUrO (ORCPT
+	id S1757539Ab2KVUsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:48:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964945Ab2KVS6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:47:14 -0500
+	Thu, 22 Nov 2012 13:58:43 -0500
+Date: Wed, 21 Nov 2012 17:43:39 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-84f1ae30bb68d8da98bca7ff2c2b825b2ac8c9a5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-7-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-7-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm: Change find_early_table_space() paramters
+Git-Commit-ID: 84f1ae30bb68d8da98bca7ff2c2b825b2ac8c9a5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
-	<50AD0CA1.8000904@zytor.com>
-	<CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
-	<50AD291A.10600@zytor.com>
-	<CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com>
-	<a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
-Date: Wed, 21 Nov 2012 22:47:39 -0800
-X-Google-Sender-Auth: XGoc3GglxOd--afUHNxdah9TLYI
-Message-ID: <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:43:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 9:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Yes, lets...
->
->
->> also do you still think need to move ext_ramdisk... ext_cmd_line_ptr
->> from setup_header to boot_param ?
->
-but looks werid:
-ramdisk_image, ramdisk_size, cmd_line_ptr are in setup_header
-but
-ext_... are in boot_param..
+Commit-ID:  84f1ae30bb68d8da98bca7ff2c2b825b2ac8c9a5
+Gitweb:     http://git.kernel.org/tip/84f1ae30bb68d8da98bca7ff2c2b825b2ac8c9a5
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:38:43 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:05 -0800
+
+x86, mm: Change find_early_table_space() paramters
+
+call split_mem_range inside the function.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-7-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index dbef4ff..51f919f 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -196,12 +196,18 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
+  * pages. Then find enough contiguous space for those page tables.
+  */
+-static void __init find_early_table_space(struct map_range *mr, int nr_range)
++static void __init find_early_table_space(unsigned long start, unsigned long end)
+ {
+ 	int i;
+ 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+-	unsigned long start = 0, good_end;
++	unsigned long good_end;
+ 	phys_addr_t base;
++	struct map_range mr[NR_RANGE_MR];
++	int nr_range;
++
++	memset(mr, 0, sizeof(mr));
++	nr_range = 0;
++	nr_range = split_mem_range(mr, nr_range, start, end);
+ 
+ 	for (i = 0; i < nr_range; i++) {
+ 		unsigned long range, extra;
+@@ -276,7 +282,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(mr, nr_range);
++		find_early_table_space(start, end);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
