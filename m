@@ -1,137 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab2KVVcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:32:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
+	id S1757985Ab2KVVcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:32:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755173Ab2KVSkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755177Ab2KVSkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [ 095/171] libceph: rename socket callbacks
-Date: Wed, 21 Nov 2012 16:40:41 -0800
-Message-Id: <20121122004042.890168786@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Richard Cochran <richard.cochran@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/83] ptp: update adjfreq callback description
+Date: Wed, 21 Nov 2012 16:41:39 -0800
+Message-Id: <20121122004214.392902254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-(cherry picked from commit 327800bdc2cb9b71f4b458ca07aa9d522668dde0)
+commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
 
-Change the names of the three socket callback functions to make it
-more obvious they're specifically associated with a connection's
-socket (not the ceph connection that uses it).
+This patch updates the adjfreq callback description to include a note that the
+delta in ppb is always relative to the base frequency, and not to the current
+frequency of the hardware clock.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+CC: Richard Cochran <richard.cochran@gmail.com>
+CC: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -153,46 +153,46 @@ EXPORT_SYMBOL(ceph_msgr_flush);
-  */
- 
- /* data available on socket, or listen socket received a connect */
--static void ceph_data_ready(struct sock *sk, int count_unused)
-+static void ceph_sock_data_ready(struct sock *sk, int count_unused)
- {
- 	struct ceph_connection *con = sk->sk_user_data;
- 
- 	if (sk->sk_state != TCP_CLOSE_WAIT) {
--		dout("ceph_data_ready on %p state = %lu, queueing work\n",
-+		dout("%s on %p state = %lu, queueing work\n", __func__,
- 		     con, con->state);
- 		queue_con(con);
- 	}
- }
- 
- /* socket has buffer space for writing */
--static void ceph_write_space(struct sock *sk)
-+static void ceph_sock_write_space(struct sock *sk)
- {
- 	struct ceph_connection *con = sk->sk_user_data;
- 
- 	/* only queue to workqueue if there is data we want to write,
- 	 * and there is sufficient space in the socket buffer to accept
--	 * more data.  clear SOCK_NOSPACE so that ceph_write_space()
-+	 * more data.  clear SOCK_NOSPACE so that ceph_sock_write_space()
- 	 * doesn't get called again until try_write() fills the socket
- 	 * buffer. See net/ipv4/tcp_input.c:tcp_check_space()
- 	 * and net/core/stream.c:sk_stream_write_space().
- 	 */
- 	if (test_bit(WRITE_PENDING, &con->state)) {
- 		if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk)) {
--			dout("ceph_write_space %p queueing write work\n", con);
-+			dout("%s %p queueing write work\n", __func__, con);
- 			clear_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- 			queue_con(con);
- 		}
- 	} else {
--		dout("ceph_write_space %p nothing to write\n", con);
-+		dout("%s %p nothing to write\n", __func__, con);
- 	}
- }
- 
- /* socket's state has changed */
--static void ceph_state_change(struct sock *sk)
-+static void ceph_sock_state_change(struct sock *sk)
- {
- 	struct ceph_connection *con = sk->sk_user_data;
- 
--	dout("ceph_state_change %p state = %lu sk_state = %u\n",
-+	dout("%s %p state = %lu sk_state = %u\n", __func__,
- 	     con, con->state, sk->sk_state);
- 
- 	if (test_bit(CLOSED, &con->state))
-@@ -200,9 +200,9 @@ static void ceph_state_change(struct soc
- 
- 	switch (sk->sk_state) {
- 	case TCP_CLOSE:
--		dout("ceph_state_change TCP_CLOSE\n");
-+		dout("%s TCP_CLOSE\n", __func__);
- 	case TCP_CLOSE_WAIT:
--		dout("ceph_state_change TCP_CLOSE_WAIT\n");
-+		dout("%s TCP_CLOSE_WAIT\n", __func__);
- 		if (test_and_set_bit(SOCK_CLOSED, &con->state) == 0) {
- 			if (test_bit(CONNECTING, &con->state))
- 				con->error_msg = "connection failed";
-@@ -212,7 +212,7 @@ static void ceph_state_change(struct soc
- 		}
- 		break;
- 	case TCP_ESTABLISHED:
--		dout("ceph_state_change TCP_ESTABLISHED\n");
-+		dout("%s TCP_ESTABLISHED\n", __func__);
- 		queue_con(con);
- 		break;
- 	default:	/* Everything else is uninteresting */
-@@ -228,9 +228,9 @@ static void set_sock_callbacks(struct so
- {
- 	struct sock *sk = sock->sk;
- 	sk->sk_user_data = con;
--	sk->sk_data_ready = ceph_data_ready;
--	sk->sk_write_space = ceph_write_space;
--	sk->sk_state_change = ceph_state_change;
-+	sk->sk_data_ready = ceph_sock_data_ready;
-+	sk->sk_write_space = ceph_sock_write_space;
-+	sk->sk_state_change = ceph_sock_state_change;
- }
- 
- 
+---
+ include/linux/ptp_clock_kernel.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/include/linux/ptp_clock_kernel.h
++++ b/include/linux/ptp_clock_kernel.h
+@@ -50,7 +50,8 @@ struct ptp_clock_request {
+  * clock operations
+  *
+  * @adjfreq:  Adjusts the frequency of the hardware clock.
+- *            parameter delta: Desired period change in parts per billion.
++ *            parameter delta: Desired frequency offset from nominal frequency
++ *            in parts per billion
+  *
+  * @adjtime:  Shifts the time of the hardware clock.
+  *            parameter delta: Desired change in nanoseconds.
 
 
