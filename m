@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab2KVTZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:25:28 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:44763 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab2KVTZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:25:24 -0500
-Message-ID: <50ADDDD5.1080709@bfs.de>
-Date: Thu, 22 Nov 2012 09:09:57 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Cyril Roelandt <tipecaml@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com,
-        laurent.pinchart@ideasonboard.com, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] UVC: use GFP_ATOMIC under spin lock.
-References: <1353360842-18384-1-git-send-email-tipecaml@gmail.com>
-In-Reply-To: <1353360842-18384-1-git-send-email-tipecaml@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756772Ab2KVTZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:25:59 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47882 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab2KVTZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:25:03 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 2/4] staging/rtl8187se: Remove an unnecessary line continuation in r8180_core.c
+Date: Thu, 22 Nov 2012 09:06:37 +0900
+Message-Id: <1353542797-21020-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
+References: <1353542753-20986-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following warnings fixed.
+- WARNING: Avoid unnecessary line continuations
 
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/rtl8187se/r8180_core.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-Am 19.11.2012 22:34, schrieb Cyril Roelandt:
-> Found using the following semantic patch:
-> <spml>
-> @@
-> @@
-> spin_lock_irqsave(...);
-> ... when != spin_unlock_irqrestore(...);
-> * GFP_KERNEL
-> </spml>
-> 
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> ---
->  drivers/usb/gadget/uvc_video.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/gadget/uvc_video.c b/drivers/usb/gadget/uvc_video.c
-> index b0e53a8..79b4132 100644
-> --- a/drivers/usb/gadget/uvc_video.c
-> +++ b/drivers/usb/gadget/uvc_video.c
-> @@ -309,7 +309,7 @@ uvc_video_pump(struct uvc_video *video)
->  		video->encode(req, video, buf);
->  
->  		/* Queue the USB request */
-> -		if ((ret = usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
-> +		if ((ret = usb_ep_queue(video->ep, req, GFP_ATOMIC)) < 0) {
->  			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
->  			usb_ep_set_halt(video->ep);
->  			spin_unlock_irqrestore(&video->queue.irqlock, flags);
+diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+index ea8dbb1..8c8b09d 100644
+--- a/drivers/staging/rtl8187se/r8180_core.c
++++ b/drivers/staging/rtl8187se/r8180_core.c
+@@ -713,8 +713,8 @@ void rtl8180_rtx_disable(struct net_device *dev)
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+ 
+ 	cmd = read_nic_byte(dev, CMD);
+-	write_nic_byte(dev, CMD, cmd & ~\
+-		       ((1<<CMD_RX_ENABLE_SHIFT)|(1<<CMD_TX_ENABLE_SHIFT)));
++	write_nic_byte(dev, CMD, cmd &
++		       ~((1<<CMD_RX_ENABLE_SHIFT)|(1<<CMD_TX_ENABLE_SHIFT)));
+ 	force_pci_posting(dev);
+ 	mdelay(10);
+ 
+@@ -1258,8 +1258,7 @@ void rtl8180_rx(struct net_device *dev)
+ 
+ 		pci_dma_sync_single_for_cpu(priv->pdev,
+ 				    priv->rxbuffer->dma,
+-				    priv->rxbuffersize * \
+-				    sizeof(u8),
++				    priv->rxbuffersize * sizeof(u8),
+ 				    PCI_DMA_FROMDEVICE);
+ 
+ 		first = *(priv->rxringtail) & (1<<29) ? 1 : 0;
+@@ -1490,8 +1489,7 @@ void rtl8180_rx(struct net_device *dev)
+ 
+ 		pci_dma_sync_single_for_device(priv->pdev,
+ 				    priv->rxbuffer->dma,
+-				    priv->rxbuffersize * \
+-				    sizeof(u8),
++				    priv->rxbuffersize * sizeof(u8),
+ 				    PCI_DMA_FROMDEVICE);
+ 
+ drop: /* this is used when we have not enough mem */
+-- 
+1.7.9.5
 
-
-IMHO, this should be two lines, aka:
-
-ret = usb_ep_queue(video->ep, req, GFP_KERNEL);
-if (ret<0)
-
-just my two cents,
-
-re,
- wh
