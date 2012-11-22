@@ -1,41 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab2KVUW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:22:27 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64462 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab2KVUWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:22:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121145842.5A45B3E0A47@localhost>
-References: <1350415340-2825-1-git-send-email-linus.walleij@linaro.org>
-	<20121121145842.5A45B3E0A47@localhost>
-Date: Thu, 22 Nov 2012 10:03:35 +0100
-Message-ID: <CACRpkdZBF0PX-XBUjtLc5=Y5mWTp2J+YWn7+8oH-afjsg9A9eA@mail.gmail.com>
-Subject: Re: [PATCH 2/7] gpio/em: convert to linear IRQ domain
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Magnus Damm <damm@opensource.se>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932406Ab2KVUW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:22:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40039 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756902Ab2KVT0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:43 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 29/40] mm: numa: Migrate on reference policy
+Date: Thu, 22 Nov 2012 19:25:42 +0000
+Message-Id: <1353612353-1576-30-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 3:58 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, 16 Oct 2012 21:22:20 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
->> The code in the em driver seems to want to try to do the job of
->> the linear IRQ domain (allocate descriptors and grab a virtual
->> range). So why not just use the linear IRQ domain?
->>
->> Also fixed the FIXME to remove the domain after use.
->
-> Applied, thanks.
+This is the simplest possible policy that still does something of note.
+When a pte_numa is faulted, it is moved immediately. Any replacement
+policy must at least do better than this and in all likelihood this
+policy regresses normal workloads.
 
-Uh I've taken most of these into my own GPIO tree ... maybe I should
-just send you a pull request for what I have so we can avoid any clashes
-in the V3.8 merge window?
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   38 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-Thanks,
-Linus Walleij
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 16fb4e6..0d11c3d 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -67,6 +67,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
+ #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
++#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
+ 
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 516491f..4c1c8d8 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -118,6 +118,26 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
+ 
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
++
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
++	int node;
++
++	if (!pol) {
++		node = numa_node_id();
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++
++		/* preferred_node_policy is not initialised early in boot */
++		if (!pol->mode)
++			pol = NULL;
++	}
++
++	return pol;
++}
++
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1598,7 +1618,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
+ 
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -2021,7 +2041,7 @@ retry_cpuset:
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
+ 
+@@ -2295,6 +2315,11 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 	default:
+ 		BUG();
+ 	}
++
++	/* Migrate the page towards the node whose CPU is referencing it */
++	if (pol->flags & MPOL_F_MORON)
++		polnid = numa_node_id();
++
+ 	if (curnid != polnid)
+ 		ret = polnid;
+ out:
+@@ -2483,6 +2508,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF | MPOL_F_MORON,
++			.v = { .preferred_node = nid, },
++		};
++	}
++
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
+-- 
+1.7.9.2
+
