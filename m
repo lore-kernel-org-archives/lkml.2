@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965254Ab2KVTwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:52:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
+	id S1757416Ab2KVTwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:52:36 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53557 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965230Ab2KVTvz (ORCPT
+	with ESMTP id S965250Ab2KVTwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:55 -0500
+	Thu, 22 Nov 2012 14:52:04 -0500
 From: Stefan Hajnoczi <stefanha@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: Markus Grabner <grabner@icg.tugraz.at>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
         laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 41/46] staging: line6: drop pod prog_data buffers
-Date: Thu, 22 Nov 2012 20:49:20 +0100
-Message-Id: <1353613765-18690-42-git-send-email-stefanha@gmail.com>
+Subject: [PATCH 46/46] staging: line6: drop unused dumprequest code
+Date: Thu, 22 Nov 2012 20:49:25 +0100
+Message-Id: <1353613765-18690-47-git-send-email-stefanha@gmail.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
@@ -23,138 +23,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver no longer keeps state of MIDI-accessible device parameters.
-Drop the buffers but be careful to keep the device startup procedure
-working even though we no longer store the contents of the dump request.
-The startup procedure will be simplified in a later patch.
+The line6 drive no longer requests MIDI dumps from the device so
+dumprequest.c is not needed.
 
 Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
 ---
- drivers/staging/line6/pod.c | 46 +++------------------------------------------
- drivers/staging/line6/pod.h | 25 ------------------------
- 2 files changed, 3 insertions(+), 68 deletions(-)
+ drivers/staging/line6/Makefile      |   1 -
+ drivers/staging/line6/dumprequest.c | 135 ------------------------------------
+ drivers/staging/line6/dumprequest.h |  76 --------------------
+ 3 files changed, 212 deletions(-)
+ delete mode 100644 drivers/staging/line6/dumprequest.c
+ delete mode 100644 drivers/staging/line6/dumprequest.h
 
-diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 278976d..e892b4a 100644
---- a/drivers/staging/line6/pod.c
-+++ b/drivers/staging/line6/pod.c
-@@ -132,14 +132,6 @@ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
- }
- 
- /*
--	Store parameter value in driver memory.
+diff --git a/drivers/staging/line6/Makefile b/drivers/staging/line6/Makefile
+index 44ee5ae..ae5c374 100644
+--- a/drivers/staging/line6/Makefile
++++ b/drivers/staging/line6/Makefile
+@@ -4,7 +4,6 @@ line6usb-y := 		\
+ 		audio.o		\
+ 		capture.o	\
+ 		driver.o	\
+-		dumprequest.o	\
+ 		midi.o		\
+ 		midibuf.o	\
+ 		pcm.o		\
+diff --git a/drivers/staging/line6/dumprequest.c b/drivers/staging/line6/dumprequest.c
+deleted file mode 100644
+index 60c7bae..0000000
+--- a/drivers/staging/line6/dumprequest.c
++++ /dev/null
+@@ -1,135 +0,0 @@
+-/*
+- * Line6 Linux USB driver - 0.9.1beta
+- *
+- * Copyright (C) 2004-2010 Markus Grabner (grabner@icg.tugraz.at)
+- *
+- *	This program is free software; you can redistribute it and/or
+- *	modify it under the terms of the GNU General Public License as
+- *	published by the Free Software Foundation, version 2.
+- *
+- */
+-
+-#include <linux/slab.h>
+-
+-#include "driver.h"
+-#include "dumprequest.h"
+-
+-/*
+-	Set "dump in progress" flag.
 -*/
--static void pod_store_parameter(struct usb_line6_pod *pod, int param, int value)
+-void line6_dump_started(struct line6_dump_request *l6dr, int dest)
 -{
--	pod->prog_data.control[param] = value;
+-	l6dr->in_progress = dest;
 -}
 -
 -/*
- 	Handle SAVE button.
- */
- static void pod_save_button_pressed(struct usb_line6_pod *pod, int type,
-@@ -169,9 +161,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
- 	/* process all remaining messages */
- 	switch (buf[0]) {
- 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_DEVICE:
--		pod_store_parameter(pod, buf[1], buf[2]);
--		/* intentionally no break here! */
--
- 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_HOST:
- 		break;
- 
-@@ -187,36 +176,8 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
- 		if (memcmp(buf + 1, line6_midi_id, sizeof(line6_midi_id)) == 0) {
- 			switch (buf[5]) {
- 			case POD_SYSEX_DUMP:
--				if (pod->line6.message_length ==
--				    sizeof(pod->prog_data) + 7) {
--					switch (pod->dumpreq.in_progress) {
--					case LINE6_DUMP_CURRENT:
--						memcpy(&pod->prog_data, buf + 7,
--						       sizeof(pod->prog_data));
--						break;
--
--					case POD_DUMP_MEMORY:
--						memcpy(&pod->prog_data_buf,
--						       buf + 7,
--						       sizeof
--						       (pod->prog_data_buf));
--						break;
--
--					default:
--						dev_dbg(pod->line6.ifcdev,
--							"unknown dump code %02X\n",
--							pod->dumpreq.in_progress);
--					}
--
--					line6_dump_finished(&pod->dumpreq);
--					pod_startup3(pod);
--				} else
--					dev_dbg(pod->line6.ifcdev,
--						"wrong size of channel dump message (%d instead of %d)\n",
--						pod->line6.message_length,
--						(int)sizeof(pod->prog_data) +
--						7);
--
-+				line6_dump_finished(&pod->dumpreq);
-+				pod_startup3(pod);
- 				break;
- 
- 			case POD_SYSEX_SYSTEM:{
-@@ -279,8 +240,7 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
- void line6_pod_transmit_parameter(struct usb_line6_pod *pod, int param,
- 				  u8 value)
- {
--	if (line6_transmit_parameter(&pod->line6, param, value) == 0)
--		pod_store_parameter(pod, param, value);
-+	line6_transmit_parameter(&pod->line6, param, value);
- }
- 
- /*
-diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
-index 8543bae..52534ca 100644
---- a/drivers/staging/line6/pod.h
-+++ b/drivers/staging/line6/pod.h
-@@ -52,21 +52,6 @@ enum {
- 	POD_STARTUP_LAST = POD_STARTUP_SETUP - 1
- };
- 
--/**
--	Binary PODxt Pro program dump
+-	Invalidate current channel, i.e., set "dump in progress" flag.
+-	Reading from the "dump" special file blocks until dump is completed.
 -*/
--struct pod_program {
--	/**
--		Header information (including program name).
--	*/
--	unsigned char header[0x20];
+-void line6_invalidate_current(struct line6_dump_request *l6dr)
+-{
+-	line6_dump_started(l6dr, LINE6_DUMP_CURRENT);
+-}
 -
--	/**
--		Program parameters.
--	*/
--	unsigned char control[POD_CONTROL_SIZE];
+-/*
+-	Clear "dump in progress" flag and notify waiting processes.
+-*/
+-void line6_dump_finished(struct line6_dump_request *l6dr)
+-{
+-	l6dr->in_progress = LINE6_DUMP_NONE;
+-	wake_up(&l6dr->wait);
+-}
+-
+-/*
+-	Send an asynchronous channel dump request.
+-*/
+-int line6_dump_request_async(struct line6_dump_request *l6dr,
+-			     struct usb_line6 *line6, int num, int dest)
+-{
+-	int ret;
+-	line6_dump_started(l6dr, dest);
+-	ret = line6_send_raw_message_async(line6, l6dr->reqbufs[num].buffer,
+-					   l6dr->reqbufs[num].length);
+-
+-	if (ret < 0)
+-		line6_dump_finished(l6dr);
+-
+-	return ret;
+-}
+-
+-/*
+-	Wait for completion (interruptible).
+-*/
+-int line6_dump_wait_interruptible(struct line6_dump_request *l6dr)
+-{
+-	return wait_event_interruptible(l6dr->wait,
+-					l6dr->in_progress == LINE6_DUMP_NONE);
+-}
+-
+-/*
+-	Wait for completion.
+-*/
+-void line6_dump_wait(struct line6_dump_request *l6dr)
+-{
+-	wait_event(l6dr->wait, l6dr->in_progress == LINE6_DUMP_NONE);
+-}
+-
+-/*
+-	Wait for completion (with timeout).
+-*/
+-int line6_dump_wait_timeout(struct line6_dump_request *l6dr, long timeout)
+-{
+-	return wait_event_timeout(l6dr->wait,
+-				  l6dr->in_progress == LINE6_DUMP_NONE,
+-				  timeout);
+-}
+-
+-/*
+-	Initialize dump request buffer.
+-*/
+-int line6_dumpreq_initbuf(struct line6_dump_request *l6dr, const void *buf,
+-			  size_t len, int num)
+-{
+-	l6dr->reqbufs[num].buffer = kmemdup(buf, len, GFP_KERNEL);
+-	if (l6dr->reqbufs[num].buffer == NULL)
+-		return -ENOMEM;
+-	l6dr->reqbufs[num].length = len;
+-	return 0;
+-}
+-
+-/*
+-	Initialize dump request data structure (including one buffer).
+-*/
+-int line6_dumpreq_init(struct line6_dump_request *l6dr, const void *buf,
+-		       size_t len)
+-{
+-	int ret;
+-	ret = line6_dumpreq_initbuf(l6dr, buf, len, 0);
+-	if (ret < 0)
+-		return ret;
+-	init_waitqueue_head(&l6dr->wait);
+-	return 0;
+-}
+-
+-/*
+-	Destruct dump request data structure.
+-*/
+-void line6_dumpreq_destructbuf(struct line6_dump_request *l6dr, int num)
+-{
+-	if (l6dr == NULL)
+-		return;
+-	if (l6dr->reqbufs[num].buffer == NULL)
+-		return;
+-	kfree(l6dr->reqbufs[num].buffer);
+-	l6dr->reqbufs[num].buffer = NULL;
+-}
+-
+-/*
+-	Destruct dump request data structure.
+-*/
+-void line6_dumpreq_destruct(struct line6_dump_request *l6dr)
+-{
+-	if (l6dr->reqbufs[0].buffer == NULL)
+-		return;
+-	line6_dumpreq_destructbuf(l6dr, 0);
+-}
+diff --git a/drivers/staging/line6/dumprequest.h b/drivers/staging/line6/dumprequest.h
+deleted file mode 100644
+index c17a262..0000000
+--- a/drivers/staging/line6/dumprequest.h
++++ /dev/null
+@@ -1,76 +0,0 @@
+-/*
+- * Line6 Linux USB driver - 0.9.1beta
+- *
+- * Copyright (C) 2004-2010 Markus Grabner (grabner@icg.tugraz.at)
+- *
+- *	This program is free software; you can redistribute it and/or
+- *	modify it under the terms of the GNU General Public License as
+- *	published by the Free Software Foundation, version 2.
+- *
+- */
+-
+-#ifndef DUMPREQUEST_H
+-#define DUMPREQUEST_H
+-
+-#include <linux/usb.h>
+-#include <linux/wait.h>
+-#include <sound/core.h>
+-
+-enum {
+-	LINE6_DUMP_NONE,
+-	LINE6_DUMP_CURRENT
 -};
 -
- struct usb_line6_pod {
- 	/**
- 		Generic Line6 USB data.
-@@ -79,16 +64,6 @@ struct usb_line6_pod {
- 	struct line6_dump_request dumpreq;
- 
- 	/**
--		Current program settings.
+-struct line6_dump_reqbuf {
+-	/**
+-		 Buffer for dump requests.
 -	*/
--	struct pod_program prog_data;
+-	unsigned char *buffer;
 -
 -	/**
--		Buffer for data retrieved from or to be stored on PODxt Pro.
+-		 Size of dump request.
 -	*/
--	struct pod_program prog_data_buf;
+-	size_t length;
+-};
+-
+-/**
+-	 Provides the functionality to request channel/model/... dump data from a
+-	 Line6 device.
+-*/
+-struct line6_dump_request {
+-	/**
+-		 Wait queue for access to program dump data.
+-	*/
+-	wait_queue_head_t wait;
 -
 -	/**
- 		Instrument monitor level.
- 	*/
- 	int monitor_level;
+-		 Indicates an unfinished program dump request.
+-		 0: no dump
+-		 1: dump current settings
+-		 Other device-specific values are also allowed.
+-	*/
+-	int in_progress;
+-
+-	/**
+-		 Dump request buffers
+-	*/
+-	struct line6_dump_reqbuf reqbufs[1];
+-};
+-
+-extern void line6_dump_finished(struct line6_dump_request *l6dr);
+-extern int line6_dump_request_async(struct line6_dump_request *l6dr,
+-				    struct usb_line6 *line6, int num, int dest);
+-extern void line6_dump_started(struct line6_dump_request *l6dr, int dest);
+-extern void line6_dumpreq_destruct(struct line6_dump_request *l6dr);
+-extern void line6_dumpreq_destructbuf(struct line6_dump_request *l6dr, int num);
+-extern int line6_dumpreq_init(struct line6_dump_request *l6dr, const void *buf,
+-			      size_t len);
+-extern int line6_dumpreq_initbuf(struct line6_dump_request *l6dr,
+-				 const void *buf, size_t len, int num);
+-extern void line6_invalidate_current(struct line6_dump_request *l6dr);
+-extern void line6_dump_wait(struct line6_dump_request *l6dr);
+-extern int line6_dump_wait_interruptible(struct line6_dump_request *l6dr);
+-extern int line6_dump_wait_timeout(struct line6_dump_request *l6dr,
+-				   long timeout);
+-
+-#endif
 -- 
 1.8.0
 
