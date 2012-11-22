@@ -1,132 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab2KVWtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:49:32 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43453 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2KVSdB (ORCPT
+	id S1751868Ab2KVWu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:50:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab2KVWuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:01 -0500
-MIME-Version: 1.0
-Date: Wed, 21 Nov 2012 15:36:50 -0800
-Message-ID: <CAK3+h2xLLnP03+cP=-aSf=xmiEuZ-RFhxP1DoeO9Hs8ksoX6zw@mail.gmail.com>
-Subject: KVM Disk i/o or VM activities causes soft lockup?
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 17:50:23 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 00/33] Latest numa/core release, v17
+Date: Thu, 22 Nov 2012 23:49:21 +0100
+Message-Id: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This release mainly addresses one of the regressions Linus
+(rightfully) complained about: the "4x JVM" SPECjbb run.
 
-We have users running on redhat based distro (Kernel
-2.6.32-131.21.1.el6.x86_64 ) with kvm, when customer made cron job
-script to copy large files between kvm guest or some other user space
-program leads to disk i/o or VM activities, users get following soft
-lockup message from console:
+[ Note to testers: if possible please still run with
+  CONFIG_TRANSPARENT_HUGEPAGES=y enabled, to avoid the
+  !THP regression that is still not fully fixed.
+  It will be fixed next. ]
 
-Nov 17 13:44:46 slot1/luipaard100a err kernel: BUG: soft lockup -
-CPU#4 stuck for 61s! [qemu-kvm:6795]
-Nov 17 13:44:46 slot1/luipaard100a warning kernel: Modules linked in:
-ebt_vlan nls_utf8 isofs ebtable_filter ebtables 8021q garp bridge stp
-llc ipt_REJECT iptable_filter xt_NOTRACK nf_conntrack iptable_raw
-ip_tables loop ext2 binfmt_misc hed womdict(U) vnic(U) parport_pc lp
-parport predis(U) lasthop(U) ipv6 toggler vhost_net tun kvm_intel kvm
-jiffies(U) sysstats hrsleep i2c_dev datastor(U) linux_user_bde(P)(U)
-linux_kernel_bde(P)(U) tg3 libphy serio_raw i2c_i801 i2c_core ehci_hcd
-raid1 raid0 virtio_pci virtio_blk virtio virtio_ring mvsas libsas
-scsi_transport_sas mptspi mptscsih mptbase scsi_transport_spi 3w_9xxx
-sata_svw(U) ahci serverworks sata_sil ata_piix libata sd_mod
-crc_t10dif amd74xx piix ide_gd_mod ide_core dm_snapshot dm_mirror
-dm_region_hash dm_log dm_mod ext3 jbd mbcache
-Nov 17 13:44:46 slot1/luipaard100a warning kernel: Pid: 6795, comm:
-qemu-kvm Tainted: P           ----------------
-2.6.32-131.21.1.el6.f5.x86_64 #1
-Nov 17 13:44:46 slot1/luipaard100a warning kernel: Call Trace:
-Nov 17 13:44:46 slot1/luipaard100a warning kernel: <IRQ>
-[<ffffffff81084f95>] ? get_timestamp+0x9/0xf
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff810855d6>] ? watchdog_timer_fn+0x130/0x178
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff81059f11>] ? __run_hrtimer+0xa3/0xff
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8105a188>] ? hrtimer_interrupt+0xe6/0x190
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8105a14b>] ? hrtimer_interrupt+0xa9/0x190
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8101e5a9>] ? hpet_interrupt_handler+0x26/0x2d
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8105a26f>] ? hrtimer_peek_ahead_timers+0x9/0xd
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff81044fcc>] ? __do_softirq+0xc5/0x17a
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff81003adc>] ? call_softirq+0x1c/0x28
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8100506b>] ? do_softirq+0x31/0x66
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff81003673>] ? call_function_interrupt+0x13/0x20
-Nov 17 13:44:46 slot1/luipaard100a warning kernel: <EOI>
-[<ffffffffa0219986>] ? vmx_get_msr+0x0/0x123 [kvm_intel]
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffffa01d11c0>] ? kvm_arch_vcpu_ioctl_run+0x80e/0xaf1 [kvm]
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffffa01d11b4>] ? kvm_arch_vcpu_ioctl_run+0x802/0xaf1 [kvm]
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8114e59b>] ? inode_has_perm+0x65/0x72
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffffa01c77f5>] ? kvm_vcpu_ioctl+0xf2/0x5ba [kvm]
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff8114e642>] ? file_has_perm+0x9a/0xac
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff810f9ec2>] ? vfs_ioctl+0x21/0x6b
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff810fa406>] ? do_vfs_ioctl+0x487/0x4da
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff810fa4aa>] ? sys_ioctl+0x51/0x70
-Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-[<ffffffff810029d1>] ? system_call_fastpath+0x3c/0x41
+The new 4x JVM results on a 4-node, 32-CPU, 64 GB RAM system,
+(240 seconds run, 8 warehouses per 4 JVM instances):
 
-or
+     spec1.txt:           throughput =     177460.44 SPECjbb2005 bops
+     spec2.txt:           throughput =     176175.08 SPECjbb2005 bops
+     spec3.txt:           throughput =     175053.91 SPECjbb2005 bops
+     spec4.txt:           throughput =     171383.52 SPECjbb2005 bops
+    
+Which is close to (but not yet completely matching) the hard binding
+performance figures.
+ 
+Mainline has the following 4x JVM performance:
+    
+     spec1.txt:           throughput =     157839.25 SPECjbb2005 bops
+     spec2.txt:           throughput =     156969.15 SPECjbb2005 bops
+     spec3.txt:           throughput =     157571.59 SPECjbb2005 bops
+     spec4.txt:           throughput =     157873.86 SPECjbb2005 bops
 
-BUG: soft lockup - CPU#2 stuck for 11s! [ksoftirqd/2:13]
-Modules linked in: ebt_vlan ebtable_filter ebtables 8021q garp bridge
-stp llc ipt_REJECT iptable_filter xt_NOTRACK nf_conntrack iptable_raw
-ip_tables loop ext2 binfmt_misc hed womdict(U) vnic(U) parport_pc lp
-parport predis(U) lasthop(U) ipv6 toggler vhost_net tun kvm_intel kvm
-jiffies(U) sysstats hrsleep i2c_dev datastor(U) linux_user_bde(P)(U)
-linux_kernel_bde(P)(U) serio_raw tg3 libphy ehci_hcd i2c_i801 i2c_core
-raid1 raid0 virtio_pci virtio_blk virtio virtio_ring mvsas libsas
-scsi_transport_sas mptspi mptscsih mptbase scsi_transport_spi 3w_9xxx
-sata_svw(U) ahci serverworks sata_sil ata_piix libata sd_mod
-crc_t10dif amd74xx piix ide_gd_mod ide_core dm_snapshot dm_mirror
-dm_region_hash dm_log dm_mod ext3 jbd mbcache
-Pid: 13, comm: ksoftirqd/2 Tainted: P           ----------------
-2.6.32-131.21.1.el6.x86_64 #1
-Call Trace:
- <IRQ>  [<ffffffff81084f95>] ? get_timestamp+0x9/0xf
- [<ffffffff810855d6>] ? watchdog_timer_fn+0x130/0x178
- [<ffffffff81059f11>] ? __run_hrtimer+0xa3/0xff
- [<ffffffff81088e33>] ? __rcu_process_callbacks+0xdd/0x252
- [<ffffffff8105a14b>] ? hrtimer_interrupt+0xa9/0x190
- [<ffffffff81045041>] ? __do_softirq+0x13a/0x17a
- [<ffffffff8105a26f>] ? hrtimer_peek_ahead_timers+0x9/0xd
- [<ffffffff81044fcc>] ? __do_softirq+0xc5/0x17a
- [<ffffffff81044ced>] ? ksoftirqd+0x0/0xbe
- [<ffffffff81003adc>] ? call_softirq+0x1c/0x28
- <EOI>  [<ffffffff8100506b>] ? do_softirq+0x31/0x66
- [<ffffffff81044ced>] ? ksoftirqd+0x0/0xbe
- [<ffffffff81044d42>] ? ksoftirqd+0x55/0xbe
- [<ffffffff81044ced>] ? ksoftirqd+0x0/0xbe
- [<ffffffff81057089>] ? kthread+0x79/0x84
- [<ffffffff810039da>] ? child_rip+0xa/0x20
- [<ffffffff81057010>] ? kthread+0x0/0x84
- [<ffffffff810039d0>] ? child_rip+0x0/0x20
+This result is achieved through the following patches:
 
-I am wondering if there is known issue in kernel world, any info would
-be helpful.
+  sched: Introduce staged average NUMA faults
+  sched: Track groups of shared tasks
+  sched: Use the best-buddy 'ideal cpu' in balancing decisions
+  sched, mm, mempolicy: Add per task mempolicy
+  sched: Average the fault stats longer
+  sched: Use the ideal CPU to drive active balancing
+  sched: Add hysteresis to p->numa_shared
+  sched: Track shared task's node groups and interleave their memory allocations
 
-Thanks
+These patches make increasing use of the shared/private access
+pattern distinction between tasks.
 
-Vincent
+Automatic, task group accurate interleaving of memory is the
+most important new placement optimization feature in -v17.
+
+It works by first implementing a task CPU placement feature:
+
+    Using our shared/private distinction to allow the separate
+    handling of 'private' versus 'shared' workloads, we enable
+    the active-balancing of them:
+    
+     - private tasks, via the sched_update_ideal_cpu_private() function,
+       try to 'spread' the system as evenly as possible.
+    
+     - shared-access tasks that also share their mm (threads), via the
+       sched_update_ideal_cpu_shared() function, try to 'compress'
+       with other shared tasks on as few nodes as possible.
+    
+As tasks are tracked as distinct groups of 'shared access pattern'
+tasks, they are compressed towards as few nodes as possible. While
+the scheduler performs this compression, a mempolicy node mask can
+be constructed almost for free - and in turn be used for the memory
+allocations of the tasks.
+
+There are two notable special cases of the interleaving:
+
+     - if a group of shared tasks fits on a single node. In this case
+       the interleaving happens on a single bit, a single node and thus
+       turns into nice node-local allocations.
+    
+     - if a large group spans the whole system: in this case the node
+       masks will cover the whole system, and all memory gets evenly
+       interleaved and available RAM bandwidth gets utilized. This is
+       preferable to allocating memory assymetrically and overloading
+       certain CPU links and running into their bandwidth limitations.
+
+"Private" and non-NUMA tasks on the other hand are not affected and
+continue to do efficient node-local allocations.
+
+With this approach we avoid most of the 'threading means shared access
+patterns' heuristics that AutoNUMA uses, by automatically separating
+out threads that have a private working set and not binding them to
+the other threads forcibly.
+
+The thread group heuristics are not completely eliminated though, as
+can be seen in the "sched: Use the ideal CPU to drive active balancing"
+patch. It's not hard-coded into the design in any case and could be
+extended to other task group information: the automatic NUMA balancing
+of cgroups for example.
+ 
+Thanks,
+
+    Ingo
+
+-------------------->
+
+Andrea Arcangeli (1):
+  numa, mm: Support NUMA hinting page faults from gup/gup_fast
+
+Ingo Molnar (14):
+  mm: Optimize the TLB flush of sys_mprotect() and change_protection()
+    users
+  sched, mm, numa: Create generic NUMA fault infrastructure, with
+    architectures overrides
+  sched, mm, x86: Add the ARCH_SUPPORTS_NUMA_BALANCING flag
+  sched, numa, mm: Interleave shared tasks
+  sched: Implement NUMA scanning backoff
+  sched: Improve convergence
+  sched: Introduce staged average NUMA faults
+  sched: Track groups of shared tasks
+  sched: Use the best-buddy 'ideal cpu' in balancing decisions
+  sched, mm, mempolicy: Add per task mempolicy
+  sched: Average the fault stats longer
+  sched: Use the ideal CPU to drive active balancing
+  sched: Add hysteresis to p->numa_shared
+  sched: Track shared task's node groups and interleave their memory
+    allocations
+
+Mel Gorman (1):
+  mm/migration: Improve migrate_misplaced_page()
+
+Peter Zijlstra (11):
+  mm: Count the number of pages affected in change_protection()
+  sched, numa, mm: Add last_cpu to page flags
+  sched: Make find_busiest_queue() a method
+  sched, numa, mm: Describe the NUMA scheduling problem formally
+  mm/migrate: Introduce migrate_misplaced_page()
+  sched, numa, mm, arch: Add variable locality exception
+  sched, numa, mm: Add the scanning page fault machinery
+  sched: Add adaptive NUMA affinity support
+  sched: Implement constant, per task Working Set Sampling (WSS) rate
+  sched, numa, mm: Count WS scanning against present PTEs, not virtual
+    memory ranges
+  sched: Implement slow start for working set sampling
+
+Rik van Riel (6):
+  mm/generic: Only flush the local TLB in ptep_set_access_flags()
+  x86/mm: Only do a local tlb flush in ptep_set_access_flags()
+  x86/mm: Introduce pte_accessible()
+  mm: Only flush the TLB when clearing an accessible pte
+  x86/mm: Completely drop the TLB flush from ptep_set_access_flags()
+  sched, numa, mm: Add credits for NUMA placement
+
+ CREDITS                                  |    1 +
+ Documentation/scheduler/numa-problem.txt |  236 +++++
+ arch/sh/mm/Kconfig                       |    1 +
+ arch/x86/Kconfig                         |    2 +
+ arch/x86/include/asm/pgtable.h           |    6 +
+ arch/x86/mm/pgtable.c                    |    8 +-
+ include/asm-generic/pgtable.h            |   59 ++
+ include/linux/huge_mm.h                  |   12 +
+ include/linux/hugetlb.h                  |    8 +-
+ include/linux/init_task.h                |    8 +
+ include/linux/mempolicy.h                |   47 +-
+ include/linux/migrate.h                  |    7 +
+ include/linux/mm.h                       |   99 +-
+ include/linux/mm_types.h                 |   50 +
+ include/linux/mmzone.h                   |   14 +-
+ include/linux/page-flags-layout.h        |   83 ++
+ include/linux/sched.h                    |   54 +-
+ init/Kconfig                             |   81 ++
+ kernel/bounds.c                          |    4 +
+ kernel/sched/core.c                      |  105 ++-
+ kernel/sched/fair.c                      | 1464 ++++++++++++++++++++++++++----
+ kernel/sched/features.h                  |   13 +
+ kernel/sched/sched.h                     |   39 +-
+ kernel/sysctl.c                          |   45 +-
+ mm/Makefile                              |    1 +
+ mm/huge_memory.c                         |  163 ++++
+ mm/hugetlb.c                             |   10 +-
+ mm/internal.h                            |    5 +-
+ mm/memcontrol.c                          |    7 +-
+ mm/memory.c                              |  105 ++-
+ mm/mempolicy.c                           |  175 +++-
+ mm/migrate.c                             |  106 ++-
+ mm/mprotect.c                            |   69 +-
+ mm/numa.c                                |   73 ++
+ mm/pgtable-generic.c                     |    9 +-
+ 35 files changed, 2818 insertions(+), 351 deletions(-)
+ create mode 100644 Documentation/scheduler/numa-problem.txt
+ create mode 100644 include/linux/page-flags-layout.h
+ create mode 100644 mm/numa.c
+
+-- 
+1.7.11.7
+
