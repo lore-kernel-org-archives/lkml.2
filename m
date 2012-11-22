@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2KVT2P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:28:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40184 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756969Ab2KVT07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756970Ab2KVT07 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 22 Nov 2012 14:26:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40129 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756840Ab2KVT0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:53 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 39/40] mm: sched: numa: Control enabling and disabling of NUMA balancing
-Date: Thu, 22 Nov 2012 19:25:52 +0000
-Message-Id: <1353612353-1576-40-git-send-email-mgorman@suse.de>
+Subject: [PATCH 35/40] mm: numa: Introduce last_nid to the page frame
+Date: Thu, 22 Nov 2012 19:25:48 +0000
+Message-Id: <1353612353-1576-36-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,245 +30,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Kconfig options and kernel parameters to allow the
-enabling and disabling of automatic NUMA balancing. The existance
-of such a switch was and is very important when debugging problems
-related to transparent hugepages and we should have the same for
-automatic NUMA placement.
+This patch introduces a last_nid field to the page struct. This is used
+to build a two-stage filter in the next patch that is aimed at
+mitigating a problem whereby pages migrate to the wrong node when
+referenced by a process that was running off its home node.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/kernel-parameters.txt |    3 +++
- include/linux/sched.h               |    4 +++
- init/Kconfig                        |    8 ++++++
- kernel/sched/core.c                 |   48 ++++++++++++++++++++++++-----------
- kernel/sched/fair.c                 |    3 +++
- kernel/sched/features.h             |    6 +++--
- mm/mempolicy.c                      |   46 +++++++++++++++++++++++++++++++++
- 7 files changed, 101 insertions(+), 17 deletions(-)
+ include/linux/mm.h       |   30 ++++++++++++++++++++++++++++++
+ include/linux/mm_types.h |    4 ++++
+ mm/page_alloc.c          |    2 ++
+ 3 files changed, 36 insertions(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 9776f06..d984acb 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -403,6 +403,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	atkbd.softrepeat= [HW]
- 			Use software keyboard repeat
- 
-+	balancenuma=	[KNL,X86] Enable or disable automatic NUMA balancing.
-+			Allowed values are enable and disable
-+
- 	baycom_epp=	[HW,AX25]
- 			Format: <io>,<mode>
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1068afd..2669bdd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1563,10 +1563,14 @@ struct task_struct {
- 
- #ifdef CONFIG_BALANCE_NUMA
- extern void task_numa_fault(int node, int pages, bool migrated);
-+extern void set_balancenuma_state(bool enabled);
- #else
- static inline void task_numa_fault(int node, int pages, bool migrated)
- {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d04c2f0..a0834e1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -693,6 +693,36 @@ static inline int page_to_nid(const struct page *page)
  }
-+static inline void set_balancenuma_state(bool enabled)
-+{
-+}
  #endif
  
- /*
-diff --git a/init/Kconfig b/init/Kconfig
-index 6897a05..4cccc00f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -720,6 +720,14 @@ config ARCH_USES_NUMA_PROT_NONE
- 	depends on ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	depends on BALANCE_NUMA
- 
-+config BALANCE_NUMA_DEFAULT_ENABLED
-+	bool "Automatically enable NUMA aware memory/task placement"
-+	default y
-+	depends on BALANCE_NUMA
-+	help
-+	  If set, autonumic NUMA balancing will be enabled if running on a NUMA
-+	  machine.
-+
- config BALANCE_NUMA
- 	bool "Memory placement aware NUMA scheduler"
- 	default n
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a59d869..4841f4f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -192,23 +192,10 @@ static void sched_feat_disable(int i) { };
- static void sched_feat_enable(int i) { };
- #endif /* HAVE_JUMP_LABEL */
- 
--static ssize_t
--sched_feat_write(struct file *filp, const char __user *ubuf,
--		size_t cnt, loff_t *ppos)
-+static int sched_feat_set(char *cmp)
- {
--	char buf[64];
--	char *cmp;
--	int neg = 0;
- 	int i;
--
--	if (cnt > 63)
--		cnt = 63;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--	cmp = strstrip(buf);
-+	int neg = 0;
- 
- 	if (strncmp(cmp, "NO_", 3) == 0) {
- 		neg = 1;
-@@ -228,6 +215,27 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
- 		}
- 	}
- 
-+	return i;
-+}
-+
-+static ssize_t
-+sched_feat_write(struct file *filp, const char __user *ubuf,
-+		size_t cnt, loff_t *ppos)
-+{
-+	char buf[64];
-+	char *cmp;
-+	int i;
-+
-+	if (cnt > 63)
-+		cnt = 63;
-+
-+	if (copy_from_user(&buf, ubuf, cnt))
-+		return -EFAULT;
-+
-+	buf[cnt] = 0;
-+	cmp = strstrip(buf);
-+
-+	i = sched_feat_set(cmp);
- 	if (i == __SCHED_FEAT_NR)
- 		return -EINVAL;
- 
-@@ -1549,6 +1557,16 @@ static void __sched_fork(struct task_struct *p)
- #endif /* CONFIG_BALANCE_NUMA */
- }
- 
 +#ifdef CONFIG_BALANCE_NUMA
-+void set_balancenuma_state(bool enabled)
++static inline int page_xchg_last_nid(struct page *page, int nid)
 +{
-+	if (enabled)
-+		sched_feat_set("NUMA");
-+	else
-+		sched_feat_set("NO_NUMA");
-+}
-+#endif /* CONFIG_BALANCE_NUMA */
-+
- /*
-  * fork()/clone()-time setup:
-  */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c1be907..b4bc459 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -811,6 +811,9 @@ void task_numa_fault(int node, int pages, bool migrated)
- {
- 	struct task_struct *p = current;
- 
-+	if (!sched_feat_numa(NUMA))
-+		return;
-+
- 	/* FIXME: Allocate task-specific structure for placement policy here */
- 
- 	/*
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index 7cfd289..d402368 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -63,8 +63,10 @@ SCHED_FEAT(RT_RUNTIME_SHARE, true)
- SCHED_FEAT(LB_MIN, false)
- 
- /*
-- * Apply the automatic NUMA scheduling policy
-+ * Apply the automatic NUMA scheduling policy. Enabled automatically
-+ * at runtime if running on a NUMA machine. Can be controlled via
-+ * balancenuma=
-  */
- #ifdef CONFIG_BALANCE_NUMA
--SCHED_FEAT(NUMA,	true)
-+SCHED_FEAT(NUMA,	false)
- #endif
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index fd20e28..56ad9bf 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2521,6 +2521,50 @@ void mpol_free_shared_policy(struct shared_policy *p)
- 	mutex_unlock(&p->mutex);
- }
- 
-+#ifdef CONFIG_BALANCE_NUMA
-+static bool __initdata balancenuma_override;
-+
-+static void __init check_balancenuma_enable(void)
-+{
-+	bool balancenuma_default = false;
-+
-+	if (IS_ENABLED(CONFIG_BALANCE_NUMA_DEFAULT_ENABLED))
-+		balancenuma_default = true;
-+
-+	if (nr_node_ids > 1 && !balancenuma_override) {
-+		printk(KERN_INFO "Enabling automatic NUMA balancing. "
-+			"Configure with balancenuma= or sysctl");
-+		set_balancenuma_state(balancenuma_default);
-+	}
++	return xchg(&page->_last_nid, nid);
 +}
 +
-+static int __init setup_balancenuma(char *str)
++static inline int page_last_nid(struct page *page)
 +{
-+	int ret = 0;
-+	if (!str)
-+		goto out;
-+	balancenuma_override = true;
-+
-+	if (!strcmp(str, "enable")) {
-+		set_balancenuma_state(true);
-+		ret = 1;
-+	} else if (!strcmp(str, "disable")) {
-+		set_balancenuma_state(false);
-+		ret = 1;
-+	}
-+out:
-+	if (!ret)
-+		printk(KERN_WARNING "Unable to parse balancenuma=\n");
-+
-+	return ret;
++	return page->_last_nid;
 +}
-+__setup("balancenuma=", setup_balancenuma);
++static inline void reset_page_last_nid(struct page *page)
++{
++	page->_last_nid = -1;
++}
 +#else
-+static inline void __init check_balancenuma_enable(void)
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return page_to_nid(page);
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page_to_nid(page);
++}
++
++static inline void reset_page_last_nid(struct page *page)
 +{
 +}
-+#endif /* CONFIG_BALANCE_NUMA */
++#endif
 +
- /* assumes fs == KERNEL_DS */
- void __init numa_policy_init(void)
+ static inline struct zone *page_zone(const struct page *page)
  {
-@@ -2571,6 +2615,8 @@ void __init numa_policy_init(void)
- 
- 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
- 		printk("numa_policy_init: interleaving failed\n");
+ 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index b40f4ef..6b478ff 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -175,6 +175,10 @@ struct page {
+ 	 */
+ 	void *shadow;
+ #endif
 +
-+	check_balancenuma_enable();
++#ifdef CONFIG_BALANCE_NUMA
++	int _last_nid;
++#endif
  }
- 
- /* Reset policy of current process to default */
+ /*
+  * The struct page can be forced to be double word aligned so that atomic ops
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index df58654..fd6a073 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -608,6 +608,7 @@ static inline int free_pages_check(struct page *page)
+ 		bad_page(page);
+ 		return 1;
+ 	}
++	reset_page_last_nid(page);
+ 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+ 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+ 	return 0;
+@@ -3826,6 +3827,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
+ 		mminit_verify_page_links(page, zone, nid, pfn);
+ 		init_page_count(page);
+ 		reset_page_mapcount(page);
++		reset_page_last_nid(page);
+ 		SetPageReserved(page);
+ 		/*
+ 		 * Mark the block movable so that blocks are reserved for
 -- 
 1.7.9.2
 
