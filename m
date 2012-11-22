@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab2KVU5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:57:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:35350 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756131Ab2KVU5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:57:21 -0500
-Message-ID: <50AE91AD.1090709@parallels.com>
-Date: Fri, 23 Nov 2012 00:57:17 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932623Ab2KVU5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:57:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55399 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab2KVU5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:57:41 -0500
+Date: Thu, 22 Nov 2012 21:57:33 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v4 04/11] pwm: pwm-tiecap: Add device-tree binding
+ support for APWM driver
+Message-ID: <20121122205732.GB16716@avionic-0098.adnet.avionic-design.de>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <1353503469-18634-5-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Amnon Shiloh <u3557@miso.sublimeip.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: vdso && cr (Was: arch_check_bp_in_kernelspace: fix the range
- check)
-References: <20121121141627.GB21030@redhat.com> <20121121173043.F0319592076@miso.sublimeip.com> <20121122161238.GA27078@redhat.com>
-In-Reply-To: <20121122161238.GA27078@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+Content-Disposition: inline
+In-Reply-To: <1353503469-18634-5-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:pM87Pyjb9LCH2kK6ryt+VsBDci5Vtosyx0b9ZgZaqwS
+ zX8dkvFjVeQq3xa8oqrePPzUcE0gDLSSImr6Sf5rdjjkj9cMUI
+ JmwMXYOlcQozULpu4Ll63UX60tRbAOt6RYPXOf69ssrFo1ckGp
+ m3iNA1GvNXxDGSJTi5syV1FLTLyZVbmq9nCYcPkXa7l+MzReX/
+ keUEU4gwWg1Y2Pw/axVVsGhKLLKnc8BrTKw6sbaOF8PW3Cnsi2
+ HZUYkHiUnaH2Xru2xFS5iWolWhhgv1MyKGcrWUTRVkWKkU3yoN
+ Z8mMb9i0XXCTIJ7+bNXkM/xwxj9No/TwoA9ULwNA3/124B+L8+
+ i078oKAlsJ1P6ej51tb/r7ltNGdRL9RRYdPw4QyhnPDB4b1zYZ
+ 4/J5ZFLY2xF5rwFzztGsTy6Q8MO6o7vgFKv9tYFpI64XLXz7ph
+ /tAS4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 08:12 PM, Oleg Nesterov wrote:
-> On 11/22, Amnon Shiloh wrote:
->>
->> Now however, that "vsyscall" was effectively replaced by vdso, it
->> creates a new problem for me and probably for anyone else who uses
->> some form of checkpoint/restore:
-> 
-> Oh, sorry, I can't help here. I can only add Cyrill and Pavel, they
-> seem to enjoy trying to solve the c/r problems.
 
-Thank you :)
+--wzJLGUyc3ArbnUjN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> Suppose a process is checkpointed because the system needs to reboot
->> for a kernel-upgrade, then restored on the new and different kernel.
->> The new VDSO page may no longer match the new kernel - it could for
->> example fetch data from addresses in the vsyscall page that now
->> contain different things; or in case the hardware also was changed,
->> it may use machine-instructions that are now illegal.
+On Wed, Nov 21, 2012 at 06:41:01PM +0530, Philip, Avinash wrote:
+[...]
+> +static const struct of_device_id ecap_of_match[] = {
+> +	{
+> +		.compatible	= "ti,am33xx-ecap",
+> +	},
 
-If we could make VDSO entry points not move across the kernels (iow, make
-them looks as yet another syscall table) this would help, I suppose.
+Same here, can be shorter by putting it on one line instead of three.
 
-> Sure. You shouldn't try to save/restore this page(s) directly. But
-> I do not really understand why do you need. IOW, I don't really
-> understand the problem, it depends on what c/r actually does.
+Thierry
 
-Think about it like this -- you stop a process, then change the kern^w VDSO
-page. Everything should work as it used to be :)
+--wzJLGUyc3ArbnUjN
+Content-Type: application/pgp-signature
 
->> As I don't mind to forego the "fast" sys_time(), my obvious solution
->> is to disable the vdso for traced processes that may be checkpointed.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-This is very poor solution from my POV. Nobody wants to have their applications
-work fast only until it's checkpointed.
+iQIcBAEBAgAGBQJQrpG8AAoJEN0jrNd/PrOhaf4QAMCySG9oIcWyadnrDf+uEbVK
+lc1jDrWL2HLEDc/ZWAyGnqUaO4NIyz7MM4bFcyOI7/6MqIxKZdxewKrT+o2UQ5Kk
+Ubmr7GjiOoUbnGPuyy/e8B1BqfKByp7AdE0g/ju8OpKk2MP/OBvIfGsecWchkO/k
+0mAWSo6anaVcTVjXvvfLfu+HJph0cnUDxMxGeUV2BRqclB3GWVs3rHxcSi9pPWTy
+06OpPGPxIP/vB0tBZIf+45MsOK//lBQ0Y+QVAD9meGIsI5HcU06QxwNTHjayjaBO
+bY4Svc2ugp03aiT/QZgQmivKeF9n4ZLOUOX9A5UNIE0YG8iWItk6bXcHq5l/L1Gj
+MsjtzuR5DmqaiE9X8z2PAv6Zo5+E7eTF1sYiy16s2zOsTkhH8elbXDent7+ed6oY
+yZ+6t6W/+Rq1fGEQsLrIqG4wU4iu1zf45+mW2LgbcqeXRkk1p7mqE38/2ob5DcQu
+5XPzZqgq4tqy1bKHr7Up7iddjUSX8nQLi0i8DFoqolkZ9FrIT6jisCGapB7CxGIA
+8VSkgg2+YaY+3x+yzhtRxVIqv7tG5Jsh/+z9qTuSM82m5CO9KxsZ785/QL6RFFcA
+StmvZ7aRpk8fBq9JERp56fXPj6zaT996WWzgP7DRtIIW8kKUK06lzxwjzUQFr/Rk
+5R1gy8pF+7SVYAZZQSEs
+=0mxx
+-----END PGP SIGNATURE-----
 
-Thanks,
-Pavel
+--wzJLGUyc3ArbnUjN--
