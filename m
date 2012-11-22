@@ -1,163 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab2KVVa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:30:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
+	id S1755637Ab2KVVa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:30:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755188Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755190Ab2KVSkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 119/171] libceph: encapsulate advancing msg page
-Date: Wed, 21 Nov 2012 16:41:05 -0800
-Message-Id: <20121122004045.297678422@linuxfoundation.org>
+        Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [ 63/83] GFS2: Dont call file_accessed() with a shared glock
+Date: Wed, 21 Nov 2012 16:42:25 -0800
+Message-Id: <20121122004219.499555479@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
-(cherry picked from commit 84ca8fc87fcf4ab97bb8acdb59bf97bb4820cb14)
+commit 3d1626889a64bd5a661544d582036a0a02104a60 upstream.
 
-In write_partial_msg_pages(), once all the data from a page has been
-sent we advance to the next one.  Put the code that takes care of
-this into its own function.
+file_accessed() was being called by gfs2_mmap() with a shared glock. If it
+needed to update the atime, it was crashing because it dirtied the inode in
+gfs2_dirty_inode() without holding an exclusive lock. gfs2_dirty_inode()
+checked if the caller was already holding a glock, but it didn't make sure that
+the glock was in the exclusive state. Now, instead of calling file_accessed()
+while holding the shared lock in gfs2_mmap(), file_accessed() is called after
+grabbing and releasing the glock to update the inode.  If file_accessed() needs
+to update the atime, it will grab an exclusive lock in gfs2_dirty_inode().
 
-While modifying write_partial_msg_pages(), make its local variable
-"in_trail" be Boolean, and use the local variable "msg" (which is
-just the connection's current out_msg pointer) consistently.
+gfs2_dirty_inode() now also checks to make sure that if the calling process has
+already locked the glock, it has an exclusive lock.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   58 +++++++++++++++++++++++++++++----------------------
- 1 file changed, 34 insertions(+), 24 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -891,6 +891,33 @@ static void iter_bio_next(struct bio **b
- }
- #endif
+---
+ fs/gfs2/file.c  |   12 +++++-------
+ fs/gfs2/super.c |    3 ++-
+ 2 files changed, 7 insertions(+), 8 deletions(-)
+
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -515,15 +515,13 @@ static int gfs2_mmap(struct file *file,
+ 		struct gfs2_holder i_gh;
+ 		int error;
  
-+static void out_msg_pos_next(struct ceph_connection *con, struct page *page,
-+			size_t len, size_t sent, bool in_trail)
-+{
-+	struct ceph_msg *msg = con->out_msg;
-+
-+	BUG_ON(!msg);
-+	BUG_ON(!sent);
-+
-+	con->out_msg_pos.data_pos += sent;
-+	con->out_msg_pos.page_pos += sent;
-+	if (sent == len) {
-+		con->out_msg_pos.page_pos = 0;
-+		con->out_msg_pos.page++;
-+		con->out_msg_pos.did_page_crc = false;
-+		if (in_trail)
-+			list_move_tail(&page->lru,
-+				       &msg->trail->head);
-+		else if (msg->pagelist)
-+			list_move_tail(&page->lru,
-+				       &msg->pagelist->head);
-+#ifdef CONFIG_BLOCK
-+		else if (msg->bio)
-+			iter_bio_next(&msg->bio_iter, &msg->bio_seg);
-+#endif
-+	}
-+}
-+
- /*
-  * Write as much message data payload as we can.  If we finish, queue
-  * up the footer.
-@@ -906,11 +933,11 @@ static int write_partial_msg_pages(struc
- 	bool do_datacrc = !con->msgr->nocrc;
- 	int ret;
- 	int total_max_write;
--	int in_trail = 0;
-+	bool in_trail = false;
- 	size_t trail_len = (msg->trail ? msg->trail->length : 0);
- 
- 	dout("write_partial_msg_pages %p msg %p page %d/%d offset %d\n",
--	     con, con->out_msg, con->out_msg_pos.page, con->out_msg->nr_pages,
-+	     con, msg, con->out_msg_pos.page, msg->nr_pages,
- 	     con->out_msg_pos.page_pos);
- 
- #ifdef CONFIG_BLOCK
-@@ -934,13 +961,12 @@ static int write_partial_msg_pages(struc
- 
- 		/* have we reached the trail part of the data? */
- 		if (con->out_msg_pos.data_pos >= data_len - trail_len) {
--			in_trail = 1;
-+			in_trail = true;
- 
- 			total_max_write = data_len - con->out_msg_pos.data_pos;
- 
- 			page = list_first_entry(&msg->trail->head,
- 						struct page, lru);
--			max_write = PAGE_SIZE;
- 		} else if (msg->pages) {
- 			page = msg->pages[con->out_msg_pos.page];
- 		} else if (msg->pagelist) {
-@@ -964,14 +990,14 @@ static int write_partial_msg_pages(struc
- 		if (do_datacrc && !con->out_msg_pos.did_page_crc) {
- 			void *base;
- 			u32 crc;
--			u32 tmpcrc = le32_to_cpu(con->out_msg->footer.data_crc);
-+			u32 tmpcrc = le32_to_cpu(msg->footer.data_crc);
- 			char *kaddr;
- 
- 			kaddr = kmap(page);
- 			BUG_ON(kaddr == NULL);
- 			base = kaddr + con->out_msg_pos.page_pos + bio_offset;
- 			crc = crc32c(tmpcrc, base, len);
--			con->out_msg->footer.data_crc = cpu_to_le32(crc);
-+			msg->footer.data_crc = cpu_to_le32(crc);
- 			con->out_msg_pos.did_page_crc = true;
- 		}
- 		ret = ceph_tcp_sendpage(con->sock, page,
-@@ -984,30 +1010,14 @@ static int write_partial_msg_pages(struc
- 		if (ret <= 0)
- 			goto out;
- 
--		con->out_msg_pos.data_pos += ret;
--		con->out_msg_pos.page_pos += ret;
--		if (ret == len) {
--			con->out_msg_pos.page_pos = 0;
--			con->out_msg_pos.page++;
--			con->out_msg_pos.did_page_crc = false;
--			if (in_trail)
--				list_move_tail(&page->lru,
--					       &msg->trail->head);
--			else if (msg->pagelist)
--				list_move_tail(&page->lru,
--					       &msg->pagelist->head);
--#ifdef CONFIG_BLOCK
--			else if (msg->bio)
--				iter_bio_next(&msg->bio_iter, &msg->bio_seg);
--#endif
+-		gfs2_holder_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_ANY, &i_gh);
+-		error = gfs2_glock_nq(&i_gh);
+-		if (error == 0) {
+-			file_accessed(file);
+-			gfs2_glock_dq(&i_gh);
 -		}
-+		out_msg_pos_next(con, page, len, (size_t) ret, in_trail);
+-		gfs2_holder_uninit(&i_gh);
++		error = gfs2_glock_nq_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_ANY,
++					   &i_gh);
+ 		if (error)
+ 			return error;
++		/* grab lock to update inode */
++		gfs2_glock_dq_uninit(&i_gh);
++		file_accessed(file);
  	}
+ 	vma->vm_ops = &gfs2_vm_ops;
+ 	vma->vm_flags |= VM_CAN_NONLINEAR;
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -810,7 +810,8 @@ static void gfs2_dirty_inode(struct inod
+ 			return;
+ 		}
+ 		need_unlock = 1;
+-	}
++	} else if (WARN_ON_ONCE(ip->i_gl->gl_state != LM_ST_EXCLUSIVE))
++		return;
  
- 	dout("write_partial_msg_pages %p msg %p done\n", con, msg);
- 
- 	/* prepare and queue up footer, too */
- 	if (!do_datacrc)
--		con->out_msg->footer.flags |= CEPH_MSG_FOOTER_NOCRC;
-+		msg->footer.flags |= CEPH_MSG_FOOTER_NOCRC;
- 	con_out_kvec_reset(con);
- 	prepare_write_message_footer(con);
- 	ret = 1;
+ 	if (current->journal_info == NULL) {
+ 		ret = gfs2_trans_begin(sdp, RES_DINODE, 0);
 
 
