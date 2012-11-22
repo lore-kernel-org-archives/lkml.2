@@ -1,179 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab2KVWIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:08:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
+	id S1758066Ab2KVWJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:09:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754815Ab2KVSkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:06 -0500
+	id S1754811Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>
-Subject: [ 135/171] libceph: set peer name on con_open, not init
-Date: Wed, 21 Nov 2012 16:41:21 -0800
-Message-Id: <20121122004046.902246847@linuxfoundation.org>
+        Eddie Chapman <eddie@ehuk.net>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 51/83] wireless: allow 40 MHz on world roaming channels 12/13
+Date: Wed, 21 Nov 2012 16:42:13 -0800
+Message-Id: <20121122004218.198202203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-(cherry picked from commit b7a9e5dd40f17a48a72f249b8bbc989b63bae5fd)
+commit 43c771a1963ab461a2f194e3c97fded1d5fe262f upstream.
 
-The peer name may change on each open attempt, even when the connection is
-reused.
+When in world roaming mode, allow 40 MHz to be used
+on channels 12 and 13 so that an AP that is, e.g.,
+using HT40+ on channel 9 (in the UK) can be used.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
+Reported-by: Eddie Chapman <eddie@ehuk.net>
+Tested-by: Eddie Chapman <eddie@ehuk.net>
+Acked-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/mds_client.c           |    7 ++++---
- include/linux/ceph/messenger.h |    4 ++--
- net/ceph/messenger.c           |   12 +++++++-----
- net/ceph/mon_client.c          |    4 ++--
- net/ceph/osd_client.c          |   10 ++++++----
- 5 files changed, 21 insertions(+), 16 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -394,8 +394,7 @@ static struct ceph_mds_session *register
- 	s->s_seq = 0;
- 	mutex_init(&s->s_mutex);
- 
--	ceph_con_init(&s->s_con, s, &mds_con_ops, &mdsc->fsc->client->msgr,
--		CEPH_ENTITY_TYPE_MDS, mds);
-+	ceph_con_init(&s->s_con, s, &mds_con_ops, &mdsc->fsc->client->msgr);
- 
- 	spin_lock_init(&s->s_gen_ttl_lock);
- 	s->s_cap_gen = 0;
-@@ -437,7 +436,8 @@ static struct ceph_mds_session *register
- 	mdsc->sessions[mds] = s;
- 	atomic_inc(&s->s_ref);  /* one ref to sessions[], one to caller */
- 
--	ceph_con_open(&s->s_con, ceph_mdsmap_get_addr(mdsc->mdsmap, mds));
-+	ceph_con_open(&s->s_con, CEPH_ENTITY_TYPE_MDS, mds,
-+		      ceph_mdsmap_get_addr(mdsc->mdsmap, mds));
- 
- 	return s;
- 
-@@ -2529,6 +2529,7 @@ static void send_mds_reconnect(struct ce
- 	session->s_seq = 0;
- 
- 	ceph_con_open(&session->s_con,
-+		      CEPH_ENTITY_TYPE_MDS, mds,
- 		      ceph_mdsmap_get_addr(mdsc->mdsmap, mds));
- 
- 	/* replay unsafe requests */
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -224,9 +224,9 @@ extern void ceph_messenger_init(struct c
- 
- extern void ceph_con_init(struct ceph_connection *con, void *private,
- 			const struct ceph_connection_operations *ops,
--			struct ceph_messenger *msgr, __u8 entity_type,
--			__u64 entity_num);
-+			struct ceph_messenger *msgr);
- extern void ceph_con_open(struct ceph_connection *con,
-+			  __u8 entity_type, __u64 entity_num,
- 			  struct ceph_entity_addr *addr);
- extern bool ceph_con_opened(struct ceph_connection *con);
- extern void ceph_con_close(struct ceph_connection *con);
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -523,12 +523,17 @@ EXPORT_SYMBOL(ceph_con_close);
- /*
-  * Reopen a closed connection, with a new peer address.
-  */
--void ceph_con_open(struct ceph_connection *con, struct ceph_entity_addr *addr)
-+void ceph_con_open(struct ceph_connection *con,
-+		   __u8 entity_type, __u64 entity_num,
-+		   struct ceph_entity_addr *addr)
- {
- 	dout("con_open %p %s\n", con, ceph_pr_addr(&addr->in_addr));
- 	set_bit(OPENING, &con->state);
- 	WARN_ON(!test_and_clear_bit(CLOSED, &con->state));
- 
-+	con->peer_name.type = (__u8) entity_type;
-+	con->peer_name.num = cpu_to_le64(entity_num);
-+
- 	memcpy(&con->peer_addr, addr, sizeof(*addr));
- 	con->delay = 0;      /* reset backoff memory */
- 	queue_con(con);
-@@ -548,7 +553,7 @@ bool ceph_con_opened(struct ceph_connect
-  */
- void ceph_con_init(struct ceph_connection *con, void *private,
- 	const struct ceph_connection_operations *ops,
--	struct ceph_messenger *msgr, __u8 entity_type, __u64 entity_num)
-+	struct ceph_messenger *msgr)
- {
- 	dout("con_init %p\n", con);
- 	memset(con, 0, sizeof(*con));
-@@ -558,9 +563,6 @@ void ceph_con_init(struct ceph_connectio
- 
- 	con_sock_state_init(con);
- 
--	con->peer_name.type = (__u8) entity_type;
--	con->peer_name.num = cpu_to_le64(entity_num);
--
- 	mutex_init(&con->mutex);
- 	INIT_LIST_HEAD(&con->out_queue);
- 	INIT_LIST_HEAD(&con->out_sent);
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -143,11 +143,11 @@ static int __open_session(struct ceph_mo
- 		monc->want_next_osdmap = !!monc->want_next_osdmap;
- 
- 		ceph_con_init(&monc->con, monc, &mon_con_ops,
--			&monc->client->msgr,
--			CEPH_ENTITY_TYPE_MON, monc->cur_mon);
-+			&monc->client->msgr);
- 
- 		dout("open_session mon%d opening\n", monc->cur_mon);
- 		ceph_con_open(&monc->con,
-+			      CEPH_ENTITY_TYPE_MON, monc->cur_mon,
- 			      &monc->monmap->mon_inst[monc->cur_mon].addr);
- 
- 		/* initiatiate authentication handshake */
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -639,8 +639,7 @@ static struct ceph_osd *create_osd(struc
- 	INIT_LIST_HEAD(&osd->o_osd_lru);
- 	osd->o_incarnation = 1;
- 
--	ceph_con_init(&osd->o_con, osd, &osd_con_ops, &osdc->client->msgr,
--		CEPH_ENTITY_TYPE_OSD, onum);
-+	ceph_con_init(&osd->o_con, osd, &osd_con_ops, &osdc->client->msgr);
- 
- 	INIT_LIST_HEAD(&osd->o_keepalive_item);
- 	return osd;
-@@ -750,7 +749,8 @@ static int __reset_osd(struct ceph_osd_c
- 		ret = -EAGAIN;
- 	} else {
- 		ceph_con_close(&osd->o_con);
--		ceph_con_open(&osd->o_con, &osdc->osdmap->osd_addr[osd->o_osd]);
-+		ceph_con_open(&osd->o_con, CEPH_ENTITY_TYPE_OSD, osd->o_osd,
-+			      &osdc->osdmap->osd_addr[osd->o_osd]);
- 		osd->o_incarnation++;
- 	}
- 	return ret;
-@@ -1005,7 +1005,9 @@ static int __map_request(struct ceph_osd
- 		dout("map_request osd %p is osd%d\n", req->r_osd, o);
- 		__insert_osd(osdc, req->r_osd);
- 
--		ceph_con_open(&req->r_osd->o_con, &osdc->osdmap->osd_addr[o]);
-+		ceph_con_open(&req->r_osd->o_con,
-+			      CEPH_ENTITY_TYPE_OSD, o,
-+			      &osdc->osdmap->osd_addr[o]);
- 	}
- 
- 	if (req->r_osd) {
+---
+ net/wireless/reg.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -141,9 +141,8 @@ static const struct ieee80211_regdomain
+ 	.reg_rules = {
+ 		/* IEEE 802.11b/g, channels 1..11 */
+ 		REG_RULE(2412-10, 2462+10, 40, 6, 20, 0),
+-		/* IEEE 802.11b/g, channels 12..13. No HT40
+-		 * channel fits here. */
+-		REG_RULE(2467-10, 2472+10, 20, 6, 20,
++		/* IEEE 802.11b/g, channels 12..13. */
++		REG_RULE(2467-10, 2472+10, 40, 6, 20,
+ 			NL80211_RRF_PASSIVE_SCAN |
+ 			NL80211_RRF_NO_IBSS),
+ 		/* IEEE 802.11 channel 14 - Only JP enables
 
 
