@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab2KVSjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:39:51 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60825 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab2KVSjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:39:49 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: [PATCH 1/2] input: gpio-keys: Disable hardware on suspend
-Date: Thu, 22 Nov 2012 13:23:36 +0000
-Message-Id: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755037Ab2KVSkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:40:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754862Ab2KVSkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 065/171] libceph: dont reset kvec in prepare_write_banner()
+Date: Wed, 21 Nov 2012 16:40:11 -0800
+Message-Id: <20121122004039.894277276@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Disable hardware if active when suspending if the hw can not
-wake the system from suspend.
+------------------
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+From: Alex Elder <elder@inktank.com>
+
+(cherry picked from commit d329156f16306449c273002486c28de3ddddfd89)
+
+Move the kvec reset for a connection out of prepare_write_banner and
+into its only caller.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/input/keyboard/gpio_keys.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ net/ceph/messenger.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 6a68041..2cf6757 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -46,6 +46,8 @@ struct gpio_keys_drvdata {
- 	const struct gpio_keys_platform_data *pdata;
- 	struct input_dev *input;
- 	struct mutex disable_lock;
-+	bool enabled;
-+	bool enable_after_suspend;
- 	struct gpio_button_data data[0];
- };
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -686,7 +686,6 @@ static int prepare_connect_authorizer(st
+ static void prepare_write_banner(struct ceph_messenger *msgr,
+ 				 struct ceph_connection *con)
+ {
+-	ceph_con_out_kvec_reset(con);
+ 	ceph_con_out_kvec_add(con, strlen(CEPH_BANNER), CEPH_BANNER);
+ 	ceph_con_out_kvec_add(con, sizeof (msgr->my_enc_addr),
+ 					&msgr->my_enc_addr);
+@@ -726,10 +725,9 @@ static int prepare_write_connect(struct
+ 	con->out_connect.protocol_version = cpu_to_le32(proto);
+ 	con->out_connect.flags = 0;
  
-@@ -531,6 +533,8 @@ static int gpio_keys_open(struct input_dev *input)
- 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
- 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
++	ceph_con_out_kvec_reset(con);
+ 	if (include_banner)
+ 		prepare_write_banner(msgr, con);
+-	else
+-		ceph_con_out_kvec_reset(con);
+ 	ceph_con_out_kvec_add(con, sizeof (con->out_connect), &con->out_connect);
  
-+	ddata->enabled = true;
-+
- 	return pdata->enable ? pdata->enable(input->dev.parent) : 0;
- }
- 
-@@ -539,6 +543,8 @@ static void gpio_keys_close(struct input_dev *input)
- 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
- 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
- 
-+	ddata->enabled = false;
-+
- 	if (pdata->disable)
- 		pdata->disable(input->dev.parent);
- }
-@@ -685,6 +691,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 
- 	ddata->pdata = pdata;
- 	ddata->input = input;
-+	ddata->enabled = false;
- 	mutex_init(&ddata->disable_lock);
- 
- 	platform_set_drvdata(pdev, ddata);
-@@ -796,6 +803,10 @@ static int gpio_keys_suspend(struct device *dev)
- 			if (bdata->button->wakeup)
- 				enable_irq_wake(bdata->irq);
- 		}
-+	} else {
-+		ddata->enable_after_suspend = ddata->enabled;
-+		if (ddata->enabled)
-+			gpio_keys_close(ddata->input);
- 	}
- 
- 	return 0;
-@@ -814,6 +825,10 @@ static int gpio_keys_resume(struct device *dev)
- 		if (gpio_is_valid(bdata->button->gpio))
- 			gpio_keys_gpio_report_event(bdata);
- 	}
-+
-+	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
-+		gpio_keys_open(ddata->input);
-+
- 	input_sync(ddata->input);
- 
- 	return 0;
--- 
-1.7.9.5
+ 	con->out_more = 0;
+
 
