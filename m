@@ -1,114 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab2KVUmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:42:42 -0500
+	id S932254Ab2KVUnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:43:01 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964987Ab2KVS6u (ORCPT
+	with ESMTP id S964984Ab2KVS6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:58:50 -0500
-Message-ID: <50AD4907.5040102@zytor.com>
-Date: Wed, 21 Nov 2012 13:35:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+Date: Wed, 21 Nov 2012 17:39:28 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-4e33e06555329e93523b3d2590b9210bf84120a3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, penberg@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu
+In-Reply-To: <1353123563-3103-3-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-3-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm:
+  Split out split_mem_range from init_memory_mapping
+Git-Commit-ID: 4e33e06555329e93523b3d2590b9210bf84120a3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Blower, Melanie" <melanie.blower@intel.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: compilation issue, inline assembly arch/x86/kvm/emulate.c
- fails at -O0
-References: <B3584E72CFEBED439A3ECA9BCE67A4EF1B17AF90@FMSMSX107.amr.corp.intel.com>
-In-Reply-To: <B3584E72CFEBED439A3ECA9BCE67A4EF1B17AF90@FMSMSX107.amr.corp.intel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/mixed;
- boundary="------------080901020100030501060401"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:39:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080901020100030501060401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Commit-ID:  4e33e06555329e93523b3d2590b9210bf84120a3
+Gitweb:     http://git.kernel.org/tip/4e33e06555329e93523b3d2590b9210bf84120a3
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:38:39 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:01 -0800
 
-On 11/14/2012 11:45 AM, Blower, Melanie wrote:
-> [1.] gcc -O0 assembly arch/x86/kvm/emulate.c gets compilation failure -- incorrect register restrictions
-> [2.] Full description of the problem/report:
-> I'm trying to compile this file at -O0, but gcc chokes in register allocation at the inline assembly.
-> 
-> In the ordinary Linux build, this file compiles with gcc at -O2, without compilation errors.
-> 
-> At -O0, gcc chokes with this message: 
-> gcc  -w -c ./emulateE.c               // (using preprocessed file)
-> ./emulateE.c: In function `em_mul_ex':
-> ./emulateE.c:1918:5: error: can't find a register in class `AREG' while reloading `asm'
-> ./emulateE.c:1918:5: error: `asm' operand has impossible constraints
-> 
-> Explanation:
-> The file contains an inline asm of a kind:
-> 
->     __asm__ __volatile__ ( " ..... " :
-> 
->  "=m" ((ctxt)->eflags), "=&r" (_tmp), "+a" (*rax), "+d" (*rdx), "+qm"(ex) :
->  "i" (11), "m" ((ctxt)->src . val), "a" (*rax), "d" (*rdx)); 
-> 
-> Note that "+a" in inputs already means that eax is the return value. An then "a" is used as an output constraint too.
-> 
+x86, mm: Split out split_mem_range from init_memory_mapping
 
-Hi Melanie,
+So make init_memory_mapping smaller and readable.
 
-Can you test the attached patch?
+-v2: use 0 instead of nr_range as input parameter found by Yasuaki Ishimatsu.
 
-	-hpa
-
-
-
---------------080901020100030501060401
-Content-Type: text/x-patch;
- name="0001-x86-kvm-Remove-incorrect-redundant-assembly-constrai.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-x86-kvm-Remove-incorrect-redundant-assembly-constrai.pa";
- filename*1="tch"
-
->From f8d8e2842ca05fd89788e35c087f02c6159b023a Mon Sep 17 00:00:00 2001
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Wed, 21 Nov 2012 13:29:20 -0800
-Subject: [PATCH] x86, kvm: Remove incorrect redundant assembly constraint
-
-In __emulate_1op_rax_rdx, we use "+a" and "+d" which are input/output
-constraints, and *then* use "a" and "d" as input constraints.  This is
-incorrect, but happens to work on some versions of gcc.
-
-However, it breaks gcc with -O0 and icc, and may break on future
-versions of gcc.
-
-Reported-by: Melanie Blower <melanie.blower@intel.com>
+Suggested-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-3-git-send-email-yinghai@kernel.org
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/B3584E72CFEBED439A3ECA9BCE67A4EF1B17AF90@FMSMSX107.amr.corp.intel.com
 ---
- arch/x86/kvm/emulate.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/mm/init.c | 41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 39171cb..bba39bf 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -426,8 +426,7 @@ static void invalidate_registers(struct x86_emulate_ctxt *ctxt)
- 			_ASM_EXTABLE(1b, 3b)				\
- 			: "=m" ((ctxt)->eflags), "=&r" (_tmp),		\
- 			  "+a" (*rax), "+d" (*rdx), "+qm"(_ex)		\
--			: "i" (EFLAGS_MASK), "m" ((ctxt)->src.val),	\
--			  "a" (*rax), "d" (*rdx));			\
-+			: "i" (EFLAGS_MASK), "m" ((ctxt)->src.val));	\
- 	} while (0)
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index aa5b0da..6368b86 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
  
- /* instruction has only one source operand, destination is implicit (e.g. mul, div, imul, idiv) */
--- 
-1.7.11.7
-
-
---------------080901020100030501060401--
+-/*
+- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+- * This runs before bootmem is initialized and gets pages directly from
+- * the physical memory. To access them they are temporarily mapped.
+- */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++				     unsigned long start,
++				     unsigned long end)
+ {
+ 	unsigned long start_pfn, end_pfn;
+-	unsigned long ret = 0;
+ 	unsigned long pos;
+-	struct map_range mr[NR_RANGE_MR];
+-	int nr_range, i;
+-
+-	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+-	       start, end - 1);
+-
+-	memset(mr, 0, sizeof(mr));
+-	nr_range = 0;
++	int i;
+ 
+ 	/* head if not big page alignment ? */
+ 	start_pfn = start >> PAGE_SHIFT;
+@@ -258,6 +246,27 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+ 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+ 
++	return nr_range;
++}
++
++/*
++ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
++ * This runs before bootmem is initialized and gets pages directly from
++ * the physical memory. To access them they are temporarily mapped.
++ */
++unsigned long __init_refok init_memory_mapping(unsigned long start,
++					       unsigned long end)
++{
++	struct map_range mr[NR_RANGE_MR];
++	unsigned long ret = 0;
++	int nr_range, i;
++
++	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
++
++	memset(mr, 0, sizeof(mr));
++	nr_range = split_mem_range(mr, 0, start, end);
++
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
