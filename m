@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab2KVUQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:16:20 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48963 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2KVUQN (ORCPT
+	id S1757347Ab2KVUQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:16:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59757 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab2KVTty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:16:13 -0500
-Date: Wed, 21 Nov 2012 20:31:12 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-In-Reply-To: <20121121172046.GA28975@gmail.com>
-Message-ID: <alpine.DEB.2.00.1211212021030.12667@chino.kir.corp.google.com>
-References: <20121119162909.GL8218@suse.de> <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com> <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com> <20121120060014.GA14065@gmail.com> <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com> <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com> <20121120090637.GA14873@gmail.com> <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com> <20121121171047.GA28875@gmail.com>
- <20121121172046.GA28975@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 22 Nov 2012 14:49:54 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 06/46] staging: line6: drop dump_buf sysfs attr
+Date: Thu, 22 Nov 2012 20:48:45 +0100
+Message-Id: <1353613765-18690-7-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012, Ingo Molnar wrote:
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 40 ----------------------------------------
+ 1 file changed, 40 deletions(-)
 
-> Btw., what I did was to simply look at David's profile on the 
-> regressing system and I compared it to the profile I got on a 
-> pretty similar (but unfortunately not identical and not 
-> regressing) system. I saw 3 differences:
-> 
->  - the numa emulation faults
->  - the higher TLB miss cost
->  - numa/core's failure to handle 4K pages properly
-> 
-> And addressed those, in the hope of one of them making a
-> difference.
-> 
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 56eab0a..c1eb145 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -610,42 +610,6 @@ static ssize_t pod_set_system_param_string(struct usb_line6_pod *pod,
+ }
+ 
+ /*
+-	"read" request on "dump_buf" special file.
+-*/
+-static ssize_t pod_get_dump_buf(struct device *dev,
+-				struct device_attribute *attr, char *buf)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	int retval = line6_dump_wait_interruptible(&pod->dumpreq);
+-	if (retval < 0)
+-		return retval;
+-	memcpy(buf, &pod->prog_data_buf, sizeof(pod->prog_data_buf));
+-	return sizeof(pod->prog_data_buf);
+-}
+-
+-/*
+-	"write" request on "dump_buf" special file.
+-*/
+-static ssize_t pod_set_dump_buf(struct device *dev,
+-				struct device_attribute *attr,
+-				const char *buf, size_t count)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-
+-	if (count != sizeof(pod->prog_data)) {
+-		dev_err(pod->line6.ifcdev,
+-			"data block must be exactly %d bytes\n",
+-			(int)sizeof(pod->prog_data));
+-		return -EINVAL;
+-	}
+-
+-	memcpy(&pod->prog_data_buf, buf, sizeof(pod->prog_data));
+-	return sizeof(pod->prog_data);
+-}
+-
+-/*
+ 	"write" request on "finish" special file.
+ */
+ static ssize_t pod_set_finish(struct device *dev,
+@@ -892,8 +856,6 @@ POD_GET_SYSTEM_PARAM(tuner_pitch, 1);
+ 
+ /* POD special files: */
+ static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
+-static DEVICE_ATTR(dump_buf, S_IWUSR | S_IRUGO, pod_get_dump_buf,
+-		   pod_set_dump_buf);
+ static DEVICE_ATTR(finish, S_IWUSR, line6_nop_read, pod_set_finish);
+ static DEVICE_ATTR(firmware_version, S_IRUGO, pod_get_firmware_version,
+ 		   line6_nop_write);
+@@ -1004,7 +966,6 @@ static int pod_create_files2(struct device *dev)
+ 	int err;
+ 
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_device_id));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_dump_buf));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_finish));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_firmware_version));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
+@@ -1142,7 +1103,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 					       properties->device_bit, dev);
+ 
+ 			device_remove_file(dev, &dev_attr_device_id);
+-			device_remove_file(dev, &dev_attr_dump_buf);
+ 			device_remove_file(dev, &dev_attr_finish);
+ 			device_remove_file(dev, &dev_attr_firmware_version);
+ 			device_remove_file(dev, &dev_attr_midi_postprocess);
+-- 
+1.8.0
 
-I agree that it's worth a try and if it's helpful to your debugging then 
-I'll always commit to trying things out.  I've pulled tip#master at 
-9f7b91a96bb6 ("Merge branch 'x86/urgent'") and performance improves 0.3% 
-with 16 warehouses with vsyscall=emulate, i.e. a revert of 01e9c2441eee 
-("x86/vsyscall: Add Kconfig option to use native vsyscalls and switch to 
-it") so I'd recommend that gets dropped based on my results and Andy's 
-feedback unless anybody can demonstrate it's better (which very well may 
-be the case on some systems, but then again that's why its configurable 
-from the command line).
-
-You're also completely right about the old glibc, mine is seven years old; 
-I can upgrade that since I need to install libnuma as well on this box 
-since you asked for the autonuma topology information that I haven't 
-forgotten about but will definitely get around to doing.
-
-> There's a fourth line of inquiry I'm pursuing as well: the node 
-> assymetry that David and Paul mentioned could have a performance 
-> effect as well - resulting from non-ideal placement under 
-> numa/core.
-> 
-> That is not easy to cure - I have written a patch to take the 
-> node assymetry into consideration, I'm still testing it with 
-> David's topology simulated on a testbox:
-> 
->    numa=fake=4:10,20,20,30,20,10,20,20,20,20,10,20,30,20,20,10
-> 
-
-This very much may be the case and that characteristic of this box is why 
-I picked it to test with first.  Just curious what types of topologies 
-you've benchmarked on for your results if you have that available?  An 
-early version of sched/numa used to panic on this machine and Peter was 
-interested in its topology (see https://lkml.org/lkml/2012/5/25/89) so 
-perhaps I'm the only one testing with such a thing thus far?
