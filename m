@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab2KVTfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:35:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40522 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757139Ab2KVTe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:34:57 -0500
-Date: Thu, 22 Nov 2012 16:24:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: memory-cgroup bug
-Message-ID: <20121122152441.GA9609@dhcp22.suse.cz>
-References: <20121121200207.01068046@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment
-In-Reply-To: <20121121200207.01068046@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757179Ab2KVTfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:35:52 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:59006 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148Ab2KVTfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:35:48 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-94-50adcca66f28
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Padmavathi Venna'" <padma.v@samsung.com>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Wolfram Sang'" <w.sang@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1353450428-2615-1-git-send-email-dianders@chromium.org>
+ <1353450428-2615-2-git-send-email-dianders@chromium.org>
+ <20121121040913.GA13280@sirena.org.uk>
+ <CAD=FV=V-59u-J40G3x9oK5phUX-5pa9xJLN9QnGJCRqGfc_2ow@mail.gmail.com>
+In-reply-to: <CAD=FV=V-59u-J40G3x9oK5phUX-5pa9xJLN9QnGJCRqGfc_2ow@mail.gmail.com>
+Subject: RE: [PATCH 2/2] i2c: s3c2410: Get the i2c bus number from alias id
+Date: Thu, 22 Nov 2012 15:56:38 +0900
+Message-id: <0f5f01cdc87e$84cacc50$8e6064f0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3IFrvYD3sAbhE7QUOnPIUUOEWWiwAYQjXw
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t8zQ91lZ9YGGOy6rGTR8fcLo8XlXXPY
+	LGac38fkwOzxeZNcAGMUl01Kak5mWWqRvl0CV8aHzydZCnZzVtyaq9XAuIe9i5GTQ0LARGLG
+	joOsELaYxIV769m6GLk4hASWMUo0npkP5HCAFc2+wQ0Rn84osa13OyOE85dR4vfpZ2wg3WwC
+	GhKH3z8DmyoikCjxcflEsEnMAleYJNb/eAM19j2jxPKJx8CqOAWCJZZ+eM0IYgsLeEscW7oO
+	zGYRUJVY8+stWA2vgK3ElI7bTBC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb17xlhjhVXeLRX12I
+	I4wkvi3YBVUiIrHvxTuo8QIS3yYfYoEol5XYdIAZ4vt17BK/V0LZkhIHV9xgmcAoMQvJ4llI
+	Fs9CsngWkg0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYoREm/QOxlUNFocYBTgYlXh4
+	MwzWBgixJpYVV+YeYpTgYFYS4V1UABTiTUmsrEotyo8vKs1JLT7E6AN0+ERmKdHkfGAiyCuJ
+	NzQ2NjEzMTUxtzQ1N8UhrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qBccXBss0zLos/7+KW
+	mvl3R/6PnXbbzrCIrk3PWR6yV+yQwaQJYtaXhT4oXkzhn9FgpPtrC8euuolymt0v5xhUVq/k
+	EHg235lH/eFv0UV/i7sarO4/+SEn18D+2Oa2wP9Gr5LJGRm/XpsFN2nW+XulmeSc2y/zu6H2
+	hcbh3We5bnWvlem/PlmwRomlOCPRUIu5qDgRAPxbfYTjAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+xoO6yM2sDDM7PkLPo+PuF0eLyrjls
+	FjPO72NyYPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHjw+eT
+	LAW7OStuzdVqYNzD3sXIwSEhYCIx+wZ3FyMnkCkmceHeerYuRi4OIYHpjBLberczQjh/GSV+
+	n37GBlLFJqAhcfj9M3YQW0QgUeLj8olgHcwCV5gk1v94A9X+nlFi+cRjYFWcAsESSz+8ZgSx
+	hQW8JY4tXQdmswioSqz59RashlfAVmJKx20mCFtQ4sfkeywgNrOAlsT6nceZIGx5ic1r3jJD
+	nK0u8eivLsQRRhLfFuyCKhGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5r
+	pFecmFtcmpeul5yfu4kRHM3PpHcwrmqwOMQowMGoxMObYbA2QIg1say4MvcQowQHs5II76IC
+	oBBvSmJlVWpRfnxRaU5q8SFGH6BHJzJLiSbnAxNNXkm8obGJmZGlkZmFkYm5OQ5hJXHeZo+U
+	ACGB9MSS1OzU1ILUIphxTBycUg2MSlxzF0qK2guWn78a/eov90vTfLVZofpzMyqSN73rWp/4
+	8byduLyGmWes35LDe2p4/VZ9PVZy4YL0XMYDV49IL5umXCQWrPqi5Y8Bt8WNTxX/U9kkM/5W
+	lrZMeJtaLys+SWS5TEzm7jtbaz+fXSvy2WpZsvzG9KfR1yo2b5k5/ZjsM/OFzPtWKLEUZyQa
+	ajEXFScCAM6juuQTAwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-11-12 20:02:07, azurIt wrote:
-> Hi,
+Doug Anderson wrote:
 > 
-> i'm using memory cgroup for limiting our users and having a really
-> strange problem when a cgroup gets out of its memory limit. It's very
-> strange because it happens only sometimes (about once per week on
-> random user), out of memory is usually handled ok.
-
-What is your memcg configuration? Do you use deeper hierarchies, is
-use_hierarchy enabled? Is the memcg oom (aka memory.oom_control)
-enabled? Do you use soft limit for those groups? Is memcg swap
-accounting enabled and memsw limits in place?
-Is the machine under global memory pressure as well?
-Could you post sysrq+t or sysrq+w?
-
-> This happens when problem occures:
->  - no new processes can be started for this cgroup
->  - current processes are freezed and taking 100% of CPU
->  - when i try to 'strace' any of current processes, the whole strace
->    freezes until process is killed (strace cannot be terminated by
->    CTRL-c)
->  - problem can be resolved by raising memory limit for cgroup or
->    killing of few processes inside cgroup so some memory is freed
+> On Tue, Nov 20, 2012 at 8:09 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> > On Tue, Nov 20, 2012 at 02:27:04PM -0800, Doug Anderson wrote:
+> >> From: Padmavathi Venna <padma.v@samsung.com>
+> >>
+> >> Get the i2c bus number that the device is connected to using the alias
+> >> id.  This makes debugging / grokking of kernel messages much easier.
+> >
+> > This doesn't look like a s3c2410 specific change - it's a generic device
+> > tree issue.  This suggests that it sohuld be implemented in the
+> > framework so that all I2C controllers with DT can use it.
 > 
-> I also garbbed the content of /proc/<pid>/stack of freezed process:
-> [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-> [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> Good suggestion.  I have posted a series with the title "Add automatic
+> bus number support for i2c busses with device tree".  It contains the
+> i2c-core patch as well as a patch removing similar code from the pxa
+> i2c driver.
+> 
+> Kukjin: please consider this patch abandoned and superseded by the new
+> i2c-core patch.  As Olof said, the patch for adding aliases for
+> exynos4 should still be fine to apply.
+> 
+OK, I see.
 
-Hmm what is this?
+Thanks.
 
-> [<ffffffff8110ba56>] mem_cgroup_charge_common+0x56/0xa0
-> [<ffffffff8110bae5>] mem_cgroup_newpage_charge+0x45/0x50
-> [<ffffffff810ec54e>] do_wp_page+0x14e/0x800
-> [<ffffffff810eda34>] handle_pte_fault+0x264/0x940
-> [<ffffffff810ee248>] handle_mm_fault+0x138/0x260
-> [<ffffffff810270ed>] do_page_fault+0x13d/0x460
-> [<ffffffff815b53ff>] page_fault+0x1f/0x30
-> [<ffffffffffffffff>] 0xffffffffffffffff
->
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-How many tasks are hung in mem_cgroup_handle_oom? If there were many
-of them then it'd smell like an issue fixed by 79dfdaccd1d5 (memcg:
-make oom_lock 0 and 1 based rather than counter) and its follow up fix
-23751be00940 (memcg: fix hierarchical oom locking) but you are saying
-that you can reproduce with 3.2 and those went in for 3.1. 2.6.32 would
-make more sense.
-
-> I'm currently using kernel 3.2.34 but i'm having this problem since 2.6.32.
-
-I guess this is a clean vanilla (stable) kernel, right? Are you able to
-reproduce with the latest Linus tree?
-
--- 
-Michal Hocko
-SUSE Labs
