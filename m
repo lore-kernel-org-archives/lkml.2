@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab2KVWjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:39:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49015 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab2KVSdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Kreis <r.kreis@uni-bremen.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 07/38] ALSA: hda - Force to reset IEC958 status bits for AD codecs
-Date: Wed, 21 Nov 2012 16:39:50 -0800
-Message-Id: <20121122003905.033190798@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1756721Ab2KVWlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:41:00 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:64605 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab2KVWk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:40:57 -0500
+Message-ID: <50AEA9F5.4010209@gmail.com>
+Date: Thu, 22 Nov 2012 20:40:53 -0200
+From: Marco Biscaro <marcobiscaro2112@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: add support to novatec wireless mouse
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This patch adds support to Novatec wireless mouse (device ID 0603:1602).
+Fixes bug https://bugzilla.kernel.org/show_bug.cgi?id=47031
 
-------------------
-
-From: Takashi Iwai <tiwai@suse.de>
-
-commit ae24c3191ba2ab03ec6b4be323e730e00404b4b6 upstream.
-
-Several bug reports suggest that the forcibly resetting IEC958 status
-bits is required for AD codecs to get the SPDIF output working
-properly after changing streams.
-
-Original fix credit to Javeed Shaikh.
-
-BugLink: https://bugs.launchpad.net/ubuntu/+source/alsa-driver/+bug/359361
-
-Reported-by: Robin Kreis <r.kreis@uni-bremen.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Marco Biscaro <marcobiscaro2112@gmail.com>
 ---
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -465,6 +465,7 @@ static int ad198x_build_pcms(struct hda_
- 	if (spec->multiout.dig_out_nid) {
- 		info++;
- 		codec->num_pcms++;
-+		codec->spdif_status_reset = 1;
- 		info->name = "AD198x Digital";
- 		info->pcm_type = HDA_PCM_TYPE_SPDIF;
- 		info->stream[SNDRV_PCM_STREAM_PLAYBACK] = ad198x_pcm_digital_playback;
-
-
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 9d7a428..b40632e 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -603,6 +603,7 @@
+ 
+ #define USB_VENDOR_ID_NOVATEK		0x0603
+ #define USB_DEVICE_ID_NOVATEK_PCT	0x0600
++#define USB_DEVICE_ID_NOVATEK_MOUSE	0x1602
+ 
+ #define USB_VENDOR_ID_NTRIG		0x1b96
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 11c7932..ef49a19 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -72,6 +72,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
