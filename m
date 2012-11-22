@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2KVXCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:02:03 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51929 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab2KVSag (ORCPT
+	id S1752703Ab2KVSaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:30:10 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45009 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751822Ab2KVSaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:30:36 -0500
-Message-ID: <50AD85C0.1010407@huawei.com>
-Date: Thu, 22 Nov 2012 09:54:08 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 22 Nov 2012 13:30:06 -0500
+Message-ID: <50ADC347.6020600@ilyx.ru>
+Date: Thu, 22 Nov 2012 10:16:39 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Betty Dall <betty.dall@hp.com>
-CC: <bhelgaas@google.com>, <jbarnes@virtuousgeek.org>,
-        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI: add PCIe 8.0 GT/s supported link speed define
-References: <1353437939-29210-1-git-send-email-betty.dall@hp.com>
-In-Reply-To: <1353437939-29210-1-git-send-email-betty.dall@hp.com>
-Content-Type: text/plain; charset="UTF-8"
+To: andrew mcgregor <andrew.mcgregor@alliedtelesis.co.nz>
+CC: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+References: <50AD43DB.4030800@ilyx.ru> <20121121213037.154306da@pyramind.ukuu.org.uk> <50AD4A01.7060500@ilyx.ru> <50AE2CE30200003600026B9A@gwia.alliedtelesyn.co.nz> <50ADAA26.7080103@ilyx.ru> <50ADC015.7080503@ilyx.ru>
+In-Reply-To: <50ADC015.7080503@ilyx.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.84]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-> index 20ae747..0cf8abb 100644
-> --- a/include/uapi/linux/pci_regs.h
-> +++ b/include/uapi/linux/pci_regs.h
-> @@ -469,6 +469,7 @@
->  #define  PCI_EXP_LNKSTA_CLS	0x000f	/* Current Link Speed */
->  #define  PCI_EXP_LNKSTA_CLS_2_5GB 0x01	/* Current Link Speed 2.5GT/s */
->  #define  PCI_EXP_LNKSTA_CLS_5_0GB 0x02	/* Current Link Speed 5.0GT/s */
-> +#define  PCI_EXP_LNKSTA_CLS_8_0GB 0x04	/* Current Link Speed 8.0GT/s */
->  #define  PCI_EXP_LNKSTA_NLW	0x03f0	/* Nogotiated Link Width */
->  #define  PCI_EXP_LNKSTA_NLW_SHIFT 4	/* start of NLW mask in link status */
->  #define  PCI_EXP_LNKSTA_LT	0x0800	/* Link Training */
-> 
-
-Hi Betty,
-   There is another patch uses this PCI_EXP_LNKSTA_CLS_8_0GB ? I think maybe move this change to
-the patch uses this symbol is better.
-
--- 
-Thanks!
-Yijing
+On 22.11.2012 10:03, Ilya Zykov wrote:
+> On 22.11.2012 8:29, Ilya Zykov wrote:
+>> On 22.11.2012 4:47, andrew mcgregor wrote:
+>>>
+>>>
+>>>>>> On 11/22/2012 at 10:39 AM, in message <50AD4A01.7060500@ilyx.ru>,
+>>>>>> Ilya Zykov
+>>> <ilya@ilyx.ru> wrote:
+>>>> On 22.11.2012 1:30, Alan Cox wrote:
+>>>>>> Function reset_buffer_flags() also invoked during the
+>>>>>> ioctl(...,TCFLSH,..). At the time of request we can have full buffers
+>>>>>> and throttled driver too. If we don't unthrottle driver, we can get
+>>>>>> forever throttled driver, because after request, we will have
+>>>>>> empty buffers and throttled driver and there is no place to
+>>>>>> unthrottle
+>>>> driver.
+>>>>>> It simple reproduce with "pty" pair then one side sleep on
+>>>>>> tty->write_wait,
+>>>>>> and other side do ioctl(...,TCFLSH,..). Then there is no place to do
+>>>> writers wake up.
+>>>>>
+>>>>>
+>>>>> So instead of revertng it why not just fix it ? Just add an
+>>>>> argument to
+>>>>> the reset_buffer_flags function to indicate if unthrottling is
+>>>>> permitted.
+>>>>>
+>>>>> Alan
+>>>>>
+>>>> Because in my opinion, unthrottling permitted always, except release
+>>>> last filp (tty->count == 0)
+>>>
+>>> Maybe so, but the patch was there in the first place to resolve an
+>>> actual observed bug, where a driver would lock up.  So the behaviour
+>>> needs preserved.
+>>>
+>>> Andrew
+>>>
+>>
+>> Maybe it was wrong driver, unfortunately, I didn't find full information
+>> about this bug. As an example, if driver indirectly call
+>> reset_buffer_flags() in driver's close() function it will be before
+>> decrement last (tty->count).
+>>
+>>
+>
+> Particularly, many drivers and 'serial_core.c' use tty_ldisc_flush() in
+> own close() function. tty_ldisc_flush() call reset_buffer_flags()
+> indirectly.
+> I think is wrong way use tty_ldisc_flush() in driver's close() function,
+> because tty layer 'tty_release()' call  tty_ldisc_release() after
+> decremented (tty->count), and clear all buffers.
+> We don't care about this in driver. And call ldisc's function.
+>
+>
+Sorry, last phrase not correct.
+We don't NEED care about this in driver. And call ldisc's function.
 
