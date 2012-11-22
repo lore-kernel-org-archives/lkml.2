@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab2KVSke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:40:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49630 "EHLO mail.kernel.org"
+	id S1755265Ab2KVSkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:40:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755038Ab2KVSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:24 -0500
+	id S1755038Ab2KVSke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Mark Tinguely <tinguely@sgi.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: [ 03/83] xfs: drop buffer io reference when a bad bio is built
-Date: Wed, 21 Nov 2012 16:41:25 -0800
-Message-Id: <20121122004212.764489150@linuxfoundation.org>
+        Rhys <rhyspuk@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 30/38] drm/i915: fix overlay on i830M
+Date: Wed, 21 Nov 2012 16:40:13 -0800
+Message-Id: <20121122003907.632959190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit d69043c42d8c6414fa28ad18d99973aa6c1c2e24 upstream.
+commit a9193983f4f292a82a00c72971c17ec0ee8c6c15 upstream.
 
-Error handling in xfs_buf_ioapply_map() does not handle IO reference
-counts correctly. We increment the b_io_remaining count before
-building the bio, but then fail to decrement it in the failure case.
-This leads to the buffer never running IO completion and releasing
-the reference that the IO holds, so at unmount we can leak the
-buffer. This leak is captured by this assert failure during unmount:
+The overlay on the i830M has a peculiar failure mode: It works the
+first time around after boot-up, but consistenly hangs the second time
+it's used.
 
-XFS: Assertion failed: atomic_read(&pag->pag_ref) == 0, file: fs/xfs/xfs_mount.c, line: 273
+Chris Wilson has dug out a nice errata:
 
-This is not a new bug - the b_io_remaining accounting has had this
-problem for a long, long time - it's just very hard to get a
-zero length bio being built by this code...
+"1.5.12 Clock Gating Disable for Display Register
+Address Offset:	06200h–06203h
 
-Further, the buffer IO error can be overwritten on a multi-segment
-buffer by subsequent bio completions for partial sections of the
-buffer. Hence we should only set the buffer error status if the
-buffer is not already carrying an error status. This ensures that a
-partial IO error on a multi-segment buffer will not be lost. This
-part of the problem is a regression, however.
+"Bit 3
+Ovrunit Clock Gating Disable.
+0 = Clock gating controlled by unit enabling logic
+1 = Disable clock gating function
+DevALM Errata ALM049: Overlay Clock Gating Must be Disabled:  Overlay
+& L2 Cache clock gating must be disabled in order to prevent device
+hangs when turning off overlay.SW must turn off Ovrunit clock gating
+(6200h) and L2 Cache clock gating (C8h)."
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Now I've nowhere found that 0xc8 register and hence couldn't apply the
+l2 cache workaround. But I've remembered that part of the magic that
+the OVERLAY_ON/OFF commands are supposed to do is to rearrange cache
+allocations so that the overlay scaler has some scratch space.
+
+And while pondering how that could explain the hang the 2nd time we
+enable the overlay, I've remembered that the old ums overlay code did
+_not_ issue the OVERLAY_OFF cmd.
+
+And indeed, disabling the OFF cmd results in the overlay working
+flawlessly, so I guess we can workaround the lack of the above
+workaround by simply never disabling the overlay engine once it's
+enabled.
+
+Note that we have the first part of the above w/a already implemented
+in i830_init_clock_gating - leave that as-is to avoid surprises.
+
+v2: Add a comment in the code.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47827
+Tested-by: Rhys <rhyspuk@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/intel_ring_emit(ring, /OUT_RING(/]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_buf.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_overlay.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -1197,9 +1197,14 @@ xfs_buf_bio_end_io(
- {
- 	xfs_buf_t		*bp = (xfs_buf_t *)bio->bi_private;
+--- a/drivers/gpu/drm/i915/intel_overlay.c
++++ b/drivers/gpu/drm/i915/intel_overlay.c
+@@ -428,9 +428,17 @@ static int intel_overlay_off(struct inte
+ 	OUT_RING(flip_addr);
+ 	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
+ 	/* turn overlay off */
+-	OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
+-	OUT_RING(flip_addr);
+-	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
++	if (IS_I830(dev)) {
++		/* Workaround: Don't disable the overlay fully, since otherwise
++		 * it dies on the next OVERLAY_ON cmd. */
++		OUT_RING(MI_NOOP);
++		OUT_RING(MI_NOOP);
++		OUT_RING(MI_NOOP);
++	} else {
++		OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
++		OUT_RING(flip_addr);
++		OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
++	}
+ 	ADVANCE_LP_RING();
  
--	xfs_buf_ioerror(bp, -error);
-+	/*
-+	 * don't overwrite existing errors - otherwise we can lose errors on
-+	 * buffers that require multiple bios to complete.
-+	 */
-+	if (!bp->b_error)
-+		xfs_buf_ioerror(bp, -error);
- 
--	if (!error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
-+	if (!bp->b_error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
- 		invalidate_kernel_vmap_range(bp->b_addr, xfs_buf_vmap_len(bp));
- 
- 	_xfs_buf_ioend(bp, 1);
-@@ -1279,6 +1284,11 @@ next_chunk:
- 		if (size)
- 			goto next_chunk;
- 	} else {
-+		/*
-+		 * This is guaranteed not to be the last io reference count
-+		 * because the caller (xfs_buf_iorequest) holds a count itself.
-+		 */
-+		atomic_dec(&bp->b_io_remaining);
- 		xfs_buf_ioerror(bp, EIO);
- 		bio_put(bio);
- 	}
+ 	return intel_overlay_do_wait_request(overlay, request,
 
 
