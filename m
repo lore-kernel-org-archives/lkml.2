@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab2KVUHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:07:11 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53846 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab2KVUHI (ORCPT
+	id S1756090Ab2KVUHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:07:49 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:50783 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab2KVUHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:07:08 -0500
-Date: Thu, 22 Nov 2012 12:03:55 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        ??? <cw00.choi@samsung.com>, anish singh <anish198519851985@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myunjoo.ham@gmail.com" <myunjoo.ham@gmail.com>,
-        "lockwood@android.com" <lockwood@android.com>,
-        "peterhuewe@gmx.de" <peterhuewe@gmx.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Re: Re: [PATCH] extcon : callback function to read cable property
-Message-ID: <20121122200355.GA12397@lizard>
-References: <32212704.282601353409543335.JavaMail.weblogic@epml17>
- <20ADAB092842284E95860F279283C564452531@BGSMSX101.gar.corp.intel.com>
+	Thu, 22 Nov 2012 15:07:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20ADAB092842284E95860F279283C564452531@BGSMSX101.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121121140109.GA7549@shaftnet.org>
+References: <1353422714-18327-1-git-send-email-pizza@shaftnet.org>
+	<CACVXFVM=+Gus1_6U82G6_mszoRNsqb24Y+F7UPPLPBgzQasaew@mail.gmail.com>
+	<20121120161011.GD18015@shaftnet.org>
+	<20121120163309.GB4990@kroah.com>
+	<20121120181203.GA7922@shaftnet.org>
+	<20121121093528.4fe11c26@tom-ThinkPad-T410>
+	<20121121140109.GA7549@shaftnet.org>
+Date: Thu, 22 Nov 2012 09:45:23 +0800
+Message-ID: <CACVXFVOuGQTLKSuFmTnv50-Eo0hzZSA2gh65upWu-E+439Dvsg@mail.gmail.com>
+Subject: Re: [PATCH] [firmware_class] Fix compile with no builtin firmware
+From: Ming Lei <tom.leiming@gmail.com>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 01:00:52PM +0000, Tc, Jenny wrote:
-[...]
-> For this solution to work, the cable provider itself
-> need to register with any of these subsystems - power_supply/regulator/charger manager
-> IMHO a cable provider shouldn't register itself with any of the subsystem.
-> 
->  For example it cannot register with power_supply subsystem
-> since it's not a power_supply. It's just source for a power_supply.
-> We register either charger/battery with power supply. I couldn't find a way
-> to register the cable with power supply subsystem.
+On Wed, Nov 21, 2012 at 10:01 PM, Solomon Peachy <pizza@shaftnet.org> wrote:
+> On Wed, Nov 21, 2012 at 09:35:28AM +0800, Ming Lei wrote:
+>> Solomon, I can't duplicate the build failure with your .config on 3.7-rc5-next.
+>
+> Okay, so it's since been fixed.
+>
+>> >  * The #ifdef wraps code that pertains solely to built-in firmware, (ie
+>> >    CONFIG_FIRMWARE_IN_KERNEL) and has an #else path for when it's disabled.
+>> >  * There is no point in a CONFIG_FW_LOADER test inside firmware_class.c
+>> >    when the file isn't even compiled unless CONFIG_FW_LOADER is defined.
+>>
+>> Enabling CONFIG_EXTRA_FIRMWARE still can make one firmware built in kernel
+>> even though CONFIG_FIRMWARE_IN_KERNEL isn't defined, so your patch will break
+>> this case.
+>
+> So... isn't the logical solution here to make CONFIG_EXTRA_FIRMARE
+> depend on (or enable) CONFIG_FIRMWARE_IN_KERNEL?  After all, the two are
+> apparently related.
 
-Yes, I guess that doesn't make much sense.
+No, it is not related closely, CONFIG_FIRMWARE_IN_KERNEL means
+that all in-kernel-tree firmware blobs should be included in kernel binary,
+but CONFIG_EXTRA_FIRMARE means that one additional firmware
+image will be put into kernel binary.
 
-> Anton,
-> Do you have any suggestion here?
-> 
-> I think the same case with regulator framework also. A cable doesn¡¯t belong
-> to a regulator framework. A cable doesn¡¯t expose any control attribute (current control/voltage
-> control). It just have  properties (eg current) controlled by external agents (Host machine/wall charger)
-> 
-> And charger manager is a consumer and not a provider. It cannot decide the charger cable capabilities.
-> 
-> I  have a modified version of the above patch which uses properties directly. 
-> https://gitorious.org/linux-charging-framework/linux-charging-framework/commit/ff358373dcb32027ebe1a267fc8b8999a3bd37e4
+>
+> I can update my patch to include this, and rewrite the commit message so
+> it's relevant to modern kernels, or I can just drop this and forget the
+> whole affair.
 
-(Please, always inline the patches.)
-
-I spent some time trying to understand what exactly you're trying to
-accomplish and I failed, and that's why:
-
-1. I see only some small snippets of the code, sometimes by means of URLs
-   and references to another patches, which is hard to follow when you
-   have like tens of emails in the thread;
-2. I believe I still didn't see a user of this callback.
-
-So, basically you're trying to force me to read your mind and guess your
-ideas, but as it appears, I'm not good at it. :)
-
-So, please do the following:
-
-- Prepare a complete, but minimal workable solution, a patchset that shows
-  how exactly you use the new features that you introduce;
-
-- The series must be an all-in-1 patchset, so people won't need to go back
-  and forth trying to understand how things depend on each other;
-
-- Briefly describe how things work, a typical use-case and how drivers
-  interact with each other. E.g. which driver registers extcon_device,
-  which driver reads mA field, which driver sets mA field (and based on
-  what information), which driver listens for the extcon events, which
-  driver produces the extcon events, etc. No need for lengthy explanations
-  about why you made the decisions, just a brief explanation of how things
-  currently work and interact.
+Considered that there is no your problem in -linus tree or -next tree and
+the current code works for long time, maybe it is better to not touch the code.
+Or suggest you to study this kind of config options and firmware/Makefie first,
+then figure out one proper patch.
 
 Thanks,
-Anton.
+-- 
+Ming Lei
