@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2KVSbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:31:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31975 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab2KVSbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:31:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,299,1352102400"; 
-   d="scan'208";a="252819532"
-Date: Thu, 22 Nov 2012 11:08:57 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Jun Chen <jun.d.chen@intel.com>
-Cc: Bi Chao <chao.bi@intel.com>, serial <linux-serial@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "russ.gorby" <russ.gorby@intel.com>
-Subject: Re: [PATCH] serial: ifx6x60: Add modem power off function in the
- platform reboot process
-Message-ID: <20121122110857.2f7c9804@bob.linux.org.uk>
-In-Reply-To: <1353583163.23300.7.camel@chenjun-workstation>
-References: <1353583163.23300.7.camel@chenjun-workstation>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753211Ab2KVScM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:32:12 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59790 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab2KVScE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:32:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353373552-16039-5-git-send-email-omar.luna@linaro.org>
+References: <1353373552-16039-1-git-send-email-omar.luna@linaro.org>
+	<1353373552-16039-5-git-send-email-omar.luna@linaro.org>
+Date: Thu, 22 Nov 2012 03:47:31 +0100
+Message-ID: <CAMP44s0h+6XTaJv8q-MJe4vmDiBzNG2cjTugSn7nFyAsZPk+Ag@mail.gmail.com>
+Subject: Re: [PATCH v5 4/5] iommu/omap: adapt to runtime pm
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Ido Yariv <ido@wizery.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 06:19:23 -0500
-Jun Chen <jun.d.chen@intel.com> wrote:
+On Tue, Nov 20, 2012 at 2:05 AM, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
 
-> 
-> This patch add modem power off function in the reboot process
-> according registering reboot callback to the reboot_notifier_list.
-> Also realizing the spi shutdown function.
+> @@ -1022,7 +1019,8 @@ static int __devexit omap_iommu_remove(struct platform_device *pdev)
+>         release_mem_region(res->start, resource_size(res));
+>         iounmap(obj->regbase);
+>
+> -       clk_put(obj->clk);
+> +       pm_runtime_disable(obj->dev);
+> +
+>         dev_info(&pdev->dev, "%s removed\n", obj->name);
+>         kfree(obj);
+>         return 0;
 
-Need to unregister the reboot notifier in the ifx_spi_exit path. If the
-driver module is unloaded you leave the callback present and the kernel
-will call into freed memory.
+I still believe this is not needed. The device framework does that
+when removing the device, and does it more properly, with
+__pm_runtime_disable(dev, false).
 
-Alan
+Cheers.
+
+-- 
+Felipe Contreras
