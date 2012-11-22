@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab2KVWCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:02:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
+	id S1758163Ab2KVWCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:02:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754874Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754872Ab2KVSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 052/171] reiserfs: Protect reiserfs_quota_on() with write lock
-Date: Wed, 21 Nov 2012 16:39:58 -0800
-Message-Id: <20121122004038.591718962@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 029/171] memcg: oom: fix totalpages calculation for memory.swappiness==0
+Date: Wed, 21 Nov 2012 16:39:35 -0800
+Message-Id: <20121122004036.296750719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,48 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit b9e06ef2e8706fe669b51f4364e3aeed58639eb2 upstream.
+commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
 
-In reiserfs_quota_on() we do quite some work - for example unpacking
-tail of a quota file. Thus we have to hold write lock until a moment
-we call back into the quota code.
+oom_badness() takes a totalpages argument which says how many pages are
+available and it uses it as a base for the score calculation.  The value
+is calculated by mem_cgroup_get_limit which considers both limit and
+total_swap_pages (resp.  memsw portion of it).
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
+with swappiness==0") we do not swap when swappiness is 0 which means
+that we cannot really use up all the totalpages pages.  This in turn
+confuses oom score calculation if the memcg limit is much smaller than
+the available swap because the used memory (capped by the limit) is
+negligible comparing to totalpages so the resulting score is too small
+if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+A wrong process might be selected as result.
+
+The problem can be worked around by checking mem_cgroup_swappiness==0
+and not considering swap at all in such a case.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/super.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ Documentation/cgroups/memory.txt |    4 ++++
+ mm/memcontrol.c                  |   21 +++++++++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -2170,8 +2170,11 @@ static int reiserfs_quota_on(struct supe
- 	struct reiserfs_transaction_handle th;
- 	int opt = type == USRQUOTA ? REISERFS_USRQUOTA : REISERFS_GRPQUOTA;
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -466,6 +466,10 @@ Note:
+ 5.3 swappiness
  
--	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt)))
--		return -EINVAL;
-+	reiserfs_write_lock(sb);
-+	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt))) {
-+		err = -EINVAL;
-+		goto out;
+ Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
++Please note that unlike the global swappiness, memcg knob set to 0
++really prevents from any swapping even if there is a swap storage
++available. This might lead to memcg OOM killer if there are no file
++pages to reclaim.
+ 
+ Following cgroups' swappiness can't be changed.
+ - root cgroup (uses /proc/sys/vm/swappiness).
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1489,17 +1489,26 @@ static int mem_cgroup_count_children(str
+ u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+-	u64 memsw;
+ 
+ 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+ 	/*
+-	 * If memsw is finite and limits the amount of swap space available
+-	 * to this memcg, return that limit.
++	 * Do not consider swap space if we cannot swap due to swappiness
+ 	 */
+-	return min(limit, memsw);
++	if (mem_cgroup_swappiness(memcg)) {
++		u64 memsw;
++
++		limit += total_swap_pages << PAGE_SHIFT;
++		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++
++		/*
++		 * If memsw is finite and limits the amount of swap space
++		 * available to this memcg, return that limit.
++		 */
++		limit = min(limit, memsw);
 +	}
- 
- 	/* Quotafile not on the same filesystem? */
- 	if (path->dentry->d_sb != sb) {
-@@ -2213,8 +2216,10 @@ static int reiserfs_quota_on(struct supe
- 		if (err)
- 			goto out;
- 	}
--	err = dquot_quota_on(sb, type, format_id, path);
-+	reiserfs_write_unlock(sb);
-+	return dquot_quota_on(sb, type, format_id, path);
- out:
-+	reiserfs_write_unlock(sb);
- 	return err;
++
++	return limit;
  }
  
+ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
 
 
