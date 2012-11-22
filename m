@@ -1,59 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2KVUim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:38:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35552 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339Ab2KVTKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:10:48 -0500
-Message-Id: <84c8a8$6kot4e@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,301,1352102400"; 
-   d="scan'208";a="223114382"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: drm_gem_create_mmap_offset / intel_uxa_prepare_access bo problems
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: "xorg-devel@lists.x.org Development" <xorg-devel@lists.x.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <50AE44C4.1060606@t-online.de>
-References: <50AE44C4.1060606@t-online.de>
-Date: Thu, 22 Nov 2012 15:37:23 +0000
+	id S1756902Ab2KVUiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:38:55 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41405 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab2KVUix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:38:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353547324.2172.1.camel@rzhang1-mobl4>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	<1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+	<1353547324.2172.1.camel@rzhang1-mobl4>
+Date: Thu, 22 Nov 2012 10:11:28 +0530
+Message-ID: <CAK44p21mnUpWpHWui6yFqaE5mrjTHhx48j3Mgm0K-KL3EskaGA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support quick cooling
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 16:29:08 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
-> Hi Chris!
-> 
-> Problem:
-> =======
-> Slowdown of system, missing icons after 16 days kernel uptime and 12 days Xserver uptime.
-> Xorg log: flooded with "(WW) intel(0): intel_uxa_prepare_access: bo map (use gtt? 1, access 1) failed: No space left on device" lines
-> dmesg: flooded with "[drm:drm_gem_create_mmap_offset] *ERROR* failed to allocate offset for bo 0" entries
-> 
-> 
-> Hardware
-> =======
-> AOpen i915GMm-hfs, Pentium-M Dothan
-> 
-> Software:
-> =======
-> linux kernel 3.6.6
-> full Xorg git master, fetch/build 10 November 2012,
-> video-intel: git f5d79b202dd448e61ab6ffce26fe9cbf9051d770
-> xserver: git 011f8458805e443ac9130865d2840a929a00cabf
-> rest of system openSuSE 12.1
-> 
-> Any idea?
+On 22 November 2012 06:52, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+>> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
+>> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
+>> jump to the upper or lower cooling level instead of incremental increase
+>> or decrease. This is needed for temperature sensors which support rising/falling
+>> threshold interrupts and polling can be totally avoided.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+>> ---
+>>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+>>  include/linux/thermal.h     |    2 ++
+>>  2 files changed, 17 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+>> index 1242cff..0d2d8d6 100644
+>> --- a/drivers/thermal/step_wise.c
+>> +++ b/drivers/thermal/step_wise.c
+>> @@ -35,6 +35,10 @@
+>>   *       state for this trip point
+>>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+>>   *       state for this trip point
+>> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+>> + *       state for this trip point
+>> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+>> + *       state for this trip point
+>>   */
+>>  static unsigned long get_target_state(struct thermal_instance *instance,
+>>                                       enum thermal_trend trend)
+>> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>>       } else if (trend == THERMAL_TREND_DROPPING) {
+>>               cur_state = cur_state > instance->lower ?
+>>                           (cur_state - 1) : instance->lower;
+>> -     }
+>> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
+>> +             cur_state = instance->upper;
+>> +     else if (trend == THERMAL_TREND_DROP_FULL)
+>> +             cur_state = instance->lower;
+>>
+>>       return cur_state;
+>>  }
+>> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
+>>  }
+>>
+>>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+>> -                             int trip, enum thermal_trip_type trip_type)
+>> +                             int trip, enum thermal_trip_type trip_type,
+>> +                             enum thermal_trend trend)
+>>  {
+>>       struct thermal_instance *instance;
+>>       struct thermal_cooling_device *cdev;
+>> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+>>               cdev = instance->cdev;
+>>               cdev->ops->get_cur_state(cdev, &cur_state);
+>>
+>> -             instance->target = cur_state > instance->lower ?
+>> +             if (trend == THERMAL_TREND_DROP_FULL)
+>> +                     instance->target = instance->lower;
+>> +             else
+>> +                     instance->target = cur_state > instance->lower ?
+>>                           (cur_state - 1) : THERMAL_NO_TARGET;
+>>
+> what do you expect to happen if the trend is THERMAL_TREND_RAISE_FULL at
+> this time?
+>
+Hi Rui,
 
-Well you kernel and drm has all the latest protections, which is good
-because it's usually a bo leak of some sort. First stop is to check
-xrestop, /sys/kernel/debug/dri/0/i915_gem_objects and
-intel-gpu-tools/scripts/who.sh
+I suppose this is dethrotle routine and hence this will be called when
+only drop in temperature happens. Also I did not used get_target_state
+here because I thought it might cause regression in the other existing
+thermal drivers(I am not sure) But I guess calling get_target_state is
+the good way to know next target state and is fine if you agree.
+Also one suggestion, 2 functions for throttle/dethrottle can be merged
+as both look same and just get_target_state can be used in that
+function
 
-That will undoubtably reveal a large number of objects being held by the
-X server...
--Chris
+Thanks,
+Amit Daniel
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+> thanks,
+> rui
+>
