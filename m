@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab2KVSkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:40:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
+	id S932748Ab2KVVv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:51:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:07 -0500
+	id S1754972Ab2KVSkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 104/171] libceph: init monitor connection when opening
-Date: Wed, 21 Nov 2012 16:40:50 -0800
-Message-Id: <20121122004043.803433914@linuxfoundation.org>
+        Jan Safrata <jan.nikitenko@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Richard Retanubun <richardretanubun@ruggedcom.com>
+Subject: [ 044/171] usb: use usb_serial_put in usb_serial_probe errors
+Date: Wed, 21 Nov 2012 16:39:50 -0800
+Message-Id: <20121122004037.788788000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,64 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Jan Safrata <jan.nikitenko@gmail.com>
 
-(cherry picked from commit 20581c1faf7b15ae1f8b80c0ec757877b0b53151)
+commit 0658a3366db7e27fa32c12e886230bb58c414c92 upstream.
 
-Hold off initializing a monitor client's connection until just
-before it gets opened for use.
+The use of kfree(serial) in error cases of usb_serial_probe
+was invalid - usb_serial structure allocated in create_serial()
+gets reference of usb_device that needs to be put, so we need
+to use usb_serial_put() instead of simple kfree().
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Safrata <jan.nikitenko@gmail.com>
+Acked-by: Johan Hovold <jhovold@gmail.com>
+Cc: Richard Retanubun <richardretanubun@ruggedcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/mon_client.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
 
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -119,6 +119,7 @@ static void __close_session(struct ceph_
- 	dout("__close_session closing mon%d\n", monc->cur_mon);
- 	ceph_con_revoke(&monc->con, monc->m_auth);
- 	ceph_con_close(&monc->con);
-+	monc->con.private = NULL;
- 	monc->cur_mon = -1;
- 	monc->pending_auth = 0;
- 	ceph_auth_reset(monc->auth);
-@@ -141,9 +142,13 @@ static int __open_session(struct ceph_mo
- 		monc->sub_renew_after = jiffies;  /* i.e., expired */
- 		monc->want_next_osdmap = !!monc->want_next_osdmap;
+---
+ drivers/usb/serial/usb-serial.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -768,7 +768,7 @@ int usb_serial_probe(struct usb_interfac
  
--		dout("open_session mon%d opening\n", monc->cur_mon);
-+		ceph_con_init(&monc->client->msgr, &monc->con);
-+		monc->con.private = monc;
-+		monc->con.ops = &mon_con_ops;
- 		monc->con.peer_name.type = CEPH_ENTITY_TYPE_MON;
- 		monc->con.peer_name.num = cpu_to_le64(monc->cur_mon);
-+
-+		dout("open_session mon%d opening\n", monc->cur_mon);
- 		ceph_con_open(&monc->con,
- 			      &monc->monmap->mon_inst[monc->cur_mon].addr);
- 
-@@ -760,10 +765,6 @@ int ceph_monc_init(struct ceph_mon_clien
- 		goto out;
- 
- 	/* connection */
--	ceph_con_init(&monc->client->msgr, &monc->con);
--	monc->con.private = monc;
--	monc->con.ops = &mon_con_ops;
--
- 	/* authentication */
- 	monc->auth = ceph_auth_init(cl->options->name,
- 				    cl->options->key);
-@@ -836,8 +837,6 @@ void ceph_monc_stop(struct ceph_mon_clie
- 	mutex_lock(&monc->mutex);
- 	__close_session(monc);
- 
--	monc->con.private = NULL;
--
- 	mutex_unlock(&monc->mutex);
- 
- 	/*
+ 		if (retval) {
+ 			dbg("sub driver rejected device");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return retval;
+ 		}
+@@ -840,7 +840,7 @@ int usb_serial_probe(struct usb_interfac
+ 		 */
+ 		if (num_bulk_in == 0 || num_bulk_out == 0) {
+ 			dev_info(&interface->dev, "PL-2303 hack: descriptors matched but endpoints did not\n");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return -ENODEV;
+ 		}
+@@ -854,7 +854,7 @@ int usb_serial_probe(struct usb_interfac
+ 		if (num_ports == 0) {
+ 			dev_err(&interface->dev,
+ 			    "Generic device with no bulk out, not allowed.\n");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return -EIO;
+ 		}
 
 
