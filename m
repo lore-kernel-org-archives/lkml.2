@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab2KVTyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:54:22 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965239Ab2KVTv6 (ORCPT
+	id S1756672Ab2KVTyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:54:33 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:28352 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab2KVTyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:58 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 43/46] staging: line6: drop variax model_data field
-Date: Thu, 22 Nov 2012 20:49:22 +0100
-Message-Id: <1353613765-18690-44-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 14:54:25 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-e7-50add7d2335e
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: anton.vorontsov@linaro.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 0/3] charger-manager: Bug fix and split _probe function
+Date: Thu, 22 Nov 2012 16:44:03 +0900
+Message-id: <1353570243-18920-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t8zLd1L19cGGPzZo2lxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyZi2/xlLwl7ni4KHVzA2Mc5m7GDk5JARMJPZt/8EEYYtJXLi3
+	nq2LkYtDSGAZo8SN02dYuhg5wIp2tIhDxBcxSjTMWwBVtJRJ4s+9pWCT2AS0JPa/uMEGYosI
+	yEm8XvsXbCqzQK3EvmtNrCC2sIC7xMYPx9lBbBYBVYkjd64xgti8Aq4SRzuXMkJcoSDRuuwQ
+	VI2AxLfJh6COkJXYdIAZZK+EwB42iQ0f/rJB1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpuUZ6
+	xYm5xaV56XrJ+bmbGCEhJb2DcVWDxSFGAQ5GJR7eDIO1AUKsiWXFlbmHGCU4mJVEeBcVAIV4
+	UxIrq1KL8uOLSnNSiw8x+gBdMpFZSjQ5HxjueSXxhsYGxoaGloZmppamBjiElcR5mz1SAoQE
+	0hNLUrNTUwtSi2DGMXFwSjUw8t1/+lV2otdFjq8zO1U3F7y+bFc6e9dE3103d4jv8dh3Yl+V
+	s7af7yPNbdyy2heLj560TRWylZgVyv7p07E9Xb9qXWQNntzJiFFeK7+S+cFWzRN7pbw8KnS/
+	8s9kcAs6K5Hy6f+Einfbnz7zk/Gsiq/Pu6E5W9o3aUvUbrOflhf4nll17Lt2XImlOCPRUIu5
+	qDgRADQjLFhWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jAd1L19cGGLw/IG9xedccNgdGj8+b
+	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
+	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM2Ytv8ZS8Je54uCh1cwN
+	jHOZuxg5OCQETCR2tIh3MXICmWISF+6tZ+ti5OIQEljEKNEwbwGUs5RJ4s+9pcwgVWwCWhL7
+	X9xgA7FFBOQkXq/9ywRiMwvUSuy71sQKYgsLuEts/HCcHcRmEVCVOHLnGiOIzSvgKnG0cykj
+	xDYFidZlh9gnMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcsM+kdzCuarA4xCjA
+	wajEw5thsDZAiDWxrLgy9xCjBAezkgjvogKgEG9KYmVValF+fFFpTmrxIUYfoO0TmaVEk/OB
+	0ZRXEm9obGJmZGlkZmxibmyMQ1hJnLfZIyVASCA9sSQ1OzW1ILUIZhwTB6dUA2MUz/nTaQ1a
+	rAk/OqTfi//TztF44B/YvkaGacm+ief6jp7+qcqrovHYedpUhl8Xm3Nur2l0tV1j8HbpnkR/
+	v0sro7+e4k2TnPrFNnlZf3N/3MH591eqhWp+XWX/IfnslYw7kqqzn5iryXEkVFaeeKW+d/PJ
+	FhtvruZUfzsL1SlHthf2Hixacl2JpTgj0VCLuag4EQCj618yhQIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sysfs attrs to access the model dump have been removed so it's safe
-to drop the model_data field.  The next step will be to simplify the
-startup process since we no longer need to fetch this data via dump
-requests, but that will be done in a later patch.
+This patchset include bug fix patch and code clean to split _probe function
+because _probe function is longer than 400 line.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/variax.c | 27 ---------------------------
- drivers/staging/line6/variax.h | 20 --------------------
- 2 files changed, 47 deletions(-)
+Chanwoo Choi (3):
+  charger-manager: Fix bug related to checking fully charged state of
+    battery
+  charger-manager: Fix bug when check dropped voltage after fullbatt
+    event
+  charger-manager: Split _probe funtion for code clean
 
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index 0adba32..0262d7d 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -70,21 +70,6 @@ static void variax_startup2(unsigned long data);
- static void variax_startup4(unsigned long data);
- static void variax_startup5(unsigned long data);
- 
--/*
--	Decode data transmitted by workbench.
--*/
--static void variax_decode(const unsigned char *raw_data, unsigned char *data,
--			  int raw_size)
--{
--	for (; raw_size > 0; raw_size -= 6) {
--		data[2] = raw_data[0] | (raw_data[1] << 4);
--		data[1] = raw_data[2] | (raw_data[3] << 4);
--		data[0] = raw_data[4] | (raw_data[5] << 4);
--		raw_data += 6;
--		data += 3;
--	}
--}
--
- static void variax_activate_async(struct usb_line6_variax *variax, int a)
- {
- 	variax->buffer_activate[VARIAX_OFFSET_ACTIVATE] = a;
-@@ -214,18 +199,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 					break;
- 
- 				case VARIAX_DUMP_PASS2:
--					/* model name is transmitted twice, so skip it here: */
--					variax_decode(buf +
--						      VARIAX_MODEL_HEADER_LENGTH,
--						      (unsigned char *)
--						      &variax->
--						      model_data.control +
--						      sizeof(variax->model_data.
--							     control)
--						      / 2,
--						      sizeof(variax->model_data.
--							     control)
--						      / 2 * 2);
- 					line6_dump_request_async
- 					    (&variax->dumpreq, &variax->line6,
- 					     2, VARIAX_DUMP_PASS3);
-diff --git a/drivers/staging/line6/variax.h b/drivers/staging/line6/variax.h
-index f3d95fa..13d5680 100644
---- a/drivers/staging/line6/variax.h
-+++ b/drivers/staging/line6/variax.h
-@@ -44,21 +44,6 @@ enum {
- 	VARIAX_DUMP_PASS3
- };
- 
--/**
--	Binary Variax model dump
--*/
--struct variax_model {
--	/**
--		Header information (including program name).
--	*/
--	unsigned char name[18];
--
--	/**
--		Model parameters.
--	*/
--	unsigned char control[78 * 2];
--};
--
- struct usb_line6_variax {
- 	/**
- 		Generic Line6 USB data.
-@@ -78,11 +63,6 @@ struct usb_line6_variax {
- 	unsigned char *buffer_activate;
- 
- 	/**
--		Current model settings.
--	*/
--	struct variax_model model_data;
--
--	/**
- 		Handler for device initializaton.
- 	*/
- 	struct work_struct startup_work;
--- 
-1.8.0
+ drivers/power/charger-manager.c |  321 +++++++++++++++++++++++----------------
+ 1 files changed, 187 insertions(+), 134 deletions(-)
 
