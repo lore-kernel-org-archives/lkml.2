@@ -1,162 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758865Ab2KVWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:54:25 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47171 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758813Ab2KVWvg (ORCPT
+	id S1758842Ab2KVWyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:54:24 -0500
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:49665 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2KVWyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:51:36 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 25/33] sched: Improve convergence
-Date: Thu, 22 Nov 2012 23:49:46 +0100
-Message-Id: <1353624594-1118-26-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+	Thu, 22 Nov 2012 17:54:19 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v2 1/2] mmc: dw_mmc: exynos: Stop claiming wp-gpio
+Date: Thu, 22 Nov 2012 14:53:49 -0800
+Message-Id: <1353624835-19137-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1353535387-32106-1-git-send-email-dianders@chromium.org>
+References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - break out of can_do_numa_run() earlier if we can make no progress
- - don't flip between siblings that often
- - turn on bidirectional fault balancing
- - improve the flow in task_numa_work()
+The exynos code claimed wp-gpio with devm_gpio_request() but never did
+anything with it.  That meant that anyone using a write protect GPIO
+would effectively be write protected all the time.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+A future change will move the wp-gpio support to the core dw_mmc.c
+file.  Now the exynos-specific code won't claim the GPIO but will
+just set the DW_MCI_QUIRK_NO_WRITE_PROTECT quirk if write protect
+won't be used.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+
 ---
- kernel/sched/fair.c     | 46 ++++++++++++++++++++++++++++++++--------------
- kernel/sched/features.h |  2 +-
- 2 files changed, 33 insertions(+), 15 deletions(-)
+Changes in v2:
+- Nothing new in this patch
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 59fea2e..9c46b45 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -917,12 +917,12 @@ void task_numa_fault(int node, int last_cpu, int pages)
-  */
- void task_numa_work(struct callback_head *work)
- {
-+	long pages_total, pages_left, pages_changed;
- 	unsigned long migrate, next_scan, now = jiffies;
-+	unsigned long start0, start, end;
- 	struct task_struct *p = current;
- 	struct mm_struct *mm = p->mm;
- 	struct vm_area_struct *vma;
--	unsigned long start, end;
--	long pages;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
- 
-@@ -951,35 +951,42 @@ void task_numa_work(struct callback_head *work)
- 
- 	current->numa_scan_period += jiffies_to_msecs(2);
- 
--	start = mm->numa_scan_offset;
--	pages = sysctl_sched_numa_scan_size;
--	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
--	if (!pages)
-+	start0 = start = end = mm->numa_scan_offset;
-+	pages_total = sysctl_sched_numa_scan_size;
-+	pages_total <<= 20 - PAGE_SHIFT; /* MB in pages */
-+	if (!pages_total)
- 		return;
- 
-+	pages_left	= pages_total;
-+
- 	down_write(&mm->mmap_sem);
- 	vma = find_vma(mm, start);
- 	if (!vma) {
- 		ACCESS_ONCE(mm->numa_scan_seq)++;
--		start = 0;
--		vma = mm->mmap;
-+		end = 0;
-+		vma = find_vma(mm, end);
+ drivers/mmc/host/dw_mmc-exynos.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+index 4d50da6..58cc03e 100644
+--- a/drivers/mmc/host/dw_mmc-exynos.c
++++ b/drivers/mmc/host/dw_mmc-exynos.c
+@@ -175,12 +175,12 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+ 		}
  	}
- 	for (; vma; vma = vma->vm_next) {
- 		if (!vma_migratable(vma))
- 			continue;
  
- 		do {
--			start = max(start, vma->vm_start);
--			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
-+			start = max(end, vma->vm_start);
-+			end = ALIGN(start + (pages_left << PAGE_SHIFT), HPAGE_SIZE);
- 			end = min(end, vma->vm_end);
--			pages -= change_prot_numa(vma, start, end);
--			start = end;
--			if (pages <= 0)
-+			pages_changed = change_prot_numa(vma, start, end);
-+
-+			WARN_ON_ONCE(pages_changed > pages_total);
-+			BUG_ON(pages_changed < 0);
-+
-+			pages_left -= pages_changed;
-+			if (pages_left <= 0)
- 				goto out;
- 		} while (end != vma->vm_end);
- 	}
- out:
--	mm->numa_scan_offset = start;
-+	mm->numa_scan_offset = end;
-+
- 	up_write(&mm->mmap_sem);
- }
- 
-@@ -3306,6 +3313,13 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int i;
- 
- 	/*
-+	 * For NUMA tasks constant, reliable placement is more important
-+	 * than flipping tasks between siblings:
-+	 */
-+	if (task_numa_shared(p) >= 0)
-+		return target;
-+
+-	gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
+-	if (gpio_is_valid(gpio)) {
+-		if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
+-			dev_info(host->dev, "gpio [%d] request failed\n",
+-						gpio);
+-	} else {
 +	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
- 	 * already idle, then it is the right target.
- 	 */
-@@ -4581,6 +4595,10 @@ static bool can_do_numa_run(struct lb_env *env, struct sd_lb_stats *sds)
- 	 * If we got capacity allow stacking up on shared tasks.
- 	 */
- 	if ((sds->this_shared_running < sds->this_group_capacity) && sds->numa_shared_running) {
-+		/* There's no point in trying to move if all are here already: */
-+		if (sds->numa_shared_running == sds->this_shared_running)
-+			return false;
-+
- 		env->flags |= LBF_NUMA_SHARED;
- 		return true;
++	 * If there are no write-protect GPIOs present then we assume no write
++	 * protect.  The mci_readl() in dw_mmc.c won't work since it's not
++	 * hooked up on exynos.
++	 */
++	if (!of_find_property(slot_np, "wp-gpios", NULL)) {
+ 		dev_info(host->dev, "wp gpio not available");
+ 		host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
  	}
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index a432eb8..b75a10d 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -71,6 +71,6 @@ SCHED_FEAT(LB_MIN, false)
- /* Do the working set probing faults: */
- SCHED_FEAT(NUMA,             true)
- SCHED_FEAT(NUMA_FAULTS_UP,   true)
--SCHED_FEAT(NUMA_FAULTS_DOWN, false)
-+SCHED_FEAT(NUMA_FAULTS_DOWN, true)
- SCHED_FEAT(NUMA_SETTLE,      true)
- #endif
 -- 
-1.7.11.7
+1.7.7.3
 
