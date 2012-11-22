@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab2KVU4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:56:33 -0500
-Received: from void.printf.net ([89.145.121.20]:43329 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756134Ab2KVS6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:30 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, matsumur@nts.ricoh.co.jp,
-        linux-pci@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock frequency
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com>
-	<m2sjqa2q93.fsf@bob.laptop.org>
-	<alpine.DEB.2.02.1107131031360.3174@lazy>
-	<201107131835.25217.arnd@arndb.de>
-	<alpine.DEB.2.02.1107131144250.3174@lazy>
-	<m21uxu2k96.fsf@bob.laptop.org>
-	<alpine.DEB.2.02.1107131157440.3174@lazy>
-	<m2wrfm1537.fsf@bob.laptop.org>
-	<alpine.DEB.2.02.1107181535250.1677@lazy>
-	<m2zkkbb9vn.fsf@bob.laptop.org>
-	<alpine.DEB.2.02.1107181546100.1677@lazy>
-Date: Wed, 21 Nov 2012 19:29:46 -0500
-In-Reply-To: <alpine.DEB.2.02.1107181546100.1677@lazy> (Manoj Iyer's message
-	of "Mon, 18 Jul 2011 15:47:33 -0500 (CDT)")
-Message-ID: <87obiqa39h.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932593Ab2KVU4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:56:53 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:58996 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab2KVU4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:56:50 -0500
+X-Greylist: delayed 3791 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 15:56:50 EST
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 1/1] Documentation: Fix historical inconsistency in STMPE DT doc
+Date: Thu, 22 Nov 2012 12:24:24 +0000
+Message-Id: <1353587064-10541-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manoj, Matsumuro-san,
+Previously a generic binding 'i2c-client-wake' was created which
+enabled I2C devices to register themselves as wake-up devices.
+This binding was later over-thrown by 'wakeup-source'. The STMPE
+driver was fixed-up, but the document was neglected. This patch
+aims to rectify that.
 
-On Mon, Jul 18 2011, Manoj Iyer wrote:
-> Right, without the patch I get..
->
-> [   52.526665] mmc0: new SDHC card at address e624
-> [   52.571228] mmcblk0: mmc0:e624 SD16G 14.8 GiB
-> [   52.591071] mmcblk0: retrying using single block read
-> [   52.593105] mmcblk0: error -84 transferring data, sector 0, nr 8,
-> card status 0x900
-> [   52.593109] end_request: I/O error, dev mmcblk0, sector 0
-> [   52.594594] mmcblk0: error -84 transferring data, sector 1, nr 7,
-> card status 0x900
-> [   52.594604] end_request: I/O error, dev mmcblk0, sector 1
-> [   52.602893] quiet_error: 24 callbacks suppressed
-> [   52.602902] Buffer I/O error on device mmcblk0, logical block 0
-> [   52.605349] ldm_validate_partition_table(): Disk read failed.
-> [   52.605384] Dev mmcblk0: unable to read RDB block 0
-> [   52.607729]  mmcblk0: unable to read partition table
-> u@u:~$
->
-> So, I cannot generate any comparison data with this SD card.
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ Documentation/devicetree/bindings/mfd/stmpe.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I don't know if you remember this bug, but I have reports from two users
-who see "error -84"s on :e823 controllers even with this patch active on
-modern ThinkPads.
-
-Maybe 50MHz isn't low enough sometimes?  Is it possible to lower the base
-clock further?
-
-I noticed that the frequency is encoded ine one of the PCI writes:
-+        * 0x32  - 50Mhz new clock frequency
-
-So if I get access to one of these systems, I might try lowering that
-value (by half, say) and see what happens.  But at the moment I haven't
-found someone who's willing to try kernel patches yet, and I don't have
-one of these systems myself.
-
-Thanks!
-
-- Chris.
+diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+index 8f0aeda..c984508 100644
+--- a/Documentation/devicetree/bindings/mfd/stmpe.txt
++++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+@@ -8,7 +8,7 @@ Optional properties:
+  - interrupts                   : The interrupt outputs from the controller
+  - interrupt-controller         : Marks the device node as an interrupt controller
+  - interrupt-parent             : Specifies which IRQ controller we're connected to
+- - i2c-client-wake              : Marks the input device as wakable
++ - wakeup-source                : Marks the input device as wakable
+  - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
+ 
+ Example:
+@@ -20,6 +20,6 @@ Example:
+ 		interrupt-parent = <&gpio6>;
+ 		interrupt-controller;
+ 
+-		i2c-client-wake;
++		wakeup-source;
+ 		st,autosleep-timeout = <1024>;
+ 	};
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+1.7.9.5
+
