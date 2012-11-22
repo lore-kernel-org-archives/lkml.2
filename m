@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab2KVV5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:57:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49626 "EHLO mail.kernel.org"
+	id S932830Ab2KVV5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:57:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754916Ab2KVSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754922Ab2KVSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 48/83] memcg: oom: fix totalpages calculation for memory.swappiness==0
-Date: Wed, 21 Nov 2012 16:42:10 -0800
-Message-Id: <20121122004217.880569840@linuxfoundation.org>
+        Zhao Yakui <yakui.zhao@intel.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 47/83] ttm: Clear the ttm page allocated from high memory zone correctly
+Date: Wed, 21 Nov 2012 16:42:09 -0800
+Message-Id: <20121122004217.783198356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -30,88 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Zhao Yakui <yakui.zhao@intel.com>
 
-commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
+commit ac207ed2471150e06af0afc76e4becc701fa2733 upstream.
 
-oom_badness() takes a totalpages argument which says how many pages are
-available and it uses it as a base for the score calculation.  The value
-is calculated by mem_cgroup_get_limit which considers both limit and
-total_swap_pages (resp.  memsw portion of it).
+The TTM page can be allocated from high memory. In such case it is
+wrong to use the page_address(page) as the virtual address for the high memory
+page.
 
-This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
-with swappiness==0") we do not swap when swappiness is 0 which means
-that we cannot really use up all the totalpages pages.  This in turn
-confuses oom score calculation if the memcg limit is much smaller than
-the available swap because the used memory (capped by the limit) is
-negligible comparing to totalpages so the resulting score is too small
-if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
-A wrong process might be selected as result.
+bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50241
 
-The problem can be worked around by checking mem_cgroup_swappiness==0
-and not considering swap at all in such a case.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/cgroups/memory.txt |    4 ++++
- mm/memcontrol.c                  |   21 +++++++++++++++------
- 2 files changed, 19 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -466,6 +466,10 @@ Note:
- 5.3 swappiness
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -749,7 +749,10 @@ static int ttm_get_pages(struct page **p
+ 	/* clear the pages coming from the pool if requested */
+ 	if (flags & TTM_PAGE_FLAG_ZERO_ALLOC) {
+ 		list_for_each_entry(p, &plist, lru) {
+-			clear_page(page_address(p));
++			if (PageHighMem(p))
++				clear_highpage(p);
++			else
++				clear_page(page_address(p));
+ 		}
+ 	}
  
- Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-+Please note that unlike the global swappiness, memcg knob set to 0
-+really prevents from any swapping even if there is a swap storage
-+available. This might lead to memcg OOM killer if there are no file
-+pages to reclaim.
- 
- Following cgroups' swappiness can't be changed.
- - root cgroup (uses /proc/sys/vm/swappiness).
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1458,17 +1458,26 @@ static int mem_cgroup_count_children(str
- static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
- {
- 	u64 limit;
--	u64 memsw;
- 
- 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
--	limit += total_swap_pages << PAGE_SHIFT;
- 
--	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
- 	/*
--	 * If memsw is finite and limits the amount of swap space available
--	 * to this memcg, return that limit.
-+	 * Do not consider swap space if we cannot swap due to swappiness
- 	 */
--	return min(limit, memsw);
-+	if (mem_cgroup_swappiness(memcg)) {
-+		u64 memsw;
-+
-+		limit += total_swap_pages << PAGE_SHIFT;
-+		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-+
-+		/*
-+		 * If memsw is finite and limits the amount of swap space
-+		 * available to this memcg, return that limit.
-+		 */
-+		limit = min(limit, memsw);
-+	}
-+
-+	return limit;
- }
- 
- void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
 
 
