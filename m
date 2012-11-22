@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375Ab2KVWT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:19:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49357 "EHLO mail.kernel.org"
+	id S1758362Ab2KVWT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:19:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49358 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab2KVSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754421Ab2KVSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Masaki Kimura <masaki.kimura.kz@hitachi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 008/171] module: fix out-by-one error in kallsyms
-Date: Wed, 21 Nov 2012 16:39:14 -0800
-Message-Id: <20121122004034.154752486@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>
+Subject: [ 13/38] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
+Date: Wed, 21 Nov 2012 16:39:56 -0800
+Message-Id: <20121122003905.670618451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 59ef28b1f14899b10d6b2682c7057ca00a9a3f47 upstream.
+commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
 
-Masaki found and patched a kallsyms issue: the last symbol in a
-module's symtab wasn't transferred.  This is because we manually copy
-the zero'th entry (which is always empty) then copy the rest in a loop
-starting at 1, though from src[0].  His fix was minimal, I prefer to
-rewrite the loops in more standard form.
+The Dell 5800 appears to be a simple rebrand of the Novatel E362.
 
-There are two loops: one to get the size, and one to copy.  Make these
-identical: always count entry 0 and any defined symbol in an allocated
-non-init section.
-
-This bug exists since the following commit was introduced.
-   module: reduce symbol table for loaded modules (v2)
-   commit: 4a4962263f07d14660849ec134ee42b63e95ea9a
-
-LKML: http://lkml.org/lkml/2012/10/24/27
-Reported-by: Masaki Kimura <masaki.kimura.kz@hitachi.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ drivers/usb/serial/option.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2273,12 +2273,17 @@ static void layout_symtab(struct module
- 	src = (void *)info->hdr + symsect->sh_offset;
- 	nsrc = symsect->sh_size / sizeof(*src);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -157,6 +157,7 @@ static void option_instat_callback(struc
+ #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
++#define NOVATELWIRELESS_PRODUCT_E362		0x9010
+ #define NOVATELWIRELESS_PRODUCT_G1		0xA001
+ #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+@@ -192,6 +193,9 @@ static void option_instat_callback(struc
+ #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
+ #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
  
-+	/* strtab always starts with a nul, so offset 0 is the empty string. */
-+	strtab_size = 1;
++#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
++#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
 +
- 	/* Compute total space required for the core symbols' strtab. */
--	for (ndst = i = strtab_size = 1; i < nsrc; ++i, ++src)
--		if (is_core_symbol(src, info->sechdrs, info->hdr->e_shnum)) {
--			strtab_size += strlen(&info->strtab[src->st_name]) + 1;
-+	for (ndst = i = 0; i < nsrc; i++) {
-+		if (i == 0 ||
-+		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
-+			strtab_size += strlen(&info->strtab[src[i].st_name])+1;
- 			ndst++;
- 		}
-+	}
+ #define KYOCERA_VENDOR_ID			0x0c88
+ #define KYOCERA_PRODUCT_KPC650			0x17da
+ #define KYOCERA_PRODUCT_KPC680			0x180a
+@@ -705,6 +709,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
  
- 	/* Append room for core symbols at end of core part. */
- 	info->symoffs = ALIGN(mod->core_size, symsect->sh_addralign ?: 1);
-@@ -2312,15 +2317,15 @@ static void add_kallsyms(struct module *
- 	mod->core_symtab = dst = mod->module_core + info->symoffs;
- 	mod->core_strtab = s = mod->module_core + info->stroffs;
- 	src = mod->symtab;
--	*dst = *src;
- 	*s++ = 0;
--	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
--		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
--			continue;
--
--		dst[ndst] = *src;
--		dst[ndst++].st_name = s - mod->core_strtab;
--		s += strlcpy(s, &mod->strtab[src->st_name], KSYM_NAME_LEN) + 1;
-+	for (ndst = i = 0; i < mod->num_symtab; i++) {
-+		if (i == 0 ||
-+		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
-+			dst[ndst] = src[i];
-+			dst[ndst++].st_name = s - mod->core_strtab;
-+			s += strlcpy(s, &mod->strtab[src[i].st_name],
-+				     KSYM_NAME_LEN) + 1;
-+		}
- 	}
- 	mod->core_num_syms = ndst;
- }
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+@@ -727,6 +732,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 
 
