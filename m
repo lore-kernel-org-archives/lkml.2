@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab2KVVs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:48:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	id S1758050Ab2KVVsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:48:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755007Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 037/171] r8169: use unlimited DMA burst for TX
-Date: Wed, 21 Nov 2012 16:39:43 -0800
-Message-Id: <20121122004037.094920182@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 063/171] ceph: messenger: update "to" in read_partial() caller
+Date: Wed, 21 Nov 2012 16:40:09 -0800
+Message-Id: <20121122004039.701295615@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,65 +25,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Alex Elder <elder@inktank.com>
 
-commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
+(cherry picked from commit e6cee71fac27c946a0bbad754dd076e66c4e9dbd)
 
-The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
-a box where this prevents the interface from using the gigabit line to its full
-potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
+read_partial() always increases whatever "to" value is supplied by
+adding the requested size to it, and that's the only thing it does
+with that pointed-to value.
 
-The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
-(XID 0c900880). TSO is enabled.
+Do that pointer advance in the caller (and then only when the
+updated value will be subsequently used), and change the "to"
+parameter to be an in-only and non-pointer value.
 
-I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
-on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
-'7'=unlimited). This chart shows the results:
-http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
-
-Interesting points:
- - With the current DMA burst limit (1024):
-   - at the default MTU=1500 I get only 842 Mbit/s.
-   - when going from small MTU, the performance rises monotonically with
-     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
-     a sudden drop to 762 MBit/s from which the throughput rises monotonically
-     again with further MTU increases.
- - With a smaller DMA burst limit (512):
-   - there's a similar peak at MTU=1076 and another one at MTU=564.
- - With unlimited DMA burst:
-   - at the default MTU=1500 I get nice 940 Mbit/s.
-   - the throughput rises monotonically with increasing MTU with no strange
-     peaks.
-
-Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
-limit plus 52. Why 52? Because:
-  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
-
-The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
-except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
-CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
-i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
-the smaller burst limit, or if any other versions have similar requirements.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/realtek/r8169.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/messenger.c |   31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -73,7 +73,7 @@
- static const int multicast_filter_limit = 32;
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -992,11 +992,12 @@ static int prepare_read_message(struct c
  
- #define MAX_READ_REQUEST_SHIFT	12
--#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
-+#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
- #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
- #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+ 
+ static int read_partial(struct ceph_connection *con,
+-			int *to, int size, void *object)
++			int to, int size, void *object)
+ {
+-	*to += size;
+-	while (con->in_base_pos < *to) {
+-		int left = *to - con->in_base_pos;
++	int end = to + size;
++
++	while (con->in_base_pos < end) {
++		int left = end - con->in_base_pos;
+ 		int have = size - left;
+ 		int ret = ceph_tcp_recvmsg(con->sock, object + have, left);
+ 		if (ret <= 0)
+@@ -1017,14 +1018,16 @@ static int read_partial_banner(struct ce
+ 	dout("read_partial_banner %p at %d\n", con, con->in_base_pos);
+ 
+ 	/* peer's banner */
+-	ret = read_partial(con, &to, strlen(CEPH_BANNER), con->in_banner);
++	ret = read_partial(con, to, strlen(CEPH_BANNER), con->in_banner);
+ 	if (ret <= 0)
+ 		goto out;
+-	ret = read_partial(con, &to, sizeof(con->actual_peer_addr),
++	to += strlen(CEPH_BANNER);
++	ret = read_partial(con, to, sizeof(con->actual_peer_addr),
+ 			   &con->actual_peer_addr);
+ 	if (ret <= 0)
+ 		goto out;
+-	ret = read_partial(con, &to, sizeof(con->peer_addr_for_me),
++	to += sizeof(con->actual_peer_addr);
++	ret = read_partial(con, to, sizeof(con->peer_addr_for_me),
+ 			   &con->peer_addr_for_me);
+ 	if (ret <= 0)
+ 		goto out;
+@@ -1038,10 +1041,11 @@ static int read_partial_connect(struct c
+ 
+ 	dout("read_partial_connect %p at %d\n", con, con->in_base_pos);
+ 
+-	ret = read_partial(con, &to, sizeof(con->in_reply), &con->in_reply);
++	ret = read_partial(con, to, sizeof(con->in_reply), &con->in_reply);
+ 	if (ret <= 0)
+ 		goto out;
+-	ret = read_partial(con, &to, le32_to_cpu(con->in_reply.authorizer_len),
++	to += sizeof(con->in_reply);
++	ret = read_partial(con, to, le32_to_cpu(con->in_reply.authorizer_len),
+ 			   con->auth_reply_buf);
+ 	if (ret <= 0)
+ 		goto out;
+@@ -1491,9 +1495,7 @@ static int process_connect(struct ceph_c
+  */
+ static int read_partial_ack(struct ceph_connection *con)
+ {
+-	int to = 0;
+-
+-	return read_partial(con, &to, sizeof(con->in_temp_ack),
++	return read_partial(con, 0, sizeof(con->in_temp_ack),
+ 			    &con->in_temp_ack);
+ }
+ 
+@@ -1638,8 +1640,7 @@ static int read_partial_message(struct c
+ 	dout("read_partial_message con %p msg %p\n", con, m);
+ 
+ 	/* header */
+-	to = 0;
+-	ret = read_partial(con, &to, sizeof (con->in_hdr), &con->in_hdr);
++	ret = read_partial(con, 0, sizeof (con->in_hdr), &con->in_hdr);
+ 	if (ret <= 0)
+ 		return ret;
+ 
+@@ -1755,7 +1756,7 @@ static int read_partial_message(struct c
+ 
+ 	/* footer */
+ 	to = sizeof (m->hdr);
+-	ret = read_partial(con, &to, sizeof (m->footer), &m->footer);
++	ret = read_partial(con, to, sizeof (m->footer), &m->footer);
+ 	if (ret <= 0)
+ 		return ret;
  
 
 
