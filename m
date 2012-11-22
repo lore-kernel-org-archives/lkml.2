@@ -1,72 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab2KVWRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:17:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49356 "EHLO mail.kernel.org"
+	id S1030180Ab2KVWRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:17:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49355 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754570Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 76/83] reiserfs: Protect reiserfs_quota_on() with write lock
-Date: Wed, 21 Nov 2012 16:42:38 -0800
-Message-Id: <20121122004220.811582928@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>
+Subject: [ 153/171] libceph: clean up con flags
+Date: Wed, 21 Nov 2012 16:41:39 -0800
+Message-Id: <20121122004048.702706990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Sage Weil <sage@inktank.com>
 
-commit b9e06ef2e8706fe669b51f4364e3aeed58639eb2 upstream.
+(cherry picked from commit 4a8616920860920abaa51193146fe36b38ef09aa)
 
-In reiserfs_quota_on() we do quite some work - for example unpacking
-tail of a quota file. Thus we have to hold write lock until a moment
-we call back into the quota code.
+Rename flags with CON_FLAG prefix, move the definitions into the c file,
+and (better) document their meaning.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/reiserfs/super.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ include/linux/ceph/messenger.h |   10 ------
+ net/ceph/messenger.c           |   62 +++++++++++++++++++++++------------------
+ 2 files changed, 36 insertions(+), 36 deletions(-)
 
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -2211,8 +2211,11 @@ static int reiserfs_quota_on(struct supe
- 	struct reiserfs_transaction_handle th;
- 	int opt = type == USRQUOTA ? REISERFS_USRQUOTA : REISERFS_GRPQUOTA;
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -107,16 +107,6 @@ struct ceph_msg_pos {
+ #define MAX_DELAY_INTERVAL	(5 * 60 * HZ)
  
--	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt)))
--		return -EINVAL;
-+	reiserfs_write_lock(sb);
-+	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << opt))) {
-+		err = -EINVAL;
-+		goto out;
-+	}
+ /*
+- * ceph_connection flag bits
+- */
+-
+-#define LOSSYTX         0  /* we can close channel or drop messages on errors */
+-#define KEEPALIVE_PENDING      3
+-#define WRITE_PENDING	4  /* we have data ready to send */
+-#define SOCK_CLOSED	11 /* socket state changed to closed */
+-#define BACKOFF         15
+-
+-/*
+  * A single connection with another host.
+  *
+  * We maintain a queue of outgoing messages, and some session state to
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -87,6 +87,15 @@
+ #define CON_STATE_OPEN          5  /* -> STANDBY, CLOSED */
+ #define CON_STATE_STANDBY       6  /* -> PREOPEN, CLOSED */
  
- 	/* Quotafile not on the same filesystem? */
- 	if (path->dentry->d_sb != sb) {
-@@ -2254,8 +2257,10 @@ static int reiserfs_quota_on(struct supe
- 		if (err)
- 			goto out;
- 	}
--	err = dquot_quota_on(sb, type, format_id, path);
-+	reiserfs_write_unlock(sb);
-+	return dquot_quota_on(sb, type, format_id, path);
- out:
-+	reiserfs_write_unlock(sb);
- 	return err;
++/*
++ * ceph_connection flag bits
++ */
++#define CON_FLAG_LOSSYTX           0  /* we can close channel or drop
++				       * messages on errors */
++#define CON_FLAG_KEEPALIVE_PENDING 1  /* we need to send a keepalive */
++#define CON_FLAG_WRITE_PENDING	   2  /* we have data ready to send */
++#define CON_FLAG_SOCK_CLOSED	   3  /* socket state changed to closed */
++#define CON_FLAG_BACKOFF           4  /* need to retry queuing delayed work */
+ 
+ /* static tag bytes (protocol control messages) */
+ static char tag_msg = CEPH_MSGR_TAG_MSG;
+@@ -288,7 +297,7 @@ static void ceph_sock_write_space(struct
+ 	 * buffer. See net/ipv4/tcp_input.c:tcp_check_space()
+ 	 * and net/core/stream.c:sk_stream_write_space().
+ 	 */
+-	if (test_bit(WRITE_PENDING, &con->flags)) {
++	if (test_bit(CON_FLAG_WRITE_PENDING, &con->flags)) {
+ 		if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk)) {
+ 			dout("%s %p queueing write work\n", __func__, con);
+ 			clear_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+@@ -313,7 +322,7 @@ static void ceph_sock_state_change(struc
+ 	case TCP_CLOSE_WAIT:
+ 		dout("%s TCP_CLOSE_WAIT\n", __func__);
+ 		con_sock_state_closing(con);
+-		set_bit(SOCK_CLOSED, &con->flags);
++		set_bit(CON_FLAG_SOCK_CLOSED, &con->flags);
+ 		queue_con(con);
+ 		break;
+ 	case TCP_ESTABLISHED:
+@@ -449,12 +458,12 @@ static int con_close_socket(struct ceph_
+ 	con->sock = NULL;
+ 
+ 	/*
+-	 * Forcibly clear the SOCK_CLOSE flag.  It gets set
++	 * Forcibly clear the SOCK_CLOSED flag.  It gets set
+ 	 * independent of the connection mutex, and we could have
+ 	 * received a socket close event before we had the chance to
+ 	 * shut the socket down.
+ 	 */
+-	clear_bit(SOCK_CLOSED, &con->flags);
++	clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags);
+ 	con_sock_state_closed(con);
+ 	return rc;
+ }
+@@ -516,9 +525,9 @@ void ceph_con_close(struct ceph_connecti
+ 	     ceph_pr_addr(&con->peer_addr.in_addr));
+ 	con->state = CON_STATE_CLOSED;
+ 
+-	clear_bit(LOSSYTX, &con->flags);  /* so we retry next connect */
+-	clear_bit(KEEPALIVE_PENDING, &con->flags);
+-	clear_bit(WRITE_PENDING, &con->flags);
++	clear_bit(CON_FLAG_LOSSYTX, &con->flags); /* so we retry next connect */
++	clear_bit(CON_FLAG_KEEPALIVE_PENDING, &con->flags);
++	clear_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ 
+ 	reset_connection(con);
+ 	con->peer_global_seq = 0;
+@@ -770,7 +779,7 @@ static void prepare_write_message(struct
+ 		/* no, queue up footer too and be done */
+ 		prepare_write_message_footer(con);
+ 
+-	set_bit(WRITE_PENDING, &con->flags);
++	set_bit(CON_FLAG_WRITE_PENDING, &con->flags);
  }
  
+ /*
+@@ -791,7 +800,7 @@ static void prepare_write_ack(struct cep
+ 				&con->out_temp_ack);
+ 
+ 	con->out_more = 1;  /* more will follow.. eventually.. */
+-	set_bit(WRITE_PENDING, &con->flags);
++	set_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ }
+ 
+ /*
+@@ -802,7 +811,7 @@ static void prepare_write_keepalive(stru
+ 	dout("prepare_write_keepalive %p\n", con);
+ 	con_out_kvec_reset(con);
+ 	con_out_kvec_add(con, sizeof (tag_keepalive), &tag_keepalive);
+-	set_bit(WRITE_PENDING, &con->flags);
++	set_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ }
+ 
+ /*
+@@ -845,7 +854,7 @@ static void prepare_write_banner(struct
+ 					&con->msgr->my_enc_addr);
+ 
+ 	con->out_more = 0;
+-	set_bit(WRITE_PENDING, &con->flags);
++	set_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ }
+ 
+ static int prepare_write_connect(struct ceph_connection *con)
+@@ -896,7 +905,7 @@ static int prepare_write_connect(struct
+ 					auth->authorizer_buf);
+ 
+ 	con->out_more = 0;
+-	set_bit(WRITE_PENDING, &con->flags);
++	set_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ 
+ 	return 0;
+ }
+@@ -1622,7 +1631,7 @@ static int process_connect(struct ceph_c
+ 			le32_to_cpu(con->in_reply.connect_seq));
+ 
+ 		if (con->in_reply.flags & CEPH_MSG_CONNECT_LOSSY)
+-			set_bit(LOSSYTX, &con->flags);
++			set_bit(CON_FLAG_LOSSYTX, &con->flags);
+ 
+ 		con->delay = 0;      /* reset backoff memory */
+ 
+@@ -2061,14 +2070,15 @@ do_next:
+ 			prepare_write_ack(con);
+ 			goto more;
+ 		}
+-		if (test_and_clear_bit(KEEPALIVE_PENDING, &con->flags)) {
++		if (test_and_clear_bit(CON_FLAG_KEEPALIVE_PENDING,
++				       &con->flags)) {
+ 			prepare_write_keepalive(con);
+ 			goto more;
+ 		}
+ 	}
+ 
+ 	/* Nothing to do! */
+-	clear_bit(WRITE_PENDING, &con->flags);
++	clear_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ 	dout("try_write nothing else to write.\n");
+ 	ret = 0;
+ out:
+@@ -2241,7 +2251,7 @@ static void con_work(struct work_struct
+ 
+ 	mutex_lock(&con->mutex);
+ restart:
+-	if (test_and_clear_bit(SOCK_CLOSED, &con->flags)) {
++	if (test_and_clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags)) {
+ 		switch (con->state) {
+ 		case CON_STATE_CONNECTING:
+ 			con->error_msg = "connection failed";
+@@ -2260,7 +2270,7 @@ restart:
+ 		goto fault;
+ 	}
+ 
+-	if (test_and_clear_bit(BACKOFF, &con->flags)) {
++	if (test_and_clear_bit(CON_FLAG_BACKOFF, &con->flags)) {
+ 		dout("con_work %p backing off\n", con);
+ 		if (queue_delayed_work(ceph_msgr_wq, &con->work,
+ 				       round_jiffies_relative(con->delay))) {
+@@ -2336,7 +2346,7 @@ static void ceph_fault(struct ceph_conne
+ 
+ 	con_close_socket(con);
+ 
+-	if (test_bit(LOSSYTX, &con->flags)) {
++	if (test_bit(CON_FLAG_LOSSYTX, &con->flags)) {
+ 		dout("fault on LOSSYTX channel, marking CLOSED\n");
+ 		con->state = CON_STATE_CLOSED;
+ 		goto out_unlock;
+@@ -2356,9 +2366,9 @@ static void ceph_fault(struct ceph_conne
+ 	/* If there are no messages queued or keepalive pending, place
+ 	 * the connection in a STANDBY state */
+ 	if (list_empty(&con->out_queue) &&
+-	    !test_bit(KEEPALIVE_PENDING, &con->flags)) {
++	    !test_bit(CON_FLAG_KEEPALIVE_PENDING, &con->flags)) {
+ 		dout("fault %p setting STANDBY clearing WRITE_PENDING\n", con);
+-		clear_bit(WRITE_PENDING, &con->flags);
++		clear_bit(CON_FLAG_WRITE_PENDING, &con->flags);
+ 		con->state = CON_STATE_STANDBY;
+ 	} else {
+ 		/* retry after a delay. */
+@@ -2383,7 +2393,7 @@ static void ceph_fault(struct ceph_conne
+ 			 * that when con_work restarts we schedule the
+ 			 * delay then.
+ 			 */
+-			set_bit(BACKOFF, &con->flags);
++			set_bit(CON_FLAG_BACKOFF, &con->flags);
+ 		}
+ 	}
+ 
+@@ -2440,8 +2450,8 @@ static void clear_standby(struct ceph_co
+ 		dout("clear_standby %p and ++connect_seq\n", con);
+ 		con->state = CON_STATE_PREOPEN;
+ 		con->connect_seq++;
+-		WARN_ON(test_bit(WRITE_PENDING, &con->flags));
+-		WARN_ON(test_bit(KEEPALIVE_PENDING, &con->flags));
++		WARN_ON(test_bit(CON_FLAG_WRITE_PENDING, &con->flags));
++		WARN_ON(test_bit(CON_FLAG_KEEPALIVE_PENDING, &con->flags));
+ 	}
+ }
+ 
+@@ -2482,7 +2492,7 @@ void ceph_con_send(struct ceph_connectio
+ 
+ 	/* if there wasn't anything waiting to send before, queue
+ 	 * new work */
+-	if (test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
++	if (test_and_set_bit(CON_FLAG_WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
+ }
+ EXPORT_SYMBOL(ceph_con_send);
+@@ -2571,8 +2581,8 @@ void ceph_con_keepalive(struct ceph_conn
+ 	mutex_lock(&con->mutex);
+ 	clear_standby(con);
+ 	mutex_unlock(&con->mutex);
+-	if (test_and_set_bit(KEEPALIVE_PENDING, &con->flags) == 0 &&
+-	    test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
++	if (test_and_set_bit(CON_FLAG_KEEPALIVE_PENDING, &con->flags) == 0 &&
++	    test_and_set_bit(CON_FLAG_WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
+ }
+ EXPORT_SYMBOL(ceph_con_keepalive);
 
 
