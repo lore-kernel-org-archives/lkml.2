@@ -1,145 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab2KVSkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:40:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
+	id S932218Ab2KVVfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:35:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49645 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755026Ab2KVSkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:23 -0500
+	id S1752872Ab2KVSkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 109/171] libceph: make ceph_con_revoke() a msg operation
-Date: Wed, 21 Nov 2012 16:40:55 -0800
-Message-Id: <20121122004044.300938762@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 06/83] mac80211: call skb_dequeue/ieee80211_free_txskb instead of __skb_queue_purge
+Date: Wed, 21 Nov 2012 16:41:28 -0800
+Message-Id: <20121122004213.112705458@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-(cherry picked from commit 6740a845b2543cc46e1902ba21bac743fbadd0dc)
+commit 1f98ab7fef48a2968f37f422c256c9fbd978c3f0 upstream.
 
-ceph_con_revoke() is passed both a message and a ceph connection.
-Now that any message associated with a connection holds a pointer
-to that connection, there's no need to provide the connection when
-revoking a message.
+Fixes more wifi status skb leaks, leading to hostapd/wpa_supplicant hangs.
 
-This has the added benefit of precluding the possibility of the
-providing the wrong connection pointer.  If the message's connection
-pointer is null, it is not being tracked by any connection, so
-revoking it is a no-op.  This is supported as a convenience for
-upper layers, so they can revoke a message that is not actually
-"in flight."
-
-Rename the function ceph_msg_revoke() to reflect that it is really
-an operation on a message, not a connection.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ceph/messenger.h |    3 ++-
- net/ceph/messenger.c           |    7 ++++++-
- net/ceph/mon_client.c          |    8 ++++----
- net/ceph/osd_client.c          |    4 ++--
- 4 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -231,7 +231,8 @@ extern void ceph_con_open(struct ceph_co
- extern bool ceph_con_opened(struct ceph_connection *con);
- extern void ceph_con_close(struct ceph_connection *con);
- extern void ceph_con_send(struct ceph_connection *con, struct ceph_msg *msg);
--extern void ceph_con_revoke(struct ceph_connection *con, struct ceph_msg *msg);
+---
+ net/mac80211/ieee80211_i.h |    2 ++
+ net/mac80211/sta_info.c    |    6 +++---
+ net/mac80211/status.c      |    9 +++++++++
+ net/mac80211/tx.c          |    9 ++++++---
+ 4 files changed, 20 insertions(+), 6 deletions(-)
+
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1304,6 +1304,8 @@ netdev_tx_t ieee80211_monitor_start_xmit
+ 					 struct net_device *dev);
+ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
+ 				       struct net_device *dev);
++void ieee80211_purge_tx_queue(struct ieee80211_hw *hw,
++			      struct sk_buff_head *skbs);
+ 
+ /* HT */
+ void ieee80211_apply_htcap_overrides(struct ieee80211_sub_if_data *sdata,
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -730,8 +730,8 @@ int __must_check __sta_info_destroy(stru
+ 
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		local->total_ps_buffered -= skb_queue_len(&sta->ps_tx_buf[ac]);
+-		__skb_queue_purge(&sta->ps_tx_buf[ac]);
+-		__skb_queue_purge(&sta->tx_filtered[ac]);
++		ieee80211_purge_tx_queue(&local->hw, &sta->ps_tx_buf[ac]);
++		ieee80211_purge_tx_queue(&local->hw, &sta->tx_filtered[ac]);
+ 	}
+ 
+ #ifdef CONFIG_MAC80211_MESH
+@@ -765,7 +765,7 @@ int __must_check __sta_info_destroy(stru
+ 		tid_tx = rcu_dereference_raw(sta->ampdu_mlme.tid_tx[i]);
+ 		if (!tid_tx)
+ 			continue;
+-		__skb_queue_purge(&tid_tx->pending);
++		ieee80211_purge_tx_queue(&local->hw, &tid_tx->pending);
+ 		kfree(tid_tx);
+ 	}
+ 
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -648,3 +648,12 @@ void ieee80211_free_txskb(struct ieee802
+ 	dev_kfree_skb_any(skb);
+ }
+ EXPORT_SYMBOL(ieee80211_free_txskb);
 +
-+extern void ceph_msg_revoke(struct ceph_msg *msg);
- extern void ceph_con_revoke_message(struct ceph_connection *con,
- 				  struct ceph_msg *msg);
- extern void ceph_con_keepalive(struct ceph_connection *con);
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2425,8 +2425,13 @@ EXPORT_SYMBOL(ceph_con_send);
- /*
-  * Revoke a message that was previously queued for send
++void ieee80211_purge_tx_queue(struct ieee80211_hw *hw,
++			      struct sk_buff_head *skbs)
++{
++	struct sk_buff *skb;
++
++	while ((skb = __skb_dequeue(skbs)))
++		ieee80211_free_txskb(hw, skb);
++}
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1358,7 +1358,7 @@ static int invoke_tx_handlers(struct iee
+ 		if (tx->skb)
+ 			ieee80211_free_txskb(&tx->local->hw, tx->skb);
+ 		else
+-			__skb_queue_purge(&tx->skbs);
++			ieee80211_purge_tx_queue(&tx->local->hw, &tx->skbs);
+ 		return -1;
+ 	} else if (unlikely(res == TX_QUEUED)) {
+ 		I802_DEBUG_INC(tx->local->tx_handlers_queued);
+@@ -2132,10 +2132,13 @@ netdev_tx_t ieee80211_subif_start_xmit(s
   */
--void ceph_con_revoke(struct ceph_connection *con, struct ceph_msg *msg)
-+void ceph_msg_revoke(struct ceph_msg *msg)
+ void ieee80211_clear_tx_pending(struct ieee80211_local *local)
  {
-+	struct ceph_connection *con = msg->con;
-+
-+	if (!con)
-+		return;		/* Message not in our possession */
-+
- 	mutex_lock(&con->mutex);
- 	if (!list_empty(&msg->list_head)) {
- 		dout("%s %p msg %p - was on queue\n", __func__, con, msg);
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -106,7 +106,7 @@ static void __send_prepared_auth_request
- 	monc->pending_auth = 1;
- 	monc->m_auth->front.iov_len = len;
- 	monc->m_auth->hdr.front_len = cpu_to_le32(len);
--	ceph_con_revoke(&monc->con, monc->m_auth);
-+	ceph_msg_revoke(monc->m_auth);
- 	ceph_msg_get(monc->m_auth);  /* keep our ref */
- 	ceph_con_send(&monc->con, monc->m_auth);
++	struct sk_buff *skb;
+ 	int i;
+ 
+-	for (i = 0; i < local->hw.queues; i++)
+-		skb_queue_purge(&local->pending[i]);
++	for (i = 0; i < local->hw.queues; i++) {
++		while ((skb = skb_dequeue(&local->pending[i])) != NULL)
++			ieee80211_free_txskb(&local->hw, skb);
++	}
  }
-@@ -117,7 +117,7 @@ static void __send_prepared_auth_request
- static void __close_session(struct ceph_mon_client *monc)
- {
- 	dout("__close_session closing mon%d\n", monc->cur_mon);
--	ceph_con_revoke(&monc->con, monc->m_auth);
-+	ceph_msg_revoke(monc->m_auth);
- 	ceph_con_close(&monc->con);
- 	monc->con.private = NULL;
- 	monc->cur_mon = -1;
-@@ -229,7 +229,7 @@ static void __send_subscribe(struct ceph
  
- 		msg->front.iov_len = p - msg->front.iov_base;
- 		msg->hdr.front_len = cpu_to_le32(msg->front.iov_len);
--		ceph_con_revoke(&monc->con, msg);
-+		ceph_msg_revoke(msg);
- 		ceph_con_send(&monc->con, ceph_msg_get(msg));
- 
- 		monc->sub_sent = jiffies | 1;  /* never 0 */
-@@ -688,7 +688,7 @@ static void __resend_generic_request(str
- 
- 	for (p = rb_first(&monc->generic_request_tree); p; p = rb_next(p)) {
- 		req = rb_entry(p, struct ceph_mon_generic_request, node);
--		ceph_con_revoke(&monc->con, req->request);
-+		ceph_msg_revoke(req->request);
- 		ceph_con_send(&monc->con, ceph_msg_get(req->request));
- 	}
- }
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -852,7 +852,7 @@ static void __unregister_request(struct
- 
- 	if (req->r_osd) {
- 		/* make sure the original request isn't in flight. */
--		ceph_con_revoke(&req->r_osd->o_con, req->r_request);
-+		ceph_msg_revoke(req->r_request);
- 
- 		list_del_init(&req->r_osd_item);
- 		if (list_empty(&req->r_osd->o_requests) &&
-@@ -879,7 +879,7 @@ static void __unregister_request(struct
- static void __cancel_request(struct ceph_osd_request *req)
- {
- 	if (req->r_sent && req->r_osd) {
--		ceph_con_revoke(&req->r_osd->o_con, req->r_request);
-+		ceph_msg_revoke(req->r_request);
- 		req->r_sent = 0;
- 	}
- }
+ /*
 
 
