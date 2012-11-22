@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab2KVTLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:11:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57496 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753916Ab2KVTLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:11:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,298,1352102400"; 
-   d="scan'208";a="250943288"
-Subject: [PATCH] watchdog: optimizing the hrtimer interval for power saving
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: akpm@linux-foundation.org, dzickus@redhat.com, mingo@kernel.org,
-        rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Nov 2012 00:48:26 +0800
-Message-ID: <1353602906.15558.1695.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756599Ab2KVTMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:12:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48702 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756539Ab2KVTMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:12:24 -0500
+Date: Thu, 22 Nov 2012 11:08:08 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8973: Fix callback setting for
+ max8973_dcdc_ops.enable
+Message-ID: <20121122020806.GA6066@opensource.wolfsonmicro.com>
+References: <1353548828.9090.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <1353548828.9090.1.camel@phoenix>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-By default, the watchdog threshold is 10, it means every 4s
-every CPU will receive one hrtimer interrupt, for low power
-device, it will cause 4-5mV power impact when device is deep
-sleep.
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So here want to optimize it as below:
-4s + 4s + 4s + 4s + 4s
-== >
-12s + 2s + 2s + 2s + 2s
-3/5   1/10 1/10 1/10 1/10
+On Thu, Nov 22, 2012 at 09:47:08AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-In 5 chances, once one chance is hit, then we can start the
-hrtimer with a longer period sample(12s). Until the current
-chance is not hit, will start the hrtimer with a shorted
-period sample(2s).
+Applied, thanks.
 
-With this patch, in most case the hrtimer will be 12s instead
-of 4s averagely. It can save the device power indeed.
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- kernel/watchdog.c |   30 ++++++++++++++++++++++++++++--
- 1 files changed, 28 insertions(+), 2 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index dd4b80a..6457e62 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -125,7 +125,24 @@ static u64 get_sample_period(void)
- 	 * and hard thresholds) to increment before the
- 	 * hardlockup detector generates a warning
- 	 */
--	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 10);
-+}
-+
-+static u64 get_long_sample_period(void)
-+{
-+	/*
-+	 * convert watchdog_thresh from seconds to ns
-+	 * We want to give 5 chances to detect softlockup,
-+	 * for power saving, once one chance is succeeding,
-+	 * we can set long period to avoid power consumption.
-+	 * Currently, set the long sample period is:
-+	 * 20s * 3/5 = 12s, once this 12s chance is not hit,
-+	 * we will divide the left 8s into 4 pieces, give every
-+	 * chance every 2s, so it will be likely:
-+	 * 12s + 2s + 2s + 2s + 2s,
-+	 * Anyway, we just use 12s is enough in normal case.
-+	 */
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC * 3 / 5);
- }
- 
- /* Commands for resetting the watchdog */
-@@ -267,6 +284,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	unsigned long touch_ts = __this_cpu_read(watchdog_touch_ts);
- 	struct pt_regs *regs = get_irq_regs();
- 	int duration;
-+	bool is_touched;
-+
-+	is_touched = (__this_cpu_read(hrtimer_interrupts) ==
-+		__this_cpu_read(soft_lockup_hrtimer_cnt));
- 
- 	/* kick the hardlockup detector */
- 	watchdog_interrupt_count();
-@@ -275,7 +296,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	wake_up_process(__this_cpu_read(softlockup_watchdog));
- 
- 	/* .. and repeat */
--	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
-+	if (is_touched) {
-+		hrtimer_forward_now(hrtimer,
-+			ns_to_ktime(get_long_sample_period()));
-+	} else {
-+		hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
-+	}
- 
- 	if (touch_ts == 0) {
- 		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
--- 
-1.7.0.4
+iQIcBAEBAgAGBQJQrYkAAAoJELSic+t+oim9hc8P/j65fdDCnQQbHD+IqrE2pGjj
+KYRythN5LnqQQiNOAJvasQ/kWwKD91TE9sRSNI7qrmw19z6B6r7NuGv+rMnbWw+f
+I1EtZ+iDZbgMg7SoqpByXPETlt+W9+qNQFu3wTm9j1RScaVQra0xWQJuF7Xgm+22
+vDAfTgr+ad0tkDOuwkiOU8UABE1+JcwGXY+5KH4sn7fqnIJbkQ5yXWd1MSyyO86q
+JbXfh/Dv3U0Fxii7JleE+CmiYw4c55sAQ7bnEmH3o0AQRnnrAWJHcTRtZS5r8Dzi
+RYAN39RVPqnMDfRm/LWnBJyj/tgW80vYcMCrh0ifr5WVrRhe/Ac5zhItLxSrc6lt
+TFUvC4ZKp+YhSuLCRDEGHNXSPXUDXLk+ajdPHT4enYGes2WpshbbRmGmfO4k7OVe
+9QxXNzdPRbDiQs27lBWi4a4cW7wbNrNjUGHm3EcvKnCzr6OGuo8qCt5DP2oHlwWP
+9CRH3HjT3rJyTpHTtUXQpKCt8owwJAlUImar2nU+IGshNHwouhMInMXfLqH0y2AJ
+Ke6POsbXHChX8WWYERlyaCBt4cDgpXtC7uK/ZT76feo/GwTHPgmMhkdig2V/zK5M
+YYip2FGawQI1LbnqCOLAWmnXglitqcsocmsjXcg/RE7VTqP011hOPzPHbO/qBV+I
+tnDZSpznza8m1susWw2y
+=an9l
+-----END PGP SIGNATURE-----
 
-
-
+--2oS5YaxWCcQjTEyO--
