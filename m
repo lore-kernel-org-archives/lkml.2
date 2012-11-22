@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab2KVVPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:15:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49609 "EHLO mail.kernel.org"
+	id S1755565Ab2KVVPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:15:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49632 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab2KVSkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755292Ab2KVSkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zheng Yan <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 092/171] ceph: check PG_Private flag before accessing page->private
-Date: Wed, 21 Nov 2012 16:40:38 -0800
-Message-Id: <20121122004042.591907522@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 127/171] libceph: dont touch con state in con_close_socket()
+Date: Wed, 21 Nov 2012 16:41:13 -0800
+Message-Id: <20121122004046.091952405@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,101 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 28c0254ede13ab575d2df5c6585ed3d4817c3e6b)
+(cherry picked from commit 456ea46865787283088b23a8a7f69244513b95f0)
 
-I got lots of NULL pointer dereference Oops when compiling kernel on ceph.
-The bug is because the kernel page migration routine replaces some pages
-in the page cache with new pages, these new pages' private can be non-zero.
+In con_close_socket(), a connection's SOCK_CLOSED flag gets set and
+then cleared while its shutdown method is called and its reference
+gets dropped.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Previously, that flag got set only if it had not already been set,
+so setting it in con_close_socket() might have prevented additional
+processing being done on a socket being shut down.  We no longer set
+SOCK_CLOSED in the socket event routine conditionally, so setting
+that bit here no longer provides whatever benefit it might have
+provided before.
+
+A race condition could still leave the SOCK_CLOSED bit set even
+after we've issued the call to con_close_socket(), so we still clear
+that bit after shutting the socket down.  Add a comment explaining
+the reason for this.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/addr.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ net/ceph/messenger.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -54,7 +54,12 @@
- 	(CONGESTION_ON_THRESH(congestion_kb) -				\
- 	 (CONGESTION_ON_THRESH(congestion_kb) >> 2))
- 
--
-+static inline struct ceph_snap_context *page_snap_context(struct page *page)
-+{
-+	if (PagePrivate(page))
-+		return (void *)page->private;
-+	return NULL;
-+}
- 
- /*
-  * Dirty a page.  Optimistically adjust accounting, on the assumption
-@@ -142,10 +147,9 @@ static void ceph_invalidatepage(struct p
- {
- 	struct inode *inode;
- 	struct ceph_inode_info *ci;
--	struct ceph_snap_context *snapc = (void *)page->private;
-+	struct ceph_snap_context *snapc = page_snap_context(page);
- 
- 	BUG_ON(!PageLocked(page));
--	BUG_ON(!page->private);
- 	BUG_ON(!PagePrivate(page));
- 	BUG_ON(!page->mapping);
- 
-@@ -182,7 +186,6 @@ static int ceph_releasepage(struct page
- 	struct inode *inode = page->mapping ? page->mapping->host : NULL;
- 	dout("%p releasepage %p idx %lu\n", inode, page, page->index);
- 	WARN_ON(PageDirty(page));
--	WARN_ON(page->private);
- 	WARN_ON(PagePrivate(page));
- 	return 0;
- }
-@@ -443,7 +446,7 @@ static int writepage_nounlock(struct pag
- 	osdc = &fsc->client->osdc;
- 
- 	/* verify this is a writeable snap context */
--	snapc = (void *)page->private;
-+	snapc = page_snap_context(page);
- 	if (snapc == NULL) {
- 		dout("writepage %p page %p not dirty?\n", inode, page);
- 		goto out;
-@@ -451,7 +454,7 @@ static int writepage_nounlock(struct pag
- 	oldest = get_oldest_context(inode, &snap_size);
- 	if (snapc->seq > oldest->seq) {
- 		dout("writepage %p page %p snapc %p not writeable - noop\n",
--		     inode, page, (void *)page->private);
-+		     inode, page, snapc);
- 		/* we should only noop if called by kswapd */
- 		WARN_ON((current->flags & PF_MEMALLOC) == 0);
- 		ceph_put_snap_context(oldest);
-@@ -591,7 +594,7 @@ static void writepages_finish(struct cep
- 			clear_bdi_congested(&fsc->backing_dev_info,
- 					    BLK_RW_ASYNC);
- 
--		ceph_put_snap_context((void *)page->private);
-+		ceph_put_snap_context(page_snap_context(page));
- 		page->private = 0;
- 		ClearPagePrivate(page);
- 		dout("unlocking %d %p\n", i, page);
-@@ -795,7 +798,7 @@ get_more_pages:
- 			}
- 
- 			/* only if matching snap context */
--			pgsnapc = (void *)page->private;
-+			pgsnapc = page_snap_context(page);
- 			if (pgsnapc->seq > snapc->seq) {
- 				dout("page snapc %p %lld > oldest %p %lld\n",
- 				     pgsnapc, pgsnapc->seq, snapc, snapc->seq);
-@@ -984,7 +987,7 @@ retry_locked:
- 	BUG_ON(!ci->i_snap_realm);
- 	down_read(&mdsc->snap_rwsem);
- 	BUG_ON(!ci->i_snap_realm->cached_context);
--	snapc = (void *)page->private;
-+	snapc = page_snap_context(page);
- 	if (snapc && snapc != ci->i_head_snapc) {
- 		/*
- 		 * this page is already dirty in another (older) snap
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -392,10 +392,16 @@ static int con_close_socket(struct ceph_
+ 	dout("con_close_socket on %p sock %p\n", con, con->sock);
+ 	if (!con->sock)
+ 		return 0;
+-	set_bit(SOCK_CLOSED, &con->flags);
+ 	rc = con->sock->ops->shutdown(con->sock, SHUT_RDWR);
+ 	sock_release(con->sock);
+ 	con->sock = NULL;
++
++	/*
++	 * Forcibly clear the SOCK_CLOSE flag.  It gets set
++	 * independent of the connection mutex, and we could have
++	 * received a socket close event before we had the chance to
++	 * shut the socket down.
++	 */
+ 	clear_bit(SOCK_CLOSED, &con->flags);
+ 	con_sock_state_closed(con);
+ 	return rc;
 
 
