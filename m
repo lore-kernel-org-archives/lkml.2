@@ -1,84 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab2KVS5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:57:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:58768 "EHLO mga14.intel.com"
+	id S964778Ab2KVS56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:57:58 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43723 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932287Ab2KVS5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:57:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,295,1352102400"; 
-   d="scan'208";a="171176701"
-From: "Blower, Melanie" <melanie.blower@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: PROBLEM: compilation issue, inline assembly
- arch/x86/kvm/emulate.c fails at -O0
-Thread-Topic: PROBLEM: compilation issue, inline assembly
- arch/x86/kvm/emulate.c fails at -O0
-Thread-Index: Ac3CnVCLy1S7HLd7SEaFDxv+y/0FtQF1c5uAAA7ythA=
-Date: Wed, 21 Nov 2012 22:31:11 +0000
-Message-ID: <B3584E72CFEBED439A3ECA9BCE67A4EF1B17F909@FMSMSX107.amr.corp.intel.com>
-References: <B3584E72CFEBED439A3ECA9BCE67A4EF1B17AF90@FMSMSX107.amr.corp.intel.com>
- <50AD4907.5040102@zytor.com>
-In-Reply-To: <50AD4907.5040102@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
+	id S932345Ab2KVS54 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:57:56 -0500
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <20121122031117.GE25470@core.coreip.homeip.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+ <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+ <20121121204324.21126.99677@nucleus>
+ <20121121205424.GA25470@core.coreip.homeip.net>
+ <20121121223859.GQ3290@n2100.arm.linux.org.uk>
+ <20121122021750.GD25470@core.coreip.homeip.net>
+ <20121122031117.GE25470@core.coreip.homeip.net>
+Message-ID: <20121122032407.21126.49680@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+Date: Wed, 21 Nov 2012 19:24:07 -0800
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAMIw8C7004741
 
-Thank you so much, this patch solves the compilation errors that I was seeing in the Intel compiler, and with gcc -O0
-BTW, my charter is to compile the kernel with the Intel compiler, and my testing stops short of verifying that the kernel build actually works.
-Best regards, Melanie Blower
-
------Original Message-----
-From: H. Peter Anvin [mailto:hpa@zytor.com] 
-Sent: Wednesday, November 21, 2012 4:35 PM
-To: Blower, Melanie
-Cc: tglx@linutronix.de; mingo@redhat.com; avi@redhat.com; x86@kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: compilation issue, inline assembly arch/x86/kvm/emulate.c fails at -O0
-
-On 11/14/2012 11:45 AM, Blower, Melanie wrote:
-> [1.] gcc -O0 assembly arch/x86/kvm/emulate.c gets compilation failure 
-> -- incorrect register restrictions [2.] Full description of the problem/report:
-> I'm trying to compile this file at -O0, but gcc chokes in register allocation at the inline assembly.
+Quoting Dmitry Torokhov (2012-11-21 19:11:17)
+> On Wed, Nov 21, 2012 at 06:17:50PM -0800, Dmitry Torokhov wrote:
+> > On Wed, Nov 21, 2012 at 10:38:59PM +0000, Russell King - ARM Linux wrote:
+> > > On Wed, Nov 21, 2012 at 12:54:24PM -0800, Dmitry Torokhov wrote:
+> > > > On Wed, Nov 21, 2012 at 12:43:24PM -0800, Mike Turquette wrote:
+> > > > > Quoting Viresh Kumar (2012-11-20 02:13:55)
+> > > > > > On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > > > > > > We'll need to invoke clk_unprepare() via a pointer in our devm_*
+> > > > > > > conversion so let's uninline the pair.
+> > > > > > 
+> > > > > > Sorry, but you aren't doing this :(
+> > > > > > This routine is already uninlined as it is in clk.c
+> > > > > > 
+> > > > > > Instead you are just moving clk_prepare(), etc calls within
+> > > > > > #ifdef CONFIG_HAVE_CLK
+> > > > > > #else
+> > > > > > #endif
+> > > > > > 
+> > > > > > I doubt why they have been added under #ifdef CONFIG_HAVE_CLK_PREPARE
+> > > > > > earlier. Can they exist without CONFIG_HAVE_CLK
+> > > > > > 
+> > > > > > @Mike: ?
+> > > > > > 
+> > > > > 
+> > > > > HAVE_CLK logically wraps HAVE_CLK_PREPARE.  There is no point in
+> > > > > selecting HAVE_CLK_PREPARE without HAVE_CLK.
+> > > > > 
+> > > > > Looking through the code I see that this used to be the case.  Commit
+> > > > > 93abe8e "clk: add non CONFIG_HAVE_CLK routines" moved the
+> > > > > clk_(un)prepare declarations outside of #ifdef CONFIG_HAVE_CLK.  That
+> > > > > commit was authored by you.  Can you elaborate on why that aspect of the
+> > > > > patch was needed?
+> > > > > 
+> > > > 
+> > > > BTW, it looks like the only place where we select HAVE_CLK_PREPARE is
+> > > > IMX platform and it also selects COMMON_CLK so I think HAVE_CLK_PREPARE
+> > > > can be removed now.
+> > > 
+> > > You've checked non-ARM architectures too?
+> > 
+> > Yes:
+> > 
+> > [dtor@dtor-d630 linux-next]$ grep -r HAVE_CLK_PREPARE .
+> > ./arch/arm/Kconfig:     select HAVE_CLK_PREPARE
+> > Binary file ./.git/objects/pack/pack-7dad5ee164f601f1327dc78648fa317772c2d872.pack matches
+> > ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> > ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> > ./drivers/clk/Kconfig:config HAVE_CLK_PREPARE
+> > ./drivers/clk/Kconfig:  select HAVE_CLK_PREPARE
+> > 
+> > Thanks.
+> > 
 > 
-> In the ordinary Linux build, this file compiles with gcc at -O2, without compilation errors.
+> So how about the one blow?
 > 
-> At -O0, gcc chokes with this message: 
-> gcc  -w -c ./emulateE.c               // (using preprocessed file)
-> ./emulateE.c: In function `em_mul_ex':
-> ./emulateE.c:1918:5: error: can't find a register in class `AREG' while reloading `asm'
-> ./emulateE.c:1918:5: error: `asm' operand has impossible constraints
+> -- 
+> Dmitry
 > 
-> Explanation:
-> The file contains an inline asm of a kind:
+> CLK: get rid of HAVE_CLK_PREPARE
 > 
->     __asm__ __volatile__ ( " ..... " :
+> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > 
->  "=m" ((ctxt)->eflags), "=&r" (_tmp), "+a" (*rax), "+d" (*rdx), "+qm"(ex) :
->  "i" (11), "m" ((ctxt)->src . val), "a" (*rax), "d" (*rdx));
+> HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
+> platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
+> switched to common clk framework, so we can delete this option now.
 > 
-> Note that "+a" in inputs already means that eax is the return value. An then "a" is used as an output constraint too.
+> As part of this change we move declarations of clk_prepare() and
+> clk_unprepare() under HAVE_CLK and provide stubs if this option is not
+> enabled.
 > 
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Hi Melanie,
+Looks right to me.  Just need to remove the select from IMX as well.
 
-Can you test the attached patch?
+Regards,
+Mike
 
-	-hpa
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ---
+>  drivers/clk/Kconfig |    4 ---
+>  include/linux/clk.h |   68 ++++++++++++++++++++++++---------------------------
+>  2 files changed, 32 insertions(+), 40 deletions(-)
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index bace9e9..639ee9d 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -3,15 +3,11 @@ config CLKDEV_LOOKUP
+>         bool
+>         select HAVE_CLK
+>  
+> -config HAVE_CLK_PREPARE
+> -       bool
+> -
+>  config HAVE_MACH_CLKDEV
+>         bool
+>  
+>  config COMMON_CLK
+>         bool
+> -       select HAVE_CLK_PREPARE
+>         select CLKDEV_LOOKUP
+>         ---help---
+>           The common clock framework is a single definition of struct
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index b3ac22d..f8204c3 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -84,42 +84,6 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+>  
+>  #endif
+>  
+> -/**
+> - * clk_prepare - prepare a clock source
+> - * @clk: clock source
+> - *
+> - * This prepares the clock source for use.
+> - *
+> - * Must not be called from within atomic context.
+> - */
+> -#ifdef CONFIG_HAVE_CLK_PREPARE
+> -int clk_prepare(struct clk *clk);
+> -#else
+> -static inline int clk_prepare(struct clk *clk)
+> -{
+> -       might_sleep();
+> -       return 0;
+> -}
+> -#endif
+> -
+> -/**
+> - * clk_unprepare - undo preparation of a clock source
+> - * @clk: clock source
+> - *
+> - * This undoes a previously prepared clock.  The caller must balance
+> - * the number of prepare and unprepare calls.
+> - *
+> - * Must not be called from within atomic context.
+> - */
+> -#ifdef CONFIG_HAVE_CLK_PREPARE
+> -void clk_unprepare(struct clk *clk);
+> -#else
+> -static inline void clk_unprepare(struct clk *clk)
+> -{
+> -       might_sleep();
+> -}
+> -#endif
+> -
+>  #ifdef CONFIG_HAVE_CLK
+>  /**
+>   * clk_get - lookup and obtain a reference to a clock producer.
+> @@ -159,6 +123,27 @@ struct clk *clk_get(struct device *dev, const char *id);
+>  struct clk *devm_clk_get(struct device *dev, const char *id);
+>  
+>  /**
+> + * clk_prepare - prepare a clock source
+> + * @clk: clock source
+> + *
+> + * This prepares the clock source for use.
+> + *
+> + * Must not be called from within atomic context.
+> + */
+> +int clk_prepare(struct clk *clk);
+> +
+> +/**
+> + * clk_unprepare - undo preparation of a clock source
+> + * @clk: clock source
+> + *
+> + * This undoes a previously prepared clock.  The caller must balance
+> + * the number of prepare and unprepare calls.
+> + *
+> + * Must not be called from within atomic context.
+> + */
+> +void clk_unprepare(struct clk *clk);
+> +
+> +/**
+>   * clk_enable - inform the system when the clock source should be running.
+>   * @clk: clock source
+>   *
+> @@ -292,6 +277,17 @@ static inline void clk_put(struct clk *clk) {}
+>  
+>  static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
+>  
+> +static inline int clk_prepare(struct clk *clk)
+> +{
+> +       might_sleep();
+> +       return 0;
+> +}
+> +
+> +static inline void clk_unprepare(struct clk *clk)
+> +{
+> +       might_sleep();
+> +}
+> +
+>  static inline int clk_enable(struct clk *clk)
+>  {
+>         return 0;
