@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2KVSps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:45:48 -0500
-Received: from nm9.bullet.mail.ukl.yahoo.com ([217.146.182.250]:42017 "EHLO
-	nm9.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754476Ab2KVSpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:45:11 -0500
-X-Yahoo-Newman-Id: 330618.98588.bm@smtp133.mail.ukl.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: dTGjTf0VM1lcSwdy3CmDosvtb5K0.fSkAekynP_sza271FI
- 0dDVw9xxvnoBToBJXzkpNi4vLMYaKLcM.xaaTo_JXUMnT_vGEdhdUtAz.1bJ
- DG3I33jmg7GX_s5aT4KLeHdebnmizH5Yj9hwD6UUW2hPEkXoiZaaI5YBTzme
- tFxJlqO6ewlfm3J4gX0zY0yItvIYnlZJoVF3tQNUo_NXbg0w60CYI9LJit1_
- 1j4SPiDfb8MfDNmQj5EbINUYDnyqbQse4cQhp1ccI5puN42Pc7KnHCe1fTnR
- eDUTNRIfCKZ38s9xaWo7nXxD5LEiOmuagh7Ac5zMHnX_52EXy8p9f0.EME_t
- OoDX_SszkVszjYeTVDFHGwJQpwKV32eF50d3rUxuaW1exJd7wve2aOvinY6X
- 8BhG1xohj7Zx0GlbNOcx1s201V47K3v0zbeLbRX7Q1cFwZIEF3O6G6rRxfWY
- dcbWaj8nU8x.WK5tAiMC5qDj03thuhdmR7tusBYaYhqbHD6xOd5Y-
-X-Yahoo-SMTP: I45Gv1yswBA64FO3PWdisLsd1VM-
-Message-ID: <50AE1DC1.949B3A9C@smtp.mail.yahoo.com>
-Date: Thu, 22 Nov 2012 12:42:46 -0600
-From: "al.jazz@yahoo.com" <al.jazz@yahoo.com>
-Subject: FW:
-To: rgarren@perroneleather.com
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Mozilla 4.7 [en]C-CCK-MCD NSCPCD47  (Win98; I)
+	id S1755499Ab2KVSqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:46:03 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55798 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab2KVSp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:45:59 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: <alsa-devel@alsa-project.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <tony@atomide.com>, <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>,
+        <perex@perex.cz>, <nsekhar@ti.com>, <sudhakar.raj@ti.com>,
+        <gururaja.hebbar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <rob@landley.net>
+Subject: [PATCH 0/2] ARM/ASoC: Davinci: Device Tree Update
+Date: Thu, 22 Nov 2012 09:34:57 +0530
+Message-ID: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://bitly.com/Y0KWmj Public Arrest Records 
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
 
+1. Add pinctrl for McASP Module
+2. Add DT support for Davinci machine platform (resend)
 
+Second commit is a resend after re-basing on latest broonie-asoc/for-next
+(v3.7-rc6)
 
+Hebbar, Gururaja (2):
+  ASoC: davinci-mcasp: Add pinctrl support
+  ASoC: Davinci: machine: Add device tree binding
 
+ .../bindings/sound/davinci-evm-audio.txt           |   66 +++++++
+ sound/soc/davinci/davinci-evm.c                    |  185 +++++++++++++++++---
+ sound/soc/davinci/davinci-mcasp.c                  |    7 +
+ 3 files changed, 238 insertions(+), 20 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- 
+1.7.9.5
 
