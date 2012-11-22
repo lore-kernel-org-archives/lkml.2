@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab2KVVUs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:20:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
+	id S1757726Ab2KVVVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:21:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49632 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab2KVSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755247Ab2KVSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Millbrandt <emillbrandt@dekaresearch.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 26/83] ASoC: wm8978: pll incorrectly configured when codec is master
-Date: Wed, 21 Nov 2012 16:41:48 -0800
-Message-Id: <20121122004215.466239155@linuxfoundation.org>
+        Mirko Lindner <mlindner@marvell.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 29/38] sky2: Fix for interrupt handler
+Date: Wed, 21 Nov 2012 16:40:12 -0800
+Message-Id: <20121122003907.507028431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Millbrandt <emillbrandt@dekaresearch.com>
+From: Mirko Lindner <mlindner@marvell.com>
 
-commit 55c6f4cb6ef49afbb86222c6a3ff85329199c729 upstream.
+commit d663d181b9e92d80c2455e460e932d34e7a2a7ae upstream.
 
-When MCLK is supplied externally and BCLK and LRC are configured as outputs
-(codec is master), the PLL values are only calculated correctly on the first
-transmission.  On subsequent transmissions, at differenct sample rates, the
-wrong PLL values are used.  Test for f_opclk instead of f_pllout to determine
-if the PLL values are needed.
+Re-enable interrupts if it is not our interrupt
 
-Signed-off-by: Eric Millbrandt <emillbrandt@dekaresearch.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8978.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/sky2.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8978.c
-+++ b/sound/soc/codecs/wm8978.c
-@@ -782,7 +782,7 @@ static int wm8978_hw_params(struct snd_p
- 		wm8978->mclk_idx = -1;
- 		f_sel = wm8978->f_mclk;
- 	} else {
--		if (!wm8978->f_pllout) {
-+		if (!wm8978->f_opclk) {
- 			/* We only enter here, if OPCLK is not used */
- 			int ret = wm8978_configure_pll(codec);
- 			if (ret < 0)
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -2929,8 +2929,10 @@ static irqreturn_t sky2_intr(int irq, vo
+ 
+ 	/* Reading this mask interrupts as side effect */
+ 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
+-	if (status == 0 || status == ~0)
++	if (status == 0 || status == ~0) {
++		sky2_write32(hw, B0_Y2_SP_ICR, 2);
+ 		return IRQ_NONE;
++	}
+ 
+ 	prefetch(&hw->st_le[hw->st_idx]);
+ 
 
 
