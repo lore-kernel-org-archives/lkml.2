@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab2KVUMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:12:31 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33649 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277Ab2KVUM0 (ORCPT
+	id S1757512Ab2KVUMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:12:42 -0500
+Received: from mailout07.t-online.de ([194.25.134.83]:42765 "EHLO
+	mailout07.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757277Ab2KVUMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:12:26 -0500
+	Thu, 22 Nov 2012 15:12:39 -0500
+X-Greylist: delayed 5417 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 15:12:39 EST
+Message-ID: <50AE44C4.1060606@t-online.de>
+Date: Thu, 22 Nov 2012 16:29:08 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20121120205421.GA4664@polaris.bitmath.org>
-References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1352908766-4492-15-git-send-email-benjamin.tissoires@gmail.com>
-	<20121114195852.GA14840@polaris.bitmath.org>
-	<50A40CB3.8070105@gmail.com>
-	<20121116200926.GA652@polaris.bitmath.org>
-	<CAN+gG=F=bHdJF0=0LHGuVQ+ObHvWKJnL0GYcAEWBeD+Z-yyGSA@mail.gmail.com>
-	<20121120205147.GA4658@polaris.bitmath.org>
-	<20121120205421.GA4664@polaris.bitmath.org>
-Date: Thu, 22 Nov 2012 21:12:24 +0100
-Message-ID: <CAN+gG=HY3ai3sKqbqMoiFNHW+c8=dUKGXzF1sU-JaZ16_w1S9w@mail.gmail.com>
-Subject: Re: [PATCH v4 14/14] HID: hid-multitouch: forwards MSC_TIMESTAMP
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>,
-        Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: "xorg-devel@lists.x.org Development" <xorg-devel@lists.x.org>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: drm_gem_create_mmap_offset / intel_uxa_prepare_access bo problems
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: Gc1U1OZCZhdwgIDks09ZfrC1fdU28-ztWHeCz9bU-y+5ZgpCMTQu4MewxXOQtZtg95
+X-TOI-MSGID: 100ca3b9-41a7-445d-8d34-9679f578ccf1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys,
+Hi Chris!
 
-well, I'm not very satisfied with this patch. I first thought it was a
-good idea but I can see now several cons:
-1. Henrik would like to partially base the time spent between two
-events when the device wraps on the *event* time. This is a great idea
-for consistency, but I'm afraid I won't be able to implement it
-because this time is computed *after* we call input_event and is only
-used by evdev. Thus, I still need to add an other clock and some
-differences may occur.
-2. the user space (at least X) will not use it before a long time:
-they already have the time of the event and it will not add that much
-consistency.
-3. it will wake up the whole input chain when fingers are present but
-no moves occurs on the digitizer: the only events we get are
-MSC_TIMESTAMP and EV_SYN and the user-space will be awaken just for
-that.
-4. MSC_TIMESTAMP does not have an abs_max value, thus we are forced to
-compute sth consistent in the kernel that can be forwarded to the user
-space.
+Problem:
+=======
+Slowdown of system, missing icons after 16 days kernel uptime and 12 days Xserver uptime.
+Xorg log: flooded with "(WW) intel(0): intel_uxa_prepare_access: bo map (use gtt? 1, access 1) failed: No space left on device" lines
+dmesg: flooded with "[drm:drm_gem_create_mmap_offset] *ERROR* failed to allocate offset for bo 0" entries
 
-So, I propose not to include this feature, and eventually reverting
-the patch that introduced MSC_TIMESTAMP as it's useless if we don't
-use it right now.
 
-Jiri, Dmitry, Henrik, are ok with that?
+Hardware
+=======
+AOpen i915GMm-hfs, Pentium-M Dothan
 
-Cheers,
-Benjamin
+Software:
+=======
+linux kernel 3.6.6
+full Xorg git master, fetch/build 10 November 2012,
+video-intel: git f5d79b202dd448e61ab6ffce26fe9cbf9051d770
+xserver: git 011f8458805e443ac9130865d2840a929a00cabf
+rest of system openSuSE 12.1
 
-On Tue, Nov 20, 2012 at 9:54 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> below logical_max (say),
->
-> That was meant to read (logical_max / 2).
->
-> Henrik
+Any idea?
+
+cu,
+  Knut
