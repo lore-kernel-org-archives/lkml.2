@@ -1,150 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab2KVWxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:53:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46981 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab2KVWxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:53:04 -0500
-Date: Thu, 22 Nov 2012 23:53:01 +0100
-From: Jan Kara <jack@suse.cz>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: Unbalanced unlock with sysrq+SUB
-Message-ID: <20121122225301.GC20326@quack.suse.cz>
-References: <50AEA7C8.6070102@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-In-Reply-To: <50AEA7C8.6070102@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758893Ab2KVWxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:53:30 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47171 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758861Ab2KVWvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 17:51:44 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 28/33] sched: Use the best-buddy 'ideal cpu' in balancing decisions
+Date: Thu, 22 Nov 2012 23:49:49 +0100
+Message-Id: <1353624594-1118-29-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now that we have a notion of (one of the) best CPUs we interrelate
+with in terms of memory usage, use that information to improve
+can_migrate_task() balancing decisions: allow the migration to
+occur even if we locally cache-hot, if we are on another node
+and want to migrate towards our best buddy's node.
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+( Note that this is not hard affinity - if imbalance persists long
+  enough then the scheduler will eventually balance tasks anyway,
+  to maximize CPU utilization. )
 
-  Hello,
-
-On Thu 22-11-12 23:31:36, Zdenek Kabelac wrote:
-> For some time - when I reboot via  'sysrq + SUB' I get this BUG: message
-> My system is running rawhide (systemd) on ext4 filesystem.
-> systemd-195-7.fc18.x86_64
-  Thanks for report. Looks like my problem. Attached patch should fix it.
-
-								Honza
-  
-> SysRq : Emergency Remount R/O
-> 
-> =====================================
-> [ BUG: bad unlock balance detected! ]
-> 3.7.0-rc6-00028-g88e75b6 #101 Not tainted
-> -------------------------------------
-> kworker/1:2/79 is trying to release lock (sb_writers) at:
-> [<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
-> but there are no more locks to release!
-> 
-> other info that might help us debug this:
-> 4 locks held by kworker/1:2/79:
->  #0:  (events){.+.+.+}, at: [<ffffffff81064a79>] process_one_work+0x149/0x750
->  #1:  ((work)#3){+.+...}, at: [<ffffffff81064a79>] process_one_work+0x149/0x750
->  #2:  (&type->s_umount_key#19){+++++.}, at: [<ffffffff81194140>]
-> do_emergency_remount+0x80/0x120
->  #3:  (files_lglock){.+.+..}, at: [<ffffffff8119202b>] mark_files_ro+0x2b/0x100
-> 
-> stack backtrace:
-> Pid: 79, comm: kworker/1:2 Not tainted 3.7.0-rc6-00028-g88e75b6 #101
-> Call Trace:
->  [<ffffffff811b33b4>] ? mnt_drop_write+0x24/0x30
->  [<ffffffff810ae52e>] print_unlock_inbalance_bug+0xfe/0x110
->  [<ffffffff810b10fe>] lock_release_non_nested+0x21e/0x320
->  [<ffffffff8113c9a5>] ? pagevec_lookup_tag+0x25/0x40
->  [<ffffffff811b33b4>] ? mnt_drop_write+0x24/0x30
->  [<ffffffff810b1297>] lock_release+0x97/0x300
->  [<ffffffff811926b1>] __sb_end_write+0x81/0x90
->  [<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
->  [<ffffffff811b33d2>] mnt_drop_write_file+0x12/0x20
->  [<ffffffff811920f7>] mark_files_ro+0xf7/0x100
->  [<ffffffff81193f6d>] do_remount_sb+0x13d/0x1b0
->  [<ffffffff81194140>] ? do_emergency_remount+0x80/0x120
->  [<ffffffff811941dc>] do_emergency_remount+0x11c/0x120
->  [<ffffffff81064add>] process_one_work+0x1ad/0x750
->  [<ffffffff81064a79>] ? process_one_work+0x149/0x750
->  [<ffffffff8106550b>] ? worker_thread+0x21b/0x450
->  [<ffffffff81557219>] ? _raw_spin_lock_irq+0x19/0x80
->  [<ffffffff811940c0>] ? mount_single+0xe0/0xe0
->  [<ffffffff8106544d>] worker_thread+0x15d/0x450
->  [<ffffffff810652f0>] ? rescuer_thread+0x230/0x230
->  [<ffffffff8106f50b>] kthread+0xdb/0xe0
->  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
->  [<ffffffff8155fe1c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
-> EXT4-fs (sda2): re-mounted. Opts: (null)
-> EXT4-fs (sda5): re-mounted. Opts: (null)
-> Emergency Remount complete
-> systemd[1]: Stopping Sendmail Mail Transport Client...
-> systemd[1]: Stopping Sendmail Mail Transport Agent...
-> systemd[1]: Starting Sendmail Mail Transport Agent...
-> systemd[1]: Started Sendmail Mail Transport Agent.
-> systemd[1]: Starting Sendmail Mail Transport Client...
-> systemd[1]: Started Sendmail Mail Transport Client.
-> SysRq : Resetting
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
-
---nFreZHaLTZJo0R7j
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-fs-Fix-imbalance-in-freeze-protection-in-mark_files_.patch"
-
->From fd6469756345146cb925766f0798187800c6c89c Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Thu, 22 Nov 2012 23:44:01 +0100
-Subject: [PATCH] fs: Fix imbalance in freeze protection in mark_files_ro()
-
-File descriptors (even those for writing) do not hold freeze protection.
-Thus mark_files_ro() must call __mnt_drop_write() to only drop protection
-against remount read-only. Calling mnt_drop_write_file() as we do now
-results in:
-
-[ BUG: bad unlock balance detected! ]
-3.7.0-rc6-00028-g88e75b6 #101 Not tainted
--------------------------------------
-kworker/1:2/79 is trying to release lock (sb_writers) at:
-[<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
-but there are no more locks to release!
-
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-CC: stable@vger.kernel.org # >= 3.6
-Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/file_table.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/sched/fair.c     | 35 ++++++++++++++++++++++++++++++++---
+ kernel/sched/features.h |  2 ++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index a72bf9d..de9e965 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -458,8 +458,8 @@ void mark_files_ro(struct super_block *sb)
- 		spin_unlock(&f->f_lock);
- 		if (file_check_writeable(f) != 0)
- 			continue;
-+		__mnt_drop_write(f->f_path.mnt);
- 		file_release_write(f);
--		mnt_drop_write_file(f);
- 	} while_file_list_for_each_entry;
- 	lg_global_unlock(&files_lglock);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 67f7fd2..24a5588 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -840,6 +840,14 @@ static void task_numa_migrate(struct task_struct *p, int next_cpu)
+ 	p->numa_migrate_seq = 0;
  }
+ 
++static int task_ideal_cpu(struct task_struct *p)
++{
++	if (!sched_feat(IDEAL_CPU))
++		return -1;
++
++	return p->ideal_cpu;
++}
++
+ /*
+  * Called for every full scan - here we consider switching to a new
+  * shared buddy, if the one we found during this scan is good enough:
+@@ -1028,7 +1036,7 @@ out_hit:
+ 	 * but don't stop the discovery of process level sharing
+ 	 * either:
+ 	 */
+-	if (this_task->mm == last_task->mm)
++	if (sched_feat(IDEAL_CPU_THREAD_BIAS) && this_task->mm == last_task->mm)
+ 		pages *= 2;
+ 
+ 	this_task->shared_buddy_faults_curr += pages;
+@@ -1189,6 +1197,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ }
+ #else /* !CONFIG_NUMA_BALANCING: */
+ #ifdef CONFIG_SMP
++static inline int task_ideal_cpu(struct task_struct *p)				{ return -1; }
+ static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)	{ }
+ #endif
+ static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)	{ }
+@@ -4064,6 +4073,7 @@ struct lb_env {
+ static void move_task(struct task_struct *p, struct lb_env *env)
+ {
+ 	deactivate_task(env->src_rq, p, 0);
++
+ 	set_task_cpu(p, env->dst_cpu);
+ 	activate_task(env->dst_rq, p, 0);
+ 	check_preempt_curr(env->dst_rq, p, 0);
+@@ -4242,15 +4252,17 @@ static bool can_migrate_numa_task(struct task_struct *p, struct lb_env *env)
+ 	 *
+ 	 * LBF_NUMA_RUN    -- numa only, only allow improvement
+ 	 * LBF_NUMA_SHARED -- shared only
++	 * LBF_NUMA_IDEAL  -- ideal only
+ 	 *
+ 	 * LBF_KEEP_SHARED -- do not touch shared tasks
+ 	 */
+ 
+ 	/* a numa run can only move numa tasks about to improve things */
+ 	if (env->flags & LBF_NUMA_RUN) {
+-		if (task_numa_shared(p) < 0)
++		if (task_numa_shared(p) < 0 && task_ideal_cpu(p) < 0)
+ 			return false;
+-		/* can only pull shared tasks */
++
++		/* If we are only allowed to pull shared tasks: */
+ 		if ((env->flags & LBF_NUMA_SHARED) && !task_numa_shared(p))
+ 			return false;
+ 	} else {
+@@ -4307,6 +4319,23 @@ static int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	if (!can_migrate_running_task(p, env))
+ 		return false;
+ 
++#ifdef CONFIG_NUMA_BALANCING
++	/* If we are only allowed to pull ideal tasks: */
++	if ((task_ideal_cpu(p) >= 0) && (p->shared_buddy_faults > 1000)) {
++		int ideal_node;
++		int dst_node;
++
++		BUG_ON(env->dst_cpu < 0);
++
++		ideal_node = cpu_to_node(p->ideal_cpu);
++		dst_node = cpu_to_node(env->dst_cpu);
++
++		if (ideal_node == dst_node)
++			return true;
++		return false;
++	}
++#endif
++
+ 	if (env->sd->flags & SD_NUMA)
+ 		return can_migrate_numa_task(p, env);
+ 
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index b75a10d..737d2c8 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -66,6 +66,8 @@ SCHED_FEAT(TTWU_QUEUE, true)
+ SCHED_FEAT(FORCE_SD_OVERLAP, false)
+ SCHED_FEAT(RT_RUNTIME_SHARE, true)
+ SCHED_FEAT(LB_MIN, false)
++SCHED_FEAT(IDEAL_CPU,			true)
++SCHED_FEAT(IDEAL_CPU_THREAD_BIAS,	false)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ /* Do the working set probing faults: */
 -- 
-1.7.1
+1.7.11.7
 
-
---nFreZHaLTZJo0R7j--
