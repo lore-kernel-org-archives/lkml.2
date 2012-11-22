@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab2KVWOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:14:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49362 "EHLO mail.kernel.org"
+	id S932771Ab2KVWO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:14:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49372 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754600Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:38:34 -0500
+	id S1754607Ab2KVSif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:38:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nathan Walp <faceprint@faceprint.com>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 040/171] r8169: allow multicast packets on sub-8168f chipset.
-Date: Wed, 21 Nov 2012 16:39:46 -0800
-Message-Id: <20121122004037.383591700@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>
+Subject: [ 148/171] libceph: move ceph_con_send() closed check under the con mutex
+Date: Wed, 21 Nov 2012 16:41:34 -0800
+Message-Id: <20121122004048.202999398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -28,33 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Walp <faceprint@faceprint.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 0481776b7a70f09acf7d9d97c288c3a8403fbfe4 upstream.
+(cherry picked from commit a59b55a602b6c741052d79c1e3643f8440cddd27)
 
-RTL_GIGA_MAC_VER_35 includes no multicast hardware filter.
+Take the con mutex before checking whether the connection is closed to
+avoid racing with someone else closing it.
 
-Signed-off-by: Nathan Walp <faceprint@faceprint.com>
-Suggested-by: Hayes Wang <hayeswang@realtek.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/realtek/r8169.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ceph/messenger.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4131,6 +4131,9 @@ static void rtl_set_rx_mode(struct net_d
- 		mc_filter[1] = swab32(data);
- 	}
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2453,22 +2453,20 @@ static void clear_standby(struct ceph_co
+  */
+ void ceph_con_send(struct ceph_connection *con, struct ceph_msg *msg)
+ {
+-	if (test_bit(CLOSED, &con->state)) {
+-		dout("con_send %p closed, dropping %p\n", con, msg);
+-		ceph_msg_put(msg);
+-		return;
+-	}
+-
+ 	/* set src+dst */
+ 	msg->hdr.src = con->msgr->inst.name;
+-
+ 	BUG_ON(msg->front.iov_len != le32_to_cpu(msg->hdr.front_len));
+-
+ 	msg->needs_out_seq = true;
  
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_35)
-+		mc_filter[1] = mc_filter[0] = 0xffffffff;
+-	/* queue */
+ 	mutex_lock(&con->mutex);
+ 
++	if (test_bit(CLOSED, &con->state)) {
++		dout("con_send %p closed, dropping %p\n", con, msg);
++		ceph_msg_put(msg);
++		mutex_unlock(&con->mutex);
++		return;
++	}
 +
- 	RTL_W32(MAR0 + 4, mc_filter[1]);
- 	RTL_W32(MAR0 + 0, mc_filter[0]);
- 
+ 	BUG_ON(msg->con != NULL);
+ 	msg->con = con->ops->get(con);
+ 	BUG_ON(msg->con == NULL);
 
 
