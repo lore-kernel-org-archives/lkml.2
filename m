@@ -1,74 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2KVUpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:45:25 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33123 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928Ab2KVUpT (ORCPT
+	id S1756792Ab2KVUoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:44:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964910Ab2KVS6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:45:19 -0500
-Date: Thu, 22 Nov 2012 02:21:22 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alex Shi <lkml.alex@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-Message-ID: <20121122012122.GA7938@gmail.com>
-References: <1353291284-2998-1-git-send-email-mingo@kernel.org>
- <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
- <20121120152933.GA17996@gmail.com>
- <20121120175647.GA23532@gmail.com>
- <CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
+	Thu, 22 Nov 2012 13:58:45 -0500
+Date: Wed, 21 Nov 2012 17:40:31 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-2086fe1159a9a75233b533986ccfcbd192bd9372@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-4-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-4-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm: Move down find_early_table_space()
+Git-Commit-ID: 2086fe1159a9a75233b533986ccfcbd192bd9372
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:40:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  2086fe1159a9a75233b533986ccfcbd192bd9372
+Gitweb:     http://git.kernel.org/tip/2086fe1159a9a75233b533986ccfcbd192bd9372
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:38:40 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:02 -0800
 
-* Alex Shi <lkml.alex@gmail.com> wrote:
+x86, mm: Move down find_early_table_space()
 
-> >
-> > Those of you who would like to test all the latest patches are
-> > welcome to pick up latest bits at tip:master:
-> >
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
-> >
-> 
-> I am wondering if it is a problem, but it still exists on HEAD: c418de93e39891
-> http://article.gmane.org/gmane.linux.kernel.mm/90131/match=compiled+with+name+pl+and+start+it+on+my
-> 
-> like when just start 4 pl tasks, often 3 were running on node 
-> 0, and 1 was running on node 1. The old balance will average 
-> assign tasks to different node, different core.
+It will need to call split_mem_range().
+Move it down after that to avoid extra declaration.
 
-This is "normal" in the sense that the current mainline 
-scheduler is (supposed to be) doing something similar: if the 
-node is still within capacity, then there's no reason to move 
-those threads.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-4-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init.c | 117 +++++++++++++++++++++++++++--------------------------
+ 1 file changed, 59 insertions(+), 58 deletions(-)
 
-OTOH, I think with NUMA balancing we indeed want to spread them 
-better, if those tasks do not share memory with each other but 
-use their own memory. If they share memory then they should 
-remain on the same node if possible.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 6368b86..701abbc 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -36,64 +36,6 @@ struct map_range {
+ };
+ 
+ static int page_size_mask;
+-/*
+- * First calculate space needed for kernel direct mapping page tables to cover
+- * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
+- * pages. Then find enough contiguous space for those page tables.
+- */
+-static void __init find_early_table_space(struct map_range *mr, int nr_range)
+-{
+-	int i;
+-	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+-	unsigned long start = 0, good_end;
+-	phys_addr_t base;
+-
+-	for (i = 0; i < nr_range; i++) {
+-		unsigned long range, extra;
+-
+-		range = mr[i].end - mr[i].start;
+-		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+-
+-		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
+-			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
+-			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-		} else {
+-			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
+-		}
+-
+-		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
+-			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+-#ifdef CONFIG_X86_32
+-			extra += PMD_SIZE;
+-#endif
+-			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		} else {
+-			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		}
+-	}
+-
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+-	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+-
+-#ifdef CONFIG_X86_32
+-	/* for fixmap */
+-	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+-#endif
+-	good_end = max_pfn_mapped << PAGE_SHIFT;
+-
+-	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+-	if (!base)
+-		panic("Cannot find space for the kernel page tables");
+-
+-	pgt_buf_start = base >> PAGE_SHIFT;
+-	pgt_buf_end = pgt_buf_start;
+-	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+-
+-	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
+-		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
+-		(pgt_buf_top << PAGE_SHIFT) - 1);
+-}
+ 
+ void probe_page_size_mask(void)
+ {
+@@ -250,6 +192,65 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ }
+ 
+ /*
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
++{
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
++	phys_addr_t base;
++
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
++
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
++
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
++
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
++#ifdef CONFIG_X86_32
++			extra += PMD_SIZE;
++#endif
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
++	}
++
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++
++#ifdef CONFIG_X86_32
++	/* for fixmap */
++	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
++#endif
++	good_end = max_pfn_mapped << PAGE_SHIFT;
++
++	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
++	if (!base)
++		panic("Cannot find space for the kernel page tables");
++
++	pgt_buf_start = base >> PAGE_SHIFT;
++	pgt_buf_end = pgt_buf_start;
++	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
++
++	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
++		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
++		(pgt_buf_top << PAGE_SHIFT) - 1);
++}
++
++/*
+  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+  * This runs before bootmem is initialized and gets pages directly from
+  * the physical memory. To access them they are temporarily mapped.
