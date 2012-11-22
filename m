@@ -1,59 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab2KVUSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:18:30 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62621 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547Ab2KVUSX (ORCPT
+	id S1757076Ab2KVURa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:17:30 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45940 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961Ab2KVTtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:18:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121013133.GE4673@opensource.wolfsonmicro.com>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
-	<1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-	<20121120215429.B621F3E1821@localhost>
-	<20121121013133.GE4673@opensource.wolfsonmicro.com>
-Date: Thu, 22 Nov 2012 09:57:22 +0100
-Message-ID: <CACRpkdaNmBpfONDpt7zFqLaqfiGm+ELpO-v5gZmM0rEi_AzijQ@mail.gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-pm@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Ola LILJA2 <ola.o.lilja@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Nov 2012 14:49:46 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 01/46] staging: line6: drop channel sysfs attr
+Date: Thu, 22 Nov 2012 20:48:40 +0100
+Message-Id: <1353613765-18690-2-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 2:31 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 51 ---------------------------------------------
+ drivers/staging/line6/pod.h |  5 -----
+ 2 files changed, 56 deletions(-)
 
-> As I said in my earlier reviews I think this is a useful thing to have
-> as a utility library for drivers independantly of the DT bindings, it
-> would allow drivers to become more data driven.  Perhaps we can rework
-> the series so that the DT bindings are added as a final patch?  All the
-> rest of the code seems OK.
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 4a86f7a..e3e2247 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -223,7 +223,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 
+ 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_DEVICE:
+ 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_HOST:
+-		pod->channel_num = buf[1];
+ 		pod->dirty = 0;
+ 		set_bit(POD_CHANNEL_DIRTY, &pod->atomic_flags);
+ 		line6_dump_request_async(&pod->dumpreq, &pod->line6, 0,
+@@ -388,19 +387,6 @@ void line6_pod_midi_postprocess(struct usb_line6_pod *pod, unsigned char *data,
+ }
+ 
+ /*
+-	Send channel number (i.e., switch to a different sound).
+-*/
+-static void pod_send_channel(struct usb_line6_pod *pod, u8 value)
+-{
+-	line6_invalidate_current(&pod->dumpreq);
+-
+-	if (line6_send_program(&pod->line6, value) == 0)
+-		pod->channel_num = value;
+-	else
+-		line6_dump_finished(&pod->dumpreq);
+-}
+-
+-/*
+ 	Transmit PODxt Pro control parameter.
+ */
+ void line6_pod_transmit_parameter(struct usb_line6_pod *pod, int param,
+@@ -526,37 +512,6 @@ static ssize_t get_name_generic(struct usb_line6_pod *pod, const char *str,
+ }
+ 
+ /*
+-	"read" request on "channel" special file.
+-*/
+-static ssize_t pod_get_channel(struct device *dev,
+-			       struct device_attribute *attr, char *buf)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	return sprintf(buf, "%d\n", pod->channel_num);
+-}
+-
+-/*
+-	"write" request on "channel" special file.
+-*/
+-static ssize_t pod_set_channel(struct device *dev,
+-			       struct device_attribute *attr,
+-			       const char *buf, size_t count)
+-{
+-	struct usb_interface *interface = to_usb_interface(dev);
+-	struct usb_line6_pod *pod = usb_get_intfdata(interface);
+-	u8 value;
+-	int ret;
+-
+-	ret = kstrtou8(buf, 10, &value);
+-	if (ret)
+-		return ret;
+-
+-	pod_send_channel(pod, value);
+-	return count;
+-}
+-
+-/*
+ 	"read" request on "name" special file.
+ */
+ static ssize_t pod_get_name(struct device *dev, struct device_attribute *attr,
+@@ -1036,8 +991,6 @@ POD_GET_SYSTEM_PARAM(tuner_pitch, 1);
+ #undef GET_SYSTEM_PARAM
+ 
+ /* POD special files: */
+-static DEVICE_ATTR(channel, S_IWUSR | S_IRUGO, pod_get_channel,
+-		   pod_set_channel);
+ static DEVICE_ATTR(clip, S_IRUGO, pod_wait_for_clip, line6_nop_write);
+ static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
+ static DEVICE_ATTR(dirty, S_IRUGO, pod_get_dirty, line6_nop_write);
+@@ -1153,7 +1106,6 @@ static int pod_create_files2(struct device *dev)
+ {
+ 	int err;
+ 
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_channel));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_clip));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_device_id));
+ 	CHECK_RETURN(device_create_file(dev, &dev_attr_dirty));
+@@ -1200,8 +1152,6 @@ static int pod_try_init(struct usb_interface *interface,
+ 	if ((interface == NULL) || (pod == NULL))
+ 		return -ENODEV;
+ 
+-	pod->channel_num = 255;
+-
+ 	/* initialize wait queues: */
+ 	init_waitqueue_head(&pod->monitor_level.wait);
+ 	init_waitqueue_head(&pod->routing.wait);
+@@ -1300,7 +1250,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
+ 					       pod->line6.
+ 					       properties->device_bit, dev);
+ 
+-			device_remove_file(dev, &dev_attr_channel);
+ 			device_remove_file(dev, &dev_attr_clip);
+ 			device_remove_file(dev, &dev_attr_device_id);
+ 			device_remove_file(dev, &dev_attr_dirty);
+diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
+index 47e0d1a..0f9e83d 100644
+--- a/drivers/staging/line6/pod.h
++++ b/drivers/staging/line6/pod.h
+@@ -89,11 +89,6 @@ struct usb_line6_pod {
+ 	struct line6_dump_request dumpreq;
+ 
+ 	/**
+-		Current program number.
+-	*/
+-	unsigned char channel_num;
+-
+-	/**
+ 		Current program settings.
+ 	*/
+ 	struct pod_program prog_data;
+-- 
+1.8.0
 
-I have the same (limited by experience) opinion. Working sort of
-near som audio drivers I have understood that power sequencing
-is a big issue not only for things like this backlight example, but
-even more so in the area of audio to avoid clicks and pops.
-
-Is it correct to assume that this library will be useful also for ALSA
-SoC type of devices?
-
-Then whether to couple that to DT or ACPI or SFI or whatever
-is a different discussion altogether.
-
-Yours,
-Linus Walleij
