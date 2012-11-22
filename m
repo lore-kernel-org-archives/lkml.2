@@ -1,49 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2KVS4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:56:05 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46206 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2KVS4C (ORCPT
+	id S932267Ab2KVS4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:56:15 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53437 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab2KVS4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:56:02 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        linux-kernel@vger.kernel.org
-Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <phil.edworthy@renesas.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 23/42] sh-pfc: Add sh7377 pinmux support
-Date: Thu, 22 Nov 2012 12:12:18 +0100
-Message-ID: <1585278.4IlJHOvdSy@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <CABMQnVJU5nfgLzYX9HavNuCxxD5Ei10hbed2Uz1wth-nDse-+Q@mail.gmail.com>
-References: <1353464863-10281-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1353464863-10281-24-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CABMQnVJU5nfgLzYX9HavNuCxxD5Ei10hbed2Uz1wth-nDse-+Q@mail.gmail.com>
+	Thu, 22 Nov 2012 13:56:10 -0500
+Date: Thu, 22 Nov 2012 14:51:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Subject: Re: [PATCH 2/2] input: gpio-keys: Add runtime support
+Message-ID: <20121122145153.GB10986@gmail.com>
+References: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
+ <1353590617-11466-2-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1353590617-11466-2-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nobuhiro-san,
+Ignore this.
 
-On Thursday 22 November 2012 13:55:19 Nobuhiro Iwamatsu wrote:
-> Hi, Laurent.
-> 
-> This patch is unnecessary.
-> Because support of this CPU is deleted from kernel.
-> 
-> Best regards,
->   Nobuhiro
+I've just rebased and the API has changed slightly.
 
-Good point, thank you. I'll drop this patch (as well as 21/42) from the 
-series.
+Will fixup and resend.
+
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
+> 
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
+> Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> ---
+>  drivers/input/keyboard/gpio_keys.c |   17 +++++++++++++----
+>  1 file changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+> index 2cf6757..cff548c 100644
+> --- a/drivers/input/keyboard/gpio_keys.c
+> +++ b/drivers/input/keyboard/gpio_keys.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/pm_runtime.h>
+>  
+>  struct gpio_button_data {
+>  	const struct gpio_keys_button *button;
+> @@ -533,6 +534,7 @@ static int gpio_keys_open(struct input_dev *input)
+>  	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+>  	const struct gpio_keys_platform_data *pdata = ddata->pdata;
+>  
+> +	pm_runtime_get_sync(input->dev.parent);
+>  	ddata->enabled = true;
+>  
+>  	return pdata->enable ? pdata->enable(input->dev.parent) : 0;
+> @@ -547,6 +549,8 @@ static void gpio_keys_close(struct input_dev *input)
+>  
+>  	if (pdata->disable)
+>  		pdata->disable(input->dev.parent);
+> +
+> +	pm_runtime_put(input->dev.parent);
+>  }
+>  
+>  /*
+> @@ -708,6 +712,8 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
+>  	input->id.product = 0x0001;
+>  	input->id.version = 0x0100;
+>  
+> +	pm_runtime_enable(&pdev->dev);
+> +
+>  	/* Enable auto repeat feature of Linux input subsystem */
+>  	if (pdata->rep)
+>  		__set_bit(EV_REP, input->evbit);
+> @@ -773,6 +779,8 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
+>  	struct input_dev *input = ddata->input;
+>  	int i;
+>  
+> +	pm_runtime_disable(&pdev->dev);
+> +
+>  	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
+>  
+>  	device_init_wakeup(&pdev->dev, 0);
+> @@ -805,8 +813,8 @@ static int gpio_keys_suspend(struct device *dev)
+>  		}
+>  	} else {
+>  		ddata->enable_after_suspend = ddata->enabled;
+> -		if (ddata->enabled)
+> -			gpio_keys_close(ddata->input);
+> +		if (ddata->enabled && ddata->disable)
+> +			ddata->disable(dev);
+>  	}
+>  
+>  	return 0;
+> @@ -826,8 +834,9 @@ static int gpio_keys_resume(struct device *dev)
+>  			gpio_keys_gpio_report_event(bdata);
+>  	}
+>  
+> -	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
+> -		gpio_keys_open(ddata->input);
+> +	if (!device_may_wakeup(dev) && ddata->enable_after_suspend
+> +	    && ddata->enable)
+> +		ddata->enable(dev);
+>  
+>  	input_sync(ddata->input);
+>  
+> -- 
+> 1.7.9.5
+> 
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
