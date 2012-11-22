@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2KVVYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:24:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49645 "EHLO mail.kernel.org"
+	id S932210Ab2KVVY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:24:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49627 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755220Ab2KVSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755183Ab2KVSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Chan <mchan@broadcom.com>, Anisse Astier <anisse@astier.eu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 67/83] tg3: unconditionally select HWMON support when tg3 is enabled.
-Date: Wed, 21 Nov 2012 16:42:29 -0800
-Message-Id: <20121122004219.912459624@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 157/171] libceph: verify state after retaking con lock after dispatch
+Date: Wed, 21 Nov 2012 16:41:43 -0800
+Message-Id: <20121122004049.111129803@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Sage Weil <sage@inktank.com>
 
-commit de0a41484c47d783dd4d442914815076aa2caac2 upstream.
+(cherry picked from commit 7b862e07b1a4d5c963d19027f10ea78085f27f9b)
 
-There is the seldom used corner case where HWMON=m at the same
-time as TIGON3=y (typically randconfigs) which will cause a link
-fail like:
+We drop the con mutex when delivering a message.  When we retake the
+lock, we need to verify we are still in the OPEN state before
+preparing to read the next tag, or else we risk stepping on a
+connection that has been closed.
 
-drivers/built-in.o: In function `tg3_close':
-tg3.c:(.text+0x16bd86): undefined reference to `hwmon_device_unregister'
-drivers/built-in.o: In function `tg3_hwmon_open':
-tg3.c:(.text+0x16fc4b): undefined reference to `hwmon_device_register'
-make[1]: *** [vmlinux] Error 1
-
-Fix it as suggested by DaveM[1] by having the Kconfig logic simply
-select HWMON when TIGON3 is selected.  This gets rid of all the
-extra IS_ENABLED ifdeffery in tg3.c as a side benefit.
-
-[1] http://marc.info/?l=linux-netdev&m=134250573718151&w=2
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michael Chan <mchan@broadcom.com>
-Reported-by: Anisse Astier <anisse@astier.eu>
-Suggested-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/broadcom/Kconfig |    1 +
- drivers/net/ethernet/broadcom/tg3.c   |    9 ---------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ net/ceph/messenger.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/Kconfig
-+++ b/drivers/net/ethernet/broadcom/Kconfig
-@@ -101,6 +101,7 @@ config TIGON3
- 	tristate "Broadcom Tigon3 support"
- 	depends on PCI
- 	select PHYLIB
-+	select HWMON
- 	---help---
- 	  This driver supports Broadcom Tigon3 based gigabit Ethernet cards.
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2003,7 +2003,6 @@ static void process_message(struct ceph_
+ 	con->ops->dispatch(con, msg);
  
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -44,10 +44,8 @@
- #include <linux/prefetch.h>
- #include <linux/dma-mapping.h>
- #include <linux/firmware.h>
--#if IS_ENABLED(CONFIG_HWMON)
- #include <linux/hwmon.h>
- #include <linux/hwmon-sysfs.h>
--#endif
- 
- #include <net/checksum.h>
- #include <net/ip.h>
-@@ -9517,7 +9515,6 @@ static int tg3_init_hw(struct tg3 *tp, i
- 	return tg3_reset_hw(tp, reset_phy);
+ 	mutex_lock(&con->mutex);
+-	prepare_read_tag(con);
  }
  
--#if IS_ENABLED(CONFIG_HWMON)
- static void tg3_sd_scan_scratchpad(struct tg3 *tp, struct tg3_ocir *ocir)
- {
- 	int i;
-@@ -9570,22 +9567,17 @@ static const struct attribute_group tg3_
- 	.attrs = tg3_attributes,
- };
  
--#endif
--
- static void tg3_hwmon_close(struct tg3 *tp)
- {
--#if IS_ENABLED(CONFIG_HWMON)
- 	if (tp->hwmon_dev) {
- 		hwmon_device_unregister(tp->hwmon_dev);
- 		tp->hwmon_dev = NULL;
- 		sysfs_remove_group(&tp->pdev->dev.kobj, &tg3_group);
+@@ -2213,6 +2212,8 @@ more:
+ 		if (con->in_tag == CEPH_MSGR_TAG_READY)
+ 			goto more;
+ 		process_message(con);
++		if (con->state == CON_STATE_OPEN)
++			prepare_read_tag(con);
+ 		goto more;
  	}
--#endif
- }
- 
- static void tg3_hwmon_open(struct tg3 *tp)
- {
--#if IS_ENABLED(CONFIG_HWMON)
- 	int i, err;
- 	u32 size = 0;
- 	struct pci_dev *pdev = tp->pdev;
-@@ -9617,7 +9609,6 @@ static void tg3_hwmon_open(struct tg3 *t
- 		dev_err(&pdev->dev, "Cannot register hwmon device, aborting\n");
- 		sysfs_remove_group(&pdev->dev.kobj, &tg3_group);
- 	}
--#endif
- }
- 
- 
+ 	if (con->in_tag == CEPH_MSGR_TAG_ACK) {
 
 
