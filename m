@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2KVU5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:57:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55399 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab2KVU5l (ORCPT
+	id S964843Ab2KVS63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:58:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964814Ab2KVS6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:57:41 -0500
-Date: Thu, 22 Nov 2012 21:57:33 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v4 04/11] pwm: pwm-tiecap: Add device-tree binding
- support for APWM driver
-Message-ID: <20121122205732.GB16716@avionic-0098.adnet.avionic-design.de>
-References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
- <1353503469-18634-5-git-send-email-avinashphilip@ti.com>
+	Thu, 22 Nov 2012 13:58:23 -0500
+Date: Wed, 21 Nov 2012 18:19:15 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-60a8f428320918458a9a21052777eada68eebfd8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-41-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-41-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm: Move after_bootmem to mm_internel.h
+Git-Commit-ID: 60a8f428320918458a9a21052777eada68eebfd8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1353503469-18634-5-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:pM87Pyjb9LCH2kK6ryt+VsBDci5Vtosyx0b9ZgZaqwS
- zX8dkvFjVeQq3xa8oqrePPzUcE0gDLSSImr6Sf5rdjjkj9cMUI
- JmwMXYOlcQozULpu4Ll63UX60tRbAOt6RYPXOf69ssrFo1ckGp
- m3iNA1GvNXxDGSJTi5syV1FLTLyZVbmq9nCYcPkXa7l+MzReX/
- keUEU4gwWg1Y2Pw/axVVsGhKLLKnc8BrTKw6sbaOF8PW3Cnsi2
- HZUYkHiUnaH2Xru2xFS5iWolWhhgv1MyKGcrWUTRVkWKkU3yoN
- Z8mMb9i0XXCTIJ7+bNXkM/xwxj9No/TwoA9ULwNA3/124B+L8+
- i078oKAlsJ1P6ej51tb/r7ltNGdRL9RRYdPw4QyhnPDB4b1zYZ
- 4/J5ZFLY2xF5rwFzztGsTy6Q8MO6o7vgFKv9tYFpI64XLXz7ph
- /tAS4
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:19:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  60a8f428320918458a9a21052777eada68eebfd8
+Gitweb:     http://git.kernel.org/tip/60a8f428320918458a9a21052777eada68eebfd8
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:39:17 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:45 -0800
 
---wzJLGUyc3ArbnUjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86, mm: Move after_bootmem to mm_internel.h
 
-On Wed, Nov 21, 2012 at 06:41:01PM +0530, Philip, Avinash wrote:
-[...]
-> +static const struct of_device_id ecap_of_match[] = {
-> +	{
-> +		.compatible	= "ti,am33xx-ecap",
-> +	},
+it is only used in arch/x86/mm/init*.c
 
-Same here, can be shorter by putting it on one line instead of three.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-41-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/mm_internal.h | 2 ++
+ include/linux/mm.h        | 1 -
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-Thierry
-
---wzJLGUyc3ArbnUjN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrpG8AAoJEN0jrNd/PrOhaf4QAMCySG9oIcWyadnrDf+uEbVK
-lc1jDrWL2HLEDc/ZWAyGnqUaO4NIyz7MM4bFcyOI7/6MqIxKZdxewKrT+o2UQ5Kk
-Ubmr7GjiOoUbnGPuyy/e8B1BqfKByp7AdE0g/ju8OpKk2MP/OBvIfGsecWchkO/k
-0mAWSo6anaVcTVjXvvfLfu+HJph0cnUDxMxGeUV2BRqclB3GWVs3rHxcSi9pPWTy
-06OpPGPxIP/vB0tBZIf+45MsOK//lBQ0Y+QVAD9meGIsI5HcU06QxwNTHjayjaBO
-bY4Svc2ugp03aiT/QZgQmivKeF9n4ZLOUOX9A5UNIE0YG8iWItk6bXcHq5l/L1Gj
-MsjtzuR5DmqaiE9X8z2PAv6Zo5+E7eTF1sYiy16s2zOsTkhH8elbXDent7+ed6oY
-yZ+6t6W/+Rq1fGEQsLrIqG4wU4iu1zf45+mW2LgbcqeXRkk1p7mqE38/2ob5DcQu
-5XPzZqgq4tqy1bKHr7Up7iddjUSX8nQLi0i8DFoqolkZ9FrIT6jisCGapB7CxGIA
-8VSkgg2+YaY+3x+yzhtRxVIqv7tG5Jsh/+z9qTuSM82m5CO9KxsZ785/QL6RFFcA
-StmvZ7aRpk8fBq9JERp56fXPj6zaT996WWzgP7DRtIIW8kKUK06lzxwjzUQFr/Rk
-5R1gy8pF+7SVYAZZQSEs
-=0mxx
------END PGP SIGNATURE-----
-
---wzJLGUyc3ArbnUjN--
+diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+index dc79ac1..6b563a1 100644
+--- a/arch/x86/mm/mm_internal.h
++++ b/arch/x86/mm/mm_internal.h
+@@ -14,4 +14,6 @@ unsigned long kernel_physical_mapping_init(unsigned long start,
+ 					     unsigned long page_size_mask);
+ void zone_sizes_init(void);
+ 
++extern int after_bootmem;
++
+ #endif	/* __X86_MM_INTERNAL_H */
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bcaab4e..64d5271 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1355,7 +1355,6 @@ extern void __init mmap_init(void);
+ extern void show_mem(unsigned int flags);
+ extern void si_meminfo(struct sysinfo * val);
+ extern void si_meminfo_node(struct sysinfo *val, int nid);
+-extern int after_bootmem;
+ 
+ extern __printf(3, 4)
+ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
