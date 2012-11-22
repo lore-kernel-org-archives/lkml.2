@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758408Ab2KVW3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:29:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49021 "EHLO mail.kernel.org"
+	id S1758398Ab2KVW3o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:29:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49022 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab2KVSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753683Ab2KVSdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 165/171] rbd: reset BACKOFF if unable to re-queue
-Date: Wed, 21 Nov 2012 16:41:51 -0800
-Message-Id: <20121122004049.899615915@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>
+Subject: [ 166/171] libceph: avoid NULL kref_put when osd reset races with alloc_msg
+Date: Wed, 21 Nov 2012 16:41:52 -0800
+Message-Id: <20121122004050.001251870@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,39 +25,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-(cherry picked from commit 588377d6199034c36d335e7df5818b731fea072c)
+(cherry picked from commit 9bd952615a42d7e2ce3fa2c632e808e804637a1a)
 
-If ceph_fault() is unable to queue work after a delay, it sets the
-BACKOFF connection flag so con_work() will attempt to do so.
+The ceph_on_in_msg_alloc() method drops con->mutex while it allocates a
+message.  If that races with a timeout that resends a zillion messages and
+resets the connection, and the ->alloc_msg() method returns a NULL message,
+it will call ceph_msg_put(NULL) and BUG.
 
-In con_work(), when BACKOFF is set, if queue_delayed_work() doesn't
-result in newly-queued work, it simply ignores this condition and
-proceeds as if no backoff delay were desired.  There are two
-problems with this--one of which is a bug.
+Fix by only calling put if msg is non-NULL.
 
-The first problem is simply that the intended behavior is to back
-off, and if we aren't able queue the work item to run after a delay
-we're not doing that.
+Fixes http://tracker.newdream.net/issues/3142
 
-The only reason queue_delayed_work() won't queue work is if the
-provided work item is already queued.  In the messenger, this
-means that con_work() is already scheduled to be run again.  So
-if we simply set the BACKOFF flag again when this occurs, we know
-the next con_work() call will again attempt to hold off activity
-on the connection until after the delay.
-
-The second problem--the bug--is a leak of a reference count.  If
-queue_delayed_work() returns 0 in con_work(), con->ops->put() drops
-the connection reference held on entry to con_work().  However,
-processing is (was) allowed to continue, and at the end of the
-function a second con->ops->put() is called.
-
-This patch fixes both problems.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
  net/ceph/messenger.c |    3 ++-
@@ -65,18 +46,15 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -2296,10 +2296,11 @@ restart:
- 			mutex_unlock(&con->mutex);
- 			return;
- 		} else {
--			con->ops->put(con);
- 			dout("con_work %p FAILED to back off %lu\n", con,
- 			     con->delay);
-+			set_bit(CON_FLAG_BACKOFF, &con->flags);
+@@ -2746,7 +2746,8 @@ static int ceph_con_in_msg_alloc(struct
+ 		msg = con->ops->alloc_msg(con, hdr, skip);
+ 		mutex_lock(&con->mutex);
+ 		if (con->state != CON_STATE_OPEN) {
+-			ceph_msg_put(msg);
++			if (msg)
++				ceph_msg_put(msg);
+ 			return -EAGAIN;
  		}
-+		goto done;
- 	}
- 
- 	if (con->state == CON_STATE_STANDBY) {
+ 		con->in_msg = msg;
 
 
