@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965194Ab2KVT1k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:27:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40197 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965041Ab2KVT1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:27:01 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 40/40] mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node
-Date: Thu, 22 Nov 2012 19:25:53 +0000
-Message-Id: <1353612353-1576-41-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S965181Ab2KVT1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:27:39 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60736 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965125Ab2KVT1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:27:36 -0500
+Date: Thu, 22 Nov 2012 14:05:40 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Ola Lilja <ola.o.lilja@stericsson.com>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [RESENDING] [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP
+ probe rather than as a device
+Message-ID: <20121122140540.GA10986@gmail.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+ <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbc6bGC4Yp7Bcdfev=Uc=1h4L1v+Lj9RbmJV3F+knQOZQ@mail.gmail.com>
+ <20120919133343.GH25694@gmail.com>
+ <505ADBE6.6080509@stericsson.com>
+ <20120920125259.GA2755@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120920125259.GA2755@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the fact that migrations are driven by the CPU a task is running
-on there is no point tracking NUMA faults until one task runs on a new
-node. This patch tracks the first node used by an address space. Until
-it changes, PTE scanning is disabled and no NUMA hinting faults are
-trapped. This should help workloads that are short-lived, do not care
-about NUMA placement or have bound themselves to a single node.
+On Thu, 20 Sep 2012, Lee Jones wrote:
 
-This takes advantage of the logic in "mm: sched: numa: Implement slow
-start for working set sampling" to delay when the checks are made. This
-will take advantage of processes that set their CPU and node bindings
-early in their lifetime. It will also potentially allow any initial load
-balancing to take place.
+> > > Can we have some closure on this patch please, as it's blocking the
+> > > patch-set? I'm fairly sure the patch is doing the correct thing, as
+> > > seconded by Mark.
+> > 
+> > I still don't like this. It is the dai_link-struct that bothers me. We have
+> > "ux500-msp-i2s.1" as name of the platform AND the cpu_dai. The MSP I2S-block is
+> > not the platform and it is certainly not both platform and cpu-DAI at the same time.
+> > Mark: Did you have a solution for this? Couldn't we just put NULL on the
+> > platform_name instead?
+> 
+> There are other drivers which do this already. 
+> 
+> I don't think it's an issue to do this.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mm_types.h |   10 ++++++++++
- kernel/fork.c            |    3 +++
- kernel/sched/fair.c      |   18 ++++++++++++++++++
- kernel/sched/features.h  |    4 +++-
- 4 files changed, 34 insertions(+), 1 deletion(-)
+Has anyone had any more bright ideas on how we might handle this?
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 62d18a9..e4551c1 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -418,10 +418,20 @@ struct mm_struct {
- 
- 	/* numa_scan_seq prevents two threads setting pte_numa */
- 	int numa_scan_seq;
-+
-+	/*
-+	 * The first node a task was scheduled on. If a task runs on
-+	 * a different node than Make PTE Scan Go Now.
-+	 */
-+	int first_nid;
- #endif
- 	struct uprobes_state uprobes_state;
- };
- 
-+/* first nid will either be a valid NID or one of these values */
-+#define NUMA_PTE_SCAN_INIT	-1
-+#define NUMA_PTE_SCAN_ACTIVE	-2
-+
- static inline void mm_init_cpumask(struct mm_struct *mm)
- {
- #ifdef CONFIG_CPUMASK_OFFSTACK
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8b20ab7..e39111a 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -821,6 +821,9 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	mm->pmd_huge_pte = NULL;
- #endif
-+#ifdef CONFIG_BALANCE_NUMA
-+	mm->first_nid = NUMA_PTE_SCAN_INIT;
-+#endif
- 	if (!mm_init(mm, tsk))
- 		goto fail_nomem;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b4bc459..fd9c78c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -861,6 +861,24 @@ void task_numa_work(struct callback_head *work)
- 		return;
- 
- 	/*
-+	 * We do not care about task placement until a task runs on a node
-+	 * other than the first one used by the address space. This is
-+	 * largely because migrations are driven by what CPU the task
-+	 * is running on. If it's never scheduled on another node, it'll
-+	 * not migrate so why bother trapping the fault.
-+	 */
-+	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
-+		mm->first_nid = numa_node_id();
-+	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
-+		/* Are we running on a new node yet? */
-+		if (numa_node_id() == mm->first_nid &&
-+		    !sched_feat_numa(NUMA_FORCE))
-+			return;
-+
-+		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
-+	}
-+
-+	/*
- 	 * Reset the scan period if enough time has gone by. Objective is that
- 	 * scanning will be reduced if pages are properly placed. As tasks
- 	 * can enter different phases this needs to be re-examined. Lacking
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index d402368..c3c86fd 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -65,8 +65,10 @@ SCHED_FEAT(LB_MIN, false)
- /*
-  * Apply the automatic NUMA scheduling policy. Enabled automatically
-  * at runtime if running on a NUMA machine. Can be controlled via
-- * balancenuma=
-+ * balancenuma=. Allow PTE scanning to be forced on UMA machines
-+ * for debugging the core machinery.
-  */
- #ifdef CONFIG_BALANCE_NUMA
- SCHED_FEAT(NUMA,	false)
-+SCHED_FEAT(NUMA_FORCE,	false)
- #endif
+The device is still being handled in platform code and I'm desperate
+to get it out of there.
+
 -- 
-1.7.9.2
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
