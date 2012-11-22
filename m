@@ -1,99 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab2KVWGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:06:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45625 "EHLO mx2.suse.de"
+	id S1758186Ab2KVWGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:06:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754867Ab2KVWGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:06:04 -0500
-Date: Thu, 22 Nov 2012 23:06:00 +0100
-From: Jan Kara <jack@suse.cz>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, linux-mm@kvack.org
-Subject: Re: 3.7-rc6 soft lockup in kswapd0
-Message-ID: <20121122220600.GA20326@quack.suse.cz>
-References: <20121122175824.19604.qmail@science.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122175824.19604.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754845Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Forrest Loomis <cybercyst@gmail.com>, Peter <lekensteyn@gmail.com>,
+        Micael Dias <kam1kaz3@gmail.com>, Huang Ying <ying.huang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 09/83] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
+Date: Wed, 21 Nov 2012 16:41:31 -0800
+Message-Id: <20121122004213.455709640@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-11-12 12:58:24, George Spelvin wrote:
-> I'm having an interesting issue with a uniprocessor Pentium 4 machine
-> locking up overnight.  3.6.5 didn't do that, but 3.7-rc6 is not doing
-> so well.
-  I've added some CCs which are hopefully relevant. Specifially I remember
-Mel fixing some -mm lockup recently although after googling for a while
-that is likely something different.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-> It's kind of a funny lockup.  Some things work:
-> 
-> - TCP SYN handshake
-> - Alt-SysRq
-> 
-> And others don't:
-> 
-> - Caps lock
-> - Shift-PgUp
-> - Alt-Fn
-> - Screen unblanking
-> - Actually talking to a daemon
-> 
-> This is a "headless" machine that boots to a text console and has zero
-> console activity until the lockup.
-> 
-> This has happened overnight, three nights in a row.  I had to turn screen
-> blanking off to see anything on the screen.  Running the daily cron jobs
-> manually just now didn't trigger it, so I haven't found a proximate cause.
-> 
-> The *first* error has scrolled off the screen, but what I can see
-> an infinite stream (at about 20s intervals) of:
-> 
-> BUG: soft lockup - CPU#0 stuck for 22s! [kswapd0:317]
-> Pid: 317, comm: kswapd0 Not tainted 3.7.0-RC6 #224 HP Pavilion 04 P6319A-ABA 750N/P4B266LA
-> EIP: 0060:[<c10571f7>] EFLAGS: 00000202 CPU: 0
-> EIP is at __zone_watermark_ok+0x5f/7e, 0x67/7e, 0x6e/0x7e, or 0x74/7e
-> (Didn't type registers & stack)
-> Call Trace:
->  [<c105774f>] ? zone_watermark_ok_safe+0x34/0x3a
->  [<c105ec7e>] ? kswapd+0x2fa/0x6f6
->  [<c105e984>] ? try_to_free_pages+0x4b8/0x4b8
->  [<c103106b>] ? kthread+0x67/0x6c
->  [<c12559b7>] ? ret_from_kernel_thread+0x1b/0x28
->  [<c1031004>] ? -_kthread_parkme+0x4c.0x4c
-> Code: (didn't type in first line)
->                                 5f                        67                     6e                  74                             7e
->  c9 39 d6 7f 14 eb 1c 6b c1 2c <8b> 44 05 60 d3 e0 29 c6 <d1> fb 39 de 7e 09 41 <39> f9 7c ea b0 01 <eb> 02 31 c0 5a 5b 5e 5f 5d c3 01 14 85 7c 16
-  Taking picture of the screen with a digital camera can usually save you
-some typing :)
+------------------
 
-> The lack of scrollback limits me to 49 lines of SysRq output, and usually the most interesting
-> part disappears off the screen.  Two things I can see:
-> 
-> - SysRq-W shows no blocked tasks
-> - SysRq-M shows zero swap in use, and apparently adequate free memory
-> 	DMA: <various segments> = 9048kB
-> 	Normal: <various> = 116312kB
-> 	HighMem: <various> = 41660kB
-> 	416557 total pagecache pages
-> 	0 pages in swap cache
-> 	Swap cache stats: add 0, delete 0, find 0/0
-> 	Free swap  = 4883724kB
-> 	Total swap = 4883724kB
-> 	524260 pages RAM
-> 	296958 pages HighMem
-> 	5221 pages reserved
-> 	406417 pages shared
-> 	351419 pages non-shared
-> 
-> Does anyone have any debugging suggestions?  Waiting overnight to
-> make a good/bad decision makes bisecting pretty slow...
+From: Huang Ying <ying.huang@intel.com>
 
-							Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+commit b3c32c4f9565f93407921c0d8a4458042eb8998e upstream.
+
+In https://bugzilla.kernel.org/show_bug.cgi?id=48981
+Peter reported that /proc/bus/pci/??/??.? does not work for 3.6.
+This is because the device configuration space registers are
+not accessible if the corresponding parent bridge is suspended or
+the device is put into D3cold state.
+
+This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
+issue.  So the function used to solve sysfs issue is used to solve
+this issue.
+
+This patch moves pci_config_pm_runtime_get()/_put() from pci/pci-sysfs.c
+to pci/pci.c and makes them extern so they can be used by both the
+sysfs and proc paths.
+
+[bhelgaas: changelog, references, reporters]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48981
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=49031
+Reported-by: Forrest Loomis <cybercyst@gmail.com>
+Reported-by: Peter <lekensteyn@gmail.com>
+Reported-by: Micael Dias <kam1kaz3@gmail.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/pci-sysfs.c |   34 ----------------------------------
+ drivers/pci/pci.c       |   32 ++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h       |    2 ++
+ drivers/pci/proc.c      |    8 ++++++++
+ 4 files changed, 42 insertions(+), 34 deletions(-)
+
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -458,40 +458,6 @@ boot_vga_show(struct device *dev, struct
+ }
+ struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+ 
+-static void
+-pci_config_pm_runtime_get(struct pci_dev *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct device *parent = dev->parent;
+-
+-	if (parent)
+-		pm_runtime_get_sync(parent);
+-	pm_runtime_get_noresume(dev);
+-	/*
+-	 * pdev->current_state is set to PCI_D3cold during suspending,
+-	 * so wait until suspending completes
+-	 */
+-	pm_runtime_barrier(dev);
+-	/*
+-	 * Only need to resume devices in D3cold, because config
+-	 * registers are still accessible for devices suspended but
+-	 * not in D3cold.
+-	 */
+-	if (pdev->current_state == PCI_D3cold)
+-		pm_runtime_resume(dev);
+-}
+-
+-static void
+-pci_config_pm_runtime_put(struct pci_dev *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct device *parent = dev->parent;
+-
+-	pm_runtime_put(dev);
+-	if (parent)
+-		pm_runtime_put_sync(parent);
+-}
+-
+ static ssize_t
+ pci_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1910,6 +1910,38 @@ bool pci_dev_run_wake(struct pci_dev *de
+ }
+ EXPORT_SYMBOL_GPL(pci_dev_run_wake);
+ 
++void pci_config_pm_runtime_get(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	if (parent)
++		pm_runtime_get_sync(parent);
++	pm_runtime_get_noresume(dev);
++	/*
++	 * pdev->current_state is set to PCI_D3cold during suspending,
++	 * so wait until suspending completes
++	 */
++	pm_runtime_barrier(dev);
++	/*
++	 * Only need to resume devices in D3cold, because config
++	 * registers are still accessible for devices suspended but
++	 * not in D3cold.
++	 */
++	if (pdev->current_state == PCI_D3cold)
++		pm_runtime_resume(dev);
++}
++
++void pci_config_pm_runtime_put(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	pm_runtime_put(dev);
++	if (parent)
++		pm_runtime_put_sync(parent);
++}
++
+ /**
+  * pci_pm_init - Initialize PM functions of given PCI device
+  * @dev: PCI device to handle.
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -72,6 +72,8 @@ extern void pci_disable_enabled_device(s
+ extern int pci_finish_runtime_suspend(struct pci_dev *dev);
+ extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
+ extern void pci_wakeup_bus(struct pci_bus *bus);
++extern void pci_config_pm_runtime_get(struct pci_dev *dev);
++extern void pci_config_pm_runtime_put(struct pci_dev *dev);
+ extern void pci_pm_init(struct pci_dev *dev);
+ extern void platform_pci_wakeup_init(struct pci_dev *dev);
+ extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -76,6 +76,8 @@ proc_bus_pci_read(struct file *file, cha
+ 	if (!access_ok(VERIFY_WRITE, buf, cnt))
+ 		return -EINVAL;
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((pos & 1) && cnt) {
+ 		unsigned char val;
+ 		pci_user_read_config_byte(dev, pos, &val);
+@@ -121,6 +123,8 @@ proc_bus_pci_read(struct file *file, cha
+ 		cnt--;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	*ppos = pos;
+ 	return nbytes;
+ }
+@@ -146,6 +150,8 @@ proc_bus_pci_write(struct file *file, co
+ 	if (!access_ok(VERIFY_READ, buf, cnt))
+ 		return -EINVAL;
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((pos & 1) && cnt) {
+ 		unsigned char val;
+ 		__get_user(val, buf);
+@@ -191,6 +197,8 @@ proc_bus_pci_write(struct file *file, co
+ 		cnt--;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	*ppos = pos;
+ 	i_size_write(ino, dp->size);
+ 	return nbytes;
+
+
