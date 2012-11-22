@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964807Ab2KVUwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:52:45 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36801 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab2KVUwl (ORCPT
+	id S932569Ab2KVUwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:52:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964880Ab2KVS6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:52:41 -0500
-Date: Thu, 22 Nov 2012 20:56:37 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/40] x86: mm: drop TLB flush from
- ptep_set_access_flags
-Message-ID: <20121122205637.4e9112e2@pyramind.ukuu.org.uk>
-In-Reply-To: <1353612353-1576-3-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-	<1353612353-1576-3-git-send-email-mgorman@suse.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 13:58:36 -0500
+Date: Wed, 21 Nov 2012 18:14:04 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-5a0d3aeeeffbd1534a510fc10c4ab7c99c45afce@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-36-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-36-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm: use round_up/down in split_mem_range()
+Git-Commit-ID: 5a0d3aeeeffbd1534a510fc10c4ab7c99c45afce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:14:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 19:25:15 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+Commit-ID:  5a0d3aeeeffbd1534a510fc10c4ab7c99c45afce
+Gitweb:     http://git.kernel.org/tip/5a0d3aeeeffbd1534a510fc10c4ab7c99c45afce
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:39:12 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:40 -0800
 
-> From: Rik van Riel <riel@redhat.com>
-> 
-> Intel has an architectural guarantee that the TLB entry causing
-> a page fault gets invalidated automatically. This means
-> we should be able to drop the local TLB invalidation.
+x86, mm: use round_up/down in split_mem_range()
 
-Can we get an AMD sign off on that ?
+to replace own inline version for those roundup and rounddown.
 
-Alan
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-36-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init.c | 30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 8168bf8..0e625e6 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -218,13 +218,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	 * slowdowns.
+ 	 */
+ 	if (pos == 0)
+-		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = PMD_SIZE >> PAGE_SHIFT;
+ 	else
+-		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-				 << (PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
+-			<< (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 	if (end_pfn > (end >> PAGE_SHIFT))
+ 		end_pfn = end >> PAGE_SHIFT;
+@@ -234,15 +232,13 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* big page (2M) range */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #ifdef CONFIG_X86_32
+-	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
+-		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
++	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
++		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 
+ 	if (start_pfn < end_pfn) {
+@@ -253,9 +249,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+-	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -264,9 +259,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* tail is not big page (1G) alignment */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
