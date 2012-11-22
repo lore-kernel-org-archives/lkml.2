@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab2KVTk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:40:27 -0500
+	id S965070Ab2KVTkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:40:43 -0500
 Received: from mail-da0-f46.google.com ([209.85.210.46]:45227 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab2KVTkX (ORCPT
+	with ESMTP id S1757223Ab2KVTkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:40:23 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com
-Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
-Subject: [PATCH 09/10] ASoC: wm8988: Convert to use devm_regmap_init_{spi,i2c}()
-Date: Thu, 22 Nov 2012 09:38:41 +0530
-Message-Id: <1353557322-25353-10-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
-References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+	Thu, 22 Nov 2012 14:40:40 -0500
+Message-ID: <50AE353A.70808@gmail.com>
+Date: Thu, 22 Nov 2012 22:22:50 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>, benchan@chromium.org,
+        syahn@gctsemi.com, devendra.aaru@gmail.com, pstew@chromium.org,
+        devel@driverdev.osuosl.org, joe@perches.com
+CC: Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: ddm72xx: remove last usage of NIPQUAD and NIP6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- sound/soc/codecs/wm8988.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+From: Shan Wei <davidshan@tencent.com>
 
-diff --git a/sound/soc/codecs/wm8988.c b/sound/soc/codecs/wm8988.c
-index 1d4c5cf..715788d 100644
---- a/sound/soc/codecs/wm8988.c
-+++ b/sound/soc/codecs/wm8988.c
-@@ -882,7 +882,7 @@ static int __devinit wm8988_spi_probe(struct spi_device *spi)
- 	if (wm8988 == NULL)
- 		return -ENOMEM;
+commit cf4ca4874fc45 removed the definition of NIPQUAD and NIPQUAD_FMT,
+and NIP6 also is out of date.
+
+Because DEBUG_SDU is not defined in gdm_wimax.h, no error message when compiling
+this code.
+
+commit cf4ca4874fc45166198424384275f443a672d0b7
+Author: Joe Perches <joe@perches.com>
+Date:   Mon Aug 9 17:20:20 2010 -0700
+
+    kernel.h: remove unused NIPQUAD and NIPQUAD_FMT
+    There are no more uses of NIPQUAD or NIPQUAD_FMT.  Remove the definitions.
+
+Signed-off-by: Shan Wei <davidshan@tencent.com>
+---
+ drivers/staging/gdm72xx/gdm_wimax.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 6cb8107..c0ec4d0 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -166,21 +166,13 @@ static void dump_eth_packet(const char *title, u8 *data, int len)
+ 		get_ip_protocol_name(ip_protocol),
+ 		get_port_name(port));
  
--	wm8988->regmap = regmap_init_spi(spi, &wm8988_regmap);
-+	wm8988->regmap = devm_regmap_init_spi(spi, &wm8988_regmap);
- 	if (IS_ERR(wm8988->regmap)) {
- 		ret = PTR_ERR(wm8988->regmap);
- 		dev_err(&spi->dev, "Failed to init regmap: %d\n", ret);
-@@ -893,17 +893,12 @@ static int __devinit wm8988_spi_probe(struct spi_device *spi)
+-	#if 1
+ 	if (!(data[0] == 0xff && data[1] == 0xff)) {
+ 		if (protocol == ETH_P_IP) {
+-			printk(KERN_DEBUG "     src=%u.%u.%u.%u\n",
+-				NIPQUAD(ih->saddr));
++			printk(KERN_DEBUG "     src=%pI4\n", &ih->saddr);
+ 		} else if (protocol == ETH_P_IPV6) {
+-			#ifdef NIP6
+-			printk(KERN_DEBUG "     src=%x:%x:%x:%x:%x:%x:%x:%x\n",
+-				NIP6(ih->saddr));
+-			#else
+ 			printk(KERN_DEBUG "     src=%pI6\n", &ih->saddr);
+-			#endif
+ 		}
+ 	}
+-	#endif
  
- 	ret = snd_soc_register_codec(&spi->dev,
- 			&soc_codec_dev_wm8988, &wm8988_dai, 1);
--	if (ret != 0)
--		regmap_exit(wm8988->regmap);
--
- 	return ret;
- }
- 
- static int __devexit wm8988_spi_remove(struct spi_device *spi)
- {
--	struct wm8988_priv *wm8988 = spi_get_drvdata(spi);
- 	snd_soc_unregister_codec(&spi->dev);
--	regmap_exit(wm8988->regmap);
- 	return 0;
- }
- 
-@@ -931,7 +926,7 @@ static __devinit int wm8988_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm8988);
- 
--	wm8988->regmap = regmap_init_i2c(i2c, &wm8988_regmap);
-+	wm8988->regmap = devm_regmap_init_i2c(i2c, &wm8988_regmap);
- 	if (IS_ERR(wm8988->regmap)) {
- 		ret = PTR_ERR(wm8988->regmap);
- 		dev_err(&i2c->dev, "Failed to init regmap: %d\n", ret);
-@@ -940,17 +935,12 @@ static __devinit int wm8988_i2c_probe(struct i2c_client *i2c,
- 
- 	ret =  snd_soc_register_codec(&i2c->dev,
- 			&soc_codec_dev_wm8988, &wm8988_dai, 1);
--	if (ret != 0)
--		regmap_exit(wm8988->regmap);
--
- 	return ret;
- }
- 
- static __devexit int wm8988_i2c_remove(struct i2c_client *client)
- {
--	struct wm8988_priv *wm8988 = i2c_get_clientdata(client);
- 	snd_soc_unregister_codec(&client->dev);
--	regmap_exit(wm8988->regmap);
- 	return 0;
- }
- 
+ 	#if (DUMP_PACKET & DUMP_SDU_ALL)
+ 	printk_hex(data, len);
 -- 
-1.7.4.1
+1.7.1
 
