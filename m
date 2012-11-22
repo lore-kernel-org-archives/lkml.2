@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab2KVUb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:31:27 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:32842 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756798Ab2KVUbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:31:24 -0500
-Message-ID: <1353613769.10902.8.camel@joe-AO722>
-Subject: [TRIVIAL PATCH] bdi_register: Add __printf verification, fix arg
- mismatch
-From: Joe Perches <joe@perches.com>
-To: Sage Weil <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Nov 2012 11:49:29 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756876Ab2KVUbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:31:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39729 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756785Ab2KVT0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:05 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 05/40] mm: Only flush the TLB when clearing an accessible pte
+Date: Thu, 22 Nov 2012 19:25:18 +0000
+Message-Id: <1353612353-1576-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__printf is useful to verify format and arguments.
+From: Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Joe Perches <joe@perches.com>
+If ptep_clear_flush() is called to clear a page table entry that is
+accessible anyway by the CPU, eg. a _PAGE_PROTNONE page table entry,
+there is no need to flush the TLB on remote CPUs.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-vm3rkzevahelwhejx5uwm8ex@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/ceph/super.c             |    2 +-
- include/linux/backing-dev.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
+ mm/pgtable-generic.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index 2eb43f2..e7dbb5c 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -849,7 +849,7 @@ static int ceph_register_bdi(struct super_block *sb,
- 		fsc->backing_dev_info.ra_pages =
- 			default_backing_dev_info.ra_pages;
- 
--	err = bdi_register(&fsc->backing_dev_info, NULL, "ceph-%d",
-+	err = bdi_register(&fsc->backing_dev_info, NULL, "ceph-%ld",
- 			   atomic_long_inc_return(&bdi_seq));
- 	if (!err)
- 		sb->s_bdi = &fsc->backing_dev_info;
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 2a9a9ab..12731a1 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -114,6 +114,7 @@ struct backing_dev_info {
- int bdi_init(struct backing_dev_info *bdi);
- void bdi_destroy(struct backing_dev_info *bdi);
- 
-+__printf(3, 4)
- int bdi_register(struct backing_dev_info *bdi, struct device *parent,
- 		const char *fmt, ...);
- int bdi_register_dev(struct backing_dev_info *bdi, dev_t dev);
-
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index d8397da..0c8323f 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -88,7 +88,8 @@ pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
+ {
+ 	pte_t pte;
+ 	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
+-	flush_tlb_page(vma, address);
++	if (pte_accessible(pte))
++		flush_tlb_page(vma, address);
+ 	return pte;
+ }
+ #endif
+-- 
+1.7.9.2
 
