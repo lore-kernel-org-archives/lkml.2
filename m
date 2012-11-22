@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab2KVT0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39778 "EHLO mx2.suse.de"
+	id S1756906Ab2KVT0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:26:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39899 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754931Ab2KVT0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:12 -0500
+	id S1756314Ab2KVT00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:26 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/40] mm: migrate: Add a tracepoint for migrate_pages
-Date: Thu, 22 Nov 2012 19:25:22 +0000
-Message-Id: <1353612353-1576-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 18/40] mm: mempolicy: Check for misplaced page
+Date: Thu, 22 Nov 2012 19:25:31 +0000
+Message-Id: <1353612353-1576-19-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,242 +30,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pgmigrate_success and pgmigrate_fail vmstat counters tells the user
-about migration activity but not the type or the reason. This patch adds
-a tracepoint to identify the type of page migration and why the page is
-being migrated.
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+This patch provides a new function to test whether a page resides
+on a node that is appropriate for the mempolicy for the vma and
+address where the page is supposed to be mapped.  This involves
+looking up the node where the page belongs.  So, the function
+returns that node so that it may be used to allocated the page
+without consulting the policy again.
+
+A subsequent patch will call this function from the fault path.
+Because of this, I don't want to go ahead and allocate the page, e.g.,
+via alloc_page_vma() only to have to free it if it has the correct
+policy.  So, I just mimic the alloc_page_vma() node computation
+logic--sort of.
+
+Note:  we could use this function to implement a MPOL_MF_STRICT
+behavior when migrating pages to match mbind() mempolicy--e.g.,
+to ensure that pages in an interleaved range are reinterleaved
+rather than left where they are when they reside on any page in
+the interleave nodemask.
+
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+[ Added MPOL_F_LAZY to trigger migrate-on-fault;
+  simplified code now that we don't have to bother
+  with special crap for interleaved ]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h        |   13 ++++++++--
- include/trace/events/migrate.h |   51 ++++++++++++++++++++++++++++++++++++++++
- mm/compaction.c                |    3 ++-
- mm/memory-failure.c            |    3 ++-
- mm/memory_hotplug.c            |    3 ++-
- mm/mempolicy.c                 |    6 +++--
- mm/migrate.c                   |   10 ++++++--
- mm/page_alloc.c                |    3 ++-
- 8 files changed, 82 insertions(+), 10 deletions(-)
- create mode 100644 include/trace/events/migrate.h
+ include/linux/mempolicy.h      |    8 +++++
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   76 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ce7e667..9d1c159 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -7,6 +7,15 @@
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index e5ccb9d..c511e25 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -198,6 +198,8 @@ static inline int vma_migratable(struct vm_area_struct *vma)
+ 	return 1;
+ }
  
- typedef struct page *new_page_t(struct page *, unsigned long private, int **);
++extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
++
+ #else
  
-+enum migrate_reason {
-+	MR_COMPACTION,
-+	MR_MEMORY_FAILURE,
-+	MR_MEMORY_HOTPLUG,
-+	MR_SYSCALL,		/* also applies to cpusets */
-+	MR_MEMPOLICY_MBIND,
-+	MR_CMA
-+};
-+
- #ifdef CONFIG_MIGRATION
+ struct mempolicy {};
+@@ -323,5 +325,11 @@ static inline int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol,
+ 	return 0;
+ }
  
- extern void putback_lru_pages(struct list_head *l);
-@@ -14,7 +23,7 @@ extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode mode);
-+			enum migrate_mode mode, int reason);
- extern int migrate_huge_page(struct page *, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
-@@ -35,7 +44,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode mode) { return -ENOSYS; }
-+		enum migrate_mode mode, int reason) { return -ENOSYS; }
- static inline int migrate_huge_page(struct page *page, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-new file mode 100644
-index 0000000..ec2a6cc
---- /dev/null
-+++ b/include/trace/events/migrate.h
-@@ -0,0 +1,51 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM migrate
++static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
++				 unsigned long address)
++{
++	return -1; /* no node preference */
++}
 +
-+#if !defined(_TRACE_MIGRATE_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_MIGRATE_H
-+
-+#define MIGRATE_MODE						\
-+	{MIGRATE_ASYNC,		"MIGRATE_ASYNC"},		\
-+	{MIGRATE_SYNC_LIGHT,	"MIGRATE_SYNC_LIGHT"},		\
-+	{MIGRATE_SYNC,		"MIGRATE_SYNC"}		
-+
-+#define MIGRATE_REASON						\
-+	{MR_COMPACTION,		"compaction"},			\
-+	{MR_MEMORY_FAILURE,	"memory_failure"},		\
-+	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
-+	{MR_SYSCALL,		"syscall_or_cpuset"},		\
-+	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
-+	{MR_CMA,		"cma"}
-+
-+TRACE_EVENT(mm_migrate_pages,
-+
-+	TP_PROTO(unsigned long succeeded, unsigned long failed,
-+		 enum migrate_mode mode, int reason),
-+
-+	TP_ARGS(succeeded, failed, mode, reason),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned long,		succeeded)
-+		__field(	unsigned long,		failed)
-+		__field(	enum migrate_mode,	mode)
-+		__field(	int,			reason)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->succeeded	= succeeded;
-+		__entry->failed		= failed;
-+		__entry->mode		= mode;
-+		__entry->reason		= reason;
-+	),
-+
-+	TP_printk("nr_succeeded=%lu nr_failed=%lu mode=%s reason=%s",
-+		__entry->succeeded,
-+		__entry->failed,
-+		__print_symbolic(__entry->mode, MIGRATE_MODE),
-+		__print_symbolic(__entry->reason, MIGRATE_REASON))
-+);
-+
-+#endif /* _TRACE_MIGRATE_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 00ad883..2c077a7 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -990,7 +990,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
- 				(unsigned long)cc, false,
--				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
-+				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
-+				MR_COMPACTION);
- 		update_nr_listpages(cc);
- 		nr_remaining = cc->nr_migratepages;
+ #endif /* CONFIG_NUMA */
+ #endif
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index d23dca8..472de8a 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -61,6 +61,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
++#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
  
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6c5899b..ddb68a1 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1558,7 +1558,8 @@ int soft_offline_page(struct page *page, int flags)
- 					    page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
--							false, MIGRATE_SYNC);
-+							false, MIGRATE_SYNC,
-+							MR_MEMORY_FAILURE);
- 		if (ret) {
- 			putback_lru_pages(&pagelist);
- 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index e4eeaca..e598bd1 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -812,7 +812,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 		 * migrate_pages returns # of failed pages.
- 		 */
- 		ret = migrate_pages(&source, alloc_migrate_target, 0,
--							true, MIGRATE_SYNC);
-+							true, MIGRATE_SYNC,
-+							MR_MEMORY_HOTPLUG);
- 		if (ret)
- 			putback_lru_pages(&source);
- 	}
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index d04a8a5..66e90ec 100644
+index c21e914..df1466d 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -961,7 +961,8 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+@@ -2181,6 +2181,82 @@ static void sp_free(struct sp_node *n)
+ 	kmem_cache_free(sn_cache, n);
+ }
  
- 	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_node_page, dest,
--							false, MIGRATE_SYNC);
-+							false, MIGRATE_SYNC,
-+							MR_SYSCALL);
- 		if (err)
- 			putback_lru_pages(&pagelist);
- 	}
-@@ -1202,7 +1203,8 @@ static long do_mbind(unsigned long start, unsigned long len,
- 		if (!list_empty(&pagelist)) {
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
- 						(unsigned long)vma,
--						false, MIGRATE_SYNC);
-+						false, MIGRATE_SYNC,
-+						MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 04687f6..27be9c9 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -38,6 +38,9 @@
- 
- #include <asm/tlbflush.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/migrate.h>
++/**
++ * mpol_misplaced - check whether current page node is valid in policy
++ *
++ * @page   - page to be checked
++ * @vma    - vm area where page mapped
++ * @addr   - virtual address where page mapped
++ *
++ * Lookup current policy node id for vma,addr and "compare to" page's
++ * node id.
++ *
++ * Returns:
++ *	-1	- not misplaced, page is in the right node
++ *	node	- node id where the page should be
++ *
++ * Policy determination "mimics" alloc_page_vma().
++ * Called from fault path where we know the vma and faulting address.
++ */
++int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
++{
++	struct mempolicy *pol;
++	struct zone *zone;
++	int curnid = page_to_nid(page);
++	unsigned long pgoff;
++	int polnid = -1;
++	int ret = -1;
 +
- #include "internal.h"
- 
- /*
-@@ -958,7 +961,7 @@ out:
-  */
- int migrate_pages(struct list_head *from,
- 		new_page_t get_new_page, unsigned long private, bool offlining,
--		enum migrate_mode mode)
-+		enum migrate_mode mode, int reason)
++	BUG_ON(!vma);
++
++	pol = get_vma_policy(current, vma, addr);
++	if (!(pol->flags & MPOL_F_MOF))
++		goto out;
++
++	switch (pol->mode) {
++	case MPOL_INTERLEAVE:
++		BUG_ON(addr >= vma->vm_end);
++		BUG_ON(addr < vma->vm_start);
++
++		pgoff = vma->vm_pgoff;
++		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
++		polnid = offset_il_node(pol, vma, pgoff);
++		break;
++
++	case MPOL_PREFERRED:
++		if (pol->flags & MPOL_F_LOCAL)
++			polnid = numa_node_id();
++		else
++			polnid = pol->v.preferred_node;
++		break;
++
++	case MPOL_BIND:
++		/*
++		 * allows binding to multiple nodes.
++		 * use current page if in policy nodemask,
++		 * else select nearest allowed node, if any.
++		 * If no allowed nodes, use current [!misplaced].
++		 */
++		if (node_isset(curnid, pol->v.nodes))
++			goto out;
++		(void)first_zones_zonelist(
++				node_zonelist(numa_node_id(), GFP_HIGHUSER),
++				gfp_zone(GFP_HIGHUSER),
++				&pol->v.nodes, &zone);
++		polnid = zone->node;
++		break;
++
++	default:
++		BUG();
++	}
++	if (curnid != polnid)
++		ret = polnid;
++out:
++	mpol_cond_put(pol);
++
++	return ret;
++}
++
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
  {
- 	int retry = 1;
- 	int nr_failed = 0;
-@@ -1004,6 +1007,8 @@ out:
- 		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
- 	if (nr_failed)
- 		count_vm_events(PGMIGRATE_FAIL, nr_failed);
-+	trace_mm_migrate_pages(nr_succeeded, nr_failed, mode, reason);
-+
- 	if (!swapwrite)
- 		current->flags &= ~PF_SWAPWRITE;
- 
-@@ -1145,7 +1150,8 @@ set_status:
- 	err = 0;
- 	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_page_node,
--				(unsigned long)pm, 0, MIGRATE_SYNC);
-+				(unsigned long)pm, 0, MIGRATE_SYNC,
-+				MR_SYSCALL);
- 		if (err)
- 			putback_lru_pages(&pagelist);
- 	}
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7bb35ac..5953dc2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5707,7 +5707,8 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
- 
- 		ret = migrate_pages(&cc->migratepages,
- 				    alloc_migrate_target,
--				    0, false, MIGRATE_SYNC);
-+				    0, false, MIGRATE_SYNC,
-+				    MR_CMA);
- 	}
- 
- 	putback_lru_pages(&cc->migratepages);
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
 -- 
 1.7.9.2
 
