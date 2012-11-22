@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab2KVV6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:58:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49648 "EHLO mail.kernel.org"
+	id S1758104Ab2KVV7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:59:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49610 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913Ab2KVSkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:13 -0500
+	id S1754883Ab2KVSkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Richard Cochran <richard.cochran@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 011/171] ptp: update adjfreq callback description
-Date: Wed, 21 Nov 2012 16:39:17 -0800
-Message-Id: <20121122004034.452636003@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>
+Subject: [ 093/171] libceph: eliminate connection state "DEAD"
+Date: Wed, 21 Nov 2012 16:40:39 -0800
+Message-Id: <20121122004042.692831800@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -29,36 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: Alex Elder <elder@inktank.com>
 
-commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
+(cherry picked from commit e5e372da9a469dfe3ece40277090a7056c566838)
 
-This patch updates the adjfreq callback description to include a note that the
-delta in ppb is always relative to the base frequency, and not to the current
-frequency of the hardware clock.
+The ceph connection state "DEAD" is never set and is therefore not
+needed.  Eliminate it.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-CC: Richard Cochran <richard.cochran@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/ptp_clock_kernel.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/ceph/messenger.h |    1 -
+ net/ceph/messenger.c           |    6 ------
+ 2 files changed, 7 deletions(-)
 
---- a/include/linux/ptp_clock_kernel.h
-+++ b/include/linux/ptp_clock_kernel.h
-@@ -50,7 +50,8 @@ struct ptp_clock_request {
-  * clock operations
-  *
-  * @adjfreq:  Adjusts the frequency of the hardware clock.
-- *            parameter delta: Desired period change in parts per billion.
-+ *            parameter delta: Desired frequency offset from nominal frequency
-+ *            in parts per billion
-  *
-  * @adjtime:  Shifts the time of the hardware clock.
-  *            parameter delta: Desired change in nanoseconds.
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -119,7 +119,6 @@ struct ceph_msg_pos {
+ #define CLOSED		10 /* we've closed the connection */
+ #define SOCK_CLOSED	11 /* socket state changed to closed */
+ #define OPENING         13 /* open connection w/ (possibly new) peer */
+-#define DEAD            14 /* dead, about to kfree */
+ #define BACKOFF         15
+ 
+ /*
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2091,12 +2091,6 @@ bad_tag:
+  */
+ static void queue_con(struct ceph_connection *con)
+ {
+-	if (test_bit(DEAD, &con->state)) {
+-		dout("queue_con %p ignoring: DEAD\n",
+-		     con);
+-		return;
+-	}
+-
+ 	if (!con->ops->get(con)) {
+ 		dout("queue_con %p ref count 0\n", con);
+ 		return;
 
 
