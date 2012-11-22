@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab2KVWL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:11:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49515 "EHLO mail.kernel.org"
+	id S1758258Ab2KVWLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:11:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49514 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754800Ab2KVSkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754797Ab2KVSkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gurucharan Shetty <gurucharan.shetty@gmail.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 15/83] crypto: cryptd - disable softirqs in cryptd_queue_worker to prevent data corruption
-Date: Wed, 21 Nov 2012 16:41:37 -0800
-Message-Id: <20121122004214.173954111@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 25/83] ALSA: hda - Add a missing quirk entry for iMac 9,1
+Date: Wed, 21 Nov 2012 16:41:47 -0800
+Message-Id: <20121122004215.343587168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -27,53 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9efade1b3e981f5064f9db9ca971b4dc7557ae42 upstream.
+commit 05193639ca977cc889668718adb38db6d585045b upstream.
 
-cryptd_queue_worker attempts to prevent simultaneous accesses to crypto
-workqueue by cryptd_enqueue_request using preempt_disable/preempt_enable.
-However cryptd_enqueue_request might be called from softirq context,
-so add local_bh_disable/local_bh_enable to prevent data corruption and
-panics.
+This is another variant of iMac 9,1 with a different codec SSID.
 
-Bug report at http://marc.info/?l=linux-crypto-vger&m=134858649616319&w=2
-
-v2:
- - Disable software interrupts instead of hardware interrupts
-
-Reported-by: Gurucharan Shetty <gurucharan.shetty@gmail.com>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-and-tested-by: Everaldo Canuto <everaldo.canuto@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/cryptd.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/crypto/cryptd.c
-+++ b/crypto/cryptd.c
-@@ -137,13 +137,18 @@ static void cryptd_queue_worker(struct w
- 	struct crypto_async_request *req, *backlog;
- 
- 	cpu_queue = container_of(work, struct cryptd_cpu_queue, work);
--	/* Only handle one request at a time to avoid hogging crypto
--	 * workqueue. preempt_disable/enable is used to prevent
--	 * being preempted by cryptd_enqueue_request() */
-+	/*
-+	 * Only handle one request at a time to avoid hogging crypto workqueue.
-+	 * preempt_disable/enable is used to prevent being preempted by
-+	 * cryptd_enqueue_request(). local_bh_disable/enable is used to prevent
-+	 * cryptd_enqueue_request() being accessed from software interrupts.
-+	 */
-+	local_bh_disable();
- 	preempt_disable();
- 	backlog = crypto_get_backlog(&cpu_queue->queue);
- 	req = crypto_dequeue_request(&cpu_queue->queue);
- 	preempt_enable();
-+	local_bh_enable();
- 
- 	if (!req)
- 		return;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5434,6 +5434,7 @@ static const struct snd_pci_quirk alc882
+ 	SND_PCI_QUIRK(0x106b, 0x4000, "MacbookPro 5,1", ALC889_FIXUP_IMAC91_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x4100, "Macmini 3,1", ALC889_FIXUP_IMAC91_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x4200, "Mac Pro 5,1", ALC885_FIXUP_MACPRO_GPIO),
++	SND_PCI_QUIRK(0x106b, 0x4300, "iMac 9,1", ALC889_FIXUP_IMAC91_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x4600, "MacbookPro 5,2", ALC889_FIXUP_IMAC91_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x4900, "iMac 9,1 Aluminum", ALC889_FIXUP_IMAC91_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x4a00, "Macbook 5,2", ALC889_FIXUP_IMAC91_VREF),
 
 
