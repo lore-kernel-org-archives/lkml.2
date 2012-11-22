@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab2KVSdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:33:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48998 "EHLO mail.kernel.org"
+	id S1753467Ab2KVSdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:33:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48997 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab2KVSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752870Ab2KVSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/38] ipv4: avoid undefined behavior in do_ip_setsockopt()
-Date: Wed, 21 Nov 2012 16:40:00 -0800
-Message-Id: <20121122003906.068748566@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 071/171] ceph: messenger: rework prepare_connect_authorizer()
+Date: Wed, 21 Nov 2012 16:40:17 -0800
+Message-Id: <20121122004040.512680515@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Alex Elder <elder@inktank.com>
 
-From: Xi Wang <xi.wang@gmail.com>
+(cherry picked from commit b1c6b9803f5491e94041e6da96bc9dec3870e792)
 
-[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
+Change prepare_connect_authorizer() so it returns without dropping
+the connection mutex if the connection has no get_authorizer method.
 
-(1<<optname) is undefined behavior in C with a negative optname or
-optname larger than 31.  In those cases the result of the shift is
-not necessarily zero (e.g., on x86).
+Use the symbolic CEPH_AUTH_UNKNOWN instead of 0 when assigning
+authorization protocols.
 
-This patch simplifies the code with a switch statement on optname.
-It also allows the compiler to generate better code (e.g., using a
-64-bit mask).
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_sockglue.c |   33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+ net/ceph/messenger.c |   28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -467,18 +467,27 @@ static int do_ip_setsockopt(struct sock
- 	struct inet_sock *inet = inet_sk(sk);
- 	int val = 0, err;
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -656,19 +656,29 @@ static void prepare_write_keepalive(stru
+ static int prepare_connect_authorizer(struct ceph_connection *con)
+ {
+ 	void *auth_buf;
+-	int auth_len = 0;
+-	int auth_protocol = 0;
++	int auth_len;
++	int auth_protocol;
++
++	if (!con->ops->get_authorizer) {
++		con->out_connect.authorizer_protocol = CEPH_AUTH_UNKNOWN;
++		con->out_connect.authorizer_len = 0;
++
++		return 0;
++	}
++
++	/* Can't hold the mutex while getting authorizer */
  
--	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
--			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
--			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
--			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
--			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
--			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
--			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
--			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
--	    optname == IP_MULTICAST_TTL ||
--	    optname == IP_MULTICAST_ALL ||
--	    optname == IP_MULTICAST_LOOP ||
--	    optname == IP_RECVORIGDSTADDR) {
-+	switch (optname) {
-+	case IP_PKTINFO:
-+	case IP_RECVTTL:
-+	case IP_RECVOPTS:
-+	case IP_RECVTOS:
-+	case IP_RETOPTS:
-+	case IP_TOS:
-+	case IP_TTL:
-+	case IP_HDRINCL:
-+	case IP_MTU_DISCOVER:
-+	case IP_RECVERR:
-+	case IP_ROUTER_ALERT:
-+	case IP_FREEBIND:
-+	case IP_PASSSEC:
-+	case IP_TRANSPARENT:
-+	case IP_MINTTL:
-+	case IP_NODEFRAG:
-+	case IP_MULTICAST_TTL:
-+	case IP_MULTICAST_ALL:
-+	case IP_MULTICAST_LOOP:
-+	case IP_RECVORIGDSTADDR:
- 		if (optlen >= sizeof(int)) {
- 			if (get_user(val, (int __user *) optval))
- 				return -EFAULT;
+ 	mutex_unlock(&con->mutex);
+-	if (con->ops->get_authorizer)
+-		con->ops->get_authorizer(con, &auth_buf, &auth_len,
+-					 &auth_protocol, &con->auth_reply_buf,
+-					 &con->auth_reply_buf_len,
+-					 con->auth_retry);
++
++	auth_buf = NULL;
++	auth_len = 0;
++	auth_protocol = CEPH_AUTH_UNKNOWN;
++	con->ops->get_authorizer(con, &auth_buf, &auth_len, &auth_protocol,
++				&con->auth_reply_buf, &con->auth_reply_buf_len,
++				con->auth_retry);
+ 	mutex_lock(&con->mutex);
+ 
+-	if (test_bit(CLOSED, &con->state) ||
+-	    test_bit(OPENING, &con->state))
++	if (test_bit(CLOSED, &con->state) || test_bit(OPENING, &con->state))
+ 		return -EAGAIN;
+ 
+ 	con->out_connect.authorizer_protocol = cpu_to_le32(auth_protocol);
 
 
