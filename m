@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab2KVW2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:28:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49012 "EHLO mail.kernel.org"
+	id S1756580Ab2KVW2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:28:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49005 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753708Ab2KVSd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753712Ab2KVSd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:33:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [ 097/171] libceph: embed ceph messenger structure in ceph_client
-Date: Wed, 21 Nov 2012 16:40:43 -0800
-Message-Id: <20121122004043.092462604@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 121/171] libceph: move init_bio_*() functions up
+Date: Wed, 21 Nov 2012 16:41:07 -0800
+Message-Id: <20121122004045.497806752@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -28,206 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 15d9882c336db2db73ccf9871ae2398e452f694c)
+(cherry picked from commit df6ad1f97342ebc4270128222e896541405eecdb)
 
-A ceph client has a pointer to a ceph messenger structure in it.
-There is always exactly one ceph messenger for a ceph client, so
-there is no need to allocate it separate from the ceph client
-structure.
-
-Switch the ceph_client structure to embed its ceph_messenger
-structure.
+Move init_bio_iter() and iter_bio_next() up in their source file so
+the'll be defined before they're needed.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/mds_client.c           |    2 +-
- include/linux/ceph/libceph.h   |    2 +-
- include/linux/ceph/messenger.h |    9 +++++----
- net/ceph/ceph_common.c         |   18 +++++-------------
- net/ceph/messenger.c           |   30 +++++++++---------------------
- net/ceph/mon_client.c          |    6 +++---
- net/ceph/osd_client.c          |    4 ++--
- 7 files changed, 26 insertions(+), 45 deletions(-)
+ net/ceph/messenger.c |   50 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -394,7 +394,7 @@ static struct ceph_mds_session *register
- 	s->s_seq = 0;
- 	mutex_init(&s->s_mutex);
- 
--	ceph_con_init(mdsc->fsc->client->msgr, &s->s_con);
-+	ceph_con_init(&mdsc->fsc->client->msgr, &s->s_con);
- 	s->s_con.private = s;
- 	s->s_con.ops = &mds_con_ops;
- 	s->s_con.peer_name.type = CEPH_ENTITY_TYPE_MDS;
---- a/include/linux/ceph/libceph.h
-+++ b/include/linux/ceph/libceph.h
-@@ -132,7 +132,7 @@ struct ceph_client {
- 	u32 supported_features;
- 	u32 required_features;
- 
--	struct ceph_messenger *msgr;   /* messenger instance */
-+	struct ceph_messenger msgr;   /* messenger instance */
- 	struct ceph_mon_client monc;
- 	struct ceph_osd_client osdc;
- 
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -203,10 +203,11 @@ extern int ceph_msgr_init(void);
- extern void ceph_msgr_exit(void);
- extern void ceph_msgr_flush(void);
- 
--extern struct ceph_messenger *ceph_messenger_create(
--	struct ceph_entity_addr *myaddr,
--	u32 features, u32 required);
--extern void ceph_messenger_destroy(struct ceph_messenger *);
-+extern void ceph_messenger_init(struct ceph_messenger *msgr,
-+			struct ceph_entity_addr *myaddr,
-+			u32 supported_features,
-+			u32 required_features,
-+			bool nocrc);
- 
- extern void ceph_con_init(struct ceph_messenger *msgr,
- 			  struct ceph_connection *con);
---- a/net/ceph/ceph_common.c
-+++ b/net/ceph/ceph_common.c
-@@ -468,19 +468,15 @@ struct ceph_client *ceph_create_client(s
- 	/* msgr */
- 	if (ceph_test_opt(client, MYIP))
- 		myaddr = &client->options->my_addr;
--	client->msgr = ceph_messenger_create(myaddr,
--					     client->supported_features,
--					     client->required_features);
--	if (IS_ERR(client->msgr)) {
--		err = PTR_ERR(client->msgr);
--		goto fail;
--	}
--	client->msgr->nocrc = ceph_test_opt(client, NOCRC);
-+	ceph_messenger_init(&client->msgr, myaddr,
-+		client->supported_features,
-+		client->required_features,
-+		ceph_test_opt(client, NOCRC));
- 
- 	/* subsystems */
- 	err = ceph_monc_init(&client->monc, client);
- 	if (err < 0)
--		goto fail_msgr;
-+		goto fail;
- 	err = ceph_osdc_init(&client->osdc, client);
- 	if (err < 0)
- 		goto fail_monc;
-@@ -489,8 +485,6 @@ struct ceph_client *ceph_create_client(s
- 
- fail_monc:
- 	ceph_monc_stop(&client->monc);
--fail_msgr:
--	ceph_messenger_destroy(client->msgr);
- fail:
- 	kfree(client);
- 	return ERR_PTR(err);
-@@ -508,8 +502,6 @@ void ceph_destroy_client(struct ceph_cli
- 
- 	ceph_debugfs_client_cleanup(client);
- 
--	ceph_messenger_destroy(client->msgr);
--
- 	ceph_destroy_options(client->options);
- 
- 	kfree(client);
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -2249,18 +2249,14 @@ out:
- 
- 
- /*
-- * create a new messenger instance
-+ * initialize a new messenger instance
-  */
--struct ceph_messenger *ceph_messenger_create(struct ceph_entity_addr *myaddr,
--					     u32 supported_features,
--					     u32 required_features)
-+void ceph_messenger_init(struct ceph_messenger *msgr,
-+			struct ceph_entity_addr *myaddr,
-+			u32 supported_features,
-+			u32 required_features,
-+			bool nocrc)
- {
--	struct ceph_messenger *msgr;
--
--	msgr = kzalloc(sizeof(*msgr), GFP_KERNEL);
--	if (msgr == NULL)
--		return ERR_PTR(-ENOMEM);
--
- 	msgr->supported_features = supported_features;
- 	msgr->required_features = required_features;
- 
-@@ -2273,19 +2269,11 @@ struct ceph_messenger *ceph_messenger_cr
- 	msgr->inst.addr.type = 0;
- 	get_random_bytes(&msgr->inst.addr.nonce, sizeof(msgr->inst.addr.nonce));
- 	encode_my_addr(msgr);
-+	msgr->nocrc = nocrc;
- 
--	dout("messenger_create %p\n", msgr);
--	return msgr;
--}
--EXPORT_SYMBOL(ceph_messenger_create);
--
--void ceph_messenger_destroy(struct ceph_messenger *msgr)
--{
--	dout("destroy %p\n", msgr);
--	kfree(msgr);
--	dout("destroyed messenger %p\n", msgr);
-+	dout("%s %p\n", __func__, msgr);
+@@ -565,6 +565,31 @@ static void con_out_kvec_add(struct ceph
+ 	con->out_kvec_bytes += size;
  }
--EXPORT_SYMBOL(ceph_messenger_destroy);
-+EXPORT_SYMBOL(ceph_messenger_init);
  
- static void clear_standby(struct ceph_connection *con)
++#ifdef CONFIG_BLOCK
++static void init_bio_iter(struct bio *bio, struct bio **iter, int *seg)
++{
++	if (!bio) {
++		*iter = NULL;
++		*seg = 0;
++		return;
++	}
++	*iter = bio;
++	*seg = bio->bi_idx;
++}
++
++static void iter_bio_next(struct bio **bio_iter, int *seg)
++{
++	if (*bio_iter == NULL)
++		return;
++
++	BUG_ON(*seg >= (*bio_iter)->bi_vcnt);
++
++	(*seg)++;
++	if (*seg == (*bio_iter)->bi_vcnt)
++		init_bio_iter((*bio_iter)->bi_next, bio_iter, seg);
++}
++#endif
++
+ static void prepare_write_message_data(struct ceph_connection *con)
  {
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -763,7 +763,7 @@ int ceph_monc_init(struct ceph_mon_clien
- 	monc->con = kmalloc(sizeof(*monc->con), GFP_KERNEL);
- 	if (!monc->con)
- 		goto out_monmap;
--	ceph_con_init(monc->client->msgr, monc->con);
-+	ceph_con_init(&monc->client->msgr, monc->con);
- 	monc->con->private = monc;
- 	monc->con->ops = &mon_con_ops;
+ 	struct ceph_msg *msg = con->out_msg;
+@@ -868,31 +893,6 @@ out:
+ 	return ret;  /* done! */
+ }
  
-@@ -888,8 +888,8 @@ static void handle_auth_reply(struct cep
- 	} else if (!was_auth && monc->auth->ops->is_authenticated(monc->auth)) {
- 		dout("authenticated, starting session\n");
- 
--		monc->client->msgr->inst.name.type = CEPH_ENTITY_TYPE_CLIENT;
--		monc->client->msgr->inst.name.num =
-+		monc->client->msgr.inst.name.type = CEPH_ENTITY_TYPE_CLIENT;
-+		monc->client->msgr.inst.name.num =
- 					cpu_to_le64(monc->auth->global_id);
- 
- 		__send_subscribe(monc);
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -639,7 +639,7 @@ static struct ceph_osd *create_osd(struc
- 	INIT_LIST_HEAD(&osd->o_osd_lru);
- 	osd->o_incarnation = 1;
- 
--	ceph_con_init(osdc->client->msgr, &osd->o_con);
-+	ceph_con_init(&osdc->client->msgr, &osd->o_con);
- 	osd->o_con.private = osd;
- 	osd->o_con.ops = &osd_con_ops;
- 	osd->o_con.peer_name.type = CEPH_ENTITY_TYPE_OSD;
-@@ -1391,7 +1391,7 @@ void ceph_osdc_handle_map(struct ceph_os
- 			     epoch, maplen);
- 			newmap = osdmap_apply_incremental(&p, next,
- 							  osdc->osdmap,
--							  osdc->client->msgr);
-+							  &osdc->client->msgr);
- 			if (IS_ERR(newmap)) {
- 				err = PTR_ERR(newmap);
- 				goto bad;
+-#ifdef CONFIG_BLOCK
+-static void init_bio_iter(struct bio *bio, struct bio **iter, int *seg)
+-{
+-	if (!bio) {
+-		*iter = NULL;
+-		*seg = 0;
+-		return;
+-	}
+-	*iter = bio;
+-	*seg = bio->bi_idx;
+-}
+-
+-static void iter_bio_next(struct bio **bio_iter, int *seg)
+-{
+-	if (*bio_iter == NULL)
+-		return;
+-
+-	BUG_ON(*seg >= (*bio_iter)->bi_vcnt);
+-
+-	(*seg)++;
+-	if (*seg == (*bio_iter)->bi_vcnt)
+-		init_bio_iter((*bio_iter)->bi_next, bio_iter, seg);
+-}
+-#endif
+-
+ static void out_msg_pos_next(struct ceph_connection *con, struct page *page,
+ 			size_t len, size_t sent, bool in_trail)
+ {
 
 
