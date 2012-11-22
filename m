@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab2KVWvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:51:40 -0500
+	id S1758885Ab2KVWvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:51:51 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932746Ab2KVWvZ (ORCPT
+	with ESMTP id S1758859Ab2KVWvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:51:25 -0500
+	Thu, 22 Nov 2012 17:51:47 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 21/33] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
-Date: Thu, 22 Nov 2012 23:49:42 +0100
-Message-Id: <1353624594-1118-22-git-send-email-mingo@kernel.org>
+Subject: [PATCH 29/33] sched, mm, mempolicy: Add per task mempolicy
+Date: Thu, 22 Nov 2012 23:49:50 +0100
+Message-Id: <1353624594-1118-30-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
 References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
@@ -28,89 +28,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+We are going to make use of it in the NUMA code: each thread will
+converge not just to a group of related tasks, but to a specific
+group of memory nodes as well.
 
-By accounting against the present PTEs, scanning speed reflects the
-actual present (mapped) memory.
-
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 37 +++++++++++++++++++++----------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
+ include/linux/mempolicy.h | 39 +--------------------------------------
+ include/linux/mm_types.h  | 40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/sched.h     |  3 ++-
+ kernel/sched/core.c       |  7 +++++++
+ mm/mempolicy.c            | 16 +++-------------
+ 5 files changed, 53 insertions(+), 52 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 151a3cd..da28315 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -914,8 +914,8 @@ void task_numa_work(struct callback_head *work)
- 	struct task_struct *p = current;
- 	struct mm_struct *mm = p->mm;
- 	struct vm_area_struct *vma;
--	unsigned long offset, end;
--	long length;
-+	unsigned long start, end;
-+	long pages;
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index c511e25..f44b7f3 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -6,11 +6,11 @@
+ #define _LINUX_MEMPOLICY_H 1
  
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
  
-@@ -942,30 +942,35 @@ void task_numa_work(struct callback_head *work)
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
++#include <linux/mm_types.h>
+ #include <linux/mmzone.h>
+ #include <linux/slab.h>
+ #include <linux/rbtree.h>
+ #include <linux/spinlock.h>
+-#include <linux/nodemask.h>
+ #include <linux/pagemap.h>
+ #include <uapi/linux/mempolicy.h>
  
--	offset = mm->numa_scan_offset;
--	length = sysctl_sched_numa_scan_size;
--	length <<= 20;
-+	start = mm->numa_scan_offset;
-+	pages = sysctl_sched_numa_scan_size;
-+	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
-+	if (!pages)
-+		return;
+@@ -19,43 +19,6 @@ struct mm_struct;
+ #ifdef CONFIG_NUMA
  
- 	down_write(&mm->mmap_sem);
--	vma = find_vma(mm, offset);
-+	vma = find_vma(mm, start);
- 	if (!vma) {
- 		ACCESS_ONCE(mm->numa_scan_seq)++;
--		offset = 0;
-+		start = 0;
- 		vma = mm->mmap;
- 	}
--	for (; vma && length > 0; vma = vma->vm_next) {
-+	for (; vma; vma = vma->vm_next) {
- 		if (!vma_migratable(vma))
- 			continue;
- 
--		offset = max(offset, vma->vm_start);
--		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
--		length -= end - offset;
+ /*
+- * Describe a memory policy.
+- *
+- * A mempolicy can be either associated with a process or with a VMA.
+- * For VMA related allocations the VMA policy is preferred, otherwise
+- * the process policy is used. Interrupts ignore the memory policy
+- * of the current process.
+- *
+- * Locking policy for interlave:
+- * In process context there is no locking because only the process accesses
+- * its own state. All vma manipulation is somewhat protected by a down_read on
+- * mmap_sem.
+- *
+- * Freeing policy:
+- * Mempolicy objects are reference counted.  A mempolicy will be freed when
+- * mpol_put() decrements the reference count to zero.
+- *
+- * Duplicating policy objects:
+- * mpol_dup() allocates a new mempolicy and copies the specified mempolicy
+- * to the new storage.  The reference count of the new object is initialized
+- * to 1, representing the caller of mpol_dup().
+- */
+-struct mempolicy {
+-	atomic_t refcnt;
+-	unsigned short mode; 	/* See MPOL_* above */
+-	unsigned short flags;	/* See set_mempolicy() MPOL_F_* above */
+-	union {
+-		short 		 preferred_node; /* preferred */
+-		nodemask_t	 nodes;		/* interleave/bind */
+-		/* undefined for default */
+-	} v;
+-	union {
+-		nodemask_t cpuset_mems_allowed;	/* relative to these nodes */
+-		nodemask_t user_nodemask;	/* nodemask passed by user */
+-	} w;
+-};
 -
--		change_prot_numa(vma, offset, end);
--
--		offset = end;
-+		do {
-+			start = max(start, vma->vm_start);
-+			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
-+			end = min(end, vma->vm_end);
-+			pages -= change_prot_numa(vma, start, end);
-+			start = end;
-+			if (pages <= 0)
-+				goto out;
-+		} while (end != vma->vm_end);
- 	}
--	mm->numa_scan_offset = offset;
-+out:
-+	mm->numa_scan_offset = start;
- 	up_write(&mm->mmap_sem);
+-/*
+  * Support for managing mempolicy data objects (clone, copy, destroy)
+  * The default fast path of a NULL MPOL_DEFAULT policy is always inlined.
+  */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 5995652..cd2be76 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -13,6 +13,7 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/uprobes.h>
+ #include <linux/page-flags-layout.h>
++#include <linux/nodemask.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
+ 
+@@ -203,6 +204,45 @@ struct page_frag {
+ 
+ typedef unsigned long __nocast vm_flags_t;
+ 
++#ifdef CONFIG_NUMA
++/*
++ * Describe a memory policy.
++ *
++ * A mempolicy can be either associated with a process or with a VMA.
++ * For VMA related allocations the VMA policy is preferred, otherwise
++ * the process policy is used. Interrupts ignore the memory policy
++ * of the current process.
++ *
++ * Locking policy for interlave:
++ * In process context there is no locking because only the process accesses
++ * its own state. All vma manipulation is somewhat protected by a down_read on
++ * mmap_sem.
++ *
++ * Freeing policy:
++ * Mempolicy objects are reference counted.  A mempolicy will be freed when
++ * mpol_put() decrements the reference count to zero.
++ *
++ * Duplicating policy objects:
++ * mpol_dup() allocates a new mempolicy and copies the specified mempolicy
++ * to the new storage.  The reference count of the new object is initialized
++ * to 1, representing the caller of mpol_dup().
++ */
++struct mempolicy {
++	atomic_t refcnt;
++	unsigned short mode; 	/* See MPOL_* above */
++	unsigned short flags;	/* See set_mempolicy() MPOL_F_* above */
++	union {
++		short 		 preferred_node; /* preferred */
++		nodemask_t	 nodes;		/* interleave/bind */
++		/* undefined for default */
++	} v;
++	union {
++		nodemask_t cpuset_mems_allowed;	/* relative to these nodes */
++		nodemask_t user_nodemask;	/* nodemask passed by user */
++	} w;
++};
++#endif
++
+ /*
+  * A region containing a mapping of a non-memory backed file under NOMMU
+  * conditions.  These are held in a global tree and are pinned by the VMAs that
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index be73297..696492e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1516,7 +1516,8 @@ struct task_struct {
+ 
+ 	struct task_struct *shared_buddy, *shared_buddy_curr;
+ 	unsigned long shared_buddy_faults, shared_buddy_faults_curr;
+-	int ideal_cpu, ideal_cpu_curr;
++	int ideal_cpu, ideal_cpu_curr, ideal_cpu_candidate;
++	struct mempolicy numa_policy;
+ 
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39cf991..794efa0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -72,6 +72,7 @@
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
+ #include <linux/binfmts.h>
++#include <uapi/linux/mempolicy.h>
+ 
+ #include <asm/switch_to.h>
+ #include <asm/tlb.h>
+@@ -1563,6 +1564,12 @@ static void __sched_fork(struct task_struct *p)
+ 	p->shared_buddy_faults = 0;
+ 	p->ideal_cpu = -1;
+ 	p->ideal_cpu_curr = -1;
++	atomic_set(&p->numa_policy.refcnt, 1);
++	p->numa_policy.mode = MPOL_INTERLEAVE;
++	p->numa_policy.flags = 0;
++	p->numa_policy.v.preferred_node = 0;
++	p->numa_policy.v.nodes = node_online_map;
++
+ #endif /* CONFIG_NUMA_BALANCING */
  }
  
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 02890f2..d71a93d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -118,20 +118,12 @@ static struct mempolicy default_policy_local = {
+ 	.flags		= MPOL_F_LOCAL,
+ };
+ 
+-/*
+- * .v.nodes is set by numa_policy_init():
+- */
+-static struct mempolicy default_policy_shared = {
+-	.refcnt			= ATOMIC_INIT(1), /* never free it */
+-	.mode			= MPOL_INTERLEAVE,
+-	.flags			= 0,
+-};
+-
+ static struct mempolicy *default_policy(void)
+ {
++#ifdef CONFIG_NUMA_BALANCING
+ 	if (task_numa_shared(current) == 1)
+-		return &default_policy_shared;
+-
++		return &current->numa_policy;
++#endif
+ 	return &default_policy_local;
+ }
+ 
+@@ -2518,8 +2510,6 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
+-	default_policy_shared.v.nodes = node_online_map;
+-
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
 -- 
 1.7.11.7
 
