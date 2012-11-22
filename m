@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab2KVUY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:24:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40009 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756875Ab2KVT0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756879Ab2KVT0k (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 22 Nov 2012 14:26:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39887 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754931Ab2KVT0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:25 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 27/40] mm: sched: numa: Implement slow start for working set sampling
-Date: Thu, 22 Nov 2012 19:25:40 +0000
-Message-Id: <1353612353-1576-28-git-send-email-mgorman@suse.de>
+Subject: [PATCH 17/40] mm: mempolicy: Add MPOL_MF_NOOP
+Date: Thu, 22 Nov 2012 19:25:30 +0000
+Message-Id: <1353612353-1576-18-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,135 +30,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
+NOTE: I have not yet addressed by own review feedback of this patch. At
+	this point I'm trying to construct a baseline tree and will apply
+	my own review feedback later and then fold it in.
 
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
+to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+flags, mbind() will map the pages PROT_NONE so that they will be
+migrated on the next touch.
 
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
 
-In practice this change fixes an observable kbuild regression:
+[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
 
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
-
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
-
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
-
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
-
-and it also fixes an observable perf bench (hackbench) regression:
-
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/balance_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ Wrote the changelog, ran measurements, tuned the default. ]
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    2 +-
- kernel/sched/fair.c   |    5 +++++
- kernel/sysctl.c       |    7 +++++++
- 4 files changed, 14 insertions(+), 1 deletion(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index abb1c70..a2b06ea 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2006,6 +2006,7 @@ enum sched_tunable_scaling {
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 3e835c9..d23dca8 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -21,6 +21,7 @@ enum {
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
+ 	MPOL_LOCAL,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
  };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
  
-+extern unsigned int sysctl_balance_numa_scan_delay;
- extern unsigned int sysctl_balance_numa_scan_period_min;
- extern unsigned int sysctl_balance_numa_scan_period_max;
- extern unsigned int sysctl_balance_numa_scan_size;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 81fa185..047e3c7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1543,7 +1543,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->node_stamp = 0ULL;
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
--	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+	p->numa_scan_period = sysctl_balance_numa_scan_delay;
- 	p->numa_work.next = &p->numa_work;
- #endif /* CONFIG_BALANCE_NUMA */
- }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 773ef97..2e65f44 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -788,6 +788,9 @@ unsigned int sysctl_balance_numa_scan_period_max = 100*16;
- /* Portion of address space to scan in MB */
- unsigned int sysctl_balance_numa_scan_size = 256;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 54bd3e5..c21e914 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
-+/* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
-+unsigned int sysctl_balance_numa_scan_delay = 1000;
-+
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-@@ -929,6 +932,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
+ 	}
+ 	VM_BUG_ON(!nodes);
  
- 	if (now - curr->node_stamp > period) {
-+		if (!curr->node_stamp)
-+			curr->numa_scan_period = sysctl_balance_numa_scan_period_min;
- 		curr->node_stamp = now;
+@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
  
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d191203..5ee587d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_BALANCE_NUMA
- 	{
-+		.procname	= "balance_numa_scan_delay_ms",
-+		.data		= &sysctl_balance_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "balance_numa_scan_period_min_ms",
- 		.data		= &sysctl_balance_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
+ 
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
+ 
+ 
+@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
+ 
+ 	switch (mode) {
 -- 
 1.7.9.2
 
