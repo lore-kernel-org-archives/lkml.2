@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab2KVUnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:43:50 -0500
+	id S932148Ab2KVUoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:44:08 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964966Ab2KVS6q (ORCPT
+	with ESMTP id S964963Ab2KVS6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:46 -0500
-Date: Wed, 21 Nov 2012 17:48:51 -0800
-From: tip-bot for Jacob Shin <jacob.shin@amd.com>
-Message-ID: <tip-dda56e134059b840631fdfd034784056b627c2a6@git.kernel.org>
+	Thu, 22 Nov 2012 13:58:45 -0500
+Date: Wed, 21 Nov 2012 17:51:58 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-e8c57d40519d7226acb8e662f3ab496202ebc7a6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-12-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-12-git-send-email-yinghai@kernel.org>
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-15-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-15-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm:
-  Fixup code testing if a pfn is direct mapped
-Git-Commit-ID: dda56e134059b840631fdfd034784056b627c2a6
+Subject: [tip:x86/mm2] x86, mm: use pfn_range_is_mapped()
+  with reserve_initrd
+Git-Commit-ID: e8c57d40519d7226acb8e662f3ab496202ebc7a6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,99 +28,147 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:48:57 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:52:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dda56e134059b840631fdfd034784056b627c2a6
-Gitweb:     http://git.kernel.org/tip/dda56e134059b840631fdfd034784056b627c2a6
-Author:     Jacob Shin <jacob.shin@amd.com>
-AuthorDate: Fri, 16 Nov 2012 19:38:48 -0800
+Commit-ID:  e8c57d40519d7226acb8e662f3ab496202ebc7a6
+Gitweb:     http://git.kernel.org/tip/e8c57d40519d7226acb8e662f3ab496202ebc7a6
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:38:51 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:09 -0800
+CommitDate: Sat, 17 Nov 2012 11:59:12 -0800
 
-x86, mm: Fixup code testing if a pfn is direct mapped
+x86, mm: use pfn_range_is_mapped() with reserve_initrd
 
-Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
-[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
-pfn_mapped ranges instead.
+We are going to map ram only, so under max_low_pfn_mapped,
+between 4g and max_pfn_mapped does not mean mapped at all.
 
--v2: change applying sequence to keep git bisecting working.
-     so add dummy pfn_range_is_mapped(). - Yinghai Lu
+Use pfn_range_is_mapped() to find out if range is mapped for initrd.
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Link: http://lkml.kernel.org/r/1353123563-3103-12-git-send-email-yinghai@kernel.org
+That could happen bootloader put initrd in range but user could
+use memmap to carve some of range out.
+
+Also during copying need to use early_memmap to map original initrd
+for accessing.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-15-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/page_types.h | 8 ++++++++
- arch/x86/kernel/cpu/amd.c         | 8 +++-----
- arch/x86/platform/efi/efi.c       | 7 +++----
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ arch/x86/kernel/setup.c | 52 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 28 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index e21fdd1..45aae6e 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d85cbd9..bd52f9d 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -317,20 +317,19 @@ static void __init relocate_initrd(void)
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+ 
+-	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = memblock_find_in_range(0, end_of_lowmem, area_size,
+-					 PAGE_SIZE);
++	/* We need to move the initrd down into directly mapped mem */
++	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_low_pfn_mapped),
++						 area_size, PAGE_SIZE);
+ 
+ 	if (!ramdisk_here)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+ 			 ramdisk_size);
+ 
+-	/* Note: this includes all the lowmem currently occupied by
++	/* Note: this includes all the mem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+ 	memblock_reserve(ramdisk_here, area_size);
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+@@ -340,17 +339,7 @@ static void __init relocate_initrd(void)
+ 
+ 	q = (char *)initrd_start;
+ 
+-	/* Copy any lowmem portion of the initrd */
+-	if (ramdisk_image < end_of_lowmem) {
+-		clen = end_of_lowmem - ramdisk_image;
+-		p = (char *)__va(ramdisk_image);
+-		memcpy(q, p, clen);
+-		q += clen;
+-		ramdisk_image += clen;
+-		ramdisk_size  -= clen;
+-	}
+-
+-	/* Copy the highmem portion of the initrd */
++	/* Copy the initrd */
+ 	while (ramdisk_size) {
+ 		slop = ramdisk_image & ~PAGE_MASK;
+ 		clen = ramdisk_size;
+@@ -364,7 +353,7 @@ static void __init relocate_initrd(void)
+ 		ramdisk_image += clen;
+ 		ramdisk_size  -= clen;
+ 	}
+-	/* high pages is not converted by early_res_to_bootmem */
++
+ 	ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+@@ -373,13 +362,27 @@ static void __init relocate_initrd(void)
+ 		ramdisk_here, ramdisk_here + ramdisk_size - 1);
  }
  
-+static inline bool pfn_range_is_mapped(unsigned long start_pfn,
-+					unsigned long end_pfn)
++static u64 __init get_mem_size(unsigned long limit_pfn)
 +{
-+	return end_pfn <= max_low_pfn_mapped ||
-+	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
-+		end_pfn <= max_pfn_mapped);
++	int i;
++	u64 mapped_pages = 0;
++	unsigned long start_pfn, end_pfn;
++
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
++		start_pfn = min_t(unsigned long, start_pfn, limit_pfn);
++		end_pfn = min_t(unsigned long, end_pfn, limit_pfn);
++		mapped_pages += end_pfn - start_pfn;
++	}
++
++	return mapped_pages << PAGE_SHIFT;
 +}
-+
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
++	u64 mapped_size;
  
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f7e98a2..9619ba6 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * benefit in doing so.
- 		 */
- 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
-+			unsigned long pfn = tseg >> PAGE_SHIFT;
-+
- 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
--			if ((tseg>>PMD_SHIFT) <
--				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
--				((tseg>>PMD_SHIFT) <
--				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
--				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
-+			if (pfn_range_is_mapped(pfn, pfn + 1))
- 				set_memory_4k((unsigned long)__va(tseg), 1);
- 		}
- 	}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index ad44391..36e53f0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -835,7 +835,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi_memory_desc_t *md, *prev_md = NULL;
- 	efi_status_t status;
- 	unsigned long size;
--	u64 end, systab, end_pfn;
-+	u64 end, systab, start_pfn, end_pfn;
- 	void *p, *va, *new_memmap = NULL;
- 	int count = 0;
+ 	if (!boot_params.hdr.type_of_loader ||
+ 	    !ramdisk_image || !ramdisk_size)
+@@ -387,18 +390,19 @@ static void __init reserve_initrd(void)
  
-@@ -888,10 +888,9 @@ void __init efi_enter_virtual_mode(void)
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
+ 	initrd_start = 0;
  
-+		start_pfn = PFN_DOWN(md->phys_addr);
- 		end_pfn = PFN_UP(end);
--		if (end_pfn <= max_low_pfn_mapped
--		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped)) {
-+		if (pfn_range_is_mapped(start_pfn, end_pfn)) {
- 			va = __va(md->phys_addr);
+-	if (ramdisk_size >= (end_of_lowmem>>1)) {
++	mapped_size = get_mem_size(max_low_pfn_mapped);
++	if (ramdisk_size >= (mapped_size>>1))
+ 		panic("initrd too large to handle, "
+ 		       "disabling initrd (%lld needed, %lld available)\n",
+-		       ramdisk_size, end_of_lowmem>>1);
+-	}
++		       ramdisk_size, mapped_size>>1);
  
- 			if (!(md->attribute & EFI_MEMORY_WB))
+ 	printk(KERN_INFO "RAMDISK: [mem %#010llx-%#010llx]\n", ramdisk_image,
+ 			ramdisk_end - 1);
+ 
+-
+-	if (ramdisk_end <= end_of_lowmem) {
+-		/* All in lowmem, easy case */
++	if (ramdisk_end <= (max_low_pfn_mapped<<PAGE_SHIFT) &&
++	    pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
++				PFN_DOWN(ramdisk_end))) {
++		/* All are mapped, easy case */
+ 		/*
+ 		 * don't need to reserve again, already reserved early
+ 		 * in i386_start_kernel
