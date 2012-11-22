@@ -1,74 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030271Ab2KVT5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:57:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49363 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756476Ab2KVT53 (ORCPT
+	id S1757403Ab2KVT6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:58:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030261Ab2KVTvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:57:29 -0500
-Date: Thu, 22 Nov 2012 11:58:40 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: devel@driverdev.osuosl.org, Markus Grabner <grabner@icg.tugraz.at>,
-        line6linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        laurent_navet@yahoo.com
-Subject: Re: [PATCH 00/46] staging: line6: drop MIDI state sysfs attrs
-Message-ID: <20121122195840.GA26543@kroah.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	Thu, 22 Nov 2012 14:51:48 -0500
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
+        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 37/46] staging: line6: drop variax raw sysfs attrs
+Date: Thu, 22 Nov 2012 20:49:16 +0100
+Message-Id: <1353613765-18690-38-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 08:48:39PM +0100, Stefan Hajnoczi wrote:
-> Let's put the line6 staging driver on a diet for Thanksgiving! :)
+Note that VARIAX_SYSEX_ACTIVATE was never used so drop it along with the
+other VARIAX_SYSEX_* constants which are now unused.
 
-Yeah!
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/variax.c | 73 ------------------------------------------
+ 1 file changed, 73 deletions(-)
 
-> Markus and I have discussed the MIDI processing that currently happens in the
-> line6 driver.  This stuff really belongs in userspace where a library or
-> utility can use ALSA MIDI APIs to control the device.  Moving MIDI processing
-> to userspace has several benefits:
-> 
-> 1. The driver only handles PCM and MIDI I/O.  This means less kernel code.
-> 
-> 2. A large number of sysfs attributes can be removed.  These attributes exposed
->    MIDI state and driver code was necessary to sync and manage this state.
-> 
-> 3. It's easier for userspace to control the device, try out new MIDI commands,
->    etc when the driver acts as a dumb transport.
-> 
-> This patch series removes the sysfs attributes and then removes the state
-> behind those attributes.  I have tried to make small incremental changes that
-> can be reviewed easily.
+diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
+index 4db21a3..ff55ad37 100644
+--- a/drivers/staging/line6/variax.c
++++ b/drivers/staging/line6/variax.c
+@@ -16,9 +16,6 @@
+ #include "driver.h"
+ #include "variax.h"
+ 
+-#define VARIAX_SYSEX_CODE 7
+-#define VARIAX_SYSEX_PARAM 0x3b
+-#define VARIAX_SYSEX_ACTIVATE 0x2a
+ #define VARIAX_MODEL_HEADER_LENGTH 7
+ #define VARIAX_MODEL_MESSAGE_LENGTH 199
+ #define VARIAX_OFFSET_ACTIVATE 7
+@@ -70,7 +67,6 @@ static const char variax_request_model2[] = {
+ };
+ 
+ /* forward declarations: */
+-static int variax_create_files2(struct device *dev);
+ static void variax_startup2(unsigned long data);
+ static void variax_startup4(unsigned long data);
+ static void variax_startup5(unsigned long data);
+@@ -187,7 +183,6 @@ static void variax_startup7(struct work_struct *work)
+ 
+ 	/* device files: */
+ 	line6_variax_create_files(0, 0, line6->ifcdev);
+-	variax_create_files2(line6->ifcdev);
+ }
+ 
+ /*
+@@ -270,58 +265,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
+ 	}
+ }
+ 
+-#ifdef CONFIG_LINE6_USB_RAW
+-
+-static char *variax_alloc_sysex_buffer(struct usb_line6_variax *variax,
+-				       int code, int size)
+-{
+-	return line6_alloc_sysex_buffer(&variax->line6, VARIAX_SYSEX_CODE, code,
+-					size);
+-}
+-
+-/*
+-	"write" request on "raw" special file.
+-*/
+-static ssize_t variax_set_raw2(struct device *dev,
+-			       struct device_attribute *attr,
+-			       const char *buf, size_t count)
+-{
+-	struct usb_line6_variax *variax =
+-	    usb_get_intfdata(to_usb_interface(dev));
+-	int size;
+-	int i;
+-	char *sysex;
+-
+-	count -= count % 3;
+-	size = count * 2;
+-	sysex = variax_alloc_sysex_buffer(variax, VARIAX_SYSEX_PARAM, size);
+-
+-	if (!sysex)
+-		return 0;
+-
+-	for (i = 0; i < count; i += 3) {
+-		const unsigned char *p1 = buf + i;
+-		char *p2 = sysex + SYSEX_DATA_OFS + i * 2;
+-		p2[0] = p1[2] & 0x0f;
+-		p2[1] = p1[2] >> 4;
+-		p2[2] = p1[1] & 0x0f;
+-		p2[3] = p1[1] >> 4;
+-		p2[4] = p1[0] & 0x0f;
+-		p2[5] = p1[0] >> 4;
+-	}
+-
+-	line6_send_sysex_message(&variax->line6, sysex, size);
+-	kfree(sysex);
+-	return count;
+-}
+-
+-#endif
+-
+-#ifdef CONFIG_LINE6_USB_RAW
+-static DEVICE_ATTR(raw, S_IWUSR, line6_nop_read, line6_set_raw);
+-static DEVICE_ATTR(raw2, S_IWUSR, line6_nop_read, variax_set_raw2);
+-#endif
+-
+ /*
+ 	Variax destructor.
+ */
+@@ -346,18 +289,6 @@ static void variax_destruct(struct usb_interface *interface)
+ }
+ 
+ /*
+-	Create sysfs entries.
+-*/
+-static int variax_create_files2(struct device *dev)
+-{
+-#ifdef CONFIG_LINE6_USB_RAW
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_raw));
+-	CHECK_RETURN(device_create_file(dev, &dev_attr_raw2));
+-#endif
+-	return 0;
+-}
+-
+-/*
+ 	 Try to init workbench device.
+ */
+ static int variax_try_init(struct usb_interface *interface,
+@@ -448,10 +379,6 @@ void line6_variax_disconnect(struct usb_interface *interface)
+ 	if (dev != NULL) {
+ 		/* remove sysfs entries: */
+ 		line6_variax_remove_files(0, 0, dev);
+-#ifdef CONFIG_LINE6_USB_RAW
+-		device_remove_file(dev, &dev_attr_raw);
+-		device_remove_file(dev, &dev_attr_raw2);
+-#endif
+ 	}
+ 
+ 	variax_destruct(interface);
+-- 
+1.8.0
 
-Very nice, I'll queue these up on Monday, very good work, thanks so much
-for doing this.
-
->  drivers/staging/line6/Kconfig       |  11 -
->  drivers/staging/line6/Makefile      |   2 -
->  drivers/staging/line6/control.c     | 995 ------------------------------------
->  drivers/staging/line6/control.h     | 195 -------
->  drivers/staging/line6/driver.c      |  20 -
->  drivers/staging/line6/dumprequest.c | 135 -----
->  drivers/staging/line6/dumprequest.h |  76 ---
->  drivers/staging/line6/midi.c        | 120 -----
->  drivers/staging/line6/midi.h        |  10 -
->  drivers/staging/line6/pod.c         | 846 +-----------------------------
->  drivers/staging/line6/pod.h         | 105 +---
->  drivers/staging/line6/variax.c      | 480 +----------------
->  drivers/staging/line6/variax.h      |  60 ---
->  13 files changed, 16 insertions(+), 3039 deletions(-)
->  delete mode 100644 drivers/staging/line6/control.c
->  delete mode 100644 drivers/staging/line6/control.h
->  delete mode 100644 drivers/staging/line6/dumprequest.c
->  delete mode 100644 drivers/staging/line6/dumprequest.h
-
-I like seeing diffstats like that :)
-
-greg k-h
