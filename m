@@ -1,120 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab2KVTtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:49:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54328 "EHLO
+	id S932389Ab2KVTtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:49:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45940 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756606Ab2KVTto (ORCPT
+	with ESMTP id S1757333Ab2KVTtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:49:44 -0500
+	Thu, 22 Nov 2012 14:49:49 -0500
 From: Stefan Hajnoczi <stefanha@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: Markus Grabner <grabner@icg.tugraz.at>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
         laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 00/46] staging: line6: drop MIDI state sysfs attrs
-Date: Thu, 22 Nov 2012 20:48:39 +0100
-Message-Id: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+Subject: [PATCH 03/46] staging: line6: drop unused param_dirty bitmap
+Date: Thu, 22 Nov 2012 20:48:42 +0100
+Message-Id: <1353613765-18690-4-git-send-email-stefanha@gmail.com>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's put the line6 staging driver on a diet for Thanksgiving! :)
+The param_dirty bitmap tracks which parameters have been modified since
+saving a preset.  The bitmap is never used though so we can drop this
+deadcode.
 
-Markus and I have discussed the MIDI processing that currently happens in the
-line6 driver.  This stuff really belongs in userspace where a library or
-utility can use ALSA MIDI APIs to control the device.  Moving MIDI processing
-to userspace has several benefits:
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+---
+ drivers/staging/line6/pod.c | 16 ----------------
+ drivers/staging/line6/pod.h |  5 -----
+ 2 files changed, 21 deletions(-)
 
-1. The driver only handles PCM and MIDI I/O.  This means less kernel code.
-
-2. A large number of sysfs attributes can be removed.  These attributes exposed
-   MIDI state and driver code was necessary to sync and manage this state.
-
-3. It's easier for userspace to control the device, try out new MIDI commands,
-   etc when the driver acts as a dumb transport.
-
-This patch series removes the sysfs attributes and then removes the state
-behind those attributes.  I have tried to make small incremental changes that
-can be reviewed easily.
-
-Testing would be appreciated and especially necessary for POD XT and Variax
-devices where the startup process has been modified.  I only have access to a
-POD HD300 device which doesn't take these code paths.
-
-The only MIDI processing left are initialization commands and the monitor
-volume level, which remains in the kernel because the driver presents an ALSA
-volume control.
-
-Stefan Hajnoczi (46):
-  staging: line6: drop channel sysfs attr
-  staging: line6: drop clip sysfs attr
-  staging: line6: drop unused param_dirty bitmap
-  staging: line6: drop dirty sysfs attr
-  staging: line6: drop dump sysfs attr
-  staging: line6: drop dump_buf sysfs attr
-  staging: line6: drop monitor_level sysfs attr
-  staging: line6: change monitor_level type ValueWait -> int
-  staging: line6: drop name sysfs attr
-  staging: line6: drop name_buf sysfs attr
-  staging: line6: drop retrieve_amp_setup sysfs attr
-  staging: line6: drop retrieve_channel sysfs attr
-  staging: line6: drop retrieve_effects_setup sysfs attr
-  staging: line6: drop store_amp_setup sysfs attr
-  staging: line6: drop store_channel sysfs attr
-  staging: line6: drop store_effects_setup sysfs attr
-  staging: line6: drop routing sysfs attr
-  staging: line6: drop tuner_freq sysfs attr
-  staging: line6: drop tuner_note sysfs attr
-  staging: line6: drop tuner_mute sysfs attr
-  staging: line6: drop tuner_pitch sysfs attr
-  staging: line6: drop finish sysfs attr
-  staging: line6: drop midi_postprocess sysfs attr
-  staging: line6: drop midi_mask_receive
-  staging: line6: drop midi_mask_transmit
-  staging: line6: drop midi_postprocess flag
-  staging: line6: drop pod.c raw sysfs attr
-  staging: line6: drop tuner param filtering
-  staging: line6: drop variax model sysfs attr
-  staging: line6: drop variax volume sysfs attr
-  staging: line6: drop variax tone sysfs attr
-  staging: line6: drop variax name sysfs attr
-  staging: line6: drop variax bank sysfs attr
-  staging: line6: drop variax dump sysfs attr
-  staging: line6: drop variax active sysfs attr
-  staging: line6: drop variax guitar sysfs attr
-  staging: line6: drop variax raw sysfs attrs
-  staging: line6: drop CONFIG_LINE6_USB_RAW
-  staging: line6: drop amp/effects dump request triggers
-  staging: line6: drop MIDI parameter sysfs attrs
-  staging: line6: drop pod prog_data buffers
-  staging: line6: drop unused pod atomic_flags field
-  staging: line6: drop variax model_data field
-  staging: line6: drop dump requests from variax startup
-  staging: line6: drop dump requests from pod startup
-  staging: line6: drop unused dumprequest code
-
- drivers/staging/line6/Kconfig       |  11 -
- drivers/staging/line6/Makefile      |   2 -
- drivers/staging/line6/control.c     | 995 ------------------------------------
- drivers/staging/line6/control.h     | 195 -------
- drivers/staging/line6/driver.c      |  20 -
- drivers/staging/line6/dumprequest.c | 135 -----
- drivers/staging/line6/dumprequest.h |  76 ---
- drivers/staging/line6/midi.c        | 120 -----
- drivers/staging/line6/midi.h        |  10 -
- drivers/staging/line6/pod.c         | 846 +-----------------------------
- drivers/staging/line6/pod.h         | 105 +---
- drivers/staging/line6/variax.c      | 480 +----------------
- drivers/staging/line6/variax.h      |  60 ---
- 13 files changed, 16 insertions(+), 3039 deletions(-)
- delete mode 100644 drivers/staging/line6/control.c
- delete mode 100644 drivers/staging/line6/control.h
- delete mode 100644 drivers/staging/line6/dumprequest.c
- delete mode 100644 drivers/staging/line6/dumprequest.h
-
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 4abe2de..8fdbe9f 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -130,17 +130,6 @@ static void pod_startup2(unsigned long data);
+ static void pod_startup3(struct usb_line6_pod *pod);
+ static void pod_startup4(struct usb_line6_pod *pod);
+ 
+-/*
+-	Mark all parameters as dirty and notify waiting processes.
+-*/
+-static void pod_mark_batch_all_dirty(struct usb_line6_pod *pod)
+-{
+-	int i;
+-
+-	for (i = 0; i < POD_CONTROL_SIZE; i++)
+-		set_bit(i, pod->param_dirty);
+-}
+-
+ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
+ 				    int size)
+ {
+@@ -163,7 +152,6 @@ static void pod_dump(struct usb_line6_pod *pod, const unsigned char *data)
+ 	memcpy(sysex + SYSEX_DATA_OFS + 1, data, sizeof(pod->prog_data));
+ 	line6_send_sysex_message(&pod->line6, sysex, size);
+ 	memcpy(&pod->prog_data, data, sizeof(pod->prog_data));
+-	pod_mark_batch_all_dirty(pod);
+ 	kfree(sysex);
+ }
+ 
+@@ -173,7 +161,6 @@ static void pod_dump(struct usb_line6_pod *pod, const unsigned char *data)
+ static void pod_store_parameter(struct usb_line6_pod *pod, int param, int value)
+ {
+ 	pod->prog_data.control[param] = value;
+-	set_bit(param, pod->param_dirty);
+ 	pod->dirty = 1;
+ }
+ 
+@@ -239,7 +226,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 					case LINE6_DUMP_CURRENT:
+ 						memcpy(&pod->prog_data, buf + 7,
+ 						       sizeof(pod->prog_data));
+-						pod_mark_batch_all_dirty(pod);
+ 						break;
+ 
+ 					case POD_DUMP_MEMORY:
+@@ -1139,8 +1125,6 @@ static int pod_try_init(struct usb_interface *interface,
+ 	init_waitqueue_head(&pod->tuner_note.wait);
+ 	init_waitqueue_head(&pod->tuner_pitch.wait);
+ 
+-	memset(pod->param_dirty, 0xff, sizeof(pod->param_dirty));
+-
+ 	/* initialize USB buffers: */
+ 	err = line6_dumpreq_init(&pod->dumpreq, pod_request_channel,
+ 				 sizeof(pod_request_channel));
+diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
+index fa247b8..dd6c318 100644
+--- a/drivers/staging/line6/pod.h
++++ b/drivers/staging/line6/pod.h
+@@ -148,11 +148,6 @@ struct usb_line6_pod {
+ 	int startup_progress;
+ 
+ 	/**
+-		Dirty flags for access to parameter data.
+-	*/
+-	unsigned long param_dirty[POD_CONTROL_SIZE / sizeof(unsigned long)];
+-
+-	/**
+ 		Some atomic flags.
+ 	*/
+ 	unsigned long atomic_flags;
 -- 
 1.8.0
 
