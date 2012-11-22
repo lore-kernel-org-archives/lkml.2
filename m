@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab2KVTwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:52:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53550 "EHLO
+	id S965254Ab2KVTwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:52:04 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965238Ab2KVTv4 (ORCPT
+	with ESMTP id S965230Ab2KVTvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:56 -0500
+	Thu, 22 Nov 2012 14:51:55 -0500
 From: Stefan Hajnoczi <stefanha@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: Markus Grabner <grabner@icg.tugraz.at>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
         laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 42/46] staging: line6: drop unused pod atomic_flags field
-Date: Thu, 22 Nov 2012 20:49:21 +0100
-Message-Id: <1353613765-18690-43-git-send-email-stefanha@gmail.com>
+Subject: [PATCH 41/46] staging: line6: drop pod prog_data buffers
+Date: Thu, 22 Nov 2012 20:49:20 +0100
+Message-Id: <1353613765-18690-42-git-send-email-stefanha@gmail.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
 References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
@@ -23,64 +23,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The driver no longer keeps state of MIDI-accessible device parameters.
+Drop the buffers but be careful to keep the device startup procedure
+working even though we no longer store the contents of the dump request.
+The startup procedure will be simplified in a later patch.
+
 Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
 ---
- drivers/staging/line6/pod.c | 11 -----------
- drivers/staging/line6/pod.h |  5 -----
- 2 files changed, 16 deletions(-)
+ drivers/staging/line6/pod.c | 46 +++------------------------------------------
+ drivers/staging/line6/pod.h | 25 ------------------------
+ 2 files changed, 3 insertions(+), 68 deletions(-)
 
 diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index e892b4a..f8257be 100644
+index 278976d..e892b4a 100644
 --- a/drivers/staging/line6/pod.c
 +++ b/drivers/staging/line6/pod.c
-@@ -132,15 +132,6 @@ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
+@@ -132,14 +132,6 @@ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
  }
  
  /*
--	Handle SAVE button.
+-	Store parameter value in driver memory.
 -*/
--static void pod_save_button_pressed(struct usb_line6_pod *pod, int type,
--				    int index)
+-static void pod_store_parameter(struct usb_line6_pod *pod, int param, int value)
 -{
--	set_bit(POD_SAVE_PRESSED, &pod->atomic_flags);
+-	pod->prog_data.control[param] = value;
 -}
 -
 -/*
- 	Process a completely received message.
+ 	Handle SAVE button.
  */
- void line6_pod_process_message(struct usb_line6_pod *pod)
-@@ -166,7 +157,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
- 
- 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_DEVICE:
- 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_HOST:
--		set_bit(POD_CHANNEL_DIRTY, &pod->atomic_flags);
- 		line6_dump_request_async(&pod->dumpreq, &pod->line6, 0,
- 					 LINE6_DUMP_CURRENT);
+ static void pod_save_button_pressed(struct usb_line6_pod *pod, int type,
+@@ -169,9 +161,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 	/* process all remaining messages */
+ 	switch (buf[0]) {
+ 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_DEVICE:
+-		pod_store_parameter(pod, buf[1], buf[2]);
+-		/* intentionally no break here! */
+-
+ 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_HOST:
  		break;
-@@ -196,7 +186,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 
+@@ -187,36 +176,8 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ 		if (memcmp(buf + 1, line6_midi_id, sizeof(line6_midi_id)) == 0) {
+ 			switch (buf[5]) {
+ 			case POD_SYSEX_DUMP:
+-				if (pod->line6.message_length ==
+-				    sizeof(pod->prog_data) + 7) {
+-					switch (pod->dumpreq.in_progress) {
+-					case LINE6_DUMP_CURRENT:
+-						memcpy(&pod->prog_data, buf + 7,
+-						       sizeof(pod->prog_data));
+-						break;
+-
+-					case POD_DUMP_MEMORY:
+-						memcpy(&pod->prog_data_buf,
+-						       buf + 7,
+-						       sizeof
+-						       (pod->prog_data_buf));
+-						break;
+-
+-					default:
+-						dev_dbg(pod->line6.ifcdev,
+-							"unknown dump code %02X\n",
+-							pod->dumpreq.in_progress);
+-					}
+-
+-					line6_dump_finished(&pod->dumpreq);
+-					pod_startup3(pod);
+-				} else
+-					dev_dbg(pod->line6.ifcdev,
+-						"wrong size of channel dump message (%d instead of %d)\n",
+-						pod->line6.message_length,
+-						(int)sizeof(pod->prog_data) +
+-						7);
+-
++				line6_dump_finished(&pod->dumpreq);
++				pod_startup3(pod);
  				break;
  
- 			case POD_SYSEX_SAVE:
--				pod_save_button_pressed(pod, buf[6], buf[7]);
- 				break;
+ 			case POD_SYSEX_SYSTEM:{
+@@ -279,8 +240,7 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
+ void line6_pod_transmit_parameter(struct usb_line6_pod *pod, int param,
+ 				  u8 value)
+ {
+-	if (line6_transmit_parameter(&pod->line6, param, value) == 0)
+-		pod_store_parameter(pod, param, value);
++	line6_transmit_parameter(&pod->line6, param, value);
+ }
  
- 			case POD_SYSEX_STORE:
+ /*
 diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
-index 52534ca..843eb4e 100644
+index 8543bae..52534ca 100644
 --- a/drivers/staging/line6/pod.h
 +++ b/drivers/staging/line6/pod.h
-@@ -84,11 +84,6 @@ struct usb_line6_pod {
- 	int startup_progress;
+@@ -52,21 +52,6 @@ enum {
+ 	POD_STARTUP_LAST = POD_STARTUP_SETUP - 1
+ };
  
- 	/**
--		Some atomic flags.
+-/**
+-	Binary PODxt Pro program dump
+-*/
+-struct pod_program {
+-	/**
+-		Header information (including program name).
 -	*/
--	unsigned long atomic_flags;
+-	unsigned char header[0x20];
 -
 -	/**
- 		Serial number of device.
+-		Program parameters.
+-	*/
+-	unsigned char control[POD_CONTROL_SIZE];
+-};
+-
+ struct usb_line6_pod {
+ 	/**
+ 		Generic Line6 USB data.
+@@ -79,16 +64,6 @@ struct usb_line6_pod {
+ 	struct line6_dump_request dumpreq;
+ 
+ 	/**
+-		Current program settings.
+-	*/
+-	struct pod_program prog_data;
+-
+-	/**
+-		Buffer for data retrieved from or to be stored on PODxt Pro.
+-	*/
+-	struct pod_program prog_data_buf;
+-
+-	/**
+ 		Instrument monitor level.
  	*/
- 	int serial_number;
+ 	int monitor_level;
 -- 
 1.8.0
 
