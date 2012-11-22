@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2KVSkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:40:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
+	id S1755381Ab2KVSlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:41:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755038Ab2KVSke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:34 -0500
+	id S1755162Ab2KVSkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rhys <rhyspuk@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 30/38] drm/i915: fix overlay on i830M
-Date: Wed, 21 Nov 2012 16:40:13 -0800
-Message-Id: <20121122003907.632959190@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 032/171] ipv4: avoid undefined behavior in do_ip_setsockopt()
+Date: Wed, 21 Nov 2012 16:39:38 -0800
+Message-Id: <20121122004036.599972864@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit a9193983f4f292a82a00c72971c17ec0ee8c6c15 upstream.
+From: Xi Wang <xi.wang@gmail.com>
 
-The overlay on the i830M has a peculiar failure mode: It works the
-first time around after boot-up, but consistenly hangs the second time
-it's used.
+[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
 
-Chris Wilson has dug out a nice errata:
+(1<<optname) is undefined behavior in C with a negative optname or
+optname larger than 31.  In those cases the result of the shift is
+not necessarily zero (e.g., on x86).
 
-"1.5.12 Clock Gating Disable for Display Register
-Address Offset:	06200h–06203h
+This patch simplifies the code with a switch statement on optname.
+It also allows the compiler to generate better code (e.g., using a
+64-bit mask).
 
-"Bit 3
-Ovrunit Clock Gating Disable.
-0 = Clock gating controlled by unit enabling logic
-1 = Disable clock gating function
-DevALM Errata ALM049: Overlay Clock Gating Must be Disabled:  Overlay
-& L2 Cache clock gating must be disabled in order to prevent device
-hangs when turning off overlay.SW must turn off Ovrunit clock gating
-(6200h) and L2 Cache clock gating (C8h)."
-
-Now I've nowhere found that 0xc8 register and hence couldn't apply the
-l2 cache workaround. But I've remembered that part of the magic that
-the OVERLAY_ON/OFF commands are supposed to do is to rearrange cache
-allocations so that the overlay scaler has some scratch space.
-
-And while pondering how that could explain the hang the 2nd time we
-enable the overlay, I've remembered that the old ums overlay code did
-_not_ issue the OVERLAY_OFF cmd.
-
-And indeed, disabling the OFF cmd results in the overlay working
-flawlessly, so I guess we can workaround the lack of the above
-workaround by simply never disabling the overlay engine once it's
-enabled.
-
-Note that we have the first part of the above w/a already implemented
-in i830_init_clock_gating - leave that as-is to avoid surprises.
-
-v2: Add a comment in the code.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47827
-Tested-by: Rhys <rhyspuk@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/intel_ring_emit(ring, /OUT_RING(/]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/intel_overlay.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ net/ipv4/ip_sockglue.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -428,9 +428,17 @@ static int intel_overlay_off(struct inte
- 	OUT_RING(flip_addr);
- 	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
- 	/* turn overlay off */
--	OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
--	OUT_RING(flip_addr);
--	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	if (IS_I830(dev)) {
-+		/* Workaround: Don't disable the overlay fully, since otherwise
-+		 * it dies on the next OVERLAY_ON cmd. */
-+		OUT_RING(MI_NOOP);
-+		OUT_RING(MI_NOOP);
-+		OUT_RING(MI_NOOP);
-+	} else {
-+		OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
-+		OUT_RING(flip_addr);
-+		OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	}
- 	ADVANCE_LP_RING();
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -456,19 +456,28 @@ static int do_ip_setsockopt(struct sock
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int val = 0, err;
  
- 	return intel_overlay_do_wait_request(overlay, request,
+-	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
+-			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
+-			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
+-			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
+-			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
+-			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
+-			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
+-			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
+-	    optname == IP_UNICAST_IF ||
+-	    optname == IP_MULTICAST_TTL ||
+-	    optname == IP_MULTICAST_ALL ||
+-	    optname == IP_MULTICAST_LOOP ||
+-	    optname == IP_RECVORIGDSTADDR) {
++	switch (optname) {
++	case IP_PKTINFO:
++	case IP_RECVTTL:
++	case IP_RECVOPTS:
++	case IP_RECVTOS:
++	case IP_RETOPTS:
++	case IP_TOS:
++	case IP_TTL:
++	case IP_HDRINCL:
++	case IP_MTU_DISCOVER:
++	case IP_RECVERR:
++	case IP_ROUTER_ALERT:
++	case IP_FREEBIND:
++	case IP_PASSSEC:
++	case IP_TRANSPARENT:
++	case IP_MINTTL:
++	case IP_NODEFRAG:
++	case IP_UNICAST_IF:
++	case IP_MULTICAST_TTL:
++	case IP_MULTICAST_ALL:
++	case IP_MULTICAST_LOOP:
++	case IP_RECVORIGDSTADDR:
+ 		if (optlen >= sizeof(int)) {
+ 			if (get_user(val, (int __user *) optval))
+ 				return -EFAULT;
 
 
