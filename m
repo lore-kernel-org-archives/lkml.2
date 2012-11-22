@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab2KVVDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:03:00 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:58769 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2KVVC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:02:57 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah5hALKRrlBV5h1yPGdsb2JhbABEhT2FI7MYg3AXAwEBAQEfGQ0ngh4BAQQBOhwjBQsIA0YUJQoaiBoKwA4UkBNhA5YAhXuDTolq
-X-IronPort-AV: E=Sophos;i="4.83,303,1352070000"; 
-   d="scan'208";a="230621564"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 22 Nov 2012 22:03:24 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 14/14] HID: hid-multitouch: forwards MSC_TIMESTAMP
-Message-ID: <20121122210324.GA593@polaris.bitmath.org>
-References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352908766-4492-15-git-send-email-benjamin.tissoires@gmail.com>
- <20121114195852.GA14840@polaris.bitmath.org>
- <50A40CB3.8070105@gmail.com>
- <20121116200926.GA652@polaris.bitmath.org>
- <CAN+gG=F=bHdJF0=0LHGuVQ+ObHvWKJnL0GYcAEWBeD+Z-yyGSA@mail.gmail.com>
- <20121120205147.GA4658@polaris.bitmath.org>
- <20121120205421.GA4664@polaris.bitmath.org>
- <CAN+gG=HY3ai3sKqbqMoiFNHW+c8=dUKGXzF1sU-JaZ16_w1S9w@mail.gmail.com>
+	id S1756124Ab2KVVDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:03:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47438 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755969Ab2KVVDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:03:37 -0500
+Message-ID: <50AE92FD.2090103@zytor.com>
+Date: Thu, 22 Nov 2012 13:02:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=HY3ai3sKqbqMoiFNHW+c8=dUKGXzF1sU-JaZ16_w1S9w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <CAE9FiQXKgnZyFNujKhMn94+0JQ6jtAHOihmtMOmk_gJi-4_aYQ@mail.gmail.com> <50AE7429.6030308@zytor.com> <CAE9FiQVDbR4d3-SgQ0O3hOWqApN241Pxd7fvF7-wwPWbdX75ug@mail.gmail.com> <50AE902D.5090705@zytor.com>
+In-Reply-To: <50AE902D.5090705@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On 11/22/2012 12:50 PM, H. Peter Anvin wrote:
+> On 11/22/2012 12:18 PM, Yinghai Lu wrote:
+>>>
+>>> If we can get the sentinel hack to work that would probably be
+>>> useful, but
+>>> we need to understand the exact pathology.
+>>
+>> for kexec bzImage --real-mode-entry, code after setup_header will be
+>> executed.
+>>
+>> so we could clear value before setup_header after copy 16bit section
+>> from bzImage...
+>>
+>> Index: kexec-tools/kexec/arch/i386/kexec-bzImage.c
+>> ===================================================================
+>> --- kexec-tools.orig/kexec/arch/i386/kexec-bzImage.c
+>> +++ kexec-tools/kexec/arch/i386/kexec-bzImage.c
+>> @@ -212,6 +212,16 @@ int do_bzImage_load(struct kexec_info *i
+>>       setup_size = kern16_size + command_line_len +
+>> PURGATORY_CMDLINE_SIZE;
+>>       real_mode = xmalloc(setup_size);
+>>       memcpy(real_mode, kernel, kern16_size);
+>> +    /*
+>> +     * clear value before header
+>> +     * not not clear value after header, --real-mode-entry
+>> +     * need code after header.
+>> +     */
+>> +    memset(real_mode, 0, 0x1f1);
+>> +    if (!real_mode_entry) {
+>> +        /* clear value after setup_header  */
+>> +        memset((unsigned char *)real_mode + 0x290, 0, kern16_size -
+>> 0x290);
+>> +    }
+>>
+>
+> You really should move the memset() into the if() clause as well...
+> doesn't matter at the moment, but that is the protocol.
+>
+> The limit is 0x280, not 0x290, or -- better -- you can use the byte at
+> 0x201 to get the size.
+>
 
-> well, I'm not very satisfied with this patch. I first thought it was a
-> good idea but I can see now several cons:
-> 1. Henrik would like to partially base the time spent between two
-> events when the device wraps on the *event* time. This is a great idea
-> for consistency, but I'm afraid I won't be able to implement it
-> because this time is computed *after* we call input_event and is only
-> used by evdev. Thus, I still need to add an other clock and some
-> differences may occur.
+Not doing so would be wrong, in fact.
 
-Alternatively, device times need to become part of input core.
 
-> 2. the user space (at least X) will not use it before a long time:
-> they already have the time of the event and it will not add that much
-> consistency.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Ok.
-
-> 3. it will wake up the whole input chain when fingers are present but
-> no moves occurs on the digitizer: the only events we get are
-> MSC_TIMESTAMP and EV_SYN and the user-space will be awaken just for
-> that.
-
-Good point, and a second argument for including this in the input core.
-
-> 4. MSC_TIMESTAMP does not have an abs_max value, thus we are forced to
-> compute sth consistent in the kernel that can be forwarded to the user
-> space.
-
-Granted, but we do not really lose anything by doing so.
-
-> So, I propose not to include this feature, and eventually reverting
-> the patch that introduced MSC_TIMESTAMP as it's useless if we don't
-> use it right now.
-> 
-> Jiri, Dmitry, Henrik, are ok with that?
-
-I think it is fine to postpone the patch, but based on the comments
-above, I do not think we need to revert the input definition.
-
-Thanks,
-Henrik
