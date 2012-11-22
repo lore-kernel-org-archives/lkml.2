@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2KVUlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:41:04 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60532 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338Ab2KVUk7 (ORCPT
+	id S932403Ab2KVUlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:41:25 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39747 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275Ab2KVUlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:40:59 -0500
-Message-ID: <50AE25AB.2060808@gmail.com>
-Date: Thu, 22 Nov 2012 21:16:27 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 22 Nov 2012 15:41:20 -0500
+Message-ID: <50ADEF2B.4030106@googlemail.com>
+Date: Thu, 22 Nov 2012 09:23:55 +0000
+From: Chris Clayton <chris2553@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Jan Kara <jack@suse.cz>, metin d <metdos@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: Problem in Page Cache Replacement
-References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com> <20121120182500.GH1408@quack.suse.cz> <20121121213417.GC24381@cmpxchg.org> <50AD7647.7050200@gmail.com> <20121122010959.GF24381@cmpxchg.org>
-In-Reply-To: <20121122010959.GF24381@cmpxchg.org>
+To: Chris Clayton <chris2553@googlemail.com>
+CC: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v1 0/5] fix up inaccurate zone->present_pages
+References: <20121115112454.e582a033.akpm@linux-foundation.org> <1353254850-27336-1-git-send-email-jiang.liu@huawei.com> <50A946BC.7010308@googlemail.com>
+In-Reply-To: <50A946BC.7010308@googlemail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 09:09 AM, Johannes Weiner wrote:
-> On Thu, Nov 22, 2012 at 08:48:07AM +0800, Jaegeuk Hanse wrote:
->> On 11/22/2012 05:34 AM, Johannes Weiner wrote:
->>> Hi,
->>>
->>> On Tue, Nov 20, 2012 at 07:25:00PM +0100, Jan Kara wrote:
->>>> On Tue 20-11-12 09:42:42, metin d wrote:
->>>>> I have two PostgreSQL databases named data-1 and data-2 that sit on the
->>>>> same machine. Both databases keep 40 GB of data, and the total memory
->>>>> available on the machine is 68GB.
->>>>>
->>>>> I started data-1 and data-2, and ran several queries to go over all their
->>>>> data. Then, I shut down data-1 and kept issuing queries against data-2.
->>>>> For some reason, the OS still holds on to large parts of data-1's pages
->>>>> in its page cache, and reserves about 35 GB of RAM to data-2's files. As
->>>>> a result, my queries on data-2 keep hitting disk.
->>>>>
->>>>> I'm checking page cache usage with fincore. When I run a table scan query
->>>>> against data-2, I see that data-2's pages get evicted and put back into
->>>>> the cache in a round-robin manner. Nothing happens to data-1's pages,
->>>>> although they haven't been touched for days.
->>>>>
->>>>> Does anybody know why data-1's pages aren't evicted from the page cache?
->>>>> I'm open to all kind of suggestions you think it might relate to problem.
->>> This might be because we do not deactive pages as long as there is
->>> cache on the inactive list.  I'm guessing that the inter-reference
->>> distance of data-2 is bigger than half of memory, so it's never
->>> getting activated and data-1 is never challenged.
->> Hi Johannes,
+>> This patchset has only been tested on x86_64 with nobootmem.c. So need
+>> help to test this patchset on machines:
+>> 1) use bootmem.c
+>> 2) have highmem
 >>
->> What's the meaning of "inter-reference distance"
-> It's the number of memory accesses between two accesses to the same
-> page:
+>> This patchset applies to "f4a75d2e Linux 3.7-rc6" from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>>
 >
->    A B C D A B C E ...
->      |_______|
->      |       |
+> I've applied the five patches to Linus' 3.7.0-rc6 and can confirm that
+> the kernel allows my system to resume from a suspend to disc. Although
+> my laptop is 64 bit, I run a 32 bit kernel with HIGHMEM (I have 8GB RAM):
 >
->> and why compare it with half of memoy, what's the trick?
-> If B gets accessed twice, it gets activated.  If it gets evicted in
-> between, the second access will be a fresh page fault and B will not
-> be recognized as frequently used.
+> [chris:~/kernel/tmp/linux-3.7-rc6-resume]$ grep -E HIGHMEM\|X86_32 .config
+> CONFIG_X86_32=y
+> CONFIG_X86_32_SMP=y
+> CONFIG_X86_32_LAZY_GS=y
+> # CONFIG_X86_32_IRIS is not set
+> # CONFIG_NOHIGHMEM is not set
+> # CONFIG_HIGHMEM4G is not set
+> CONFIG_HIGHMEM64G=y
+> CONFIG_HIGHMEM=y
 >
-> Our cutoff for scanning the active list is cache size / 2 right now
-> (inactive_file_is_low), leaving 50% of memory to the inactive list.
-> If the inter-reference distance for pages on the inactive list is
-> bigger than that, they get evicted before their second access.
+> I can also say that a quick browse of the output of dmesg, shows nothing
+> out of the ordinary. I have insufficient knowledge to comment on the
+> patches, but I will run the kernel over the next few days and report
+> back later in the week.
+>
 
-Hi Johannes,
-
-Thanks for your explanation. But could you give a short description of 
-how you resolve this inactive list thrashing issues?
-
-Regards,
-Jaegeuk
-
-
-
+Well, I've been running the kernel since Sunday and have had no problems 
+with my normal work mix of browsing, browsing the internet, video 
+editing, listening to music and building software. I'm now running a 
+kernel that build with the new patches 1 and 4 from yesterday (plus the 
+original 1, 2 and 5). All seems OK so far, including a couple of resumes 
+from suspend to disk.
