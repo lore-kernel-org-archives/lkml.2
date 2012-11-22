@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2KVUqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:46:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964949Ab2KVS6o (ORCPT
+	id S932506Ab2KVUqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:46:42 -0500
+Received: from manchmal.in-ulm.de ([217.10.9.201]:48904 "EHLO
+	manchmal.in-ulm.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab2KVUqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:44 -0500
-Date: Wed, 21 Nov 2012 17:49:53 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-8eb5779f6b9c7e390c92f451edaafc039e06e743@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1353123563-3103-13-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-13-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm: use pfn_range_is_mapped() with CPA
-Git-Commit-ID: 8eb5779f6b9c7e390c92f451edaafc039e06e743
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 22 Nov 2012 15:46:40 -0500
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 15:46:39 EST
+Date: Thu, 22 Nov 2012 21:40:09 +0100
+From: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [ 81/83] ACPI video: Ignore errors after _DOD evaluation.
+Message-ID: <1353616368@msgid.manchmal.in-ulm.de>
+References: <20121122004212.371862690@linuxfoundation.org>
+ <20121122004221.293493645@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:49:59 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121122004221.293493645@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8eb5779f6b9c7e390c92f451edaafc039e06e743
-Gitweb:     http://git.kernel.org/tip/8eb5779f6b9c7e390c92f451edaafc039e06e743
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 16 Nov 2012 19:38:49 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 17 Nov 2012 11:59:09 -0800
+Greg Kroah-Hartman wrote...
 
-x86, mm: use pfn_range_is_mapped() with CPA
+> 3.6-stable review patch.  If anyone has any objections, please let me know.
 
-We are going to map ram only, so under max_low_pfn_mapped,
-between 4g and max_pfn_mapped does not mean mapped at all.
+Only a small set of the (guessed) 300 e-mails arrived here, they were:
 
-Use pfn_range_is_mapped() directly.
+ - 21/11 Greg Kroah-Hartman   ┬─>[ 81/83] ACPI video: Ignore errors after _DOD evaluation.
+ - 21/11 Greg Kroah-Hartman   └─>[ 29/83] ASoC: core: Double control update err for snd_soc_put_volsw_sx
+ - 21/11 Greg Kroah-Hartman   [ 05/38] ptp: update adjfreq callback description
+ - 21/11 Greg Kroah-Hartman   ┬─>[ 105/171] libceph: fully initialize connection in con_init()
+ - 21/11 Greg Kroah-Hartman   ├─>[ 001/171] mm: bugfix: set current->reclaim_state to NULL while returning from kswapd()
+ - 21/11 Greg Kroah-Hartman   ├─>[ 075/171] ceph: ensure auth ops are defined before use
+ - 21/11 Greg Kroah-Hartman   ├─>[ 086/171] libceph: flush msgr queue during mon_client shutdown
+ - 21/11 Greg Kroah-Hartman   ├─>[ 005/171] mac80211: call skb_dequeue/ieee80211_free_txskb instead of __skb_queue_purge
+ - 21/11 Greg Kroah-Hartman   ├─>[ 065/171] libceph: dont reset kvec in prepare_write_banner()
+ - 21/11 Greg Kroah-Hartman   ├─>[ 049/171] drm/i915: fix overlay on i830M
+ - 21/11 Greg Kroah-Hartman   └─>[ 039/171] r8169: Fix WoL on RTL8168d/8111d.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1353123563-3103-13-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/pageattr.c | 16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index a718e0d..44acfcd 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -551,16 +551,10 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	for (i = 0; i < PTRS_PER_PTE; i++, pfn += pfninc)
- 		set_pte(&pbase[i], pfn_pte(pfn, ref_prot));
- 
--	if (address >= (unsigned long)__va(0) &&
--		address < (unsigned long)__va(max_low_pfn_mapped << PAGE_SHIFT))
-+	if (pfn_range_is_mapped(PFN_DOWN(__pa(address)),
-+				PFN_DOWN(__pa(address)) + 1))
- 		split_page_count(level);
- 
--#ifdef CONFIG_X86_64
--	if (address >= (unsigned long)__va(1UL<<32) &&
--		address < (unsigned long)__va(max_pfn_mapped << PAGE_SHIFT))
--		split_page_count(level);
--#endif
--
- 	/*
- 	 * Install the new, split up pagetable.
- 	 *
-@@ -729,13 +723,9 @@ static int cpa_process_alias(struct cpa_data *cpa)
- 	unsigned long vaddr;
- 	int ret;
- 
--	if (cpa->pfn >= max_pfn_mapped)
-+	if (!pfn_range_is_mapped(cpa->pfn, cpa->pfn + 1))
- 		return 0;
- 
--#ifdef CONFIG_X86_64
--	if (cpa->pfn >= max_low_pfn_mapped && cpa->pfn < (1UL<<(32-PAGE_SHIFT)))
--		return 0;
--#endif
- 	/*
- 	 * No need to redo, when the primary call touched the direct
- 	 * mapping already:
+And they had a huge delay of eight hours at kernel.org:
+
+| Received: from mail.kernel.org ([198.145.19.201]:49019 "EHLO mail.kernel.org"
+|         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+|         id S1753592Ab2KVSdp (ORCPT <rfc822;stable@vger.kernel.org>);
+|         Thu, 22 Nov 2012 13:33:45 -0500
+| Received: from mail.kernel.org (localhost [127.0.0.1])
+|         by mail.kernel.org (Postfix) with ESMTP id 87EA220434;
+|         Thu, 22 Nov 2012 00:46:51 +0000 (UTC)
+
+Since there was nothing else in the two hours since then, care to
+check what went wrong?
+
+Nevertheless, thanks to the predictable patch download URLs, I could
+start my tests, everything looks good so far.
+
+    Christoph
