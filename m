@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab2KVS6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087Ab2KVS6J (ORCPT
+	id S1757581Ab2KVVAF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:00:05 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57472 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab2KVVAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:09 -0500
-Message-ID: <50AE62E9.3000602@zytor.com>
-Date: Thu, 22 Nov 2012 09:37:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 22 Nov 2012 16:00:00 -0500
+Date: Thu, 22 Nov 2012 21:59:44 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
+Subject: Re: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
+Message-ID: <20121122205944.GC16716@avionic-0098.adnet.avionic-design.de>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <1353503469-18634-6-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Daniel Kiper <daniel.kiper@oracle.com>, andrew.cooper3@citrix.com,
-        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com>
-In-Reply-To: <87txshx28b.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
+Content-Disposition: inline
+In-Reply-To: <1353503469-18634-6-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:w5aTnYZrYkw3lnYDTUu1C1jVrF6OpbbGOv8b0518rtq
+ 25n2VstPF+m4F4NNo6KMYLH51/+S8YMWcMN6grh5+yXhyYP2oC
+ euKpugVC4wwZQxPtLfLZ2FGsETvpLjWRThdl6k8NewCEXS3rQd
+ 2hcRSrnGZAlE/FZbpoimb6TEOxajuGo7yKNmiWD/vJFSBT3V4y
+ S1vMFpCugXevI7ETMmQh8S1NOAhAfCVBRVwoPTOvlbsBzbOQn/
+ +t8ZyKBqm6eDohQwr/w+4jI73QSX1nRJsHK+94yc5wkV0zHDSB
+ bLu9D/vlfCf/AfkwN2tNYYiOmkQzjKfJbMFCnQJCroHIn0JZzo
+ VC17GX7GS0AJvNUeI1CvIZZIfCeZyr5WKvEt0gdLUjfQ7LuXm1
+ IDcsb201j6xZx5xfczY9qyr7jAEKapN6jA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 04:15 AM, Eric W. Biederman wrote:
->
-> Let me be clear.  kexec_ops as you have implemented it is absolutely
-> unacceptable.
->
-> Your kexec_ops is not an abstraction but a hack that enshrines in stone
-> implementation details.
->
 
-This is the kind of stuff that is absolutely endemic to the Xen 
-endeavour, and which is why Xen is such a disease.  The design principle 
-seems to have been "hey, let's go and replace random Linux kernel 
-internals with our own stuff, and make them ABIs, so that they can never 
-change.  Oh, and let's not bother documenting the constraints we're 
-imposing, that might make the code manageable."
+--Izn7cH1Com+I3R9J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I actually talked to Ian Jackson at LCE, and mentioned among other 
-things the bogosity of requiring a PUD page for three-level paging in 
-Linux -- a bogosity which has spread from Xen into native.  It's a page 
-wasted for no good reason, since it only contains 32 bytes worth of 
-data, *inherently*.  Furthermore, contrary to popular belief, it is 
-*not* pa page table per se.
+On Wed, Nov 21, 2012 at 06:41:02PM +0530, Philip, Avinash wrote:
+[...]
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
 
-Ian told me: "I didn't know we did that, and we shouldn't have to." 
-Here we have suffered this overhead for at least six years, because *XEN 
-FUCKED UP AND NOONE ELSE HAD ANY WAY OF KNOWING THAT*.
+I think we already discussed this, but shouldn't this be a fatal error?
 
-Now we know that it can "maybe"(!!!) be fixed, if we are willing to 
-spend time working on a dying platform, whereas we have already suffered 
-the damage during the height of its importance.
+Thierry
 
-	-hpa
+--Izn7cH1Com+I3R9J
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+iQIcBAEBAgAGBQJQrpJAAAoJEN0jrNd/PrOhWpwP/iUHHBVkmCk5Chr1iJN2CCjy
+hr2gF3YlBQpHpyyvH9+rqtkRzJ0+7iPvq8gaM3pQoW67lgrD5H7nHxqfCqdxghV2
+8ARiatAsfiWHAhHi/O9uNCkJ+NZv9YyPaPsrkJvaSie+O14HEAM5kiHtDOpFDkkd
+STfXFUHIgMtajNMo4MnjON8FTr7dLv4/RmXVymeUskopkpYoD/hvpqlg1ivEz0M6
+UKbbPZ6Z6iiLp5wwGYBEN8dhHA7uHqjFmRfu4dDdD8tKwMLxCVN6EA539VawWmeU
+x2gjBbE2Vi5REBt8G+gDkJqCcSB46Xqzg7beZSb7C96bPuxFcI1cWZKzGnjCeyfM
+pACqZFHbci8+9hqWYkhAJ3PnCfXn9asR5UMfiwVUxRG7v6LaHPzh4dYpNeW2bDGB
+E2RCC2AeFKJ5SqsmM/YOQROHS88RDAFBaXYjly4kPj7Z9dNI+pgoPMVJg3B+tpMI
+Ob9NNyYXP+NNOedGrBYdNhnj8Z+51aYMtKAG/KWYyga4U+1JkHEmIQ2BpAfemh/u
+WMNqWVSFA/y8hf2AT3PH9Vq0GgfpqfOrOIKZLnwdIAeIl9uEDwp0phDMGkB6Nnwg
+ckGRHEo3oQfMzACNUjuXO2vX0TOIig8+rFrThqotrGP+z3wTZNpjevkC1JUImJp4
+9veop7y+AI0mSrvAqmru
+=7YdN
+-----END PGP SIGNATURE-----
 
+--Izn7cH1Com+I3R9J--
