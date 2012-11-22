@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab2KVXL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 18:11:28 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45121 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750916Ab2KVXL0 (ORCPT
+	id S1753476Ab2KVXPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 18:15:22 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:46991 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750815Ab2KVXPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 18:11:26 -0500
-Message-ID: <50AEB10D.3050909@ilyx.ru>
-Date: Fri, 23 Nov 2012 03:11:09 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 22 Nov 2012 18:15:19 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AscIAJewrlB5LKAf/2dsb2JhbABEhT22MoV5F3OCHgEBBScTHCMQCAMYLhQlAyETiAy/bBSMIyiEGQOWAJBDgwOBTR4
+Date: Fri, 23 Nov 2012 10:15:15 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>, axboe@kernel.dk,
+        lucho@ionkov.net, ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
+        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
+ page writes
+Message-ID: <20121122231515.GW2591@dastard>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020056.10225.15220.stgit@blackbox.djwong.org>
+ <20121121021543.GI10507@quack.suse.cz>
+ <20121121211319.GA32202@blackbox.djwong.org>
+ <20121121213333.GF30250@quack.suse.cz>
+ <20121122084713.69e5b1fc@notabene.brown>
+ <20121122014755.GH8740@blackbox.djwong.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
-References: <50AEAF20.3070001@ilyx.ru>
-In-Reply-To: <50AEAF20.3070001@ilyx.ru>
-X-Forwarded-Message-Id: <50AEAF20.3070001@ilyx.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122014755.GH8740@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regression 'tty: fix "IRQ45: nobody cared"'
-Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
+On Wed, Nov 21, 2012 at 05:47:55PM -0800, Darrick J. Wong wrote:
+> On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
+> > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
+> > 
+> > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
+> > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
+> > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
+> > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
+> > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
+> > > > > > tries to mount in write mode.
+> > > > > > 
+> > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > > > > > ---
+> > > > > >  fs/ext3/super.c |    8 ++++++++
+> > > > > >  1 file changed, 8 insertions(+)
+> > > > > > 
+> > > > > > 
+> > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> > > > > > index 5366393..5b3725d 100644
+> > > > > > --- a/fs/ext3/super.c
+> > > > > > +++ b/fs/ext3/super.c
+> > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
+> > > > > >  			"forcing read-only mode");
+> > > > > >  		res = MS_RDONLY;
+> > > > > >  	}
+> > > > > > +	if (!read_only &&
+> > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
+> > > > > > +		ext3_msg(sb, KERN_ERR,
+> > > > > > +			"error: ext3 cannot safely write data to a disk "
+> > > > > > +			"requiring stable pages writes; forcing read-only "
+> > > > > > +			"mode.  Upgrading to ext4 is recommended.");
+> > > > > > +		res = MS_RDONLY;
+> > > > > > +	}
+> > > > > >  	if (read_only)
+> > > > > >  		return res;
+> > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
+> > > > >   Why this? ext3 should be fixed by your change to
+> > > > > filemap_page_mkwrite()... Or does testing show otherwise?
+> > > > 
+> > > > Yes, it's still broken even with this new set of changes.  Now that I think
+> > > > about it a little more, I recall that writeback mode was actually fine, so this
+> > > > is a little harsh.
+> > > > 
+> > > > Hm... looking at the ordered code a little more, it looks like
+> > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
+> > > > to write mapped buffers back through the journal?  Taking it out seems to fix
+> > > > ordered mode, though I have a suspicion that it might very well break ordered
+> > > > mode too.
+> > >   Oh, right. kjournald writing buffers directly (without setting
+> > > PageWriteback) will break things. So please, change warning to:
+> 
+> Maybe we should just fix this anyway?
+> 
+> I still have the patch that adds PG_stable (and changes the
 
-  Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
-At the time of request we can have full buffers and throttled driver too. 
-If we don't unthrottle driver, we can get forever throttled driver, because,
-after request, we will have empty buffers and throttled driver and 
-there is no place to unthrottle driver.
-It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
-and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
+Page flags are in short supply. If you need a page flag to fix a bug
+in a single filesytem, there's a couple of reserved private page
+flags that can be used. i.e PG_owner_priv_1. I don't think using a
+glbal page flag for just this purpose will fly, though...
 
-About 'tty: fix "IRQ45: nobody cared"':
-  We don't call tty_unthrottle() if release last filp - ('tty->count == 0')
-In other case it must be safely. 
+Cheers,
 
-Unfortunately, many drivers indirectly invoke tty_unthrottle() before TTY LAYER
-decremented (tty->count).
-  This Patch help us catch bugs in tty's drivers and invoke tty_unthrottle()
-in right moment only.
-
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 26f0d0e..f20b44a 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -173,6 +173,13 @@ static void reset_buffer_flags(struct tty_struct *tty)
- {
- 	unsigned long flags;
- 
-+	WARN_ON(tty->drvbug);
-+	/*
-+	 * We should not call this method from driver's close function.
-+	 * It will be called by TTY layer later.
-+	 */
-+	if (tty->drvbug)
-+		return;
- 	spin_lock_irqsave(&tty->read_lock, flags);
- 	tty->read_head = tty->read_tail = tty->read_cnt = 0;
- 	spin_unlock_irqrestore(&tty->read_lock, flags);
-@@ -184,6 +191,7 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 	tty->canon_head = tty->canon_data = tty->erasing = 0;
- 	memset(&tty->read_flags, 0, sizeof tty->read_flags);
- 	n_tty_set_room(tty);
-+	check_unthrottle(tty);
- }
- 
- /**
-@@ -1585,7 +1593,6 @@ static int n_tty_open(struct tty_struct *tty)
- 			return -ENOMEM;
- 	}
- 	reset_buffer_flags(tty);
--	tty_unthrottle(tty);
- 	tty->column = 0;
- 	n_tty_set_termios(tty, NULL);
- 	tty->minimum_to_wake = 1;
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index b425c79..0cd2370 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1649,8 +1649,10 @@ int tty_release(struct inode *inode, struct file *filp)
- 			tty_name(tty, buf), tty->count);
- #endif
- 
-+	tty->drvbug = 1;
- 	if (tty->ops->close)
- 		tty->ops->close(tty, filp);
-+	tty->drvbug = 0;
- 
- 	tty_unlock();
- 	/*
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index ed1e82e..01455b6 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -281,7 +281,7 @@ struct tty_struct {
- 	int count;
- 	struct winsize winsize;		/* termios mutex */
- 	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
--	unsigned char low_latency:1, warned:1;
-+	unsigned char low_latency:1, warned:1, drvbug:1;
- 	unsigned char ctrl_status;	/* ctrl_lock */
- 	unsigned int receive_room;	/* Bytes free for queue */
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
