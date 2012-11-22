@@ -1,119 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab2KVUtz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:49:55 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48082 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab2KVUtu (ORCPT
+	id S1757484Ab2KVUuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:50:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964914Ab2KVS6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:49:50 -0500
-Date: Wed, 21 Nov 2012 23:46:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/27] Latest numa/core release, v16
-Message-ID: <20121121224653.GA4164@gmail.com>
-References: <alpine.DEB.2.00.1211191644340.24618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1211191703270.24618@chino.kir.corp.google.com>
- <20121120060014.GA14065@gmail.com>
- <alpine.DEB.2.00.1211192213420.5498@chino.kir.corp.google.com>
- <20121120074445.GA14539@gmail.com>
- <alpine.DEB.2.00.1211200001420.16449@chino.kir.corp.google.com>
- <20121120090637.GA14873@gmail.com>
- <CA+55aFyR9FsGYWSKkgsnZB7JhheDMjEQgbzb0gsqawSTpetPvA@mail.gmail.com>
- <20121121171047.GA28875@gmail.com>
- <CA+55aFwCiA=4+piuvf6uTT6dqeJm_Nmib_zZ=4Xj0_JmN1GrnA@mail.gmail.com>
+	Thu, 22 Nov 2012 13:58:40 -0500
+Date: Wed, 21 Nov 2012 18:01:21 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-868bf4d6b94c980d3ad87f892a5e528b8ee2c320@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        stefano.stabellini@eu.citrix.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        stefano.stabellini@eu.citrix.com
+In-Reply-To: <1353123563-3103-24-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-24-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm:
+  Remove parameter in alloc_low_page for 64bit
+Git-Commit-ID: 868bf4d6b94c980d3ad87f892a5e528b8ee2c320
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwCiA=4+piuvf6uTT6dqeJm_Nmib_zZ=4Xj0_JmN1GrnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:01:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  868bf4d6b94c980d3ad87f892a5e528b8ee2c320
+Gitweb:     http://git.kernel.org/tip/868bf4d6b94c980d3ad87f892a5e528b8ee2c320
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Fri, 16 Nov 2012 19:39:00 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:22 -0800
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+x86, mm: Remove parameter in alloc_low_page for 64bit
 
-> On Wed, Nov 21, 2012 at 7:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Because scalability slowdowns are often non-linear.
-> 
-> Only if you hold locks or have other non-cpu-private activity.
-> 
-> Which the vsyscall code really shouldn't have.
+Now all page table buf are pre-mapped, and could use virtual address directly.
+So don't need to remember physical address anymore.
 
-Yeah, the faults accessing any sort of thread shared cache line 
-was my main thinking - the vsyscall faults are so hidden, and 
-David's transaction score was so low that I could not exclude 
-some extremely high page fault rate (which would not get 
-reported by anything other than a strange blip on the profile). 
-I was thinking of a hundred thousand vsyscall page faults per 
-second as a possibility - SPECjbb measures time for every 
-transaction.
+Remove that phys pointer in alloc_low_page(), and that will allow us to merge
+alloc_low_page between 64bit and 32bit.
 
-So this was just a "maybe-that-has-an-effect" blind theory of 
-mine - and David's testing did not confirm it so we know it was 
-a bad idea.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-24-git-send-email-yinghai@kernel.org
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init_64.c | 19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-I basically wanted to see a profile from David that looked as 
-flat as mine - that would have excluded a handful of unknown 
-unknowns.
-
-> That said, it might be worth removing the 
-> "prefetchw(&mm->mmap_sem)" from the VM fault path. Partly 
-> because software prefetches have never ever worked on any 
-> reasonable hardware, and partly because it could seriously 
-> screw up things like the vsyscall stuff.
-
-Yeah, I was wondering about that one too ...
-
-> I think we only turn prefetchw into an actual prefetch 
-> instruction on 3DNOW hardware. Which is the *old* AMD chips. I 
-> don't think even the Athlon does that.
-> 
-> Anyway, it might be interesting to see a instruction-level 
-> annotated profile of do_page_fault() or whatever
-
-Yes.
-
-> > So with CONFIG_NUMA_BALANCING=y we are taking a higher page 
-> > fault rate, in exchange for a speedup.
-> 
-> The thing is, so is autonuma.
-> 
-> And autonuma doesn't show any of these problems. [...]
-
-AutoNUMA regresses on this workload, at least on my box:
-
-                         v3.7  AutoNUMA   |  numa/core-v16    [ vs. v3.7]
-                        -----  --------   |  -------------    -----------
-                                          |
-  [ SPECjbb transactions/sec ]            |
-  [ higher is better         ]            |
-                                          |
-  SPECjbb single-1x32    524k     507k    |       638k           +21.7%
-
-It regresses by 3.3% over mainline. [I have not measured a 
-THP-disabled number for AutoNUMA.]
-
-Maybe it does not regress on David's box - I have just 
-re-checked all of David's mails and AFAICS he has not reported 
-AutoNUMA SPECjbb performance.
-
-> Why are you ignoring that fact?
-
-I'm not :-(
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 5ee9242..1960820 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
+ 	}
+ }
+ 
+-static __ref void *alloc_low_page(unsigned long *phys)
++static __ref void *alloc_low_page(void)
+ {
+ 	unsigned long pfn;
+ 	void *adr;
+ 
+ 	if (after_bootmem) {
+ 		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+-		*phys = __pa(adr);
+ 
+ 		return adr;
+ 	}
+@@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+ 	clear_page(adr);
+-	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+ 
+@@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 	int i = pmd_index(address);
+ 
+ 	for (; i < PTRS_PER_PMD; i++, address = next) {
+-		unsigned long pte_phys;
+ 		pmd_t *pmd = pmd_page + pmd_index(address);
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
+@@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pte = alloc_low_page(&pte_phys);
++		pte = alloc_low_page();
+ 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
++		pmd_populate_kernel(&init_mm, pmd, pte);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	update_page_count(PG_LEVEL_2M, pages);
+@@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 	int i = pud_index(addr);
+ 
+ 	for (; i < PTRS_PER_PUD; i++, addr = next) {
+-		unsigned long pmd_phys;
+ 		pud_t *pud = pud_page + pud_index(addr);
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
+@@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pmd = alloc_low_page(&pmd_phys);
++		pmd = alloc_low_page();
+ 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+ 					      prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pud_populate(&init_mm, pud, __va(pmd_phys));
++		pud_populate(&init_mm, pud, pmd);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	__flush_tlb_all();
+@@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
+ 
+ 	for (; start < end; start = next) {
+ 		pgd_t *pgd = pgd_offset_k(start);
+-		unsigned long pud_phys;
+ 		pud_t *pud;
+ 
+ 		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+@@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
+ 			continue;
+ 		}
+ 
+-		pud = alloc_low_page(&pud_phys);
++		pud = alloc_low_page();
+ 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+ 						 page_size_mask);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pgd_populate(&init_mm, pgd, __va(pud_phys));
++		pgd_populate(&init_mm, pgd, pud);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 		pgd_changed = true;
+ 	}
