@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2KVToi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:44:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49667 "EHLO
+	id S1757245Ab2KVTox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:44:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64653 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab2KVTof (ORCPT
+	with ESMTP id S1752387Ab2KVTou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:44:35 -0500
-Date: Thu, 22 Nov 2012 11:12:08 +0100 (CET)
+	Thu, 22 Nov 2012 14:44:50 -0500
+Date: Thu, 22 Nov 2012 11:12:04 +0100 (CET)
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 X-X-Sender: lyakh@axis700.grange
 To: linux-sh@vger.kernel.org
 cc: Magnus Damm <magnus.damm@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH v2 2/2] regulator: add a regulator driver for the AS3711 PMIC
-In-Reply-To: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1211221110330.28453@axis700.grange>
-References: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
+Subject: [PATCH v2 1/2] mfd: add an AS3711 PMIC MFD driver
+Message-ID: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:MlhcEWJBF3bqLcHLts1ZEUWTqek3OVewzEYBt2MJKVU
- draZKf7J2VuoGb3BCsp0zBqjMaKE/wt2j4bAIR1n1bcVsCttUk
- In86aukRkDFnYez1rC5m4t40iOBnOKUeKhz/0Tmq0hw1ch1M51
- WMgottti9nJWD0Mxkf75w+kpjKXCYjmnobFHtLATD0kueE+V9v
- NB0nREbajuC5SdE/lHN3hxvV+V/hFlvpRKgb3y5pgFhUzfGn3/
- 8TJGMQEb/VmyyOzzLgGBhSMKeo8cjLlF5ATr98cXsbbg0/359a
- V2sTL5ltyP1TS0l+TFDauJidDEkvkm8AzrdXnBhI//WB6Ej7PE
- btKumoWzn3U+XixD7KRuf7kQNWRW1Lg/fNaeMpfV3/UhynRrHV
- Q5qOmlHgeKxeg==
+X-Provags-ID: V02:K0:UmNbG78shBsExcmmomvmt0Hgfv77eBoN2nEaR4I8GgQ
+ vOk9qt/hRzL3gWHYAiMVea65srUruxqCQKRqfw1iYJV1LdYfLr
+ VQcLGvKS4ARDPm2qjaIYawaEcZZ+e3qTj4GoWVUvbm+14W+W+1
+ QodtHeYuveVP0jnFxIT9Ebc0hnZSQMiVvfmoqcLG8AinYYznfG
+ CabU7ieqsA91Y4r+JRb1udJ0Cc5zbc+xvUOa1f5fbL1HHg599s
+ Ll6M69ibdGJ5oiler0ddlc82aE3UTdoDEed3tWdkTAEXzCac5b
+ wuSMhU2ZxKKAdnTmYFkTrDNNx604WmDUusj67d+5cin6PXAZXk
+ 3Nvv01rav5ND2u7JEGOmj3kkUe7s8n2jYqVhM4hj/kqMhrh7/X
+ Du+mhpI+7515Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports the 4 DCDC and 8 LDO regulators on the AS3711 PMIC.
+AS3711 is a PMIC with multiple DCDC and LDO power supplies, GPIOs, an RTC,
+a battery charger and a general purpose ADC. This patch adds support for
+the MFD with support for a regulator driver and a backlight driver.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
 
-v2: make platform data optional
+v2: (Thanks to Mark for review)
 
- drivers/regulator/Kconfig            |    7 +
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/as3711-regulator.c |  379 ++++++++++++++++++++++++++++++++++
- 3 files changed, 387 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/as3711-regulator.c
+ - Only print chip IDs if they match expected values
+ - Check regmap_read() error
+ - Make platform data optional
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 67d47b59..f73d6f5 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -450,5 +450,12 @@ config REGULATOR_WM8994
- 	  This driver provides support for the voltage regulators on the
- 	  WM8994 CODEC.
+ drivers/mfd/Kconfig        |    9 ++
+ drivers/mfd/Makefile       |    1 +
+ drivers/mfd/as3711.c       |  217 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/as3711.h |  126 +++++++++++++++++++++++++
+ 4 files changed, 353 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/as3711.c
+ create mode 100644 include/linux/mfd/as3711.h
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index acab3ef..77360f9 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1044,6 +1044,15 @@ config MFD_PALMAS
+ 	  If you say yes here you get support for the Palmas
+ 	  series of PMIC chips from Texas Instruments.
  
-+config REGULATOR_AS3711
-+	tristate "AS3711 PMIC"
-+	depends on MFD_AS3711
++config MFD_AS3711
++	bool "Support for AS3711"
++	select MFD_CORE
++	select REGMAP_I2C
++	select REGMAP_IRQ
++	depends on I2C=y
 +	help
-+	  This driver provides support for the voltage regulators on the
-+	  AS3711 PMIC
++	  Support for the AS3711 PMIC from AMS
 +
+ endmenu
  endif
  
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index e431eed..c1557ac 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
- obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
- obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o arizona-ldo1.o
-+obj-$(CONFIG_REGULATOR_AS3711) += as3711-regulator.o
- obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
- obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
- obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
-diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index d8ccb63..f84d012 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -138,3 +138,4 @@ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+ obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+ obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
+ obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
++obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+diff --git a/drivers/mfd/as3711.c b/drivers/mfd/as3711.c
 new file mode 100644
-index 0000000..81578bf
+index 0000000..e994c96
 --- /dev/null
-+++ b/drivers/regulator/as3711-regulator.c
-@@ -0,0 +1,379 @@
++++ b/drivers/mfd/as3711.c
+@@ -0,0 +1,217 @@
 +/*
-+ * AS3711 PMIC regulator driver, using DCDC Step Down and LDO supplies
++ * AS3711 PMIC MFC driver
 + *
 + * Copyright (C) 2012 Renesas Electronics Corporation
 + * Author: Guennadi Liakhovetski, <g.liakhovetski@gmx.de>
@@ -92,374 +98,344 @@ index 0000000..81578bf
 + * published by the Free Software Foundation
 + */
 +
++#include <linux/device.h>
 +#include <linux/err.h>
++#include <linux/i2c.h>
 +#include <linux/init.h>
++#include <linux/kernel.h>
 +#include <linux/mfd/as3711.h>
++#include <linux/mfd/core.h>
 +#include <linux/module.h>
-+#include <linux/platform_device.h>
 +#include <linux/regmap.h>
-+#include <linux/regulator/driver.h>
 +#include <linux/slab.h>
 +
-+struct as3711_regulator_info {
-+	struct regulator_desc	desc;
-+	unsigned int		max_uV;
++enum {
++	AS3711_REGULATOR,
++	AS3711_BACKLIGHT,
 +};
-+
-+struct as3711_regulator {
-+	struct as3711_regulator_info *reg_info;
-+	struct regulator_dev *rdev;
-+};
-+
-+static int as3711_list_voltage_sd(struct regulator_dev *rdev,
-+				  unsigned int selector)
-+{
-+	if (selector >= rdev->desc->n_voltages)
-+		return -EINVAL;
-+
-+	if (!selector)
-+		return 0;
-+	if (selector < 0x41)
-+		return 600000 + selector * 12500;
-+	if (selector < 0x71)
-+		return 1400000 + (selector - 0x40) * 25000;
-+	return 2600000 + (selector - 0x70) * 50000;
-+}
-+
-+static int as3711_list_voltage_aldo(struct regulator_dev *rdev,
-+				    unsigned int selector)
-+{
-+	if (selector >= rdev->desc->n_voltages)
-+		return -EINVAL;
-+
-+	if (selector < 0x10)
-+		return 1200000 + selector * 50000;
-+	return 1800000 + (selector - 0x10) * 100000;
-+}
-+
-+static int as3711_list_voltage_dldo(struct regulator_dev *rdev,
-+				    unsigned int selector)
-+{
-+	if (selector >= rdev->desc->n_voltages ||
-+	    (selector > 0x10 && selector < 0x20))
-+		return -EINVAL;
-+
-+	if (selector < 0x11)
-+		return 900000 + selector * 50000;
-+	return 1750000 + (selector - 0x20) * 50000;
-+}
-+
-+static int as3711_bound_check(struct regulator_dev *rdev,
-+			      int *min_uV, int *max_uV)
-+{
-+	struct as3711_regulator_info *info = container_of(rdev->desc,
-+					struct as3711_regulator_info, desc);
-+	struct as3711_regulator *reg = rdev->reg_data;
-+
-+	WARN_ON(reg->reg_info != info);
-+
-+	dev_dbg(&rdev->dev, "%s(), %d, %d, %d\n", __func__,
-+		*min_uV, rdev->desc->min_uV, info->max_uV);
-+
-+	if (*max_uV < *min_uV ||
-+	    *min_uV >= info->max_uV || rdev->desc->min_uV >= *max_uV)
-+		return -EINVAL;
-+
-+	if (rdev->desc->n_voltages == 1)
-+		return 0;
-+
-+	if (*max_uV > info->max_uV)
-+		*max_uV = info->max_uV;
-+
-+	if (*min_uV < rdev->desc->min_uV)
-+		*min_uV = rdev->desc->min_uV;
-+
-+	return *min_uV;
-+}
-+
-+static int as3711_sel_check(int min, int max, int bottom, int step)
-+{
-+	int ret, voltage;
-+
-+	/* Round up min, when dividing: keeps us within the range */
-+	ret = (min - bottom + step - 1) / step;
-+	voltage = ret * step + bottom;
-+	pr_debug("%s(): select %d..%d in %d+N*%d: %d\n", __func__,
-+	       min, max, bottom, step, ret);
-+	if (voltage > max) {
-+		/*
-+		 * Try 1 down. It will take us below min, but as long we stay
-+		 * above bottom, we're fine.
-+		 */
-+		ret--;
-+		voltage = ret * step + bottom;
-+		if (voltage < bottom)
-+			return -EINVAL;
-+	}
-+	return ret;
-+}
-+
-+static int as3711_map_voltage_sd(struct regulator_dev *rdev,
-+				 int min_uV, int max_uV)
-+{
-+	int ret;
-+
-+	ret = as3711_bound_check(rdev, &min_uV, &max_uV);
-+	if (ret <= 0)
-+		return ret;
-+
-+	if (min_uV <= 1400000)
-+		return as3711_sel_check(min_uV, max_uV, 600000, 12500);
-+
-+	if (min_uV <= 2600000)
-+		return as3711_sel_check(min_uV, max_uV, 1400000, 25000) + 0x40;
-+
-+	return as3711_sel_check(min_uV, max_uV, 2600000, 50000) + 0x70;
-+}
 +
 +/*
-+ * The regulator API supports 4 modes of operataion: FAST, NORMAL, IDLE and
-+ * STANDBY. We map them in the following way to AS3711 SD1-4 DCDC modes:
-+ * FAST:	sdX_fast=1
-+ * NORMAL:	low_noise=1
-+ * IDLE:	low_noise=0
++ * Ok to have it static: it is only used during probing and multiple I2C devices
++ * cannot be probed simultaneously. Just make sure to avoid stale data.
 + */
++static struct mfd_cell as3711_subdevs[] = {
++	[AS3711_REGULATOR] = {.name = "as3711-regulator",},
++	[AS3711_BACKLIGHT] = {.name = "as3711-backlight",},
++};
 +
-+static int as3711_set_mode_sd(struct regulator_dev *rdev, unsigned int mode)
++static bool as3711_volatile_reg(struct device *dev, unsigned int reg)
 +{
-+	unsigned int fast_bit = rdev->desc->enable_mask,
-+		low_noise_bit = fast_bit << 4;
-+	u8 val;
-+
-+	switch (mode) {
-+	case REGULATOR_MODE_FAST:
-+		val = fast_bit | low_noise_bit;
-+		break;
-+	case REGULATOR_MODE_NORMAL:
-+		val = low_noise_bit;
-+		break;
-+	case REGULATOR_MODE_IDLE:
-+		val = 0;
-+		break;
-+	default:
-+		return -EINVAL;
++	switch (reg) {
++	case AS3711_GPIO_SIGNAL_IN:
++	case AS3711_INTERRUPT_STATUS_1:
++	case AS3711_INTERRUPT_STATUS_2:
++	case AS3711_INTERRUPT_STATUS_3:
++	case AS3711_CHARGER_STATUS_1:
++	case AS3711_CHARGER_STATUS_2:
++	case AS3711_REG_STATUS:
++		return true;
 +	}
-+
-+	return regmap_update_bits(rdev->regmap, AS3711_SD_CONTROL_1,
-+				  low_noise_bit | fast_bit, val);
++	return false;
 +}
 +
-+static unsigned int as3711_get_mode_sd(struct regulator_dev *rdev)
++static bool as3711_precious_reg(struct device *dev, unsigned int reg)
 +{
-+	unsigned int fast_bit = rdev->desc->enable_mask,
-+		low_noise_bit = fast_bit << 4, mask = fast_bit | low_noise_bit;
-+	unsigned int val;
-+	int ret = regmap_read(rdev->regmap, AS3711_SD_CONTROL_1, &val);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	if ((val & mask) == mask)
-+		return REGULATOR_MODE_FAST;
-+
-+	if ((val & mask) == low_noise_bit)
-+		return REGULATOR_MODE_NORMAL;
-+
-+	if (!(val & mask))
-+		return REGULATOR_MODE_IDLE;
-+
-+	return -EINVAL;
++	switch (reg) {
++	case AS3711_INTERRUPT_STATUS_1:
++	case AS3711_INTERRUPT_STATUS_2:
++	case AS3711_INTERRUPT_STATUS_3:
++		return true;
++	}
++	return false;
 +}
 +
-+static int as3711_map_voltage_aldo(struct regulator_dev *rdev,
-+				  int min_uV, int max_uV)
++static bool as3711_readable_reg(struct device *dev, unsigned int reg)
 +{
++	switch (reg) {
++	case AS3711_SD_1_VOLTAGE:
++	case AS3711_SD_2_VOLTAGE:
++	case AS3711_SD_3_VOLTAGE:
++	case AS3711_SD_4_VOLTAGE:
++	case AS3711_LDO_1_VOLTAGE:
++	case AS3711_LDO_2_VOLTAGE:
++	case AS3711_LDO_3_VOLTAGE:
++	case AS3711_LDO_4_VOLTAGE:
++	case AS3711_LDO_5_VOLTAGE:
++	case AS3711_LDO_6_VOLTAGE:
++	case AS3711_LDO_7_VOLTAGE:
++	case AS3711_LDO_8_VOLTAGE:
++	case AS3711_SD_CONTROL:
++	case AS3711_GPIO_SIGNAL_OUT:
++	case AS3711_GPIO_SIGNAL_IN:
++	case AS3711_SD_CONTROL_1:
++	case AS3711_SD_CONTROL_2:
++	case AS3711_CURR_CONTROL:
++	case AS3711_CURR1_VALUE:
++	case AS3711_CURR2_VALUE:
++	case AS3711_CURR3_VALUE:
++	case AS3711_STEPUP_CONTROL_1:
++	case AS3711_STEPUP_CONTROL_2:
++	case AS3711_STEPUP_CONTROL_4:
++	case AS3711_STEPUP_CONTROL_5:
++	case AS3711_REG_STATUS:
++	case AS3711_INTERRUPT_STATUS_1:
++	case AS3711_INTERRUPT_STATUS_2:
++	case AS3711_INTERRUPT_STATUS_3:
++	case AS3711_CHARGER_STATUS_1:
++	case AS3711_CHARGER_STATUS_2:
++	case AS3711_ASIC_ID_1:
++	case AS3711_ASIC_ID_2:
++		return true;
++	}
++	return false;
++}
++
++static const struct regmap_config as3711_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.volatile_reg = as3711_volatile_reg,
++	.readable_reg = as3711_readable_reg,
++	.precious_reg = as3711_precious_reg,
++	.max_register = AS3711_MAX_REGS,
++	.num_reg_defaults_raw = AS3711_MAX_REGS,
++	.cache_type = REGCACHE_RBTREE,
++};
++
++static int as3711_i2c_probe(struct i2c_client *client,
++			    const struct i2c_device_id *id)
++{
++	struct as3711 *as3711;
++	struct as3711_platform_data *pdata = client->dev.platform_data;
++	unsigned int id1, id2;
 +	int ret;
-+
-+	ret = as3711_bound_check(rdev, &min_uV, &max_uV);
-+	if (ret <= 0)
-+		return ret;
-+
-+	if (min_uV <= 1800000)
-+		return as3711_sel_check(min_uV, max_uV, 1200000, 50000);
-+
-+	return as3711_sel_check(min_uV, max_uV, 1800000, 100000) + 0x10;
-+}
-+
-+static int as3711_map_voltage_dldo(struct regulator_dev *rdev,
-+				  int min_uV, int max_uV)
-+{
-+	int ret;
-+
-+	ret = as3711_bound_check(rdev, &min_uV, &max_uV);
-+	if (ret <= 0)
-+		return ret;
-+
-+	if (min_uV <= 1700000)
-+		return as3711_sel_check(min_uV, max_uV, 900000, 50000);
-+
-+	return as3711_sel_check(min_uV, max_uV, 1750000, 50000) + 0x20;
-+}
-+
-+static struct regulator_ops as3711_sd_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= as3711_list_voltage_sd,
-+	.map_voltage		= as3711_map_voltage_sd,
-+	.get_mode		= as3711_get_mode_sd,
-+	.set_mode		= as3711_set_mode_sd,
-+};
-+
-+static struct regulator_ops as3711_aldo_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= as3711_list_voltage_aldo,
-+	.map_voltage		= as3711_map_voltage_aldo,
-+};
-+
-+static struct regulator_ops as3711_dldo_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= as3711_list_voltage_dldo,
-+	.map_voltage		= as3711_map_voltage_dldo,
-+};
-+
-+#define AS3711_REG(_id, _en_reg, _en_bit, _vmask, _vshift, _min_uV, _max_uV, _sfx)	\
-+	[AS3711_REGULATOR_ ## _id] = {							\
-+	.desc = {									\
-+		.name = "as3711-regulator-" # _id,					\
-+		.id = AS3711_REGULATOR_ ## _id,						\
-+		.n_voltages = (_vmask + 1),						\
-+		.ops = &as3711_ ## _sfx ## _ops,					\
-+		.type = REGULATOR_VOLTAGE,						\
-+		.owner = THIS_MODULE,							\
-+		.vsel_reg = AS3711_ ## _id ## _VOLTAGE,					\
-+		.vsel_mask = _vmask << _vshift,						\
-+		.enable_reg = AS3711_ ## _en_reg,					\
-+		.enable_mask = BIT(_en_bit),						\
-+		.min_uV	= _min_uV,							\
-+	},										\
-+	.max_uV = _max_uV,								\
-+}
-+
-+static struct as3711_regulator_info as3711_reg_info[] = {
-+	AS3711_REG(SD_1, SD_CONTROL, 0, 0x7f, 0, 612500, 3350000, sd),
-+	AS3711_REG(SD_2, SD_CONTROL, 1, 0x7f, 0, 612500, 3350000, sd),
-+	AS3711_REG(SD_3, SD_CONTROL, 2, 0x7f, 0, 612500, 3350000, sd),
-+	AS3711_REG(SD_4, SD_CONTROL, 3, 0x7f, 0, 612500, 3350000, sd),
-+	AS3711_REG(LDO_1, LDO_1_VOLTAGE, 7, 0x1f, 0, 1200000, 3300000, aldo),
-+	AS3711_REG(LDO_2, LDO_2_VOLTAGE, 7, 0x1f, 0, 1200000, 3300000, aldo),
-+	AS3711_REG(LDO_3, LDO_3_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(LDO_4, LDO_4_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(LDO_5, LDO_5_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(LDO_6, LDO_6_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(LDO_7, LDO_7_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(LDO_8, LDO_8_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	/* StepUp output voltage depends on supplying regulator */
-+};
-+
-+#define AS3711_REGULATOR_NUM ARRAY_SIZE(as3711_reg_info)
-+
-+static int as3711_regulator_probe(struct platform_device *pdev)
-+{
-+	struct as3711_regulator_pdata *pdata = dev_get_platdata(&pdev->dev);
-+	struct as3711 *as3711 = dev_get_drvdata(pdev->dev.parent);
-+	struct regulator_init_data *reg_data;
-+	struct regulator_config config = {.dev = &pdev->dev,};
-+	struct as3711_regulator *reg = NULL;
-+	struct as3711_regulator *regs;
-+	struct regulator_dev *rdev;
-+	struct as3711_regulator_info *ri;
-+	int ret;
-+	int id;
 +
 +	if (!pdata)
-+		dev_dbg(&pdev->dev, "No platform data...\n");
++		dev_dbg(&client->dev, "Platform data not found\n");
 +
-+	regs = devm_kzalloc(&pdev->dev, AS3711_REGULATOR_NUM *
-+			sizeof(struct as3711_regulator), GFP_KERNEL);
-+	if (!regs) {
-+		dev_err(&pdev->dev, "Memory allocation failed exiting..\n");
++	as3711 = devm_kzalloc(&client->dev, sizeof(struct as3711), GFP_KERNEL);
++	if (!as3711) {
++		dev_err(&client->dev, "Memory allocation failed\n");
 +		return -ENOMEM;
 +	}
 +
-+	for (id = 0, ri = as3711_reg_info; id < AS3711_REGULATOR_NUM; ++id, ri++) {
-+		reg_data = pdata ? pdata->init_data[id] : NULL;
++	as3711->dev = &client->dev;
++	i2c_set_clientdata(client, as3711);
 +
-+		/* No need to register if there is no regulator data */
-+		if (!ri->desc.name)
-+			continue;
++	if (client->irq)
++		dev_notice(&client->dev, "IRQ not supported yet\n");
 +
-+		reg = &regs[id];
-+		reg->reg_info = ri;
-+
-+		config.init_data = reg_data;
-+		config.driver_data = reg;
-+		config.regmap = as3711->regmap;
-+
-+		rdev = regulator_register(&ri->desc, &config);
-+		if (IS_ERR(rdev)) {
-+			dev_err(&pdev->dev, "Failed to register regulator %s\n",
-+				ri->desc.name);
-+			ret = PTR_ERR(rdev);
-+			goto eregreg;
-+		}
-+		reg->rdev = rdev;
++	as3711->regmap = devm_regmap_init_i2c(client, &as3711_regmap_config);
++	if (IS_ERR(as3711->regmap)) {
++		ret = PTR_ERR(as3711->regmap);
++		dev_err(&client->dev, "regmap initialization failed: %d\n", ret);
++		return ret;
 +	}
-+	platform_set_drvdata(pdev, regs);
-+	return 0;
 +
-+eregreg:
-+	while (--id >= 0)
-+		regulator_unregister(regs[id].rdev);
++	ret = regmap_read(as3711->regmap, AS3711_ASIC_ID_1, &id1);
++	if (!ret)
++		ret = regmap_read(as3711->regmap, AS3711_ASIC_ID_2, &id2);
++	if (ret < 0) {
++		dev_err(&client->dev, "regmap_read() failed: %d\n", ret);
++		return ret;
++	}
++	if (id1 != 0x8b)
++		return -ENODEV;
++	dev_info(as3711->dev, "AS3711 detected: %x:%x\n", id1, id2);
++
++	/* We can reuse as3711_subdevs[], it will be copied in mfd_add_devices() */
++	if (pdata) {
++		as3711_subdevs[AS3711_REGULATOR].platform_data = &pdata->regulator;
++		as3711_subdevs[AS3711_REGULATOR].pdata_size = sizeof(pdata->regulator);
++		as3711_subdevs[AS3711_BACKLIGHT].platform_data = &pdata->backlight;
++		as3711_subdevs[AS3711_BACKLIGHT].pdata_size = sizeof(pdata->backlight);
++	} else {
++		as3711_subdevs[AS3711_REGULATOR].platform_data = NULL;
++		as3711_subdevs[AS3711_REGULATOR].pdata_size = 0;
++		as3711_subdevs[AS3711_BACKLIGHT].platform_data = NULL;
++		as3711_subdevs[AS3711_BACKLIGHT].pdata_size = 0;
++	}
++
++	ret = mfd_add_devices(as3711->dev, -1, as3711_subdevs,
++			      ARRAY_SIZE(as3711_subdevs), NULL, 0, NULL);
++	if (ret < 0)
++		dev_err(&client->dev, "add mfd devices failed: %d\n", ret);
 +
 +	return ret;
 +}
 +
-+static int as3711_regulator_remove(struct platform_device *pdev)
++static int as3711_i2c_remove(struct i2c_client *client)
 +{
-+	struct as3711_regulator *regs = platform_get_drvdata(pdev);
-+	int id;
++	struct as3711 *as3711 = i2c_get_clientdata(client);
 +
-+	for (id = 0; id < AS3711_REGULATOR_NUM; ++id)
-+		regulator_unregister(regs[id].rdev);
++	mfd_remove_devices(as3711->dev);
 +	return 0;
 +}
 +
-+static struct platform_driver as3711_regulator_driver = {
-+	.driver	= {
-+		.name	= "as3711-regulator",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= as3711_regulator_probe,
-+	.remove		= as3711_regulator_remove,
++static const struct i2c_device_id as3711_i2c_id[] = {
++	{.name = "as3711", .driver_data = 0},
++	{}
 +};
 +
-+static int __init as3711_regulator_init(void)
-+{
-+	return platform_driver_register(&as3711_regulator_driver);
-+}
-+subsys_initcall(as3711_regulator_init);
++MODULE_DEVICE_TABLE(i2c, as3711_i2c_id);
 +
-+static void __exit as3711_regulator_exit(void)
++static struct i2c_driver as3711_i2c_driver = {
++	.driver = {
++		   .name = "as3711",
++		   .owner = THIS_MODULE,
++		   },
++	.probe = as3711_i2c_probe,
++	.remove = as3711_i2c_remove,
++	.id_table = as3711_i2c_id,
++};
++
++static int __init as3711_i2c_init(void)
 +{
-+	platform_driver_unregister(&as3711_regulator_driver);
++	return i2c_add_driver(&as3711_i2c_driver);
 +}
-+module_exit(as3711_regulator_exit);
++/* Initialise early */
++subsys_initcall(as3711_i2c_init);
++
++static void __exit as3711_i2c_exit(void)
++{
++	i2c_del_driver(&as3711_i2c_driver);
++}
++module_exit(as3711_i2c_exit);
 +
 +MODULE_AUTHOR("Guennadi Liakhovetski <g.liakhovetski@gmx.de>");
-+MODULE_DESCRIPTION("AS3711 regulator driver");
-+MODULE_ALIAS("platform:as3711-regulator");
++MODULE_DESCRIPTION("AS3711 PMIC driver");
 +MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/as3711.h b/include/linux/mfd/as3711.h
+new file mode 100644
+index 0000000..38452ce
+--- /dev/null
++++ b/include/linux/mfd/as3711.h
+@@ -0,0 +1,126 @@
++/*
++ * AS3711 PMIC MFC driver header
++ *
++ * Copyright (C) 2012 Renesas Electronics Corporation
++ * Author: Guennadi Liakhovetski, <g.liakhovetski@gmx.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the version 2 of the GNU General Public License as
++ * published by the Free Software Foundation
++ */
++
++#ifndef MFD_AS3711_H
++#define MFD_AS3711_H
++
++/*
++ * Client data
++ */
++
++/* Register addresses */
++#define AS3711_SD_1_VOLTAGE		0	/* Digital Step-Down */
++#define AS3711_SD_2_VOLTAGE		1
++#define AS3711_SD_3_VOLTAGE		2
++#define AS3711_SD_4_VOLTAGE		3
++#define AS3711_LDO_1_VOLTAGE		4	/* Analog LDO */
++#define AS3711_LDO_2_VOLTAGE		5
++#define AS3711_LDO_3_VOLTAGE		6	/* Digital LDO */
++#define AS3711_LDO_4_VOLTAGE		7
++#define AS3711_LDO_5_VOLTAGE		8
++#define AS3711_LDO_6_VOLTAGE		9
++#define AS3711_LDO_7_VOLTAGE		0xa
++#define AS3711_LDO_8_VOLTAGE		0xb
++#define AS3711_SD_CONTROL		0x10
++#define AS3711_GPIO_SIGNAL_OUT		0x20
++#define AS3711_GPIO_SIGNAL_IN		0x21
++#define AS3711_SD_CONTROL_1		0x30
++#define AS3711_SD_CONTROL_2		0x31
++#define AS3711_CURR_CONTROL		0x40
++#define AS3711_CURR1_VALUE		0x43
++#define AS3711_CURR2_VALUE		0x44
++#define AS3711_CURR3_VALUE		0x45
++#define AS3711_STEPUP_CONTROL_1		0x50
++#define AS3711_STEPUP_CONTROL_2		0x51
++#define AS3711_STEPUP_CONTROL_4		0x53
++#define AS3711_STEPUP_CONTROL_5		0x54
++#define AS3711_REG_STATUS		0x73
++#define AS3711_INTERRUPT_STATUS_1	0x77
++#define AS3711_INTERRUPT_STATUS_2	0x78
++#define AS3711_INTERRUPT_STATUS_3	0x79
++#define AS3711_CHARGER_STATUS_1		0x86
++#define AS3711_CHARGER_STATUS_2		0x87
++#define AS3711_ASIC_ID_1		0x90
++#define AS3711_ASIC_ID_2		0x91
++
++#define AS3711_MAX_REGS			0x92
++
++/* Regulators */
++enum {
++	AS3711_REGULATOR_SD_1,
++	AS3711_REGULATOR_SD_2,
++	AS3711_REGULATOR_SD_3,
++	AS3711_REGULATOR_SD_4,
++	AS3711_REGULATOR_LDO_1,
++	AS3711_REGULATOR_LDO_2,
++	AS3711_REGULATOR_LDO_3,
++	AS3711_REGULATOR_LDO_4,
++	AS3711_REGULATOR_LDO_5,
++	AS3711_REGULATOR_LDO_6,
++	AS3711_REGULATOR_LDO_7,
++	AS3711_REGULATOR_LDO_8,
++
++	AS3711_REGULATOR_MAX,
++};
++
++struct device;
++struct regmap;
++
++struct as3711 {
++	struct device *dev;
++	struct regmap *regmap;
++};
++
++#define AS3711_MAX_STEPDOWN 4
++#define AS3711_MAX_STEPUP 2
++#define AS3711_MAX_LDO 8
++
++enum as3711_su2_feedback {
++	AS3711_SU2_VOLTAGE,
++	AS3711_SU2_CURR1,
++	AS3711_SU2_CURR2,
++	AS3711_SU2_CURR3,
++	AS3711_SU2_CURR_AUTO,
++};
++
++enum as3711_su2_fbprot {
++	AS3711_SU2_LX_SD4,
++	AS3711_SU2_GPIO2,
++	AS3711_SU2_GPIO3,
++	AS3711_SU2_GPIO4,
++};
++
++/*
++ * Platform data
++ */
++
++struct as3711_regulator_pdata {
++	struct regulator_init_data *init_data[AS3711_REGULATOR_MAX];
++};
++
++struct as3711_bl_pdata {
++	const char *su1_fb;
++	int su1_max_uA;
++	const char *su2_fb;
++	int su2_max_uA;
++	enum as3711_su2_feedback su2_feedback;
++	enum as3711_su2_fbprot su2_fbprot;
++	bool su2_auto_curr1;
++	bool su2_auto_curr2;
++	bool su2_auto_curr3;
++};
++
++struct as3711_platform_data {
++	struct as3711_regulator_pdata regulator;
++	struct as3711_bl_pdata backlight;
++};
++
++#endif
 -- 
 1.7.2.5
 
