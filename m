@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab2KVSeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:34:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49017 "EHLO mail.kernel.org"
+	id S1753899Ab2KVSeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:34:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49016 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab2KVSdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:44 -0500
+	id S1753751Ab2KVSd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 138/171] libceph: initialize msgpool message types
-Date: Wed, 21 Nov 2012 16:41:24 -0800
-Message-Id: <20121122004047.203389069@linuxfoundation.org>
+        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: [ 006/171] PCI/PM: Fix deadlock when unbinding device if parent in D3cold
+Date: Wed, 21 Nov 2012 16:39:12 -0800
+Message-Id: <20121122004033.949092835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,102 +27,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Huang Ying <ying.huang@intel.com>
 
-(cherry picked from commit d50b409fb8698571d8209e5adfe122e287e31290)
+commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
 
-Initialize the type field for messages in a msgpool.  The caller was doing
-this for osd ops, but not for the reply messages.
+If a PCI device and its parents are put into D3cold, unbinding the
+device will trigger deadlock as follow:
 
-Reported-by: Alex Elder <elder@inktank.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+- driver_unbind
+  - device_release_driver
+    - device_lock(dev)				<--- previous lock here
+    - __device_release_driver
+      - pm_runtime_get_sync
+        ...
+          - rpm_resume(dev)
+            - rpm_resume(dev->parent)
+              ...
+                - pci_pm_runtime_resume
+                  ...
+                  - pci_set_power_state
+                    - __pci_start_power_transition
+                      - pci_wakeup_bus(dev->parent->subordinate)
+                        - pci_walk_bus
+                          - device_lock(dev)	<--- deadlock here
+
+
+If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+Device_lock in pci_walk_bus is introduced in commit:
+d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+said device_lock is added to pci_walk_bus because:
+
+  Some error handling functions call pci_walk_bus. For example, PCIe
+  aer. Here we lock the device, so the driver wouldn't detach from the
+  device, as the cb might call driver's callback function.
+
+So I fixed the deadlock as follows:
+
+- remove device_lock from pci_walk_bus
+- add device_lock into callback if callback will call driver's callback
+
+I checked pci_walk_bus users one by one, and found only PCIe aer needs
+device lock.
+
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+CC: Zhang Yanmin <yanmin.zhang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ceph/msgpool.h |    3 ++-
- net/ceph/msgpool.c           |    7 ++++---
- net/ceph/osd_client.c        |    7 ++++---
- 3 files changed, 10 insertions(+), 7 deletions(-)
 
---- a/include/linux/ceph/msgpool.h
-+++ b/include/linux/ceph/msgpool.h
-@@ -11,10 +11,11 @@
- struct ceph_msgpool {
- 	const char *name;
- 	mempool_t *pool;
-+	int type;               /* preallocated message type */
- 	int front_len;          /* preallocated payload size */
- };
+---
+ drivers/pci/bus.c                  |    3 ---
+ drivers/pci/pcie/aer/aerdrv_core.c |   20 ++++++++++++++++----
+ 2 files changed, 16 insertions(+), 7 deletions(-)
+
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -314,10 +314,7 @@ void pci_walk_bus(struct pci_bus *top, i
+ 		} else
+ 			next = dev->bus_list.next;
  
--extern int ceph_msgpool_init(struct ceph_msgpool *pool,
-+extern int ceph_msgpool_init(struct ceph_msgpool *pool, int type,
- 			     int front_len, int size, bool blocking,
- 			     const char *name);
- extern void ceph_msgpool_destroy(struct ceph_msgpool *pool);
---- a/net/ceph/msgpool.c
-+++ b/net/ceph/msgpool.c
-@@ -12,7 +12,7 @@ static void *msgpool_alloc(gfp_t gfp_mas
- 	struct ceph_msgpool *pool = arg;
- 	struct ceph_msg *msg;
+-		/* Run device routines with the device locked */
+-		device_lock(&dev->dev);
+ 		retval = cb(dev, userdata);
+-		device_unlock(&dev->dev);
+ 		if (retval)
+ 			break;
+ 	}
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -244,6 +244,7 @@ static int report_error_detected(struct
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
  
--	msg = ceph_msg_new(0, pool->front_len, gfp_mask, true);
-+	msg = ceph_msg_new(pool->type, pool->front_len, gfp_mask, true);
- 	if (!msg) {
- 		dout("msgpool_alloc %s failed\n", pool->name);
- 	} else {
-@@ -32,10 +32,11 @@ static void msgpool_free(void *element,
- 	ceph_msg_put(msg);
++	device_lock(&dev->dev);
+ 	dev->error_state = result_data->state;
+ 
+ 	if (!dev->driver ||
+@@ -262,12 +263,14 @@ static int report_error_detected(struct
+ 				   dev->driver ?
+ 				   "no AER-aware driver" : "no driver");
+ 		}
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->error_detected(dev, result_data->state);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
  }
  
--int ceph_msgpool_init(struct ceph_msgpool *pool,
-+int ceph_msgpool_init(struct ceph_msgpool *pool, int type,
- 		      int front_len, int size, bool blocking, const char *name)
+@@ -278,14 +281,17 @@ static int report_mmio_enabled(struct pc
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
+ 
++	device_lock(&dev->dev);
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->mmio_enabled)
+-		return 0;
++		goto out;
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->mmio_enabled(dev);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -296,14 +302,17 @@ static int report_slot_reset(struct pci_
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
+ 
++	device_lock(&dev->dev);
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->slot_reset)
+-		return 0;
++		goto out;
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->slot_reset(dev);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -311,15 +320,18 @@ static int report_resume(struct pci_dev
  {
- 	dout("msgpool %s init\n", name);
-+	pool->type = type;
- 	pool->front_len = front_len;
- 	pool->pool = mempool_create(size, msgpool_alloc, msgpool_free, pool);
- 	if (!pool->pool)
-@@ -61,7 +62,7 @@ struct ceph_msg *ceph_msgpool_get(struct
- 		WARN_ON(1);
+ 	struct pci_error_handlers *err_handler;
  
- 		/* try to alloc a fresh message */
--		return ceph_msg_new(0, front_len, GFP_NOFS, false);
-+		return ceph_msg_new(pool->type, front_len, GFP_NOFS, false);
- 	}
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_normal;
  
- 	msg = mempool_alloc(pool->pool, GFP_NOFS);
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -242,6 +242,7 @@ struct ceph_osd_request *ceph_osdc_alloc
- 		}
- 		ceph_pagelist_init(req->r_trail);
- 	}
-+
- 	/* create request message; allow space for oid */
- 	msg_size += MAX_OBJ_NAME_SIZE;
- 	if (snapc)
-@@ -255,7 +256,6 @@ struct ceph_osd_request *ceph_osdc_alloc
- 		return NULL;
- 	}
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->resume)
+-		return 0;
++		goto out;
  
--	msg->hdr.type = cpu_to_le16(CEPH_MSG_OSD_OP);
- 	memset(msg->front.iov_base, 0, msg->front.iov_len);
+ 	err_handler = dev->driver->err_handler;
+ 	err_handler->resume(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
  
- 	req->r_request = msg;
-@@ -1837,11 +1837,12 @@ int ceph_osdc_init(struct ceph_osd_clien
- 	if (!osdc->req_mempool)
- 		goto out;
- 
--	err = ceph_msgpool_init(&osdc->msgpool_op, OSD_OP_FRONT_LEN, 10, true,
-+	err = ceph_msgpool_init(&osdc->msgpool_op, CEPH_MSG_OSD_OP,
-+				OSD_OP_FRONT_LEN, 10, true,
- 				"osd_op");
- 	if (err < 0)
- 		goto out_mempool;
--	err = ceph_msgpool_init(&osdc->msgpool_op_reply,
-+	err = ceph_msgpool_init(&osdc->msgpool_op_reply, CEPH_MSG_OSD_OPREPLY,
- 				OSD_OPREPLY_FRONT_LEN, 10, true,
- 				"osd_op_reply");
- 	if (err < 0)
 
 
