@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab2KVWjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:39:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49004 "EHLO mail.kernel.org"
+	id S1758532Ab2KVWjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:39:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49006 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab2KVSdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:42 -0500
+	id S1753562Ab2KVSdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Torsten Luettgert <ml-netfilter@enda.eu>, Julian Anastasov <ja@ssi.bg>,
-        Eric Dumazet <edumazet@google.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 71/83] netfilter: xt_TEE: dont use destination address found in header
-Date: Wed, 21 Nov 2012 16:42:33 -0800
-Message-Id: <20121122004220.301768859@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 40/83] USB: usb_wwan: fix bulk-urb allocation
+Date: Wed, 21 Nov 2012 16:42:02 -0800
+Message-Id: <20121122004217.089503376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
 References: <20121122004212.371862690@linuxfoundation.org>
@@ -27,41 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 2ad5b9e4bd314fc685086b99e90e5de3bc59e26b upstream.
+commit 8e493ca1767d4951ed1322abaa74d6edbca29918 upstream.
 
-Torsten Luettgert bisected TEE regression starting with commit
-f8126f1d5136be1 (ipv4: Adjust semantics of rt->rt_gateway.)
+Make sure we do not allocate urbs if we do not have a bulk endpoint.
 
-The problem is that it tries to ARP-lookup the original destination
-address of the forwarded packet, not the address of the gateway.
+Legacy code used incorrect assumption to test for bulk endpoints.
 
-Fix this using FLOWI_FLAG_KNOWN_NH Julian added in commit
-c92b96553a80c1 (ipv4: Add FLOWI_FLAG_KNOWN_NH), so that known
-nexthop (info->gw.ip) has preference on resolving.
-
-Reported-by: Torsten Luettgert <ml-netfilter@enda.eu>
-Bisected-by: Torsten Luettgert <ml-netfilter@enda.eu>
-Tested-by: Torsten Luettgert <ml-netfilter@enda.eu>
-Cc: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/xt_TEE.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/usb_wwan.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/net/netfilter/xt_TEE.c
-+++ b/net/netfilter/xt_TEE.c
-@@ -70,6 +70,7 @@ tee_tg_route4(struct sk_buff *skb, const
- 	fl4.daddr = info->gw.ip;
- 	fl4.flowi4_tos = RT_TOS(iph->tos);
- 	fl4.flowi4_scope = RT_SCOPE_UNIVERSE;
-+	fl4.flowi4_flags = FLOWI_FLAG_KNOWN_NH;
- 	rt = ip_route_output_key(net, &fl4);
- 	if (IS_ERR(rt))
- 		return false;
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -455,9 +455,6 @@ static struct urb *usb_wwan_setup_urb(st
+ 	struct usb_serial *serial = port->serial;
+ 	struct urb *urb;
+ 
+-	if (endpoint == -1)
+-		return NULL;	/* endpoint not needed */
+-
+ 	urb = usb_alloc_urb(0, GFP_KERNEL);	/* No ISO */
+ 	if (urb == NULL) {
+ 		dbg("%s: alloc for endpoint %d failed.", __func__, endpoint);
+@@ -487,6 +484,9 @@ int usb_wwan_port_probe(struct usb_seria
+ 	init_usb_anchor(&portdata->delayed);
+ 
+ 	for (i = 0; i < N_IN_URB; i++) {
++		if (!port->bulk_in_size)
++			break;
++
+ 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
+ 		if (!buffer)
+ 			goto bail_out_error;
+@@ -499,8 +499,8 @@ int usb_wwan_port_probe(struct usb_seria
+ 		portdata->in_urbs[i] = urb;
+  	}
+ 	for (i = 0; i < N_OUT_URB; i++) {
+-		if (port->bulk_out_endpointAddress == -1)
+-			continue;
++		if (!port->bulk_out_size)
++			break;
+ 
+ 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
+ 		if (!buffer)
 
 
