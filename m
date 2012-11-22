@@ -1,79 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab2KVVjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:39:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49605 "EHLO mail.kernel.org"
+	id S932451Ab2KVVjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:39:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755074Ab2KVSk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755077Ab2KVSk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 025/171] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
-Date: Wed, 21 Nov 2012 16:39:31 -0800
-Message-Id: <20121122004035.882031092@linuxfoundation.org>
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: [ 13/83] cifs: fix potential buffer overrun in cifs.idmap handling code
+Date: Wed, 21 Nov 2012 16:41:35 -0800
+Message-Id: <20121122004213.926673842@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
+commit 36960e440ccf94349c09fb944930d3bfe4bc473f upstream.
 
-The Dell 5800 appears to be a simple rebrand of the Novatel E362.
+The userspace cifs.idmap program generally works with the wbclient libs
+to generate binary SIDs in userspace. That program defines the struct
+that holds these values as having a max of 15 subauthorities. The kernel
+idmapping code however limits that value to 5.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+When the kernel copies those values around though, it doesn't sanity
+check the num_subauths value handed back from userspace or from the
+server. It's possible therefore for userspace to hand us back a bogus
+num_subauths value (or one that's valid, but greater than 5) that could
+cause the kernel to walk off the end of the cifs_sid->sub_auths array.
+
+Fix this by defining a new routine for copying sids and using that in
+all of the places that copy it. If we end up with a sid that's longer
+than expected then this approach will just lop off the "extra" subauths,
+but that's basically what the code does today already. Better approaches
+might be to fix this code to reject SIDs with >5 subauths, or fix it
+to handle the subauths array dynamically.
+
+At the same time, change the kernel to check the length of the data
+returned by userspace. If it's shorter than struct cifs_sid, reject it
+and return -EIO. If that happens we'll end up with fields that are
+basically uninitialized.
+
+Long term, it might make sense to redefine cifs_sid using a flexarray at
+the end, to allow for variable-length subauth lists, and teach the code
+to handle the case where the subauths array being passed in from
+userspace is shorter than 5 elements.
+
+Note too, that I don't consider this a security issue since you'd need
+a compromised cifs.idmap program. If you have that, you can do all sorts
+of nefarious stuff. Still, this is probably reasonable for stable.
+
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/cifs/cifsacl.c |   49 ++++++++++++++++++++-----------------------------
+ 1 file changed, 20 insertions(+), 29 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -157,6 +157,7 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
-+#define NOVATELWIRELESS_PRODUCT_E362		0x9010
- #define NOVATELWIRELESS_PRODUCT_G1		0xA001
- #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
-@@ -192,6 +193,9 @@ static void option_instat_callback(struc
- #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
- #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -225,6 +225,13 @@ sid_to_str(struct cifs_sid *sidptr, char
+ }
  
-+#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
-+#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
+ static void
++cifs_copy_sid(struct cifs_sid *dst, const struct cifs_sid *src)
++{
++	memcpy(dst, src, sizeof(*dst));
++	dst->num_subauth = min_t(u8, src->num_subauth, NUM_SUBAUTHS);
++}
 +
- #define KYOCERA_VENDOR_ID			0x0c88
- #define KYOCERA_PRODUCT_KPC650			0x17da
- #define KYOCERA_PRODUCT_KPC680			0x180a
-@@ -705,6 +709,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
++static void
+ id_rb_insert(struct rb_root *root, struct cifs_sid *sidptr,
+ 		struct cifs_sid_id **psidid, char *typestr)
+ {
+@@ -248,7 +255,7 @@ id_rb_insert(struct rb_root *root, struc
+ 		}
+ 	}
  
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
-@@ -727,6 +732,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
+-	memcpy(&(*psidid)->sid, sidptr, sizeof(struct cifs_sid));
++	cifs_copy_sid(&(*psidid)->sid, sidptr);
+ 	(*psidid)->time = jiffies - (SID_MAP_RETRY + 1);
+ 	(*psidid)->refcount = 0;
+ 
+@@ -354,7 +361,7 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 	 * any fields of the node after a reference is put .
+ 	 */
+ 	if (test_bit(SID_ID_MAPPED, &psidid->state)) {
+-		memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
++		cifs_copy_sid(ssid, &psidid->sid);
+ 		psidid->time = jiffies; /* update ts for accessing */
+ 		goto id_sid_out;
+ 	}
+@@ -370,14 +377,14 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 		if (IS_ERR(sidkey)) {
+ 			rc = -EINVAL;
+ 			cFYI(1, "%s: Can't map and id to a SID", __func__);
++		} else if (sidkey->datalen < sizeof(struct cifs_sid)) {
++			rc = -EIO;
++			cFYI(1, "%s: Downcall contained malformed key "
++				"(datalen=%hu)", __func__, sidkey->datalen);
+ 		} else {
+ 			lsid = (struct cifs_sid *)sidkey->payload.data;
+-			memcpy(&psidid->sid, lsid,
+-				sidkey->datalen < sizeof(struct cifs_sid) ?
+-				sidkey->datalen : sizeof(struct cifs_sid));
+-			memcpy(ssid, &psidid->sid,
+-				sidkey->datalen < sizeof(struct cifs_sid) ?
+-				sidkey->datalen : sizeof(struct cifs_sid));
++			cifs_copy_sid(&psidid->sid, lsid);
++			cifs_copy_sid(ssid, &psidid->sid);
+ 			set_bit(SID_ID_MAPPED, &psidid->state);
+ 			key_put(sidkey);
+ 			kfree(psidid->sidstr);
+@@ -396,7 +403,7 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 			return rc;
+ 		}
+ 		if (test_bit(SID_ID_MAPPED, &psidid->state))
+-			memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
++			cifs_copy_sid(ssid, &psidid->sid);
+ 		else
+ 			rc = -EINVAL;
+ 	}
+@@ -675,8 +682,6 @@ int compare_sids(const struct cifs_sid *
+ static void copy_sec_desc(const struct cifs_ntsd *pntsd,
+ 				struct cifs_ntsd *pnntsd, __u32 sidsoffset)
+ {
+-	int i;
+-
+ 	struct cifs_sid *owner_sid_ptr, *group_sid_ptr;
+ 	struct cifs_sid *nowner_sid_ptr, *ngroup_sid_ptr;
+ 
+@@ -692,26 +697,14 @@ static void copy_sec_desc(const struct c
+ 	owner_sid_ptr = (struct cifs_sid *)((char *)pntsd +
+ 				le32_to_cpu(pntsd->osidoffset));
+ 	nowner_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset);
+-
+-	nowner_sid_ptr->revision = owner_sid_ptr->revision;
+-	nowner_sid_ptr->num_subauth = owner_sid_ptr->num_subauth;
+-	for (i = 0; i < 6; i++)
+-		nowner_sid_ptr->authority[i] = owner_sid_ptr->authority[i];
+-	for (i = 0; i < 5; i++)
+-		nowner_sid_ptr->sub_auth[i] = owner_sid_ptr->sub_auth[i];
++	cifs_copy_sid(nowner_sid_ptr, owner_sid_ptr);
+ 
+ 	/* copy group sid */
+ 	group_sid_ptr = (struct cifs_sid *)((char *)pntsd +
+ 				le32_to_cpu(pntsd->gsidoffset));
+ 	ngroup_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset +
+ 					sizeof(struct cifs_sid));
+-
+-	ngroup_sid_ptr->revision = group_sid_ptr->revision;
+-	ngroup_sid_ptr->num_subauth = group_sid_ptr->num_subauth;
+-	for (i = 0; i < 6; i++)
+-		ngroup_sid_ptr->authority[i] = group_sid_ptr->authority[i];
+-	for (i = 0; i < 5; i++)
+-		ngroup_sid_ptr->sub_auth[i] = group_sid_ptr->sub_auth[i];
++	cifs_copy_sid(ngroup_sid_ptr, group_sid_ptr);
+ 
+ 	return;
+ }
+@@ -1120,8 +1113,7 @@ static int build_sec_desc(struct cifs_nt
+ 				kfree(nowner_sid_ptr);
+ 				return rc;
+ 			}
+-			memcpy(owner_sid_ptr, nowner_sid_ptr,
+-					sizeof(struct cifs_sid));
++			cifs_copy_sid(owner_sid_ptr, nowner_sid_ptr);
+ 			kfree(nowner_sid_ptr);
+ 			*aclflag = CIFS_ACL_OWNER;
+ 		}
+@@ -1139,8 +1131,7 @@ static int build_sec_desc(struct cifs_nt
+ 				kfree(ngroup_sid_ptr);
+ 				return rc;
+ 			}
+-			memcpy(group_sid_ptr, ngroup_sid_ptr,
+-					sizeof(struct cifs_sid));
++			cifs_copy_sid(group_sid_ptr, ngroup_sid_ptr);
+ 			kfree(ngroup_sid_ptr);
+ 			*aclflag = CIFS_ACL_GROUP;
+ 		}
 
 
