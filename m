@@ -1,59 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2KVVqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:46:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
+	id S932711Ab2KVVrh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:47:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab2KVSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:24 -0500
+	id S1755016Ab2KVSkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Kreis <r.kreis@uni-bremen.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 20/83] ALSA: hda - Force to reset IEC958 status bits for AD codecs
-Date: Wed, 21 Nov 2012 16:41:42 -0800
-Message-Id: <20121122004214.733671900@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 076/171] ceph: have get_authorizer methods return pointers
+Date: Wed, 21 Nov 2012 16:40:22 -0800
+Message-Id: <20121122004041.002564424@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Elder <elder@inktank.com>
 
-commit ae24c3191ba2ab03ec6b4be323e730e00404b4b6 upstream.
+(cherry picked from commit a3530df33eb91d787d08c7383a0a9982690e42d0)
 
-Several bug reports suggest that the forcibly resetting IEC958 status
-bits is required for AD codecs to get the SPDIF output working
-properly after changing streams.
+Have the get_authorizer auth_client method return a ceph_auth
+pointer rather than an integer, pointer-encoding any returned
+error value.  This is to pave the way for making use of the
+returned value in an upcoming patch.
 
-Original fix credit to Javeed Shaikh.
-
-BugLink: https://bugs.launchpad.net/ubuntu/+source/alsa-driver/+bug/359361
-
-Reported-by: Robin Kreis <r.kreis@uni-bremen.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ceph/mds_client.c           |   20 +++++++++++++-------
+ include/linux/ceph/messenger.h |    8 +++++---
+ net/ceph/messenger.c           |    8 ++++----
+ net/ceph/osd_client.c          |   19 ++++++++++++-------
+ 4 files changed, 34 insertions(+), 21 deletions(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -545,6 +545,7 @@ static int ad198x_build_pcms(struct hda_
- 	if (spec->multiout.dig_out_nid) {
- 		info++;
- 		codec->num_pcms++;
-+		codec->spdif_status_reset = 1;
- 		info->name = "AD198x Digital";
- 		info->pcm_type = HDA_PCM_TYPE_SPDIF;
- 		info->stream[SNDRV_PCM_STREAM_PLAYBACK] = ad198x_pcm_digital_playback;
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -3395,15 +3395,20 @@ out:
+ /*
+  * authentication
+  */
+-static int get_authorizer(struct ceph_connection *con,
+-			  void **buf, int *len, int *proto,
+-			  void **reply_buf, int *reply_len, int force_new)
++
++/*
++ * Note: returned pointer is the address of a structure that's
++ * managed separately.  Caller must *not* attempt to free it.
++ */
++static struct ceph_auth_handshake *get_authorizer(struct ceph_connection *con,
++					void **buf, int *len, int *proto,
++					void **reply_buf, int *reply_len,
++					int force_new)
+ {
+ 	struct ceph_mds_session *s = con->private;
+ 	struct ceph_mds_client *mdsc = s->s_mdsc;
+ 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
+ 	struct ceph_auth_handshake *auth = &s->s_auth;
+-	int ret = 0;
+ 
+ 	if (force_new && auth->authorizer) {
+ 		if (ac->ops && ac->ops->destroy_authorizer)
+@@ -3411,9 +3416,10 @@ static int get_authorizer(struct ceph_co
+ 		auth->authorizer = NULL;
+ 	}
+ 	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+-		ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS, auth);
++		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
++							auth);
+ 		if (ret)
+-			return ret;
++			return ERR_PTR(ret);
+ 	}
+ 
+ 	*proto = ac->protocol;
+@@ -3422,7 +3428,7 @@ static int get_authorizer(struct ceph_co
+ 	*reply_buf = auth->authorizer_reply_buf;
+ 	*reply_len = auth->authorizer_reply_buf_len;
+ 
+-	return 0;
++	return auth;
+ }
+ 
+ 
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -25,9 +25,11 @@ struct ceph_connection_operations {
+ 	void (*dispatch) (struct ceph_connection *con, struct ceph_msg *m);
+ 
+ 	/* authorize an outgoing connection */
+-	int (*get_authorizer) (struct ceph_connection *con,
+-			       void **buf, int *len, int *proto,
+-			       void **reply_buf, int *reply_len, int force_new);
++	struct ceph_auth_handshake *(*get_authorizer) (
++				struct ceph_connection *con,
++				void **buf, int *len, int *proto,
++				void **reply_buf, int *reply_len,
++				int force_new);
+ 	int (*verify_authorizer_reply) (struct ceph_connection *con, int len);
+ 	int (*invalidate_authorizer)(struct ceph_connection *con);
+ 
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -658,7 +658,7 @@ static int prepare_connect_authorizer(st
+ 	void *auth_buf;
+ 	int auth_len;
+ 	int auth_protocol;
+-	int ret;
++	struct ceph_auth_handshake *auth;
+ 
+ 	if (!con->ops->get_authorizer) {
+ 		con->out_connect.authorizer_protocol = CEPH_AUTH_UNKNOWN;
+@@ -674,13 +674,13 @@ static int prepare_connect_authorizer(st
+ 	auth_buf = NULL;
+ 	auth_len = 0;
+ 	auth_protocol = CEPH_AUTH_UNKNOWN;
+-	ret = con->ops->get_authorizer(con, &auth_buf, &auth_len,
++	auth = con->ops->get_authorizer(con, &auth_buf, &auth_len,
+ 				&auth_protocol, &con->auth_reply_buf,
+ 				&con->auth_reply_buf_len, con->auth_retry);
+ 	mutex_lock(&con->mutex);
+ 
+-	if (ret)
+-		return ret;
++	if (IS_ERR(auth))
++		return PTR_ERR(auth);
+ 
+ 	if (test_bit(CLOSED, &con->state) || test_bit(OPENING, &con->state))
+ 		return -EAGAIN;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2108,15 +2108,19 @@ static void put_osd_con(struct ceph_conn
+ /*
+  * authentication
+  */
+-static int get_authorizer(struct ceph_connection *con,
+-			  void **buf, int *len, int *proto,
+-			  void **reply_buf, int *reply_len, int force_new)
++/*
++ * Note: returned pointer is the address of a structure that's
++ * managed separately.  Caller must *not* attempt to free it.
++ */
++static struct ceph_auth_handshake *get_authorizer(struct ceph_connection *con,
++					void **buf, int *len, int *proto,
++					void **reply_buf, int *reply_len,
++					int force_new)
+ {
+ 	struct ceph_osd *o = con->private;
+ 	struct ceph_osd_client *osdc = o->o_osdc;
+ 	struct ceph_auth_client *ac = osdc->client->monc.auth;
+ 	struct ceph_auth_handshake *auth = &o->o_auth;
+-	int ret = 0;
+ 
+ 	if (force_new && auth->authorizer) {
+ 		if (ac->ops && ac->ops->destroy_authorizer)
+@@ -2124,9 +2128,10 @@ static int get_authorizer(struct ceph_co
+ 		auth->authorizer = NULL;
+ 	}
+ 	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+-		ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD, auth);
++		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
++							auth);
+ 		if (ret)
+-			return ret;
++			return ERR_PTR(ret);
+ 	}
+ 
+ 	*proto = ac->protocol;
+@@ -2135,7 +2140,7 @@ static int get_authorizer(struct ceph_co
+ 	*reply_buf = auth->authorizer_reply_buf;
+ 	*reply_len = auth->authorizer_reply_buf_len;
+ 
+-	return 0;
++	return auth;
+ }
+ 
+ 
 
 
