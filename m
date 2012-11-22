@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab2KVWAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:00:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
+	id S1758076Ab2KVWAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:00:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49639 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754670Ab2KVSkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754723Ab2KVSkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 108/171] libceph: have messages take a connection reference
-Date: Wed, 21 Nov 2012 16:40:54 -0800
-Message-Id: <20121122004044.202774289@linuxfoundation.org>
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: [ 009/171] cifs: fix potential buffer overrun in cifs.idmap handling code
+Date: Wed, 21 Nov 2012 16:39:15 -0800
+Message-Id: <20121122004034.254087125@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,174 +26,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-(cherry picked from commit 92ce034b5a740046cc643a21ea21eaad589e0043)
+commit 36960e440ccf94349c09fb944930d3bfe4bc473f upstream.
 
-There are essentially two types of ceph messages: incoming and
-outgoing.  Outgoing messages are always allocated via ceph_msg_new(),
-and at the time of their allocation they are not associated with any
-particular connection.  Incoming messages are always allocated via
-ceph_con_in_msg_alloc(), and they are initially associated with the
-connection from which incoming data will be placed into the message.
+The userspace cifs.idmap program generally works with the wbclient libs
+to generate binary SIDs in userspace. That program defines the struct
+that holds these values as having a max of 15 subauthorities. The kernel
+idmapping code however limits that value to 5.
 
-When an outgoing message gets sent, it becomes associated with a
-connection and remains that way until the message is successfully
-sent.  The association of an incoming message goes away at the point
-it is sent to an upper layer via a con->ops->dispatch method.
+When the kernel copies those values around though, it doesn't sanity
+check the num_subauths value handed back from userspace or from the
+server. It's possible therefore for userspace to hand us back a bogus
+num_subauths value (or one that's valid, but greater than 5) that could
+cause the kernel to walk off the end of the cifs_sid->sub_auths array.
 
-This patch implements reference counting for all ceph messages, such
-that every message holds a reference (and a pointer) to a connection
-if and only if it is associated with that connection (as described
-above).
+Fix this by defining a new routine for copying sids and using that in
+all of the places that copy it. If we end up with a sid that's longer
+than expected then this approach will just lop off the "extra" subauths,
+but that's basically what the code does today already. Better approaches
+might be to fix this code to reject SIDs with >5 subauths, or fix it
+to handle the subauths array dynamically.
 
-For background, here is an explanation of the ceph message
-lifecycle, emphasizing when an association exists between a message
-and a connection.
+At the same time, change the kernel to check the length of the data
+returned by userspace. If it's shorter than struct cifs_sid, reject it
+and return -EIO. If that happens we'll end up with fields that are
+basically uninitialized.
 
-Outgoing Messages
-An outgoing message is "owned" by its allocator, from the time it is
-allocated in ceph_msg_new() up to the point it gets queued for
-sending in ceph_con_send().  Prior to that point the message's
-msg->con pointer is null; at the point it is queued for sending its
-message pointer is assigned to refer to the connection.  At that
-time the message is inserted into a connection's out_queue list.
+Long term, it might make sense to redefine cifs_sid using a flexarray at
+the end, to allow for variable-length subauth lists, and teach the code
+to handle the case where the subauths array being passed in from
+userspace is shorter than 5 elements.
 
-When a message on the out_queue list has been sent to the socket
-layer to be put on the wire, it is transferred out of that list and
-into the connection's out_sent list.  At that point it is still owned
-by the connection, and will remain so until an acknowledgement is
-received from the recipient that indicates the message was
-successfully transferred.  When such an acknowledgement is received
-(in process_ack()), the message is removed from its list (in
-ceph_msg_remove()), at which point it is no longer associated with
-the connection.
+Note too, that I don't consider this a security issue since you'd need
+a compromised cifs.idmap program. If you have that, you can do all sorts
+of nefarious stuff. Still, this is probably reasonable for stable.
 
-So basically, any time a message is on one of a connection's lists,
-it is associated with that connection.  Reference counting outgoing
-messages can thus be done at the points a message is added to the
-out_queue (in ceph_con_send()) and the point it is removed from
-either its two lists (in ceph_msg_remove())--at which point its
-connection pointer becomes null.
-
-Incoming Messages
-When an incoming message on a connection is getting read (in
-read_partial_message()) and there is no message in con->in_msg,
-a new one is allocated using ceph_con_in_msg_alloc().  At that
-point the message is associated with the connection.  Once that
-message has been completely and successfully read, it is passed to
-upper layer code using the connection's con->ops->dispatch method.
-At that point the association between the message and the connection
-no longer exists.
-
-Reference counting of connections for incoming messages can be done
-by taking a reference to the connection when the message gets
-allocated, and releasing that reference when it gets handed off
-using the dispatch method.
-
-We should never fail to get a connection reference for a
-message--the since the caller should already hold one.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -415,6 +415,7 @@ static void ceph_msg_remove(struct ceph_
- {
- 	list_del_init(&msg->list_head);
- 	BUG_ON(msg->con == NULL);
-+	ceph_con_put(msg->con);
- 	msg->con = NULL;
- 
- 	ceph_msg_put(msg);
-@@ -440,6 +441,7 @@ static void reset_connection(struct ceph
- 		con->in_msg->con = NULL;
- 		ceph_msg_put(con->in_msg);
- 		con->in_msg = NULL;
-+		ceph_con_put(con->in_msg->con);
- 	}
- 
- 	con->connect_seq = 0;
-@@ -1918,6 +1920,7 @@ static void process_message(struct ceph_
- 	con->in_msg->con = NULL;
- 	msg = con->in_msg;
- 	con->in_msg = NULL;
-+	ceph_con_put(con);
- 
- 	/* if first message, set peer_name */
- 	if (con->peer_name.type == 0)
-@@ -2279,6 +2282,7 @@ static void ceph_fault(struct ceph_conne
- 		con->in_msg->con = NULL;
- 		ceph_msg_put(con->in_msg);
- 		con->in_msg = NULL;
-+		ceph_con_put(con);
- 	}
- 
- 	/* Requeue anything that hasn't been acked */
-@@ -2395,8 +2399,11 @@ void ceph_con_send(struct ceph_connectio
- 
- 	/* queue */
- 	mutex_lock(&con->mutex);
-+
- 	BUG_ON(msg->con != NULL);
--	msg->con = con;
-+	msg->con = ceph_con_get(con);
-+	BUG_ON(msg->con == NULL);
-+
- 	BUG_ON(!list_empty(&msg->list_head));
- 	list_add_tail(&msg->list_head, &con->out_queue);
- 	dout("----- %p to %s%lld %d=%s len %d+%d+%d -----\n", msg,
-@@ -2425,10 +2432,11 @@ void ceph_con_revoke(struct ceph_connect
- 		dout("%s %p msg %p - was on queue\n", __func__, con, msg);
- 		list_del_init(&msg->list_head);
- 		BUG_ON(msg->con == NULL);
-+		ceph_con_put(msg->con);
- 		msg->con = NULL;
-+		msg->hdr.seq = 0;
- 
- 		ceph_msg_put(msg);
--		msg->hdr.seq = 0;
- 	}
- 	if (con->out_msg == msg) {
- 		dout("%s %p msg %p - was sending\n", __func__, con, msg);
-@@ -2437,8 +2445,9 @@ void ceph_con_revoke(struct ceph_connect
- 			con->out_skip = con->out_kvec_bytes;
- 			con->out_kvec_is_msg = false;
- 		}
--		ceph_msg_put(msg);
- 		msg->hdr.seq = 0;
-+
-+		ceph_msg_put(msg);
- 	}
- 	mutex_unlock(&con->mutex);
+---
+ fs/cifs/cifsacl.c |   49 ++++++++++++++++++++-----------------------------
+ 1 file changed, 20 insertions(+), 29 deletions(-)
+
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -225,6 +225,13 @@ sid_to_str(struct cifs_sid *sidptr, char
  }
-@@ -2622,8 +2631,10 @@ static bool ceph_con_in_msg_alloc(struct
- 		mutex_unlock(&con->mutex);
- 		con->in_msg = con->ops->alloc_msg(con, hdr, &skip);
- 		mutex_lock(&con->mutex);
--		if (con->in_msg)
--			con->in_msg->con = con;
-+		if (con->in_msg) {
-+			con->in_msg->con = ceph_con_get(con);
-+			BUG_ON(con->in_msg->con == NULL);
-+		}
- 		if (skip)
- 			con->in_msg = NULL;
  
-@@ -2637,7 +2648,8 @@ static bool ceph_con_in_msg_alloc(struct
- 			       type, front_len);
- 			return false;
+ static void
++cifs_copy_sid(struct cifs_sid *dst, const struct cifs_sid *src)
++{
++	memcpy(dst, src, sizeof(*dst));
++	dst->num_subauth = min_t(u8, src->num_subauth, NUM_SUBAUTHS);
++}
++
++static void
+ id_rb_insert(struct rb_root *root, struct cifs_sid *sidptr,
+ 		struct cifs_sid_id **psidid, char *typestr)
+ {
+@@ -248,7 +255,7 @@ id_rb_insert(struct rb_root *root, struc
  		}
--		con->in_msg->con = con;
-+		con->in_msg->con = ceph_con_get(con);
-+		BUG_ON(con->in_msg->con == NULL);
- 		con->in_msg->page_alignment = le16_to_cpu(hdr->data_off);
  	}
- 	memcpy(&con->in_msg->hdr, &con->in_hdr, sizeof(con->in_hdr));
+ 
+-	memcpy(&(*psidid)->sid, sidptr, sizeof(struct cifs_sid));
++	cifs_copy_sid(&(*psidid)->sid, sidptr);
+ 	(*psidid)->time = jiffies - (SID_MAP_RETRY + 1);
+ 	(*psidid)->refcount = 0;
+ 
+@@ -354,7 +361,7 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 	 * any fields of the node after a reference is put .
+ 	 */
+ 	if (test_bit(SID_ID_MAPPED, &psidid->state)) {
+-		memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
++		cifs_copy_sid(ssid, &psidid->sid);
+ 		psidid->time = jiffies; /* update ts for accessing */
+ 		goto id_sid_out;
+ 	}
+@@ -370,14 +377,14 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 		if (IS_ERR(sidkey)) {
+ 			rc = -EINVAL;
+ 			cFYI(1, "%s: Can't map and id to a SID", __func__);
++		} else if (sidkey->datalen < sizeof(struct cifs_sid)) {
++			rc = -EIO;
++			cFYI(1, "%s: Downcall contained malformed key "
++				"(datalen=%hu)", __func__, sidkey->datalen);
+ 		} else {
+ 			lsid = (struct cifs_sid *)sidkey->payload.data;
+-			memcpy(&psidid->sid, lsid,
+-				sidkey->datalen < sizeof(struct cifs_sid) ?
+-				sidkey->datalen : sizeof(struct cifs_sid));
+-			memcpy(ssid, &psidid->sid,
+-				sidkey->datalen < sizeof(struct cifs_sid) ?
+-				sidkey->datalen : sizeof(struct cifs_sid));
++			cifs_copy_sid(&psidid->sid, lsid);
++			cifs_copy_sid(ssid, &psidid->sid);
+ 			set_bit(SID_ID_MAPPED, &psidid->state);
+ 			key_put(sidkey);
+ 			kfree(psidid->sidstr);
+@@ -396,7 +403,7 @@ id_to_sid(unsigned long cid, uint sidtyp
+ 			return rc;
+ 		}
+ 		if (test_bit(SID_ID_MAPPED, &psidid->state))
+-			memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
++			cifs_copy_sid(ssid, &psidid->sid);
+ 		else
+ 			rc = -EINVAL;
+ 	}
+@@ -675,8 +682,6 @@ int compare_sids(const struct cifs_sid *
+ static void copy_sec_desc(const struct cifs_ntsd *pntsd,
+ 				struct cifs_ntsd *pnntsd, __u32 sidsoffset)
+ {
+-	int i;
+-
+ 	struct cifs_sid *owner_sid_ptr, *group_sid_ptr;
+ 	struct cifs_sid *nowner_sid_ptr, *ngroup_sid_ptr;
+ 
+@@ -692,26 +697,14 @@ static void copy_sec_desc(const struct c
+ 	owner_sid_ptr = (struct cifs_sid *)((char *)pntsd +
+ 				le32_to_cpu(pntsd->osidoffset));
+ 	nowner_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset);
+-
+-	nowner_sid_ptr->revision = owner_sid_ptr->revision;
+-	nowner_sid_ptr->num_subauth = owner_sid_ptr->num_subauth;
+-	for (i = 0; i < 6; i++)
+-		nowner_sid_ptr->authority[i] = owner_sid_ptr->authority[i];
+-	for (i = 0; i < 5; i++)
+-		nowner_sid_ptr->sub_auth[i] = owner_sid_ptr->sub_auth[i];
++	cifs_copy_sid(nowner_sid_ptr, owner_sid_ptr);
+ 
+ 	/* copy group sid */
+ 	group_sid_ptr = (struct cifs_sid *)((char *)pntsd +
+ 				le32_to_cpu(pntsd->gsidoffset));
+ 	ngroup_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset +
+ 					sizeof(struct cifs_sid));
+-
+-	ngroup_sid_ptr->revision = group_sid_ptr->revision;
+-	ngroup_sid_ptr->num_subauth = group_sid_ptr->num_subauth;
+-	for (i = 0; i < 6; i++)
+-		ngroup_sid_ptr->authority[i] = group_sid_ptr->authority[i];
+-	for (i = 0; i < 5; i++)
+-		ngroup_sid_ptr->sub_auth[i] = group_sid_ptr->sub_auth[i];
++	cifs_copy_sid(ngroup_sid_ptr, group_sid_ptr);
+ 
+ 	return;
+ }
+@@ -1120,8 +1113,7 @@ static int build_sec_desc(struct cifs_nt
+ 				kfree(nowner_sid_ptr);
+ 				return rc;
+ 			}
+-			memcpy(owner_sid_ptr, nowner_sid_ptr,
+-					sizeof(struct cifs_sid));
++			cifs_copy_sid(owner_sid_ptr, nowner_sid_ptr);
+ 			kfree(nowner_sid_ptr);
+ 			*aclflag = CIFS_ACL_OWNER;
+ 		}
+@@ -1139,8 +1131,7 @@ static int build_sec_desc(struct cifs_nt
+ 				kfree(ngroup_sid_ptr);
+ 				return rc;
+ 			}
+-			memcpy(group_sid_ptr, ngroup_sid_ptr,
+-					sizeof(struct cifs_sid));
++			cifs_copy_sid(group_sid_ptr, ngroup_sid_ptr);
+ 			kfree(ngroup_sid_ptr);
+ 			*aclflag = CIFS_ACL_GROUP;
+ 		}
 
 
