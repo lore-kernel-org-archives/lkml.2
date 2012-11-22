@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab2KVUIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:08:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53550 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755980Ab2KVTvW (ORCPT
+	id S1757414Ab2KVUJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:09:06 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33036 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab2KVUI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:22 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 22/46] staging: line6: drop finish sysfs attr
-Date: Thu, 22 Nov 2012 20:49:01 +0100
-Message-Id: <1353613765-18690-23-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 15:08:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121122195840.GA26543@kroah.com>
 References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	<20121122195840.GA26543@kroah.com>
+Date: Thu, 22 Nov 2012 21:08:55 +0100
+Message-ID: <CAJSP0QUai4O12U7fbrARAZLOig5=10e1WYg7i+OZTDETuDRWoQ@mail.gmail.com>
+Subject: Re: [PATCH 00/46] staging: line6: drop MIDI state sysfs attrs
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Markus Grabner <grabner@icg.tugraz.at>,
+        "line6linux-devel@lists.sourceforge.net" 
+	<line6linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Laurent Navet <laurent_navet@yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/pod.c | 21 ---------------------
- 1 file changed, 21 deletions(-)
+On Thu, Nov 22, 2012 at 8:58 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Nov 22, 2012 at 08:48:39PM +0100, Stefan Hajnoczi wrote:
+>> Markus and I have discussed the MIDI processing that currently happens in the
+>> line6 driver.  This stuff really belongs in userspace where a library or
+>> utility can use ALSA MIDI APIs to control the device.  Moving MIDI processing
+>> to userspace has several benefits:
+>>
+>> 1. The driver only handles PCM and MIDI I/O.  This means less kernel code.
+>>
+>> 2. A large number of sysfs attributes can be removed.  These attributes exposed
+>>    MIDI state and driver code was necessary to sync and manage this state.
+>>
+>> 3. It's easier for userspace to control the device, try out new MIDI commands,
+>>    etc when the driver acts as a dumb transport.
+>>
+>> This patch series removes the sysfs attributes and then removes the state
+>> behind those attributes.  I have tried to make small incremental changes that
+>> can be reviewed easily.
+>
+> Very nice, I'll queue these up on Monday, very good work, thanks so much
+> for doing this.
 
-diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 052db4a..797f6e0 100644
---- a/drivers/staging/line6/pod.c
-+++ b/drivers/staging/line6/pod.c
-@@ -371,24 +371,6 @@ static int pod_set_system_param_int(struct usb_line6_pod *pod, int value,
- }
- 
- /*
--	"write" request on "finish" special file.
--*/
--static ssize_t pod_set_finish(struct device *dev,
--			      struct device_attribute *attr,
--			      const char *buf, size_t count)
--{
--	struct usb_interface *interface = to_usb_interface(dev);
--	struct usb_line6_pod *pod = usb_get_intfdata(interface);
--	int size = 0;
--	char *sysex = pod_alloc_sysex_buffer(pod, POD_SYSEX_FINISH, size);
--	if (!sysex)
--		return 0;
--	line6_send_sysex_message(&pod->line6, sysex, size);
--	kfree(sysex);
--	return count;
--}
--
--/*
- 	"read" request on "midi_postprocess" special file.
- */
- static ssize_t pod_get_midi_postprocess(struct device *dev,
-@@ -526,7 +508,6 @@ static void pod_startup5(struct work_struct *work)
- 
- /* POD special files: */
- static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
--static DEVICE_ATTR(finish, S_IWUSR, line6_nop_read, pod_set_finish);
- static DEVICE_ATTR(firmware_version, S_IRUGO, pod_get_firmware_version,
- 		   line6_nop_write);
- static DEVICE_ATTR(midi_postprocess, S_IWUSR | S_IRUGO,
-@@ -612,7 +593,6 @@ static int pod_create_files2(struct device *dev)
- 	int err;
- 
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_device_id));
--	CHECK_RETURN(device_create_file(dev, &dev_attr_finish));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_firmware_version));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_midi_postprocess));
- 	CHECK_RETURN(device_create_file(dev, &dev_attr_serial_number));
-@@ -727,7 +707,6 @@ void line6_pod_disconnect(struct usb_interface *interface)
- 					       properties->device_bit, dev);
- 
- 			device_remove_file(dev, &dev_attr_device_id);
--			device_remove_file(dev, &dev_attr_finish);
- 			device_remove_file(dev, &dev_attr_firmware_version);
- 			device_remove_file(dev, &dev_attr_midi_postprocess);
- 			device_remove_file(dev, &dev_attr_serial_number);
--- 
-1.8.0
+Thanks!  I hope Markus has a chance to review and/or test these
+changes first - he knows generally what I'm up too but should have the
+final word on details.
 
+Stefan
