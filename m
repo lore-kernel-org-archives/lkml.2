@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2KVWPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:15:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49361 "EHLO mail.kernel.org"
+	id S932867Ab2KVWPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:15:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49360 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754589Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 133/171] libceph: small changes to messenger.c
-Date: Wed, 21 Nov 2012 16:41:19 -0800
-Message-Id: <20121122004046.705780993@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 031/171] m68k: fix sigset_t accessor functions
+Date: Wed, 21 Nov 2012 16:39:37 -0800
+Message-Id: <20121122004036.493321250@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -25,143 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-(cherry picked from commit 5821bd8ccdf5d17ab2c391c773756538603838c3)
+commit 34fa78b59c52d1db3513db4c1a999db26b2e9ac2 upstream.
 
-This patch gathers a few small changes in "net/ceph/messenger.c":
-  out_msg_pos_next()
-    - small logic change that mostly affects indentation
-  write_partial_msg_pages().
-    - use a local variable trail_off to represent the offset into
-      a message of the trail portion of the data (if present)
-    - once we are in the trail portion we will always be there, so we
-      don't always need to check against our data position
-    - avoid computing len twice after we've reached the trail
-    - get rid of the variable tmpcrc, which is not needed
-    - trail_off and trail_len never change so mark them const
-    - update some comments
-  read_partial_message_bio()
-    - bio_iovec_idx() will never return an error, so don't bother
-      checking for it
+The sigaddset/sigdelset/sigismember functions that are implemented with
+bitfield insn cannot allow the sigset argument to be placed in a data
+register since the sigset is wider than 32 bits.  Remove the "d"
+constraint from the asm statements.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+The effect of the bug is that sending RT signals does not work, the signal
+number is truncated modulo 32.
+
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   63 +++++++++++++++++++++++++--------------------------
- 1 file changed, 31 insertions(+), 32 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -907,21 +907,23 @@ static void out_msg_pos_next(struct ceph
- 
- 	con->out_msg_pos.data_pos += sent;
- 	con->out_msg_pos.page_pos += sent;
--	if (sent == len) {
--		con->out_msg_pos.page_pos = 0;
--		con->out_msg_pos.page++;
--		con->out_msg_pos.did_page_crc = false;
--		if (in_trail)
--			list_move_tail(&page->lru,
--				       &msg->trail->head);
--		else if (msg->pagelist)
--			list_move_tail(&page->lru,
--				       &msg->pagelist->head);
-+	if (sent < len)
-+		return;
-+
-+	BUG_ON(sent != len);
-+	con->out_msg_pos.page_pos = 0;
-+	con->out_msg_pos.page++;
-+	con->out_msg_pos.did_page_crc = false;
-+	if (in_trail)
-+		list_move_tail(&page->lru,
-+			       &msg->trail->head);
-+	else if (msg->pagelist)
-+		list_move_tail(&page->lru,
-+			       &msg->pagelist->head);
- #ifdef CONFIG_BLOCK
--		else if (msg->bio)
--			iter_bio_next(&msg->bio_iter, &msg->bio_seg);
-+	else if (msg->bio)
-+		iter_bio_next(&msg->bio_iter, &msg->bio_seg);
- #endif
--	}
+---
+ arch/m68k/include/asm/signal.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/m68k/include/asm/signal.h
++++ b/arch/m68k/include/asm/signal.h
+@@ -156,7 +156,7 @@ typedef struct sigaltstack {
+ static inline void sigaddset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfset %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
  }
- 
- /*
-@@ -940,30 +942,31 @@ static int write_partial_msg_pages(struc
+@@ -164,7 +164,7 @@ static inline void sigaddset(sigset_t *s
+ static inline void sigdelset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfclr %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
+ }
+@@ -180,7 +180,7 @@ static inline int __gen_sigismember(sigs
  	int ret;
- 	int total_max_write;
- 	bool in_trail = false;
--	size_t trail_len = (msg->trail ? msg->trail->length : 0);
-+	const size_t trail_len = (msg->trail ? msg->trail->length : 0);
-+	const size_t trail_off = data_len - trail_len;
- 
- 	dout("write_partial_msg_pages %p msg %p page %d/%d offset %d\n",
- 	     con, msg, con->out_msg_pos.page, msg->nr_pages,
- 	     con->out_msg_pos.page_pos);
- 
-+	/*
-+	 * Iterate through each page that contains data to be
-+	 * written, and send as much as possible for each.
-+	 *
-+	 * If we are calculating the data crc (the default), we will
-+	 * need to map the page.  If we have no pages, they have
-+	 * been revoked, so use the zero page.
-+	 */
- 	while (data_len > con->out_msg_pos.data_pos) {
- 		struct page *page = NULL;
- 		int max_write = PAGE_SIZE;
- 		int bio_offset = 0;
- 
--		total_max_write = data_len - trail_len -
--			con->out_msg_pos.data_pos;
--
--		/*
--		 * if we are calculating the data crc (the default), we need
--		 * to map the page.  if our pages[] has been revoked, use the
--		 * zero page.
--		 */
--
--		/* have we reached the trail part of the data? */
--		if (con->out_msg_pos.data_pos >= data_len - trail_len) {
--			in_trail = true;
-+		in_trail = in_trail || con->out_msg_pos.data_pos >= trail_off;
-+		if (!in_trail)
-+			total_max_write = trail_off - con->out_msg_pos.data_pos;
- 
-+		if (in_trail) {
- 			total_max_write = data_len - con->out_msg_pos.data_pos;
- 
- 			page = list_first_entry(&msg->trail->head,
-@@ -990,14 +993,13 @@ static int write_partial_msg_pages(struc
- 
- 		if (do_datacrc && !con->out_msg_pos.did_page_crc) {
- 			void *base;
--			u32 crc;
--			u32 tmpcrc = le32_to_cpu(msg->footer.data_crc);
-+			u32 crc = le32_to_cpu(msg->footer.data_crc);
- 			char *kaddr;
- 
- 			kaddr = kmap(page);
- 			BUG_ON(kaddr == NULL);
- 			base = kaddr + con->out_msg_pos.page_pos + bio_offset;
--			crc = crc32c(tmpcrc, base, len);
-+			crc = crc32c(crc, base, len);
- 			msg->footer.data_crc = cpu_to_le32(crc);
- 			con->out_msg_pos.did_page_crc = true;
- 		}
-@@ -1702,9 +1704,6 @@ static int read_partial_message_bio(stru
- 	void *p;
- 	int ret, left;
- 
--	if (IS_ERR(bv))
--		return PTR_ERR(bv);
--
- 	left = min((int)(data_len - con->in_msg_pos.data_pos),
- 		   (int)(bv->bv_len - con->in_msg_pos.page_pos));
- 
+ 	asm ("bfextu %1{%2,#1},%0"
+ 		: "=d" (ret)
+-		: "od" (*set), "id" ((_sig-1) ^ 31)
++		: "o" (*set), "id" ((_sig-1) ^ 31)
+ 		: "cc");
+ 	return ret;
+ }
 
 
