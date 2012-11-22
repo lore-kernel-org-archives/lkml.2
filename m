@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2KVUjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:39:49 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:61301 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932111Ab2KVTKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:10:04 -0500
-Message-Id: <ea8847a552326d6ac41c77ed7acd94c28f6feb9b.1353518444.git.ecashin@coraid.com>
-In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
-References: <cover.1353518444.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 3/8] aoe: increase default cap on outstanding AoE commands in the network
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
-From: Ed Cashin <ecashin@coraid.com>
-X-Mailer: nedmail
-Date: Wed, 21 Nov 2012 19:58:15 -0500
+	id S1756277Ab2KVTDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:03:52 -0500
+Received: from relay.parallels.com ([195.214.232.42]:55376 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab2KVTDt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:03:49 -0500
+Message-ID: <50ADDCB4.2050603@parallels.com>
+Date: Thu, 22 Nov 2012 12:05:08 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Jeff Layton <jlayton@redhat.com>, <linux-nfs@vger.kernel.org>,
+        <devel@openvz.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 00/15] NFSd state containerization
+References: <20121114152018.4708.63125.stgit@localhost.localdomain> <20121114220036.GD539@fieldses.org> <20121115133408.23db9ebb@corrin.poochiereds.net> <20121121204408.GA23097@fieldses.org>
+In-Reply-To: <20121121204408.GA23097@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aoe driver will never be waiting for more than aoe_maxout AoE
-commands from a given remote network port on an AoE target.
-Increasing the cap increases performance.  Users can tighten the
-setting to reduce the amount of memory used for handling AoE
-traffic or the network bandwidth used for AoE.
+22.11.2012 00:44, J. Bruce Fields пишет:
+> On Thu, Nov 15, 2012 at 01:34:08PM -0500, Jeff Layton wrote:
+>> On Wed, 14 Nov 2012 17:00:36 -0500
+>> "J. Bruce Fields" <bfields@fieldses.org> wrote:
+>>
+>>> On Wed, Nov 14, 2012 at 06:20:59PM +0300, Stanislav Kinsbursky wrote:
+>>>> This patch set is my first attempt to containerize NFSv4 state - i.e. make it
+>>>> works in networks namespace context.
+>>>> I admit, that some of this new code could be partially rewritten during future
+>>>> NFSd containerization.
+>>>> But the overall idea look more or less correct to me.
+>>>> So, the main things here are:
+>>>> 1) making nfs4_client network namespace aware.
+>>>> 2) Allocating all hashes (except file_hashtbl and reclaim_str_hashtbl) per
+>>>> network namespace context on NFSd start (not init) and destroying on NFSd
+>>>> state shutdown.
+>>>> 3) Allocating of reclaim_str_hashtbl on legacy tracker start and destroying on
+>>>> legacy tracker stop.
+>>>> 4) Moving of client_lru and close_lru lists to per-net data.
+>>>> 5) Making lundromat network namespace aware.
+>>>
+>>> These look OK and pass my tests.  Jeff, do the revised recovery bits
+>>> look OK?
+>>>
+>>> Have you done any testing?
+>>>
+>>> It'd be interesting, for example, to know if there are any pynfs that
+>>> fail against the server in a non-init network namespace, but pass
+>>> normally.
+>>>
+>>> --b.
+>>>
+>>
+>> I looked over the patches and they look sane to me. I move that they go
+>> into your -next branch to soak for a bit.
+>
+> Stanislav, actually, I'm unclear, since you labeled these "RFC": do you
+> consider these patches ready?
+>
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoecmd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes, I consider them ready.
+I added the "RFC" mark, because I'm not completely sure, this this code wont' be
+partially rewritten in future.
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index d609c47..53b9869 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -29,7 +29,7 @@ static int aoe_deadsecs = 60 * 3;
- module_param(aoe_deadsecs, int, 0644);
- MODULE_PARM_DESC(aoe_deadsecs, "After aoe_deadsecs seconds, give up and fail dev.");
- 
--static int aoe_maxout = 16;
-+static int aoe_maxout = 64;
- module_param(aoe_maxout, int, 0644);
- MODULE_PARM_DESC(aoe_maxout,
- 	"Only aoe_maxout outstanding packets for every MAC on eX.Y.");
+> --b.
+>
+
+
 -- 
-1.7.1
-
+Best regards,
+Stanislav Kinsbursky
