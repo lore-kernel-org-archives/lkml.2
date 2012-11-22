@@ -1,129 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2KVUZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:25:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39998 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756870Ab2KVT0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:38 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 26/40] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
-Date: Thu, 22 Nov 2012 19:25:39 +0000
-Message-Id: <1353612353-1576-27-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S1756923Ab2KVUZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 15:25:52 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43124 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab2KVUZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 15:25:49 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Cc: FlorianSchandinat@gmx.de, linux@prisktech.co.nz, patches@linaro.org
+Subject: [PATCH 2/4] video: vt8500: Fix invalid free of devm_ allocated data
+Date: Thu, 22 Nov 2012 12:12:09 +0530
+Message-Id: <1353566531-31251-3-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1353566531-31251-1-git-send-email-tushar.behera@linaro.org>
+References: <1353566531-31251-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By accounting against the present PTEs, scanning speed reflects the
-actual present (mapped) memory.
+While at it, also fix the related return statements.
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- kernel/sched/fair.c |   36 +++++++++++++++++++++---------------
- 1 file changed, 21 insertions(+), 15 deletions(-)
+ drivers/video/vt8500lcdfb.c |   15 +++------------
+ 1 files changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 66d8bd2..773ef97 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -827,8 +827,8 @@ void task_numa_work(struct callback_head *work)
- 	struct task_struct *p = current;
- 	struct mm_struct *mm = p->mm;
- 	struct vm_area_struct *vma;
--	unsigned long offset, end;
--	long length;
-+	unsigned long start, end;
-+	long pages;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
- 
-@@ -858,18 +858,20 @@ void task_numa_work(struct callback_head *work)
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
--	offset = mm->numa_scan_offset;
--	length = sysctl_balance_numa_scan_size;
--	length <<= 20;
-+	start = mm->numa_scan_offset;
-+	pages = sysctl_balance_numa_scan_size;
-+	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
-+	if (!pages)
-+		return;
- 
- 	down_read(&mm->mmap_sem);
--	vma = find_vma(mm, offset);
-+	vma = find_vma(mm, start);
- 	if (!vma) {
- 		reset_ptenuma_scan(p);
--		offset = 0;
-+		start = 0;
- 		vma = mm->mmap;
+diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+index 5777adc..2438368 100644
+--- a/drivers/video/vt8500lcdfb.c
++++ b/drivers/video/vt8500lcdfb.c
+@@ -294,8 +294,7 @@ static int __devinit vt8500lcd_probe(struct platform_device *pdev)
+ 			+ sizeof(u32) * 16, GFP_KERNEL);
+ 	if (!fbi) {
+ 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
+-		ret = -ENOMEM;
+-		goto failed;
++		return -ENOMEM;
  	}
--	for (; vma && length > 0; vma = vma->vm_next) {
-+	for (; vma; vma = vma->vm_next) {
- 		if (!vma_migratable(vma))
- 			continue;
  
-@@ -877,15 +879,19 @@ void task_numa_work(struct callback_head *work)
- 		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
- 			continue;
+ 	strcpy(fbi->fb.fix.id, "VT8500 LCD");
+@@ -328,15 +327,13 @@ static int __devinit vt8500lcd_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "no I/O memory resource defined\n");
+-		ret = -ENODEV;
+-		goto failed_fbi;
++		return -ENODEV;
+ 	}
  
--		offset = max(offset, vma->vm_start);
--		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
--		length -= end - offset;
+ 	res = request_mem_region(res->start, resource_size(res), "vt8500lcd");
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "failed to request I/O memory\n");
+-		ret = -EBUSY;
+-		goto failed_fbi;
++		return -EBUSY;
+ 	}
+ 
+ 	fbi->regbase = ioremap(res->start, resource_size(res));
+@@ -466,10 +463,6 @@ failed_free_io:
+ 	iounmap(fbi->regbase);
+ failed_free_res:
+ 	release_mem_region(res->start, resource_size(res));
+-failed_fbi:
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(fbi);
+-failed:
+ 	return ret;
+ }
+ 
+@@ -501,8 +494,6 @@ static int __devexit vt8500lcd_remove(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	release_mem_region(res->start, resource_size(res));
+ 
+-	kfree(fbi);
 -
--		change_prot_numa(vma, offset, end);
-+		do {
-+			start = max(start, vma->vm_start);
-+			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
-+			end = min(end, vma->vm_end);
-+			pages -= change_prot_numa(vma, start, end);
+ 	return 0;
+ }
  
--		offset = end;
-+			start = end;
-+			if (pages <= 0)
-+				goto out;
-+		} while (end != vma->vm_end);
- 	}
- 
-+out:
- 	/*
- 	 * It is possible to reach the end of the VMA list but the last few VMAs are
- 	 * not guaranteed to the vma_migratable. If they are not, we would find the
-@@ -893,7 +899,7 @@ void task_numa_work(struct callback_head *work)
- 	 * so check it now.
- 	 */
- 	if (vma)
--		mm->numa_scan_offset = offset;
-+		mm->numa_scan_offset = start;
- 	else
- 		reset_ptenuma_scan(p);
- 	up_read(&mm->mmap_sem);
 -- 
-1.7.9.2
+1.7.4.1
 
