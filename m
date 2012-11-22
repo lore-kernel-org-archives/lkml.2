@@ -1,140 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2KVSde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:33:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48996 "EHLO mail.kernel.org"
+	id S1758723Ab2KVWqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:46:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49011 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab2KVSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:29 -0500
+	id S1753400Ab2KVSdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 105/171] libceph: fully initialize connection in con_init()
-Date: Wed, 21 Nov 2012 16:40:51 -0800
-Message-Id: <20121122004043.900910644@linuxfoundation.org>
+        Tom Herbert <therbert@google.com>, Eric Dumazet <edumazet@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 20/38] net-rps: Fix brokeness causing OOO packets
+Date: Wed, 21 Nov 2012 16:40:03 -0800
+Message-Id: <20121122003906.418016160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 1bfd89f4e6e1adc6a782d94aa5d4c53be1e404d7)
+From: Tom Herbert <therbert@google.com>
 
-Move the initialization of a ceph connection's private pointer,
-operations vector pointer, and peer name information into
-ceph_con_init().  Rearrange the arguments so the connection pointer
-is first.  Hide the byte-swapping of the peer entity number inside
-ceph_con_init()
+[ Upstream commit baefa31db2f2b13a05d1b81bdf2d20d487f58b0a ]
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+In commit c445477d74ab3779 which adds aRFS to the kernel, the CPU
+selected for RFS is not set correctly when CPU is changing.
+This is causing OOO packets and probably other issues.
+
+Signed-off-by: Tom Herbert <therbert@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/mds_client.c           |    7 ++-----
- include/linux/ceph/messenger.h |    6 ++++--
- net/ceph/messenger.c           |    9 ++++++++-
- net/ceph/mon_client.c          |    8 +++-----
- net/ceph/osd_client.c          |    7 ++-----
- 5 files changed, 19 insertions(+), 18 deletions(-)
+ net/core/dev.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -394,11 +394,8 @@ static struct ceph_mds_session *register
- 	s->s_seq = 0;
- 	mutex_init(&s->s_mutex);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2706,8 +2706,10 @@ static int get_rps_cpu(struct net_device
+ 		if (unlikely(tcpu != next_cpu) &&
+ 		    (tcpu == RPS_NO_CPU || !cpu_online(tcpu) ||
+ 		     ((int)(per_cpu(softnet_data, tcpu).input_queue_head -
+-		      rflow->last_qtail)) >= 0))
++		      rflow->last_qtail)) >= 0)) {
++			tcpu = next_cpu;
+ 			rflow = set_rps_cpu(dev, skb, rflow, next_cpu);
++		}
  
--	ceph_con_init(&mdsc->fsc->client->msgr, &s->s_con);
--	s->s_con.private = s;
--	s->s_con.ops = &mds_con_ops;
--	s->s_con.peer_name.type = CEPH_ENTITY_TYPE_MDS;
--	s->s_con.peer_name.num = cpu_to_le64(mds);
-+	ceph_con_init(&s->s_con, s, &mds_con_ops, &mdsc->fsc->client->msgr,
-+		CEPH_ENTITY_TYPE_MDS, mds);
- 
- 	spin_lock_init(&s->s_gen_ttl_lock);
- 	s->s_cap_gen = 0;
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -219,8 +219,10 @@ extern void ceph_messenger_init(struct c
- 			u32 required_features,
- 			bool nocrc);
- 
--extern void ceph_con_init(struct ceph_messenger *msgr,
--			  struct ceph_connection *con);
-+extern void ceph_con_init(struct ceph_connection *con, void *private,
-+			const struct ceph_connection_operations *ops,
-+			struct ceph_messenger *msgr, __u8 entity_type,
-+			__u64 entity_num);
- extern void ceph_con_open(struct ceph_connection *con,
- 			  struct ceph_entity_addr *addr);
- extern bool ceph_con_opened(struct ceph_connection *con);
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -521,15 +521,22 @@ void ceph_con_put(struct ceph_connection
- /*
-  * initialize a new connection.
-  */
--void ceph_con_init(struct ceph_messenger *msgr, struct ceph_connection *con)
-+void ceph_con_init(struct ceph_connection *con, void *private,
-+	const struct ceph_connection_operations *ops,
-+	struct ceph_messenger *msgr, __u8 entity_type, __u64 entity_num)
- {
- 	dout("con_init %p\n", con);
- 	memset(con, 0, sizeof(*con));
-+	con->private = private;
-+	con->ops = ops;
- 	atomic_set(&con->nref, 1);
- 	con->msgr = msgr;
- 
- 	con_sock_state_init(con);
- 
-+	con->peer_name.type = (__u8) entity_type;
-+	con->peer_name.num = cpu_to_le64(entity_num);
-+
- 	mutex_init(&con->mutex);
- 	INIT_LIST_HEAD(&con->out_queue);
- 	INIT_LIST_HEAD(&con->out_sent);
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -142,11 +142,9 @@ static int __open_session(struct ceph_mo
- 		monc->sub_renew_after = jiffies;  /* i.e., expired */
- 		monc->want_next_osdmap = !!monc->want_next_osdmap;
- 
--		ceph_con_init(&monc->client->msgr, &monc->con);
--		monc->con.private = monc;
--		monc->con.ops = &mon_con_ops;
--		monc->con.peer_name.type = CEPH_ENTITY_TYPE_MON;
--		monc->con.peer_name.num = cpu_to_le64(monc->cur_mon);
-+		ceph_con_init(&monc->con, monc, &mon_con_ops,
-+			&monc->client->msgr,
-+			CEPH_ENTITY_TYPE_MON, monc->cur_mon);
- 
- 		dout("open_session mon%d opening\n", monc->cur_mon);
- 		ceph_con_open(&monc->con,
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -640,11 +640,8 @@ static struct ceph_osd *create_osd(struc
- 	INIT_LIST_HEAD(&osd->o_osd_lru);
- 	osd->o_incarnation = 1;
- 
--	ceph_con_init(&osdc->client->msgr, &osd->o_con);
--	osd->o_con.private = osd;
--	osd->o_con.ops = &osd_con_ops;
--	osd->o_con.peer_name.type = CEPH_ENTITY_TYPE_OSD;
--	osd->o_con.peer_name.num = cpu_to_le64(onum);
-+	ceph_con_init(&osd->o_con, osd, &osd_con_ops, &osdc->client->msgr,
-+		CEPH_ENTITY_TYPE_OSD, onum);
- 
- 	INIT_LIST_HEAD(&osd->o_keepalive_item);
- 	return osd;
+ 		if (tcpu != RPS_NO_CPU && cpu_online(tcpu)) {
+ 			*rflowp = rflow;
 
 
