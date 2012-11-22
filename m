@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab2KVWcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:32:52 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49161 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758457Ab2KVWbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:31:45 -0500
-Date: Thu, 22 Nov 2012 09:54:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v2 1/3] CLK: get rid of HAVE_CLK_PREPARE
-Message-ID: <20121122095448.GC5764@n2100.arm.linux.org.uk>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com> <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com> <1353562482-12422-2-git-send-email-dmitry.torokhov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353562482-12422-2-git-send-email-dmitry.torokhov@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758458Ab2KVWdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:33:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49018 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab2KVSdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:52 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        "Dae S. Kim" <dae@velatum.com>, Colin Cross <ccross@android.com>
+Subject: [ 37/83] Revert "Staging: Android alarm: IOCTL command encoding fix"
+Date: Wed, 21 Nov 2012 16:41:59 -0800
+Message-Id: <20121122004216.768643555@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 09:34:40PM -0800, Dmitry Torokhov wrote:
-> HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
-> platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
-> switched to common clk framework, so we can delete this option now.
-> 
-> As part of this change we move declarations of clk_prepare() and
-> clk_unprepare() under HAVE_CLK and provide stubs if this option is not
-> enabled.
-> 
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-NAK, until some proper investigation about whether this can be removed
-has been done.
+------------------
+
+From: Colin Cross <ccross@android.com>
+
+commit d38e0e3fed4f58bcddef4dc93a591dfe2f651cb0 upstream.
+
+Commit 6bd4a5d96c08dc2380f8053b1bd4f879f55cd3c9 changed the
+ANDROID_ALARM_GET_TIME ioctls from IOW to IOR.  While technically
+correct, the _IOC_DIR bits are ignored by alarm_ioctl, so the
+commit breaks a userspace ABI used by all existing Android devices
+for a purely cosmetic reason.  Revert it.
+
+Cc: Dae S. Kim <dae@velatum.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/android/android_alarm.h |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+--- a/drivers/staging/android/android_alarm.h
++++ b/drivers/staging/android/android_alarm.h
+@@ -51,12 +51,10 @@ enum android_alarm_return_flags {
+ #define ANDROID_ALARM_WAIT                  _IO('a', 1)
+ 
+ #define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
+-#define ALARM_IOR(c, type, size)            _IOR('a', (c) | ((type) << 4), size)
+-
+ /* Set alarm */
+ #define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
+ #define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
+-#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOR(4, type, struct timespec)
++#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
+ #define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
+ #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
+ #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+
+
