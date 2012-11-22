@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab2KVWjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:39:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49006 "EHLO mail.kernel.org"
+	id S1758688Ab2KVWmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:42:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49009 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab2KVSdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:43 -0500
+	id S1753531Ab2KVSdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 40/83] USB: usb_wwan: fix bulk-urb allocation
-Date: Wed, 21 Nov 2012 16:42:02 -0800
-Message-Id: <20121122004217.089503376@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 054/171] reiserfs: Protect reiserfs_quota_write() with write lock
+Date: Wed, 21 Nov 2012 16:40:00 -0800
+Message-Id: <20121122004038.788030381@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 8e493ca1767d4951ed1322abaa74d6edbca29918 upstream.
+commit 361d94a338a3fd0cee6a4ea32bbc427ba228e628 upstream.
 
-Make sure we do not allocate urbs if we do not have a bulk endpoint.
+Calls into reiserfs journalling code and reiserfs_get_block() need to
+be protected with write lock. We remove write lock around calls to high
+level quota code in the next patch so these paths would suddently become
+unprotected.
 
-Legacy code used incorrect assumption to test for bulk endpoints.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/reiserfs/super.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -455,9 +455,6 @@ static struct urb *usb_wwan_setup_urb(st
- 	struct usb_serial *serial = port->serial;
- 	struct urb *urb;
- 
--	if (endpoint == -1)
--		return NULL;	/* endpoint not needed */
--
- 	urb = usb_alloc_urb(0, GFP_KERNEL);	/* No ISO */
- 	if (urb == NULL) {
- 		dbg("%s: alloc for endpoint %d failed.", __func__, endpoint);
-@@ -487,6 +484,9 @@ int usb_wwan_port_probe(struct usb_seria
- 	init_usb_anchor(&portdata->delayed);
- 
- 	for (i = 0; i < N_IN_URB; i++) {
-+		if (!port->bulk_in_size)
-+			break;
-+
- 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
- 		if (!buffer)
- 			goto bail_out_error;
-@@ -499,8 +499,8 @@ int usb_wwan_port_probe(struct usb_seria
- 		portdata->in_urbs[i] = urb;
-  	}
- 	for (i = 0; i < N_OUT_URB; i++) {
--		if (port->bulk_out_endpointAddress == -1)
--			continue;
-+		if (!port->bulk_out_size)
-+			break;
- 
- 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
- 		if (!buffer)
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -2303,7 +2303,9 @@ static ssize_t reiserfs_quota_write(stru
+ 		tocopy = sb->s_blocksize - offset < towrite ?
+ 		    sb->s_blocksize - offset : towrite;
+ 		tmp_bh.b_state = 0;
++		reiserfs_write_lock(sb);
+ 		err = reiserfs_get_block(inode, blk, &tmp_bh, GET_BLOCK_CREATE);
++		reiserfs_write_unlock(sb);
+ 		if (err)
+ 			goto out;
+ 		if (offset || tocopy != sb->s_blocksize)
+@@ -2319,10 +2321,12 @@ static ssize_t reiserfs_quota_write(stru
+ 		flush_dcache_page(bh->b_page);
+ 		set_buffer_uptodate(bh);
+ 		unlock_buffer(bh);
++		reiserfs_write_lock(sb);
+ 		reiserfs_prepare_for_journal(sb, bh, 1);
+ 		journal_mark_dirty(current->journal_info, sb, bh);
+ 		if (!journal_quota)
+ 			reiserfs_add_ordered_list(inode, bh);
++		reiserfs_write_unlock(sb);
+ 		brelse(bh);
+ 		offset = 0;
+ 		towrite -= tocopy;
 
 
