@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab2KVUmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 15:42:08 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45127 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab2KVUmF (ORCPT
+	id S965007Ab2KVS6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:58:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964933Ab2KVS6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 15:42:05 -0500
+	Thu, 22 Nov 2012 13:58:47 -0500
+Date: Wed, 21 Nov 2012 17:47:49 -0800
+From: tip-bot for Jacob Shin <jacob.shin@amd.com>
+Message-ID: <tip-4eea6aa581abfeb2695ebe9f9d4672597e1bdd4b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1353123563-3103-11-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-11-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm:
+  if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+Git-Commit-ID: 4eea6aa581abfeb2695ebe9f9d4672597e1bdd4b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Date: Thu, 22 Nov 2012 14:52:35 +0530
-Message-ID: <CAA_L+UPNOLg=ZuZofc-uhybXKuBO37XBSGa2vDLYZ7wLkgAb=A@mail.gmail.com>
-Subject: [PATCH 3.6.6 0/3] i82975x_edac: fatal bug fixed
-From: Arvind R <arvino55@gmail.com>
-To: linux-edac@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 17:47:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH 3.6.6 0/3] i82975x_edac: fatal bug fixed
+Commit-ID:  4eea6aa581abfeb2695ebe9f9d4672597e1bdd4b
+Gitweb:     http://git.kernel.org/tip/4eea6aa581abfeb2695ebe9f9d4672597e1bdd4b
+Author:     Jacob Shin <jacob.shin@amd.com>
+AuthorDate: Fri, 16 Nov 2012 19:38:47 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:08 -0800
 
-This patchset fixes fatal crash caused by i82975x_edac driver.
-It consists of 3 parts:
-1. Move the debug code to conform to the edac_core standard
-   instead of using hardcoded ifdefs. Also add some more dram
-   info outputs in the debug output.
-2. Cleanup the long lines and other format errors found. Use
-   defines for numeric constants used repeatedly in code.
-3. Fix the crash caused by wrong memory_layer initialisation
-   and dimm_label initialisation. Almost total, but cleaner
-   rewrite of csrow_info initialisation. And a terser error
-   reporting function.
-The patch has been applied to linux-3.6.6 and tested on
-on Asus P5WDG2 WS Pro mobo with 7 memory configurations,
-3 symmetric and 4 assymmetric:
-Symmetric:
- 1. 2 ECC DIMMS, one on slot A1 and other on slot B1
- 2. 2 ECC DIMMS, one on slot A2 and other on slot B2
- 3. 4 ECC DIMMS, mobo fully populated.
-Assymmetric:
- 1. 1 ECC DIMM on A1
- 2. 1 ECC DIMM on B1
- 3. 2 ECC DIMMS on A1 and B2
- 4. 3 ECC DIMMS on A1, B2, B2
-Size, label values in /sys/devices/system/edac/mc/mc0 found
-consistent.
+x86, mm: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
 
-Tested-by: Arvind R. <arvino55@gmail.com>
-Signed-off-by: Arvind R. <arvino55@gmail.com>
+There could be cases where user supplied memmap=exactmap memory
+mappings do not mark the region where the kernel .text .data and
+.bss reside as E820_RAM, as reported here:
+
+https://lkml.org/lkml/2012/8/14/86
+
+Handle it by complaining, and adding the range back into the e820.
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1353123563-3103-11-git-send-email-yinghai@kernel.org
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/edac/i82975x_edac.c |  361 +++++++++++++++++-----------------
- 1 file changed, 185 insertions(+), 176 deletions(-)
+ arch/x86/kernel/setup.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 4bd8921..d85cbd9 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -832,6 +832,20 @@ void __init setup_arch(char **cmdline_p)
+ 	insert_resource(&iomem_resource, &data_resource);
+ 	insert_resource(&iomem_resource, &bss_resource);
+ 
++	/*
++	 * Complain if .text .data and .bss are not marked as E820_RAM and
++	 * attempt to fix it by adding the range. We may have a confused BIOS,
++	 * or the user may have incorrectly supplied it via memmap=exactmap. If
++	 * we really are running on top non-RAM, we will crash later anyways.
++	 */
++	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
++		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
++
++		e820_add_region(code_resource.start,
++				__pa(__brk_limit) - code_resource.start + 1,
++				E820_RAM);
++	}
++
+ 	trim_bios_range();
+ #ifdef CONFIG_X86_32
+ 	if (ppro_with_ram_bug()) {
