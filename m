@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab2KVSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:49:29 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:63565 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab2KVStZ (ORCPT
+	id S932265Ab2KVSt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:49:27 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44975 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab2KVStV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:49:25 -0500
-X-IronPort-AV: E=Sophos;i="4.83,302,1352073600"; 
-   d="scan'208";a="215291704"
-Message-ID: <50AE69EF.4060909@citrix.com>
-Date: Thu, 22 Nov 2012 18:07:43 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com>
-In-Reply-To: <50AE6542.3020302@zytor.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Nov 2012 13:49:21 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org, trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] mips: lantiq: Fix typo endianess in dma.c
+Date: Fri, 23 Nov 2012 01:05:13 +0900
+Message-Id: <1353600313-11983-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.273.g2d242fb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/11/12 17:47, H. Peter Anvin wrote:
-> The other thing that should be considered here is how utterly 
-> preposterous the notion of doing in-guest crash dumping is in a system 
-> that contains a hypervisor.  The reason for kdump is that on bare metal 
-> there are no other options, but in a hypervisor system the right thing 
-> should be for the hypervisor to do the dump (possibly spawning a clean 
-> I/O domain if the I/O domain is necessary to access the media.)
->
-> There is absolutely no reason to have a crashkernel sitting around in 
-> each guest, consuming memory, and possibly get corrupt.
->
-> 	-hpa
->
+Correct spelling typo ENDIANESS to ENDIANNESS in
+arc/mips/lantiq/xway/dma.c
 
-I agree that regular guests should not be using the kexec/kdump. 
-However, this patch series is required for allowing a pvops kernel to be
-a crash kernel for Xen, which is very important from dom0/Xen's point of
-view.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ arch/mips/lantiq/xway/dma.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
+index 55d2c4f..0f7228d 100644
+--- a/arch/mips/lantiq/xway/dma.c
++++ b/arch/mips/lantiq/xway/dma.c
+@@ -48,7 +48,7 @@
+ #define DMA_CLK_DIV4		BIT(6)		/* polling clock divider */
+ #define DMA_2W_BURST		BIT(1)		/* 2 word burst length */
+ #define DMA_MAX_CHANNEL		20		/* the soc has 20 channels */
+-#define DMA_ETOP_ENDIANESS	(0xf << 8) /* endianess swap etop channels */
++#define DMA_ETOP_ENDIANNESS	(0xf << 8) /* endianness swap etop channels */
+ #define DMA_WEIGHT	(BIT(17) | BIT(16))	/* default channel wheight */
+ 
+ #define ltq_dma_r32(x)			ltq_r32(ltq_dma_membase + (x))
+@@ -191,10 +191,10 @@ ltq_dma_init_port(int p)
+ 	switch (p) {
+ 	case DMA_PORT_ETOP:
+ 		/*
+-		 * Tell the DMA engine to swap the endianess of data frames and
++		 * Tell the DMA engine to swap the endianness of data frames and
+ 		 * drop packets if the channel arbitration fails.
+ 		 */
+-		ltq_dma_w32_mask(0, DMA_ETOP_ENDIANESS | DMA_PDEN,
++		ltq_dma_w32_mask(0, DMA_ETOP_ENDIANNESS | DMA_PDEN,
+ 			LTQ_DMA_PCTRL);
+ 		break;
+ 
 -- 
-Andrew Cooper - Dom0 Kernel Engineer, Citrix XenServer
-T: +44 (0)1223 225 900, http://www.citrix.com
+1.8.0.273.g2d242fb
 
