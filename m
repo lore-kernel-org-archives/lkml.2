@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750898Ab2KVS02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:26:28 -0500
-Received: from science.horizon.com ([71.41.210.146]:47717 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750750Ab2KVS01 (ORCPT
+	id S1751135Ab2KVS0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:26:37 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42600 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2KVS0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:26:27 -0500
-Date: 22 Nov 2012 12:58:24 -0500
-Message-ID: <20121122175824.19604.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux-kernel@vger.kernel.org
-Subject: 3.7-rc6 soft lockup in kswapd0
-Cc: linux@horizon.com
+	Thu, 22 Nov 2012 13:26:33 -0500
+Date: Thu, 22 Nov 2012 10:27:44 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rene Buergel <rene.buergel@sohard.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, mroos@linux.ee
+Subject: Re: [PATCH] ezusb: add dependency to USB
+Message-ID: <20121122182744.GA25505@kroah.com>
+References: <6ea638d3-6ab4-42af-aadb-398cc8593f08@shmail0>
+ <f90b1aa6-492d-4431-9334-cfcfa4a92b9a@shmail0>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <f90b1aa6-492d-4431-9334-cfcfa4a92b9a@shmail0>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm having an interesting issue with a uniprocessor Pentium 4 machine
-locking up overnight.  3.6.5 didn't do that, but 3.7-rc6 is not doing
-so well.
+On Thu, Nov 22, 2012 at 07:10:50PM +0100, Rene Buergel wrote:
+> This fixes an error during modpost, when ezusb is built into the kernel while USB is built as module.
+> 
+> Signed-off-by: René Bürgel <rene.buergel@sohard.de>
+> --
+> diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+> index a8f0523..fecde69 100644
+> --- a/drivers/usb/misc/Kconfig
+> +++ b/drivers/usb/misc/Kconfig
+> @@ -246,6 +246,7 @@ config USB_YUREX
+> 
+>  config USB_EZUSB_FX2
+>  	tristate "Functions for loading firmware on EZUSB chips"
+> +	depends on USB
 
-It's kind of a funny lockup.  Some things work:
+Ah, that makes sense, thanks for the fix, I'll queue it up for 3.8 and
+backport it for 3.7-stable as well.
 
-- TCP SYN handshake
-- Alt-SysRq
+thanks,
 
-And others don't:
-
-- Caps lock
-- Shift-PgUp
-- Alt-Fn
-- Screen unblanking
-- Actually talking to a daemon
-
-This is a "headless" machine that boots to a text console and has zero
-console activity until the lockup.
-
-This has happened overnight, three nights in a row.  I had to turn screen
-blanking off to see anything on the screen.  Running the daily cron jobs
-manually just now didn't trigger it, so I haven't found a proximate cause.
-
-The *first* error has scrolled off the screen, but what I can see
-an infinite stream (at about 20s intervals) of:
-
-BUG: soft lockup - CPU#0 stuck for 22s! [kswapd0:317]
-Pid: 317, comm: kswapd0 Not tainted 3.7.0-RC6 #224 HP Pavilion 04 P6319A-ABA 750N/P4B266LA
-EIP: 0060:[<c10571f7>] EFLAGS: 00000202 CPU: 0
-EIP is at __zone_watermark_ok+0x5f/7e, 0x67/7e, 0x6e/0x7e, or 0x74/7e
-(Didn't type registers & stack)
-Call Trace:
- [<c105774f>] ? zone_watermark_ok_safe+0x34/0x3a
- [<c105ec7e>] ? kswapd+0x2fa/0x6f6
- [<c105e984>] ? try_to_free_pages+0x4b8/0x4b8
- [<c103106b>] ? kthread+0x67/0x6c
- [<c12559b7>] ? ret_from_kernel_thread+0x1b/0x28
- [<c1031004>] ? -_kthread_parkme+0x4c.0x4c
-Code: (didn't type in first line)
-                                5f                        67                     6e                  74                             7e
- c9 39 d6 7f 14 eb 1c 6b c1 2c <8b> 44 05 60 d3 e0 29 c6 <d1> fb 39 de 7e 09 41 <39> f9 7c ea b0 01 <eb> 02 31 c0 5a 5b 5e 5f 5d c3 01 14 85 7c 16
-
-
-The lack of scrollback limits me to 49 lines of SysRq output, and usually the most interesting
-part disappears off the screen.  Two things I can see:
-
-- SysRq-W shows no blocked tasks
-- SysRq-M shows zero swap in use, and apparently adequate free memory
-	DMA: <various segments> = 9048kB
-	Normal: <various> = 116312kB
-	HighMem: <various> = 41660kB
-	416557 total pagecache pages
-	0 pages in swap cache
-	Swap cache stats: add 0, delete 0, find 0/0
-	Free swap  = 4883724kB
-	Total swap = 4883724kB
-	524260 pages RAM
-	296958 pages HighMem
-	5221 pages reserved
-	406417 pages shared
-	351419 pages non-shared
-
-Does anyone have any debugging suggestions?  Waiting overnight to
-make a good/bad decision makes bisecting pretty slow...
+greg k-h
