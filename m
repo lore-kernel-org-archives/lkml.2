@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290Ab2KVT5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:57:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030259Ab2KVTvv (ORCPT
+	id S1757123Ab2KVT52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:57:28 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52480 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530Ab2KVT5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:51:51 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        laurent_navet@yahoo.com, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 39/46] staging: line6: drop amp/effects dump request triggers
-Date: Thu, 22 Nov 2012 20:49:18 +0100
-Message-Id: <1353613765-18690-40-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
-References: <1353613765-18690-1-git-send-email-stefanha@gmail.com>
+	Thu, 22 Nov 2012 14:57:23 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com
+Cc: broonie@opensource.wolfsonmicro.com, patches@linaro.org
+Subject: [PATCH 01/10] ASoC: wm8510: remove invalid free of devm_ allocated data
+Date: Thu, 22 Nov 2012 09:38:33 +0530
+Message-Id: <1353557322-25353-2-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
+References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the driver no longer needs to keep state of device parameters it
-is no longer necessary to refresh state when messages that affect other
-parameters are sent.  Drop the code to trigger a dump when amp/effects
-are changed.
+Fixes following warning.
+sound/soc/codecs/wm8510.c:614:1-6: WARNING: invalid free of devm_ allocated data
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- drivers/staging/line6/pod.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ sound/soc/codecs/wm8510.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 157ef68..aa3a547 100644
---- a/drivers/staging/line6/pod.c
-+++ b/drivers/staging/line6/pod.c
-@@ -174,12 +174,6 @@ void line6_pod_process_message(struct usb_line6_pod *pod)
- 		/* intentionally no break here! */
- 
- 	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_HOST:
--		if ((buf[1] == POD_amp_model_setup) ||
--		    (buf[1] == POD_effect_setup))
--			/* these also affect other settings */
--			line6_dump_request_async(&pod->dumpreq, &pod->line6, 0,
--						 LINE6_DUMP_CURRENT);
--
- 		break;
- 
- 	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_DEVICE:
-@@ -288,9 +282,6 @@ void line6_pod_transmit_parameter(struct usb_line6_pod *pod, int param,
+diff --git a/sound/soc/codecs/wm8510.c b/sound/soc/codecs/wm8510.c
+index c12a54e..923e7e1 100644
+--- a/sound/soc/codecs/wm8510.c
++++ b/sound/soc/codecs/wm8510.c
+@@ -608,10 +608,7 @@ static int wm8510_probe(struct snd_soc_codec *codec)
+ /* power down chip */
+ static int wm8510_remove(struct snd_soc_codec *codec)
  {
- 	if (line6_transmit_parameter(&pod->line6, param, value) == 0)
- 		pod_store_parameter(pod, param, value);
+-	struct wm8510_priv *wm8510 = snd_soc_codec_get_drvdata(codec);
 -
--	if ((param == POD_amp_model_setup) || (param == POD_effect_setup))	/* these also affect other settings */
--		line6_invalidate_current(&pod->dumpreq);
+ 	wm8510_set_bias_level(codec, SND_SOC_BIAS_OFF);
+-	kfree(wm8510);
+ 	return 0;
  }
  
- /*
 -- 
-1.8.0
+1.7.4.1
 
