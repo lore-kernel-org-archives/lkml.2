@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab2KVWnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:43:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49007 "EHLO mail.kernel.org"
+	id S1753486Ab2KVSdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:33:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48998 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab2KVSdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:33:39 -0500
+	id S1753086Ab2KVSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 14/38] USB: option: add Alcatel X220/X500D USB IDs
-Date: Wed, 21 Nov 2012 16:39:57 -0800
-Message-Id: <20121122003905.769880420@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/38] ipv4: avoid undefined behavior in do_ip_setsockopt()
+Date: Wed, 21 Nov 2012 16:40:00 -0800
+Message-Id: <20121122003906.068748566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
 References: <20121122003904.262382971@linuxfoundation.org>
@@ -25,34 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
 
-commit c0bc3098871dd9b964f6b45ec1e4d70d87811744 upstream.
+From: Xi Wang <xi.wang@gmail.com>
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
+
+(1<<optname) is undefined behavior in C with a negative optname or
+optname larger than 31.  In those cases the result of the shift is
+not necessarily zero (e.g., on x86).
+
+This patch simplifies the code with a switch statement on optname.
+It also allows the compiler to generate better code (e.g., using a
+64-bit mask).
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ip_sockglue.c |   33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -286,6 +286,7 @@ static void option_instat_callback(struc
- /* ALCATEL PRODUCTS */
- #define ALCATEL_VENDOR_ID			0x1bbb
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
-+#define ALCATEL_PRODUCT_X220_X500D		0x0017
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -467,18 +467,27 @@ static int do_ip_setsockopt(struct sock
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int val = 0, err;
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1163,6 +1164,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+-	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
+-			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
+-			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
+-			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
+-			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
+-			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
+-			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
+-			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
+-	    optname == IP_MULTICAST_TTL ||
+-	    optname == IP_MULTICAST_ALL ||
+-	    optname == IP_MULTICAST_LOOP ||
+-	    optname == IP_RECVORIGDSTADDR) {
++	switch (optname) {
++	case IP_PKTINFO:
++	case IP_RECVTTL:
++	case IP_RECVOPTS:
++	case IP_RECVTOS:
++	case IP_RETOPTS:
++	case IP_TOS:
++	case IP_TTL:
++	case IP_HDRINCL:
++	case IP_MTU_DISCOVER:
++	case IP_RECVERR:
++	case IP_ROUTER_ALERT:
++	case IP_FREEBIND:
++	case IP_PASSSEC:
++	case IP_TRANSPARENT:
++	case IP_MINTTL:
++	case IP_NODEFRAG:
++	case IP_MULTICAST_TTL:
++	case IP_MULTICAST_ALL:
++	case IP_MULTICAST_LOOP:
++	case IP_RECVORIGDSTADDR:
+ 		if (optlen >= sizeof(int)) {
+ 			if (get_user(val, (int __user *) optval))
+ 				return -EFAULT;
 
 
