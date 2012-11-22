@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2KVSli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:41:38 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:34802
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755201Ab2KVSlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:41:35 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(za62pz98dI1432Izz1de0h1202h1d1ah1d2ahzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 22 Nov 2012 14:12:41 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH v2 1/3] CLK: get rid of HAVE_CLK_PREPARE
-Message-ID: <20121122061238.GB24693@S2100-06.ap.freescale.net>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353562482-12422-1-git-send-email-dmitry.torokhov@gmail.com>
- <1353562482-12422-2-git-send-email-dmitry.torokhov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1353562482-12422-2-git-send-email-dmitry.torokhov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S1755332Ab2KVSkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:40:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755157Ab2KVSke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Florent Fourcot <florent.fourcot@enst-bretagne.fr>,
+        Cyril Brulebois <kibi@debian.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 039/171] r8169: Fix WoL on RTL8168d/8111d.
+Date: Wed, 21 Nov 2012 16:39:45 -0800
+Message-Id: <20121122004037.285321535@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 09:34:40PM -0800, Dmitry Torokhov wrote:
-> HAVE_CLK_PREPARE is automatically selected by COMMON_CLK and the only
-> platform that explicitly selects HAVE_CLK_PREPARE is MXS which has been
-> switched to common clk framework, so we can delete this option now.
-> 
-> As part of this change we move declarations of clk_prepare() and
-> clk_unprepare() under HAVE_CLK and provide stubs if this option is not
-> enabled.
-> 
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+------------------
+
+From: Cyril Brulebois <kibi@debian.org>
+
+commit b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd upstream.
+
+This regression was spotted between Debian squeeze and Debian wheezy
+kernels (respectively based on 2.6.32 and 3.2). More info about
+Wake-on-LAN issues with Realtek's 816x chipsets can be found in the
+following thread: http://marc.info/?t=132079219400004
+
+Probable regression from d4ed95d796e5126bba51466dc07e287cebc8bd19;
+more chipsets are likely affected.
+
+Tested on top of a 3.2.23 kernel.
+
+Reported-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Tested-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Hinted-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Cyril Brulebois <kibi@debian.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/ethernet/realtek/r8169.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3488,6 +3488,8 @@ static void rtl_wol_suspend_quirk(struct
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 
+ 	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_25:
++	case RTL_GIGA_MAC_VER_26:
+ 	case RTL_GIGA_MAC_VER_29:
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_32:
+
 
