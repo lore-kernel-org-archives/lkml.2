@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab2KVVw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:52:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49627 "EHLO mail.kernel.org"
+	id S1757965Ab2KVVxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:53:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754954Ab2KVSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 058/171] crush: be more tolerant of nonsensical crush maps
-Date: Wed, 21 Nov 2012 16:40:04 -0800
-Message-Id: <20121122004039.192156219@linuxfoundation.org>
+Subject: [ 056/171] crush: clean up types, const-ness
+Date: Wed, 21 Nov 2012 16:40:02 -0800
+Message-Id: <20121122004038.989002703@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,110 +27,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sage Weil <sage@inktank.com>
 
-(cherry picked from commit a1f4895be8bf1ba56c2306b058f51619e9b0e8f8)
+(cherry picked from commit 8b12d47b80c7a34dffdd98244d99316db490ec58)
 
-If we get a map that doesn't make sense, error out or ignore the badness
-instead of BUGging out.  This reflects the ceph.git commits
-9895f0bff7dc68e9b49b572613d242315fb11b6c and
-8ded26472058d5205803f244c2f33cb6cb10de79.
+Move various types from int -> __u32 (or similar), and add const as
+appropriate.
+
+This reflects changes that have been present in the userland implementation
+for some time.
 
 Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/crush/mapper.c |   33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ include/linux/crush/crush.h  |    2 +-
+ include/linux/crush/mapper.h |    6 +++---
+ net/ceph/crush/crush.c       |    8 ++++----
+ net/ceph/crush/mapper.c      |   31 ++++++++++++++++---------------
+ 4 files changed, 24 insertions(+), 23 deletions(-)
 
+--- a/include/linux/crush/crush.h
++++ b/include/linux/crush/crush.h
+@@ -168,7 +168,7 @@ struct crush_map {
+ 
+ 
+ /* crush.c */
+-extern int crush_get_bucket_item_weight(struct crush_bucket *b, int pos);
++extern int crush_get_bucket_item_weight(const struct crush_bucket *b, int pos);
+ extern void crush_calc_parents(struct crush_map *map);
+ extern void crush_destroy_bucket_uniform(struct crush_bucket_uniform *b);
+ extern void crush_destroy_bucket_list(struct crush_bucket_list *b);
+--- a/include/linux/crush/mapper.h
++++ b/include/linux/crush/mapper.h
+@@ -10,11 +10,11 @@
+ 
+ #include "crush.h"
+ 
+-extern int crush_find_rule(struct crush_map *map, int pool, int type, int size);
+-extern int crush_do_rule(struct crush_map *map,
++extern int crush_find_rule(const struct crush_map *map, int ruleset, int type, int size);
++extern int crush_do_rule(const struct crush_map *map,
+ 			 int ruleno,
+ 			 int x, int *result, int result_max,
+ 			 int forcefeed,    /* -1 for none */
+-			 __u32 *weights);
++			 const __u32 *weights);
+ 
+ #endif
+--- a/net/ceph/crush/crush.c
++++ b/net/ceph/crush/crush.c
+@@ -26,9 +26,9 @@ const char *crush_bucket_alg_name(int al
+  * @b: bucket pointer
+  * @p: item index in bucket
+  */
+-int crush_get_bucket_item_weight(struct crush_bucket *b, int p)
++int crush_get_bucket_item_weight(const struct crush_bucket *b, int p)
+ {
+-	if (p >= b->size)
++	if ((__u32)p >= b->size)
+ 		return 0;
+ 
+ 	switch (b->alg) {
+@@ -124,10 +124,9 @@ void crush_destroy_bucket(struct crush_b
+  */
+ void crush_destroy(struct crush_map *map)
+ {
+-	int b;
+-
+ 	/* buckets */
+ 	if (map->buckets) {
++		__s32 b;
+ 		for (b = 0; b < map->max_buckets; b++) {
+ 			if (map->buckets[b] == NULL)
+ 				continue;
+@@ -138,6 +137,7 @@ void crush_destroy(struct crush_map *map
+ 
+ 	/* rules */
+ 	if (map->rules) {
++		__u32 b;
+ 		for (b = 0; b < map->max_rules; b++)
+ 			kfree(map->rules[b]);
+ 		kfree(map->rules);
 --- a/net/ceph/crush/mapper.c
 +++ b/net/ceph/crush/mapper.c
-@@ -152,8 +152,8 @@ static int bucket_list_choose(struct cru
- 			return bucket->h.items[i];
- 	}
- 
--	BUG_ON(1);
--	return 0;
-+	dprintk("bad list sums for bucket %d\n", bucket->h.id);
-+	return bucket->h.items[0];
- }
- 
- 
-@@ -239,6 +239,7 @@ static int bucket_straw_choose(struct cr
- static int crush_bucket_choose(struct crush_bucket *in, int x, int r)
+@@ -32,9 +32,9 @@
+  * @type: storage ruleset type (user defined)
+  * @size: output set size
+  */
+-int crush_find_rule(struct crush_map *map, int ruleset, int type, int size)
++int crush_find_rule(const struct crush_map *map, int ruleset, int type, int size)
  {
- 	dprintk(" crush_bucket_choose %d x=%d r=%d\n", in->id, x, r);
-+	BUG_ON(in->size == 0);
- 	switch (in->alg) {
- 	case CRUSH_BUCKET_UNIFORM:
- 		return bucket_uniform_choose((struct crush_bucket_uniform *)in,
-@@ -253,7 +254,7 @@ static int crush_bucket_choose(struct cr
- 		return bucket_straw_choose((struct crush_bucket_straw *)in,
- 					   x, r);
- 	default:
--		BUG_ON(1);
-+		dprintk("unknown bucket %d alg %d\n", in->id, in->alg);
- 		return in->items[0];
- 	}
- }
-@@ -354,7 +355,11 @@ static int crush_choose(const struct cru
- 					item = bucket_perm_choose(in, x, r);
- 				else
- 					item = crush_bucket_choose(in, x, r);
--				BUG_ON(item >= map->max_devices);
-+				if (item >= map->max_devices) {
-+					dprintk("   bad item %d\n", item);
-+					skip_rep = 1;
-+					break;
-+				}
+-	int i;
++	__u32 i;
  
- 				/* desired type? */
- 				if (item < 0)
-@@ -365,8 +370,12 @@ static int crush_choose(const struct cru
+ 	for (i = 0; i < map->max_rules; i++) {
+ 		if (map->rules[i] &&
+@@ -72,7 +72,7 @@ static int bucket_perm_choose(struct cru
+ 	unsigned i, s;
  
- 				/* keep going? */
- 				if (itemtype != type) {
--					BUG_ON(item >= 0 ||
--					       (-1-item) >= map->max_buckets);
-+					if (item >= 0 ||
-+					    (-1-item) >= map->max_buckets) {
-+						dprintk("   bad item type %d\n", type);
-+						skip_rep = 1;
-+						break;
-+					}
- 					in = map->buckets[-1-item];
- 					retry_bucket = 1;
- 					continue;
-@@ -478,7 +487,10 @@ int crush_do_rule(const struct crush_map
+ 	/* start a new permutation if @x has changed */
+-	if (bucket->perm_x != x || bucket->perm_n == 0) {
++	if (bucket->perm_x != (__u32)x || bucket->perm_n == 0) {
+ 		dprintk("bucket %d new x=%d\n", bucket->id, x);
+ 		bucket->perm_x = x;
+ 
+@@ -219,7 +219,7 @@ static int bucket_tree_choose(struct cru
+ static int bucket_straw_choose(struct crush_bucket_straw *bucket,
+ 			       int x, int r)
+ {
+-	int i;
++	__u32 i;
+ 	int high = 0;
+ 	__u64 high_draw = 0;
+ 	__u64 draw;
+@@ -262,7 +262,7 @@ static int crush_bucket_choose(struct cr
+  * true if device is marked "out" (failed, fully offloaded)
+  * of the cluster
+  */
+-static int is_out(struct crush_map *map, __u32 *weight, int item, int x)
++static int is_out(const struct crush_map *map, const __u32 *weight, int item, int x)
+ {
+ 	if (weight[item] >= 0x10000)
+ 		return 0;
+@@ -287,16 +287,16 @@ static int is_out(struct crush_map *map,
+  * @recurse_to_leaf: true if we want one device under each item of given type
+  * @out2: second output vector for leaf items (if @recurse_to_leaf)
+  */
+-static int crush_choose(struct crush_map *map,
++static int crush_choose(const struct crush_map *map,
+ 			struct crush_bucket *bucket,
+-			__u32 *weight,
++			const __u32 *weight,
+ 			int x, int numrep, int type,
+ 			int *out, int outpos,
+ 			int firstn, int recurse_to_leaf,
+ 			int *out2)
+ {
+ 	int rep;
+-	int ftotal, flocal;
++	unsigned int ftotal, flocal;
+ 	int retry_descent, retry_bucket, skip_rep;
+ 	struct crush_bucket *in = bucket;
+ 	int r;
+@@ -304,7 +304,7 @@ static int crush_choose(struct crush_map
+ 	int item = 0;
+ 	int itemtype;
+ 	int collide, reject;
+-	const int orig_tries = 5; /* attempts before we fall back to search */
++	const unsigned int orig_tries = 5; /* attempts before we fall back to search */
+ 
+ 	dprintk("CHOOSE%s bucket %d x %d outpos %d numrep %d\n", recurse_to_leaf ? "_LEAF" : "",
+ 		bucket->id, x, outpos, numrep);
+@@ -325,7 +325,7 @@ static int crush_choose(struct crush_map
+ 				r = rep;
+ 				if (in->alg == CRUSH_BUCKET_UNIFORM) {
+ 					/* be careful */
+-					if (firstn || numrep >= in->size)
++					if (firstn || (__u32)numrep >= in->size)
+ 						/* r' = r + f_total */
+ 						r += ftotal;
+ 					else if (in->size % numrep == 0)
+@@ -425,7 +425,7 @@ reject:
+ 						/* else give up */
+ 						skip_rep = 1;
+ 					dprintk("  reject %d  collide %d  "
+-						"ftotal %d  flocal %d\n",
++						"ftotal %u  flocal %u\n",
+ 						reject, collide, ftotal,
+ 						flocal);
+ 				}
+@@ -456,9 +456,9 @@ reject:
+  * @result_max: maximum result size
+  * @force: force initial replica choice; -1 for none
+  */
+-int crush_do_rule(struct crush_map *map,
++int crush_do_rule(const struct crush_map *map,
+ 		  int ruleno, int x, int *result, int result_max,
+-		  int force, __u32 *weight)
++		  int force, const __u32 *weight)
+ {
+ 	int result_len;
+ 	int force_context[CRUSH_MAX_DEPTH];
+@@ -473,7 +473,7 @@ int crush_do_rule(struct crush_map *map,
+ 	int osize;
+ 	int *tmp;
+ 	struct crush_rule *rule;
+-	int step;
++	__u32 step;
+ 	int i, j;
  	int numrep;
  	int firstn;
- 
--	BUG_ON(ruleno >= map->max_rules);
-+	if ((__u32)ruleno >= map->max_rules) {
-+		dprintk(" bad ruleno %d\n", ruleno);
-+		return 0;
-+	}
- 
- 	rule = map->rules[ruleno];
- 	result_len = 0;
-@@ -528,7 +540,8 @@ int crush_do_rule(const struct crush_map
- 			firstn = 1;
- 		case CRUSH_RULE_CHOOSE_LEAF_INDEP:
- 		case CRUSH_RULE_CHOOSE_INDEP:
--			BUG_ON(wsize == 0);
-+			if (wsize == 0)
-+				break;
- 
- 			recurse_to_leaf =
- 				rule->steps[step].op ==
-@@ -597,7 +610,9 @@ int crush_do_rule(const struct crush_map
- 			break;
- 
- 		default:
--			BUG_ON(1);
-+			dprintk(" unknown op %d at step %d\n",
-+				curstep->op, step);
-+			break;
- 		}
- 	}
- 	return result_len;
+@@ -488,7 +488,8 @@ int crush_do_rule(struct crush_map *map,
+ 	/*
+ 	 * determine hierarchical context of force, if any.  note
+ 	 * that this may or may not correspond to the specific types
+-	 * referenced by the crush rule.
++	 * referenced by the crush rule.  it will also only affect
++	 * the first descent (TAKE).
+ 	 */
+ 	if (force >= 0 &&
+ 	    force < map->max_devices &&
 
 
