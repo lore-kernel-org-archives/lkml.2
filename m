@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab2KVW1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:27:35 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40370 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab2KVW1c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:27:32 -0500
-X-Originating-IP: 217.70.178.144
-X-Originating-IP: 83.160.107.163
-Date: Thu, 22 Nov 2012 23:26:14 +0100
-From: Matthias Kaehlcke <matthias@kaehlcke.net>
-To: Pavan Savoy <pavan_savoy@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] misc/st_kim: Free resources in the error path of probe()
-Message-ID: <20121122222613.GC19316@darwin>
-Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
-	Pavan Savoy <pavan_savoy@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754161Ab2KVW1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:27:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49004 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753737Ab2KVSd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:33:58 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Gurucharan Shetty <gurucharan.shetty@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 010/171] crypto: cryptd - disable softirqs in cryptd_queue_worker to prevent data corruption
+Date: Wed, 21 Nov 2012 16:39:16 -0800
+Message-Id: <20121122004034.352400059@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+------------------
+
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+
+commit 9efade1b3e981f5064f9db9ca971b4dc7557ae42 upstream.
+
+cryptd_queue_worker attempts to prevent simultaneous accesses to crypto
+workqueue by cryptd_enqueue_request using preempt_disable/preempt_enable.
+However cryptd_enqueue_request might be called from softirq context,
+so add local_bh_disable/local_bh_enable to prevent data corruption and
+panics.
+
+Bug report at http://marc.info/?l=linux-crypto-vger&m=134858649616319&w=2
+
+v2:
+ - Disable software interrupts instead of hardware interrupts
+
+Reported-by: Gurucharan Shetty <gurucharan.shetty@gmail.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/misc/ti-st/st_kim.c |   30 +++++++++++++++++++++---------
- 1 file changed, 21 insertions(+), 9 deletions(-)
+ crypto/cryptd.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 04a8199..9ff942a 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -705,9 +705,9 @@ static const struct file_operations list_debugfs_fops = {
- static struct dentry *kim_debugfs_dir;
- static int kim_probe(struct platform_device *pdev)
- {
--	long status;
- 	struct kim_data_s	*kim_gdata;
- 	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
-+	int err;
+--- a/crypto/cryptd.c
++++ b/crypto/cryptd.c
+@@ -137,13 +137,18 @@ static void cryptd_queue_worker(struct w
+ 	struct crypto_async_request *req, *backlog;
  
- 	if ((pdev->id != -1) && (pdev->id < MAX_ST_DEVICES)) {
- 		/* multiple devices could exist */
-@@ -724,10 +724,11 @@ static int kim_probe(struct platform_device *pdev)
- 	}
- 	dev_set_drvdata(&pdev->dev, kim_gdata);
+ 	cpu_queue = container_of(work, struct cryptd_cpu_queue, work);
+-	/* Only handle one request at a time to avoid hogging crypto
+-	 * workqueue. preempt_disable/enable is used to prevent
+-	 * being preempted by cryptd_enqueue_request() */
++	/*
++	 * Only handle one request at a time to avoid hogging crypto workqueue.
++	 * preempt_disable/enable is used to prevent being preempted by
++	 * cryptd_enqueue_request(). local_bh_disable/enable is used to prevent
++	 * cryptd_enqueue_request() being accessed from software interrupts.
++	 */
++	local_bh_disable();
+ 	preempt_disable();
+ 	backlog = crypto_get_backlog(&cpu_queue->queue);
+ 	req = crypto_dequeue_request(&cpu_queue->queue);
+ 	preempt_enable();
++	local_bh_enable();
  
--	status = st_core_init(&kim_gdata->core_data);
--	if (status != 0) {
-+	err = st_core_init(&kim_gdata->core_data);
-+	if (err != 0) {
- 		pr_err(" ST core init failed");
--		return -EIO;
-+		err = -EIO;
-+		goto err_core_init;
- 	}
- 	/* refer to itself */
- 	kim_gdata->core_data->kim_data = kim_gdata;
-@@ -738,10 +739,10 @@ static int kim_probe(struct platform_device *pdev)
- 	init_completion(&kim_gdata->kim_rcvd);
- 	init_completion(&kim_gdata->ldisc_installed);
- 
--	status = sysfs_create_group(&pdev->dev.kobj, &uim_attr_grp);
--	if (status) {
-+	err = sysfs_create_group(&pdev->dev.kobj, &uim_attr_grp);
-+	if (err) {
- 		pr_err("failed to create sysfs entries");
--		return status;
-+		goto err_sysfs_group;
- 	}
- 
- 	/* copying platform data */
-@@ -753,8 +754,8 @@ static int kim_probe(struct platform_device *pdev)
- 	kim_debugfs_dir = debugfs_create_dir("ti-st", NULL);
- 	if (IS_ERR(kim_debugfs_dir)) {
- 		pr_err(" debugfs entries creation failed ");
--		kim_debugfs_dir = NULL;
--		return -EIO;
-+		err = -EIO;
-+		goto err_debugfs_dir;
- 	}
- 
- 	debugfs_create_file("version", S_IRUGO, kim_debugfs_dir,
-@@ -763,6 +764,17 @@ static int kim_probe(struct platform_device *pdev)
- 				kim_gdata, &list_debugfs_fops);
- 	pr_info(" debugfs entries created ");
- 	return 0;
-+
-+err_debugfs_dir:
-+	sysfs_remove_group(&pdev->dev.kobj, &uim_attr_grp);
-+
-+err_sysfs_group:
-+	st_core_exit(kim_gdata->core_data);
-+
-+err_core_init:
-+	kfree(kim_gdata);
-+
-+	return err;
- }
- 
- static int kim_remove(struct platform_device *pdev)
--- 
-1.7.10
+ 	if (!req)
+ 		return;
+
 
