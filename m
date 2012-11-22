@@ -1,196 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2KVVjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:39:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49604 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab2KVSk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:40:28 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [ 13/83] cifs: fix potential buffer overrun in cifs.idmap handling code
-Date: Wed, 21 Nov 2012 16:41:35 -0800
-Message-Id: <20121122004213.926673842@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S932203Ab2KVVkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:40:49 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63985 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab2KVVkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 16:40:45 -0500
+Date: Thu, 22 Nov 2012 22:40:21 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
+References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
+ <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
+ <20121120215429.B621F3E1821@localhost>
+ <13540495.epaCf4JVn9@percival>
+ <20121122133941.24B883E129E@localhost>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Disposition: inline
+In-Reply-To: <20121122133941.24B883E129E@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:+/YfEP1lk3zorfD9mcVhxU9ABxlOWubMNIt0VyrwHC0
+ 2XdeBpZQVUzgh9uyfr3tzOue2nPSs+ZLBQVG/2qdMtk/Gn2RKQ
+ qcn8W/JaMu1iNqIUiY9y1kpL2kIUYNG4Bv8fcAQAtogdkm0SSQ
+ NKnmrOxfiaZyJntDuH0gMceBXefFXL6IToiKuar4LqmRCFUA68
+ ueBoz5MPnhI/oSQxLKfOcEOvIU1/HD5ABnUqCoB2y5M2KwEsti
+ MTh6ll7+BZVZRv9w3O8zJSmnMWCXXL4FZnfLwEfJ0XZuX6ogUa
+ osU+sCHsVtA10qF6hOkf94JwAwBv0PaBG0fgYL6crFtGb3JyPg
+ tQWdtgN274u5zhVdtn0P32j/FTh+yP9p6E6AAKtCQ9PT0svVUI
+ fMVJT7f9Q0QSSgbjWlDX2GaUqBlBLypWhc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Jeff Layton <jlayton@redhat.com>
+On Thu, Nov 22, 2012 at 01:39:41PM +0000, Grant Likely wrote:
+[...]
+> I do think that each sequence should be contained within a single
+> property, but I'm open to other suggestions.
 
-commit 36960e440ccf94349c09fb944930d3bfe4bc473f upstream.
+IIRC a very early prototype did implement something like that. However
+because of the resource issues this had to be string based, so that the
+sequences looked somewhat like (Alex, correct me if I'm wrong):
 
-The userspace cifs.idmap program generally works with the wbclient libs
-to generate binary SIDs in userspace. That program defines the struct
-that holds these values as having a max of 15 subauthorities. The kernel
-idmapping code however limits that value to 5.
+	power-on = <"REGULATOR", "power", 1, "GPIO", "enable", 1>;
 
-When the kernel copies those values around though, it doesn't sanity
-check the num_subauths value handed back from userspace or from the
-server. It's possible therefore for userspace to hand us back a bogus
-num_subauths value (or one that's valid, but greater than 5) that could
-cause the kernel to walk off the end of the cifs_sid->sub_auths array.
+Instead we could possibly have something like:
 
-Fix this by defining a new routine for copying sids and using that in
-all of the places that copy it. If we end up with a sid that's longer
-than expected then this approach will just lop off the "extra" subauths,
-but that's basically what the code does today already. Better approaches
-might be to fix this code to reject SIDs with >5 subauths, or fix it
-to handle the subauths array dynamically.
+	power-on = <0 &reg 1,
+		    1 &gpio 42 0 1>;
 
-At the same time, change the kernel to check the length of the data
-returned by userspace. If it's shorter than struct cifs_sid, reject it
-and return -EIO. If that happens we'll end up with fields that are
-basically uninitialized.
+Where the first cell in each entry defines the type (0 = regulator, 1 =
+GPIO) and the rest would be a regular OF specifier for the given type of
+resource along with some defined parameter such as enable/disable,
+voltage, delay in ms, ... I don't know if that sounds any better. It
+looks sort of cryptic but it is more "in the spirit of" DT, right Grant?
 
-Long term, it might make sense to redefine cifs_sid using a flexarray at
-the end, to allow for variable-length subauth lists, and teach the code
-to handle the case where the subauths array being passed in from
-userspace is shorter than 5 elements.
+Writing this down, it seems to me like even that proposal was already
+discussed at some point. Again, Alex may remember better.
 
-Note too, that I don't consider this a security issue since you'd need
-a compromised cifs.idmap program. If you have that, you can do all sorts
-of nefarious stuff. Still, this is probably reasonable for stable.
+Thierry
 
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature
 
----
- fs/cifs/cifsacl.c |   49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -225,6 +225,13 @@ sid_to_str(struct cifs_sid *sidptr, char
- }
- 
- static void
-+cifs_copy_sid(struct cifs_sid *dst, const struct cifs_sid *src)
-+{
-+	memcpy(dst, src, sizeof(*dst));
-+	dst->num_subauth = min_t(u8, src->num_subauth, NUM_SUBAUTHS);
-+}
-+
-+static void
- id_rb_insert(struct rb_root *root, struct cifs_sid *sidptr,
- 		struct cifs_sid_id **psidid, char *typestr)
- {
-@@ -248,7 +255,7 @@ id_rb_insert(struct rb_root *root, struc
- 		}
- 	}
- 
--	memcpy(&(*psidid)->sid, sidptr, sizeof(struct cifs_sid));
-+	cifs_copy_sid(&(*psidid)->sid, sidptr);
- 	(*psidid)->time = jiffies - (SID_MAP_RETRY + 1);
- 	(*psidid)->refcount = 0;
- 
-@@ -354,7 +361,7 @@ id_to_sid(unsigned long cid, uint sidtyp
- 	 * any fields of the node after a reference is put .
- 	 */
- 	if (test_bit(SID_ID_MAPPED, &psidid->state)) {
--		memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
-+		cifs_copy_sid(ssid, &psidid->sid);
- 		psidid->time = jiffies; /* update ts for accessing */
- 		goto id_sid_out;
- 	}
-@@ -370,14 +377,14 @@ id_to_sid(unsigned long cid, uint sidtyp
- 		if (IS_ERR(sidkey)) {
- 			rc = -EINVAL;
- 			cFYI(1, "%s: Can't map and id to a SID", __func__);
-+		} else if (sidkey->datalen < sizeof(struct cifs_sid)) {
-+			rc = -EIO;
-+			cFYI(1, "%s: Downcall contained malformed key "
-+				"(datalen=%hu)", __func__, sidkey->datalen);
- 		} else {
- 			lsid = (struct cifs_sid *)sidkey->payload.data;
--			memcpy(&psidid->sid, lsid,
--				sidkey->datalen < sizeof(struct cifs_sid) ?
--				sidkey->datalen : sizeof(struct cifs_sid));
--			memcpy(ssid, &psidid->sid,
--				sidkey->datalen < sizeof(struct cifs_sid) ?
--				sidkey->datalen : sizeof(struct cifs_sid));
-+			cifs_copy_sid(&psidid->sid, lsid);
-+			cifs_copy_sid(ssid, &psidid->sid);
- 			set_bit(SID_ID_MAPPED, &psidid->state);
- 			key_put(sidkey);
- 			kfree(psidid->sidstr);
-@@ -396,7 +403,7 @@ id_to_sid(unsigned long cid, uint sidtyp
- 			return rc;
- 		}
- 		if (test_bit(SID_ID_MAPPED, &psidid->state))
--			memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
-+			cifs_copy_sid(ssid, &psidid->sid);
- 		else
- 			rc = -EINVAL;
- 	}
-@@ -675,8 +682,6 @@ int compare_sids(const struct cifs_sid *
- static void copy_sec_desc(const struct cifs_ntsd *pntsd,
- 				struct cifs_ntsd *pnntsd, __u32 sidsoffset)
- {
--	int i;
--
- 	struct cifs_sid *owner_sid_ptr, *group_sid_ptr;
- 	struct cifs_sid *nowner_sid_ptr, *ngroup_sid_ptr;
- 
-@@ -692,26 +697,14 @@ static void copy_sec_desc(const struct c
- 	owner_sid_ptr = (struct cifs_sid *)((char *)pntsd +
- 				le32_to_cpu(pntsd->osidoffset));
- 	nowner_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset);
--
--	nowner_sid_ptr->revision = owner_sid_ptr->revision;
--	nowner_sid_ptr->num_subauth = owner_sid_ptr->num_subauth;
--	for (i = 0; i < 6; i++)
--		nowner_sid_ptr->authority[i] = owner_sid_ptr->authority[i];
--	for (i = 0; i < 5; i++)
--		nowner_sid_ptr->sub_auth[i] = owner_sid_ptr->sub_auth[i];
-+	cifs_copy_sid(nowner_sid_ptr, owner_sid_ptr);
- 
- 	/* copy group sid */
- 	group_sid_ptr = (struct cifs_sid *)((char *)pntsd +
- 				le32_to_cpu(pntsd->gsidoffset));
- 	ngroup_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset +
- 					sizeof(struct cifs_sid));
--
--	ngroup_sid_ptr->revision = group_sid_ptr->revision;
--	ngroup_sid_ptr->num_subauth = group_sid_ptr->num_subauth;
--	for (i = 0; i < 6; i++)
--		ngroup_sid_ptr->authority[i] = group_sid_ptr->authority[i];
--	for (i = 0; i < 5; i++)
--		ngroup_sid_ptr->sub_auth[i] = group_sid_ptr->sub_auth[i];
-+	cifs_copy_sid(ngroup_sid_ptr, group_sid_ptr);
- 
- 	return;
- }
-@@ -1120,8 +1113,7 @@ static int build_sec_desc(struct cifs_nt
- 				kfree(nowner_sid_ptr);
- 				return rc;
- 			}
--			memcpy(owner_sid_ptr, nowner_sid_ptr,
--					sizeof(struct cifs_sid));
-+			cifs_copy_sid(owner_sid_ptr, nowner_sid_ptr);
- 			kfree(nowner_sid_ptr);
- 			*aclflag = CIFS_ACL_OWNER;
- 		}
-@@ -1139,8 +1131,7 @@ static int build_sec_desc(struct cifs_nt
- 				kfree(ngroup_sid_ptr);
- 				return rc;
- 			}
--			memcpy(group_sid_ptr, ngroup_sid_ptr,
--					sizeof(struct cifs_sid));
-+			cifs_copy_sid(group_sid_ptr, ngroup_sid_ptr);
- 			kfree(ngroup_sid_ptr);
- 			*aclflag = CIFS_ACL_GROUP;
- 		}
+iQIcBAEBAgAGBQJQrpvFAAoJEN0jrNd/PrOhhywP/AiT0Ylywbi9V9FNnZ6zwngi
+WtclXo/ALSEifXqZxDDw4wxS3rhQpSN34+l75lu5mbYP2FDgglRuKBrdXDGZuy7M
+fcQKA5SDJAypajIijGWSWLzHZCnKVXonfHOUKeVmfq+Oo7LXUSYKYT4W3yYV9LcK
+xJLtxJKJDNpIuxhcI0FaUewXRYjzhB/IFAf1IUWhV3YZ6ZfbR5PXwx/Jg6qvo5Ns
+Z8PDMyth0YY0LWMIJBMpvZZk1xlL3yw8imwNLw+P1seICh0mq8QATXf5zM07DXa1
+Lf8JWn/d8ueto4jCm0gavWLjexpN9baC2PUNkS313hRhbWGcnI+c95bMlpUx8QjI
+PN3WUXF2vPcfrrsgIZrFjr5PrEIS4vQfC9LfrCg44UxM0IlvCRVEiFhEgbyTEeW5
+qiuBaDnUMY6l39pZx7EG/hOU207u9ZaSM+w66COb630WzzpKnJd2ZTsf1H4dZ7w3
+Oyozguikk5Ohw2olOKsNkIncvRZEYa6GYpKIIDhmW3GoNE+/rC/dVSXM2CDBlQWJ
+A/QLnww1K0sKc0VN+m83JK/R7EvslAAv4gKVJ5U3AQbZm02k7bzUqFMw6ZHlNEw7
+CeHgOX35dN+SQHtaVwC5G27hNpBoKSjubd3xzrS+F+65Rdt97If0Q7FgmU1o+b/u
+zQV/10Xw4kMSFyk8raC3
+=8uOp
+-----END PGP SIGNATURE-----
 
-
+--ibTvN161/egqYuK8--
