@@ -1,103 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2KVTCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:02:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54021 "EHLO mga11.intel.com"
+	id S964805Ab2KVTDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:03:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753908Ab2KVTCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:02:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,295,1352102400"; 
-   d="scan'208";a="252615567"
-Message-ID: <50AD6543.1050501@linux.intel.com>
-Date: Wed, 21 Nov 2012 15:35:31 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] futex: Avoid wake_futex for a PI futex_q
-References: <3b25c8ba053760892871713ff6e81660433f6734.1353483196.git.dvhart@linux.intel.com> <20121121143454.d72866e8.akpm@linux-foundation.org>
-In-Reply-To: <20121121143454.d72866e8.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753699Ab2KVTDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:03:02 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-raid@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        akpm@linux-foundation.org, Lukas Czerner <lczerner@redhat.com>,
+        Neil Brown <neilb@suse.de>, David Howells <dhowells@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 1/2 v2] wait: add wait_event_lock_irq() interface
+Date: Thu, 22 Nov 2012 09:18:34 +0100
+Message-Id: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
+moves the private wait_event_lock_irq() macro from MD to regular wait
+includes, introduces new macro wait_event_lock_irq_cmd() instead of using
+the old method with omitting cmd parameter which is ugly and makes a use
+of new macros in the MD. It also introduces the _interruptible_ variant.
 
+The use of new interface is when one have a special lock to protect data
+structures used in the condition, or one also needs to invoke "cmd"
+before putting it to sleep. "cmd" is always invoked before checking the
+"condition" so in case it will change the condition outcome we would not
+have to sleep unnecessarily.
 
-On 11/21/2012 02:34 PM, Andrew Morton wrote:
-> On Tue, 20 Nov 2012 23:36:45 -0800
-> Darren Hart <dvhart@linux.intel.com> wrote:
-> 
->> Dave Jones reported a bug with futex_lock_pi() that his trinity test
->> exposed. Sometime between queue_me() and taking the q.lock_ptr, the
->> lock_ptr became NULL, resulting in a crash.
->>
->> While futex_wake() is careful to not call wake_futex() on futex_q's with
->> a pi_state or an rt_waiter (which are either waiting for a
->> futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
->> futex_requeue() do not perform the same test.
->>
->> Update futex_wake_op() and futex_requeue() to test for q.pi_state and
->> q.rt_waiter and abort with -EINVAL if detected. To ensure any future
->> breakage is caught, add a WARN() to wake_futex() if the same condition
->> is true.
->>
->> This fix has seen 3 hours of testing with "trinity -c futex" on an
->> x86_64 VM with 4 CPUS.
->>
->> ...
->>
->> --- a/kernel/futex.c
->> +++ b/kernel/futex.c
->> @@ -840,6 +840,11 @@ static void wake_futex(struct futex_q *q)
->>  {
->>  	struct task_struct *p = q->task;
->>  
->> +	if (q->pi_state || q->rt_waiter) {
->> +		WARN(1, "%s: refusing to wake PI futex\n", __FUNCTION__);
->> +		return;
->> +	}
-> 
-> There's no need to display __FUNCTION__ because WARN() gives a
-> backtrace, and we can more neatly use the WARN() return value:
-> 
-> --- a/kernel/futex.c~futex-avoid-wake_futex-for-a-pi-futex_q-fix
-> +++ a/kernel/futex.c
-> @@ -843,10 +843,8 @@ static void wake_futex(struct futex_q *q
->  {
->  	struct task_struct *p = q->task;
->  
-> -	if (q->pi_state || q->rt_waiter) {
-> -		WARN(1, "%s: refusing to wake PI futex\n", __FUNCTION__);
-> +	if (WARN(q->pi_state || q->rt_waiter, "refusing to wake PI futex\n"))
->  		return;
-> -	}
+All new macros are expected to be called with the lock taken. The lock
+is released before sleep and is reacquired afterwards. We will leave the
+macro with the lock held.
 
-Thanks, that's better. Duh. That block of code used to be a lot more
-complex during my debug sessions, I should have caught that and boiled
-it down one step further.
+Note to DM: IMO this should also fix theoretical race on waitqueue while
+using simultaneously wait_event_lock_irq() and wait_event() because of
+lack of locking around current state setting and wait queue removal.
 
---
-Darren
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+v2: add interruptible variant, swap cmd and schedule, use prepare_to_wait
 
+ drivers/md/md.c      |    2 +-
+ drivers/md/md.h      |   26 --------
+ drivers/md/raid1.c   |   15 ++---
+ drivers/md/raid10.c  |   15 ++---
+ drivers/md/raid5.c   |   12 ++--
+ include/linux/wait.h |  166 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 186 insertions(+), 50 deletions(-)
 
->  
->  	/*
->  	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
-> _
-> 
->>
->> ...
->>
-
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 9ab768a..7e513a3 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -452,7 +452,7 @@ void md_flush_request(struct mddev *mddev, struct bio *bio)
+ 	spin_lock_irq(&mddev->write_lock);
+ 	wait_event_lock_irq(mddev->sb_wait,
+ 			    !mddev->flush_bio,
+-			    mddev->write_lock, /*nothing*/);
++			    mddev->write_lock);
+ 	mddev->flush_bio = bio;
+ 	spin_unlock_irq(&mddev->write_lock);
+ 
+diff --git a/drivers/md/md.h b/drivers/md/md.h
+index af443ab..1e2fc3d 100644
+--- a/drivers/md/md.h
++++ b/drivers/md/md.h
+@@ -551,32 +551,6 @@ struct md_thread {
+ 
+ #define THREAD_WAKEUP  0
+ 
+-#define __wait_event_lock_irq(wq, condition, lock, cmd) 		\
+-do {									\
+-	wait_queue_t __wait;						\
+-	init_waitqueue_entry(&__wait, current);				\
+-									\
+-	add_wait_queue(&wq, &__wait);					\
+-	for (;;) {							\
+-		set_current_state(TASK_UNINTERRUPTIBLE);		\
+-		if (condition)						\
+-			break;						\
+-		spin_unlock_irq(&lock);					\
+-		cmd;							\
+-		schedule();						\
+-		spin_lock_irq(&lock);					\
+-	}								\
+-	current->state = TASK_RUNNING;					\
+-	remove_wait_queue(&wq, &__wait);				\
+-} while (0)
+-
+-#define wait_event_lock_irq(wq, condition, lock, cmd) 			\
+-do {									\
+-	if (condition)	 						\
+-		break;							\
+-	__wait_event_lock_irq(wq, condition, lock, cmd);		\
+-} while (0)
+-
+ static inline void safe_put_page(struct page *p)
+ {
+ 	if (p) put_page(p);
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 636bae0..f264a62 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -822,7 +822,7 @@ static void raise_barrier(struct r1conf *conf)
+ 
+ 	/* Wait until no block IO is waiting */
+ 	wait_event_lock_irq(conf->wait_barrier, !conf->nr_waiting,
+-			    conf->resync_lock, );
++			    conf->resync_lock);
+ 
+ 	/* block any new IO from starting */
+ 	conf->barrier++;
+@@ -830,7 +830,7 @@ static void raise_barrier(struct r1conf *conf)
+ 	/* Now wait for all pending IO to complete */
+ 	wait_event_lock_irq(conf->wait_barrier,
+ 			    !conf->nr_pending && conf->barrier < RESYNC_DEPTH,
+-			    conf->resync_lock, );
++			    conf->resync_lock);
+ 
+ 	spin_unlock_irq(&conf->resync_lock);
+ }
+@@ -864,8 +864,7 @@ static void wait_barrier(struct r1conf *conf)
+ 				    (conf->nr_pending &&
+ 				     current->bio_list &&
+ 				     !bio_list_empty(current->bio_list)),
+-				    conf->resync_lock,
+-			);
++				    conf->resync_lock);
+ 		conf->nr_waiting--;
+ 	}
+ 	conf->nr_pending++;
+@@ -898,10 +897,10 @@ static void freeze_array(struct r1conf *conf)
+ 	spin_lock_irq(&conf->resync_lock);
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+-	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
+-			    conf->resync_lock,
+-			    flush_pending_writes(conf));
++	wait_event_lock_irq_cmd(conf->wait_barrier,
++				conf->nr_pending == conf->nr_queued+1,
++				conf->resync_lock,
++				flush_pending_writes(conf));
+ 	spin_unlock_irq(&conf->resync_lock);
+ }
+ static void unfreeze_array(struct r1conf *conf)
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index d1295af..2530403 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -952,7 +952,7 @@ static void raise_barrier(struct r10conf *conf, int force)
+ 
+ 	/* Wait until no block IO is waiting (unless 'force') */
+ 	wait_event_lock_irq(conf->wait_barrier, force || !conf->nr_waiting,
+-			    conf->resync_lock, );
++			    conf->resync_lock);
+ 
+ 	/* block any new IO from starting */
+ 	conf->barrier++;
+@@ -960,7 +960,7 @@ static void raise_barrier(struct r10conf *conf, int force)
+ 	/* Now wait for all pending IO to complete */
+ 	wait_event_lock_irq(conf->wait_barrier,
+ 			    !conf->nr_pending && conf->barrier < RESYNC_DEPTH,
+-			    conf->resync_lock, );
++			    conf->resync_lock);
+ 
+ 	spin_unlock_irq(&conf->resync_lock);
+ }
+@@ -993,8 +993,7 @@ static void wait_barrier(struct r10conf *conf)
+ 				    (conf->nr_pending &&
+ 				     current->bio_list &&
+ 				     !bio_list_empty(current->bio_list)),
+-				    conf->resync_lock,
+-			);
++				    conf->resync_lock);
+ 		conf->nr_waiting--;
+ 	}
+ 	conf->nr_pending++;
+@@ -1027,10 +1026,10 @@ static void freeze_array(struct r10conf *conf)
+ 	spin_lock_irq(&conf->resync_lock);
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+-	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
+-			    conf->resync_lock,
+-			    flush_pending_writes(conf));
++	wait_event_lock_irq_cmd(conf->wait_barrier,
++				conf->nr_pending == conf->nr_queued+1,
++				conf->resync_lock,
++				flush_pending_writes(conf));
+ 
+ 	spin_unlock_irq(&conf->resync_lock);
+ }
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index c5439dc..2bf617d 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -466,7 +466,7 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+ 	do {
+ 		wait_event_lock_irq(conf->wait_for_stripe,
+ 				    conf->quiesce == 0 || noquiesce,
+-				    conf->device_lock, /* nothing */);
++				    conf->device_lock);
+ 		sh = __find_stripe(conf, sector, conf->generation - previous);
+ 		if (!sh) {
+ 			if (!conf->inactive_blocked)
+@@ -480,8 +480,7 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+ 						    (atomic_read(&conf->active_stripes)
+ 						     < (conf->max_nr_stripes *3/4)
+ 						     || !conf->inactive_blocked),
+-						    conf->device_lock,
+-						    );
++						    conf->device_lock);
+ 				conf->inactive_blocked = 0;
+ 			} else
+ 				init_stripe(sh, sector, previous);
+@@ -1646,8 +1645,7 @@ static int resize_stripes(struct r5conf *conf, int newsize)
+ 		spin_lock_irq(&conf->device_lock);
+ 		wait_event_lock_irq(conf->wait_for_stripe,
+ 				    !list_empty(&conf->inactive_list),
+-				    conf->device_lock,
+-				    );
++				    conf->device_lock);
+ 		osh = get_free_stripe(conf);
+ 		spin_unlock_irq(&conf->device_lock);
+ 		atomic_set(&nsh->count, 1);
+@@ -4000,7 +3998,7 @@ static int chunk_aligned_read(struct mddev *mddev, struct bio * raid_bio)
+ 		spin_lock_irq(&conf->device_lock);
+ 		wait_event_lock_irq(conf->wait_for_stripe,
+ 				    conf->quiesce == 0,
+-				    conf->device_lock, /* nothing */);
++				    conf->device_lock);
+ 		atomic_inc(&conf->active_aligned_reads);
+ 		spin_unlock_irq(&conf->device_lock);
+ 
+@@ -6088,7 +6086,7 @@ static void raid5_quiesce(struct mddev *mddev, int state)
+ 		wait_event_lock_irq(conf->wait_for_stripe,
+ 				    atomic_read(&conf->active_stripes) == 0 &&
+ 				    atomic_read(&conf->active_aligned_reads) == 0,
+-				    conf->device_lock, /* nothing */);
++				    conf->device_lock);
+ 		conf->quiesce = 1;
+ 		spin_unlock_irq(&conf->device_lock);
+ 		/* allow reshape to continue */
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 168dfe1..62ee600 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -550,6 +550,172 @@ do {									\
+ 	__ret;								\
+ })
+ 
++
++#define __wait_event_lock_irq(wq, condition, lock, cmd)			\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	cmd;								\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		spin_unlock_irq(&lock);					\
++		schedule();						\
++		cmd;							\
++		spin_lock_irq(&lock);					\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_lock_irq_cmd - sleep until a condition gets true. The
++ *			     condition is checked under the lock. This
++ *			     is expected to be called with the lock
++ *			     taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and cmd reacquired afterwards.
++ * @cmd: a command which is invoked outside the critical section before
++ *	 sleep
++ *
++ * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
++ * @condition evaluates to true. The @condition is checked each time
++ * the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and invoking the cmd and is reacquired
++ * afterwards.
++ */
++#define wait_event_lock_irq_cmd(wq, condition, lock, cmd)		\
++do {									\
++	if (condition)							\
++		break;							\
++	__wait_event_lock_irq(wq, condition, lock, cmd);		\
++} while (0)
++
++/**
++ * wait_event_lock_irq - sleep until a condition gets true. The
++ *			 condition is checked under the lock. This
++ *			 is expected to be called with the lock
++ *			 taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ *
++ * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
++ * @condition evaluates to true. The @condition is checked each time
++ * the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ */
++#define wait_event_lock_irq(wq, condition, lock)			\
++do {									\
++	if (condition)							\
++		break;							\
++	__wait_event_lock_irq(wq, condition, lock, );			\
++} while (0)
++
++
++#define __wait_event_interruptible_lock_irq(wq, condition,		\
++					    lock, ret, cmd)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	cmd;								\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		schedule();						\
++		cmd;							\
++		spin_lock_irq(&lock);					\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_cmd - sleep until a condition gets true.
++ *		The condition is checked under the lock. This is expected to
++ *		be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and cmd reacquired afterwards.
++ * @cmd: a command which is invoked outside the critical section before
++ *	 sleep
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and invoking the cmd and is reacquired
++ * afterwards.
++ *
++ * The macro will return -ERESTARTSYS if it was interrupted by a signal
++ * and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_lock_irq_cmd(wq, condition, lock, cmd)	\
++({									\
++	int __ret = 0;							\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq(wq, condition,	\
++						    lock, __ret, cmd);	\
++	__ret;								\
++})
++
++/**
++ * wait_event_interruptible_lock_irq - sleep until a condition gets true.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The macro will return -ERESTARTSYS if it was interrupted by a signal
++ * and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_lock_irq(wq, condition, lock)		\
++({									\
++	int __ret = 0;							\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq(wq, condition,	\
++						    lock, __ret, );	\
++	__ret;								\
++})
++
++
+ /*
+  * These are the old interfaces to sleep waiting for an event.
+  * They are racy.  DO NOT use them, use the wait_event* interfaces above.
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+1.7.7.6
+
