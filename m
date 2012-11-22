@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab2KVWwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:52:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42291 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758859Ab2KVWvy (ORCPT
+	id S1758902Ab2KVWwy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:52:54 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:43246 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758873Ab2KVWvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 17:51:54 -0500
+	Thu, 22 Nov 2012 17:51:49 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 32/33] sched: Add hysteresis to p->numa_shared
-Date: Thu, 22 Nov 2012 23:49:53 +0100
-Message-Id: <1353624594-1118-33-git-send-email-mingo@kernel.org>
+Subject: [PATCH 30/33] sched: Average the fault stats longer
+Date: Thu, 22 Nov 2012 23:49:51 +0100
+Message-Id: <1353624594-1118-31-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353624594-1118-1-git-send-email-mingo@kernel.org>
 References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
@@ -28,12 +28,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make p->numa_shared flip/flop less around unstable equilibriums,
-instead require a significant move in either direction to trigger
-'dominantly shared accesses' versus 'dominantly private accesses'
-NUMA status.
+We will rely on the per CPU fault statistics and its
+shared/private derivative even more in the future, so
+stabilize this metric even better.
 
-Suggested-by: Rik van Riel <riel@redhat.com>
+The staged updates introduced in commit:
+
+   sched: Introduce staged average NUMA faults
+
+Already stabilized this key metric significantly, but in
+real workloads it was still reacting to temporary load
+balancing transients too quickly.
+
+Slow down by weighting the average. The weighting value was
+found via experimentation.
+
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -43,35 +52,24 @@ Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8aa4b36..ab4a7130 100644
+index 24a5588..a5f3ad7 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1111,7 +1111,20 @@ static void task_numa_placement(struct task_struct *p)
- 	 * we might want to consider a different equation below to reduce
- 	 * the impact of a little private memory accesses.
- 	 */
--	shared = (total[0] >= total[1] / 2);
-+	shared = p->numa_shared;
-+
-+	if (shared < 0) {
-+		shared = (total[0] >= total[1]);
-+	} else if (shared == 0) {
-+		/* If it was private before, make it harder to become shared: */
-+		if (total[0] >= total[1]*2)
-+			shared = 1;
-+	} else if (shared == 1 ) {
-+		 /* If it was shared before, make it harder to become private: */
-+		if (total[0]*2 <= total[1])
-+			shared = 0;
-+	}
-+
- 	if (shared)
- 		p->ideal_cpu = sched_update_ideal_cpu_shared(p);
- 	else
+@@ -914,8 +914,8 @@ static void task_numa_placement(struct task_struct *p)
+ 			p->numa_faults_curr[idx] = 0;
+ 
+ 			/* Keep a simple running average: */
+-			p->numa_faults[idx] += new_faults;
+-			p->numa_faults[idx] /= 2;
++			p->numa_faults[idx] = p->numa_faults[idx]*7 + new_faults;
++			p->numa_faults[idx] /= 8;
+ 
+ 			faults += p->numa_faults[idx];
+ 			total[priv] += p->numa_faults[idx];
 -- 
 1.7.11.7
 
