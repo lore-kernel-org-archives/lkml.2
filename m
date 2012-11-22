@@ -1,103 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab2KVS3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:29:18 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49948 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2KVS3O (ORCPT
+	id S1752552Ab2KVS3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:29:22 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37528 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab2KVS3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:29:14 -0500
-Date: Thu, 22 Nov 2012 14:22:23 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: walter harms <wharms@bfs.de>
-CC: Cyril Roelandt <tipecaml@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <laurent.pinchart@ideasonboard.com>,
-        <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] UVC: use GFP_ATOMIC under spin lock.
-Message-ID: <20121122122223.GC18022@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1353360842-18384-1-git-send-email-tipecaml@gmail.com>
- <50ADDDD5.1080709@bfs.de>
+	Thu, 22 Nov 2012 13:29:12 -0500
+Date: Thu, 22 Nov 2012 15:46:12 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
+Message-ID: <20121122154612.GC10986@gmail.com>
+References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
+ <b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
+ <20121122112451.GE4328@gmail.com>
+ <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50ADDDD5.1080709@bfs.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---u65IjBhB3TIa72Vp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > Big fat NACK.
+> >
+> > You've just overwritten the current implementation with your own.
+> > Please take time to understand the mechanisms in place before
+> > you submit any changes or additions to it.
+> 
+> :)
+> 
+> My fault. Comments on all overwritten stuff accepted
 
-On Thu, Nov 22, 2012 at 09:09:57AM +0100, walter harms wrote:
->=20
->=20
-> Am 19.11.2012 22:34, schrieb Cyril Roelandt:
-> > Found using the following semantic patch:
-> > <spml>
-> > @@
-> > @@
-> > spin_lock_irqsave(...);
-> > ... when !=3D spin_unlock_irqrestore(...);
-> > * GFP_KERNEL
-> > </spml>
-> >=20
-> > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> > ---
-> >  drivers/usb/gadget/uvc_video.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/usb/gadget/uvc_video.c b/drivers/usb/gadget/uvc_vi=
-deo.c
-> > index b0e53a8..79b4132 100644
-> > --- a/drivers/usb/gadget/uvc_video.c
-> > +++ b/drivers/usb/gadget/uvc_video.c
-> > @@ -309,7 +309,7 @@ uvc_video_pump(struct uvc_video *video)
-> >  		video->encode(req, video, buf);
-> > =20
-> >  		/* Queue the USB request */
-> > -		if ((ret =3D usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
-> > +		if ((ret =3D usb_ep_queue(video->ep, req, GFP_ATOMIC)) < 0) {
-> >  			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
-> >  			usb_ep_set_halt(video->ep);
-> >  			spin_unlock_irqrestore(&video->queue.irqlock, flags);
->=20
->=20
-> IMHO, this should be two lines, aka:
->=20
-> ret =3D usb_ep_queue(video->ep, req, GFP_KERNEL);
-> if (ret<0)
+Okay, great.
 
-correct, please resend with the fix.
+> >> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> >> +- irq-over-gpio: bool, true if gpio is used to get irq
+> >> +- irq-gpios: gpio number over which irq will be requested (significant only if
+> >> +  irq-over-gpio is true)
+> >
+> > You don't need these. Use gpio_to_irq() instead.
+> 
+> I am passing gpio numbers here and am doing gpio_to_irq() in driver.
+> Didn't get this one :(
 
---=20
-balbi
+For a start you have 'irq-over-gpio' in the binding document and Device Tree
+and 'irq_over_gpio' in the code. Has it even been tested?
 
---u65IjBhB3TIa72Vp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+GPIOs are used as IRQ lines in many other previously DT:ed drivers. Take a
+look to see how they are handled without adding unnecessary DT bindings. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> >>  Optional properties:
+> >> - - interrupts                   : The interrupt outputs from the controller
+> >> - - interrupt-controller         : Marks the device node as an interrupt controller
+> >> - - interrupt-parent             : Specifies which IRQ controller we're connected to
+> >> - - i2c-client-wake              : Marks the input device as wakable
+> >> - - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
+> >
+> > And you've removed these why?
+> 
+> No. They are readjusted...
 
-iQIcBAEBAgAGBQJQrhj+AAoJEIaOsuA1yqREOfMQAKbctsaWRc3L+esWickU5pUe
-lZPq73+gW1FYH2+oMd67/s260DO+gM1Z/HmKgOhdK+oDvqQ5v+PYSwCKKsksOPHw
-2cmksQxSD5fCnmlXmx/JzbPoaSGpODCmGVuq2gUj7uyEf/KYsiKuBLK9hWLbMG0T
-kOSktHfrYul2UeYaBvaQLGGl/20r2AgdoSLr1ljmtWKNFpvup5TNQWpxB6yq4ZlM
-CX06iDwecU3uw6QDWBUZ5Ss+DDJQB4GgrMdM/ecOT+Bq7haXISdggulex+s2vYWy
-ozkUj922KIfmddR9W0WxWxWo3MiGBsssVX2Taoasq/Sj2jUpujazOYkuBgqL6agl
-EP5QFb5jT0l1Iu3lT2XoMF8XbA2smKQ4Z1dejOJ96AbIfgh5rB27Wes2QIzLIEwv
-0mj7DXTYzuYV84fol6qMxUgsXwKzk609SLljMQwSmY5Y3q81TRlBUXj4FNzrCRHf
-iD2jMoA2t/Cz7Z51IxYE6Ep/OtIbAtxwPM4aHYM5MZIzTnhS2osKxC6MKCSOQRX+
-qYfKM+vZumzAps3F9THNHtpBKV02+4UpV9L/8JfXFZZ21UexW/Ej/b9kg1mbKa2W
-669BJ6PjcI7bbauCTLKRnvghM4LFaHB90OyHu6vo2Uu+HY18QWjhnSCGWxw/qrVI
-tJ5+i5H0XYFuk3f1jfxE
-=gce8
------END PGP SIGNATURE-----
+Please don't readjust them.
 
---u65IjBhB3TIa72Vp--
+They are clear and easily readable in their current state. In the new
+implementation they are messy and hard to decipher.
+
+> One thing removed is interrupt-controller. I had a doubt on this.
+> stmpe, by itself doesn't give any interrupt lines to SoC to freely use
+> them. Instead
+> gpio controller driver part of it does. And so adding
+> interrupt-controller for that is
+> the right option.
+
+That's fine, I don't have an issue with that.
+
+> stmpe is an interrupt controller for the IP's which are present inside
+> it: gpio, adc.
+> But interrupt lines for them are managed by stmpe driver internally. So should
+> we really add interrupt-controller for it?
+
+You can't manage IRQ lines internally, you have to go through
+the IRQ subsystem. When you request an IRQ via device tree you
+will do so like this:
+
+ interrupts = <25 0x1>;
+ interrupt-parent = <&stmpe-gpio>;
+
+In this example the stmpe-gpio node must advertise itself using
+the interrupt-controller property.
+
+The STMPE GPIO controller can't be used by Device Tree yet in any case,
+because it doesn't have an IRQ domain. This is compulsory, or it won't
+work. Have you tried to test this functionality yet?
+
+> >> +- keypad,scan-count: number of key scanning cycles to confirm key data. Maximum
+> >> +  is STMPE_KEYPAD_MAX_SCAN_COUNT.
+> >> +- keypad,debounce-ms: debounce interval, in ms. Maximum is
+> >> +  STMPE_KEYPAD_MAX_DEBOUNCE.
+> >> +- keypad,no-autorepeat: bool, disable key autorepeat
+> >
+> > See "When adding new bindings, ask yourself" above.
+> 
+> Yes, these are required. This is part of platform data it expects.
+
+Okay, I've just had a look at my tested bindings.
+
+We already have these:
+
+  debounce-interval   /* This is a generic binding */
+  st,scan-count       /* These are vendor specific */
+  st,no-autorepeat    /*            "              */
+
+Vendor specific bindings should be "<vendor>,<binding>", rather than
+"<type_of_driver>,<binding>"
+
+> >> +             reg = <0>;
+> >
+> > You have reg twice here. Also reg should never be '0'.
+> 
+> For SPI, there are chip selects and there is no reg offset.
+
+I understand the addressing issues, but you have 'reg' twice.
+
+Which one should be used?
+
+> >> +             stmpe610-ts {
+> >> +                     compatible = "stmpe,ts";
+> >> +                     ts,sample-time = <4>;
+> >> +                     ts,mod-12b = <1>;
+> >> +                     ts,ref-sel = <0>;
+> >> +                     ts,adc-freq = <1>;
+> >> +                     ts,ave-ctrl = <1>;
+> >> +                     ts,touch-det-delay = <2>;
+> >> +                     ts,settling = <2>;
+> >> +                     ts,fraction-z = <7>;
+> >> +                     ts,i-drive = <1>;
+> >
+> > Wow! See "When adding new bindings, ask yourself" above.
+> 
+> :)
+> They are required. I didn't get your point, sorry.
+
+I didn't go through them, but are you sure that:
+
+1. Can I do without them?
+   1.1 Can I derive the configuration from other things?
+   2.2 Are they _really_ required, or am I just blindly copying platform data?
+2. Does a similar binding already exist?
+3. Can other drivers make use of them?
+   3.1 If so, create a generic binding
+   3.2 If not, prepend the binding with "<vendor>,"
+
+There looks like a lot there. So each of those values vary, or can
+any of them be hard-coded? Just because they're in platform code,
+it doesn't mean they should be in the DT binding. A lot of platform
+code is actually crap.
+
+> >> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+> >> +static struct stmpe_keypad_platform_data *
+> >> +get_keyboard_pdata_dt(struct device *dev, struct device_node *np)
+> >> +{
+> >> +     struct stmpe_keypad_platform_data *pdata;
+> >> +     u32 val;
+> >> +
+> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> >> +     if (!pdata) {
+> >> +             dev_warn(dev, "stmpe keypad kzalloc fail\n");
+> >> +             return NULL;
+> >> +     }
+> >> +
+> >> +     if (!of_property_read_u32(np, "keypad,scan-count", &val))
+> >> +             pdata->scan_count = val;
+> >> +     if (!of_property_read_u32(np, "keypad,debounce-ms", &val))
+> >> +             pdata->debounce_ms = val;
+> >> +     if (of_property_read_bool(np, "keypad,no-autorepeat"))
+> >> +             pdata->no_autorepeat = true;
+> >
+> > Why are you (re)adding these here? Have you even looked in the driver?
+> 
+> Because i wanted to keep all DT stuff together. Obviously i have seen keypad
+> driver earlier :)
+
+If you had, you'd realise that these bindings already exist. ;)
+
+I appreciate that the patches haven't landed yet, but they've been
+on the MLs for some time now, and already have some important Acks.
+
+> I am not setting pdata of stmpe here, but pdata of keypad.
+
+Exactly, so why are you doing it in the STMPE driver?
+
+It's keypad data, set it up in the keypad driver.
+
+> >> +static struct stmpe_gpio_platform_data *get_gpio_pdata_dt(struct device *dev,
+> >> +             struct device_node *np)
+> >> +{
+> >> +     struct stmpe_gpio_platform_data *pdata;
+> >> +     u32 val;
+> >> +
+> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> >> +     if (!pdata) {
+> >> +             dev_warn(dev, "stmpe gpio kzalloc fail\n");
+> >> +             return NULL;
+> >> +     }
+> >> +
+> >> +     if (!of_property_read_u32(np, "gpio,norequest-mask", &val))
+> >> +             pdata->norequest_mask = val;
+> >> +
+> >> +     /* assign gpio numbers dynamically */
+> >> +     pdata->gpio_base = -1;
+> >> +
+> >> +     return pdata;
+> >> +}
+> >
+> > Is this function really required? Even if is is, should it live here
+> > or in the STMPE driver?
+> 
+> As said earlier, either i can do DT parsing of sub-modules of stmpe in
+> their specific files or in stmpe driver itself. Because currently platform
+> data of those sub-modules is passed from stmpe, i kept them here only.
+> stmpe sub modules can't live without stmpe driver and so keeping all
+> binding stuff here isn't that bad of an idea.
+
+Yes, don't do that.
+
+Do DT parsing in the driver it references, not in the most common denominator.
+
+> >> +static struct stmpe_ts_platform_data *get_ts_pdata_dt(struct device *dev,
+> >> +             struct device_node *np)
+> >> +{
+> >> +     struct stmpe_ts_platform_data *pdata;
+> >> +     u32 val;
+> >> +
+> >> +     pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> >> +     if (!pdata) {
+> >> +             dev_warn(dev, "stmpe ts kzalloc fail\n");
+> >> +             return NULL;
+> >> +     }
+> >> +
+> >> +     if (!of_property_read_u32(np, "ts,sample-time", &val))
+> >> +             pdata->sample_time = val;
+> >> +     if (!of_property_read_u32(np, "ts,mod-12b", &val))
+> >> +             pdata->mod_12b = val;
+> >> +     if (!of_property_read_u32(np, "ts,ref-sel", &val))
+> >> +             pdata->ref_sel = val;
+> >> +     if (!of_property_read_u32(np, "ts,adc-freq", &val))
+> >> +             pdata->adc_freq = val;
+> >> +     if (!of_property_read_u32(np, "ts,ave-ctrl", &val))
+> >> +             pdata->ave_ctrl = val;
+> >> +     if (!of_property_read_u32(np, "ts,touch-det-delay", &val))
+> >> +             pdata->touch_det_delay = val;
+> >> +     if (!of_property_read_u32(np, "ts,settling", &val))
+> >> +             pdata->settling = val;
+> >> +     if (!of_property_read_u32(np, "ts,fraction-z", &val))
+> >> +             pdata->fraction_z = val;
+> >> +     if (!of_property_read_u32(np, "ts,i-drive", &val))
+> >> +             pdata->i_drive = val;
+> >> +
+> >> +     return pdata;
+> >> +}
+> >
+> > As above.
+> >
+> > I'm going to stop my review here. I think you get the idea.
+> 
+> I got most of your worries, but couldn't understand the issue of passing
+> all pdata fields as DT bindings.
+
+It's a really big issue with DT enablement. Platform data has been filled
+with lots of junk over the years, to blindly move it all over to DT would
+be foolish. Now is the time to go through each of them and pull out the
+ones that we can do without, can be hard-coded or derived in the driver.
+I'm more than sure that at least some of the above can be removed with
+some thoughtful coding.
+
+> Thanks for your review though. :)
+
+No problem.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
