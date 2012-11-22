@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2KVWPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:15:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49360 "EHLO mail.kernel.org"
+	id S932848Ab2KVWPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:15:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49370 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754594Ab2KVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:38:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 031/171] m68k: fix sigset_t accessor functions
-Date: Wed, 21 Nov 2012 16:39:37 -0800
-Message-Id: <20121122004036.493321250@linuxfoundation.org>
+        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 08/83] PCI/PM: Resume device before shutdown
+Date: Wed, 21 Nov 2012 16:41:30 -0800
+Message-Id: <20121122004213.330778914@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Huang Ying <ying.huang@intel.com>
 
-commit 34fa78b59c52d1db3513db4c1a999db26b2e9ac2 upstream.
+commit 3ff2de9ba1a2e22e548979dbcd46e999b22c93d8 upstream.
 
-The sigaddset/sigdelset/sigismember functions that are implemented with
-bitfield insn cannot allow the sigset argument to be placed in a data
-register since the sigset is wider than 32 bits.  Remove the "d"
-constraint from the asm statements.
+Some actions during shutdown need device to be in D0 state, such as
+MSI shutdown etc, so resume device before shutdown.
 
-The effect of the bug is that sending RT signals does not work, the signal
-number is truncated modulo 32.
+Without this patch, a device may not be enumerated after a kexec
+because the corresponding bridge is not in D0, so that
+configuration space of the device is not accessible.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/include/asm/signal.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/pci/pci-driver.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
---- a/arch/m68k/include/asm/signal.h
-+++ b/arch/m68k/include/asm/signal.h
-@@ -156,7 +156,7 @@ typedef struct sigaltstack {
- static inline void sigaddset(sigset_t *set, int _sig)
- {
- 	asm ("bfset %0{%1,#1}"
--		: "+od" (*set)
-+		: "+o" (*set)
- 		: "id" ((_sig - 1) ^ 31)
- 		: "cc");
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -421,6 +421,8 @@ static void pci_device_shutdown(struct d
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct pci_driver *drv = pci_dev->driver;
+ 
++	pm_runtime_resume(dev);
++
+ 	if (drv && drv->shutdown)
+ 		drv->shutdown(pci_dev);
+ 	pci_msi_shutdown(pci_dev);
+@@ -431,16 +433,6 @@ static void pci_device_shutdown(struct d
+ 	 * continue to do DMA
+ 	 */
+ 	pci_disable_device(pci_dev);
+-
+-	/*
+-	 * Devices may be enabled to wake up by runtime PM, but they need not
+-	 * be supposed to wake up the system from its "power off" state (e.g.
+-	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
+-	 * supposed to wake up the system at this point.  The state argument
+-	 * will be ignored by pci_enable_wake().
+-	 */
+-	if (!device_may_wakeup(dev))
+-		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
  }
-@@ -164,7 +164,7 @@ static inline void sigaddset(sigset_t *s
- static inline void sigdelset(sigset_t *set, int _sig)
- {
- 	asm ("bfclr %0{%1,#1}"
--		: "+od" (*set)
-+		: "+o" (*set)
- 		: "id" ((_sig - 1) ^ 31)
- 		: "cc");
- }
-@@ -180,7 +180,7 @@ static inline int __gen_sigismember(sigs
- 	int ret;
- 	asm ("bfextu %1{%2,#1},%0"
- 		: "=d" (ret)
--		: "od" (*set), "id" ((_sig-1) ^ 31)
-+		: "o" (*set), "id" ((_sig-1) ^ 31)
- 		: "cc");
- 	return ret;
- }
+ 
+ #ifdef CONFIG_PM
 
 
