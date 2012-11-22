@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2KVVPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:15:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
+	id S1757642Ab2KVVQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:16:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49649 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296Ab2KVSkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755285Ab2KVSkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>,
-        Anders Blomdell <anders.blomdell@control.lth.se>,
-        Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/38] fanotify: fix missing break
-Date: Wed, 21 Nov 2012 16:39:46 -0800
-Message-Id: <20121122003904.613044461@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>
+Subject: [ 151/171] libceph: drop unnecessary CLOSED check in socket state change callback
+Date: Wed, 21 Nov 2012 16:41:37 -0800
+Message-Id: <20121122004048.503919420@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
-References: <20121122003904.262382971@linuxfoundation.org>
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+(cherry picked from commit d7353dd5aaf22ed611fbcd0d4a4a12fb30659290)
 
-commit 848561d368751a1c0f679b9f045a02944506a801 upstream.
 
-Anders Blomdell noted in 2010 that Fanotify lost events and provided a
-test case.  Eric Paris confirmed it was a bug and posted a fix to the
-list
+If we are CLOSED, the socket is closed and we won't get these.
 
-  https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/RrJfTfyW2BE
-
-but never applied it.  Repeated attempts over time to actually get him
-to apply it have never had a reply from anyone who has raised it
-
-So apply it anyway
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reported-by: Anders Blomdell <anders.blomdell@control.lth.se>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/notify/fanotify/fanotify.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ceph/messenger.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -21,6 +21,7 @@ static bool should_merge(struct fsnotify
- 			if ((old->path.mnt == new->path.mnt) &&
- 			    (old->path.dentry == new->path.dentry))
- 				return true;
-+			break;
- 		case (FSNOTIFY_EVENT_NONE):
- 			return true;
- 		default:
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -296,9 +296,6 @@ static void ceph_sock_state_change(struc
+ 	dout("%s %p state = %lu sk_state = %u\n", __func__,
+ 	     con, con->state, sk->sk_state);
+ 
+-	if (test_bit(CLOSED, &con->state))
+-		return;
+-
+ 	switch (sk->sk_state) {
+ 	case TCP_CLOSE:
+ 		dout("%s TCP_CLOSE\n", __func__);
 
 
