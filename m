@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab2KVV4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:56:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54883 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754928Ab2KVV4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:56:18 -0500
-Date: Wed, 21 Nov 2012 22:13:41 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20121121221341.GX13292@decadent.org.uk>
-References: <20121121174445.GE30250@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121174445.GE30250@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: Tagging of -stable patches
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S932807Ab2KVVz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:55:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49635 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932Ab2KVSkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 52/83] Bluetooth: Fix having bogus entries in mgmt_read_index_list reply
+Date: Wed, 21 Nov 2012 16:42:14 -0800
+Message-Id: <20121122004218.309118841@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 06:44:45PM +0100, Jan Kara wrote:
->   Hello,
-> 
->   I have a question regarding tagging of patches targetted in -stable
-> kernels. We have this 'CC: stable@vger.kernel.org # something' tag. Now
-> inconvenient thing is that when I create a patch and have such tag in it,
-> then git-send-email will mangle the address because of the #. Now even if
-> git-send-email started to ignore the part after #, we don't really want
-> stable@vger.kernel.org to get the patch since it is eligible for -stable
-> only after it is merged upstream. So the CC form of the tag seems to be
-> kind of inconvenient. Won't it be better to have some different tag?
+3.6-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Johan Hedberg <johan.hedberg@intel.com>
+
+commit 476e44cb19f1fbf2d5883dddcc0ce31b33b45915 upstream.
+
+The mgmt_read_index_list uses one loop to calculate the max needed size
+of its response with the help of an upper-bound of the controller count.
+The second loop is more strict as it checks for HCI_SETUP (which might
+have gotten set after the first loop) and could result in some indexes
+being skipped. Because of this the function needs to readjust the event
+length and index count after filling in the response array.
+
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/bluetooth/mgmt.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -321,7 +321,7 @@ static int read_index_list(struct sock *
+ 	struct hci_dev *d;
+ 	size_t rp_len;
+ 	u16 count;
+-	int i, err;
++	int err;
  
-I don't have any particular attachment to this odd format, but I
-would like to see *some* format properly standardised.  I want to be
-able to script:
+ 	BT_DBG("sock %p", sk);
+ 
+@@ -339,17 +339,18 @@ static int read_index_list(struct sock *
+ 		return -ENOMEM;
+ 	}
+ 
+-	rp->num_controllers = cpu_to_le16(count);
+-
+-	i = 0;
++	count = 0;
+ 	list_for_each_entry(d, &hci_dev_list, list) {
+ 		if (test_bit(HCI_SETUP, &d->dev_flags))
+ 			continue;
+ 
+-		rp->index[i++] = cpu_to_le16(d->id);
++		rp->index[count++] = cpu_to_le16(d->id);
+ 		BT_DBG("Added hci%u", d->id);
+ 	}
+ 
++	rp->num_controllers = cpu_to_le16(count);
++	rp_len = sizeof(*rp) + (2 * count);
++
+ 	read_unlock(&hci_dev_list_lock);
+ 
+ 	err = cmd_complete(sk, MGMT_INDEX_NONE, MGMT_OP_READ_INDEX_LIST, 0, rp,
 
-for each new commit cc'd to stable:
-    if no version restriction is specified:
-        add to patch queue(s) pending check for suitability
-    elif version restriction can be parsed:
-        add to patch queue(s) or drop based on version comparison
-    else:
-        show version restriction and ask whether/where to add it
 
-...with as few questions asked as possible.  As yet, though, I haven't
-bothered trying to parse the variety of different ways people write
-version restrictions, but the script does require them to be preceded
-by a '#'.
-
-Ben.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
