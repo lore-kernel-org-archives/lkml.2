@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab2KVWJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:09:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49620 "EHLO mail.kernel.org"
+	id S932699Ab2KVWJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:09:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754808Ab2KVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zhao Yakui <yakui.zhao@intel.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 028/171] ttm: Clear the ttm page allocated from high memory zone correctly
-Date: Wed, 21 Nov 2012 16:39:34 -0800
-Message-Id: <20121122004036.192338093@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>,
+        Stefan Beller <stefanbeller@googlemail.com>,
+        John Johansen <john.johansen@canonical.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [ 045/171] eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
+Date: Wed, 21 Nov 2012 16:39:51 -0800
+Message-Id: <20121122004037.887282324@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
 References: <20121122004033.298367941@linuxfoundation.org>
@@ -27,38 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhao Yakui <yakui.zhao@intel.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit ac207ed2471150e06af0afc76e4becc701fa2733 upstream.
+commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
 
-The TTM page can be allocated from high memory. In such case it is
-wrong to use the page_address(page) as the virtual address for the high memory
-page.
+When the eCryptfs mount options do not include '-o acl', but the lower
+filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
+flipped on in the eCryptfs super block flags. This flag is what the VFS
+checks in do_last() when deciding if the current umask should be applied
+to a newly created inode's mode or not. When a default POSIX ACL mask is
+set on a directory, the current umask is incorrectly applied to new
+inodes created in the directory. This patch ignores the MS_POSIXACL flag
+passed into ecryptfs_mount() and sets the flag on the eCryptfs super
+block depending on the flag's presence on the lower super block.
 
-bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50241
+Additionally, it is incorrect to allow a writeable eCryptfs mount on top
+of a read-only lower mount. This missing check did not allow writes to
+the read-only lower mount because permissions checks are still performed
+on the lower filesystem's objects but it is best to simply not allow a
+rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
+mount is valid and still allowed.
 
-Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+https://launchpad.net/bugs/1009207
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Stefan Beller <stefanbeller@googlemail.com>
+Cc: John Johansen <john.johansen@canonical.com>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ecryptfs/main.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -749,7 +749,10 @@ static int ttm_get_pages(struct page **p
- 	/* clear the pages coming from the pool if requested */
- 	if (flags & TTM_PAGE_FLAG_ZERO_ALLOC) {
- 		list_for_each_entry(p, &plist, lru) {
--			clear_page(page_address(p));
-+			if (PageHighMem(p))
-+				clear_highpage(p);
-+			else
-+				clear_page(page_address(p));
- 		}
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -506,7 +506,6 @@ static struct dentry *ecryptfs_mount(str
+ 		goto out;
  	}
  
+-	s->s_flags = flags;
+ 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
+ 	if (rc)
+ 		goto out1;
+@@ -542,6 +541,15 @@ static struct dentry *ecryptfs_mount(str
+ 	}
+ 
+ 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
++
++	/**
++	 * Set the POSIX ACL flag based on whether they're enabled in the lower
++	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
++	 * Allow a ro eCryptfs mount even when the lower mount is rw.
++	 */
++	s->s_flags = flags & ~MS_POSIXACL;
++	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
++
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
 
 
