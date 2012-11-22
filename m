@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab2KVStL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:49:11 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:18937 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab2KVStF (ORCPT
+	id S1756080Ab2KVVJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:09:12 -0500
+Received: from shmail0.sohard.de ([212.114.139.117]:36399 "EHLO
+	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722Ab2KVSsp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:49:05 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH v4 15/31] bio: add bvec_length(), like iov_length()
-Date: Wed, 21 Nov 2012 16:40:55 -0600
-Message-Id: <1353537671-26284-16-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+	Thu, 22 Nov 2012 13:48:45 -0500
+X-Greylist: delayed 1200 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 13:48:45 EST
+Date: Thu, 22 Nov 2012 19:10:50 +0100 (CET)
+From: Rene Buergel <rene.buergel@sohard.de>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, mroos@linux.ee
+Subject: [PATCH] ezusb: add dependency to USB
+Message-ID: <f90b1aa6-492d-4431-9334-cfcfa4a92b9a@shmail0>
+In-Reply-To: <6ea638d3-6ab4-42af-aadb-398cc8593f08@shmail0>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Originating-IP: [77.7.69.241]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+This fixes an error during modpost, when ezusb is built into the kernel while USB is built as module.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- include/linux/bio.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 820e7aa..f5f9829 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -290,6 +290,14 @@ extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set
- extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
- extern unsigned int bvec_nr_vecs(unsigned short idx);
+Signed-off-by: René Bürgel <rene.buergel@sohard.de>
+--
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index a8f0523..fecde69 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -246,6 +246,7 @@ config USB_YUREX
  
-+static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
-+{
-+	ssize_t bytes = 0;
-+	while (nr--)
-+		bytes += (bvec++)->bv_len;
-+	return bytes;
-+}
-+
- #ifdef CONFIG_BLK_CGROUP
- int bio_associate_current(struct bio *bio);
- void bio_disassociate_task(struct bio *bio);
--- 
-1.8.0
-
+ config USB_EZUSB_FX2
+ 	tristate "Functions for loading firmware on EZUSB chips"
++	depends on USB
+ 	help
+ 	  Say Y here if you need EZUSB device support.
+ 	  (Cypress FX/FX2/FX2LP microcontrollers)
