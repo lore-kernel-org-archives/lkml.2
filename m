@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2KVV61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:58:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49621 "EHLO mail.kernel.org"
+	id S932864Ab2KVV6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:58:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49646 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754898Ab2KVSkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754906Ab2KVSkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Massimo Del Fedele <max@veneto.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 015/171] ALSA: hda - Fix empty DAC filling in patch_via.c
-Date: Wed, 21 Nov 2012 16:39:21 -0800
-Message-Id: <20121122004034.863056907@linuxfoundation.org>
+        Arik Nemtsov <arik@wizery.com>, Ido Yariv <ido@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 04/83] mac80211: sync acccess to tx_filtered/ps_tx_buf queues
+Date: Wed, 21 Nov 2012 16:41:26 -0800
+Message-Id: <20121122004212.885130637@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
-References: <20121122004033.298367941@linuxfoundation.org>
+In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
+References: <20121122004212.371862690@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit 5b3761954dac2d1393beef8210eb8cee81d16b8d upstream.
+commit 987c285c2ae2e4e32aca3a9b3252d28171c75711 upstream.
 
-In via_auto_fill_adc_nids(), the parser tries to fill dac_nids[] at
-the point of the current line-out (i).  When no valid path is found
-for this output, this results in dac = 0, thus it creates a hole in
-dac_nids[].  This confuses is_empty_dac() and trims the detected DAC
-in later reference.
+These are accessed without a lock when ending STA PSM. If the
+sta_cleanup timer accesses these lists at the same time, we might crash.
 
-This patch fixes the bug by appending DAC properly to dac_nids[] in
-via_auto_fill_adc_nids().
+This may fix some mysterious crashes we had during
+ieee80211_sta_ps_deliver_wakeup.
 
-Reported-by: Massimo Del Fedele <max@veneto.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Arik Nemtsov <arik@wizery.com>
+Signed-off-by: Ido Yariv <ido@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_via.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ net/mac80211/sta_info.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -1868,11 +1868,11 @@ static int via_auto_fill_dac_nids(struct
- {
- 	struct via_spec *spec = codec->spec;
- 	const struct auto_pin_cfg *cfg = &spec->autocfg;
--	int i, dac_num;
-+	int i;
- 	hda_nid_t nid;
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -948,6 +948,7 @@ void ieee80211_sta_ps_deliver_wakeup(str
+ 	struct ieee80211_local *local = sdata->local;
+ 	struct sk_buff_head pending;
+ 	int filtered = 0, buffered = 0, ac;
++	unsigned long flags;
  
-+	spec->multiout.num_dacs = 0;
- 	spec->multiout.dac_nids = spec->private_dac_nids;
--	dac_num = 0;
- 	for (i = 0; i < cfg->line_outs; i++) {
- 		hda_nid_t dac = 0;
- 		nid = cfg->line_out_pins[i];
-@@ -1883,16 +1883,13 @@ static int via_auto_fill_dac_nids(struct
- 		if (!i && parse_output_path(codec, nid, dac, 1,
- 					    &spec->out_mix_path))
- 			dac = spec->out_mix_path.path[0];
--		if (dac) {
--			spec->private_dac_nids[i] = dac;
--			dac_num++;
--		}
-+		if (dac)
-+			spec->private_dac_nids[spec->multiout.num_dacs++] = dac;
- 	}
- 	if (!spec->out_path[0].depth && spec->out_mix_path.depth) {
- 		spec->out_path[0] = spec->out_mix_path;
- 		spec->out_mix_path.depth = 0;
- 	}
--	spec->multiout.num_dacs = dac_num;
- 	return 0;
- }
+ 	clear_sta_flag(sta, WLAN_STA_SP);
  
+@@ -963,12 +964,16 @@ void ieee80211_sta_ps_deliver_wakeup(str
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		int count = skb_queue_len(&pending), tmp;
+ 
++		spin_lock_irqsave(&sta->tx_filtered[ac].lock, flags);
+ 		skb_queue_splice_tail_init(&sta->tx_filtered[ac], &pending);
++		spin_unlock_irqrestore(&sta->tx_filtered[ac].lock, flags);
+ 		tmp = skb_queue_len(&pending);
+ 		filtered += tmp - count;
+ 		count = tmp;
+ 
++		spin_lock_irqsave(&sta->ps_tx_buf[ac].lock, flags);
+ 		skb_queue_splice_tail_init(&sta->ps_tx_buf[ac], &pending);
++		spin_unlock_irqrestore(&sta->ps_tx_buf[ac].lock, flags);
+ 		tmp = skb_queue_len(&pending);
+ 		buffered += tmp - count;
+ 	}
 
 
