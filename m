@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab2KVT07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:26:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40129 "EHLO mx2.suse.de"
+	id S965165Ab2KVT2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:28:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40173 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756840Ab2KVT0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:26:53 -0500
+	id S1756960Ab2KVT05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:26:57 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -20,9 +20,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 35/40] mm: numa: Introduce last_nid to the page frame
-Date: Thu, 22 Nov 2012 19:25:48 +0000
-Message-Id: <1353612353-1576-36-git-send-email-mgorman@suse.de>
+Subject: [PATCH 38/40] mm: sched: Adapt the scanning rate if a NUMA hinting fault does not migrate
+Date: Thu, 22 Nov 2012 19:25:51 +0000
+Message-Id: <1353612353-1576-39-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
 References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
@@ -30,94 +30,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a last_nid field to the page struct. This is used
-to build a two-stage filter in the next patch that is aimed at
-mitigating a problem whereby pages migrate to the wrong node when
-referenced by a process that was running off its home node.
+The PTE scanning rate and fault rates are two of the biggest sources of
+system CPU overhead with automatic NUMA placement.  Ideally a proper policy
+would detect if a workload was properly placed, schedule and adjust the
+PTE scanning rate accordingly. We do not track the necessary information
+to do that but we at least know if we migrated or not.
+
+This patch scans slower if a page was not migrated as the result of a
+NUMA hinting fault up to sysctl_balance_numa_scan_period_max which is
+now higher than the previous default. Once every minute it will reset
+the scanner in case of phase changes.
+
+This is hilariously crude and the times are arbitrary. Workloads will
+converge slowly in comparison to what a proper policy should be able to
+do. On the plus side, we will chew up less CPU for workloads that have no
+need for automatic balancing.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mm.h       |   30 ++++++++++++++++++++++++++++++
- include/linux/mm_types.h |    4 ++++
- mm/page_alloc.c          |    2 ++
- 3 files changed, 36 insertions(+)
+ include/linux/mm_types.h |    3 +++
+ include/linux/sched.h    |    5 +++--
+ kernel/sched/core.c      |    1 +
+ kernel/sched/fair.c      |   29 +++++++++++++++++++++--------
+ kernel/sysctl.c          |    7 +++++++
+ mm/huge_memory.c         |   11 +++++++++--
+ mm/memory.c              |   12 ++++++++----
+ 7 files changed, 52 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d04c2f0..a0834e1 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -693,6 +693,36 @@ static inline int page_to_nid(const struct page *page)
- }
- #endif
- 
-+#ifdef CONFIG_BALANCE_NUMA
-+static inline int page_xchg_last_nid(struct page *page, int nid)
-+{
-+	return xchg(&page->_last_nid, nid);
-+}
-+
-+static inline int page_last_nid(struct page *page)
-+{
-+	return page->_last_nid;
-+}
-+static inline void reset_page_last_nid(struct page *page)
-+{
-+	page->_last_nid = -1;
-+}
-+#else
-+static inline int page_xchg_last_nid(struct page *page, int nid)
-+{
-+	return page_to_nid(page);
-+}
-+
-+static inline int page_last_nid(struct page *page)
-+{
-+	return page_to_nid(page);
-+}
-+
-+static inline void reset_page_last_nid(struct page *page)
-+{
-+}
-+#endif
-+
- static inline struct zone *page_zone(const struct page *page)
- {
- 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
 diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index b40f4ef..6b478ff 100644
+index 6b478ff..62d18a9 100644
 --- a/include/linux/mm_types.h
 +++ b/include/linux/mm_types.h
-@@ -175,6 +175,10 @@ struct page {
+@@ -410,6 +410,9 @@ struct mm_struct {
  	 */
- 	void *shadow;
- #endif
+ 	unsigned long numa_next_scan;
+ 
++	/* numa_next_reset is when the PTE scanner period will be reset */
++	unsigned long numa_next_reset;
 +
-+#ifdef CONFIG_BALANCE_NUMA
-+	int _last_nid;
-+#endif
+ 	/* Restart point for scanning and setting pte_numa */
+ 	unsigned long numa_scan_offset;
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index a2b06ea..1068afd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1562,9 +1562,9 @@ struct task_struct {
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+ 
+ #ifdef CONFIG_BALANCE_NUMA
+-extern void task_numa_fault(int node, int pages);
++extern void task_numa_fault(int node, int pages, bool migrated);
+ #else
+-static inline void task_numa_fault(int node, int pages)
++static inline void task_numa_fault(int node, int pages, bool migrated)
+ {
  }
- /*
-  * The struct page can be forced to be double word aligned so that atomic ops
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index df58654..fd6a073 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -608,6 +608,7 @@ static inline int free_pages_check(struct page *page)
- 		bad_page(page);
- 		return 1;
+ #endif
+@@ -2009,6 +2009,7 @@ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ extern unsigned int sysctl_balance_numa_scan_delay;
+ extern unsigned int sysctl_balance_numa_scan_period_min;
+ extern unsigned int sysctl_balance_numa_scan_period_max;
++extern unsigned int sysctl_balance_numa_scan_period_reset;
+ extern unsigned int sysctl_balance_numa_scan_size;
+ extern unsigned int sysctl_balance_numa_settle_count;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 047e3c7..a59d869 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1537,6 +1537,7 @@ static void __sched_fork(struct task_struct *p)
+ #ifdef CONFIG_BALANCE_NUMA
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+ 		p->mm->numa_next_scan = jiffies;
++		p->mm->numa_next_reset = jiffies;
+ 		p->mm->numa_scan_seq = 0;
  	}
-+	reset_page_last_nid(page);
- 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
- 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3c632448..c1be907 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -784,7 +784,8 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  * numa task sample period in ms
+  */
+ unsigned int sysctl_balance_numa_scan_period_min = 100;
+-unsigned int sysctl_balance_numa_scan_period_max = 100*16;
++unsigned int sysctl_balance_numa_scan_period_max = 100*50;
++unsigned int sysctl_balance_numa_scan_period_reset = 100*600;
+ 
+ /* Portion of address space to scan in MB */
+ unsigned int sysctl_balance_numa_scan_size = 256;
+@@ -806,20 +807,19 @@ static void task_numa_placement(struct task_struct *p)
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void task_numa_fault(int node, int pages)
++void task_numa_fault(int node, int pages, bool migrated)
+ {
+ 	struct task_struct *p = current;
+ 
+ 	/* FIXME: Allocate task-specific structure for placement policy here */
+ 
+ 	/*
+-	 * Assume that as faults occur that pages are getting properly placed
+-	 * and fewer NUMA hints are required. Note that this is a big
+-	 * assumption, it assumes processes reach a steady steady with no
+-	 * further phase changes.
++	 * If pages are properly placed (did not migrate) then scan slower.
++	 * This is reset periodically in case of phase changes
+ 	 */
+-	p->numa_scan_period = min(sysctl_balance_numa_scan_period_max,
+-				p->numa_scan_period + jiffies_to_msecs(2));
++        if (!migrated)
++		p->numa_scan_period = min(sysctl_balance_numa_scan_period_max,
++			p->numa_scan_period + jiffies_to_msecs(10));
+ 
+ 	task_numa_placement(p);
+ }
+@@ -858,6 +858,19 @@ void task_numa_work(struct callback_head *work)
+ 		return;
+ 
+ 	/*
++	 * Reset the scan period if enough time has gone by. Objective is that
++	 * scanning will be reduced if pages are properly placed. As tasks
++	 * can enter different phases this needs to be re-examined. Lacking
++	 * proper tracking of reference behaviour, this blunt hammer is used.
++	 */
++	migrate = mm->numa_next_reset;
++	if (time_after(now, migrate)) {
++		p->numa_scan_period = sysctl_balance_numa_scan_period_min;
++		next_scan = now + msecs_to_jiffies(sysctl_balance_numa_scan_period_reset);
++		xchg(&mm->numa_next_reset, next_scan);
++	}
++
++	/*
+ 	 * Enforce maximal scan/migration frequency..
+ 	 */
+ 	migrate = mm->numa_next_scan;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 5ee587d..c335f426 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -367,6 +367,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "balance_numa_scan_period_reset",
++		.data		= &sysctl_balance_numa_scan_period_reset,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "balance_numa_scan_period_max_ms",
+ 		.data		= &sysctl_balance_numa_scan_period_max,
+ 		.maxlen		= sizeof(unsigned int),
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e74cb93..b4e1431 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1027,6 +1027,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int target_nid;
+ 	bool migrated;
+ 	bool page_locked = false;
++	int current_nid = -1;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+@@ -1035,9 +1036,11 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page = pmd_page(pmd);
+ 	get_page(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
++	current_nid = page_to_nid(page);
+ 
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
++		current_nid = page_to_nid(page);
+ 		put_page(page);
+ 		goto clear_pmdnuma;
+ 	}
+@@ -1060,7 +1063,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr,
+ 				page, target_nid);
+-	if (!migrated) {
++	if (migrated)
++		current_nid = target_nid;
++	else {
+ 		spin_lock(&mm->page_table_lock);
+ 		if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 			unlock_page(page);
+@@ -1069,7 +1074,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto clear_pmdnuma;
+ 	}
+ 
+-	task_numa_fault(target_nid, HPAGE_PMD_NR);
++	task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
  	return 0;
-@@ -3826,6 +3827,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 		mminit_verify_page_links(page, zone, nid, pfn);
- 		init_page_count(page);
- 		reset_page_mapcount(page);
-+		reset_page_last_nid(page);
- 		SetPageReserved(page);
- 		/*
- 		 * Mark the block movable so that blocks are reserved for
+ 
+ clear_pmdnuma:
+@@ -1082,6 +1087,8 @@ clear_pmdnuma:
+ 
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
++	if (current_nid != -1)
++		task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
+ 	return 0;
+ }
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 0f0ce80..d0789cc 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3468,6 +3468,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	spinlock_t *ptl;
+ 	int current_nid = -1;
+ 	int target_nid;
++	bool migrated = false;
+ 
+ 	/*
+ 	* The "pte" at this point cannot be used safely without
+@@ -3509,12 +3510,13 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 
+ 	/* Migrate to the requested node */
+-	if (migrate_misplaced_page(page, target_nid))
++	migrated = migrate_misplaced_page(page, target_nid);
++	if (migrated)
+ 		current_nid = target_nid;
+ 
+ out:
+ 	if (current_nid != -1)
+-		task_numa_fault(current_nid, 1);
++		task_numa_fault(current_nid, 1, migrated);
+ 	return 0;
+ }
+ 
+@@ -3553,6 +3555,7 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct page *page;
+ 		int curr_nid = local_nid;
+ 		int target_nid;
++		bool migrated;
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3589,9 +3592,10 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 		/* Migrate to the requested node */
+ 		pte_unmap_unlock(pte, ptl);
+-		if (migrate_misplaced_page(page, target_nid))
++		migrated = migrate_misplaced_page(page, target_nid);
++		if (migrated)
+ 			curr_nid = target_nid;
+-		task_numa_fault(curr_nid, 1);
++		task_numa_fault(curr_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
 -- 
 1.7.9.2
 
