@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab2KVVtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:49:19 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:8605 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab2KVVtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:49:16 -0500
-Date: Wed, 21 Nov 2012 22:54:50 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, broonie@opensource.wolfsonmicro.com,
-        ben-linux@fluff.org, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v4 0/3] ACPI 5 support for GPIO, SPI and I2C
-Message-ID: <20121121225450.026dcaf6@endymion.delvare>
-In-Reply-To: <79636467.nuLQX2FqW5@vostro.rjw.lan>
-References: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1353435212-15325-1-git-send-email-mika.westerberg@linux.intel.com>
-	<79636467.nuLQX2FqW5@vostro.rjw.lan>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758085Ab2KVVs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:48:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755002Ab2KVSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Michal Schmidt <mschmidt@redhat.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 037/171] r8169: use unlimited DMA burst for TX
+Date: Wed, 21 Nov 2012 16:39:43 -0800
+Message-Id: <20121122004037.094920182@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 22:31:15 +0100, Rafael J. Wysocki wrote:
-> > Mathias Nyman (1):
-> >   gpio / ACPI: add ACPI support
-> > 
-> > Mika Westerberg (2):
-> >   spi / ACPI: add ACPI enumeration support
-> >   i2c / ACPI: add ACPI enumeration support
-> 
-> This patchset has been around for quite a while and went through a few
-> iterations, so I think it's as good as it gets at this point.
-> 
-> I wonder if the GPIO / SPI / I2C maintainers have any objections against it or
-> would like the patches to be modified somehow?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I'd say go ahead, any issue that shows up can be fixed afterward.
+------------------
 
-> If not, then I'd like to take it for v3.8 into the linux-pm.git tree, because
-> the patches depend on some changes already in that tree.  Hopefully, that's OK.
+From: Michal Schmidt <mschmidt@redhat.com>
 
-Yes.
+commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
 
--- 
-Jean Delvare
+The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
+a box where this prevents the interface from using the gigabit line to its full
+potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
+
+The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
+(XID 0c900880). TSO is enabled.
+
+I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
+on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
+'7'=unlimited). This chart shows the results:
+http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
+
+Interesting points:
+ - With the current DMA burst limit (1024):
+   - at the default MTU=1500 I get only 842 Mbit/s.
+   - when going from small MTU, the performance rises monotonically with
+     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
+     a sudden drop to 762 MBit/s from which the throughput rises monotonically
+     again with further MTU increases.
+ - With a smaller DMA burst limit (512):
+   - there's a similar peak at MTU=1076 and another one at MTU=564.
+ - With unlimited DMA burst:
+   - at the default MTU=1500 I get nice 940 Mbit/s.
+   - the throughput rises monotonically with increasing MTU with no strange
+     peaks.
+
+Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
+limit plus 52. Why 52? Because:
+  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
+
+The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
+except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
+CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
+i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
+the smaller burst limit, or if any other versions have similar requirements.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/ethernet/realtek/r8169.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -73,7 +73,7 @@
+ static const int multicast_filter_limit = 32;
+ 
+ #define MAX_READ_REQUEST_SHIFT	12
+-#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
++#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
+ #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+ 
+
+
