@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811Ab2KVS6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:19 -0500
+	id S964964Ab2KVS6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:58:45 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2KVS6J (ORCPT
+	with ESMTP id S964910Ab2KVS6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:09 -0500
-Message-ID: <50AE6542.3020302@zytor.com>
-Date: Thu, 22 Nov 2012 09:47:46 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 22 Nov 2012 13:58:40 -0500
+Date: Wed, 21 Nov 2012 18:06:47 -0800
+From: tip-bot for Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Message-ID: <tip-ddd3509df8f8d4f1cf4784f559d702ce00dc8846@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        stefano.stabellini@eu.citrix.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        stefano.stabellini@eu.citrix.com
+In-Reply-To: <1353123563-3103-29-git-send-email-yinghai@kernel.org>
+References: <1353123563-3103-29-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, mm:
+  Add pointer about Xen mmu requirement for alloc_low_pages
+Git-Commit-ID: ddd3509df8f8d4f1cf4784f559d702ce00dc8846
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Daniel Kiper <daniel.kiper@oracle.com>, andrew.cooper3@citrix.com,
-        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com>
-In-Reply-To: <87txshx28b.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 21 Nov 2012 18:06:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The other thing that should be considered here is how utterly 
-preposterous the notion of doing in-guest crash dumping is in a system 
-that contains a hypervisor.  The reason for kdump is that on bare metal 
-there are no other options, but in a hypervisor system the right thing 
-should be for the hypervisor to do the dump (possibly spawning a clean 
-I/O domain if the I/O domain is necessary to access the media.)
+Commit-ID:  ddd3509df8f8d4f1cf4784f559d702ce00dc8846
+Gitweb:     http://git.kernel.org/tip/ddd3509df8f8d4f1cf4784f559d702ce00dc8846
+Author:     Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+AuthorDate: Fri, 16 Nov 2012 19:39:05 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 17 Nov 2012 11:59:28 -0800
 
-There is absolutely no reason to have a crashkernel sitting around in 
-each guest, consuming memory, and possibly get corrupt.
+x86, mm: Add pointer about Xen mmu requirement for alloc_low_pages
 
-	-hpa
+Add link for more information
+	279b706 x86,xen: introduce x86_init.mapping.pagetable_reserve
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+-v2: updated to commets from hpa to include commit name.
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1353123563-3103-29-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/init.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 02cea14..cb4f8ba 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -25,6 +25,15 @@ unsigned long __meminitdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
+ 
++/*
++ * Pages returned are already directly mapped.
++ *
++ * Changing that is likely to break Xen, see commit:
++ *
++ *    279b706 x86,xen: introduce x86_init.mapping.pagetable_reserve
++ *
++ * for detailed information.
++ */
+ __ref void *alloc_low_pages(unsigned int num)
+ {
+ 	unsigned long pfn;
