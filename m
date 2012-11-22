@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964780Ab2KVS6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 13:58:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45548 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932345Ab2KVS6A (ORCPT
+	id S964811Ab2KVS6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 13:58:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37038 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab2KVS6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 13:58:00 -0500
-From: Yan Hong <clouds.yan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] fs/buffer.c: do not inline exported function
-Date: Thu, 22 Nov 2012 19:54:16 +0800
-Message-Id: <1353585257-4415-1-git-send-email-clouds.yan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <N>
-References: <N>
+	Thu, 22 Nov 2012 13:58:09 -0500
+Message-ID: <50AE6542.3020302@zytor.com>
+Date: Thu, 22 Nov 2012 09:47:46 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Daniel Kiper <daniel.kiper@oracle.com>, andrew.cooper3@citrix.com,
+        jbeulich@suse.com, konrad.wilk@oracle.com, mingo@redhat.com,
+        tglx@linutronix.de, x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com>
+In-Reply-To: <87txshx28b.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes no sense to inlines exported function.
+The other thing that should be considered here is how utterly 
+preposterous the notion of doing in-guest crash dumping is in a system 
+that contains a hypervisor.  The reason for kdump is that on bare metal 
+there are no other options, but in a hypervisor system the right thing 
+should be for the hypervisor to do the dump (possibly spawning a clean 
+I/O domain if the I/O domain is necessary to access the media.)
 
-Signed-off-by: Yan Hong <clouds.yan@gmail.com>
----
+There is absolutely no reason to have a crashkernel sitting around in 
+each guest, consuming memory, and possibly get corrupt.
 
-init_buffer() is trivial and only get two module users. Maybe we 
-can move it to buffer_head.h. 
+	-hpa
 
-Remove inline is much more simple to make it clean though.
-
- fs/buffer.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index b5f0442..69e83ee 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -46,8 +46,7 @@ static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
- 
- #define BH_ENTRY(list) list_entry((list), struct buffer_head, b_assoc_buffers)
- 
--inline void
--init_buffer(struct buffer_head *bh, bh_end_io_t *handler, void *private)
-+void init_buffer(struct buffer_head *bh, bh_end_io_t *handler, void *private)
- {
- 	bh->b_end_io = handler;
- 	bh->b_private = private;
 -- 
-1.7.9.5
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
