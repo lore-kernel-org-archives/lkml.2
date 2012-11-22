@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030205Ab2KVTTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 14:19:09 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:47926 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756197Ab2KVTTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 14:19:04 -0500
-Message-Id: <b98e56706b65fd3fb7f51d0b5c83bc60b131c4a3.1353518444.git.ecashin@coraid.com>
-In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
-References: <cover.1353518444.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 7/8] aoe: initialize sysminor to avoid compiler warning
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
-From: Ed Cashin <ecashin@coraid.com>
-X-Mailer: nedmail
-Date: Wed, 21 Nov 2012 20:06:17 -0500
+	id S965174Ab2KVTUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 14:20:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37875 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756727Ab2KVTUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 14:20:01 -0500
+Message-ID: <50AD723B.60605@gmail.com>
+Date: Thu, 22 Nov 2012 01:30:51 +0100
+From: Cyril Roelandt <tipecaml@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] acpi_system_write_wakeup_device(): fix error check for
+ unsigned variable.
+References: <1353117263-6957-1-git-send-email-tipecaml@gmail.com> <1732852.VDXGV3Ao2T@vostro.rjw.lan> <50AD6C4A.4030809@gmail.com> <1645783.2WuR77RKxS@vostro.rjw.lan>
+In-Reply-To: <1645783.2WuR77RKxS@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the minor_get and related functions use the return values
-for errors, the compiler doesn't know that sysminor will always
-either 1) be initialized in aoedev_by_aoeaddr by the call to
-minor_get, or 2) be unused as the "goto out" is executed.
+On 11/22/2012 01:23 AM, Rafael J. Wysocki wrote:
+> On Thursday, November 22, 2012 01:05:30 AM Cyril Roelandt wrote:
+>> On 11/21/2012 01:44 AM, Rafael J. Wysocki wrote:
+>>> On Saturday, November 17, 2012 02:54:23 AM Cyril Roelandt wrote:
+>>>> The LEN variable is unsigned, therefore checking whether it is less than 0 is
+>>>> useless.
+>>>>
+>>>> Signed-off-by: Cyril Roelandt<tipecaml@gmail.com>
+>>>> ---
+>>>>    drivers/acpi/proc.c |    2 --
+>>>>    1 file changed, 2 deletions(-)
+>>>>
+>>>> diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
+>>>> index 27adb09..37871a7 100644
+>>>> --- a/drivers/acpi/proc.c
+>>>> +++ b/drivers/acpi/proc.c
+>>>> @@ -366,8 +366,6 @@ acpi_system_write_wakeup_device(struct file *file,
+>>>>
+>>>>    	if (len>   4)
+>>>>    		len = 4;
+>>>> -	if (len<   0)
+>>>> -		return -EFAULT;
+>>>
+>>> I would prefer to check if count<   0 instead.
+>>>
+>>
+>>
+>> count has type size_t, so it is also an unsigned variable. I think that
+>> acpi_system_write_wakeup_device really cannot be called with a "count"
+>> parameter that is less than 0.
+>
+> OK
+>
+> So I suppose we can just drop len entirely and replace it with count, right?
+> [And drop the<  0 check too.]
+>
 
-This patch avoids the compiler warning.
+Indeed, I'll resend.
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoedev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
-index 88ccd6d..80b3d3e 100644
---- a/drivers/block/aoe/aoedev.c
-+++ b/drivers/block/aoe/aoedev.c
-@@ -383,7 +383,7 @@ aoedev_by_aoeaddr(ulong maj, int min, int do_alloc)
- 	struct aoedev *d;
- 	int i;
- 	ulong flags;
--	ulong sysminor;
-+	ulong sysminor = 0;
- 
- 	spin_lock_irqsave(&devlist_lock, flags);
- 
--- 
-1.7.1
-
+Cyril Roelandt.
