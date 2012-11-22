@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab2KVVpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 16:45:33 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34930 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab2KVVpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 16:45:30 -0500
-Date: Thu, 22 Nov 2012 22:45:27 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-Subject: Re: memory-cgroup bug
-Message-ID: <20121122214527.GB20319@dhcp22.suse.cz>
-References: <20121121200207.01068046@pobox.sk>
- <50AD713F.9030909@jp.fujitsu.com>
- <20121122103618.79F03818@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122103618.79F03818@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758057Ab2KVVoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 16:44:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755045Ab2KVSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 13:40:25 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Mirko Lindner <mlindner@marvell.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 047/171] sky2: Fix for interrupt handler
+Date: Wed, 21 Nov 2012 16:39:53 -0800
+Message-Id: <20121122004038.088905943@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121122004033.298367941@linuxfoundation.org>
+References: <20121122004033.298367941@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-11-12 10:36:18, azurIt wrote:
-[...]
-> I can look also to the data of 'freezed' proces if you need it but i
-> will have to wait until problem occurs again.
-> 
-> The main problem is that when this problem happens, it's NOT resolved
-> automatically by kernel/OOM and user of cgroup, where it happend, has
-> non-working services until i kill his processes by hand. I'm sure
-> that all 'freezed' processes are taking very much CPU because also
-> server load goes really high - next time i will make a screenshot of
-> htop. I really wonder why OOM is __sometimes__ not resolving this
-> (it's usually is, only sometimes not).
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-What does your kernel log says while this is happening. Are there any
-memcg OOM messages showing up?
--- 
-Michal Hocko
-SUSE Labs
+------------------
+
+From: Mirko Lindner <mlindner@marvell.com>
+
+commit d663d181b9e92d80c2455e460e932d34e7a2a7ae upstream.
+
+Re-enable interrupts if it is not our interrupt
+
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/ethernet/marvell/sky2.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -3079,8 +3079,10 @@ static irqreturn_t sky2_intr(int irq, vo
+ 
+ 	/* Reading this mask interrupts as side effect */
+ 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
+-	if (status == 0 || status == ~0)
++	if (status == 0 || status == ~0) {
++		sky2_write32(hw, B0_Y2_SP_ICR, 2);
+ 		return IRQ_NONE;
++	}
+ 
+ 	prefetch(&hw->st_le[hw->st_idx]);
+ 
+
+
