@@ -1,201 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2KVWGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 17:06:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49608 "EHLO mail.kernel.org"
+	id S1758167Ab2KVWGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 17:06:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49611 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754845Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754857Ab2KVSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Nov 2012 13:40:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Forrest Loomis <cybercyst@gmail.com>, Peter <lekensteyn@gmail.com>,
-        Micael Dias <kam1kaz3@gmail.com>, Huang Ying <ying.huang@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 09/83] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-Date: Wed, 21 Nov 2012 16:41:31 -0800
-Message-Id: <20121122004213.455709640@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 32/38] reiserfs: Fix lock ordering during remount
+Date: Wed, 21 Nov 2012 16:40:15 -0800
+Message-Id: <20121122003907.856848609@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121122004212.371862690@linuxfoundation.org>
-References: <20121122004212.371862690@linuxfoundation.org>
+In-Reply-To: <20121122003904.262382971@linuxfoundation.org>
+References: <20121122003904.262382971@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Huang Ying <ying.huang@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit b3c32c4f9565f93407921c0d8a4458042eb8998e upstream.
+commit 3bb3e1fc47aca554e7e2cc4deeddc24750987ac2 upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=48981
-Peter reported that /proc/bus/pci/??/??.? does not work for 3.6.
-This is because the device configuration space registers are
-not accessible if the corresponding parent bridge is suspended or
-the device is put into D3cold state.
+When remounting reiserfs dquot_suspend() or dquot_resume() can be called.
+These functions take dqonoff_mutex which ranks above write lock so we have
+to drop it before calling into quota code.
 
-This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
-issue.  So the function used to solve sysfs issue is used to solve
-this issue.
-
-This patch moves pci_config_pm_runtime_get()/_put() from pci/pci-sysfs.c
-to pci/pci.c and makes them extern so they can be used by both the
-sysfs and proc paths.
-
-[bhelgaas: changelog, references, reporters]
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48981
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=49031
-Reported-by: Forrest Loomis <cybercyst@gmail.com>
-Reported-by: Peter <lekensteyn@gmail.com>
-Reported-by: Micael Dias <kam1kaz3@gmail.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-sysfs.c |   34 ----------------------------------
- drivers/pci/pci.c       |   32 ++++++++++++++++++++++++++++++++
- drivers/pci/pci.h       |    2 ++
- drivers/pci/proc.c      |    8 ++++++++
- 4 files changed, 42 insertions(+), 34 deletions(-)
+ fs/reiserfs/super.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -458,40 +458,6 @@ boot_vga_show(struct device *dev, struct
- }
- struct device_attribute vga_attr = __ATTR_RO(boot_vga);
- 
--static void
--pci_config_pm_runtime_get(struct pci_dev *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct device *parent = dev->parent;
--
--	if (parent)
--		pm_runtime_get_sync(parent);
--	pm_runtime_get_noresume(dev);
--	/*
--	 * pdev->current_state is set to PCI_D3cold during suspending,
--	 * so wait until suspending completes
--	 */
--	pm_runtime_barrier(dev);
--	/*
--	 * Only need to resume devices in D3cold, because config
--	 * registers are still accessible for devices suspended but
--	 * not in D3cold.
--	 */
--	if (pdev->current_state == PCI_D3cold)
--		pm_runtime_resume(dev);
--}
--
--static void
--pci_config_pm_runtime_put(struct pci_dev *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct device *parent = dev->parent;
--
--	pm_runtime_put(dev);
--	if (parent)
--		pm_runtime_put_sync(parent);
--}
--
- static ssize_t
- pci_read_config(struct file *filp, struct kobject *kobj,
- 		struct bin_attribute *bin_attr,
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1910,6 +1910,38 @@ bool pci_dev_run_wake(struct pci_dev *de
- }
- EXPORT_SYMBOL_GPL(pci_dev_run_wake);
- 
-+void pci_config_pm_runtime_get(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	if (parent)
-+		pm_runtime_get_sync(parent);
-+	pm_runtime_get_noresume(dev);
-+	/*
-+	 * pdev->current_state is set to PCI_D3cold during suspending,
-+	 * so wait until suspending completes
-+	 */
-+	pm_runtime_barrier(dev);
-+	/*
-+	 * Only need to resume devices in D3cold, because config
-+	 * registers are still accessible for devices suspended but
-+	 * not in D3cold.
-+	 */
-+	if (pdev->current_state == PCI_D3cold)
-+		pm_runtime_resume(dev);
-+}
-+
-+void pci_config_pm_runtime_put(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	pm_runtime_put(dev);
-+	if (parent)
-+		pm_runtime_put_sync(parent);
-+}
-+
- /**
-  * pci_pm_init - Initialize PM functions of given PCI device
-  * @dev: PCI device to handle.
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -72,6 +72,8 @@ extern void pci_disable_enabled_device(s
- extern int pci_finish_runtime_suspend(struct pci_dev *dev);
- extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
- extern void pci_wakeup_bus(struct pci_bus *bus);
-+extern void pci_config_pm_runtime_get(struct pci_dev *dev);
-+extern void pci_config_pm_runtime_put(struct pci_dev *dev);
- extern void pci_pm_init(struct pci_dev *dev);
- extern void platform_pci_wakeup_init(struct pci_dev *dev);
- extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
---- a/drivers/pci/proc.c
-+++ b/drivers/pci/proc.c
-@@ -76,6 +76,8 @@ proc_bus_pci_read(struct file *file, cha
- 	if (!access_ok(VERIFY_WRITE, buf, cnt))
- 		return -EINVAL;
- 
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((pos & 1) && cnt) {
- 		unsigned char val;
- 		pci_user_read_config_byte(dev, pos, &val);
-@@ -121,6 +123,8 @@ proc_bus_pci_read(struct file *file, cha
- 		cnt--;
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -1207,7 +1207,7 @@ static int reiserfs_remount(struct super
+ 				kfree(qf_names[i]);
+ #endif
+ 		err = -EINVAL;
+-		goto out_err;
++		goto out_unlock;
+ 	}
+ #ifdef CONFIG_QUOTA
+ 	handle_quota_files(s, qf_names, &qfmt);
+@@ -1250,7 +1250,7 @@ static int reiserfs_remount(struct super
+ 	if (blocks) {
+ 		err = reiserfs_resize(s, blocks);
+ 		if (err != 0)
+-			goto out_err;
++			goto out_unlock;
  	}
  
-+	pci_config_pm_runtime_put(dev);
-+
- 	*ppos = pos;
- 	return nbytes;
- }
-@@ -146,6 +150,8 @@ proc_bus_pci_write(struct file *file, co
- 	if (!access_ok(VERIFY_READ, buf, cnt))
- 		return -EINVAL;
+ 	if (*mount_flags & MS_RDONLY) {
+@@ -1260,9 +1260,15 @@ static int reiserfs_remount(struct super
+ 			/* it is read-only already */
+ 			goto out_ok;
  
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((pos & 1) && cnt) {
- 		unsigned char val;
- 		__get_user(val, buf);
-@@ -191,6 +197,8 @@ proc_bus_pci_write(struct file *file, co
- 		cnt--;
++		/*
++		 * Drop write lock. Quota will retake it when needed and lock
++		 * ordering requires calling dquot_suspend() without it.
++		 */
++		reiserfs_write_unlock(s);
+ 		err = dquot_suspend(s, -1);
+ 		if (err < 0)
+ 			goto out_err;
++		reiserfs_write_lock(s);
+ 
+ 		/* try to remount file system with read-only permissions */
+ 		if (sb_umount_state(rs) == REISERFS_VALID_FS
+@@ -1272,7 +1278,7 @@ static int reiserfs_remount(struct super
+ 
+ 		err = journal_begin(&th, s, 10);
+ 		if (err)
+-			goto out_err;
++			goto out_unlock;
+ 
+ 		/* Mounting a rw partition read-only. */
+ 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
+@@ -1287,7 +1293,7 @@ static int reiserfs_remount(struct super
+ 
+ 		if (reiserfs_is_journal_aborted(journal)) {
+ 			err = journal->j_errno;
+-			goto out_err;
++			goto out_unlock;
+ 		}
+ 
+ 		handle_data_mode(s, mount_options);
+@@ -1296,7 +1302,7 @@ static int reiserfs_remount(struct super
+ 		s->s_flags &= ~MS_RDONLY;	/* now it is safe to call journal_begin */
+ 		err = journal_begin(&th, s, 10);
+ 		if (err)
+-			goto out_err;
++			goto out_unlock;
+ 
+ 		/* Mount a partition which is read-only, read-write */
+ 		reiserfs_prepare_for_journal(s, SB_BUFFER_WITH_SB(s), 1);
+@@ -1313,11 +1319,17 @@ static int reiserfs_remount(struct super
+ 	SB_JOURNAL(s)->j_must_wait = 1;
+ 	err = journal_end(&th, s, 10);
+ 	if (err)
+-		goto out_err;
++		goto out_unlock;
+ 	s->s_dirt = 0;
+ 
+ 	if (!(*mount_flags & MS_RDONLY)) {
++		/*
++		 * Drop write lock. Quota will retake it when needed and lock
++		 * ordering requires calling dquot_resume() without it.
++		 */
++		reiserfs_write_unlock(s);
+ 		dquot_resume(s, -1);
++		reiserfs_write_lock(s);
+ 		finish_unfinished(s);
+ 		reiserfs_xattr_init(s, *mount_flags);
  	}
+@@ -1327,9 +1339,10 @@ out_ok:
+ 	reiserfs_write_unlock(s);
+ 	return 0;
  
-+	pci_config_pm_runtime_put(dev);
-+
- 	*ppos = pos;
- 	i_size_write(ino, dp->size);
- 	return nbytes;
++out_unlock:
++	reiserfs_write_unlock(s);
+ out_err:
+ 	kfree(new_opts);
+-	reiserfs_write_unlock(s);
+ 	return err;
+ }
+ 
 
 
