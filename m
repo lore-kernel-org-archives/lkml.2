@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979Ab2KWDqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 22:46:18 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:50162 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757574Ab2KWDqQ (ORCPT
+	id S1758977Ab2KWDva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 22:51:30 -0500
+Received: from fallback8.mail.ru ([94.100.176.136]:34813 "EHLO
+	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496Ab2KWDv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 22:46:16 -0500
-Date: Fri, 23 Nov 2012 09:15:58 +0530
-From: Shiraz Hashim <shiraz.hashim@st.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, Lee Jones <lee.jones@linaro.org>
-Cc: <sameo@linux.intel.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
-Message-ID: <20121123034557.GB5384@localhost.localdomain>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
- <b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
- <20121122112451.GE4328@gmail.com>
- <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
- <20121122154612.GC10986@gmail.com>
- <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 22 Nov 2012 22:51:29 -0500
+X-Greylist: delayed 630 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 22:51:28 EST
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QW50b24gVm9yb250c292?= <anton.vorontsov@linaro.org>
+Cc: =?UTF-8?B?QW5kcmV3IE1vcnRvbg==?= <akpm@linux-foundation.org>,
+        linaro-kernel@lists.linaro.org,
+        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?Sm9obiBTdHVsdHo=?= <john.stultz@linaro.org>,
+        =?UTF-8?B?SmFzb24gV2Vzc2Vs?= <jason.wessel@windriver.com>,
+        kernel-team@android.com, linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAxMC8xMF0gQVJNOiBGSVE6IEdldCByaWQgb2YgaW5pdF9G?=
+ =?UTF-8?B?SVEoKQ==?=
+Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [188.134.40.128]
+Date: Fri, 23 Nov 2012 07:40:30 +0400
+References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net> <1353631803-4853-10-git-send-email-anton.vorontsov@linaro.org>
+In-Reply-To: <1353631803-4853-10-git-send-email-anton.vorontsov@linaro.org>
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1353642030.851395840@f20.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAN3pXqQ010924
 
-On Thu, Nov 22, 2012 at 10:31:48PM +0530, Viresh Kumar wrote:
-> On 22 November 2012 21:16, Lee Jones <lee.jones@linaro.org> wrote:
-> > The STMPE GPIO controller can't be used by Device Tree yet in
-> > any case, because it doesn't have an IRQ domain. This is
-> > compulsory, or it won't work. Have you tried to test this
-> > functionality yet?
+> The function only saves initial arch-specific "no FIQ" instruction, by
+> placing the code into set_fiq_handler() we can:
 > 
-> I don't have SPEAr board to test it anymore. I have moved out of
-> ST now and working in linaro as ARM asignee. Just pushing these
-> as an part time activity.
+> - Have less code and logic in the platform-specific files;
+> - Have the code that manages FIQ vector overwriting in one place, i.e.
+>   don't spread the logic around.
 > 
-> Though ST guys would have tested stmpe, but stmpe-gpio, i am not
-> sure about.
+> p.s. Also, I noticed that we saved no_fiq_insn w/o bothering about
+> !CONFIG_CPU_USE_DOMAINS case, but set_fiq_handler() handles this case
+> specifically. I wonder, was that on purpose, e.g. it does not matter for
+> init_FIQ(), or it was just overlooked? In the latter case, the patch fixes
+> the issue.
+...
+> diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+> index 9bf3a60..3602df6 100644
+> --- a/arch/arm/kernel/fiq.c
+> +++ b/arch/arm/kernel/fiq.c
+> @@ -49,6 +49,7 @@
+>  #include <asm/mach/irq.h>
+>  
+>  static unsigned long no_fiq_insn;
+> +static int got_no_fiq_insn;
+>  
+>  /* Default reacquire function
+>   * - we always relinquish FIQ control
+> @@ -78,11 +79,14 @@ void show_fiq_list(struct seq_file *p, int prec)
+>  
+>  void set_fiq_handler(void *start, unsigned int length)
+>  {
+> -#if defined(CONFIG_CPU_USE_DOMAINS)
+> -	memcpy((void *)0xffff001c, start, length);
+> -#else
+> -	memcpy(vectors_page + 0x1c, start, length);
+> +	unsigned long *addr = (void *)0xffff001c;
+> +
+> +#ifndef CONFIG_CPU_USE_DOMAINS
+> +	addr = vectors_page + 0x1c;
+>  #endif
+> +	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
+> +		no_fiq_insn = *addr;
+> +	memcpy(addr, start, length);
+>  	flush_icache_range(0xffff001c, 0xffff001c + length);
+>  	if (!vectors_high())
+>  		flush_icache_range(0x1c, 0x1c + length);
+> @@ -126,8 +130,3 @@ EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
+>  EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
+>  EXPORT_SYMBOL(claim_fiq);
+>  EXPORT_SYMBOL(release_fiq);
+> -
+> -void __init init_FIQ(void)
+> -{
+> -	no_fiq_insn = *(unsigned long *)0xffff001c;
 
-Let me bring some more information here. I totally understand
-Jones concerns, but the way stmpe (and may be other mfd devices)
-are handled is this that the parent block (i.e. stmpe) decides on
-the variants (say by probing device itself) and then prepares
-associated data for the (probed) variant and creates a platform
-device for the same.
+it seems that this is wrong. In this case we have an uninitialized variable and
+sequential call claim_fiq and release_fiq could be fatal. FIXME please.
 
-For the interrupts case also, it is stmpe which registers the
-irq domain. This is because, stmpe driver probes variant and
-populates its platform data and stmpe-gpio may not be aware of the
-variant it serves. At the same time, it (stmpe) needs few of the
-(virtual) interrupts for its internal purpose also.
-
-Hence stmpe passes irq_base to the stmpe-gpio driver while
-allocating and registering irq domain by itself.
-
-With this approach we have tested the functionality on SPEAr
-platform.
-
---
-regards
-Shiraz
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
