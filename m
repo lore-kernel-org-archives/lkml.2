@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab2KWWVm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 17:21:42 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41371 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab2KWWVk (ORCPT
+	id S932102Ab2KWWeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 17:34:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50578 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab2KWWeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 17:21:40 -0500
+	Fri, 23 Nov 2012 17:34:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <50AF7901.20401@kernel.dk>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
-	<20121120180949.GG1408@quack.suse.cz>
-	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
-	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-	<50AF7901.20401@kernel.dk>
-Date: Sat, 24 Nov 2012 06:21:40 +0800
-Message-ID: <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
-Subject: Re: Recent kernel "mount" slow
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, Mikulas Patocka <mpatocka@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 23 Nov 2012 22:33:57 +0000
+X-Google-Sender-Auth: w7ZsUuKKlrL1KxvFCrSDMjtnN1o
+Message-ID: <CACxGe6v-VAEDnOYtnRaYtNf_3njjbN4ZG42h6uPXO=VUJsn7-g@mail.gmail.com>
+Subject: [GIT PULL] devicetree fix for v3.7
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        David Miller <davem@davemloft.net>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 9:24 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2012-11-22 20:21, Linus Torvalds wrote:
->> Doesn't sound like a fsdevel issue since it seems to be independent of
->> filesystems. More like some generic block layer thing. Adding Jens
->> (and quoting the whole thing)
->>
->> Jens, any ideas? Most of your stuff came in after -rc2, which would
->> fit with the fact that most of the slowdown seems to be after -rc2
->> according to Jeff.
->
-> No ideas. Looking at what went in from my side, only the rq plug sorting
-> is a core change, and that should not cause any change in behaviour for
-> a single device. That's commit 975927b9.
->
->> Jeff, more bisecting would be good, though.
->
-> Probably required, yes...
+Hi Linus,
+
+Here's is a device tree build regression fix that I've just received.
+Please pull.
+
+Thanks,
+g.
+
+The following changes since commit 26d29d06ea020411559f75ec908db235ca1838d9:
+
+  Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input (2012-11-22
+21:45:34 -1000)
+
+are available in the git repository at:
 
 
-This one slows mount from 0.012s to 0.168s.
+  git://git.secretlab.ca/git/linux-2.6 tags/devicetree-for-linus
 
-commit 62ac665ff9fc07497ca524bd20d6a96893d11071
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Wed Sep 26 07:46:43 2012 +0200
+for you to fetch changes up to 0e622d39197f0b64b9e043fe75ac3634bf9f3a05:
 
-    blockdev: turn a rw semaphore into a percpu rw semaphore
+  of/address: sparc: Declare of_iomap as an extern function for sparc
+again (2012-11-23 22:01:15 +0000)
 
+----------------------------------------------------------------
+Device tree regression fix for v3.7
 
-There were couple of more changes to percpu-rw-semaphores after
-3.7.0-rc2 and those slows mount further from 0.168s to 0.500s. I don't
-really know, but I'm suspecting these. Still bisecting.
+Simple build regression fix for DT device drivers on Sparc. An earlier
+change had masked out the of_iomap() helper on SPARC.
 
-commit 5c1eabe68501d1e1b1586c7f4c46cc531828c4ab
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Mon Oct 22 19:37:47 2012 -0400
+----------------------------------------------------------------
+Andreas Larsson (1):
+      of/address: sparc: Declare of_iomap as an extern function for sparc again
 
-    percpu-rw-semaphores: use light/heavy barriers
+ arch/sparc/include/asm/prom.h |    5 ++++-
+ include/linux/of_address.h    |    2 ++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
-
-commit 1bf11c53535ab87e3bf14ecdf6747bf46f601c5d
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Mon Oct 22 19:39:16 2012 -0400
-
-    percpu-rw-semaphores: use rcu_read_lock_sched
-
-
-commit 1a25b1c4ce189e3926f2981f3302352a930086db
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Mon Oct 15 17:20:17 2012 -0400
-
-    Lock splice_read and splice_write functions
-
-
-
-I couldn't unpatch with the latest kernel, but still trying.
-
-Jeff
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
