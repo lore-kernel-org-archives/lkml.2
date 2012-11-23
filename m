@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab2KWJIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:08:41 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59142 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab2KWJIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:08:38 -0500
+	id S1758262Ab2KWJJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:09:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60534 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755471Ab2KWJJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:09:16 -0500
+Date: Fri, 23 Nov 2012 09:09:09 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/40] x86: mm: drop TLB flush from ptep_set_access_flags
+Message-ID: <20121123090909.GX8218@suse.de>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+ <1353612353-1576-3-git-send-email-mgorman@suse.de>
+ <20121122205637.4e9112e2@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1352188034-9982-1-git-send-email-qingx@marvell.com>
-References: <1352188034-9982-1-git-send-email-qingx@marvell.com>
-Date: Fri, 23 Nov 2012 17:08:37 +0800
-Message-ID: <CAN1soZw5RDN+wRacR1YTMqQfy5SNAg_KzGDt+77846M8Qk_7sw@mail.gmail.com>
-Subject: Re: [PATCH 6/7] mfd: max8925: support dt for backlight
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Qing Xu <qingx@marvell.com>
-Cc: rpurdie@rpsys.net, FlorianSchandinat@gmx.de,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, cxie4@marvell.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121122205637.4e9112e2@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 3:47 PM, Qing Xu <qingx@marvell.com> wrote:
-> From: Qing Xu <qingx@marvell.com>
->
-> Signed-off-by: Qing Xu <qingx@marvell.com>
-> ---
->  drivers/video/backlight/max8925_bl.c |   31 ++++++++++++++++++++++++++++++-
->  1 files changed, 30 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-> index f72ba54..7de02ed 100644
-> --- a/drivers/video/backlight/max8925_bl.c
-> +++ b/drivers/video/backlight/max8925_bl.c
-> @@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
->         .get_brightness = max8925_backlight_get_brightness,
->  };
->
-> +#ifdef CONFIG_OF
-> +static int max8925_backlight_dt_init(struct platform_device *pdev,
-> +                             struct max8925_backlight_pdata *pdata)
-> +{
-> +       struct device_node *nproot = pdev->dev.parent->of_node, *np;
-> +       int dual_string;
-> +
-> +       if (!nproot)
-> +               return -ENODEV;
-> +       np = of_find_node_by_name(nproot, "backlight");
-> +       if (!np) {
-> +               dev_err(&pdev->dev, "failed to find backlight node\n");
-> +               return -ENODEV;
-> +       }
-> +
-> +       of_property_read_u32(np, "dual-string", &dual_string);
-Please use the property like "maxium,max8925-dual-string" at here. It's used
-to avoid naming conflict.
+On Thu, Nov 22, 2012 at 08:56:37PM +0000, Alan Cox wrote:
+> On Thu, 22 Nov 2012 19:25:15 +0000
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > From: Rik van Riel <riel@redhat.com>
+> > 
+> > Intel has an architectural guarantee that the TLB entry causing
+> > a page fault gets invalidated automatically. This means
+> > we should be able to drop the local TLB invalidation.
+> 
+> Can we get an AMD sign off on that ?
+> 
 
-> +       pdata->dual_string = dual_string;
-> +       return 0;
-> +}
-> +#else
-> +#define max8925_backlight_dt_init(x, y)        (-1)
-> +#endif
-> +
->  static int __devinit max8925_backlight_probe(struct platform_device *pdev)
->  {
->         struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-> @@ -150,6 +173,13 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
->         platform_set_drvdata(pdev, bl);
->
->         value = 0;
-> +       if (pdev->dev.parent->of_node && !pdata) {
-> +               pdata = devm_kzalloc(&pdev->dev,
-> +                                    sizeof(struct max8925_backlight_pdata),
-> +                                    GFP_KERNEL);
-> +               max8925_backlight_dt_init(pdev, pdata);
-> +       }
-> +
->         if (pdata) {
->                 if (pdata->lxw_scl)
->                         value |= (1 << 7);
-> @@ -161,7 +191,6 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
->         ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
->         if (ret < 0)
->                 goto out_brt;
-> -
->         backlight_update_status(bl);
->         return 0;
->  out_brt:
-> --
-> 1.7.0.4
->
+Hi Alan,
+
+You sortof can[1]. Borislav Petkov answered that they do
+https://lkml.org/lkml/2012/11/17/85 and quoted the manual at
+https://lkml.org/lkml/2012/10/29/414 saying that this should be ok.
+
+[1] There is no delicate way of putting it. I've no idea what the
+    current status of current and former AMD kernel developers is.
+
+-- 
+Mel Gorman
+SUSE Labs
