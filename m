@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab2KWIsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 03:48:51 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38235 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758249Ab2KWIsr (ORCPT
+	id S1758045Ab2KWIue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 03:50:34 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33886 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab2KWIud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 03:48:47 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: w.sang@pengutronix.de, kgene.kim@samsung.com, patches@linaro.org
-Subject: [PATCH V2 4/4] i2c: s3c2410: Remove err_cpufreq label
-Date: Fri, 23 Nov 2012 14:11:55 +0530
-Message-Id: <1353660115-9710-5-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1353660115-9710-1-git-send-email-tushar.behera@linaro.org>
-References: <1353660115-9710-1-git-send-email-tushar.behera@linaro.org>
+	Fri, 23 Nov 2012 03:50:33 -0500
+Message-ID: <50AF38D2.6090106@gmail.com>
+Date: Fri, 23 Nov 2012 16:50:26 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: kswapd endless loop for compaction
+References: <20121120190440.GA24381@cmpxchg.org>
+In-Reply-To: <20121120190440.GA24381@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-err_cpufreq label is now used only once. It can be removed and related
-code can be moved to the caller location.
+On 11/21/2012 03:04 AM, Johannes Weiner wrote:
+> Hi guys,
+>
+> while testing a 3.7-rc5ish kernel, I noticed that kswapd can drop into
+> a busy spin state without doing reclaim.  printk-style debugging told
+> me that this happens when the distance between a zone's high watermark
+> and its low watermark is less than two huge pages (DMA zone).
+>
+> 1. The first loop in balance_pgdat() over the zones finds all zones to
+> be above their high watermark and only does goto out (all_zones_ok).
+>
+> 2. pgdat_balanced() at the out: label also just checks the high
+> watermark, so the node is considered balanced and the order is not
+> reduced.
+>
+> 3. In the `if (order)' block after it, compaction_suitable() checks if
+> the zone's low watermark + twice the huge page size is okay, which
+> it's not necessarily in a small zone, and so COMPACT_SKIPPED makes it
+> it go back to loop_again:.
+>
+> This will go on until somebody else allocates and breaches the high
+> watermark and then hopefully goes on to reclaim the zone above low
+> watermark + 2 * THP.
+>
+> I'm not really sure what the correct solution is.  Should we modify
+> the zone_watermark_ok() checks in balance_pgdat() to take into account
+> the higher watermark requirements for reclaim on behalf of compaction?
+> Change the check in compaction_suitable() / not use it directly?
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
-Changes since V1:
-  * Rebased as per the V2 patch series.
+Hi Johannes,
 
- drivers/i2c/busses/i2c-s3c2410.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+If depend on compaction get enough contigous pages, why
 
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index 3f2d632..ff4408d 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1044,7 +1044,8 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c->adap);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "failed to add bus to i2c core\n");
--		goto err_cpufreq;
-+		s3c24xx_i2c_deregister_cpufreq(i2c);
-+		return ret;
- 	}
- 
- 	of_i2c_register_devices(&i2c->adap);
-@@ -1055,10 +1056,6 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
- 
- 	dev_info(&pdev->dev, "%s: S3C I2C adapter\n", dev_name(&i2c->adap.dev));
- 	return 0;
--
-- err_cpufreq:
--	s3c24xx_i2c_deregister_cpufreq(i2c);
--	return ret;
- }
- 
- /* s3c24xx_i2c_remove
--- 
-1.7.4.1
+if (CONPACT_BUILD && order &&
+     compaction_suitable(zone, order) !=
+         COMPACTION_SKIPPED)
+     testorder = 0;
+
+can't guarantee low watermark + twice the huge page size is okay?
+
+Regards,
+Jaegeuk
+
+> Thanks,
+> Johannes
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
