@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab2KWU3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 15:29:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42525 "EHLO mx1.redhat.com"
+	id S1756227Ab2KWUax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 15:30:53 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:35328 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756110Ab2KWU3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 15:29:49 -0500
-Date: Fri, 23 Nov 2012 21:28:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] uprobes: _unregister() should always do
-	register_for_each_vma(false)
-Message-ID: <20121123202815.GA18904@redhat.com>
+	id S1756188Ab2KWUau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 15:30:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Chris Ball <cjb@laptop.org>, mika.westerberg@linux.intel.com,
+        linux-mmc@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] Add SDHCI ACPI driver
+Date: Fri, 23 Nov 2012 21:35:22 +0100
+Message-ID: <3416042.oXdXWT2CDk@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1353670561-22515-1-git-send-email-adrian.hunter@intel.com>
+References: <1353670561-22515-1-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121123202741.GA18858@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe_unregister() removes the breakpoints only if the last consumer
-goes away. To support the filtering it should do this every time, we
-want to remove the breakpoints which nobody else want to keep.
+On Friday, November 23, 2012 01:35:58 PM Adrian Hunter wrote:
+> Hi
+> 
+> Here is SDHCI ACPI driver.
+> 
+> Changes for v2:
+> 
+> 	Dropped "PNPACPI: exclude SDHCI devices"
+> 	Added "PNPACPI: exclude devices already bound"
+> 	Changed dev->acpi_handle to ACPI_HANDLE(dev)
+> 	Added Chris' Ack for sdhci-acpi
+> 
+> 
+> Adrian Hunter (2):
+>       ACPI: add SDHCI to ACPI platform devices
+>       mmc: sdhci-acpi: add SDHCI ACPI driver
+> 
+> Mika Westerberg (1):
+>       PNPACPI: exclude devices already bound
 
-Note: given that filter_chain() is not actually implemented, this patch
-itself doesn't change the behaviour yet, register_for_each_vma(false)
-is a heavy "nop" unless there are no more consumers.
+Applied to linux-pm.git/linux-next as v3.8 material.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+Next time, however, I'll really prefer it if your changelogs (1) exist and (2)
+are more descriptive than the (existing) ones in this series.
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index edc47ae..7c98671 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -825,12 +825,20 @@ static int __uprobe_register(struct uprobe *uprobe)
- 	return register_for_each_vma(uprobe, true);
- }
- 
--static void __uprobe_unregister(struct uprobe *uprobe)
-+static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
- {
--	if (!register_for_each_vma(uprobe, false))
--		delete_uprobe(uprobe);
-+	int err;
-+
-+	if (!consumer_del(uprobe, uc))	/* WARN? */
-+		return;
- 
--	/* TODO : cant unregister? schedule a worker thread */
-+	err = register_for_each_vma(uprobe, false);
-+	if (!uprobe->consumers) {
-+		clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
-+		/* TODO : cant unregister? schedule a worker thread */
-+		if (!err)
-+			delete_uprobe(uprobe);
-+	}
- }
- 
- /*
-@@ -868,8 +876,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	} else if (!consumer_add(uprobe, uc)) {
- 		ret = __uprobe_register(uprobe);
- 		if (ret) {
--			uprobe->consumers = NULL;
--			__uprobe_unregister(uprobe);
-+			__uprobe_unregister(uprobe, uc);
- 		} else {
- 			set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
- 		}
-@@ -897,14 +904,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
- 		return;
- 
- 	mutex_lock(uprobes_hash(inode));
--
--	if (consumer_del(uprobe, uc)) {
--		if (!uprobe->consumers) {
--			__uprobe_unregister(uprobe);
--			clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
--		}
--	}
--
-+	__uprobe_unregister(uprobe, uc);
- 	mutex_unlock(uprobes_hash(inode));
- 	put_uprobe(uprobe);
- }
+I added the changelogs for you (please check in the tree above if they make
+sense), but that's not something I should be doing in general I think.
+
+Thanks,
+Rafael
+
+
 -- 
-1.5.5.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
