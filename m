@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab2KWLTv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:19:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54927 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab2KWLTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:19:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,307,1352102400"; 
-   d="scan'208";a="223420890"
-Date: Fri, 23 Nov 2012 12:19:43 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] Documentation: Fix historical inconsistency in STMPE
- DT doc
-Message-ID: <20121123111943.GF12685@sortiz-mobl>
-References: <1353587064-10541-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353587064-10541-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756096Ab2KWLYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:24:53 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:24561 "HELO
+	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753800Ab2KWLYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 06:24:51 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: davem@davemloft.net
+Cc: sam@ravnborg.org, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        sparclinux@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, software@gaisler.com
+Subject: [PATCH] of/address: sparc: Declare of_iomap as an extern function for sparc again
+Date: Fri, 23 Nov 2012 12:24:09 +0100
+Message-Id: <1353669849-23697-1-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+This bug-fix makes sure that of_iomap is defined extern for sparc so that the
+sparc-specific implementation of_iomap is once again used when including
+include/linux/of_address.h in a sparc context. OF_GPIO that is now available for
+sparc relies on this.
 
-On Thu, Nov 22, 2012 at 12:24:24PM +0000, Lee Jones wrote:
-> Previously a generic binding 'i2c-client-wake' was created which
-> enabled I2C devices to register themselves as wake-up devices.
-> This binding was later over-thrown by 'wakeup-source'. The STMPE
-> driver was fixed-up, but the document was neglected. This patch
-> aims to rectify that.
-> 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  Documentation/devicetree/bindings/mfd/stmpe.txt |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-Applied, thanks.
+The bug was inadvertently introduced in a850a75, "of/address: add empty static
+inlines for !CONFIG_OF", that added a static dummy inline for of_iomap when
+!CONFIG_OF_ADDRESS. However, CONFIG_OF_ADDRESS is never defined for sparc, but
+there is a sparc-specific implementation /arch/sparc/kernel/of_device_common.c.
 
-Cheers,
-Samuel.
+This fix takes the same approach as 0bce04b that solved the equivalent problem
+for of_address_to_resource.
 
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ arch/sparc/include/asm/prom.h |    5 ++++-
+ include/linux/of_address.h    |    2 ++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/arch/sparc/include/asm/prom.h b/arch/sparc/include/asm/prom.h
+index f930031..67c6257 100644
+--- a/arch/sparc/include/asm/prom.h
++++ b/arch/sparc/include/asm/prom.h
+@@ -63,10 +63,13 @@ extern char *of_console_options;
+ extern void irq_trans_init(struct device_node *dp);
+ extern char *build_path_component(struct device_node *dp);
+ 
+-/* SPARC has a local implementation */
++/* SPARC has local implementations */
+ extern int of_address_to_resource(struct device_node *dev, int index,
+ 				  struct resource *r);
+ #define of_address_to_resource of_address_to_resource
+ 
++void __iomem *of_iomap(struct device_node *node, int index);
++#define of_iomap of_iomap
++
+ #endif /* __KERNEL__ */
+ #endif /* _SPARC_PROM_H */
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index e20e3af..0506eb5 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -42,10 +42,12 @@ static inline struct device_node *of_find_matching_node_by_address(
+ {
+ 	return NULL;
+ }
++#ifndef of_iomap
+ static inline void __iomem *of_iomap(struct device_node *device, int index)
+ {
+ 	return NULL;
+ }
++#endif
+ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+ 					u64 *size, unsigned int *flags)
+ {
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.0.4
+
