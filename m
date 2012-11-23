@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab2KWJmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:42:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56446 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759078Ab2KWJmI (ORCPT
+	id S1759206Ab2KWJme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:42:34 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43250 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759149Ab2KWJmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:42:08 -0500
-Date: Fri, 23 Nov 2012 09:42:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com
-Subject: Re: [PATCH V2 1/2] mfd: stmpe: Use devm_*() routines
-Message-ID: <20121123094203.GG17471@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
- <20121122102710.GD4328@gmail.com>
- <CAKohpo=gctcd5+bZ8xeJn-Cx3=+=+uxaCzEoZhFmp+XaJSpf9Q@mail.gmail.com>
- <20121123094044.GF17471@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121123094044.GF17471@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Nov 2012 04:42:32 -0500
+From: Harvey Yang <harvey.huawei.yang@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Mooney <mfm@muteddisk.com>, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Harvey Yang <harvey.huawei.yang@gmail.com>
+Subject: [RFC PATCH 0/2] staging: usbip: refine the spinlock
+Date: Fri, 23 Nov 2012 17:46:34 +0800
+Message-Id: <1353663996-11455-1-git-send-email-harvey.huawei.yang@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Lee Jones wrote:
+This patchset refine some spinlocks which I think not used properly. Maybe my 'refine' make the code  broken, so any comments will be appreciated. 
 
-> On Thu, 22 Nov 2012, Viresh Kumar wrote:
-> 
-> > On 22 November 2012 15:57, Lee Jones <lee.jones@linaro.org> wrote:
-> > > On Thu, 22 Nov 2012, Viresh Kumar wrote:
-> > >
-> > >> This patch frees stmpe driver from tension of freeing resources :)
-> > >> devm_* derivatives of multiple routines are used while allocating resources,
-> > >> which would be freed automatically by kernel.
-> > >>
-> > >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
-> > > Acked-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > Hi Sameo,
-> > 
-> > Please apply this patch only from this series. I will not resend it in
-> > V3 of my set.
-> 
-> That's not how it works.
-> 
-> Apply my Acked-by yourself and re-send the patch-set as a whole.
+patch1: The function 'usbip_event_add()' may be called in interrupt context on the stub side: 
+'stub_complete'->'stub_enqueue_ret_unlink'->'usbip_event_add'.
+In this function it tries to get the lock 'ud->lock', so we shoud disable irq when we get this lock in process context.
 
-Sorry, you have another option. Break it away from the patch-set,
-apply my Acked-by, then resubmit as a single patch.
+patch2: On the client side, we have a virtual hcd driver so there actually no hardware interrupts. Maybe to achieve a good performance there is no need to use the interrupt safe spinlock. Just replace them with a non interrupt safe version.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Harvey Yang (2):
+  staging: usbip: use interrupt safe spinlock to avoid potential
+    deadlock.
+  staging: usbip: replace the interrupt safe spinlock because no
+    hardware interrupt exists.
+
+ drivers/staging/usbip/stub_dev.c    |   34 ++++++++--------
+ drivers/staging/usbip/stub_rx.c     |    4 +-
+ drivers/staging/usbip/usbip_event.c |    6 ++-
+ drivers/staging/usbip/vhci_hcd.c    |   75 +++++++++++++++--------------------
+ drivers/staging/usbip/vhci_rx.c     |   10 ++---
+ drivers/staging/usbip/vhci_tx.c     |   14 +++----
+ 6 files changed, 65 insertions(+), 78 deletions(-)
+
