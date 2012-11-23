@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab2KWOZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 09:25:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58443 "EHLO
+	id S1755029Ab2KWOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 09:25:25 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58444 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab2KWOY1 (ORCPT
+	with ESMTP id S1752760Ab2KWOY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Nov 2012 09:24:27 -0500
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -22,9 +22,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>,
         Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
         devicetree-discuss@lists.ozlabs.org,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v7 2/4] misc: Generic on-chip SRAM allocation driver
-Date: Fri, 23 Nov 2012 15:24:13 +0100
-Message-Id: <1353680655-21624-3-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v7 3/4] media: coda: use genalloc API
+Date: Fri, 23 Nov 2012 15:24:14 +0100
+Message-Id: <1353680655-21624-4-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
 References: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
@@ -36,209 +36,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver requests and remaps a memory region as configured in the
-device tree. It serves memory from this region via the genalloc API.
-It optionally enables the SRAM clock.
-
-Other drivers can retrieve the genalloc pool from a phandle pointing
-to this drivers' device node in the device tree.
-
-The allocation granularity is hard-coded to 32 bytes for now,
-to make the SRAM driver useful for the 6502 remoteproc driver.
-There is overhead for bigger SRAMs, where only a much coarser
-allocation granularity is needed: At 32 bytes minimum allocation
-size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
+This patch depends on "genalloc: add a global pool list,
+allow to find pools by phys address", which provides the
+of_get_named_gen_pool function.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- Documentation/devicetree/bindings/misc/sram.txt |   17 ++++
- drivers/misc/Kconfig                            |    9 ++
- drivers/misc/Makefile                           |    1 +
- drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
- 4 files changed, 148 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/sram.txt
- create mode 100644 drivers/misc/sram.c
+ drivers/media/platform/Kconfig |    3 +--
+ drivers/media/platform/coda.c  |   47 ++++++++++++++++++++++++++++------------
+ 2 files changed, 34 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
-new file mode 100644
-index 0000000..b64136c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/sram.txt
-@@ -0,0 +1,17 @@
-+Generic on-chip SRAM
-+
-+Simple IO memory regions to be managed by the genalloc API.
-+
-+Required properties:
-+
-+- compatible : sram
-+
-+- reg : SRAM iomem address range
-+
-+Example:
-+
-+sram: sram@5c000000 {
-+	compatible = "sram";
-+	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
-+};
-+
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b151b7c..211468c 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -499,6 +499,15 @@ config USB_SWITCH_FSA9480
- 	  stereo and mono audio, video, microphone and UART data to use
- 	  a common connector port.
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 181c768..09d45c6 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -130,10 +130,9 @@ if V4L_MEM2MEM_DRIVERS
  
-+config SRAM
-+	bool "Generic on-chip SRAM driver"
-+	depends on HAS_IOMEM
-+	select GENERIC_ALLOCATOR
-+	help
-+	  This driver allows to declare a memory region to be managed
-+	  by the genalloc API. It is supposed to be used for small
-+	  on-chip SRAM areas found on many SoCs.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 2129377..d845690 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -49,3 +49,4 @@ obj-y				+= carma/
- obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
- obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
- obj-$(CONFIG_INTEL_MEI)		+= mei/
-+obj-$(CONFIG_SRAM)		+= sram.o
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-new file mode 100644
-index 0000000..0d91964
---- /dev/null
-+++ b/drivers/misc/sram.c
-@@ -0,0 +1,121 @@
-+/*
-+ * Generic on-chip SRAM allocation driver
-+ *
-+ * Copyright (C) 2012 Philipp Zabel, Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
+ config VIDEO_CODA
+ 	tristate "Chips&Media Coda multi-standard codec IP"
+-	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
++	depends on VIDEO_DEV && VIDEO_V4L2
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+-	select IRAM_ALLOC if SOC_IMX53
+ 	---help---
+ 	   Coda is a range of video codec IPs that supports
+ 	   H.264, MPEG-4, and other video formats.
+diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
+index cd04ae2..f17b659 100644
+--- a/drivers/media/platform/coda.c
++++ b/drivers/media/platform/coda.c
+@@ -14,6 +14,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
 +#include <linux/genalloc.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
+@@ -24,7 +25,6 @@
+ #include <linux/videodev2.h>
+ #include <linux/of.h>
+ 
+-#include <mach/iram.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ioctl.h>
+@@ -43,6 +43,7 @@
+ #define CODA7_WORK_BUF_SIZE	(512 * 1024 + CODA_FMO_BUF_SIZE * 8 * 1024)
+ #define CODA_PARA_BUF_SIZE	(10 * 1024)
+ #define CODA_ISRAM_SIZE	(2048 * 2)
++#define CODADX6_IRAM_SIZE	0xb000
+ #define CODA7_IRAM_SIZE		0x14000 /* 81920 bytes */
+ 
+ #define CODA_MAX_FRAMEBUFFERS	2
+@@ -128,7 +129,10 @@ struct coda_dev {
+ 
+ 	struct coda_aux_buf	codebuf;
+ 	struct coda_aux_buf	workbuf;
++	struct gen_pool		*iram_pool;
++	long unsigned int	iram_vaddr;
+ 	long unsigned int	iram_paddr;
++	unsigned long		iram_size;
+ 
+ 	spinlock_t		irqlock;
+ 	struct mutex		dev_mutex;
+@@ -1958,6 +1962,22 @@ static int __devinit coda_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
++	/* Without device tree, get SRAM paddr from second memory resource */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (res != NULL)
++		dev->iram_pool = gen_pool_find_by_phys(res->start);
++#ifdef CONFIG_OF
++	if (!dev->iram_pool) {
++		struct device_node *np = pdev->dev.of_node;
 +
-+#define SRAM_GRANULARITY	32
-+
-+struct sram_dev {
-+	struct gen_pool *pool;
-+	struct clk *clk;
-+};
-+
-+static int __devinit sram_probe(struct platform_device *pdev)
-+{
-+	void __iomem *virt_base;
-+	struct sram_dev *sram;
-+	struct resource *res;
-+	unsigned long size;
-+	int ret;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EINVAL;
-+
-+	size = resource_size(res);
-+
-+	virt_base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!virt_base)
-+		return -EADDRNOTAVAIL;
-+
-+	sram = devm_kzalloc(&pdev->dev, sizeof(*sram), GFP_KERNEL);
-+	if (!sram)
++		dev->iram_pool = of_get_named_gen_pool(np, "iram", 0);
++	}
++#endif
++	if (!dev->iram_pool) {
++		dev_err(&pdev->dev, "iram pool not available\n");
 +		return -ENOMEM;
-+
-+	sram->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(sram->clk))
-+		sram->clk = NULL;
-+	else
-+		clk_prepare_enable(sram->clk);
-+
-+	sram->pool = gen_pool_create(ilog2(SRAM_GRANULARITY), -1);
-+	if (!sram->pool)
-+		return -ENOMEM;
-+
-+	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-+				res->start, size, -1);
-+	if (ret < 0) {
-+		gen_pool_destroy(sram->pool);
-+		return ret;
 +	}
 +
-+	platform_set_drvdata(pdev, sram);
-+
-+	dev_dbg(&pdev->dev, "SRAM pool: %ld KiB @ 0x%p\n", size / 1024, virt_base);
-+
-+	return 0;
-+}
-+
-+static int __devexit sram_remove(struct platform_device *pdev)
-+{
-+	struct sram_dev *sram = platform_get_drvdata(pdev);
-+
-+	if (gen_pool_avail(sram->pool) < gen_pool_size(sram->pool))
-+		dev_dbg(&pdev->dev, "removed while SRAM allocated\n");
-+
-+	gen_pool_destroy(sram->pool);
-+
-+	if (sram->clk)
-+		clk_disable_unprepare(sram->clk);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id sram_dt_ids[] = {
-+	{ .compatible = "sram" },
-+	{}
-+};
-+#endif
-+
-+static struct platform_driver sram_driver = {
-+	.driver = {
-+		.name = "sram",
-+		.of_match_table = of_match_ptr(sram_dt_ids),
-+	},
-+	.probe = sram_probe,
-+	.remove = __devexit_p(sram_remove),
-+};
-+
-+int __init sram_init(void)
-+{
-+	return platform_driver_register(&sram_driver);
-+}
-+
-+postcore_initcall(sram_init);
+ 	ret = v4l2_device_register(&pdev->dev, &dev->v4l2_dev);
+ 	if (ret)
+ 		return ret;
+@@ -1992,18 +2012,17 @@ static int __devinit coda_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	if (dev->devtype->product == CODA_DX6) {
+-		dev->iram_paddr = 0xffff4c00;
+-	} else {
+-		void __iomem *iram_vaddr;
+-
+-		iram_vaddr = iram_alloc(CODA7_IRAM_SIZE,
+-					&dev->iram_paddr);
+-		if (!iram_vaddr) {
+-			dev_err(&pdev->dev, "unable to alloc iram\n");
+-			return -ENOMEM;
+-		}
++	if (dev->devtype->product == CODA_DX6)
++		dev->iram_size = CODADX6_IRAM_SIZE;
++	else
++		dev->iram_size = CODA7_IRAM_SIZE;
++	dev->iram_vaddr = gen_pool_alloc(dev->iram_pool, dev->iram_size);
++	if (!dev->iram_vaddr) {
++		dev_err(&pdev->dev, "unable to alloc iram\n");
++		return -ENOMEM;
+ 	}
++	dev->iram_paddr = gen_pool_virt_to_phys(dev->iram_pool,
++						dev->iram_vaddr);
+ 
+ 	platform_set_drvdata(pdev, dev);
+ 
+@@ -2020,8 +2039,8 @@ static int coda_remove(struct platform_device *pdev)
+ 	if (dev->alloc_ctx)
+ 		vb2_dma_contig_cleanup_ctx(dev->alloc_ctx);
+ 	v4l2_device_unregister(&dev->v4l2_dev);
+-	if (dev->iram_paddr)
+-		iram_free(dev->iram_paddr, CODA7_IRAM_SIZE);
++	if (dev->iram_vaddr)
++		gen_pool_free(dev->iram_pool, dev->iram_vaddr, dev->iram_size);
+ 	if (dev->codebuf.vaddr)
+ 		dma_free_coherent(&pdev->dev, dev->codebuf.size,
+ 				  &dev->codebuf.vaddr, dev->codebuf.paddr);
 -- 
 1.7.10.4
 
