@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161072Ab2KWJzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:55:43 -0500
-Received: from antcom.de ([188.40.178.216]:36510 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161025Ab2KWJzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:55:41 -0500
-Message-ID: <50AF4819.6020509@antcom.de>
-Date: Fri, 23 Nov 2012 10:55:37 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
-MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Alban Bedel <alban.bedel@avionic-design.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 2/3] pwm: lpc32xx - Properly disable the clock on device
- remove
-References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de> <1352894295-14339-3-git-send-email-alban.bedel@avionic-design.de> <CAAAP30GTuCB6FCvM9v-ju8y5b+UhQdDnEnHALtewfOzWnD1v=A@mail.gmail.com>
-In-Reply-To: <CAAAP30GTuCB6FCvM9v-ju8y5b+UhQdDnEnHALtewfOzWnD1v=A@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1161084Ab2KWJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:55:59 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45525 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964867Ab2KWJz6 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Fri, 23 Nov 2012 04:55:58 -0500
+Message-Id: <50AF567402000078000AABF6@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 23 Nov 2012 09:56:52 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: <andrew.cooper3@citrix.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <kexec@lists.infradead.org>,
+        <virtualization@lists.linux-foundation.org>,
+        <xen-devel@lists.xensource.com>,
+        "Daniel Kiper" <daniel.kiper@oracle.com>, <konrad.wilk@oracle.com>,
+        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+ <87lidwtego.fsf@xmission.com>
+ <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
+ <87txshx28b.fsf@xmission.com> <50AE62E9.3000602@zytor.com>
+In-Reply-To: <50AE62E9.3000602@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 11:31 PM, Alexandre Pereira da Silva wrote:
-> Em 14/11/2012 09:58, "Alban Bedel" <alban.bedel@avionic-design.de> escreveu:
->>
->> A single clock is used for all PWMs meaning the clock ref count might
->> be between 0 and N when remove() is called. Instead of a single
->> clk_disable() call pwm_disable() on each PWM, that ensure that
->> clk_disable() is called for each PWM that were still enabled.
->>
->> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+>>> On 22.11.12 at 18:37, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> I actually talked to Ian Jackson at LCE, and mentioned among other 
+> things the bogosity of requiring a PUD page for three-level paging in 
+> Linux -- a bogosity which has spread from Xen into native.  It's a page 
+> wasted for no good reason, since it only contains 32 bytes worth of 
+> data, *inherently*.  Furthermore, contrary to popular belief, it is 
+> *not* pa page table per se.
 > 
-> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Ian told me: "I didn't know we did that, and we shouldn't have to." 
+> Here we have suffered this overhead for at least six years, ...
 
-Some style fixes necessary below (Thierry will take care of it), otherwise:
+Even the Xen kernel only needs the full page when running on a
+64-bit hypervisor (now that we don't have a 32-bit hypervisor
+anymore, that of course basically means always). But yes, I too
+never liked this enforced over-allocation for native kernels (and
+was surprised that it was allowed in at all).
 
-Acked-by: Roland Stigge <stigge@antcom.de>
-
-> 
->> ---
->>  drivers/pwm/pwm-lpc32xx.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
->> index 03ec3ff..f45ce2c 100644
->> --- a/drivers/pwm/pwm-lpc32xx.c
->> +++ b/drivers/pwm/pwm-lpc32xx.c
->> @@ -136,8 +136,11 @@ static int lpc32xx_pwm_probe(struct platform_device
-> *pdev)
->>  static int __devexit lpc32xx_pwm_remove(struct platform_device *pdev)
->>  {
->>         struct lpc32xx_pwm_chip *lpc32xx = platform_get_drvdata(pdev);
->> +       int i;
->> +
->> +       for (i = 0 ; i < lpc32xx->chip.npwm ; i += 1)
->> +               pwm_disable(&lpc32xx->chip.pwms[i]);
->>
->> -       clk_disable(lpc32xx->clk);
->>         return pwmchip_remove(&lpc32xx->chip);
->>  }
->>
->> --
->> 1.7.0.4
->>
-> 
+Jan
 
