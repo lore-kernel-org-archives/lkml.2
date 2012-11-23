@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161078Ab2KWJxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:53:08 -0500
-Received: from antcom.de ([188.40.178.216]:36211 "EHLO chuck.antcom.de"
+	id S1161091Ab2KWJxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:53:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41129 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161024Ab2KWJxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:53:04 -0500
-Message-ID: <50AF477E.5020008@antcom.de>
+	id S1161071Ab2KWJxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:53:08 -0500
 Date: Fri, 23 Nov 2012 10:53:02 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
+From: Borislav Petkov <bp@alien8.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/40] x86: mm: drop TLB flush from ptep_set_access_flags
+Message-ID: <20121123095301.GB18765@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mel Gorman <mgorman@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	Hugh Dickins <hughd@google.com>,
+	Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Alex Shi <lkml.alex@gmail.com>,
+	Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+ <1353612353-1576-3-git-send-email-mgorman@suse.de>
+ <20121122205637.4e9112e2@pyramind.ukuu.org.uk>
+ <20121123090909.GX8218@suse.de>
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Alban Bedel <alban.bedel@avionic-design.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] pwm: lpc32xx - Fix the PWM polarity
-References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de> <1352894295-14339-2-git-send-email-alban.bedel@avionic-design.de> <CAAAP30GUM31pcHxXfWJnuUBN2jYHbWz0XFX7o6x=_2wNtbHroQ@mail.gmail.com>
-In-Reply-To: <CAAAP30GUM31pcHxXfWJnuUBN2jYHbWz0XFX7o6x=_2wNtbHroQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121123090909.GX8218@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 10:34 AM, Alexandre Pereira da Silva wrote:
-> On Wed, Nov 14, 2012 at 9:58 AM, Alban Bedel
-> <alban.bedel@avionic-design.de> wrote:
->> The duty cycles value goes from 1 (99% HIGH) to 256 (0% HIGH) but it
->> is stored modulo 256 in the register as it is only 8 bits wide.
->>
->> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+On Fri, Nov 23, 2012 at 09:09:09AM +0000, Mel Gorman wrote:
+> You sortof can[1]. Borislav Petkov answered that they do
+> https://lkml.org/lkml/2012/11/17/85 and quoted the manual at
+> https://lkml.org/lkml/2012/10/29/414 saying that this should be ok.
 > 
-> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> [1] There is no delicate way of putting it. I've no idea what the
+>     current status of current and former AMD kernel developers is.
 
-When the below doc typos are fixed,
+All those based in Dresden don't work for AMD anymore.
 
-Acked-by: Roland Stigge <stigge@antcom.de>
+But regardless, I've already confirmed with AMD design that this is
+actually architectural and we're zapping the TLB entry on a #PF on all
+relevant CPUs.
 
-> 
->> ---
->>  drivers/pwm/pwm-lpc32xx.c |   17 ++++++++++++++++-
->>  1 files changed, 16 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
->> index adb87f0..03ec3ff 100644
->> --- a/drivers/pwm/pwm-lpc32xx.c
->> +++ b/drivers/pwm/pwm-lpc32xx.c
->> @@ -49,9 +49,24 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->>                 c = 0; /* 0 set division by 256 */
->>         period_cycles = c;
->>
->> +       /* The duty value is a follow:
->> +        *
->> +        *  DUTY     HIGH LEVEL
->> +        *   1         99.9%
->> +        *   25        90.0%
->> +        *   128       50.0%
->> +        *   220       10.0%
->> +        *   255        0.1%
->> +        *   0          0.0%
->> +        *
->> +        * In other word the in-register value is duty % 256 with duty
->> +        * in the range 1-256.
->> +        */
->>         c = 256 * duty_ns;
->>         do_div(c, period_ns);
->> -       duty_cycles = c;
->> +       if (c > 255)
->> +               c = 255;
->> +       duty_cycles = 256 - c;
->>
->>         writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
->>                 lpc32xx->base + (pwm->hwpwm << 2));
->> --
->> 1.7.0.4
->>
+I'd still like to have some sort of an assertion there just in case but,
+as Linus pointed out, that won't be easy. I'd guess it's up to you -mm
+guys to think up something sick that works under CONFIG_DEBUG_VM :).
 
+HTH.
+
+-- 
+Regards/Gruss,
+Boris.
