@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab2KWNYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:24:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36927 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2KWNYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:24:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,307,1352102400"; 
-   d="scan'208";a="246203391"
-Date: Fri, 23 Nov 2012 15:27:49 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] mmc: sdhci-acpi: add SDHCI ACPI driver
-Message-ID: <20121123132749.GA3867@intel.com>
-References: <1353670561-22515-1-git-send-email-adrian.hunter@intel.com>
- <1353670561-22515-4-git-send-email-adrian.hunter@intel.com>
+	id S1752974Ab2KWNZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:25:30 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52329 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab2KWNZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 08:25:29 -0500
+Message-ID: <50AF7901.20401@kernel.dk>
+Date: Fri, 23 Nov 2012 14:24:17 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353670561-22515-4-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeff Chua <jeff.chua.linux@gmail.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Recent kernel "mount" slow
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com> <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com> <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com> <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+In-Reply-To: <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 01:36:01PM +0200, Adrian Hunter wrote:
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> Acked-by: Chris Ball <cjb@laptop.org>
+On 2012-11-22 20:21, Linus Torvalds wrote:
+> Doesn't sound like a fsdevel issue since it seems to be independent of
+> filesystems. More like some generic block layer thing. Adding Jens
+> (and quoting the whole thing)
+> 
+> Jens, any ideas? Most of your stuff came in after -rc2, which would
+> fit with the fact that most of the slowdown seems to be after -rc2
+> according to Jeff.
 
-Looks like you left that redundant check in place but it doesn't hurt
-anyway.
+No ideas. Looking at what went in from my side, only the rq plug sorting
+is a core change, and that should not cause any change in behaviour for
+a single device. That's commit 975927b9.
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Jeff, more bisecting would be good, though.
+
+Probably required, yes...
+
+-- 
+Jens Axboe
+
