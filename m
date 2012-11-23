@@ -1,68 +1,515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab2KWKvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:51:19 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:53740 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab2KWKvN (ORCPT
+	id S1755386Ab2KWKv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:51:27 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:46722
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754316Ab2KWKvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:51:13 -0500
-X-IronPort-AV: E=Sophos;i="4.83,306,1352073600"; 
-   d="scan'208";a="15970264"
-Message-ID: <1353667868.13542.218.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2 01/11] kexec: introduce kexec_ops struct
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Fri, 23 Nov 2012 10:51:08 +0000
-In-Reply-To: <20121123103726.GB2921@host-192-168-1-59.local.net-space.pl>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
-	 <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
-	 <87lidwtego.fsf@xmission.com>
-	 <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
-	 <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com>
-	 <50AEBF86.50501@citrix.com>
-	 <18e831d4-910d-4f58-8911-1398b96e3a47@email.android.com>
-	 <50AED7B8.7040902@citrix.com>
-		<50AF55B102000078000AABF3@nat28.tlf.novell.com>
-	 <20121123103726.GB2921@host-192-168-1-59.local.net-space.pl>
-Organization: Citrix Systems, Inc.
+	Fri, 23 Nov 2012 05:51:22 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zz98dI936eI1432Ic8kzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
+Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>
+In-Reply-To: <1350986593.23353.3.camel@dhruva>
+References: <1349952025.9228.3.camel@dhruva>
+	 <1350986593.23353.3.camel@dhruva>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+Date: Fri, 23 Nov 2012 15:41:03 +0530
+Message-ID: <1353665463.1760.3000.camel@dhruva>
 MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-23 at 10:37 +0000, Daniel Kiper wrote:
-> On Fri, Nov 23, 2012 at 09:53:37AM +0000, Jan Beulich wrote:
-> > >>> On 23.11.12 at 02:56, Andrew Cooper <andrew.cooper3@citrix.com> wrote:
-> > > The crash region (as specified by crashkernel= on the Xen command line)
-> > > is isolated from dom0.
-> > >[...]
-> >
-> > But all of this _could_ be done completely independent of the
-> > Dom0 kernel's kexec infrastructure (i.e. fully from user space,
-> > invoking the necessary hypercalls through the privcmd driver).
+Any comments on this patch.
+On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
+> Does this patch looks good?
+> On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
+> > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
+> > the DA9055 MFD core.
+> > 
+> > This patch is functionally tested on Samsung SMDKV6410.
+> > 
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> > ---
+> > changes since version v3:
+> > - use of module_platform_driver macro
+> > - add the regmap virtual irq map API.
+> > changes since version v2:
+> > - Use of devm_request_threaded_irq API
+> > ---
+> >  drivers/rtc/Kconfig      |   10 +
+> >  drivers/rtc/Makefile     |    1 +
+> >  drivers/rtc/rtc-da9055.c |  413 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 424 insertions(+), 0 deletions(-)
+> >  mode change 100644 => 100755 drivers/rtc/Kconfig
+> >  create mode 100644 drivers/rtc/rtc-da9055.c
+> > 
+> > diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> > old mode 100644
+> > new mode 100755
+> > index fabc99a..6050f8b
+> > --- a/drivers/rtc/Kconfig
+> > +++ b/drivers/rtc/Kconfig
+> > @@ -571,6 +571,16 @@ config RTC_DRV_DA9052
+> >  	  Say y here to support the RTC driver for Dialog Semiconductor
+> >  	  DA9052-BC and DA9053-AA/Bx PMICs.
+> >  
+> > +config RTC_DRV_DA9055
+> > +	tristate "Dialog Semiconductor DA9055 RTC"
+> > +	depends on MFD_DA9055
+> > +	help
+> > +	  If you say yes here you will get support for the
+> > +	  RTC of the Dialog DA9055 PMIC.
+> > +
+> > +	  This driver can also be built as a module. If so, the module
+> > +	  will be called rtc-da9055
+> > +
+> >  config RTC_DRV_EFI
+> >  	tristate "EFI RTC"
+> >  	depends on IA64
+> > diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> > index 0d5b2b6..b4c162f 100644
+> > --- a/drivers/rtc/Makefile
+> > +++ b/drivers/rtc/Makefile
+> > @@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_BQ4802)	+= rtc-bq4802.o
+> >  obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+> >  obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+> >  obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+> > +obj-$(CONFIG_RTC_DRV_DA9055)	+= rtc-da9055.o
+> >  obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
+> >  obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+> >  obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+> > diff --git a/drivers/rtc/rtc-da9055.c b/drivers/rtc/rtc-da9055.c
+> > new file mode 100644
+> > index 0000000..2304647
+> > --- /dev/null
+> > +++ b/drivers/rtc/rtc-da9055.c
+> > @@ -0,0 +1,413 @@
+> > +/*
+> > + * Real time clock driver for DA9055
+> > + *
+> > + * Copyright(c) 2012 Dialog Semiconductor Ltd.
+> > + *
+> > + * Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/rtc.h>
+> > +
+> > +#include <linux/mfd/da9055/core.h>
+> > +#include <linux/mfd/da9055/reg.h>
+> > +#include <linux/mfd/da9055/pdata.h>
+> > +
+> > +struct da9055_rtc {
+> > +	struct rtc_device *rtc;
+> > +	struct da9055 *da9055;
+> > +	int alarm_enable;
+> > +};
+> > +
+> > +static int da9055_rtc_enable_alarm(struct da9055_rtc *rtc, bool enable)
+> > +{
+> > +	int ret;
+> > +	if (enable) {
+> > +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
+> > +					DA9055_RTC_ALM_EN,
+> > +					DA9055_RTC_ALM_EN);
+> > +		if (ret != 0)
+> > +			dev_err(rtc->da9055->dev, "Failed to enable ALM: %d\n",
+> > +				ret);
+> > +		rtc->alarm_enable = 1;
+> > +	} else {
+> > +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
+> > +					DA9055_RTC_ALM_EN, 0);
+> > +		if (ret != 0)
+> > +			dev_err(rtc->da9055->dev,
+> > +				"Failed to disable ALM: %d\n", ret);
+> > +		rtc->alarm_enable = 0;
+> > +	}
+> > +	return ret;
+> > +}
+> > +
+> > +static irqreturn_t da9055_rtc_alm_irq(int irq, void *data)
+> > +{
+> > +	struct da9055_rtc *rtc = data;
+> > +
+> > +	da9055_rtc_enable_alarm(rtc, 0);
+> > +	rtc_update_irq(rtc->rtc, 1, RTC_IRQF | RTC_AF);
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
+> > +
+> > +static int da9055_read_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
+> > +{
+> > +	int ret;
+> > +	uint8_t v[5];
+> > +
+> > +	ret = da9055_group_read(da9055, DA9055_REG_ALARM_MI, 5, v);
+> > +	if (ret != 0) {
+> > +		dev_err(da9055->dev, "Failed to group read ALM: %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	rtc_tm->tm_year = (v[4] & DA9055_RTC_ALM_YEAR) + 100;
+> > +	rtc_tm->tm_mon  = (v[3] & DA9055_RTC_ALM_MONTH) - 1;
+> > +	rtc_tm->tm_mday = v[2] & DA9055_RTC_ALM_DAY;
+> > +	rtc_tm->tm_hour = v[1] & DA9055_RTC_ALM_HOUR;
+> > +	rtc_tm->tm_min  = v[0] & DA9055_RTC_ALM_MIN;
+> > +
+> > +	return rtc_valid_tm(rtc_tm);
+> > +}
+> > +
+> > +static int da9055_set_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
+> > +{
+> > +	int ret;
+> > +	uint8_t v[2];
+> > +
+> > +	rtc_tm->tm_year -= 100;
+> > +	rtc_tm->tm_mon += 1;
+> > +
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MI,
+> > +				DA9055_RTC_ALM_MIN, rtc_tm->tm_min);
+> > +	if (ret != 0) {
+> > +		dev_err(da9055->dev, "Failed to write ALRM MIN: %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	v[0] = rtc_tm->tm_hour;
+> > +	v[1] = rtc_tm->tm_mday;
+> > +
+> > +	ret = da9055_group_write(da9055, DA9055_REG_ALARM_H, 2, v);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
+> > +				DA9055_RTC_ALM_MONTH, rtc_tm->tm_mon);
+> > +	if (ret < 0)
+> > +		dev_err(da9055->dev, "Failed to write ALM Month:%d\n", ret);
+> > +
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_Y,
+> > +				DA9055_RTC_ALM_YEAR, rtc_tm->tm_year);
+> > +	if (ret < 0)
+> > +		dev_err(da9055->dev, "Failed to write ALM Year:%d\n", ret);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int da9055_rtc_get_alarm_status(struct da9055 *da9055)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = da9055_reg_read(da9055, DA9055_REG_ALARM_Y);
+> > +	if (ret < 0) {
+> > +		dev_err(da9055->dev, "Failed to read ALM: %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +	ret &= DA9055_RTC_ALM_EN;
+> > +	return (ret > 0) ? 1 : 0;
+> > +}
+> > +
+> > +static int da9055_rtc_read_time(struct device *dev, struct rtc_time *rtc_tm)
+> > +{
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> > +	uint8_t v[6];
+> > +	int ret;
+> > +
+> > +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_COUNT_S);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/*
+> > +	 * Registers are only valid when RTC_READ
+> > +	 * status bit is asserted
+> > +	 */
+> > +	if (!(ret & DA9055_RTC_READ))
+> > +		return -EBUSY;
+> > +
+> > +	ret = da9055_group_read(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
+> > +	if (ret < 0) {
+> > +		dev_err(rtc->da9055->dev, "Failed to read RTC time : %d\n",
+> > +				ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	rtc_tm->tm_year = (v[5] & DA9055_RTC_YEAR) + 100;
+> > +	rtc_tm->tm_mon  = (v[4] & DA9055_RTC_MONTH) - 1;
+> > +	rtc_tm->tm_mday = v[3] & DA9055_RTC_DAY;
+> > +	rtc_tm->tm_hour = v[2] & DA9055_RTC_HOUR;
+> > +	rtc_tm->tm_min  = v[1] & DA9055_RTC_MIN;
+> > +	rtc_tm->tm_sec  = v[0] & DA9055_RTC_SEC;
+> > +
+> > +	return rtc_valid_tm(rtc_tm);
+> > +}
+> > +
+> > +static int da9055_rtc_set_time(struct device *dev, struct rtc_time *tm)
+> > +{
+> > +	struct da9055_rtc *rtc;
+> > +	uint8_t v[6];
+> > +
+> > +	rtc = dev_get_drvdata(dev);
+> > +
+> > +	v[0] = tm->tm_sec;
+> > +	v[1] = tm->tm_min;
+> > +	v[2] = tm->tm_hour;
+> > +	v[3] = tm->tm_mday;
+> > +	v[4] = tm->tm_mon + 1;
+> > +	v[5] = tm->tm_year - 100;
+> > +
+> > +	return da9055_group_write(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
+> > +}
+> > +
+> > +static int da9055_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+> > +{
+> > +	int ret;
+> > +	struct rtc_time *tm = &alrm->time;
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> > +
+> > +	ret = da9055_read_alarm(rtc->da9055, tm);
+> > +
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	alrm->enabled = da9055_rtc_get_alarm_status(rtc->da9055);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int da9055_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+> > +{
+> > +	int ret;
+> > +	struct rtc_time *tm = &alrm->time;
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> > +
+> > +	ret = da9055_rtc_enable_alarm(rtc, 0);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	ret = da9055_set_alarm(rtc->da9055, tm);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = da9055_rtc_enable_alarm(rtc, 1);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int da9055_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+> > +{
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> > +
+> > +	return da9055_rtc_enable_alarm(rtc, enabled);
+> > +}
+> > +
+> > +static const struct rtc_class_ops da9055_rtc_ops = {
+> > +	.read_time	= da9055_rtc_read_time,
+> > +	.set_time	= da9055_rtc_set_time,
+> > +	.read_alarm	= da9055_rtc_read_alarm,
+> > +	.set_alarm	= da9055_rtc_set_alarm,
+> > +	.alarm_irq_enable = da9055_rtc_alarm_irq_enable,
+> > +};
+> > +
+> > +static int __init da9055_rtc_device_init(struct da9055 *da9055,
+> > +				  struct da9055_pdata *pdata)
+> > +{
+> > +	int ret;
+> > +
+> > +	/* Enable RTC and the internal Crystal */
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> > +				DA9055_RTC_EN, DA9055_RTC_EN);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_EN_32K,
+> > +				DA9055_CRYSTAL_EN, DA9055_CRYSTAL_EN);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/* Enable RTC in Power Down mode */
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> > +				DA9055_RTC_MODE_PD, DA9055_RTC_MODE_PD);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/* Enable RTC in Reset mode */
+> > +	if (pdata && pdata->reset_enable) {
+> > +		ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> > +					DA9055_RTC_MODE_SD,
+> > +					DA9055_RTC_MODE_SD <<
+> > +					DA9055_RTC_MODE_SD_SHIFT);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +	}
+> > +
+> > +	/* Disable the RTC TICK ALM */
+> > +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
+> > +				DA9055_RTC_TICK_WAKE_MASK, 0);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int __devinit da9055_rtc_probe(struct platform_device *pdev)
+> > +{
+> > +	struct da9055_rtc *rtc;
+> > +	struct da9055_pdata *pdata = NULL;
+> > +	int ret, alm_irq;
+> > +
+> > +	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9055_rtc), GFP_KERNEL);
+> > +	if (!rtc)
+> > +		return -ENOMEM;
+> > +
+> > +	rtc->da9055 = dev_get_drvdata(pdev->dev.parent);
+> > +	pdata = rtc->da9055->dev->platform_data;
+> > +	platform_set_drvdata(pdev, rtc);
+> > +
+> > +	ret = da9055_rtc_device_init(rtc->da9055, pdata);
+> > +	if (ret < 0)
+> > +		goto err_rtc;
+> > +
+> > +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_ALARM_Y);
+> > +	if (ret < 0)
+> > +		goto err_rtc;
+> > +
+> > +	if (ret & DA9055_RTC_ALM_EN)
+> > +		rtc->alarm_enable = 1;
+> > +
+> > +	device_init_wakeup(&pdev->dev, 1);
+> > +
+> > +	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> > +				       &da9055_rtc_ops, THIS_MODULE);
+> > +	if (IS_ERR(rtc->rtc)) {
+> > +		ret = PTR_ERR(rtc->rtc);
+> > +		goto err_rtc;
+> > +	}
+> > +
+> > +	alm_irq = platform_get_irq_byname(pdev, "ALM");
+> > +	alm_irq = regmap_irq_get_virq(rtc->da9055->irq_data, alm_irq);
+> > +	ret = devm_request_threaded_irq(&pdev->dev, alm_irq, NULL,
+> > +					da9055_rtc_alm_irq,
+> > +					IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+> > +					"ALM", rtc);
+> > +	if (ret != 0)
+> > +		dev_err(rtc->da9055->dev, "irq registration failed: %d\n", ret);
+> > +
+> > +err_rtc:
+> > +	return ret;
+> > +
+> > +}
+> > +
+> > +static int __devexit da9055_rtc_remove(struct platform_device *pdev)
+> > +{
+> > +	struct da9055_rtc *rtc = pdev->dev.platform_data;
+> > +
+> > +	rtc_device_unregister(rtc->rtc);
+> > +	platform_set_drvdata(pdev, NULL);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +#ifdef CONFIG_PM
+> > +/* Turn off the alarm if it should not be a wake source. */
+> > +static int da9055_rtc_suspend(struct device *dev)
+> > +{
+> > +	struct platform_device *pdev = to_platform_device(dev);
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> > +	int ret;
+> > +
+> > +	if (!device_may_wakeup(&pdev->dev)) {
+> > +		/* Disable the ALM IRQ */
+> > +		ret = da9055_rtc_enable_alarm(rtc, 0);
+> > +		if (ret < 0)
+> > +			dev_err(&pdev->dev, "Failed to disable RTC ALM\n");
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/* Enable the alarm if it should be enabled (in case it was disabled to
+> > + * prevent use as a wake source).
+> > + */
+> > +static int da9055_rtc_resume(struct device *dev)
+> > +{
+> > +	struct platform_device *pdev = to_platform_device(dev);
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> > +	int ret;
+> > +
+> > +	if (!device_may_wakeup(&pdev->dev)) {
+> > +		if (rtc->alarm_enable) {
+> > +			ret = da9055_rtc_enable_alarm(rtc, 1);
+> > +			if (ret < 0)
+> > +				dev_err(&pdev->dev,
+> > +						"Failed to restart RTC ALM\n");
+> > +		}
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/* Unconditionally disable the alarm */
+> > +static int da9055_rtc_freeze(struct device *dev)
+> > +{
+> > +	struct platform_device *pdev = to_platform_device(dev);
+> > +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> > +	int ret;
+> > +
+> > +	ret = da9055_rtc_enable_alarm(rtc, 0);
+> > +	if (ret < 0)
+> > +		dev_err(&pdev->dev, "Failed to freeze RTC ALMs\n");
+> > +
+> > +	return 0;
+> > +
+> > +}
+> > +#else
+> > +#define da9055_rtc_suspend NULL
+> > +#define da9055_rtc_resume NULL
+> > +#define da9055_rtc_freeze NULL
+> > +#endif
+> > +
+> > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
+> > +	.suspend = da9055_rtc_suspend,
+> > +	.resume = da9055_rtc_resume,
+> > +
+> > +	.freeze = da9055_rtc_freeze,
+> > +	.thaw = da9055_rtc_resume,
+> > +	.restore = da9055_rtc_resume,
+> > +
+> > +	.poweroff = da9055_rtc_suspend,
+> > +};
+> > +
+> > +static struct platform_driver da9055_rtc_driver = {
+> > +	.probe	= da9055_rtc_probe,
+> > +	.remove	= __devexit_p(da9055_rtc_remove),
+> > +	.driver = {
+> > +		.name	= "da9055-rtc",
+> > +		.owner	= THIS_MODULE,
+> > +		.pm = &da9055_rtc_pm_ops,
+> > +	},
+> > +};
+> > +
+> > +module_platform_driver(da9055_rtc_driver);
+> > +
+> > +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
+> > +MODULE_DESCRIPTION("RTC driver for Dialog DA9055 PMIC");
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_ALIAS("platform:da9055-rtc");
 > 
-> No, this is impossible. kexec/kdump image lives in dom0 kernel memory
-> until execution.
 
-Are you sure? I could have sworn they lived in the hypervisor owned
-memory set aside by the crashkernel= parameter as Andy suggested.
-
-Ian.
 
