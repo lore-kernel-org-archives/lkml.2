@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab2KWGxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:53:35 -0500
-Received: from nm6-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.71]:25979 "EHLO
-	nm6-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932397Ab2KWGxd (ORCPT
+	id S932752Ab2KWGyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:54:45 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45520 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506Ab2KWGyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:53:33 -0500
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 01:53:32 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 513920.10116.bm@omp1027.access.mail.mud.yahoo.com
-X-YMail-OSG: baAZ1.gVM1msXiZ3eofKW26QZ_d46qCkwxxokr.hpntL_aR
- kJNIWlCp2NK5qs5dvit43bEabdDzQtuqpmG2YYXzSrfEvRPbZphMAspMmOq5
- Iym6i5pQ__5PwTJAnaFMuOy1XFm0qFa2hTkUmSWvh0zAHSkmECbXuEPm4WPo
- vJ79AzKWsTqeQJ4BsC0bcngsvzNX1nZ1V3E3L7UEOo4ZzGx.y1edSYWjRDN0
- H1Vwb1QMbuglEfOmbhG2p0FLXjClCsBmMB0QHnuNFcA0wyjz73CRllHeVZZ1
- 4hQac3NdKbuzv5hZc3rsg3shkhggaTJLXgGdy3sPxOpUclrZfTTEAcxzW5jY
- KccCn.yu0IhDvVAEzZFL8yXxZiOmmvXrquY8hVVLaUUZNHQGeLs_M47ToFnJ
- OwEvxUxJRPVRGtjGEycRjp2A71iwMawEUB6gms.h_osnK2FdpJ8MKf6.unr_
- kK6UFvycSNXbZPxvpcwpT0ZbfM4RRAOhmYZEXlLScQuf2RFpqAg--
-X-RocketYMMF: webccsdsff
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.460
-Message-ID: <1353653287.86187.YahooMailClassic@web5706.biz.mail.ne1.yahoo.com>
-Date: Thu, 22 Nov 2012 22:48:07 -0800 (PST)
-From: KINGDOM NELSON <kingdomnelson1@gmail.com>
-Reply-To: nelson.kingdom@yahoo.com
-Subject: KINGDOM NELSON
-To: undisclosed recipients:;
+	Fri, 23 Nov 2012 01:54:44 -0500
+Date: Thu, 22 Nov 2012 22:54:39 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.7-rc6
+Message-ID: <20121123065439.GA14428@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="805399167-21125228-1353653287=:86187"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---805399167-21125228-1353653287=:86187
+
+--M9NhX3UHpAaciwkO
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. This fixes recent regression
+where /dev/input/mice got assigned wrong device node which messed up
+setups with static /dev, and a regression in ads7846 GPIO debounce
+setup.
+
+Changelog:
+---------
+
+Dmitry Torokhov (1):
+      Input: mousedev - move /dev/input/mice to the correct minor
+
+Henrik Rydberg (1):
+      Input: MT - document new 'flags' argument of input_mt_init_slots()
+
+Igor Grinberg (2):
+      Input: ads7846 - enable pendown GPIO debounce time setting
+      ARM - OMAP: ads7846: fix pendown debounce setting
 
 
---805399167-21125228-1353653287=:86187
-Content-Type: application/msword; name=KINGDOM
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="KINGDOM NELSON.rtf"
+Diffstat:
+--------
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgIEZST00gS0lOR0RPTSBORUxTT05ccGFyDQpHTEVORE9W
-RU4gRkFSTVMsIFpJTUJBQldFIERlYXIgUGFydG5lcixOYXR1cmFsbHksdGhp
-cyBsZXR0ZXIgd2lsbCBjb21lIHRvIHlvdSBhcyBhIHN1cnByaXNlIHNpbmNl
-IHdlIGhhdmUgbm90IG1ldCxwZXJtaXQgbWUgaG93ZXZlciB0byBpbnRyb2R1
-Y2UgbXlzZWxmLEkgYW0gS2luZ2RvbSBOZWxzb24sYSBibGFjayBaaW1iYWJ3
-ZWFuIGZhcm1lcixjdXJyZW50bHkgaW4gc291dGggYWZyaWNhIGFzIHJlZmZ1
-Z2UuIEkgdXNlZCB0byB3b3JrIGluIHRocmVlIHRvYmFjY28gZmFybXMgaW4g
-Q2hpcGluZ2UsYW5kIEkgd2FzIGFsc28gcGFydCBvd25lciBvZiB0aGVzZSBm
-YXJtcyB3aGljaCB3ZXJlIG93bmVkIGJ5IG15IGxhdGUgZmF0aGVyLiBJIGFt
-IGNvbnRhY3RpbmcgeW91IGFzIHRoZSBuZWVkIGZvciBtZSB0byBoYXZlIGEg
-Zm9yZWlnbiBwYXJ0bmVyIGluIHlvdXIgY291bnRyeSBoYXMgYmVjb21lIG5l
-Y2Vzc2FyeSBkdWUgdG8gbXkgcGxhbnMgdG8gcmVsb2NhdGUgdG8gdGhhdCBj
-b3VudHJ5IHNvIHRoYXQgSSBjYW4gcHVyY2hhc2Ugc29tZSBsYW5kIGFuZCBz
-dGFydCBmYXJtaW5nIGFsbCBvdmVyIGFnYWluLGFzIHRoZSBwcmVzZW50IHBv
-bGl0aWNhbCBpbnN0YWJpbGl0eSBpbiBaaW1iYWJ3ZSxkb2VzIG5vdCBlbmNv
-dXJhZ2UgZmluYW5jaWFsIGludmVzdG1lbnQgYXMgdGhlIGVudmlyb25tZW50
-IGlzIG5vIGxvbmdlciBjb25kdWNpdmUgZm9yIGZhcm1pbmcgaW52ZXN0bWVu
-dCBhbmQgbW9zdCBvZiBhbGwsc2VjdXJpdHkgaXMgbm90IGd1YXJhbnRlZWQs
-anVzdCBhcyByZXBvcnRlZCBieSBpbnRlcm5hdGlvbmFsIG1lZGlhLlRoaXMg
-cHJvYmxlbSBzdGFydGVkIHdoZW4gdGhlIFppbWJhYndlYW4gZ292ZXJubWVu
-dCB1bmRlciB0aGUgbGVhZGVyc2hpcCBvZiBQcmVzaWRlbnQgUm9iZXJ0IE11
-Z2FiZSBhbm5vdW5jZWQgYSBkZWNyZWUgb24gTWF5IDMxc3QgMjAwMCB0byBz
-ZWl6ZSBtb3JlIHRoYW44NDlccGFyDQp3aGl0ZS1vd25lZCBmYXJtcy5EdXJp
-bmcgdGhpcyBwZXJpb2QsYXMgcmVwb3J0ZWQgYnkgaW50ZXJuYXRpb25hbCBt
-ZWRpYSBhbmQgaGUgQ05OLG1vcmUgdGhhbiA2MDAgZmFybWVycyhpbmNsdWRp
-bmcgbXkgZmF0aGVyKSB3ZXJlIGtpbGxlZDsgdGhlIGdvdmVybm1lbnQgaXMg
-bm90IHN0b3BwaW5nIGF0IHRoaXMsIGFzIHRoZSBnb3Zlcm5tZW50IGhhcyBh
-bHJlYWR5IGFza2VkIGFsbCBmYXJtZXJzIHRvIGdpdmUgdXAgdGhlaXIgZmFy
-bXMgdG8gZ292ZXJubWVudCBvciByaXNrIGdvaW5nIHRvIHByaXNvbi5TbyBm
-YXIsbW9yZSB0aGFuIDEsNDAwIG93bmVkIGZhcm1zIGhhdmUgYmVlbiBpbnZh
-ZGVkIGFuZCBjb25maXNjYXRlZCxhcyB3ZWxsIGFzIGNsYWltaW5nIHRoZSBw
-cm9wZXJ0aWVzIG9mIHRoZSBmYXJtZXJzLiBBbHNvLGFib3V0IDEzMzMgZmFy
-bWVycyBhcnJlc3RlZCBmb3IgZGVmeWluZyB0aGUgb3JkZXJzIHRvIGxlYXZl
-IHRoZWlyIGZhcm1zIHVuZGVyIHRoZSBjb250cm92ZXJzaWFsIGxhbmQgcmVm
-b3JtIHByb2dyYW0gb2YgdGhlIGdvdmVybm1lbnQuIEhhdmluZyBsaXZlZCBp
-biB0aGlzIGNvdW50cnkgc291dGggYWZyaWNhIGZvciB5ZWFycyxBbSByZWZm
-dWdlIHNvbWUgeWVhcnMgdGhlcmVmb3JlLEkgZGVjaWRlZCB0byBjb250YWN0
-IHlvdSxmb3IgeW91ciBhc3Npc3RhbmNlLHNvIHRoYXQgSSBjYW4gZGl2ZXJ0
-IG15IGludGVyZXN0IGluIHNvdXRoIGFmcmljYSB0byBhIG1vcmUgc3RhYmxl
-IGNvdW50cnkgYXMgeW91cnMuIEFsc28sSSBtdXN0IHJlLWl0ZXJhdGUgdGhl
-IGltcG9ydGFuY2Ugb2YgaGF2aW5nIGEgY2l0aXplbiBvZiB5b3VyIGNvdW50
-cnkgdG8gZnJvbnQgb3IgbWUsc2luY2UgaSBpbnRlbmQgdG8gcHVyY2hhc2Ug
-c29tZSBsYW5kIGZvciBmYXJtaW5nLEkgZG8gbm90IGtub3cgbXVjaCBhYm91
-dCB5b3VyIGxhbmQtb3duZXJzaGlwIGxhd3MsSSB0aG91Z2h0IGl0IHdpc2Ug
-dG9ccGFyDQpzZWVrIHRoZSBoZWxwIG9mIGEgZm9yZWlnbmVyIHRvIGFjdCBh
-cyBwcm94eSBmb3IgbWUuRm9yIHRoaXMgcHVycG9zZSxJIGhhdmUgcHV0IGlu
-IGEgc2VjdXJpdHkgZGVwb3NpdCBhbGwgbW9uaWVzIGZyb20gdGhlIHNhbGUg
-b2YgbXkgZmFybWluZyBlcXVpcG1lbnQoaW5jbHVkaW5nIHRyYWN0b3JzIGV0
-YykgYW5kIGFsc28gYWxsIGZpbmFuY2lhbCBwcm9maXRzLkFsbCB0aGVzZSBh
-cmUgYSB0b3RhbCBvZiBVUyQxOC41bWlsbGlvbi5JIHdpbGwgdXBvbiByZWNl
-aXZpbmcgeW91ciBjb25zZW50IHByZXBhcmUgZXZlcnkgZG9jdW1lbnQgdG8g
-ZW5hYmxlIHlvdSByZWNlaXZlIHRoaXMgbW9uZXkgb24gbXkgYmVoYWxmLHBl
-bmRpbmcgbXkgYXJyaXZhbCB0byBtZWV0IHdpdGggeW91IGluIHlvdXIgY291
-bnRyeSBzbyB0aGF0IHdlIGNhbiBib3RoIG1ha2UgZnVydGhlciBhcnJhbmdl
-bWVudHMgd2l0aCByZWdhcmRzIHRvIHRoZSBwdXJjaGFzZSBvZiBsYW5kLkZv
-ciB5b3VyIGFzc2lzdGFuY2UgdG8gbWUseW91IHdpbGwgYmUgZW50aXRsZWQg
-dG8gYSBjb21taXNzaW9uIG9mIDE1JSBvZiB0aGUgdG90YWwgc3VtIHRoYXQg
-eW91IHdpbGwgYmUgcmVjZWl2aW5nIG9uIG15IGJlaGFsZiBmb3IgdGhlIGFi
-b3ZlIHB1cnBvc2UuSWYgeW91IGFyZSBpbnRlcmVzdGVkIGFuZCB3aWxsaW5n
-IHRvIGFzc2lzdCBtZSx5b3Ugc2hvdWxkIHBsZWFzZSBmb3J3YXJkIHRvIG1l
-IHRoZSBmb2xsb3dpbmcgaW5mb3JtYXRpb24gc28gdGhhdCBJIGNhbiByZWFj
-aCB5b3Ugb3IgY2FsbCBtZSBpbiB0aGlzIG51bWJlciArMjctNzg0MDIzMjA2
-IEkgd2lsbCB0ZWxsIHlvdSBtb3JlIGRldGFpbHMuIDEuIFlPVVIgQ09OVEFD
-VCBBRERSRVNTIDIuIFlPVVIgVEVMRVBIT05FIEFORCBGQVggTlVNQkVSLCAz
-LiBWQUxJRCBJRCBPRiBZT1VSU0VMRiwgSSBhbSB3YWl0aW5nIHVyZ2VudGx5
-IGZvciB5b3VyIHJlc3BvbnNlLHdoaWxlIGFsc29ccGFyDQpyZXF1ZXN0aW5n
-IHRoYXQgeW91IHRyZWF0IHRoaXMgbWF0dGVyIGluIHN0cmljdCBwcml2YWN5
-LkNoZWVycyBhbmQgR29kIGJsZXNzLiBJIHdpbGwgZ2l2ZSB5b3UgbW9yZSBk
-ZXRhaWxzIHdoZW4gaSBoZWFyIGZyb20geW91LllvdSBjYW4gY2xpY2sgb24g
-dGhlIGxpbmsgYmVsb3cgdG8gZ2V0IGEgYmV0dGVyIHVuZGVyc3RhbmRpbmcg
-bXkgc2l0dWF0aW9uIGFuZCB3aHkgaSBuZWVkIHRvIG1vdmUgb3V0IG15IG1v
-bmV5OiBodHRwOi8vbmV3cy5iYmMuY28udWsvMS9oaS93b3JsZC9hZnJpY2Ev
-MTA2ODUyOC5zdG0gQmVzdCBSZWdhcmRzXHBhcg0KXHBhcg0KS2luZ2RvbSBO
-ZWxzb25ccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQp9DQoA
+ arch/arm/mach-omap2/common-board-devices.c | 34 ++++++++++++++++++--------=
+----
+ drivers/input/input-mt.c                   |  4 ++++
+ drivers/input/mousedev.c                   |  4 ++--
+ drivers/input/touchscreen/ads7846.c        |  6 +++++-
+ include/linux/spi/ads7846.h                |  5 +++--
+ 5 files changed, 34 insertions(+), 19 deletions(-)
+
+Thanks!
+
+--=20
+Dmitry
 
 
---805399167-21125228-1353653287=:86187--
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQrx2vAAoJEH70+W8r6ZYqMDMP/jSisg+rE3X17XimJAbS5chK
+avdLLFPoQ9VdRzLsaQo10M9BNUHcGAnxRH1xSU7Lm2IeQrPowYRFyjhVSyP7dQid
+V3kxrVyi1BmkbeRKqEX0BidmjIgky9kf1VnroNqaHBQGvf91ZYz+aE/gnxBSBqxY
+65PzQMqcUoHXGlbIUsgcRAhLVMxHvitBbGtDAJrOISHCIw1xJ2IYFWgM5nQIFqsn
+XUT8QpSk6kLGj8tKbJk1+NYzeKM0P3vKs92ttr0RCo9tyS9B4kOpCAopJB8DgsZJ
+WlGbId0QCRT2gHeurjWvKPjn1bDeh9p6zlOKsw16CVPO6loi/H00Cxw8VWHk7aIY
+xPUJnHvAiMZ5ibdJEduBadh1N2b2i4U+/U8hTIu14y4nI/5Ub9MkF6BO5UNOgemX
+UxN7iYBvS/wacLBQA5emKDBWVETae93Sn/Imok66X4UW+3oXJDB+Kiz1qH3H9354
++IM5X77a39JgjMfHpM8AJRLHX9ihiOSjyIVhGcSjlwD8GhJ2dhUWp8rklRLz0AIX
+t3c56U8bCqHgKOlXsInKTYWUVQL9kW6lIMF86AfyM5uK4sSQQFFZcE8uEnrQ4rcI
+Le0sbo8kZ5QFGQ9eLyiTeYzXl+2A41nm0Lo5MVwsS6oSQkX7ji1yjvXvSLPn0fh0
+IP3uYvfHy05DKdeorBZe
+=pN20
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
