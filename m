@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2KWRuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 12:50:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64017 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2KWRur (ORCPT
+	id S1754070Ab2KWSAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 13:00:22 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35018 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2KWSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 12:50:47 -0500
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Cc: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Subject: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-Date: Fri, 23 Nov 2012 18:50:34 +0100
-Message-Id: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-X-Mailer: git-send-email 1.7.9
+	Fri, 23 Nov 2012 13:00:20 -0500
+Message-ID: <50AFB996.7040905@oracle.com>
+Date: Fri, 23 Nov 2012 11:59:50 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Steven Whitehouse <swhiteho@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        cluster-devel@redhat.com
+Subject: Re: [PATCH v4 27/31] gfs2: Convert aio_read/write ops to read/write_iter
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com> <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com> <1353577893.2757.14.camel@menhir> <20121122225926.GU2591@dastard>
+In-Reply-To: <20121122225926.GU2591@dastard>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed in https://patchwork.kernel.org/patch/1581581/
-the driver core remove function needs to always succeed. This means we need
-to know that the device can be successfully removed before acpi_bus_trim / 
-acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-or SCI-initiated eject of memory devices fail e.g with:
-echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+On 11/22/2012 04:59 PM, Dave Chinner wrote:
+> On Thu, Nov 22, 2012 at 09:51:33AM +0000, Steven Whitehouse wrote:
+>> Hi,
+>>
+>> On Wed, 2012-11-21 at 16:41 -0600, Dave Kleikamp wrote:
+>>> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+>>> Cc: Steven Whitehouse <swhiteho@redhat.com>
+>>> Cc: cluster-devel@redhat.com
+>>> ---
+>>>  fs/gfs2/file.c | 21 ++++++++++-----------
+>>>  1 file changed, 10 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+>>> index e056b4c..bcea69e 100644
+>>> --- a/fs/gfs2/file.c
+>>> +++ b/fs/gfs2/file.c
+>>> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>>>  }
+>>>  
+>>>  /**
+>>> - * gfs2_file_aio_write - Perform a write to a file
+>>> + * gfs2_file_write_iter - Perform a write to a file
+>>>   * @iocb: The io context
+>>> - * @iov: The data to write
+>>> - * @nr_segs: Number of @iov segments
+>>> + * @iter: The data to write
+>>>   * @pos: The file position
+>>>   *
+>>>   * We have to do a lock/unlock here to refresh the inode size for
+>>> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>>>   *
+>>>   */
+>>>  
+>>> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>>> -				   unsigned long nr_segs, loff_t pos)
+>>> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+>>> +				    loff_t pos)
+>>>  {
+>>>  	struct file *file = iocb->ki_filp;
+>>> -	size_t writesize = iov_length(iov, nr_segs);
+>>> +	size_t writesize = iov_iter_count(iter);
+>> Hmm, I'm not sure that length isn't a better name than count for this
+>> function. What we want is the total length of the i/o request and count
+>> sounds to me as if it would refer to the number of segments. So could we
+>> have a iov_iter_length() function instead perhaps?
+> 
+> I had exactly the same thought when looking at one of the XFS
+> patches and was holding off commenting until I'd read the entire
+> patch set. But, you've pointed out the same thing, so I figured I'd
+> add my 2c here as well.
 
-since the ACPI core goes ahead and ejects the device regardless of whether the
-the memory is still in use or not.
+I agree with both of you. iov_iter_length() would be more consistent.
 
-For this reason a new acpi_device operation called prepare_remove is introduced.
-This operation should be registered for acpi devices whose removal (from kernel
-perspective) can fail.  Memory devices fall in this category.
-
-acpi_bus_remove() is changed to handle removal in 2 steps:
-- preparation for removal i.e. perform part of removal that can fail. Should
-  succeed for device and all its children.
-- if above step was successfull, proceed to actual device removal
-
-With this patchset, only acpi memory devices use the new prepare_remove
-device operation. The actual memory removal (VM-related offline and other memory
-cleanups) is moved to prepare_remove. The old remove operation just cleans up
-the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
-haven't tested yet with an ACPI container which contains memory devices.
-
-Note that unbinding the acpi driver from a memory device with:
-echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-
-will no longer try to remove the memory. This is in compliance with normal
-unbind driver core semantics, see the discussion in v2 of this patchset:
-https://lkml.org/lkml/2012/11/16/649
-
-After a successful unbind of the driver:
-- OSPM ejects of the memory device cannot proceed, as acpi_eject_store will
-return -ENODEV on missing driver.
-- SCI ejects of the memory device also cannot proceed, as they will also get
-a "driver data is NULL" error.
-So the memory can continue to be used safely after unbind.
-
-Patchset based on Rafael's linux-pm/linux-next (commit 78c38651).
-Comments welcome.
-
-v2->v3:
-- remove driver core changes. Only acpi core changes needed. Unbind semantics
-follow driver core rules. Unbind does not remove memory.
-- new patch to set enable bit in order to proceed with ejects on driver
-re-binding scenario.
-
-v1->v2:
-- new patch to introduce bus_type prepare_remove callback. Needed to prepare
-removal on driver unbinding from device-driver core.
-- v1 patches 1 and 2 simplified and merged in one. acpi_bus_trim does not require
-argument changes.
-
-Vasilis Liaskovitis (3):
-  acpi: Introduce prepare_remove operation in acpi_device_ops
-  acpi_memhotplug: Add prepare_remove operation
-  acpi_memhotplug: Allow eject to proceed on rebind scenario
-
- drivers/acpi/acpi_memhotplug.c |   21 +++++++++++++++++----
- drivers/acpi/scan.c            |    9 ++++++++-
- include/acpi/acpi_bus.h        |    2 ++
- 3 files changed, 27 insertions(+), 5 deletions(-)
-
--- 
-1.7.9
-
+Shaggy
