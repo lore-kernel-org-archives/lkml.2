@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514Ab2KWA5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 19:57:35 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:45820 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab2KWA5e (ORCPT
+	id S1758677Ab2KWA5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 19:57:39 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49988 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab2KWA5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 19:57:34 -0500
+	Thu, 22 Nov 2012 19:57:37 -0500
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 5/7] kdb: Remove KDB_REPEAT_NONE flag
-Date: Thu, 22 Nov 2012 16:53:54 -0800
-Message-Id: <1353632036-5354-5-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 6/7] kdb: Mark safe commands as KDB_SAFE and KDB_SAFE_NO_ARGS
+Date: Thu, 22 Nov 2012 16:53:55 -0800
+Message-Id: <1353632036-5354-6-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <20121123005315.GA12690@lizard.mcd25758.sjc.wayport.net>
 References: <20121123005315.GA12690@lizard.mcd25758.sjc.wayport.net>
@@ -23,181 +23,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we now treat KDB_REPEAT_* as flags, there is no need to
-pass KDB_REPEAT_NONE. It's just the default behaviour when no
-flags are specified.
+This patch introduces two new flags: KDB_SAFE, denotes a safe command,
+and KDB_SAFE_NO_ARGS, denotes a safe command when used without arguments.
+
+The word "safe" here used in the sense that the commands cannot be
+used to leak sensitive data from the memory, and cannot be used
+to change program flow in a predefined manner.
+
+These flags will be used by the "kiosk" mode, i.e. when it is possible
+for the ordinary user to enter the KDB (or user can get the access to
+KDB after the crash), but we do not allow user to read dump the
+memory [and thus read some sensitive data].
+
+The following commands were marked as "safe":
+
+	Display exception frame
+	Stack traceback
+	Display stack for process
+	Display stack all processes
+	Backtrace current process on each cpu
+	Execute cmd for each element in linked list
+	Show environment variables
+	Set environment variables
+	Display Help Message
+	Switch to new cpu
+	Display active task list
+	Switch to another task
+	Reboot the machine immediately
+	List loaded kernel modules
+	Magic SysRq key
+	Display syslog buffer
+	Define a set of commands, down to endefcmd
+	Summarize the system
+	Disable NMI entry to KDB
+
+The following commands were marked as safe when issued with no arguments:
+
+	Continue Execution
+
+And the following commands are unsafe:
+
+	Clear Breakpoint
+	Enable Breakpoint
+	Disable Breakpoint
+	Single step
+	Single step to branch/call
+	Continue Execution (with address argument)
+	Display Memory Contents
+	Display Raw Memory
+	Display Physical Memory
+	Display Memory Symbolically
+	Modify Memory Contents
+	Display Registers
+	Modify Registers
+	Backtrace process given its struct task address
+	Send a signal to a process
+	Enter kgdb mode
+	Display per_cpu variables
+
+Note that we mark "display registers" command unsafe, this is because
+single stepping + constantly dumping registers in string or memory
+functions can be used as a way to read sensitive data (it's actually
+trivial to exploit). Later we can do a bit better, i.e. not displaying
+general-purpose registers, but printing control registers.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/kdb.h         |  1 -
- kernel/debug/kdb/kdb_bp.c   |  6 ++---
- kernel/debug/kdb/kdb_main.c | 61 ++++++++++++++++++++++-----------------------
+ include/linux/kdb.h         |  2 ++
+ kernel/debug/kdb/kdb_main.c | 44 ++++++++++++++++++++++----------------------
  kernel/trace/trace_kdb.c    |  2 +-
- 4 files changed, 34 insertions(+), 36 deletions(-)
+ 3 files changed, 25 insertions(+), 23 deletions(-)
 
 diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index c6f1ec3..792779c 100644
+index 792779c..abe927c 100644
 --- a/include/linux/kdb.h
 +++ b/include/linux/kdb.h
-@@ -14,7 +14,6 @@
-  */
- 
+@@ -16,6 +16,8 @@
  typedef enum {
--	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
  	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
  	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
++	KDB_SAFE		= 0x4, /* Security-wise safe command */
++	KDB_SAFE_NO_ARGS	= 0x8, /* Only safe if run w/o arguments */
  } kdb_cmdflags_t;
-diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
-index d2cb80d..928e9e9 100644
---- a/kernel/debug/kdb/kdb_bp.c
-+++ b/kernel/debug/kdb/kdb_bp.c
-@@ -553,11 +553,11 @@ void __init kdb_initbptab(void)
- 		kdb_register_flags("bph", kdb_bp, "[<vaddr>]",
- 		"[datar [length]|dataw [length]]   Set hw brk", 0, KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("bc", kdb_bc, "<bpnum>",
--		"Clear Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Clear Breakpoint", 0, 0);
- 	kdb_register_flags("be", kdb_bc, "<bpnum>",
--		"Enable Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Enable Breakpoint", 0, 0);
- 	kdb_register_flags("bd", kdb_bc, "<bpnum>",
--		"Disable Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Disable Breakpoint", 0, 0);
  
- 	kdb_register_flags("ss", kdb_ss, "",
- 		"Single Step", 1, KDB_REPEAT_NO_ARGS);
+ typedef int (*kdb_func_t)(int, const char **);
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 7245bab..172b726 100644
+index 172b726..83c3f60 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -2752,7 +2752,7 @@ EXPORT_SYMBOL_GPL(kdb_register_flags);
- /*
-  * kdb_register - Compatibility register function for commands that do
-  *	not need to specify a repeat state.  Equivalent to
-- *	kdb_register_flags with KDB_REPEAT_NONE.
-+ *	kdb_register_flags with flags set to 0.
-  * Inputs:
-  *	cmd	Command name
-  *	func	Function to execute the command
-@@ -2767,8 +2767,7 @@ int kdb_register(char *cmd,
- 	     char *help,
- 	     short minlen)
- {
--	return kdb_register_flags(cmd, func, usage, help, minlen,
--				  KDB_REPEAT_NONE);
-+	return kdb_register_flags(cmd, func, usage, help, minlen, 0);
- }
- EXPORT_SYMBOL_GPL(kdb_register);
- 
-@@ -2822,70 +2821,70 @@ static void __init kdb_inittab(void)
+@@ -2821,70 +2821,70 @@ static void __init kdb_inittab(void)
  	kdb_register_flags("mm", kdb_mm, "<vaddr> <contents>",
  	  "Modify Memory Contents", 0, KDB_REPEAT_NO_ARGS);
  	kdb_register_flags("go", kdb_go, "[<vaddr>]",
--	  "Continue Execution", 1, KDB_REPEAT_NONE);
-+	  "Continue Execution", 1, 0);
+-	  "Continue Execution", 1, 0);
++	  "Continue Execution", 1, KDB_SAFE_NO_ARGS);
  	kdb_register_flags("rd", kdb_rd, "",
--	  "Display Registers", 0, KDB_REPEAT_NONE);
-+	  "Display Registers", 0, 0);
+ 	  "Display Registers", 0, 0);
  	kdb_register_flags("rm", kdb_rm, "<reg> <contents>",
--	  "Modify Registers", 0, KDB_REPEAT_NONE);
-+	  "Modify Registers", 0, 0);
+ 	  "Modify Registers", 0, 0);
  	kdb_register_flags("ef", kdb_ef, "<vaddr>",
--	  "Display exception frame", 0, KDB_REPEAT_NONE);
-+	  "Display exception frame", 0, 0);
+-	  "Display exception frame", 0, 0);
++	  "Display exception frame", 0, KDB_SAFE);
  	kdb_register_flags("bt", kdb_bt, "[<vaddr>]",
--	  "Stack traceback", 1, KDB_REPEAT_NONE);
-+	  "Stack traceback", 1, 0);
+-	  "Stack traceback", 1, 0);
++	  "Stack traceback", 1, KDB_SAFE);
  	kdb_register_flags("btp", kdb_bt, "<pid>",
--	  "Display stack for process <pid>", 0, KDB_REPEAT_NONE);
-+	  "Display stack for process <pid>", 0, 0);
+-	  "Display stack for process <pid>", 0, 0);
++	  "Display stack for process <pid>", 0, KDB_SAFE);
  	kdb_register_flags("bta", kdb_bt, "[DRSTCZEUIMA]",
--	  "Display stack all processes", 0, KDB_REPEAT_NONE);
-+	  "Display stack all processes", 0, 0);
+-	  "Display stack all processes", 0, 0);
++	  "Display stack all processes", 0, KDB_SAFE);
  	kdb_register_flags("btc", kdb_bt, "",
--	  "Backtrace current process on each cpu", 0, KDB_REPEAT_NONE);
-+	  "Backtrace current process on each cpu", 0, 0);
+-	  "Backtrace current process on each cpu", 0, 0);
++	  "Backtrace current process on each cpu", 0, KDB_SAFE);
  	kdb_register_flags("btt", kdb_bt, "<vaddr>",
  	  "Backtrace process given its struct task address", 0,
--			    KDB_REPEAT_NONE);
-+			    0);
+ 			    0);
  	kdb_register_flags("ll", kdb_ll, "<first-element> <linkoffset> <cmd>",
--	  "Execute cmd for each element in linked list", 0, KDB_REPEAT_NONE);
-+	  "Execute cmd for each element in linked list", 0, 0);
+-	  "Execute cmd for each element in linked list", 0, 0);
++	  "Execute cmd for each element in linked list", 0, KDB_SAFE);
  	kdb_register_flags("env", kdb_env, "",
--	  "Show environment variables", 0, KDB_REPEAT_NONE);
-+	  "Show environment variables", 0, 0);
+-	  "Show environment variables", 0, 0);
++	  "Show environment variables", 0, KDB_SAFE);
  	kdb_register_flags("set", kdb_set, "",
--	  "Set environment variables", 0, KDB_REPEAT_NONE);
-+	  "Set environment variables", 0, 0);
+-	  "Set environment variables", 0, 0);
++	  "Set environment variables", 0, KDB_SAFE);
  	kdb_register_flags("help", kdb_help, "",
--	  "Display Help Message", 1, KDB_REPEAT_NONE);
-+	  "Display Help Message", 1, 0);
+-	  "Display Help Message", 1, 0);
++	  "Display Help Message", 1, KDB_SAFE);
  	kdb_register_flags("?", kdb_help, "",
--	  "Display Help Message", 0, KDB_REPEAT_NONE);
-+	  "Display Help Message", 0, 0);
+-	  "Display Help Message", 0, 0);
++	  "Display Help Message", 0, KDB_SAFE);
  	kdb_register_flags("cpu", kdb_cpu, "<cpunum>",
--	  "Switch to new cpu", 0, KDB_REPEAT_NONE);
-+	  "Switch to new cpu", 0, 0);
+-	  "Switch to new cpu", 0, 0);
++	  "Switch to new cpu", 0, KDB_SAFE);
  	kdb_register_flags("kgdb", kdb_kgdb, "",
--	  "Enter kgdb mode", 0, KDB_REPEAT_NONE);
-+	  "Enter kgdb mode", 0, 0);
+ 	  "Enter kgdb mode", 0, 0);
  	kdb_register_flags("ps", kdb_ps, "[<flags>|A]",
--	  "Display active task list", 0, KDB_REPEAT_NONE);
-+	  "Display active task list", 0, 0);
+-	  "Display active task list", 0, 0);
++	  "Display active task list", 0, KDB_SAFE);
  	kdb_register_flags("pid", kdb_pid, "<pidnum>",
--	  "Switch to another task", 0, KDB_REPEAT_NONE);
-+	  "Switch to another task", 0, 0);
+-	  "Switch to another task", 0, 0);
++	  "Switch to another task", 0, KDB_SAFE);
  	kdb_register_flags("reboot", kdb_reboot, "",
--	  "Reboot the machine immediately", 0, KDB_REPEAT_NONE);
-+	  "Reboot the machine immediately", 0, 0);
+-	  "Reboot the machine immediately", 0, 0);
++	  "Reboot the machine immediately", 0, KDB_SAFE);
  #if defined(CONFIG_MODULES)
  	kdb_register_flags("lsmod", kdb_lsmod, "",
--	  "List loaded kernel modules", 0, KDB_REPEAT_NONE);
-+	  "List loaded kernel modules", 0, 0);
+-	  "List loaded kernel modules", 0, 0);
++	  "List loaded kernel modules", 0, KDB_SAFE);
  #endif
  #if defined(CONFIG_MAGIC_SYSRQ)
  	kdb_register_flags("sr", kdb_sr, "<key>",
--	  "Magic SysRq key", 0, KDB_REPEAT_NONE);
-+	  "Magic SysRq key", 0, 0);
+-	  "Magic SysRq key", 0, 0);
++	  "Magic SysRq key", 0, KDB_SAFE);
  #endif
  #if defined(CONFIG_PRINTK)
  	kdb_register_flags("dmesg", kdb_dmesg, "[lines]",
--	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
-+	  "Display syslog buffer", 0, 0);
+-	  "Display syslog buffer", 0, 0);
++	  "Display syslog buffer", 0, KDB_SAFE);
  #endif
  	if (arch_kgdb_ops.enable_nmi) {
  		kdb_register_flags("disable_nmi", kdb_disable_nmi, "",
--		  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
-+		  "Disable NMI entry to KDB", 0, 0);
+-		  "Disable NMI entry to KDB", 0, 0);
++		  "Disable NMI entry to KDB", 0, KDB_SAFE);
  	}
  	kdb_register_flags("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
--	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
-+	  "Define a set of commands, down to endefcmd", 0, 0);
+-	  "Define a set of commands, down to endefcmd", 0, 0);
++	  "Define a set of commands, down to endefcmd", 0, KDB_SAFE);
  	kdb_register_flags("kill", kdb_kill, "<-signal> <pid>",
--	  "Send a signal to a process", 0, KDB_REPEAT_NONE);
-+	  "Send a signal to a process", 0, 0);
+ 	  "Send a signal to a process", 0, 0);
  	kdb_register_flags("summary", kdb_summary, "",
--	  "Summarize the system", 4, KDB_REPEAT_NONE);
-+	  "Summarize the system", 4, 0);
+-	  "Summarize the system", 4, 0);
++	  "Summarize the system", 4, KDB_SAFE);
  	kdb_register_flags("per_cpu", kdb_per_cpu, "<sym> [<bytes>] [<cpu>]",
--	  "Display per_cpu variables", 3, KDB_REPEAT_NONE);
-+	  "Display per_cpu variables", 3, 0);
+ 	  "Display per_cpu variables", 3, 0);
  	kdb_register_flags("grephelp", kdb_grep_help, "",
--	  "Display help on | grep", 0, KDB_REPEAT_NONE);
-+	  "Display help on | grep", 0, 0);
+-	  "Display help on | grep", 0, 0);
++	  "Display help on | grep", 0, KDB_SAFE);
  }
  
  /* Execute any commands defined in kdb_cmds.  */
 diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index e9db346..1b68177 100644
+index 1b68177..8353852 100644
 --- a/kernel/trace/trace_kdb.c
 +++ b/kernel/trace/trace_kdb.c
 @@ -128,7 +128,7 @@ static int kdb_ftdump(int argc, const char **argv)
  static __init int kdb_ftrace_register(void)
  {
  	kdb_register_flags("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
--			    "Dump ftrace log", 0, KDB_REPEAT_NONE);
-+			    "Dump ftrace log", 0, 0);
+-			    "Dump ftrace log", 0, 0);
++			    "Dump ftrace log", 0, KDB_SAFE);
  	return 0;
  }
  
