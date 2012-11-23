@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab2KWLTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:19:34 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62774 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2KWLTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:19:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121123104620.GQ17471@gmail.com>
-References: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
-	<20121123104620.GQ17471@gmail.com>
-Date: Fri, 23 Nov 2012 16:49:31 +0530
-Message-ID: <CAKohpon+iU93sviKrkR+sdCJk0Z6rz0FcvTNsh9Ap88+Qy2mVw@mail.gmail.com>
-Subject: Re: [PATCH] input: stmpe-ts: Add DT support for stmpe touchscreen
-From: Viresh Kumar <viresh.kumar@linaro.org>
+	id S1756221Ab2KWLTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:19:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54927 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab2KWLTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 06:19:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,307,1352102400"; 
+   d="scan'208";a="223420890"
+Date: Fri, 23 Nov 2012 12:19:43 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
 To: Lee Jones <lee.jones@linaro.org>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/1] Documentation: Fix historical inconsistency in STMPE
+ DT doc
+Message-ID: <20121123111943.GF12685@sortiz-mobl>
+References: <1353587064-10541-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353587064-10541-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 November 2012 16:16, Lee Jones <lee.jones@linaro.org> wrote:
->> +++ b/Documentation/devicetree/bindings/input/touchscreen/stmpe.txt
->> @@ -0,0 +1,43 @@
->> +STMPE Touchscreen
->> +----------------
->> +
->> +Required properties:
->> + - compatible: "st,stmpe-ts"
->
-> You shouldn't be specifying a compatible string in the DT.
->
->> +Example:
->> +
->> +     stmpe_touchscreen {
->> +             compatible = "st,stmpe-ts";
->
-> This needs to be removed.
+Hi Lee,
 
-Copying my earlier reply from stmpe-gpio patch for others to know
-what i have to say on this :)
+On Thu, Nov 22, 2012 at 12:24:24PM +0000, Lee Jones wrote:
+> Previously a generic binding 'i2c-client-wake' was created which
+> enabled I2C devices to register themselves as wake-up devices.
+> This binding was later over-thrown by 'wakeup-source'. The STMPE
+> driver was fixed-up, but the document was neglected. This patch
+> aims to rectify that.
+> 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/stmpe.txt |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+Applied, thanks.
 
-I believe these are required by the code you wrote in mfd-core.c
+Cheers,
+Samuel.
 
-        if (parent->of_node && cell->of_compatible) {
-                for_each_child_of_node(parent->of_node, np) {
-                        if (of_device_is_compatible(np, cell->of_compatible)) {
-                                pdev->dev.of_node = np;
-                                break;
-                        }
-                }
-        }
-
-This matches compatible of child node with compatible of cell. And that's
-why you have added that in your keypad mappings as well.
-
---
-viresh
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
