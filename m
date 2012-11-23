@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab2KWWeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 17:34:19 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50578 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab2KWWeS (ORCPT
+	id S932189Ab2KWWzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 17:55:42 -0500
+Received: from mail.tsu.ge ([217.147.230.9]:52441 "EHLO mail.tsu.ge"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932157Ab2KWWzl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 17:34:18 -0500
+	Fri, 23 Nov 2012 17:55:41 -0500
+X-Qmail-Scanner-Diagnostics: from 41.71.176.32 (maia.menteshashvili@tsu.ge@41.71.176.32) by mail (envelope-from <maia.menteshashvili@tsu.ge>, uid 89) with qmail-scanner-2.10st 
+ (clamdscan: 0.97.3/15618. mhr: 1.0. spamassassin: 3.3.1. perlscan: 2.10st.  
+ Clear:RC:0(41.71.176.32):SA:0(2.0/5.0):. 
+ Processed in 2.877266 secs); 23 Nov 2012 23:29:36 -0000
+X-Qmail-Scanner-Mail-From: maia.menteshashvili@tsu.ge via mail
+X-Qmail-Scanner: 2.10st (Clear:RC:0(41.71.176.32):SA:0(2.0/5.0):. Processed in 2.877266 secs Process 24034)
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 23 Nov 2012 22:33:57 +0000
-X-Google-Sender-Auth: w7ZsUuKKlrL1KxvFCrSDMjtnN1o
-Message-ID: <CACxGe6v-VAEDnOYtnRaYtNf_3njjbN4ZG42h6uPXO=VUJsn7-g@mail.gmail.com>
-Subject: [GIT PULL] devicetree fix for v3.7
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        David Miller <davem@davemloft.net>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: *Alert Notification!!!
+To: Recipients <maia.menteshashvili@tsu.ge>
+From: "Webmail Communications" <maia.menteshashvili@tsu.ge>
+Date: Fri, 23 Nov 2012 22:43:23 +0100
+Reply-To: info@webmail.co.uk
+Message-ID: <1353713373103924034@mail>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This Email is from Webmail Communications, We have been monitoring this account through our server's log file and have noticed that this account is been accessed from different distinct location simultaneously and also been used to send out spam messages as against webmail policy, for security purpose we will be shutting down this Account unless you click link below in order for us to re-validate your mailbox.
 
-Here's is a device tree build regression fix that I've just received.
-Please pull.
+https://docs.google.com/spreadsheet/embeddedform?formkey=dEVoamZFQXptN3lSOWpBWktRRXB3VFE6MQ
 
-Thanks,
-g.
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently.
 
-The following changes since commit 26d29d06ea020411559f75ec908db235ca1838d9:
-
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input (2012-11-22
-21:45:34 -1000)
-
-are available in the git repository at:
-
-
-  git://git.secretlab.ca/git/linux-2.6 tags/devicetree-for-linus
-
-for you to fetch changes up to 0e622d39197f0b64b9e043fe75ac3634bf9f3a05:
-
-  of/address: sparc: Declare of_iomap as an extern function for sparc
-again (2012-11-23 22:01:15 +0000)
-
-----------------------------------------------------------------
-Device tree regression fix for v3.7
-
-Simple build regression fix for DT device drivers on Sparc. An earlier
-change had masked out the of_iomap() helper on SPARC.
-
-----------------------------------------------------------------
-Andreas Larsson (1):
-      of/address: sparc: Declare of_iomap as an extern function for sparc again
-
- arch/sparc/include/asm/prom.h |    5 ++++-
- include/linux/of_address.h    |    2 ++
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Thank you for using our email.
+Copyright ©2012 Webmail Communications.
