@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab2KWQ3M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 11:29:12 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60609 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab2KWQ3L convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 23 Nov 2012 11:29:11 -0500
-Message-Id: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 23 Nov 2012 16:30:07 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mjg@redhat.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: [PATCH] x86/EFI: properly init-annotate BGRT code
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755676Ab2KWQa2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 11:30:28 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33293 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab2KWQa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 11:30:27 -0500
+Date: Fri, 23 Nov 2012 08:30:25 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.7 (one more)
+Message-ID: <20121123163025.GA24140@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These items are only ever referenced from initialization code.
+Hi,
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+I had missed one pull request in the batch you merged yesterday. Better
+keep them small and frequent at this point, so here it is.
 
----
- arch/x86/platform/efi/efi-bgrt.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+The following changes since commit 5a903166dd31a42e39283b075cc6b9a9c079d1af:
 
---- 3.7-rc6/arch/x86/platform/efi/efi-bgrt.c
-+++ 3.7-rc6-x86-BGRT-init/arch/x86/platform/efi/efi-bgrt.c
-@@ -11,20 +11,21 @@
-  * published by the Free Software Foundation.
-  */
- #include <linux/kernel.h>
-+#include <linux/init.h>
- #include <linux/acpi.h>
- #include <linux/efi.h>
- #include <linux/efi-bgrt.h>
- 
- struct acpi_table_bgrt *bgrt_tab;
--void *bgrt_image;
--size_t bgrt_image_size;
-+void *__initdata bgrt_image;
-+size_t __initdata bgrt_image_size;
- 
- struct bmp_header {
- 	u16 id;
- 	u32 size;
- } __packed;
- 
--void efi_bgrt_init(void)
-+void __init efi_bgrt_init(void)
- {
- 	acpi_status status;
- 	void __iomem *image;
+  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-11-22 09:22:13 -1000)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
+for you to fetch changes up to c667f757f392aa7b4d87374b2a975dce8c6186d1:
+
+  Merge branch 'v3.7-samsung-fixes-3' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into fixes (2012-11-22 20:43:37 -0800)
+
+----------------------------------------------------------------
+
+ARM: SoC fixes for 3.7
+
+I missed one pull request from Samsung with one fix in the previous
+batch. Here it is -- a dma driver fix for an early version of silicon
+that they still support.
+
+----------------------------------------------------------------
+Bartlomiej Zolnierkiewicz (1):
+      ARM: EXYNOS: PL330 MDMA1 fix for revision 0 of Exynos4210 SOC
+
+Olof Johansson (1):
+      Merge branch 'v3.7-samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+
+ arch/arm/mach-exynos/dma.c              | 3 +++
+ arch/arm/mach-exynos/include/mach/map.h | 1 +
+ 2 files changed, 4 insertions(+)
