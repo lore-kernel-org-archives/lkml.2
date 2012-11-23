@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab2KWP4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 10:56:44 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52267 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab2KWP4m (ORCPT
+	id S1755404Ab2KWP5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 10:57:11 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41214 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab2KWP5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 10:56:42 -0500
+	Fri, 23 Nov 2012 10:57:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353683310-23654-5-git-send-email-ciminaghi@gnudd.com>
+In-Reply-To: <1353683310-23654-3-git-send-email-ciminaghi@gnudd.com>
 References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com>
-	<1353683310-23654-5-git-send-email-ciminaghi@gnudd.com>
-Date: Fri, 23 Nov 2012 21:26:41 +0530
-X-Google-Sender-Auth: fVQ-1NWVIqibdno6AIZs8f5aIYs
-Message-ID: <CAOh2x=mL8NzQuwjpuehbq3TiRp5dddS4fwYRT7OSQVicfLGZyw@mail.gmail.com>
-Subject: Re: [PATCH 4/8] watchdog: sp805_wdt depends on ARM
+	<1353683310-23654-3-git-send-email-ciminaghi@gnudd.com>
+Date: Fri, 23 Nov 2012 21:27:09 +0530
+X-Google-Sender-Auth: pXdta0w4peti1V2qPmXs3wUk3FM
+Message-ID: <CAOh2x==YCgecQi5CMJ3KRH6zxmvM2GRLR2TBcnWzznQFyHoyOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/8] gpio: pl061 depends on ARM
 From: viresh kumar <viresh.kumar@linaro.org>
 To: Davide Ciminaghi <ciminaghi@gnudd.com>
 Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
@@ -32,14 +32,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Fri, Nov 23, 2012 at 8:38 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
 > From: Alessandro Rubini <rubini@gnudd.com>
 >
-> The SP805 driver is only used by the Spear machines, and uses
-> writel_relaxed, which is not available on all architectures.
+> Commit dece904d (gpio: pl061: use chained_irq_* functions in irq
+> handler) introduced chained_irq_enter/exit, which is only
+> available for arch/arm and the driver won't compile elsewhere.
 >
-> The dependency from CONFIG_ARM avoids compilation problems under
-> randomconfig when CONFIG_ARM_AMBA is enabled for x86 builds.
+> The dependency is thus made explicit, because AMBA is used in the x86
+> world by a PCI-to-AMBA bridge, to be submitted.
 >
 > Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 > Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
