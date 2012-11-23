@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2KWLtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:49:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40463 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754900Ab2KWLtT (ORCPT
+	id S1755031Ab2KWL4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:56:39 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:56861 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab2KWL4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:49:19 -0500
-Date: Fri, 23 Nov 2012 20:49:16 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+	Fri, 23 Nov 2012 06:56:37 -0500
+Date: Fri, 23 Nov 2012 12:56:35 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Samuel Ortiz <sameo@linux.intel.com>, linux-sh@vger.kernel.org,
         Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v2 2/2] regulator: add a regulator driver for the AS3711
  PMIC
-Message-ID: <20121123114915.GG4529@opensource.wolfsonmicro.com>
+In-Reply-To: <20121123114915.GG4529@opensource.wolfsonmicro.com>
+Message-ID: <Pine.LNX.4.64.1211231255350.14984@axis700.grange>
 References: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
- <Pine.LNX.4.64.1211221110330.28453@axis700.grange>
- <20121123111515.GD12685@sortiz-mobl>
+ <Pine.LNX.4.64.1211221110330.28453@axis700.grange> <20121123111515.GD12685@sortiz-mobl>
+ <20121123114915.GG4529@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ublo+h3cBgJ33ahC"
-Content-Disposition: inline
-In-Reply-To: <20121123111515.GD12685@sortiz-mobl>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:Aec03q46u44JTfvEl/61eO10D6xnAh/JsJGe3UNGAE8
+ OzpO9jWW0zxkuVIwaqTV0sKUPeFZVket+3Q/ulb92zRkK6yQEs
+ 32PBnDvIiwPb0V5dKhQYceGyrYFV4DjptGYnl/W3eN9P2JQ3fm
+ xGiLWgO7itD7PlH5eRMZgmkgnEMqWKeXtEyh+IgV3/7rmJ44LM
+ OAOyu+AS3g/4F+L3nLMko9n4c6q238FGwRJxcxk1uwT/Xm70XA
+ R5udzuAxTClhyvpDlyxmLIu8451w2VeAwNJjaYLa4kOYij0Hd2
+ BGFRH72hayNWYZj1YGG/93K0RmvnuQiQNHn/45yWSnlPLCljFZ
+ 0XNjX+4ONO838j+8zje4gJ26WQEUXjbXiYSgxrBMFqryAep+g6
+ TBUdO9RICBqlw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 23 Nov 2012, Mark Brown wrote:
 
---Ublo+h3cBgJ33ahC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Fri, Nov 23, 2012 at 12:15:15PM +0100, Samuel Ortiz wrote:
+> 
+> > Mark, does that look ok with you ? There's a build dependency with patch #1,
+> > so it would make sense for me to take it.
+> 
+> If there's a build dependency there's a problem - the Kconfig should
+> prevent the driver being selected without the MFD.
 
-On Fri, Nov 23, 2012 at 12:15:15PM +0100, Samuel Ortiz wrote:
+Indeed there is one:
 
-> Mark, does that look ok with you ? There's a build dependency with patch #1,
-> so it would make sense for me to take it.
++config REGULATOR_AS3711
++	tristate "AS3711 PMIC"
++	depends on MFD_AS3711
 
-If there's a build dependency there's a problem - the Kconfig should
-prevent the driver being selected without the MFD.
+So, should be ok
 
---Ublo+h3cBgJ33ahC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQr2KyAAoJELSic+t+oim9zFUQAI5kxYLHdr0Z/Yb8rKtAbDRG
-j5ovejuFGzLRrej4+9a2+RBA4Bq/Cl4+m6gg+LbmpDDIqA/6L97QmMTYQoOojEBP
-tSRWoOqsjTwiTwaO6BtgHluAJoMpI1EOZtwedKpocdLIyHDyZSCDANTmPF4X8Z4x
-emXzoGYTEVVzNrivD/yTHDP/F22IJn6eeTAIwxQ30HilLithLPf/B65lH+yd4R5d
-NPx2Y48zLq6MI96sQLwb9SgQLNJLyROpoiYiml3OC4tS0R756tfcwgIE6hu/zY5M
-gXqHbpQNeMZSxh7CBlVt4DinT3WbvtyN+CQTNK/Zl56zZRfy7a5XaUb/yPJT+C7R
-/jRs6FYVUmr0jn/ALUZsQs9SWTkKRBoEINKpOpKm8SfoPYZwHV4Z6CrQOLw5gEGq
-WXUK4t8nOU7f3UKqJEGHp8A0FsXPlcxP8lK/NkLSfXpjxHv2UqHgqaGWBVtmvZdh
-D68rcMmpOgyVPgBSTPmYR6BWMrgJf6tN+CYjNuTRJwBpQ1GsbVs2uHiONO5rM67/
-ldL475b/4ggFUgs02HOIh959jUq0B6uCqMVDYIYYs9TWXHvhzTfIEK9XY6gZbST9
-CkeabtoyLeV67z+/DRV6pRaJ2WhxY4Qu+WEKrA7q9Fgn2KPYxHMkLjndLIuTfOe7
-lPdoHZ/lBDRjNHzP47sT
-=FfST
------END PGP SIGNATURE-----
-
---Ublo+h3cBgJ33ahC--
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
