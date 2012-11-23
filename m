@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab2KWQZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 11:25:25 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:59613 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab2KWQZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 11:25:24 -0500
-From: Javi Merino <javi.merino@arm.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, Javi Merino <javi.merino@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] of: add missing documentation for of_platform_populate()
-Date: Fri, 23 Nov 2012 16:25:08 +0000
-Message-Id: <1353687908-17215-1-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 23 Nov 2012 16:25:21.0106 (UTC) FILETIME=[21FC9B20:01CDC997]
-X-MC-Unique: 112112316252202201
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1755627Ab2KWQ1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 11:27:38 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48692 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab2KWQ1h convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 23 Nov 2012 11:27:37 -0500
+Message-Id: <50AFB24002000078000AAE8A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 23 Nov 2012 16:28:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/perf_events: build fix
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qANGPTuL013850
 
-15c3597d (dt/platform: allow device name to be overridden) added a
-lookup parameter to of_platform_populate() but did not update the
-documentation.  This patch adds the missing documentation entry.
+At least some older gcc versions dislike mixing constant and non-const
+data in the same section ("... causes a section type confict"). Newer
+gcc simply emits the section as writable (which isn't what we want, but
+also is not a big problem as it gets discarded post-init anyway).
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jiri Kosina <trivial@kernel.org>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+Also get the Knight's Corner definitions in sync.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
 ---
- drivers/of/platform.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/cpu/perf_event_knc.c |    4 ++--
+ arch/x86/kernel/cpu/perf_event_p6.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b80891b..e0a6514 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -436,6 +436,7 @@ EXPORT_SYMBOL(of_platform_bus_probe);
-  * of_platform_populate() - Populate platform_devices from device tree data
-  * @root: parent of the first level to probe or NULL for the root of the tree
-  * @matches: match table, NULL to use the default
-+ * @lookup: auxdata table for matching id and platform_data with device nodes
-  * @parent: parent to hook devices from, NULL for toplevel
-  *
-  * Similar to of_platform_bus_probe(), this function walks the device tree
--- 
-1.7.9.5
+--- 3.7-rc6/arch/x86/kernel/cpu/perf_event_knc.c
++++ 3.7-rc6-x86-perf-initconst/arch/x86/kernel/cpu/perf_event_knc.c
+@@ -17,7 +17,7 @@ static const u64 knc_perfmon_event_map[]
+   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
+ };
+ 
+-static __initconst u64 knc_hw_cache_event_ids
++static const u64 __initconst knc_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+@@ -284,7 +284,7 @@ static struct attribute *intel_knc_forma
+ 	NULL,
+ };
+ 
+-static __initconst struct x86_pmu knc_pmu = {
++static const struct x86_pmu knc_pmu __initconst = {
+ 	.name			= "knc",
+ 	.handle_irq		= knc_pmu_handle_irq,
+ 	.disable_all		= knc_pmu_disable_all,
+--- 3.7-rc6/arch/x86/kernel/cpu/perf_event_p6.c
++++ 3.7-rc6-x86-perf-initconst/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -19,7 +19,7 @@ static const u64 p6_perfmon_event_map[]
+ 
+ };
+ 
+-static __initconst u64 p6_hw_cache_event_ids
++static const u64 __initconst p6_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+
 
 
