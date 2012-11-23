@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab2KWNLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:11:47 -0500
-Received: from mailout11.t-online.de ([194.25.134.85]:59744 "EHLO
-	mailout11.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab2KWNLq (ORCPT
+	id S1752864Ab2KWNMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:12:51 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50098 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab2KWNMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:11:46 -0500
-From: Norbert Warmuth <nwarmuth@t-online.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [regression] 3.7+ suspend to RAM/offline CPU fails with nmi_watchdog=0 (bisected)
-In-Reply-To: <alpine.LFD.2.02.1211231033230.2701@ionos> (Thomas Gleixner's
-	message of "Fri, 23 Nov 2012 10:33:54 +0100 (CET)")
-References: <86sj83pbwy.fsf@belegost.ivcecceob.t-online.de>
-	<alpine.LFD.2.02.1211231033230.2701@ionos>
-Date: Fri, 23 Nov 2012 14:11:09 +0100
-Message-ID: <868v9s4g7m.fsf@belegost.ivcecceob.t-online.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-ID: Ew7lg-Zr8h8+Z48iapWSw2PejD1r3gqP9dy9AvItAs8dnxtdj0NASWTHi7dNvDFZsx
-X-TOI-MSGID: 21c47c49-cf0e-4442-904b-b76581d175d4
+	Fri, 23 Nov 2012 08:12:49 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: ondemand: fix wrong delay sampling rate
+Date: Fri, 23 Nov 2012 14:12:38 +0100
+Message-Id: <1353676358-4385-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner writes:
-> On Wed, 21 Nov 2012, Norbert Warmuth wrote:
->> 3.7-rc6 booted with nmi_watchdog=0 fails to suspend to RAM or
->> offline CPUs. It's reproducable with a KVM guest and physical
->> system. 
->
-> Does the patch below fix it?
+Restore the correct delay value for ondemand's od_dbs_timer, as it was
+changed erroneously in 83f0e55.
 
-Yes. 
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/cpufreq/cpufreq_ondemand.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-- Norbert
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index bdaab92..cca3e9f 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -234,7 +234,8 @@ static void od_dbs_timer(struct work_struct *work)
+ 			dbs_info->sample_type = OD_SUB_SAMPLE;
+ 			delay = dbs_info->freq_hi_jiffies;
+ 		} else {
+-			delay = delay_for_sampling_rate(dbs_info->rate_mult);
++			delay = delay_for_sampling_rate(od_tuners.sampling_rate
++						* dbs_info->rate_mult);
+ 		}
+ 	}
+ 
+-- 
+1.7.12.1
 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 9d4c8d5..e3ef521 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -368,6 +368,9 @@ static void watchdog_disable(unsigned int cpu)
->  {
->  	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
->  
-> +	if (!watchdog_enabled)
-> +		return;
-> +
->  	watchdog_set_prio(SCHED_NORMAL, 0);
->  	hrtimer_cancel(hrtimer);
->  	/* disable the perf event */
