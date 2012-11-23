@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab2KWJkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:40:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64176 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759130Ab2KWJkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759162Ab2KWJkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:40:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30368 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759092Ab2KWJkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Nov 2012 04:40:49 -0500
-Date: Fri, 23 Nov 2012 09:40:44 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com
-Subject: Re: [PATCH V2 1/2] mfd: stmpe: Use devm_*() routines
-Message-ID: <20121123094044.GF17471@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
- <20121122102710.GD4328@gmail.com>
- <CAKohpo=gctcd5+bZ8xeJn-Cx3=+=+uxaCzEoZhFmp+XaJSpf9Q@mail.gmail.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
+   d="scan'208";a="223383959"
+Date: Fri, 23 Nov 2012 11:44:06 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mmc: sdhci-acpi: add SDHCI ACPI driver
+Message-ID: <20121123094406.GS3867@intel.com>
+References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
+ <1353573830-13006-4-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpo=gctcd5+bZ8xeJn-Cx3=+=+uxaCzEoZhFmp+XaJSpf9Q@mail.gmail.com>
+In-Reply-To: <1353573830-13006-4-git-send-email-adrian.hunter@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012, Viresh Kumar wrote:
+On Thu, Nov 22, 2012 at 10:43:50AM +0200, Adrian Hunter wrote:
+> +static int __devinit sdhci_acpi_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	acpi_handle handle = dev->acpi_handle;
 
-> On 22 November 2012 15:57, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Thu, 22 Nov 2012, Viresh Kumar wrote:
-> >
-> >> This patch frees stmpe driver from tension of freeing resources :)
-> >> devm_* derivatives of multiple routines are used while allocating resources,
-> >> which would be freed automatically by kernel.
-> >>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Hi Sameo,
-> 
-> Please apply this patch only from this series. I will not resend it in
-> V3 of my set.
+This is not going to work anymore, you'll have to use ACPI_HANDLE(dev) for
+this (there was a new macro introduced with the struct acpi_dev_node).
 
-That's not how it works.
+> +	struct acpi_device *device;
+> +	struct sdhci_acpi_host *c;
+> +	struct sdhci_host *host;
+> +	struct resource *iomem;
+> +	resource_size_t len;
+> +	const char *hid;
+> +	int err;
+> +
+> +	if (acpi_bus_get_device(handle, &device))
+> +		return -ENODEV;
+> +
+> +	if (acpi_bus_get_status(device) || !device->status.present)
+> +		return -ENODEV;
 
-Apply my Acked-by yourself and re-send the patch-set as a whole.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This is a bit redundant as the platform code already checks whether the
+device is present or not and only creates the platform device in case it is
+present.
