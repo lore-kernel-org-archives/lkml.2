@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab2KWC0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 21:26:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18728 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756873Ab2KWC0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 21:26:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,304,1352102400"; 
-   d="scan'208";a="251261115"
-Date: Fri, 23 Nov 2012 10:25:57 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-Cc: metin d <metdos@yahoo.com>, Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Problem in Page Cache Replacement
-Message-ID: <20121123022557.GA3954@localhost>
-References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
- <20121120182500.GH1408@quack.suse.cz>
- <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com>
- <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
- <50AC9220.70202@gmail.com>
- <20121121090204.GA9064@localhost>
- <50ACA209.9000101@gmail.com>
- <20121122152611.GA11736@localhost>
- <50AED214.4000701@gmail.com>
+	id S1757102Ab2KWCeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 21:34:23 -0500
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:34204 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752823Ab2KWCeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 21:34:22 -0500
+Message-ID: <50AEDF00.7060709@marvell.com>
+Date: Fri, 23 Nov 2012 10:27:12 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AED214.4000701@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "lrg@ti.com" <lrg@ti.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: max8925: fix compiler warnings
+References: <1353550266-21330-1-git-send-email-qingx@marvell.com> <20121123014135.GC4385@opensource.wolfsonmicro.com>
+In-Reply-To: <20121123014135.GC4385@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Nov 2012 02:25:49.0391 (UTC) FILETIME=[DA1ADDF0:01CDC921]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jaegeuk,
+On 11/23/2012 09:41 AM, Mark Brown wrote:
+> On Thu, Nov 22, 2012 at 10:11:06AM +0800, Qing Xu wrote:
+>
+>> -	int i, regulator_idx;
+>> +	int i;
+>> +	int regulator_idx = 0;
+> This sort of fix is rarely good without some analysis as to why this is
+> a sensible initialisation to do, just unconditionally initialising may
+> be masking a real issue in the control flow which the compiler has
+> identified.
+In my build environment, there is no such compiler warning. :(
 
-> Thanks for your response. But which kind of pages are in the special
-> reserved and which are all-flags-cleared?
+Adding this patch is just want to avoid kbuild test robot's warning.
+But, in fact, it is not necessary to initialize regulator_idx.
 
-The all-flags-cleared pages are mostly free pages in the buddy system.
-The pages with flag "buddy" are also free pages: the buddy system only
-marks the head pages of each order-2 free range with flag "buddy".
 
-The reserved pages come from many sources, they may be set for memory
-reserved for BIOS, memory holes, offlined memory, or used by some
-device drivers.
+         for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+                 ri = &max8925_regulator_info[i];
+                 if (ri->vol_reg == res->start) {
 
-Thanks,
-Fengguang
+****** if regulator_idx can not get a match "i" here, it will return
+-EINVAL in below code
+
+                         regulator_idx = i;
+                         break;
+                 }
+         }
+
+         if (i == ARRAY_SIZE(max8925_regulator_info)) {
+                 dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+                         (unsigned long long)res->start);
+                 return -EINVAL;
+         }
+
+How to solve such compiler warning?
+
