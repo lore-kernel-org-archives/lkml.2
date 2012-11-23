@@ -1,150 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759004Ab2KWJNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:13:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49574 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758275Ab2KWJNR (ORCPT
+	id S1758695Ab2KWJO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:14:58 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:34447 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab2KWJOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:13:17 -0500
-Message-ID: <50AF3E21.4000009@ti.com>
-Date: Fri, 23 Nov 2012 10:13:05 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
+	Fri, 23 Nov 2012 04:14:55 -0500
+Subject: Re: arch_check_bp_in_kernelspace: fix the range check
+To: oleg@redhat.com (Oleg Nesterov)
+Date: Fri, 23 Nov 2012 20:14:52 +1100 (EST)
+Cc: gorcunov@openvz.org (Cyrill Gorcunov),
+        xemul@parallels.com (Pavel Emelyanov),
+        rostedt@goodmis.org (Steven Rostedt),
+        fweisbec@gmail.com (Frederic Weisbecker),
+        mingo@redhat.com (Ingo Molnar),
+        a.p.zijlstra@chello.nl (Peter Zijlstra), linux-kernel@vger.kernel.org
+Reply-To: u3557@dialix.com.au
+In-Reply-To: <20121122161238.GA27078@redhat.com>
+X-Mailer: ELM [version 2.5 PL8]
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Landley <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost>
-In-Reply-To: <20121123075537.A14713E0A91@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20121123091453.016B0592076@miso.sublimeip.com>
+From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Dear Oleg,
 
-On 11/23/2012 08:55 AM, Grant Likely wrote:
-> Ugh. and this is why I wanted the PWM and GPIO subsystems to use the
-> same namespace and binding. <grumble, mutter> But that's not your fault.
+After the detour into the VDSO page, which is really a separate issue,
+but one which I was able to work around in user-mode (for my particular
+needs, not yet for all others who write checkpoint/restore pacakges),
+I am sad to report that despite my previous post, the "vsyscall" problem
+was not solved after all.
+
+I made some further tests, without the fix that allows a hardware
+breakpoint in the kernel, hoping that fixing the VDSO issue solves
+it all, but alas, current libraries still call the vsyscall page even
+when the VDSO page is present.
+
+My dynamic glibc library calls call the VDSO version of "gettimeofday()",
+but still uses the vsyscall version of "time()", while the static library
+uses vsyscall for both.
+
+What I discovered now, is that PTRACE_SYSCALL (also PTRACE_SINGLESTEP)
+does not work within the vsyscall page, so I cannot trap the kernel-calls
+there (this is very simple to verify using "gdb" or "strace").
+
+I suspect that statically-linked executables will be around for a while,
+long after the rest of the glibc library moves to VDSO, hence I still need
+to place hardware breakpoints in the vsyscall page.
+
+The necessary patch was already discussed and is very simple.
+
+Or, there is an alternative: if only I (the ptracer or the traced process)
+was allowed to munmap the vsyscall page, just get rid of that page
+altogether, or at least make it non-executable, that would be fine
+too for me, because then the process will get a SIGSEGV signal, which
+the ptracer can easily handle.
+
+Best Regards,
+Amnon.
+
+> On 11/22, Amnon Shiloh wrote:
+> >
+> > Now however, that "vsyscall" was effectively replaced by vdso, it
+> > creates a new problem for me and probably for anyone else who uses
+> > some form of checkpoint/restore:
 > 
-> It's pretty horrible to have a separate translator node to convert a PWM
-> into a GPIO (with output only of course). The gpio properties should
-> appear directly in the PWM node itself and the translation code should
-> be in either the pwm or the gpio core. I don't think it should look like
-> a separate device.
+> Oh, sorry, I can't help here. I can only add Cyrill and Pavel, they
+> seem to enjoy trying to solve the c/r problems.
+> 
+> > Suppose a process is checkpointed because the system needs to reboot
+> > for a kernel-upgrade, then restored on the new and different kernel.
+> > The new VDSO page may no longer match the new kernel - it could for
+> > example fetch data from addresses in the vsyscall page that now
+> > contain different things; or in case the hardware also was changed,
+> > it may use machine-instructions that are now illegal.
+> 
+> Sure. You shouldn't try to save/restore this page(s) directly. But
+> I do not really understand why do you need. IOW, I don't really
+> understand the problem, it depends on what c/r actually does.
+> 
+> > As I don't mind to forego the "fast" sys_time(), my obvious solution
+> > is to disable the vdso for traced processes that may be checkpointed.
+> >
+> > One way to do it would be by brute-force: straight after "execve"
+> > unmap the tracee's vdso page,
+> 
+> Not sure this will be always possible. For example, my (old) glibc
+> assumes that vsyscall() must work, I won't be surprised if some time
+> later it won't work without vdso. But again, I do not know.
+> 
+> > then manipulate the ELF tables in
+> > its memory so the VDSO entry is gone and the library will not go
+> > looking for it.
+> 
+> Probably it would be enough to simply erase AT_SYSINFO_EHDR note,
+> but again, I can be easily wrong.
+> 
+> > I just wonder whether you know of an easier and more standard way
+> > to disable the vdso in user-mode
+> 
+> Only the kernel parameter, afaics. vdso=0
+> 
+> > - ideally on a per-process basis,
+> > or otherwise, if it's too hard, on the whole computer.  I searched
+> > the web and found references to "/proc/sys/vm/vdso_enable", but I
+> > have no such file or "sysctl" option on my system.
+> 
+> sys/vm/vdso_enabled, but only if CONFIG_X86_32 for some reason. See
+> kernel/sysctl.c
+> 
+> Oleg.
+> 
+> 
 
-Let me see if I understand your suggestion correctly. In the DT you suggest
-something like this:
-
-twl_pwmled: pwmled {
-	compatible = "ti,twl4030-pwmled";
-	#pwm-cells = <2>;
-	#gpio-cells = <2>;
-	gpio-controller;
-};
-
-led_user {
-	compatible = "pwm-leds";
-	pwms = <&twl_pwmled 1 7812500>; /* PWMB/LEDB from twl4030 */
-	pwm-names = "PMU_STAT LED";
-
-	label = "beagleboard::pmu_stat";
-	max-brightness = <127>;
-};
-
-vdd_usbhost: fixedregulator-vdd-usbhost {
-	compatible = "regulator-fixed";
-	regulator-name = "USBHOST_POWER";
-	regulator-min-microvolt = <5000000>;
-	regulator-max-microvolt = <5000000>;
-	gpio = <&twl_pwmled 0 7812500>; /* PWMA/LEDA from twl4030 */
-	enable-active-high;
-	regulator-boot-on;
-};
-
-With this I think this is what should happen in code level:
-- the "pwm-gpo" driver does not have of_match_table at all.
-- the driver for the "ti,twl4030-pwmled" is loaded.
-- it prepares and calls pwmchip_add() to add the PWM chip.
-- the of_pwmchip_add() will look for gpio-controller property of the node
- - if it is found it prepares the pdata (based on the PWM chip information)
-for the "pwm-gpo" driver and registers the platform_device for it.
- - the "pwm-gpo" driver will use:
-    priv->gpio_chip.of_node = pdev->dev.parent->of_node;
-
-In DT boot we are fine with this I think.
-
-When it comes to legacy boot (boot without DT) I think we should still have
-the two layers to avoid big changes which would affect all existing pwm
-drivers. Something like this in the board files:
-
-static struct pwm_lookup pwm_lookup[] = {
-	/* LEDA ->  nUSBHOST_PWR_EN */
-	PWM_LOOKUP("twl-pwmled", 0, "pwm-gpo", "nUSBHOST_PWR_EN"),
-	/* LEDB -> PMU_STAT */
-	PWM_LOOKUP("twl-pwmled", 1, "leds_pwm", "beagleboard::pmu_stat"),
-};
-
-/* for the LED user of PWM */
-static struct led_pwm pwm_leds[] = {
-	{
-		.name		= "beagleboard::pmu_stat",
-		.max_brightness	= 127,
-		.pwm_period_ns	= 7812500,
-	},
-};
-
-static struct led_pwm_platform_data pwm_data = {
-	.num_leds	= ARRAY_SIZE(pwm_leds),
-	.leds		= pwm_leds,
-};
-
-static struct platform_device leds_pwm = {
-	.name	= "leds_pwm",
-	.id	= -1,
-	.dev	= {
-		.platform_data = &pwm_data,
-	},
-};
-
-/* for the GPIO user of PWM */
-static struct gpio_pwm pwm_gpios[] = {
-	{
-		.name		= "nUSBHOST_PWR_EN",
-		.pwm_period_ns	= 7812500,
-	},
-};
-
-static struct gpio_pwm_pdata pwm_gpio_data = {
-	.num_gpos	= ARRAY_SIZE(pwm_gpios),
-	.gpos		= pwm_gpios,
-	.setup		= beagle_pwm_gpio_setup, /*to get the gpio base	*/
-};
-
-static struct platform_device gpos_pwm = {
-	.name	= "pwm-gpo",
-	.id	= -1,
-	.dev	= {
-		.platform_data = &pwm_gpio_data,
-	},
-};
-
-static int beagle_pwm_gpio_setup(struct device *dev, unsigned gpio,
-				 unsigned ngpio)
-{
-	beagle_usbhub_pdata.gpio = gpio; /* fixed_voltage_config struct */
-
-	platform_device_register(&beagle_usbhub);
-	return 0;
-}
-
-What do you think?
-
--- 
-Péter
