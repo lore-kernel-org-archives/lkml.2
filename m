@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759029Ab2KWJ2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:28:36 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61017 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758655Ab2KWJ2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:28:34 -0500
-Date: Fri, 23 Nov 2012 10:28:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: memory-cgroup bug
-Message-ID: <20121123092829.GE24698@dhcp22.suse.cz>
-References: <20121121200207.01068046@pobox.sk>
- <20121122152441.GA9609@dhcp22.suse.cz>
- <20121122190526.390C7A28@pobox.sk>
- <20121122214249.GA20319@dhcp22.suse.cz>
- <20121122233434.3D5E35E6@pobox.sk>
- <20121123074023.GA24698@dhcp22.suse.cz>
- <20121123102137.10D6D653@pobox.sk>
+	id S1759026Ab2KWJbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:31:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30563 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758097Ab2KWJa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:30:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
+   d="scan'208";a="223381490"
+Date: Fri, 23 Nov 2012 11:34:16 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <cjb@laptop.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-mmc@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add SDHCI ACPI driver
+Message-ID: <20121123093416.GR3867@intel.com>
+References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
+ <87k3tdagim.fsf@octavius.laptop.org>
+ <50AE3AB2.2070307@intel.com>
+ <3578053.jWYihc5IJI@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121123102137.10D6D653@pobox.sk>
+In-Reply-To: <3578053.jWYihc5IJI@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-11-12 10:21:37, azurIt wrote:
-> >Either use gdb YOUR_VMLINUX and disassemble mem_cgroup_handle_oom or
-> >use objdump -d YOUR_VMLINUX and copy out only mem_cgroup_handle_oom
-> >function.
-> If 'YOUR_VMLINUX' is supposed to be my kernel image:
+On Thu, Nov 22, 2012 at 10:24:33PM +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 22, 2012 04:46:10 PM Adrian Hunter wrote:
+> > On 22/11/12 15:55, Chris Ball wrote:
+> > > Hi,
+> > > 
+> > > On Thu, Nov 22 2012, Adrian Hunter wrote:
+> > >> Here is SDHCI ACPI driver.  It is dependent on new ACPI Platform support
+> > >> so I suggest Rafael takes the patches with Chris' Ack.
+> > >>
+> > >> Please note that I would prefer this to be queued for 3.8
+> > > 
+> > > Looks fine:
+> > > 
+> > > Acked-by: Chris Ball <cjb@laptop.org>
+> > 
+> > Thank you!
+> > 
+> > > 
+> > > I have some dumb questions, though -- what kind of platforms ship with
+> > > these devices?  Do they ever have the controller on PCI too, and what
+> > > happens with sdhci-pci vs. sdhci-acpi in that case?
+> > 
+> > Since the arrival of ACPI5, platform devices can be configured using ACPI
+> > tables.  PCI can also be used, but the firmware ensures that the same
+> > device is not enumerated via both ACPI and PCI.
+> > 
+> > Rafael can you take these patches?
 > 
-> # gdb vmlinuz-3.2.34-grsec-1 
-> GNU gdb (GDB) 7.0.1-debian
-> Copyright (C) 2009 Free Software Foundation, Inc.
-> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-> This is free software: you are free to change and redistribute it.
-> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-> and "show warranty" for details.
-> This GDB was configured as "x86_64-linux-gnu".
-> For bug reporting instructions, please see:
-> <http://www.gnu.org/software/gdb/bugs/>...
-> "/root/bug/vmlinuz-3.2.34-grsec-1": not in executable format: File format not recognized
-> 
-> 
-> # objdump -d vmlinuz-3.2.34-grsec-1 
+> Well, I'd prefer pnpacpi/core.c to actually use acpi_platform_device_ids[]
+> directly in addition to excluded_id_list[], so that duplicate entries don't
+> have to be added to the both of them.
 
-You need vmlinux not vmlinuz...
--- 
-Michal Hocko
-SUSE Labs
+How about having pnpacpi to check if the ACPI device is already bound to a
+physical device and skip the device creation? Then we don't need to expose
+the acpi_platform_device_ids[] list, and this is what the ->find_device()
+code already does so why create the device in the first place?
+
+diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+index 5b17cc8..4dc2e64 100644
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -243,6 +243,10 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+ 	char *pnpid;
+ 	struct acpi_hardware_id *id;
+ 
++	/* Skip devices that are already bound */
++	if (device->physical_node_count)
++		return 0;
++
+ 	/*
+ 	 * If a PnPacpi device is not present , the device
+ 	 * driver should not be loaded.
