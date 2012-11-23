@@ -1,75 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab2KWJMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:12:48 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61157 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758275Ab2KWJMl (ORCPT
+	id S1759004Ab2KWJNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:13:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49574 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758275Ab2KWJNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:12:41 -0500
-Date: Fri, 23 Nov 2012 09:12:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ola Lilja <ola.o.lilja@stericsson.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [RESENDING] [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP
- probe rather than as a device
-Message-ID: <20121123091236.GA17471@gmail.com>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
- <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
- <CACRpkdbc6bGC4Yp7Bcdfev=Uc=1h4L1v+Lj9RbmJV3F+knQOZQ@mail.gmail.com>
- <20120919133343.GH25694@gmail.com>
- <505ADBE6.6080509@stericsson.com>
- <20120920125259.GA2755@gmail.com>
- <20121122140540.GA10986@gmail.com>
- <20121123015838.GH4385@opensource.wolfsonmicro.com>
+	Fri, 23 Nov 2012 04:13:17 -0500
+Message-ID: <50AF3E21.4000009@ti.com>
+Date: Fri, 23 Nov 2012 10:13:05 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@linaro.org>, Rob Landley <rob@landley.net>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
+References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost>
+In-Reply-To: <20121123075537.A14713E0A91@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121123015838.GH4385@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Mark Brown wrote:
+Hi Grant,
 
-> On Thu, Nov 22, 2012 at 02:05:40PM +0000, Lee Jones wrote:
-> > On Thu, 20 Sep 2012, Lee Jones wrote:
+On 11/23/2012 08:55 AM, Grant Likely wrote:
+> Ugh. and this is why I wanted the PWM and GPIO subsystems to use the
+> same namespace and binding. <grumble, mutter> But that's not your fault.
 > 
-> > > > > Can we have some closure on this patch please, as it's blocking the
-> > > > > patch-set? I'm fairly sure the patch is doing the correct thing, as
-> > > > > seconded by Mark.
-> 
-> > > > I still don't like this. It is the dai_link-struct that bothers me. We have
-> > > > "ux500-msp-i2s.1" as name of the platform AND the cpu_dai. The MSP I2S-block is
-> > > > not the platform and it is certainly not both platform and cpu-DAI at the same time.
-> > > > Mark: Did you have a solution for this? Couldn't we just put NULL on the
-> > > > platform_name instead?
-> 
-> > > There are other drivers which do this already. 
-> 
-> > > I don't think it's an issue to do this.
-> 
-> > Has anyone had any more bright ideas on how we might handle this?
-> 
-> > The device is still being handled in platform code and I'm desperate
-> > to get it out of there.
-> 
-> Why do we need any ideas?  Just implement it already.
+> It's pretty horrible to have a separate translator node to convert a PWM
+> into a GPIO (with output only of course). The gpio properties should
+> appear directly in the PWM node itself and the translation code should
+> be in either the pwm or the gpio core. I don't think it should look like
+> a separate device.
 
-How do you mean? I've written the patch, just accept it. ;)
+Let me see if I understand your suggestion correctly. In the DT you suggest
+something like this:
+
+twl_pwmled: pwmled {
+	compatible = "ti,twl4030-pwmled";
+	#pwm-cells = <2>;
+	#gpio-cells = <2>;
+	gpio-controller;
+};
+
+led_user {
+	compatible = "pwm-leds";
+	pwms = <&twl_pwmled 1 7812500>; /* PWMB/LEDB from twl4030 */
+	pwm-names = "PMU_STAT LED";
+
+	label = "beagleboard::pmu_stat";
+	max-brightness = <127>;
+};
+
+vdd_usbhost: fixedregulator-vdd-usbhost {
+	compatible = "regulator-fixed";
+	regulator-name = "USBHOST_POWER";
+	regulator-min-microvolt = <5000000>;
+	regulator-max-microvolt = <5000000>;
+	gpio = <&twl_pwmled 0 7812500>; /* PWMA/LEDA from twl4030 */
+	enable-active-high;
+	regulator-boot-on;
+};
+
+With this I think this is what should happen in code level:
+- the "pwm-gpo" driver does not have of_match_table at all.
+- the driver for the "ti,twl4030-pwmled" is loaded.
+- it prepares and calls pwmchip_add() to add the PWM chip.
+- the of_pwmchip_add() will look for gpio-controller property of the node
+ - if it is found it prepares the pdata (based on the PWM chip information)
+for the "pwm-gpo" driver and registers the platform_device for it.
+ - the "pwm-gpo" driver will use:
+    priv->gpio_chip.of_node = pdev->dev.parent->of_node;
+
+In DT boot we are fine with this I think.
+
+When it comes to legacy boot (boot without DT) I think we should still have
+the two layers to avoid big changes which would affect all existing pwm
+drivers. Something like this in the board files:
+
+static struct pwm_lookup pwm_lookup[] = {
+	/* LEDA ->  nUSBHOST_PWR_EN */
+	PWM_LOOKUP("twl-pwmled", 0, "pwm-gpo", "nUSBHOST_PWR_EN"),
+	/* LEDB -> PMU_STAT */
+	PWM_LOOKUP("twl-pwmled", 1, "leds_pwm", "beagleboard::pmu_stat"),
+};
+
+/* for the LED user of PWM */
+static struct led_pwm pwm_leds[] = {
+	{
+		.name		= "beagleboard::pmu_stat",
+		.max_brightness	= 127,
+		.pwm_period_ns	= 7812500,
+	},
+};
+
+static struct led_pwm_platform_data pwm_data = {
+	.num_leds	= ARRAY_SIZE(pwm_leds),
+	.leds		= pwm_leds,
+};
+
+static struct platform_device leds_pwm = {
+	.name	= "leds_pwm",
+	.id	= -1,
+	.dev	= {
+		.platform_data = &pwm_data,
+	},
+};
+
+/* for the GPIO user of PWM */
+static struct gpio_pwm pwm_gpios[] = {
+	{
+		.name		= "nUSBHOST_PWR_EN",
+		.pwm_period_ns	= 7812500,
+	},
+};
+
+static struct gpio_pwm_pdata pwm_gpio_data = {
+	.num_gpos	= ARRAY_SIZE(pwm_gpios),
+	.gpos		= pwm_gpios,
+	.setup		= beagle_pwm_gpio_setup, /*to get the gpio base	*/
+};
+
+static struct platform_device gpos_pwm = {
+	.name	= "pwm-gpo",
+	.id	= -1,
+	.dev	= {
+		.platform_data = &pwm_gpio_data,
+	},
+};
+
+static int beagle_pwm_gpio_setup(struct device *dev, unsigned gpio,
+				 unsigned ngpio)
+{
+	beagle_usbhub_pdata.gpio = gpio; /* fixed_voltage_config struct */
+
+	platform_device_register(&beagle_usbhub);
+	return 0;
+}
+
+What do you think?
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Péter
