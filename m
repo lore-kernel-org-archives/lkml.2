@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162Ab2KWJkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:40:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30368 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759092Ab2KWJkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:40:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
-   d="scan'208";a="223383959"
-Date: Fri, 23 Nov 2012 11:44:06 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mmc: sdhci-acpi: add SDHCI ACPI driver
-Message-ID: <20121123094406.GS3867@intel.com>
-References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
- <1353573830-13006-4-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353573830-13006-4-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759191Ab2KWJlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:41:40 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59758 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759180Ab2KWJlh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:41:37 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
+To: Viresh Kumar <viresh.kumar@linaro.org>, sameo@linux.intel.com
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org
+In-Reply-To: <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org> <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+Date: Fri, 23 Nov 2012 09:41:32 +0000
+Message-Id: <20121123094132.EFCB73E07BE@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 10:43:50AM +0200, Adrian Hunter wrote:
-> +static int __devinit sdhci_acpi_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	acpi_handle handle = dev->acpi_handle;
-
-This is not going to work anymore, you'll have to use ACPI_HANDLE(dev) for
-this (there was a new macro introduced with the struct acpi_dev_node).
-
-> +	struct acpi_device *device;
-> +	struct sdhci_acpi_host *c;
-> +	struct sdhci_host *host;
-> +	struct resource *iomem;
-> +	resource_size_t len;
-> +	const char *hid;
-> +	int err;
+On Fri, 23 Nov 2012 00:26:20 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> 
+> This patch extends existing DT support for stmpe devices. This updates:
+> - DT support from stmpe SPI and I2C drivers
+> - missing header files in stmpe.c
+> - stmpe_of_probe() with pwm, rotator and new bindings.
+> - Bindings are updated in binding document.
+> 
+> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V2->V3:
+> ------
+> - Removed sub-modules DT bindings from this patch
+> - Retain original work done by Lee Jones
+> 
+>  Documentation/devicetree/bindings/mfd/stmpe.txt | 12 ++++++++----
+>  drivers/mfd/stmpe-i2c.c                         | 15 +++++++++++++++
+>  drivers/mfd/stmpe-spi.c                         | 15 +++++++++++++++
+>  drivers/mfd/stmpe.c                             | 21 +++++++++++++++------
+>  4 files changed, 53 insertions(+), 10 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> index 8f0aeda..8f65c8d 100644
+> --- a/Documentation/devicetree/bindings/mfd/stmpe.txt
+> +++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> @@ -1,13 +1,17 @@
+> -* STMPE Multi-Functional Device
+> +* ST Microelectronics STMPE Multi-Functional Device
 > +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return -ENODEV;
-> +
-> +	if (acpi_bus_get_status(device) || !device->status.present)
-> +		return -ENODEV;
+> +STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
+> +touchscreen, adc, pwm, rotator.
+>  
+>  Required properties:
+> - - compatible                   : "st,stmpe[811|1601|2401|2403]"
+> - - reg                          : I2C address of the device
+> + - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
+> + - reg                          : I2C/SPI address of the device
+>  
+>  Optional properties:
+>   - interrupts                   : The interrupt outputs from the controller
+> - - interrupt-controller         : Marks the device node as an interrupt controller
+>   - interrupt-parent             : Specifies which IRQ controller we're connected to
+> + - irq-trigger			: IRQ trigger to use for the interrupt to the host
+> + - irq-invert-polarity		: bool, IRQ line is connected with reversed polarity
 
-This is a bit redundant as the platform code already checks whether the
-device is present or not and only creates the platform device in case it is
-present.
+This looks odd. Normally the interrupt polarity should be encoded in the irq
+specifier flags field.
+
+g.
+
