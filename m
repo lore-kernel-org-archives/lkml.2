@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab2KWMsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 07:48:13 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47016 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab2KWMsM (ORCPT
+	id S1755306Ab2KWMs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 07:48:58 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38856 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2KWMsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 07:48:12 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: dwmw2@infradead.org, cbou@mail.ru, patches@linaro.org
-Subject: [PATCH] power: 88pm860x_battery: Add a few more devm_* APIs
-Date: Fri, 23 Nov 2012 18:11:52 +0530
-Message-Id: <1353674512-16119-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 23 Nov 2012 07:48:55 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: "Philip\, Avinash" <avinashphilip@ti.com>,
+        "paul\@pwsan.com" <paul@pwsan.com>,
+        "tony\@atomide.com" <tony@atomide.com>,
+        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson\, Benoit" <b-cousson@ti.com>,
+        "Hiremath\, Vaibhav" <hvaibhav@ti.com>,
+        "AnilKumar\, Chimata" <anilkumar@ti.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss\@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori\, Sekhar" <nsekhar@ti.com>,
+        "Hebbar\, Gururaja" <gururaja.hebbar@ti.com>,
+        "Bedia\, Vaibhav" <vaibhav.bedia@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+	<1353503469-18634-6-git-send-email-avinashphilip@ti.com>
+	<20121122205944.GC16716@avionic-0098.adnet.avionic-design.de>
+	<518397C60809E147AF5323E0420B992E3E9EE991@DBDE01.ent.ti.com>
+	<20121123105110.GA6884@avionic-0098.adnet.avionic-design.de>
+	<518397C60809E147AF5323E0420B992E3E9EEAAA@DBDE01.ent.ti.com>
+	<20121123111811.GA5072@avionic-0098.adnet.avionic-design.de>
+Date: Fri, 23 Nov 2012 13:48:51 +0100
+In-Reply-To: <20121123111811.GA5072@avionic-0098.adnet.avionic-design.de>
+	(Thierry Reding's message of "Fri, 23 Nov 2012 12:18:11 +0100")
+Message-ID: <87mwy8eb7w.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devm_* APIs for threaded IRQ.
+>>>>> "Thierry" == Thierry Reding <thierry.reding@avionic-design.de> writes:
 
-Also since devres managed objects are removed when the device gets
-detached, remove explicit freeing of them.
+Hi,
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/power/88pm860x_battery.c |   25 ++++++++-----------------
- 1 files changed, 8 insertions(+), 17 deletions(-)
+ Thierry> Everybody seems to be doing it with a warning, so I guess
+ Thierry> that's fine for now. I just find it strange that if you
+ Thierry> request the default pin group to be selected when in fact the
+ Thierry> hardware doesn't support pinctrl at all you shouldn't be
+ Thierry> getting an error either.
 
-diff --git a/drivers/power/88pm860x_battery.c b/drivers/power/88pm860x_battery.c
-index beed5ecf..a245aa4 100644
---- a/drivers/power/88pm860x_battery.c
-+++ b/drivers/power/88pm860x_battery.c
-@@ -915,15 +915,13 @@ static __devinit int pm860x_battery_probe(struct platform_device *pdev)
- 	info->irq_cc = platform_get_irq(pdev, 0);
- 	if (info->irq_cc <= 0) {
- 		dev_err(&pdev->dev, "No IRQ resource!\n");
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	info->irq_batt = platform_get_irq(pdev, 1);
- 	if (info->irq_batt <= 0) {
- 		dev_err(&pdev->dev, "No IRQ resource!\n");
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	info->chip = chip;
-@@ -957,10 +955,10 @@ static __devinit int pm860x_battery_probe(struct platform_device *pdev)
- 
- 	ret = power_supply_register(&pdev->dev, &info->battery);
- 	if (ret)
--		goto out;
-+		return ret;
- 	info->battery.dev->parent = &pdev->dev;
- 
--	ret = request_threaded_irq(info->irq_cc, NULL,
-+	ret = devm_request_threaded_irq(&pdev->dev, info->irq_cc, NULL,
- 				pm860x_coulomb_handler, IRQF_ONESHOT,
- 				"coulomb", info);
- 	if (ret < 0) {
-@@ -969,23 +967,19 @@ static __devinit int pm860x_battery_probe(struct platform_device *pdev)
- 		goto out_reg;
- 	}
- 
--	ret = request_threaded_irq(info->irq_batt, NULL, pm860x_batt_handler,
--				IRQF_ONESHOT, "battery", info);
-+	ret = devm_request_threaded_irq(&pdev->dev, info->irq_batt, NULL,
-+				pm860x_batt_handler, IRQF_ONESHOT,
-+				"battery", info);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
- 			info->irq_batt, ret);
--		goto out_coulomb;
-+		goto out_reg;
- 	}
- 
--
- 	return 0;
- 
--out_coulomb:
--	free_irq(info->irq_cc, info);
- out_reg:
- 	power_supply_unregister(&info->battery);
--out:
--	kfree(info);
- 	return ret;
- }
- 
-@@ -994,9 +988,6 @@ static int __devexit pm860x_battery_remove(struct platform_device *pdev)
- 	struct pm860x_battery_info *info = platform_get_drvdata(pdev);
- 
- 	power_supply_unregister(&info->battery);
--	free_irq(info->irq_batt, info);
--	free_irq(info->irq_cc, info);
--	kfree(info);
- 	platform_set_drvdata(pdev, NULL);
- 	return 0;
- }
+There's several different situations:
+
+- Platform without pinctrl support
+- Platform with pinctrl support but no pinmux specified in dt for device
+  (E.G. pinmux setup in bootloader)
+- Pinmux specified in dt
+- Some kind of misconfiguration in dt
+
+You could argue that devm_pinctrl_get_select_default() shouldn't return
+an error for the first situation, but how should it be able to know the
+difference between 2 and 4?
+
 -- 
-1.7.4.1
-
+Bye, Peter Korsgaard
