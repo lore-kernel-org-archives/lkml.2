@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab2KWXbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 18:31:31 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37310 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab2KWXb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 18:31:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
-	<20121120180949.GG1408@quack.suse.cz>
-	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
-	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-	<50AF7901.20401@kernel.dk>
-	<CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
-Date: Sat, 24 Nov 2012 07:31:29 +0800
-Message-ID: <CAAJw_ZuYh=ZYLS7O+5rtBd1Qm-qh=dza3D9SD7M5LJ7t4j3hFw@mail.gmail.com>
-Subject: Re: Recent kernel "mount" slow
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, Mikulas Patocka <mpatocka@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932277Ab2KWXeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 18:34:23 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:59772 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932217Ab2KWXeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 18:34:22 -0500
+X-Greylist: delayed 33812 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 18:34:20 EST
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH v3] mm: trace filemap add and del
+Date: Sat, 24 Nov 2012 00:34:06 +0100
+Message-Id: <1353713646-30362-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353679819-6989-1-git-send-email-robert.jarzmik@free.fr>
+References: <1353679819-6989-1-git-send-email-robert.jarzmik@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 6:21 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Fri, Nov 23, 2012 at 9:24 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 2012-11-22 20:21, Linus Torvalds wrote:
->>> Doesn't sound like a fsdevel issue since it seems to be independent of
->>> filesystems. More like some generic block layer thing. Adding Jens
->>> (and quoting the whole thing)
->>>
->>> Jens, any ideas? Most of your stuff came in after -rc2, which would
->>> fit with the fact that most of the slowdown seems to be after -rc2
->>> according to Jeff.
->>
->> No ideas. Looking at what went in from my side, only the rq plug sorting
->> is a core change, and that should not cause any change in behaviour for
->> a single device. That's commit 975927b9.
->>
->>> Jeff, more bisecting would be good, though.
->>
->> Probably required, yes...
->
->
-> This one slows mount from 0.012s to 0.168s.
->
-> commit 62ac665ff9fc07497ca524bd20d6a96893d11071
-> Author: Mikulas Patocka <mpatocka@redhat.com>
-> Date:   Wed Sep 26 07:46:43 2012 +0200
->
->     blockdev: turn a rw semaphore into a percpu rw semaphore
->
->
-> There were couple of more changes to percpu-rw-semaphores after
-> 3.7.0-rc2 and those slows mount further from 0.168s to 0.500s. I don't
-> really know, but I'm suspecting these. Still bisecting.
->
-> commit 5c1eabe68501d1e1b1586c7f4c46cc531828c4ab
-> Author: Mikulas Patocka <mpatocka@redhat.com>
-> Date:   Mon Oct 22 19:37:47 2012 -0400
->
->     percpu-rw-semaphores: use light/heavy barriers
->
->
-> commit 1bf11c53535ab87e3bf14ecdf6747bf46f601c5d
-> Author: Mikulas Patocka <mpatocka@redhat.com>
-> Date:   Mon Oct 22 19:39:16 2012 -0400
->
->     percpu-rw-semaphores: use rcu_read_lock_sched
+Use the events API to trace filemap loading and
+unloading of file pieces into the page cache.
 
+This patch aims at tracing the eviction reload
+cycle of executable and shared libraries pages in
+a memory constrained environment.
 
-I reverted these 3 patches and mount time is now 0.012s.
+The typical usage is to spot a specific device and
+inode (for example /lib/libc.so) to see the eviction
+cycles, and find out if frequently used code is
+rather spread across many pages (bad) or coallesced
+(good).
 
-# time mount /dev/sda1 /mnt; sync; sync; umount /mnt
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+Since V1:
+ - included Andrew's comments
+ - included Dave's comment
+ - fixed according to Hugh's comment
+Since V2:
+ - amended inode print to hexadecimal format
+---
+ include/trace/events/filemap.h |   79 ++++++++++++++++++++++++++++++++++++++++
+ mm/filemap.c                   |    5 +++
+ 2 files changed, 84 insertions(+)
+ create mode 100644 include/trace/events/filemap.h
 
+diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
+new file mode 100644
+index 0000000..2d36386
+--- /dev/null
++++ b/include/trace/events/filemap.h
+@@ -0,0 +1,79 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM filemap
++
++#if !defined(_TRACE_FILEMAP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_FILEMAP_H
++
++#include <linux/types.h>
++#include <linux/tracepoint.h>
++#include <linux/mm.h>
++#include <linux/memcontrol.h>
++#include <linux/device.h>
++#include <linux/kdev_t.h>
++
++TRACE_EVENT(mm_filemap_delete_from_page_cache,
++
++	TP_PROTO(struct page *page),
++
++	TP_ARGS(page),
++
++	TP_STRUCT__entry(
++		__field(struct page *, page)
++		__field(unsigned long, i_ino)
++		__field(unsigned long, index)
++		__field(dev_t, s_dev)
++	),
++
++	TP_fast_assign(
++		__entry->page = page;
++		__entry->i_ino = page->mapping->host->i_ino;
++		__entry->index = page->index;
++		if (page->mapping->host->i_sb)
++			__entry->s_dev = page->mapping->host->i_sb->s_dev;
++		else
++			__entry->s_dev = page->mapping->host->i_rdev;
++	),
++
++	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
++		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
++		__entry->i_ino,
++		__entry->page,
++		page_to_pfn(__entry->page),
++		__entry->index << PAGE_SHIFT)
++);
++
++TRACE_EVENT(mm_filemap_add_to_page_cache,
++
++	TP_PROTO(struct page *page),
++
++	TP_ARGS(page),
++
++	TP_STRUCT__entry(
++		__field(struct page *, page)
++		__field(unsigned long, i_ino)
++		__field(unsigned long, index)
++		__field(dev_t, s_dev)
++	),
++
++	TP_fast_assign(
++		__entry->page = page;
++		__entry->i_ino = page->mapping->host->i_ino;
++		__entry->index = page->index;
++		if (page->mapping->host->i_sb)
++			__entry->s_dev = page->mapping->host->i_sb->s_dev;
++		else
++			__entry->s_dev = page->mapping->host->i_rdev;
++	),
++
++	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
++		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
++		__entry->i_ino,
++		__entry->page,
++		page_to_pfn(__entry->page),
++		__entry->index << PAGE_SHIFT)
++);
++
++#endif /* _TRACE_FILEMAP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..1ee7cf6 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -35,6 +35,9 @@
+ #include <linux/cleancache.h>
+ #include "internal.h"
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/filemap.h>
++
+ /*
+  * FIXME: remove all knowledge of the buffer layer from the core VM
+  */
+@@ -113,6 +116,7 @@ void __delete_from_page_cache(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
++	trace_mm_filemap_delete_from_page_cache(page);
+ 	/*
+ 	 * if we're uptodate, flush out into the cleancache, otherwise
+ 	 * invalidate any existing cleancache entries.  We can't leave
+@@ -463,6 +467,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 		if (likely(!error)) {
+ 			mapping->nrpages++;
+ 			__inc_zone_page_state(page, NR_FILE_PAGES);
++			trace_mm_filemap_add_to_page_cache(page);
+ 			spin_unlock_irq(&mapping->tree_lock);
+ 		} else {
+ 			page->mapping = NULL;
+-- 
+1.7.10.4
 
-> commit 1a25b1c4ce189e3926f2981f3302352a930086db
-> Author: Mikulas Patocka <mpatocka@redhat.com>
-> Date:   Mon Oct 15 17:20:17 2012 -0400
->
->     Lock splice_read and splice_write functions
-
-Looks like this one is not the problem. But I reverted it anyway
-because it's part of the same chunk.
-
-
-Happy Thanksgiving!
-
-Jeff
