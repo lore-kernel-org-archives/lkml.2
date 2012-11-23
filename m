@@ -1,183 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab2KWEme (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 23:42:34 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49658 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab2KWEmd (ORCPT
+	id S1757589Ab2KWEz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 23:55:57 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:4261
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755339Ab2KWEzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 23:42:33 -0500
-X-AuditID: 9c93016f-b7b42ae000004383-dd-50aefeb66a1f
-Date: Fri, 23 Nov 2012 13:42:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
- approaches low water mark
-Message-ID: <20121123044250.GG5121@bbox>
-References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
- <20121120000137.GC447@bbox>
- <50AB987F.30002@samsung.com>
- <20121121010556.GD447@bbox>
- <50ACF855.7010506@samsung.com>
+	Thu, 22 Nov 2012 23:55:55 -0500
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zz98dI9371I328cM542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2fh2a8h683h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h15d0l1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.244.37;KIP:(null);UIP:(null);(null);H:CH1PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "thozza@redhat.com" <thozza@redhat.com>,
+        "dcbw@redhat.com" <dcbw@redhat.com>
+Subject: RE: [PATCH V5 3/6] Tools: hv: Add an example script to configure an
+ interface
+Thread-Topic: [PATCH V5 3/6] Tools: hv: Add an example script to configure
+ an interface
+Thread-Index: AQHNi6XMrsHNkFWoG02f6IPXlEG3epf21PMAgAB2TMA=
+Date: Fri, 23 Nov 2012 04:39:13 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E4EB18@CH1PRD0310MB381.namprd03.prod.outlook.com>
+References: <1346878188-30822-1-git-send-email-kys@microsoft.com>
+ <1346878215-30863-1-git-send-email-kys@microsoft.com>
+ <1346878215-30863-3-git-send-email-kys@microsoft.com>
+ <20121122211248.GA18828@aepfle.de>
+In-Reply-To: <20121122211248.GA18828@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.144]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50ACF855.7010506@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-OrganizationHeadersPreserved: CH1PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAN4u46k011034
 
-Hi Marek,
 
-On Wed, Nov 21, 2012 at 04:50:45PM +0100, Marek Szyprowski wrote:
-> Hello,
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, November 22, 2012 4:13 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; ben@decadent.org.uk;
+> thozza@redhat.com; dcbw@redhat.com
+> Subject: Re: [PATCH V5 3/6] Tools: hv: Add an example script to configure an
+> interface
 > 
-> On 11/21/2012 2:05 AM, Minchan Kim wrote:
-> >On Tue, Nov 20, 2012 at 03:49:35PM +0100, Marek Szyprowski wrote:
-> >> Hello,
-> >>
-> >> On 11/20/2012 1:01 AM, Minchan Kim wrote:
-> >> >Hi Marek,
-> >> >
-> >> >On Mon, Nov 12, 2012 at 09:59:42AM +0100, Marek Szyprowski wrote:
-> >> >> It has been observed that system tends to keep a lot of CMA free pages
-> >> >> even in very high memory pressure use cases. The CMA fallback for movable
-> >> >
-> >> >CMA free pages are just fallback for movable pages so if user requires many
-> >> >user pages, it ends up consuming cma free pages after out of movable pages.
-> >> >What do you mean that system tend to keep free pages even in very
-> >> >high memory pressure?
-> >> >> pages is used very rarely, only when system is completely pruned from
-> >> >> MOVABLE pages, what usually means that the out-of-memory even will be
-> >> >> triggered very soon. To avoid such situation and make better use of CMA
-> >> >
-> >> >Why does OOM is triggered very soon if movable pages are burned out while
-> >> >there are many cma pages?
-> >> >
-> >> >It seems I can't understand your point quitely.
-> >> >Please make your problem clear for silly me to understand clearly.
-> >>
-> >> Right now running out of 'plain' movable pages is the only possibility to
-> >> get movable pages allocated from CMA. On the other hand running out of
-> >> 'plain' movable pages is very deadly for the system, as movable pageblocks
-> >> are also the main fallbacks for reclaimable and non-movable pages.
-> >>
-> >> Then, once we run out of movable pages and kernel needs non-mobable or
-> >> reclaimable page (what happens quite often), it usually triggers OOM to
-> >> satisfy the memory needs. Such OOM is very strange, especially on a system
-> >> with dozen of megabytes of CMA memory, having most of them free at the OOM
-> >> event. By high memory pressure I mean the high memory usage.
-> >
-> >So your concern is that too many free pages in MIGRATE_CMA when OOM happens
-> >is odd? It's natural with considering CMA design which kernel never fallback
-> >non-movable page allocation to CMA area. I guess it's not a your concern.
+> On Wed, Sep 05, K. Y. Srinivasan wrote:
 > 
-> My concern is how to minimize memory waste with CMA.
+> > To keep the KVP daemon code free of distro specific details, we invoke an
+> > external script to configure the interface. This is an example script that
+> > was used to test the KVP code. This script has to be implemented in a Distro
+> > specific fashion. For instance on distros that ship with Network Manager
+> enabled,
+> > this script can be based on NM APIs.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  tools/hv/hv_set_ifconfig.sh |   68
+> +++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 68 insertions(+), 0 deletions(-)
+> >  create mode 100755 tools/hv/hv_set_ifconfig.sh
 > 
-> >Let's think below extreme cases.
-> >
-> >= Before =
-> >
-> >* 1000M DRAM system.
-> >* 400M kernel used pages.
-> >* 300M movable used pages.
-> >* 300M cma freed pages.
-> >
-> >1. kernel want to request 400M non-movable memory, additionally.
-> >2. VM start to reclaim 300M movable pages.
-> >3. But it's not enough to meet 400M request.
-> >4. go to OOM. (It's natural)
-> >
-> >= After(with your patch) =
-> >
-> >* 1000M DRAM system.
-> >* 400M kernel used pages.
-> >* 300M movable *freed* pages.
-> >* 300M cma used pages(by your patch, I simplified your concept)
-> >
-> >1. kernel want to request 400M non-movable memory.
-> >2. 300M movable freed pages isn't enough to meet 400M request.
-> >3. Also, there is no point to reclaim CMA pages for non-movable allocation.
-> >4. go to OOM. (It's natural)
-> >
-> >There is no difference between before and after in allocation POV.
-> >Let's think another example.
-> >
-> >= Before =
-> >
-> >* 1000M DRAM system.
-> >* 400M kernel used pages.
-> >* 300M movable used pages.
-> >* 300M cma freed pages.
-> >
-> >1. kernel want to request 300M non-movable memory.
-> >2. VM start to reclaim 300M movable pages.
-> >3. It's enough to meet 300M request.
-> >4. happy end
-> >
-> >= After(with your patch) =
-> >
-> >* 1000M DRAM system.
-> >* 400M kernel used pages.
-> >* 300M movable *freed* pages.
-> >* 300M cma used pages(by your patch, I simplified your concept)
-> >
-> >1. kernel want to request 300M non-movable memory.
-> >2. 300M movable freed pages is enough to meet 300M request.
-> >3. happy end.
-> >
-> >There is no difference in allocation POV, too.
+> This already went in, but I overlooked this part:
 > 
-> Those cases are just theoretical, out-of-real live examples. In real world
-> kernel allocates (and frees) non-movable memory in small portions while
-> system is running. Typically keeping some amount of free 'plain' movable
-> pages is enough to make kernel happy about any kind of allocations
-> (especially non-movable). This requirement is in complete contrast to the
-> current fallback mechanism, which activates only when kernel runs out of
-> movable pages completely.
+> > +# GATEWAY=ipaddr1
 > 
-> >So I guess that if you see OOM while there are many movable pages,
-> >I think principal problem is VM reclaimer which should try to reclaim
-> >best effort if there are freeable movable pages. If VM reclaimer has
-> >some problem for your workload, firstly we should try fix it rather than
-> >adding such heuristic to hot path. Otherwise, if you see OOM while there
-> >are many free CMA pages, it's not odd to me.
+> I guest GATEWAY means the default gateway.
 > 
-> Frankly I don't see how reclaim procedure can ensure that it will be
-> always possible to allocate non-movable pages with current fallback
-> mechanism,
-> which is used only when kernel runs out of pages of a given type. Could you
-> explain how would You like to change the reclaim procedure to avoid
-> the above
-> situation?
+> > +# GATEWAY_x=ipaddry (where y = x + 1)
+> 
+> How can there be multiple gateways?
+> Or: What does GATEWAY_n mean here?
+> 
+Olaf,
 
-What I have a mind is following as.
+On windows, we can support multiple default gateways (I think). This is 
+really implementing the host protocol. Minimally we can have an ipv4 default
+and an ipv6 default gateway.
 
-1. Reclaimer should migrate MIGRATE_MOVABLE into MIGRATE_CMA
-   if there are free space in MIGRATE_CMA so VM could allocate
-   non-movalbe pages with MIGRATE_MOVABLE fallback.
+Hope this helps,
 
-2. Reclaimer should consider non-movable page allocation.
-   I mean reclaimer can reclaim MIGRATE_CMA pages when memory pressure happens
-   by request of non-movable page but it is useless and such unnecessary reclaim
-   hit performance. So reclaimer should reclaim target pages(ie, MIGRATE_MOVABLE)
+Regards,
 
-3. If reclaiming got failed by some reason(ex, they are working set),
-   we should reclaim MIGRATE_CMA and migrate MIGRATE_MOVABLE pages to MIGRATE_CMA.
-   So kernel allocatio would be succeeded.
+K. Y
 
-Above migration scheme is important for embedded system which don't have a swap
-because they has a limit to reclaim anonymous pages in MIGRATE_MOVABLE.
-
-Will take a look when I have a time.
--- 
-Kind regards,
-Minchan Kim
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
