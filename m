@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759026Ab2KWJbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:31:04 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30563 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758097Ab2KWJa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:30:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
-   d="scan'208";a="223381490"
-Date: Fri, 23 Nov 2012 11:34:16 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-mmc@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add SDHCI ACPI driver
-Message-ID: <20121123093416.GR3867@intel.com>
-References: <1353573830-13006-1-git-send-email-adrian.hunter@intel.com>
- <87k3tdagim.fsf@octavius.laptop.org>
- <50AE3AB2.2070307@intel.com>
- <3578053.jWYihc5IJI@vostro.rjw.lan>
+	id S1759054Ab2KWJbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:31:41 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:39761 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759016Ab2KWJbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:31:39 -0500
+Message-ID: <50AF4269.1070404@st.com>
+Date: Fri, 23 Nov 2012 10:31:21 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3578053.jWYihc5IJI@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Byungho An <bh74.an@samsung.com>
+Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] net: stmmac: change GMAC control register for SGMII
+References: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
+In-Reply-To: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 10:24:33PM +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 22, 2012 04:46:10 PM Adrian Hunter wrote:
-> > On 22/11/12 15:55, Chris Ball wrote:
-> > > Hi,
-> > > 
-> > > On Thu, Nov 22 2012, Adrian Hunter wrote:
-> > >> Here is SDHCI ACPI driver.  It is dependent on new ACPI Platform support
-> > >> so I suggest Rafael takes the patches with Chris' Ack.
-> > >>
-> > >> Please note that I would prefer this to be queued for 3.8
-> > > 
-> > > Looks fine:
-> > > 
-> > > Acked-by: Chris Ball <cjb@laptop.org>
-> > 
-> > Thank you!
-> > 
-> > > 
-> > > I have some dumb questions, though -- what kind of platforms ship with
-> > > these devices?  Do they ever have the controller on PCI too, and what
-> > > happens with sdhci-pci vs. sdhci-acpi in that case?
-> > 
-> > Since the arrival of ACPI5, platform devices can be configured using ACPI
-> > tables.  PCI can also be used, but the firmware ensures that the same
-> > device is not enumerated via both ACPI and PCI.
-> > 
-> > Rafael can you take these patches?
-> 
-> Well, I'd prefer pnpacpi/core.c to actually use acpi_platform_device_ids[]
-> directly in addition to excluded_id_list[], so that duplicate entries don't
-> have to be added to the both of them.
+Hello An
 
-How about having pnpacpi to check if the ACPI device is already bound to a
-physical device and skip the device creation? Then we don't need to expose
-the acpi_platform_device_ids[] list, and this is what the ->find_device()
-code already does so why create the device in the first place?
+On 11/23/2012 10:04 AM, Byungho An wrote:
+>
+> This patch changes GMAC control register (TC(Transmit
+> Configuration) and PS(Port Selection) bit for SGMII.
+> In case of SGMII, TC bit is '1' and PS bit is 0.
 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index 5b17cc8..4dc2e64 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -243,6 +243,10 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
- 	char *pnpid;
- 	struct acpi_hardware_id *id;
- 
-+	/* Skip devices that are already bound */
-+	if (device->physical_node_count)
-+		return 0;
-+
- 	/*
- 	 * If a PnPacpi device is not present , the device
- 	 * driver should not be loaded.
+I was looking at this too. In particular, I was working on the rgmii 
+interrupt so I guess we could improve this part together.
+
+First my note is that I would like to have this kind of code never 
+placed in the stmmac_main. It should stay in the core part.
+Also I 'd like to avoid the Kconfig option where possible.
+
+At any rate, I'll come back with further details soon.
+
+BR,
+Peppe
+
+>
+> Signed-off-by: Byungho An <bh74.an@samsung.com>
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   10 ++++++++++
+>   1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index c6cdbc4..a719c87 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -1037,6 +1037,7 @@ static int stmmac_open(struct net_device *dev)
+>   {
+>   	struct stmmac_priv *priv = netdev_priv(dev);
+>   	int ret;
+> +	u32 value;
+>
+>   #ifdef CONFIG_STMMAC_TIMER
+>   	priv->tm = kzalloc(sizeof(struct stmmac_timer *), GFP_KERNEL);
+> @@ -1088,6 +1089,15 @@ static int stmmac_open(struct net_device *dev)
+>   	/* Initialize the MAC Core */
+>   	priv->hw->mac->core_init(priv->ioaddr);
+>
+> +	if (priv->phydev->interface == PHY_INTERFACE_MODE_SGMII) {
+> +		value = readl(priv->ioaddr);
+> +		/* GMAC_CONTROL_TC : transmit config in RGMII/SGMII */
+> +		value |= 0x1000000;
+> +		/* GMAC_CONTROL_PS : Port Selection for GMII */
+> +		value &= ~(0x8000);
+> +		writel(value, priv->ioaddr);
+> +	}
+> +
+>   	/* Request the IRQ lines */
+>   	ret = request_irq(dev->irq, stmmac_interrupt,
+>   			 IRQF_SHARED, dev->name, dev);
+>
+
