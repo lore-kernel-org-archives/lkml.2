@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab2KWCGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 21:06:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56920 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab2KWCGv (ORCPT
+	id S1758900Ab2KWCKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 21:10:34 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:53084 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab2KWCKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 21:06:51 -0500
-Date: Fri, 23 Nov 2012 11:06:36 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: alsa-devel@alsa-project.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: mxs-saif: export
- mxs_saif_put_mclk,mxs_saif_get_mclk
-Message-ID: <20121123020635.GK4385@opensource.wolfsonmicro.com>
-References: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
- <1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
+	Thu, 22 Nov 2012 21:10:33 -0500
+Message-ID: <50AEDB12.6090300@gmail.com>
+Date: Fri, 23 Nov 2012 10:10:26 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nrXiCraHbXeog9mY"
-Content-Disposition: inline
-In-Reply-To: <1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: =?UTF-8?B?TWV0aW4gRMO2xZ9sw7w=?= <metindoslu@gmail.com>,
+        Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Problem in Page Cache Replacement
+References: <20121120182500.GH1408@quack.suse.cz> <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com> <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com> <50AC9220.70202@gmail.com> <20121121090204.GA9064@localhost> <50ACA209.9000101@gmail.com> <1353491880.11679.YahooMailNeo@web141102.mail.bf1.yahoo.com> <50ACA634.5000007@gmail.com> <CAJOrxZBpefqtkXr+XTxEZ6qy-6SCwQJ11makD=Lg_M4itY5Ang@mail.gmail.com> <20121122154107.GB11736@localhost> <20121122155318.GA12636@localhost>
+In-Reply-To: <20121122155318.GA12636@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/22/2012 11:53 PM, Fengguang Wu wrote:
+> On Thu, Nov 22, 2012 at 11:41:07PM +0800, Fengguang Wu wrote:
+>> On Wed, Nov 21, 2012 at 12:07:22PM +0200, Metin Döşlü wrote:
+>>> On Wed, Nov 21, 2012 at 12:00 PM, Jaegeuk Hanse <jaegeuk.hanse@gmail.com> wrote:
+>>>> On 11/21/2012 05:58 PM, metin d wrote:
+>>>>
+>>>> Hi Fengguang,
+>>>>
+>>>> I run tests and attached the results. The line below I guess shows the data-1 page caches.
+>>>>
+>>>> 0x000000080000006c       6584051    25718  __RU_lA___________________P________    referenced,uptodate,lru,active,private
+>>>>
+>>>>
+>>>> I thinks this is just one state of page cache pages.
+>>> But why these page caches are in this state as opposed to other page
+>>> caches. From the results I conclude that:
+>>>
+>>> data-1 pages are in state : referenced,uptodate,lru,active,private
+>> I wonder if it's this code that stops data-1 pages from being
+>> reclaimed:
+>>
+>> shrink_page_list():
+>>
+>>                  if (page_has_private(page)) {
+>>                          if (!try_to_release_page(page, sc->gfp_mask))
+>>                                  goto activate_locked;
+>>
+>> What's the filesystem used?
+> Ah it's more likely caused by this logic:
+>
+>          if (is_active_lru(lru)) {
+>                  if (inactive_list_is_low(mz, file))
+>                          shrink_active_list(nr_to_scan, mz, sc, priority, file);
+>
+> The active file list won't be scanned at all if it's smaller than the
+> active list. In this case, it's inactive=33586MB > active=25719MB. So
+> the data-1 pages in the active list will never be scanned and reclaimed.
 
---nrXiCraHbXeog9mY
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Fengguang,
 
-On Thu, Nov 22, 2012 at 01:31:09PM +0100, Lothar Wa=DFmann wrote:
->=20
-> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
+It seems that most of data-1 file pages are in active lru cache and most 
+of data-2 file pages are in inactive lru cache. As Johannes mentioned, 
+if inter-reference distance is bigger than half of memory, the pages 
+will not be actived. How you intend to resolve this issue? Is Johannes's 
+inactive list threshing idea  available?
 
-Why?
+Regards,
+Jaegeuk
 
---nrXiCraHbXeog9mY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+>>> data-2 pages are in state : referenced,uptodate,lru,mappedtodisk
+>> Thanks,
+>> Fengguang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQrtoaAAoJELSic+t+oim9VloQAIN02AOT+o5F1sAQUjWANdY3
-tVuzfGu/MA+eGTM9tX+Vzg4I6A6YO/lm6BJwx6wtzlRkTaiECxWbpcG+MtPgp8c9
-7wR9faUzH+w+jxLxXU7F/cxOglTk5Og6+0szROAmzNGDEG0r2IhyZ6azmW9201Q7
-5nzYKz/4cwljVmpc/XqliOmuREzQZiszqvev4hPI/Gj6nFRgzM84YFKOGa2HyHOS
-tjv0/CG81zFsoU/nmLbcd4iA8ZU8pkpMMlYypN31iUcqTnL2DxCNnep1dZPOfYKu
-7Jc2KvTxnPrR+j1MB4krxWA+9oX1E+YSdmn4cSn/KX7jyY5K0jER3AL7gTQsDI2P
-BWWtzUEZt4nB0OFRSpYkQho0dayNT5zVQU/jHU647u1E250Vznc063RFjkccNPuq
-EgajP8RLftUDyP1+LiMPiLM1vI6tofLx0UuFmLR6SDbpeN4QKtcGSIv4VoSqlJez
-nAk2700h3B/OjV+81gvxKIXOW866cOn86a7EC142tJyJdKu09iXmwX3LVKstl66k
-ITtF4NdbeUOTl/KrvqMgHijMon9vCGm0VDLu+NWDFhxEdscj6+Wa+jiStiVT8tzk
-MOcUO3AzHwi71XGMh0hsH3xlgqJh9Z6TcCjn75uoGPGMX7Ic+VdPKtF+CV1kcdi0
-lRgYvVyVU8d2l1m7Zw0B
-=qetv
------END PGP SIGNATURE-----
-
---nrXiCraHbXeog9mY--
