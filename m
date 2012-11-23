@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2KWBji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 20:39:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49904 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756648Ab2KWBjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 20:39:37 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <50AEBF86.50501@citrix.com>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com> <50AEBF86.50501@citrix.com>
+	id S1756876Ab2KWBll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 20:41:41 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48658 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756648Ab2KWBlk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 20:41:40 -0500
+Date: Fri, 23 Nov 2012 10:41:36 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: lrg@ti.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8925: fix compiler warnings
+Message-ID: <20121123014135.GC4385@opensource.wolfsonmicro.com>
+References: <1353550266-21330-1-git-send-email-qingx@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 22 Nov 2012 17:38:33 -0800
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Message-ID: <18e831d4-910d-4f58-8911-1398b96e3a47@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
+Content-Disposition: inline
+In-Reply-To: <1353550266-21330-1-git-send-email-qingx@marvell.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I still don't really get why it can't be isolated from dom0, which would make more sense to me, even for a Xen crash.
 
-Andrew Cooper <andrew.cooper3@citrix.com> wrote:
+--DIOMP1UsTsWJauNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->On 22/11/2012 17:47, H. Peter Anvin wrote:
->> The other thing that should be considered here is how utterly 
->> preposterous the notion of doing in-guest crash dumping is in a
->system 
->> that contains a hypervisor.  The reason for kdump is that on bare
->metal 
->> there are no other options, but in a hypervisor system the right
->thing 
->> should be for the hypervisor to do the dump (possibly spawning a
->clean 
->> I/O domain if the I/O domain is necessary to access the media.)
->>
->> There is absolutely no reason to have a crashkernel sitting around in
->
->> each guest, consuming memory, and possibly get corrupt.
->>
->> 	-hpa
->>
->
->(Your reply to my email which I can see on the xen devel archive
->appears
->to have gotten lost somewhere inside the citrix email system, so
->apologies for replying out of order)
->
->The kdump kernel loaded by dom0 is for when Xen crashes, not for when
->dom0 crashes (although a dom0 crash does admittedly lead to a Xen
->crash)
->
->There is no possible way it could be a separate domain; Xen completely
->ceases to function as soon as jumps to the entry point of the kdump
->image.
->
->~Andrew
+On Thu, Nov 22, 2012 at 10:11:06AM +0800, Qing Xu wrote:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+> -	int i, regulator_idx;
+> +	int i;
+> +	int regulator_idx = 0;
+
+This sort of fix is rarely good without some analysis as to why this is
+a sensible initialisation to do, just unconditionally initialising may
+be masking a real issue in the control flow which the compiler has
+identified.
+
+--DIOMP1UsTsWJauNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQrtQ8AAoJELSic+t+oim9t78QAJWyLIdWkjeYvCViIayUoTYQ
+Fll2ic72SvCxN6RHQmmSXytIWChoQYh3WJnJxe+Ge15K1g/7HK01SUyzRZKFgeKS
+ul83EC6dQDrVuRTgv21V/nIwwOv5yfmxEOpKFYrQ+THZKbw29lwDofSKBl81AsNl
+/1YLA5nuSMcvCm/BrJLcdtC1BzhiwRUicK0yF3CzjnYX6MTnqu0y8EEDHby13n35
+oi4zkO2cLTZGofTD++AqYrBWwJc1K0SXSMSoWIBWdyEXEs/svkANI67zcpIgu4jJ
+NMi7ssJL9WEGDIxT3PFJgQJgV4dZDUzyVGVstf24TZ9jOan+0cSZg365iOCzIOrn
+xkPIxBUEsasBZ2uA+Rw5cW9L3swB5iTm/9dB/VFGgfpZvoRxqerMeBioY53CCUlY
+Br3F/+nsEtbCOpZSEr4HZahi9tJeslJSRCITcNWIOBLyHzlcol8aUnJC4GBKM57i
+X6EeMTshBAhPatelhawhxBClHUAjapBsDVNJ+R9CNx4hW4MRPbzBp9AjRSj6ymrx
+CGsBBpSsaHrl1BaGidecCYOAtSsbgxWWVDQ8OPizsNO9pFgm+3XR1T5IW+gfjEA1
+EdEssxYxD3kFtxyLJpVVuS3WGO0ahxtgERtb49dTLeZFCrKHdpjenxFM3t78/jH+
+sqKLl93f5Ax8xQcnfvlH
+=x2xi
+-----END PGP SIGNATURE-----
+
+--DIOMP1UsTsWJauNi--
