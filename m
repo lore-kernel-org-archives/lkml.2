@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030245Ab2KWHtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 02:49:08 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62898 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030181Ab2KWHtF (ORCPT
+	id S1030249Ab2KWHyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 02:54:52 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43934 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756401Ab2KWHyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 02:49:05 -0500
+	Fri, 23 Nov 2012 02:54:51 -0500
+Date: Thu, 22 Nov 2012 23:51:39 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linaro-kernel@lists.linaro.org,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>, kernel-team@android.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 10/10] ARM: FIQ: Get rid of init_FIQ()
+Message-ID: <20121123075138.GA2136@lizard>
+References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net>
+ <1353652071.755665772@f76.mail.ru>
+ <20121123065002.GB27827@lizard>
+ <1353656161.911816605@f287.mail.ru>
 MIME-Version: 1.0
-In-Reply-To: <20121121155208.GF22106@titan.lakedaemon.net>
-References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkdYAnNCFDCjA67r0h_CSHMifb1Z83YJfYGQV3abPB8uQZg@mail.gmail.com>
-	<50ACAAF5.2030002@gmail.com>
-	<CACRpkdYzQuv8sPk57CvqiwMmV0z007cGqVkGOENmr_aYAN14=Q@mail.gmail.com>
-	<20121121155208.GF22106@titan.lakedaemon.net>
-Date: Fri, 23 Nov 2012 08:49:04 +0100
-Message-ID: <CACRpkdYXSR7Fv95bCPSTZiUHgV+jwnVw1MraE_73njNa807wnQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Dove pinctrl fixes and DT enabling
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1353656161.911816605@f287.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 4:52 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Wed, Nov 21, 2012 at 03:45:42PM +0100, Linus Walleij wrote:
+On Fri, Nov 23, 2012 at 11:36:01AM +0400, Alexander Shiyan wrote:
+[...]
+> got_no_fiq_insn also not initialized.
 
->> So what I mean is that the patches creating pinctrl/mvebu is in the
->> pinctrl tree, so if patches in the MVEBU tree depend on these,
->> then it must have pulled in a branch from pinctrl or applied the
->> same patches in that tree too (which is OK *sometimes*).
->
-> Yes, Thomas and Gregory informed me of the pinctrl dependency and said
-> they were using for-next from the pinctrl tree.  I've used that branch
-> to merge and build successfully.  Is that ok in practice or is there a
-> more specific branch I should pull in as a dependency?
+It is static, so by definition it is initialized to 0.
 
-Do not use for-next. That is a mix-down for the linux-next tree.
+> I think as a whole on this issue requires additional comments from Russell
+> as the author of implementation.
+> 
+> PS: In any case, I can reproduce it and check it out if you send me a patchset
+> to my email as an attachment.
 
-It is basically created like this:
+Sent privately.
 
-git checkout for-next
-git reset --hard fixes
-git merge devel
-
-fixes will be based on the latest release candidate and devel on
-something older like -rc1, -rc2.
-
-If you pull something in it must be from the devel branch.
-
-The ebst idea is to take the last commit in the devel branch
-that you need, so the last mvebu commit in that branch.
-This is what the ARM SoC guys usually does.
-
-So: git pull <pinctrl tree> devel
-git log ...
-<find the commit you need e.g 10930572>
-git checkout -b my-new-mvebu-stuff 10930572
-
-So you branch off where you have the deps you
-need.
-
-That way I can still reorder patches *above* that
-commit (not that I should, but sometimes we discover
-commits that are not bisectable and such exceptions).
-
-The result can the be pulled into my tree or ARM SoC
-or similar.
-
-Linus Walleij
+Thanks,
+Anton.
