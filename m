@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab2KWLdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:33:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:1596 "EHLO mga01.intel.com"
+	id S1755067Ab2KWLfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:35:12 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:34790 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab2KWLdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:33:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,307,1352102400"; 
-   d="scan'208";a="253225933"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, mika.westerberg@linux.intel.com,
-        linux-mmc@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] PNPACPI: exclude devices already bound
-Date: Fri, 23 Nov 2012 13:35:59 +0200
-Message-Id: <1353670561-22515-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353670561-22515-1-git-send-email-adrian.hunter@intel.com>
-References: <1353670561-22515-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1753515Ab2KWLfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 06:35:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, w.sang@pengutronix.de,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, broonie@opensource.wolfsonmicro.com,
+        ben-linux@fluff.org, bhelgaas@google.com,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v4 0/3] ACPI 5 support for GPIO, SPI and I2C
+Date: Fri, 23 Nov 2012 12:39:40 +0100
+Message-ID: <1717408.oqDbQt79dV@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121121225450.026dcaf6@endymion.delvare>
+References: <1353407384-26880-1-git-send-email-mika.westerberg@linux.intel.com> <79636467.nuLQX2FqW5@vostro.rjw.lan> <20121121225450.026dcaf6@endymion.delvare>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Wednesday, November 21, 2012 10:54:50 PM Jean Delvare wrote:
+> On Wed, 21 Nov 2012 22:31:15 +0100, Rafael J. Wysocki wrote:
+> > > Mathias Nyman (1):
+> > >   gpio / ACPI: add ACPI support
+> > > 
+> > > Mika Westerberg (2):
+> > >   spi / ACPI: add ACPI enumeration support
+> > >   i2c / ACPI: add ACPI enumeration support
+> > 
+> > This patchset has been around for quite a while and went through a few
+> > iterations, so I think it's as good as it gets at this point.
+> > 
+> > I wonder if the GPIO / SPI / I2C maintainers have any objections against it or
+> > would like the patches to be modified somehow?
+> 
+> I'd say go ahead, any issue that shows up can be fixed afterward.
+> 
+> > If not, then I'd like to take it for v3.8 into the linux-pm.git tree, because
+> > the patches depend on some changes already in that tree.  Hopefully, that's OK.
+> 
+> Yes.
 
-This will exclude ACPI platform devices from also being created
-as PNP devices.
+Cool, thanks! :-)
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- drivers/pnp/pnpacpi/core.c | 4 ++++
- 1 file changed, 4 insertions(+)
+I took the i2c patch for linux-next (targeting v3.8) and I'm waiting with
+the GPIO and SPI patches for a word from Grant.
 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index 26b5d4b..653d563 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -242,6 +242,10 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
- 	char *pnpid;
- 	struct acpi_hardware_id *id;
- 
-+	/* Skip devices that are already bound */
-+	if (device->physical_node_count)
-+		return 0;
-+
- 	/*
- 	 * If a PnPacpi device is not present , the device
- 	 * driver should not be loaded.
+Thanks,
+Rafael
+
+
 -- 
-1.7.11.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
