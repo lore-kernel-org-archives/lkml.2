@@ -1,169 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab2KWXeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 18:34:23 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:59772 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932217Ab2KWXeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 18:34:22 -0500
-X-Greylist: delayed 33812 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 18:34:20 EST
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v3] mm: trace filemap add and del
-Date: Sat, 24 Nov 2012 00:34:06 +0100
-Message-Id: <1353713646-30362-1-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353679819-6989-1-git-send-email-robert.jarzmik@free.fr>
-References: <1353679819-6989-1-git-send-email-robert.jarzmik@free.fr>
+	id S932314Ab2KWXee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 18:34:34 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:40948 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284Ab2KWXec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 18:34:32 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20121123215947.02DDC3E1EC4@localhost>
+References: <1353669849-23697-1-git-send-email-andreas@gaisler.com> <20121123.142110.835354734152648777.davem@davemloft.net> <20121123215947.02DDC3E1EC4@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] of/address: sparc: Declare of_iomap as an extern function for sparc again
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 23 Nov 2012 23:34:20 +0000
+To: David Miller <davem@davemloft.net>, andreas@gaisler.com
+CC: sam@ravnborg.org, rob.herring@calxeda.com, sparclinux@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com, stable <stable@vger.kernel.org>
+Message-ID: <61dbc2ab-5fa4-4095-bbba-11f146ad89a5@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the events API to trace filemap loading and
-unloading of file pieces into the page cache.
+Cc'ing stable since this should go into previous kernels too.
 
-This patch aims at tracing the eviction reload
-cycle of executable and shared libraries pages in
-a memory constrained environment.
+g.
 
-The typical usage is to spot a specific device and
-inode (for example /lib/libc.so) to see the eviction
-cycles, and find out if frequently used code is
-rather spread across many pages (bad) or coallesced
-(good).
 
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
-Since V1:
- - included Andrew's comments
- - included Dave's comment
- - fixed according to Hugh's comment
-Since V2:
- - amended inode print to hexadecimal format
----
- include/trace/events/filemap.h |   79 ++++++++++++++++++++++++++++++++++++++++
- mm/filemap.c                   |    5 +++
- 2 files changed, 84 insertions(+)
- create mode 100644 include/trace/events/filemap.h
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
-new file mode 100644
-index 0000000..2d36386
---- /dev/null
-+++ b/include/trace/events/filemap.h
-@@ -0,0 +1,79 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM filemap
-+
-+#if !defined(_TRACE_FILEMAP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_FILEMAP_H
-+
-+#include <linux/types.h>
-+#include <linux/tracepoint.h>
-+#include <linux/mm.h>
-+#include <linux/memcontrol.h>
-+#include <linux/device.h>
-+#include <linux/kdev_t.h>
-+
-+TRACE_EVENT(mm_filemap_delete_from_page_cache,
-+
-+	TP_PROTO(struct page *page),
-+
-+	TP_ARGS(page),
-+
-+	TP_STRUCT__entry(
-+		__field(struct page *, page)
-+		__field(unsigned long, i_ino)
-+		__field(unsigned long, index)
-+		__field(dev_t, s_dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->page = page;
-+		__entry->i_ino = page->mapping->host->i_ino;
-+		__entry->index = page->index;
-+		if (page->mapping->host->i_sb)
-+			__entry->s_dev = page->mapping->host->i_sb->s_dev;
-+		else
-+			__entry->s_dev = page->mapping->host->i_rdev;
-+	),
-+
-+	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
-+		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
-+		__entry->i_ino,
-+		__entry->page,
-+		page_to_pfn(__entry->page),
-+		__entry->index << PAGE_SHIFT)
-+);
-+
-+TRACE_EVENT(mm_filemap_add_to_page_cache,
-+
-+	TP_PROTO(struct page *page),
-+
-+	TP_ARGS(page),
-+
-+	TP_STRUCT__entry(
-+		__field(struct page *, page)
-+		__field(unsigned long, i_ino)
-+		__field(unsigned long, index)
-+		__field(dev_t, s_dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->page = page;
-+		__entry->i_ino = page->mapping->host->i_ino;
-+		__entry->index = page->index;
-+		if (page->mapping->host->i_sb)
-+			__entry->s_dev = page->mapping->host->i_sb->s_dev;
-+		else
-+			__entry->s_dev = page->mapping->host->i_rdev;
-+	),
-+
-+	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
-+		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
-+		__entry->i_ino,
-+		__entry->page,
-+		page_to_pfn(__entry->page),
-+		__entry->index << PAGE_SHIFT)
-+);
-+
-+#endif /* _TRACE_FILEMAP_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..1ee7cf6 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -35,6 +35,9 @@
- #include <linux/cleancache.h>
- #include "internal.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/filemap.h>
-+
- /*
-  * FIXME: remove all knowledge of the buffer layer from the core VM
-  */
-@@ -113,6 +116,7 @@ void __delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 
-+	trace_mm_filemap_delete_from_page_cache(page);
- 	/*
- 	 * if we're uptodate, flush out into the cleancache, otherwise
- 	 * invalidate any existing cleancache entries.  We can't leave
-@@ -463,6 +467,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 		if (likely(!error)) {
- 			mapping->nrpages++;
- 			__inc_zone_page_state(page, NR_FILE_PAGES);
-+			trace_mm_filemap_add_to_page_cache(page);
- 			spin_unlock_irq(&mapping->tree_lock);
- 		} else {
- 			page->mapping = NULL;
+>On Fri, 23 Nov 2012 14:21:10 -0500 (EST), David Miller
+><davem@davemloft.net> wrote:
+>> From: Andreas Larsson <andreas@gaisler.com>
+>> Date: Fri, 23 Nov 2012 12:24:09 +0100
+>> 
+>> > This bug-fix makes sure that of_iomap is defined extern for sparc
+>so that the
+>> > sparc-specific implementation of_iomap is once again used when
+>including
+>> > include/linux/of_address.h in a sparc context. OF_GPIO that is now
+>available for
+>> > sparc relies on this.
+>> > 
+>> > The bug was inadvertently introduced in a850a75, "of/address: add
+>empty static
+>> > inlines for !CONFIG_OF", that added a static dummy inline for
+>of_iomap when
+>> > !CONFIG_OF_ADDRESS. However, CONFIG_OF_ADDRESS is never defined for
+>sparc, but
+>> > there is a sparc-specific implementation
+>/arch/sparc/kernel/of_device_common.c.
+>> > 
+>> > This fix takes the same approach as 0bce04b that solved the
+>equivalent problem
+>> > for of_address_to_resource.
+>> > 
+>> > Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+>> 
+>> Grant, can you possibly merge this to Linus while I'm travelling?
+>> That would help me a lot.
+>
+>Yup, I'm doing it right now.
+>
+>g.
+
 -- 
-1.7.10.4
-
+Grant Likely, P.Eng.
+Secret Lab Technologies Ltd.
