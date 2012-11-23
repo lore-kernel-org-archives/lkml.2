@@ -1,87 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab2KWKna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:43:30 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:49652 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab2KWKn2 (ORCPT
+	id S1753792Ab2KWKne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:43:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53289 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab2KWKna convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:43:28 -0500
+	Fri, 23 Nov 2012 05:43:30 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "paul@pwsan.com" <paul@pwsan.com>, "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Subject: RE: [PATCH v4 00/11] Support for AM33xx PWM Subsystem
+Thread-Topic: [PATCH v4 00/11] Support for AM33xx PWM Subsystem
+Thread-Index: AQHNx+m7qg64Nt3OLE2rnPs5zTQ1E5f2ATAAgAEw56A=
+Date: Fri, 23 Nov 2012 10:42:13 +0000
+Deferred-Delivery: Fri, 23 Nov 2012 10:42:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9EE9FC@DBDE01.ent.ti.com>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <20121122211616.GK16716@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121122211616.GK16716@avionic-0098.adnet.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121123103400.GO17471@gmail.com>
-References: <912d88b8906ce87cf5459cf3d5798e03bfce34c7.1353649737.git.viresh.kumar@linaro.org>
-	<20121123103400.GO17471@gmail.com>
-Date: Fri, 23 Nov 2012 16:13:28 +0530
-Message-ID: <CAKohponW-Wd+Vrnj8mbdFMmJvwQgPq1jFCZRipBFoEhTknStHQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: stmpe: Add DT support for stmpe gpio
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 November 2012 16:04, Lee Jones <lee.jones@linaro.org> wrote:
-> On Fri, 23 Nov 2012, Viresh Kumar wrote:
->> diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+On Fri, Nov 23, 2012 at 02:46:16, Thierry Reding wrote:
+> On Wed, Nov 21, 2012 at 06:40:57PM +0530, Philip, Avinash wrote:
+> > In AM33xx PWM sub modules like ECAP, EHRPWM & EQEP are  integrated to
+> > PWM subsystem. All these submodules shares the resources (clock) & has
+> > a clock gating register in PWM Subsystem. This patch series creates a
+> > parent PWM Subsystem driver to handle access synchronization of shared
+> > resources & clock gating from PWM Subsystem configuration space.
+> > Also Device tree nodes populated to support parent child relation
+> > between PWMSS, ECAP & EHRPWM submodules.
+> > In addition EHRPWM module requires explicit clock gating from control
+> > module & is handled by patch #2 & 8.
+> > 
+> > As suggested by  Thierry for handling clock gating for PWM submodules
+> > should handle with a global function. This requires config space
+> > handling done independent from driver and is done at parent driver.
+> > 
+> > So the parent<->child relation adopted to handle
+> > 1. pm runtime synchronization
+> > 2. PWM subsystem common config space clock gating for PWM submodules.
+> > 
+> > Patches supports
+> > - Driver support for parent child relation handled patch #1
+> > - Optional EHRPWM tb clock in patch #2
+> > - Parent child in HWMOD handled at patch #3
+> > - Device tree binding support handled in patch #4, 6 &8
+> > - pinctrl support in patch #5 & 7.
+> > - DT node populated in patch #9 ,10 & 11.
+> > 
+> > This patch series based on omap_dt/for_3.8/dts_part2 and tested
+> > on am335x-evm & am335x-evmsk.
+> > 
+> > It depends on [1]
+> > 
+> > 1. https://lkml.org/lkml/2012/11/21/70
+> > pwm: Device tree support for PWM polarity
+> > 
+> > Changes since v3:
+> > 	- Rebased on top of omap_dt/for_3.8/dts_part2
+> > 	- Add pwm backlight for am335xevm_sk
+> > 	- Moved tipwmss.h to pwm-tipwmss.h
+> > 
+> > Philip, Avinash (11):
+> >   PWMSS: Add PWM Subsystem driver for parent<->child relationship
+> >   ARM: am33xx: clk: Add optional clock for EHRPWM
+> >   ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM
+> >     subsystem
+> >   pwm: pwm-tiecap: Add device-tree binding support for APWM driver
+> >   pwm: pwm-tiecap: pinctrl support
+> >   pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
+> >   pwm: pwm-tiehrpwm: pinctrl support
+> >   pwm: pwm-tiehrpwm: Adding TBCLK gating support.
+> >   ARM: dts: AM33XX: Add PWMSS device tree nodes
+> >   ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
+> >   ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk
+> 
+> Hi,
+> 
+> So how do you want to get this merged? Should I take patches 1, 4, 5, 6,
+> 7 and 8 while the rest go through some ARM tree? Can we still merge this
+> for 3.8?
 
->>  static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
->>  {
+These patches can go on, as DT node is not populated. Also without patch #3
+PWM Subsystem driver won't come and hence the platform devices for ECAP 
+& EHRPWM. So there is no issue in getting this merged in PWM subsystem.
 
->> -     stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
->
-> Why have you deleted this?
->
->> +
->> +     if (pdata) {
->> +             stmpe_gpio->norequest_mask = pdata->norequest_mask;
->> +             stmpe_gpio->chip.base = pdata->gpio_base;
->
-> Then added this?
->
->> +     } else {
->> +             stmpe_gpio->chip.base = -1;
->
-> And this?
+> The patches don't seem to have build dependencies on each other
+> but how about runtime dependencies?
 
-To group all non-DT assignments in a single if block, instead of two.
+Patch #3 required for PWM subsystem driver to populate PWM subsystem HWMOD
+Entries and DT entries. 
+Patch #2 required for EHRPWM to have TBCLK handling. This patch required for
+EHRPWM driver functionality. But currently DT node is disabled for EHRPWM.
 
-> Just leave the top line in and it saves you lots of complecations.
+So the dependency on the entire series is patch #3, for backlight through PWM
+ecap.
 
-Sorry, Couldn't get this one.
+I will follow up with OMAP subsystem community for getting reviews/ack
 
->> +             if (np)
->> +                     of_property_read_u32(np, "st,norequest-mask",
->> +                                     &pdata->norequest_mask);
->
-> Can you explain to me what this does?
+Thanks
+Avinash
 
-You mean pdata->norequest_mask?  It marks few gpios as unusable.
-Because these pads might be used by other blocks of stmpe.
+> 
+> Thierry
+> 
 
->> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-
->>  static struct mfd_cell stmpe_gpio_cell = {
->>       .name           = "stmpe-gpio",
->> +     .of_compatible  = "st,stmpe-gpio",
->
-> There's no need for any of the STMPE to have their own compatible
-> string, as they are MFD devices. They are registered as platform
-> devices from the MFD subsystem.
-
-This is required by mfd-core.c, mfd_add_device() isn't it?
-
-	if (parent->of_node && cell->of_compatible) {
-		for_each_child_of_node(parent->of_node, np) {
-			if (of_device_is_compatible(np, cell->of_compatible)) {
-				pdev->dev.of_node = np;
-				break;
-			}
-		}
-	}
-
---
-viresh
