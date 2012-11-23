@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab2KWA43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 19:56:29 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:54834 "EHLO
+	id S1756728Ab2KWA5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 19:57:23 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:45820 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab2KWA42 (ORCPT
+	with ESMTP id S1752963Ab2KWA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 19:56:28 -0500
-Date: Thu, 22 Nov 2012 16:53:15 -0800
+	Thu, 22 Nov 2012 19:57:22 -0500
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH resend 0/7] KDB: Kiosk (reduced capabilities) mode
-Message-ID: <20121123005315.GA12690@lizard.mcd25758.sjc.wayport.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH 1/7] kdb: Remove currently unused kdbtab_t->cmd_flags
+Date: Thu, 22 Nov 2012 16:53:50 -0800
+Message-Id: <1353632036-5354-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <20121123005315.GA12690@lizard.mcd25758.sjc.wayport.net>
+References: <20121123005315.GA12690@lizard.mcd25758.sjc.wayport.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, Jason,
+The struct member is never used in the code, so we can remove it.
 
-And yet another set that folks seem to be too busy to look into. :)
+We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
 
-The rationale for the series is this:
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/debug/kdb/kdb_main.c    | 1 -
+ kernel/debug/kdb/kdb_private.h | 1 -
+ 2 files changed, 2 deletions(-)
 
-This patchset implements "kiosk" mode for KDB debugger. The mode reduces
-kdb features, so that it is no longer possible to leak sensitive data via
-the debugger, and not possible to change program flow in a predefined
-manner by an ordinary user. The root can control the capability.
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 4d5f8d5..cdaaa52 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2748,7 +2748,6 @@ int kdb_register_repeat(char *cmd,
+ 	kp->cmd_func   = func;
+ 	kp->cmd_usage  = usage;
+ 	kp->cmd_help   = help;
+-	kp->cmd_flags  = 0;
+ 	kp->cmd_minlen = minlen;
+ 	kp->cmd_repeat = repeat;
+ 
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index 392ec6a..f8245b3 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -175,7 +175,6 @@ typedef struct _kdbtab {
+ 	kdb_func_t cmd_func;		/* Function to execute command */
+ 	char    *cmd_usage;		/* Usage String for this command */
+ 	char    *cmd_help;		/* Help message for this command */
+-	short    cmd_flags;		/* Parsing flags */
+ 	short    cmd_minlen;		/* Minimum legal # command
+ 					 * chars required */
+ 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
+-- 
+1.8.0
 
-It is useful on phones with an easy access to a debugger console (e.g.
-thru a headphone mini-jack), or on a public PCs (but we still want to let
-the user somewhat diagnose the problem via KDB-via-KMS).
-
-Later we might want to implement password-protected "unlock" command (with
-the hash of the password passed via some sysfs attribute).
-
-There are a few patches, some are just cleanups, some are churn-ish
-cleanups, but inevitable. And the rest implements the mode -- after all
-the preparations, everything is pretty straightforward.
-
-Thanks!
-Anton.
-
---
- include/linux/kdb.h            |  20 ++--
- kernel/debug/kdb/kdb_bp.c      |  24 ++---
- kernel/debug/kdb/kdb_main.c    | 189 +++++++++++++++++----------------
- kernel/debug/kdb/kdb_private.h |   3 +-
- kernel/trace/trace_kdb.c       |   4 +-
- 5 files changed, 125 insertions(+), 115 deletions(-)
