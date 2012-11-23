@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2KWGxR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:53:17 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53072 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932397Ab2KWGxO (ORCPT
+	id S932759Ab2KWGxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:53:35 -0500
+Received: from nm6-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.71]:25979 "EHLO
+	nm6-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932397Ab2KWGxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:53:14 -0500
-Date: Thu, 22 Nov 2012 22:50:02 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linaro-kernel@lists.linaro.org,
-        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 10/10] ARM: FIQ: Get rid of init_FIQ()
-Message-ID: <20121123065002.GB27827@lizard>
-References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net>
- <1353642030.851395840@f20.mail.ru>
- <20121123055328.GA21566@lizard>
- <1353652071.755665772@f76.mail.ru>
+	Fri, 23 Nov 2012 01:53:33 -0500
+X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 01:53:32 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 513920.10116.bm@omp1027.access.mail.mud.yahoo.com
+X-YMail-OSG: baAZ1.gVM1msXiZ3eofKW26QZ_d46qCkwxxokr.hpntL_aR
+ kJNIWlCp2NK5qs5dvit43bEabdDzQtuqpmG2YYXzSrfEvRPbZphMAspMmOq5
+ Iym6i5pQ__5PwTJAnaFMuOy1XFm0qFa2hTkUmSWvh0zAHSkmECbXuEPm4WPo
+ vJ79AzKWsTqeQJ4BsC0bcngsvzNX1nZ1V3E3L7UEOo4ZzGx.y1edSYWjRDN0
+ H1Vwb1QMbuglEfOmbhG2p0FLXjClCsBmMB0QHnuNFcA0wyjz73CRllHeVZZ1
+ 4hQac3NdKbuzv5hZc3rsg3shkhggaTJLXgGdy3sPxOpUclrZfTTEAcxzW5jY
+ KccCn.yu0IhDvVAEzZFL8yXxZiOmmvXrquY8hVVLaUUZNHQGeLs_M47ToFnJ
+ OwEvxUxJRPVRGtjGEycRjp2A71iwMawEUB6gms.h_osnK2FdpJ8MKf6.unr_
+ kK6UFvycSNXbZPxvpcwpT0ZbfM4RRAOhmYZEXlLScQuf2RFpqAg--
+X-RocketYMMF: webccsdsff
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.460
+Message-ID: <1353653287.86187.YahooMailClassic@web5706.biz.mail.ne1.yahoo.com>
+Date: Thu, 22 Nov 2012 22:48:07 -0800 (PST)
+From: KINGDOM NELSON <kingdomnelson1@gmail.com>
+Reply-To: nelson.kingdom@yahoo.com
+Subject: KINGDOM NELSON
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1353652071.755665772@f76.mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="805399167-21125228-1353653287=:86187"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 10:27:51AM +0400, Alexander Shiyan wrote:
-> > On Fri, Nov 23, 2012 at 07:40:30AM +0400, Alexander Shiyan wrote:
-> > [...]
-> > > >  static unsigned long no_fiq_insn;
-> > > > +static int got_no_fiq_insn;
-> > > > @@ -78,11 +79,14 @@ void show_fiq_list(struct seq_file *p, int prec)
-> > > >  
-> > > >  void set_fiq_handler(void *start, unsigned int length)
-> > > >  {
-> > > > -#if defined(CONFIG_CPU_USE_DOMAINS)
-> > > > -	memcpy((void *)0xffff001c, start, length);
-> > > > -#else
-> > > > -	memcpy(vectors_page + 0x1c, start, length);
-> > > > +	unsigned long *addr = (void *)0xffff001c;
-> > > > +
-> > > > +#ifndef CONFIG_CPU_USE_DOMAINS
-> > > > +	addr = vectors_page + 0x1c;
-> > > >  #endif
-> > > > +	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
-> > > > +		no_fiq_insn = *addr;
-> > > > +	memcpy(addr, start, length);
-> > > >  	flush_icache_range(0xffff001c, 0xffff001c + length);
-> > > >  	if (!vectors_high())
-> > > >  		flush_icache_range(0x1c, 0x1c + length);
-> > > > @@ -126,8 +130,3 @@ EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
-> > > > -
-> > > > -void __init init_FIQ(void)
-> > > > -{
-> > > > -	no_fiq_insn = *(unsigned long *)0xffff001c;
-> > > 
-> > > it seems that this is wrong. In this case we have an uninitialized variable and
-> > > sequential call claim_fiq and release_fiq could be fatal. FIXME please.
-> > 
-> > Um... I don't think I understand, can you please elaborate?
-> 
-> OK, I'll try to explain it.
-> At the end of the release_fiq function we have a call fiq_op. For the default
-> handler - is a fiq_def_op function, and we call this function with the option
-> "relinquish = 0", i.e. we want to restore old fiq_handler. But if we do not call
-> set_fiq_handler never before, we will have an uninitialized no_fiq_insn variable.
+--805399167-21125228-1353653287=:86187
+Content-Type: text/plain; charset=us-ascii
 
-It should not matter when or in what order anyone calls the
-set_fiq_handler(), since it stores "no FIQ instruction" into no_fiq_insn
-at its first invocation:
 
-	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
-		no_fiq_insn = *addr;
+--805399167-21125228-1353653287=:86187
+Content-Type: application/msword; name=KINGDOM
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="KINGDOM NELSON.rtf"
 
-If we never called set_fiq_handler() before, during release_fiq() we'll:
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGYwXGZzMjAgIEZST00gS0lOR0RPTSBORUxTT05ccGFyDQpHTEVORE9W
+RU4gRkFSTVMsIFpJTUJBQldFIERlYXIgUGFydG5lcixOYXR1cmFsbHksdGhp
+cyBsZXR0ZXIgd2lsbCBjb21lIHRvIHlvdSBhcyBhIHN1cnByaXNlIHNpbmNl
+IHdlIGhhdmUgbm90IG1ldCxwZXJtaXQgbWUgaG93ZXZlciB0byBpbnRyb2R1
+Y2UgbXlzZWxmLEkgYW0gS2luZ2RvbSBOZWxzb24sYSBibGFjayBaaW1iYWJ3
+ZWFuIGZhcm1lcixjdXJyZW50bHkgaW4gc291dGggYWZyaWNhIGFzIHJlZmZ1
+Z2UuIEkgdXNlZCB0byB3b3JrIGluIHRocmVlIHRvYmFjY28gZmFybXMgaW4g
+Q2hpcGluZ2UsYW5kIEkgd2FzIGFsc28gcGFydCBvd25lciBvZiB0aGVzZSBm
+YXJtcyB3aGljaCB3ZXJlIG93bmVkIGJ5IG15IGxhdGUgZmF0aGVyLiBJIGFt
+IGNvbnRhY3RpbmcgeW91IGFzIHRoZSBuZWVkIGZvciBtZSB0byBoYXZlIGEg
+Zm9yZWlnbiBwYXJ0bmVyIGluIHlvdXIgY291bnRyeSBoYXMgYmVjb21lIG5l
+Y2Vzc2FyeSBkdWUgdG8gbXkgcGxhbnMgdG8gcmVsb2NhdGUgdG8gdGhhdCBj
+b3VudHJ5IHNvIHRoYXQgSSBjYW4gcHVyY2hhc2Ugc29tZSBsYW5kIGFuZCBz
+dGFydCBmYXJtaW5nIGFsbCBvdmVyIGFnYWluLGFzIHRoZSBwcmVzZW50IHBv
+bGl0aWNhbCBpbnN0YWJpbGl0eSBpbiBaaW1iYWJ3ZSxkb2VzIG5vdCBlbmNv
+dXJhZ2UgZmluYW5jaWFsIGludmVzdG1lbnQgYXMgdGhlIGVudmlyb25tZW50
+IGlzIG5vIGxvbmdlciBjb25kdWNpdmUgZm9yIGZhcm1pbmcgaW52ZXN0bWVu
+dCBhbmQgbW9zdCBvZiBhbGwsc2VjdXJpdHkgaXMgbm90IGd1YXJhbnRlZWQs
+anVzdCBhcyByZXBvcnRlZCBieSBpbnRlcm5hdGlvbmFsIG1lZGlhLlRoaXMg
+cHJvYmxlbSBzdGFydGVkIHdoZW4gdGhlIFppbWJhYndlYW4gZ292ZXJubWVu
+dCB1bmRlciB0aGUgbGVhZGVyc2hpcCBvZiBQcmVzaWRlbnQgUm9iZXJ0IE11
+Z2FiZSBhbm5vdW5jZWQgYSBkZWNyZWUgb24gTWF5IDMxc3QgMjAwMCB0byBz
+ZWl6ZSBtb3JlIHRoYW44NDlccGFyDQp3aGl0ZS1vd25lZCBmYXJtcy5EdXJp
+bmcgdGhpcyBwZXJpb2QsYXMgcmVwb3J0ZWQgYnkgaW50ZXJuYXRpb25hbCBt
+ZWRpYSBhbmQgaGUgQ05OLG1vcmUgdGhhbiA2MDAgZmFybWVycyhpbmNsdWRp
+bmcgbXkgZmF0aGVyKSB3ZXJlIGtpbGxlZDsgdGhlIGdvdmVybm1lbnQgaXMg
+bm90IHN0b3BwaW5nIGF0IHRoaXMsIGFzIHRoZSBnb3Zlcm5tZW50IGhhcyBh
+bHJlYWR5IGFza2VkIGFsbCBmYXJtZXJzIHRvIGdpdmUgdXAgdGhlaXIgZmFy
+bXMgdG8gZ292ZXJubWVudCBvciByaXNrIGdvaW5nIHRvIHByaXNvbi5TbyBm
+YXIsbW9yZSB0aGFuIDEsNDAwIG93bmVkIGZhcm1zIGhhdmUgYmVlbiBpbnZh
+ZGVkIGFuZCBjb25maXNjYXRlZCxhcyB3ZWxsIGFzIGNsYWltaW5nIHRoZSBw
+cm9wZXJ0aWVzIG9mIHRoZSBmYXJtZXJzLiBBbHNvLGFib3V0IDEzMzMgZmFy
+bWVycyBhcnJlc3RlZCBmb3IgZGVmeWluZyB0aGUgb3JkZXJzIHRvIGxlYXZl
+IHRoZWlyIGZhcm1zIHVuZGVyIHRoZSBjb250cm92ZXJzaWFsIGxhbmQgcmVm
+b3JtIHByb2dyYW0gb2YgdGhlIGdvdmVybm1lbnQuIEhhdmluZyBsaXZlZCBp
+biB0aGlzIGNvdW50cnkgc291dGggYWZyaWNhIGZvciB5ZWFycyxBbSByZWZm
+dWdlIHNvbWUgeWVhcnMgdGhlcmVmb3JlLEkgZGVjaWRlZCB0byBjb250YWN0
+IHlvdSxmb3IgeW91ciBhc3Npc3RhbmNlLHNvIHRoYXQgSSBjYW4gZGl2ZXJ0
+IG15IGludGVyZXN0IGluIHNvdXRoIGFmcmljYSB0byBhIG1vcmUgc3RhYmxl
+IGNvdW50cnkgYXMgeW91cnMuIEFsc28sSSBtdXN0IHJlLWl0ZXJhdGUgdGhl
+IGltcG9ydGFuY2Ugb2YgaGF2aW5nIGEgY2l0aXplbiBvZiB5b3VyIGNvdW50
+cnkgdG8gZnJvbnQgb3IgbWUsc2luY2UgaSBpbnRlbmQgdG8gcHVyY2hhc2Ug
+c29tZSBsYW5kIGZvciBmYXJtaW5nLEkgZG8gbm90IGtub3cgbXVjaCBhYm91
+dCB5b3VyIGxhbmQtb3duZXJzaGlwIGxhd3MsSSB0aG91Z2h0IGl0IHdpc2Ug
+dG9ccGFyDQpzZWVrIHRoZSBoZWxwIG9mIGEgZm9yZWlnbmVyIHRvIGFjdCBh
+cyBwcm94eSBmb3IgbWUuRm9yIHRoaXMgcHVycG9zZSxJIGhhdmUgcHV0IGlu
+IGEgc2VjdXJpdHkgZGVwb3NpdCBhbGwgbW9uaWVzIGZyb20gdGhlIHNhbGUg
+b2YgbXkgZmFybWluZyBlcXVpcG1lbnQoaW5jbHVkaW5nIHRyYWN0b3JzIGV0
+YykgYW5kIGFsc28gYWxsIGZpbmFuY2lhbCBwcm9maXRzLkFsbCB0aGVzZSBh
+cmUgYSB0b3RhbCBvZiBVUyQxOC41bWlsbGlvbi5JIHdpbGwgdXBvbiByZWNl
+aXZpbmcgeW91ciBjb25zZW50IHByZXBhcmUgZXZlcnkgZG9jdW1lbnQgdG8g
+ZW5hYmxlIHlvdSByZWNlaXZlIHRoaXMgbW9uZXkgb24gbXkgYmVoYWxmLHBl
+bmRpbmcgbXkgYXJyaXZhbCB0byBtZWV0IHdpdGggeW91IGluIHlvdXIgY291
+bnRyeSBzbyB0aGF0IHdlIGNhbiBib3RoIG1ha2UgZnVydGhlciBhcnJhbmdl
+bWVudHMgd2l0aCByZWdhcmRzIHRvIHRoZSBwdXJjaGFzZSBvZiBsYW5kLkZv
+ciB5b3VyIGFzc2lzdGFuY2UgdG8gbWUseW91IHdpbGwgYmUgZW50aXRsZWQg
+dG8gYSBjb21taXNzaW9uIG9mIDE1JSBvZiB0aGUgdG90YWwgc3VtIHRoYXQg
+eW91IHdpbGwgYmUgcmVjZWl2aW5nIG9uIG15IGJlaGFsZiBmb3IgdGhlIGFi
+b3ZlIHB1cnBvc2UuSWYgeW91IGFyZSBpbnRlcmVzdGVkIGFuZCB3aWxsaW5n
+IHRvIGFzc2lzdCBtZSx5b3Ugc2hvdWxkIHBsZWFzZSBmb3J3YXJkIHRvIG1l
+IHRoZSBmb2xsb3dpbmcgaW5mb3JtYXRpb24gc28gdGhhdCBJIGNhbiByZWFj
+aCB5b3Ugb3IgY2FsbCBtZSBpbiB0aGlzIG51bWJlciArMjctNzg0MDIzMjA2
+IEkgd2lsbCB0ZWxsIHlvdSBtb3JlIGRldGFpbHMuIDEuIFlPVVIgQ09OVEFD
+VCBBRERSRVNTIDIuIFlPVVIgVEVMRVBIT05FIEFORCBGQVggTlVNQkVSLCAz
+LiBWQUxJRCBJRCBPRiBZT1VSU0VMRiwgSSBhbSB3YWl0aW5nIHVyZ2VudGx5
+IGZvciB5b3VyIHJlc3BvbnNlLHdoaWxlIGFsc29ccGFyDQpyZXF1ZXN0aW5n
+IHRoYXQgeW91IHRyZWF0IHRoaXMgbWF0dGVyIGluIHN0cmljdCBwcml2YWN5
+LkNoZWVycyBhbmQgR29kIGJsZXNzLiBJIHdpbGwgZ2l2ZSB5b3UgbW9yZSBk
+ZXRhaWxzIHdoZW4gaSBoZWFyIGZyb20geW91LllvdSBjYW4gY2xpY2sgb24g
+dGhlIGxpbmsgYmVsb3cgdG8gZ2V0IGEgYmV0dGVyIHVuZGVyc3RhbmRpbmcg
+bXkgc2l0dWF0aW9uIGFuZCB3aHkgaSBuZWVkIHRvIG1vdmUgb3V0IG15IG1v
+bmV5OiBodHRwOi8vbmV3cy5iYmMuY28udWsvMS9oaS93b3JsZC9hZnJpY2Ev
+MTA2ODUyOC5zdG0gQmVzdCBSZWdhcmRzXHBhcg0KXHBhcg0KS2luZ2RvbSBO
+ZWxzb25ccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQp9DQoA
 
-1. Copy the initial instruction from the vector page to 'no_fiq_insn';
-2. Copy the initial instruction from 'no_fiq_insn' to the vector page;
 
-So no_fiq_insn gets initialized, then we just instantly write the same
-value back.
-
-Thanks,
-Anton.
+--805399167-21125228-1353653287=:86187--
