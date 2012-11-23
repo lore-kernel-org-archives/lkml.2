@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab2KWNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:48:27 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38150 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab2KWNs0 (ORCPT
+	id S1754044Ab2KWNtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:49:07 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34616 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab2KWNtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:48:26 -0500
-Date: Fri, 23 Nov 2012 13:53:33 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
-Message-ID: <20121123135333.6b7a87f1@pyramind.ukuu.org.uk>
-In-Reply-To: <50AEAF20.3070001@ilyx.ru>
-References: <50AEAF20.3070001@ilyx.ru>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Nov 2012 08:49:05 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] net/macb: GEM DMA configuration register update
+Date: Fri, 23 Nov 2012 14:49:01 +0100
+Message-ID: <1353678541-26839-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012 03:02:56 +0400
-Ilya Zykov <ilya@ilyx.ru> wrote:
+Add information to the DMA Configuration Register to
+maximize system performance:
+- rx/tx packet buffer full memory size
+- allow possibility to use INCR16 if supported
 
-> Regression 'tty: fix "IRQ45: nobody cared"'
-> Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
-> 
->   Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
-> At the time of request we can have full buffers and throttled driver too. 
-> If we don't unthrottle driver, we can get forever throttled driver, because,
-> after request, we will have empty buffers and throttled driver and 
-> there is no place to unthrottle driver.
-> It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
-> and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
-> 
-> About 'tty: fix "IRQ45: nobody cared"':
->   We don't call tty_unthrottle() if release last filp - ('tty->count == 0')
-> In other case it must be safely. 
-> 
-> Unfortunately, many drivers indirectly invoke tty_unthrottle() before TTY LAYER
-> decremented (tty->count).
->   This Patch help us catch bugs in tty's drivers and invoke tty_unthrottle()
-> in right moment only.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/macb.c | 10 ++++++++--
+ drivers/net/ethernet/cadence/macb.h | 11 +++++++++++
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
-This isn't really what I meant by fixing the problem. Simply declaring
-the known universe to disagree with your view and adding a WARN isn't a
-fix.
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index cc6e593..6a59bce 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -1033,8 +1033,12 @@ static u32 macb_dbw(struct macb *bp)
+ }
+ 
+ /*
+- * Configure the receive DMA engine to use the correct receive buffer size.
+- * This is a configurable parameter for GEM.
++ * Configure the receive DMA engine
++ * - use the correct receive buffer size
++ * - set the possibility to use INCR16 bursts
++ *   (if not supported by FIFO, it will fallback to default)
++ * - set both rx/tx packet buffers to full memory size
++ * These are configurable parameters for GEM.
+  */
+ static void macb_configure_dma(struct macb *bp)
+ {
+@@ -1043,6 +1047,8 @@ static void macb_configure_dma(struct macb *bp)
+ 	if (macb_is_gem(bp)) {
+ 		dmacfg = gem_readl(bp, DMACFG) & ~GEM_BF(RXBS, -1L);
+ 		dmacfg |= GEM_BF(RXBS, RX_BUFFER_SIZE / 64);
++		dmacfg |= GEM_BF(FBLDO, 16);
++		dmacfg |= GEM_BIT(TXPBMS) | GEM_BF(RXBMS, -1L);
+ 		gem_writel(bp, DMACFG, dmacfg);
+ 	}
+ }
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 4414421..570908b 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -171,8 +171,19 @@
+ #define GEM_DBW128				2
+ 
+ /* Bitfields in DMACFG. */
++#define GEM_FBLDO_OFFSET			0
++#define GEM_FBLDO_SIZE				5
++#define GEM_RXBMS_OFFSET			8
++#define GEM_RXBMS_SIZE				2
++#define GEM_TXPBMS_OFFSET			10
++#define GEM_TXPBMS_SIZE				1
++#define GEM_TXCOEN_OFFSET			11
++#define GEM_TXCOEN_SIZE				1
+ #define GEM_RXBS_OFFSET				16
+ #define GEM_RXBS_SIZE				8
++#define GEM_DDRP_OFFSET				24
++#define GEM_DDRP_SIZE				1
++
+ 
+ /* Bitfields in NSR */
+ #define MACB_NSR_LINK_OFFSET			0
+-- 
+1.8.0
 
-Alan
