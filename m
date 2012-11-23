@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2KWNZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:25:30 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52329 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2KWNZ3 (ORCPT
+	id S1752353Ab2KWN33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:29:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:37512 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2KWN31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:25:29 -0500
-Message-ID: <50AF7901.20401@kernel.dk>
-Date: Fri, 23 Nov 2012 14:24:17 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 23 Nov 2012 08:29:27 -0500
+Date: Fri, 23 Nov 2012 11:29:20 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Ram Pai <linuxram@us.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Andrew Worsley <amworsley@gmail.com>,
+        Michal Ludvig <mludvig@logix.net.nz>
+Subject: Re: [ 37/38] PCI : ability to relocate assigned pci-resources
+Message-ID: <20121123132919.GA3759@herton-Z68MA-D2H-B3>
+References: <20121122003904.262382971@linuxfoundation.org>
+ <20121122003908.400731657@linuxfoundation.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jeff Chua <jeff.chua.linux@gmail.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Recent kernel "mount" slow
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com> <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com> <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com> <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-In-Reply-To: <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122003908.400731657@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-22 20:21, Linus Torvalds wrote:
-> Doesn't sound like a fsdevel issue since it seems to be independent of
-> filesystems. More like some generic block layer thing. Adding Jens
-> (and quoting the whole thing)
+On Wed, Nov 21, 2012 at 04:40:20PM -0800, Greg Kroah-Hartman wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Jens, any ideas? Most of your stuff came in after -rc2, which would
-> fit with the fact that most of the slowdown seems to be after -rc2
-> according to Jeff.
+> ------------------
+> 
+> From: Ram Pai <linuxram@us.ibm.com>
+> 
+> commit 2bbc6942273b5b3097bd265d82227bdd84b351b2 upstream.
+> 
+> Currently pci-bridges are allocated enough resources to satisfy their immediate
+> requirements.  Any additional resource-requests fail if additional free space,
+> contiguous to the one already allocated, is not available. This behavior is not
+> reasonable since sufficient contiguous resources, that can satisfy the request,
+> are available at a different location.
+> 
+> This patch provides the ability to expand and relocate a allocated resource.
+> 
+> 	v2: Changelog: Fixed size calculation in pci_reassign_resource()
+> 	v3: Changelog : Split this patch. The resource.c changes are already
+> 			upstream. All the pci driver changes are in here.
+> 
+> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Andrew Worsley <amworsley@gmail.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-No ideas. Looking at what went in from my side, only the rq plug sorting
-is a core change, and that should not cause any change in behaviour for
-a single device. That's commit 975927b9.
+This change is said to bring a regression:
+http://comments.gmane.org/gmane.linux.kernel.pci/11666
 
-> Jeff, more bisecting would be good, though.
+fixed by:
+commit 47ea91b4052d9e94b9dca5d7a3d947fbebd07ba9
+Resource: fix wrong resource window calculation
 
-Probably required, yes...
+Which wasn't applied with this series for 3.0.
 
 -- 
-Jens Axboe
-
+[]'s
+Herton
