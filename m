@@ -1,1342 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab2KWVDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 16:03:49 -0500
-Received: from smtp7.sms.unimo.it ([155.185.44.150]:34737 "EHLO
-	smtp7.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab2KWVDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 16:03:47 -0500
-Date: Fri, 23 Nov 2012 22:03:19 +0100
-From: Paolo Valente <paolo.valente@unimore.it>
-To: davem@davemloft.net, jhs@mojatatu.com, shemminger@vyatta.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rizzo@iet.unipi.it,
-        fchecconi@gmail.com, paolo.valente@unimore.it
-Subject: [PATCH] pkt_sched: QFQ Plus: fair-queueing service at DRR cost
-Message-ID: <20121123210319.GA15775@paolo-ThinkPad-W520>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-UNIMORE-X-SA-Score: -2.9
+	id S1756435Ab2KWVZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 16:25:20 -0500
+Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:46553
+	"EHLO relay" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756359Ab2KWVZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 16:25:19 -0500
+From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+To: andrey.smirnov@convergeddevices.net
+Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] [RFC] regmap: Add no-"bus" configuration possibility
+Date: Fri, 23 Nov 2012 13:25:24 -0800
+Message-Id: <1353705924-25401-1-git-send-email-andrey.smirnov@convergeddevices.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch turns QFQ into QFQ+, a variant of QFQ that provides the
-following two benefits: 1) QFQ+ is faster than QFQ, 2) differently
-from QFQ, QFQ+ correctly schedules also non-leaves classes in a
-hierarchical setting. A detailed description of QFQ+, plus a
-performance comparison with DRR and QFQ, can be found in [1].
+Second version of the patch with incorporated suggestions form
+Mark(hopefully):
+   https://lkml.org/lkml/2012/11/20/249
 
-[1] P. Valente, "Reducing the Execution Time of Fair-Queueing Schedulers"
-http://algo.ing.unimo.it/people/paolo/agg-sched/agg-sched.pdf
+Once again at this point this patch is for illustrative purposes. If
+the overall structure and nature of the change is agreed upon, I'll
+work on properly implementing it and testing it with my driver code(SI476X).
 
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
+Original description of the first version:
+
+This patch proposes extension to the API that was suggested by Mark in
+the following thread:
+http://article.gmane.org/gmane.linux.kernel/1383734
+
+The idea behind extensions is to allow the devices that expose some
+register-like interface but whose protocol for reading or writing
+those registers could not be simplified to serialized bytestream
+writes to be used within 'regmap' framework
+
+This patch adds two callbacks to the 'regmap' configuration which user
+is expected to set with their implementation of read and write
+functionality for the device.
+
+I am not very well versed with the code of the remap framework so I
+apologize if my proposal has some glaring mistakes and I would
+welcome any suggestion or criticism on how to either improve the code
+or implement the proposal in a better way.
+
+This commit has only purpose of illustrating the proposed extension of
+the 'regmap' API. It has never been compiled or tested.
 ---
- net/sched/sch_qfq.c |  830 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 566 insertions(+), 264 deletions(-)
+ drivers/base/regmap/internal.h |    4 +
+ drivers/base/regmap/regmap.c   |  172 ++++++++++++++++++++++++++++------------
+ include/linux/regmap.h         |   12 ++-
+ 3 files changed, 137 insertions(+), 51 deletions(-)
 
-diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-index 9687fa1..6ed3765 100644
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -1,7 +1,8 @@
- /*
-- * net/sched/sch_qfq.c         Quick Fair Queueing Scheduler.
-+ * net/sched/sch_qfq.c         Quick Fair Queueing Plus Scheduler.
-  *
-  * Copyright (c) 2009 Fabio Checconi, Luigi Rizzo, and Paolo Valente.
-+ * Copyright (c) 2012 Paolo Valente.
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -19,12 +20,18 @@
- #include <net/pkt_cls.h>
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 80f9ab9..2bb5f8e 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -58,6 +58,10 @@ struct regmap {
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
  
- 
--/*  Quick Fair Queueing
--    ===================
-+/*  Quick Fair Queueing Plus
-+    ========================
- 
-     Sources:
- 
--    Fabio Checconi, Luigi Rizzo, and Paolo Valente: "QFQ: Efficient
-+    [1] Paolo Valente,
-+    "Reducing the Execution Time of Fair-Queueing Schedulers."
-+    http://algo.ing.unimo.it/people/paolo/agg-sched/agg-sched.pdf
++	int (*reg_read)(struct regmap *map, unsigned int reg, unsigned int *val);
++	int (*reg_write)(struct regmap *map, unsigned int reg, unsigned int val);
++	int (*reg_cache)(struct regmap *map, unsigned int reg, unsigned int val);
 +
-+    Sources for QFQ:
-+
-+    [2] Fabio Checconi, Luigi Rizzo, and Paolo Valente: "QFQ: Efficient
-     Packet Scheduling with Tight Bandwidth Distribution Guarantees."
+ 	u8 read_flag_mask;
+ 	u8 write_flag_mask;
  
-     See also:
-@@ -33,6 +40,20 @@
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c241ae2..4ecb4b8 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -326,7 +326,8 @@ struct regmap *regmap_init(struct device *dev,
+ 	enum regmap_endian reg_endian, val_endian;
+ 	int i, j;
  
- /*
+-	if (!bus || !config)
++	if (!config ||
++	    (!bus && !config->reg_read && !config->reg_write))
+ 		goto err;
  
-+  QFQ+ divides classes into aggregates of at most MAX_AGG_CLASSES
-+  classes. Each aggregate is timestamped with a virtual start time S
-+  and a virtual finish time F, and scheduled according to its
-+  timestamps. S and F are computed as a function of a system virtual
-+  time function V. The classes within each aggregate are instead
-+  scheduled with DRR.
-+
-+  To speed up operations, QFQ+ divides also aggregates into a limited
-+  number of groups. Which group a class belongs to depends on the
-+  ratio between the maximum packet length for the class and the weight
-+  of the class. Groups have their own S and F. In the end, QFQ+
-+  schedules groups, then aggregates within groups, then classes within
-+  aggregates. See [1] and [2] for a full description.
-+
-   Virtual time computations.
- 
-   S, F and V are all computed in fixed point arithmetic with
-@@ -76,27 +97,28 @@
- #define QFQ_MAX_SLOTS	32
- 
- /*
-- * Shifts used for class<->group mapping.  We allow class weights that are
-- * in the range [1, 2^MAX_WSHIFT], and we try to map each class i to the
-+ * Shifts used for aggregate<->group mapping.  We allow class weights that are
-+ * in the range [1, 2^MAX_WSHIFT], and we try to map each aggregate i to the
-  * group with the smallest index that can support the L_i / r_i configured
-- * for the class.
-+ * for the classes in the aggregate.
-  *
-  * grp->index is the index of the group; and grp->slot_shift
-  * is the shift for the corresponding (scaled) sigma_i.
-  */
- #define QFQ_MAX_INDEX		24
--#define QFQ_MAX_WSHIFT		12
-+#define QFQ_MAX_WSHIFT		10
- 
--#define	QFQ_MAX_WEIGHT		(1<<QFQ_MAX_WSHIFT)
--#define QFQ_MAX_WSUM		(16*QFQ_MAX_WEIGHT)
-+#define	QFQ_MAX_WEIGHT		(1<<QFQ_MAX_WSHIFT) /* see qfq_slot_insert */
-+#define QFQ_MAX_WSUM		(64*QFQ_MAX_WEIGHT)
- 
- #define FRAC_BITS		30	/* fixed point arithmetic */
- #define ONE_FP			(1UL << FRAC_BITS)
- #define IWSUM			(ONE_FP/QFQ_MAX_WSUM)
- 
- #define QFQ_MTU_SHIFT		16	/* to support TSO/GSO */
--#define QFQ_MIN_SLOT_SHIFT	(FRAC_BITS + QFQ_MTU_SHIFT - QFQ_MAX_INDEX)
--#define QFQ_MIN_LMAX		256	/* min possible lmax for a class */
-+#define QFQ_MIN_LMAX		512	/* see qfq_slot_insert */
-+
-+#define QFQ_MAX_AGG_CLASSES	8 /* max num classes per aggregate allowed */
- 
- /*
-  * Possible group states.  These values are used as indexes for the bitmaps
-@@ -106,6 +128,8 @@ enum qfq_state { ER, IR, EB, IB, QFQ_MAX_STATE };
- 
- struct qfq_group;
- 
-+struct qfq_aggregate;
-+
- struct qfq_class {
- 	struct Qdisc_class_common common;
- 
-@@ -116,7 +140,12 @@ struct qfq_class {
- 	struct gnet_stats_queue qstats;
- 	struct gnet_stats_rate_est rate_est;
- 	struct Qdisc *qdisc;
-+	struct list_head alist;		/* Link for active-classes list. */
-+	struct qfq_aggregate *agg;	/* Parent aggregate. */
-+	int deficit;			/* DRR deficit counter. */
-+};
- 
-+struct qfq_aggregate {
- 	struct hlist_node next;	/* Link for the slot list. */
- 	u64 S, F;		/* flow timestamps (exact) */
- 
-@@ -127,8 +156,18 @@ struct qfq_class {
- 	struct qfq_group *grp;
- 
- 	/* these are copied from the flowset. */
--	u32	inv_w;		/* ONE_FP/weight */
--	u32	lmax;		/* Max packet size for this flow. */
-+	u32	class_weight; /* Weight of each class in this aggregate. */
-+	/* Max pkt size for the classes in this aggregate, DRR quantum. */
-+	int	lmax;
-+
-+	u32	inv_w;	    /* ONE_FP/(sum of weights of classes in aggr.). */
-+	u32	budgetmax;  /* Max budget for this aggregate. */
-+	u32	initial_budget, budget;     /* Initial and current budget. */
-+
-+	int		  num_classes;	/* Number of classes in this aggr. */
-+	struct list_head  active;	/* DRR queue of active classes. */
-+
-+	struct hlist_node nonfull_next;	/* See nonfull_aggs in qfq_sched. */
- };
- 
- struct qfq_group {
-@@ -138,7 +177,7 @@ struct qfq_group {
- 	unsigned int front;		/* Index of the front slot. */
- 	unsigned long full_slots;	/* non-empty slots */
- 
--	/* Array of RR lists of active classes. */
-+	/* Array of RR lists of active aggregates. */
- 	struct hlist_head slots[QFQ_MAX_SLOTS];
- };
- 
-@@ -146,13 +185,28 @@ struct qfq_sched {
- 	struct tcf_proto *filter_list;
- 	struct Qdisc_class_hash clhash;
- 
--	u64		V;		/* Precise virtual time. */
--	u32		wsum;		/* weight sum */
-+	u64			oldV, V;	/* Precise virtual times. */
-+	struct qfq_aggregate	*in_serv_agg;   /* Aggregate being served. */
-+	u32			num_active_agg; /* Num. of active aggregates */
-+	u32			wsum;		/* weight sum */
- 
- 	unsigned long bitmaps[QFQ_MAX_STATE];	    /* Group bitmaps. */
- 	struct qfq_group groups[QFQ_MAX_INDEX + 1]; /* The groups. */
-+	u32 min_slot_shift;	/* Index of the group-0 bit in the bitmaps. */
-+
-+	u32 max_agg_classes;		/* Max number of classes per aggr. */
-+	struct hlist_head nonfull_aggs; /* Aggs with room for more classes. */
- };
- 
-+/*
-+ * Possible reasons why the timestamps of an aggregate are updated
-+ * enqueue: the aggregate switches from idle to active and must scheduled
-+ *	    for service
-+ * requeue: the aggregate finishes its budget, so it stops being served and
-+ *	    must be rescheduled for service
-+ */
-+enum update_reason {enqueue, requeue};
-+
- static struct qfq_class *qfq_find_class(struct Qdisc *sch, u32 classid)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
-@@ -182,18 +236,18 @@ static const struct nla_policy qfq_policy[TCA_QFQ_MAX + 1] = {
-  * index = log_2(maxlen/weight) but we need to apply the scaling.
-  * This is used only once at flow creation.
-  */
--static int qfq_calc_index(u32 inv_w, unsigned int maxlen)
-+static int qfq_calc_index(u32 inv_w, unsigned int maxlen, u32 min_slot_shift)
- {
- 	u64 slot_size = (u64)maxlen * inv_w;
- 	unsigned long size_map;
- 	int index = 0;
- 
--	size_map = slot_size >> QFQ_MIN_SLOT_SHIFT;
-+	size_map = slot_size >> min_slot_shift;
- 	if (!size_map)
- 		goto out;
- 
- 	index = __fls(size_map) + 1;	/* basically a log_2 */
--	index -= !(slot_size - (1ULL << (index + QFQ_MIN_SLOT_SHIFT - 1)));
-+	index -= !(slot_size - (1ULL << (index + min_slot_shift - 1)));
- 
- 	if (index < 0)
- 		index = 0;
-@@ -204,66 +258,150 @@ out:
- 	return index;
- }
- 
--/* Length of the next packet (0 if the queue is empty). */
--static unsigned int qdisc_peek_len(struct Qdisc *sch)
-+static void qfq_deactivate_agg(struct qfq_sched *, struct qfq_aggregate *);
-+static void qfq_activate_agg(struct qfq_sched *, struct qfq_aggregate *,
-+			     enum update_reason);
-+
-+static void qfq_init_agg(struct qfq_sched *q, struct qfq_aggregate *agg,
-+			 u32 lmax, u32 weight)
- {
--	struct sk_buff *skb;
-+	INIT_LIST_HEAD(&agg->active);
-+	hlist_add_head(&agg->nonfull_next, &q->nonfull_aggs);
-+
-+	agg->lmax = lmax;
-+	agg->class_weight = weight;
-+}
-+
-+static struct qfq_aggregate *qfq_find_agg(struct qfq_sched *q,
-+					  u32 lmax, u32 weight)
-+{
-+	struct qfq_aggregate *agg;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry(agg, n, &q->nonfull_aggs, nonfull_next)
-+		if (agg->lmax == lmax && agg->class_weight == weight)
-+			return agg;
-+
-+	return NULL;
-+}
-+
- 
--	skb = sch->ops->peek(sch);
--	return skb ? qdisc_pkt_len(skb) : 0;
-+/* Update aggregate as a function of the new number of classes. */
-+static void qfq_update_agg(struct qfq_sched *q, struct qfq_aggregate *agg,
-+			   int new_num_classes)
-+{
-+	u32 new_agg_weight;
-+
-+	if (new_num_classes == q->max_agg_classes)
-+		hlist_del_init(&agg->nonfull_next);
-+
-+	if (agg->num_classes > new_num_classes &&
-+	    new_num_classes == q->max_agg_classes - 1) /* agg no more full */
-+		hlist_add_head(&agg->nonfull_next, &q->nonfull_aggs);
-+
-+	agg->budgetmax = new_num_classes * agg->lmax;
-+	new_agg_weight = agg->class_weight * new_num_classes;
-+	agg->inv_w = ONE_FP/new_agg_weight;
-+
-+	if (agg->grp == NULL) {
-+		int i = qfq_calc_index(agg->inv_w, agg->budgetmax,
-+				       q->min_slot_shift);
-+		agg->grp = &q->groups[i];
-+	}
-+
-+	q->wsum +=
-+		(int) agg->class_weight * (new_num_classes - agg->num_classes);
-+
-+	agg->num_classes = new_num_classes;
-+}
-+
-+/* Add class to aggregate. */
-+static void qfq_add_to_agg(struct qfq_sched *q,
-+			   struct qfq_aggregate *agg,
-+			   struct qfq_class *cl)
-+{
-+	cl->agg = agg;
-+
-+	qfq_update_agg(q, agg, agg->num_classes+1);
-+	if (cl->qdisc->q.qlen > 0) { /* adding an active class */
-+		list_add_tail(&cl->alist, &agg->active);
-+		if (list_first_entry(&agg->active, struct qfq_class, alist) ==
-+		    cl && q->in_serv_agg != agg) /* agg was inactive */
-+			qfq_activate_agg(q, agg, enqueue); /* schedule agg */
-+	}
- }
- 
--static void qfq_deactivate_class(struct qfq_sched *, struct qfq_class *);
--static void qfq_activate_class(struct qfq_sched *q, struct qfq_class *cl,
--			       unsigned int len);
-+static struct qfq_aggregate *qfq_choose_next_agg(struct qfq_sched *);
- 
--static void qfq_update_class_params(struct qfq_sched *q, struct qfq_class *cl,
--				    u32 lmax, u32 inv_w, int delta_w)
-+static void qfq_destroy_agg(struct qfq_sched *q, struct qfq_aggregate *agg)
- {
--	int i;
-+	if (!hlist_unhashed(&agg->nonfull_next))
-+		hlist_del_init(&agg->nonfull_next);
-+	if (q->in_serv_agg == agg)
-+		q->in_serv_agg = qfq_choose_next_agg(q);
-+	kfree(agg);
-+}
- 
--	/* update qfq-specific data */
--	cl->lmax = lmax;
--	cl->inv_w = inv_w;
--	i = qfq_calc_index(cl->inv_w, cl->lmax);
-+/* Deschedule class from within its parent aggregate. */
-+static void qfq_deactivate_class(struct qfq_sched *q, struct qfq_class *cl)
-+{
-+	struct qfq_aggregate *agg = cl->agg;
- 
--	cl->grp = &q->groups[i];
- 
--	q->wsum += delta_w;
-+	list_del(&cl->alist); /* remove from RR queue of the aggregate */
-+	if (list_empty(&agg->active)) /* agg is now inactive */
-+		qfq_deactivate_agg(q, agg);
- }
- 
--static void qfq_update_reactivate_class(struct qfq_sched *q,
--					struct qfq_class *cl,
--					u32 inv_w, u32 lmax, int delta_w)
-+/* Remove class from its parent aggregate. */
-+static void qfq_rm_from_agg(struct qfq_sched *q, struct qfq_class *cl)
- {
--	bool need_reactivation = false;
--	int i = qfq_calc_index(inv_w, lmax);
-+	struct qfq_aggregate *agg = cl->agg;
- 
--	if (&q->groups[i] != cl->grp && cl->qdisc->q.qlen > 0) {
--		/*
--		 * shift cl->F back, to not charge the
--		 * class for the not-yet-served head
--		 * packet
--		 */
--		cl->F = cl->S;
--		/* remove class from its slot in the old group */
--		qfq_deactivate_class(q, cl);
--		need_reactivation = true;
-+	cl->agg = NULL;
-+	if (agg->num_classes == 1) { /* agg being emptied, destroy it */
-+		qfq_destroy_agg(q, agg);
-+		return;
+ 	map = kzalloc(sizeof(*map), GFP_KERNEL);
+@@ -335,15 +336,16 @@ struct regmap *regmap_init(struct device *dev,
+ 		goto err;
  	}
-+	qfq_update_agg(q, agg, agg->num_classes-1);
-+}
  
--	qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
-+/* Deschedule class and remove it from its parent aggregate. */
-+static void qfq_deact_rm_from_agg(struct qfq_sched *q, struct qfq_class *cl)
-+{
-+	if (cl->qdisc->q.qlen > 0) /* class is active */
-+		qfq_deactivate_class(q, cl);
+-	if (bus->fast_io) {
+-		spin_lock_init(&map->spinlock);
+-		map->lock = regmap_lock_spinlock;
+-		map->unlock = regmap_unlock_spinlock;
+-	} else {
++	if (!bus || !bus->fast_io) {
+ 		mutex_init(&map->mutex);
+ 		map->lock = regmap_lock_mutex;
+ 		map->unlock = regmap_unlock_mutex;
++	} else {
++		spin_lock_init(&map->spinlock);
++		map->lock = regmap_lock_spinlock;
++		map->unlock = regmap_unlock_spinlock;
+ 	}
++
+ 	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
+ 	map->format.pad_bytes = config->pad_bits / 8;
+ 	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
+@@ -355,14 +357,16 @@ struct regmap *regmap_init(struct device *dev,
+ 	else
+ 		map->reg_stride = 1;
+ 	map->use_single_rw = config->use_single_rw;
+-	map->dev = dev;
+ 	map->bus = bus;
++	map->dev = dev;
+ 	map->bus_context = bus_context;
+ 	map->max_register = config->max_register;
+ 	map->writeable_reg = config->writeable_reg;
+ 	map->readable_reg = config->readable_reg;
+ 	map->volatile_reg = config->volatile_reg;
+ 	map->precious_reg = config->precious_reg;
++	map->reg_read = config->reg_read;
++	map->reg_write = config->reg_write;
+ 	map->cache_type = config->cache_type;
+ 	map->name = config->name;
  
--	if (need_reactivation) /* activate in new group */
--		qfq_activate_class(q, cl, qdisc_peek_len(cl->qdisc));
-+	qfq_rm_from_agg(q, cl);
+@@ -373,6 +377,11 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->read_flag_mask = bus->read_flag_mask;
+ 	}
+ 
++	if (!bus)
++		goto skip_format_initialization;
++	else
++		map->reg_read = _regmap_bus_read;
++
+ 	reg_endian = config->reg_format_endian;
+ 	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+ 		reg_endian = bus->reg_format_endian_default;
+@@ -512,6 +521,15 @@ struct regmap *regmap_init(struct device *dev,
+ 	    !(map->format.format_reg && map->format.format_val))
+ 		goto err_map;
+ 
++skip_format_initialization:
++	if (map->format.format_write) {
++		map->reg_cache = _regmap_reg_cache;
++		map->reg_write = _regmap_bus_formatted_write;
++	} else if (map->format.format_val) {
++		map->reg_cache = NULL;
++		map->reg_write = _regmap_bus_raw_write;
++	}
++
+ 	map->work_buf = kzalloc(map->format.buf_size, GFP_KERNEL);
+ 	if (map->work_buf == NULL) {
+ 		ret = -ENOMEM;
+@@ -878,13 +896,49 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 	return ret;
  }
  
-+/* Move class to a new aggregate, matching the new class weight and/or lmax */
-+static int qfq_change_agg(struct Qdisc *sch, struct qfq_class *cl, u32 weight,
-+			   u32 lmax)
+-int _regmap_write(struct regmap *map, unsigned int reg,
+-		  unsigned int val)
++
++static int _regmap_bus_formatted_write(struct regmap *map, unsigned int reg,
++				       unsigned int val)
 +{
-+	struct qfq_sched *q = qdisc_priv(sch);
-+	struct qfq_aggregate *new_agg = qfq_find_agg(q, lmax, weight);
++	int ret;
++	BUG_ON(!map->format.format_write);
 +
-+	if (new_agg == NULL) { /* create new aggregate */
-+		new_agg = kzalloc(sizeof(*new_agg), GFP_ATOMIC);
-+		if (new_agg == NULL)
-+			return -ENOBUFS;
-+		qfq_init_agg(q, new_agg, lmax, weight);
-+	}
-+	qfq_deact_rm_from_agg(q, cl);
-+	qfq_add_to_agg(q, new_agg, cl);
++	ret = _regmap_select_page(map, &reg, 1);
++	if (ret < 0)
++		return ret;
 +
++	map->format.format_write(map, reg, val);
++
++	trace_regmap_hw_write_start(map->dev, reg, 1);
++
++	ret = map->bus->write(map->bus_context, map->work_buf,
++			      map->format.buf_size);
++
++	trace_regmap_hw_write_done(map->dev, reg, 1);
++
++	return ret;
++}
++
++static int _regmap_bus_raw_write(struct regmap *map, unsigned int reg,
++				 unsigned int val)
++
+ {
+ 	int ret;
+-	BUG_ON(!map->format.format_write && !map->format.format_val);
++	BUG_ON(!map->format.format_val);
++
++	map->format.format_val(map->work_buf + map->format.reg_bytes
++			       + map->format.pad_bytes, val, 0);
++	return _regmap_raw_write(map, reg,
++				 map->work_buf +
++				 map->format.reg_bytes +
++				 map->format.pad_bytes,
++				 map->format.val_bytes);
++}
+ 
+-	if (!map->cache_bypass && map->format.format_write) {
++static int _regmap_reg_cache(struct regmap *map, unsigned int reg,
++			     unsigned int val)
++{
++	if (!map->cache_bypass) {
+ 		ret = regcache_write(map, reg, val);
+ 		if (ret != 0)
+ 			return ret;
+@@ -894,37 +948,31 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 		}
+ 	}
+ 
+-#ifdef LOG_DEVICE
+-	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+-		dev_info(map->dev, "%x <= %x\n", reg, val);
+-#endif
 +	return 0;
 +}
  
- static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 			    struct nlattr **tca, unsigned long *arg)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
- 	struct qfq_class *cl = (struct qfq_class *)*arg;
-+	bool existing = false;
- 	struct nlattr *tb[TCA_QFQ_MAX + 1];
-+	struct qfq_aggregate *new_agg = NULL;
- 	u32 weight, lmax, inv_w;
- 	int err;
- 	int delta_w;
-@@ -286,15 +424,6 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 	} else
- 		weight = 1;
+-	trace_regmap_reg_write(map->dev, reg, val);
++int _regmap_write(struct regmap *map, unsigned int reg,
++		  unsigned int val)
++{
++	int ret;
++	BUG_ON(!map->reg_write);
  
--	inv_w = ONE_FP / weight;
--	weight = ONE_FP / inv_w;
--	delta_w = weight - (cl ? ONE_FP / cl->inv_w : 0);
--	if (q->wsum + delta_w > QFQ_MAX_WSUM) {
--		pr_notice("qfq: total weight out of range (%u + %u)\n",
--			  delta_w, q->wsum);
--		return -EINVAL;
--	}
+-	if (map->format.format_write) {
+-		ret = _regmap_select_page(map, &reg, 1);
++	if (map->reg_cache) {
++		ret = map->reg_cache(map, reg, val);
+ 		if (ret < 0)
+ 			return ret;
++	}
+ 
+-		map->format.format_write(map, reg, val);
 -
- 	if (tb[TCA_QFQ_LMAX]) {
- 		lmax = nla_get_u32(tb[TCA_QFQ_LMAX]);
- 		if (lmax < QFQ_MIN_LMAX || lmax > (1UL << QFQ_MTU_SHIFT)) {
-@@ -304,7 +433,23 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 	} else
- 		lmax = psched_mtu(qdisc_dev(sch));
+-		trace_regmap_hw_write_start(map->dev, reg, 1);
++#ifdef LOG_DEVICE
++	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++		dev_info(map->dev, "%x <= %x\n", reg, val);
++#endif
  
--	if (cl != NULL) {
-+	inv_w = ONE_FP / weight;
-+	weight = ONE_FP / inv_w;
-+
-+	if (cl != NULL &&
-+	    lmax == cl->agg->lmax &&
-+	    weight == cl->agg->class_weight)
-+		return 0; /* nothing to change */
-+
-+	delta_w = weight - (cl ? cl->agg->class_weight : 0);
-+
-+	if (q->wsum + delta_w > QFQ_MAX_WSUM) {
-+		pr_notice("qfq: total weight out of range (%d + %u)\n",
-+			  delta_w, q->wsum);
+-		ret = map->bus->write(map->bus_context, map->work_buf,
+-				      map->format.buf_size);
++	trace_regmap_reg_write(map->dev, reg, val);
+ 
+-		trace_regmap_hw_write_done(map->dev, reg, 1);
++	ret = map->reg_write(map, reg, val);
+ 
+-		return ret;
+-	} else {
+-		map->format.format_val(map->work_buf + map->format.reg_bytes
+-				       + map->format.pad_bytes, val, 0);
+-		return _regmap_raw_write(map, reg,
+-					 map->work_buf +
+-					 map->format.reg_bytes +
+-					 map->format.pad_bytes,
+-					 map->format.val_bytes);
+-	}
++	return ret;
+ }
+ 
+ /**
+@@ -975,6 +1023,8 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ {
+ 	int ret;
+ 
++	if (!map->bus)
 +		return -EINVAL;
-+	}
-+
-+	if (cl != NULL) { /* modify existing class */
- 		if (tca[TCA_RATE]) {
- 			err = gen_replace_estimator(&cl->bstats, &cl->rate_est,
- 						    qdisc_root_sleeping_lock(sch),
-@@ -312,25 +457,18 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 			if (err)
- 				return err;
- 		}
--
--		if (lmax == cl->lmax && inv_w == cl->inv_w)
--			return 0; /* nothing to update */
--
--		sch_tree_lock(sch);
--		qfq_update_reactivate_class(q, cl, inv_w, lmax, delta_w);
--		sch_tree_unlock(sch);
--
--		return 0;
-+		existing = true;
-+		goto set_change_agg;
- 	}
+ 	if (val_len % map->format.val_bytes)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+@@ -1011,7 +1061,7 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	size_t val_bytes = map->format.val_bytes;
+ 	void *wval;
  
-+	/* create and init new class */
- 	cl = kzalloc(sizeof(struct qfq_class), GFP_KERNEL);
- 	if (cl == NULL)
- 		return -ENOBUFS;
- 
- 	cl->refcnt = 1;
- 	cl->common.classid = classid;
--
--	qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
-+	cl->deficit = lmax;
- 
- 	cl->qdisc = qdisc_create_dflt(sch->dev_queue,
- 				      &pfifo_qdisc_ops, classid);
-@@ -341,11 +479,8 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 		err = gen_new_estimator(&cl->bstats, &cl->rate_est,
- 					qdisc_root_sleeping_lock(sch),
- 					tca[TCA_RATE]);
--		if (err) {
--			qdisc_destroy(cl->qdisc);
--			kfree(cl);
--			return err;
--		}
-+		if (err)
-+			goto destroy_class;
- 	}
- 
- 	sch_tree_lock(sch);
-@@ -354,19 +489,39 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 
- 	qdisc_class_hash_grow(sch, &q->clhash);
- 
-+set_change_agg:
-+	sch_tree_lock(sch);
-+	new_agg = qfq_find_agg(q, lmax, weight);
-+	if (new_agg == NULL) { /* create new aggregate */
-+		sch_tree_unlock(sch);
-+		new_agg = kzalloc(sizeof(*new_agg), GFP_KERNEL);
-+		if (new_agg == NULL) {
-+			err = -ENOBUFS;
-+			gen_kill_estimator(&cl->bstats, &cl->rate_est);
-+			goto destroy_class;
-+		}
-+		sch_tree_lock(sch);
-+		qfq_init_agg(q, new_agg, lmax, weight);
-+	}
-+	if (existing)
-+		qfq_deact_rm_from_agg(q, cl);
-+	qfq_add_to_agg(q, new_agg, cl);
-+	sch_tree_unlock(sch);
-+
- 	*arg = (unsigned long)cl;
- 	return 0;
-+
-+destroy_class:
-+	qdisc_destroy(cl->qdisc);
-+	kfree(cl);
-+	return err;
- }
- 
- static void qfq_destroy_class(struct Qdisc *sch, struct qfq_class *cl)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
- 
--	if (cl->inv_w) {
--		q->wsum -= ONE_FP / cl->inv_w;
--		cl->inv_w = 0;
--	}
--
-+	qfq_rm_from_agg(q, cl);
- 	gen_kill_estimator(&cl->bstats, &cl->rate_est);
- 	qdisc_destroy(cl->qdisc);
- 	kfree(cl);
-@@ -481,8 +636,8 @@ static int qfq_dump_class(struct Qdisc *sch, unsigned long arg,
- 	nest = nla_nest_start(skb, TCA_OPTIONS);
- 	if (nest == NULL)
- 		goto nla_put_failure;
--	if (nla_put_u32(skb, TCA_QFQ_WEIGHT, ONE_FP/cl->inv_w) ||
--	    nla_put_u32(skb, TCA_QFQ_LMAX, cl->lmax))
-+	if (nla_put_u32(skb, TCA_QFQ_WEIGHT, cl->agg->class_weight) ||
-+	    nla_put_u32(skb, TCA_QFQ_LMAX, cl->agg->lmax))
- 		goto nla_put_failure;
- 	return nla_nest_end(skb, nest);
- 
-@@ -500,8 +655,8 @@ static int qfq_dump_class_stats(struct Qdisc *sch, unsigned long arg,
- 	memset(&xstats, 0, sizeof(xstats));
- 	cl->qdisc->qstats.qlen = cl->qdisc->q.qlen;
- 
--	xstats.weight = ONE_FP/cl->inv_w;
--	xstats.lmax = cl->lmax;
-+	xstats.weight = cl->agg->class_weight;
-+	xstats.lmax = cl->agg->lmax;
- 
- 	if (gnet_stats_copy_basic(d, &cl->bstats) < 0 ||
- 	    gnet_stats_copy_rate_est(d, &cl->bstats, &cl->rate_est) < 0 ||
-@@ -652,16 +807,16 @@ static void qfq_unblock_groups(struct qfq_sched *q, int index, u64 old_F)
-  * perhaps
-  *
- 	old_V ^= q->V;
--	old_V >>= QFQ_MIN_SLOT_SHIFT;
-+	old_V >>= q->min_slot_shift;
- 	if (old_V) {
- 		...
- 	}
-  *
-  */
--static void qfq_make_eligible(struct qfq_sched *q, u64 old_V)
-+static void qfq_make_eligible(struct qfq_sched *q)
- {
--	unsigned long vslot = q->V >> QFQ_MIN_SLOT_SHIFT;
--	unsigned long old_vslot = old_V >> QFQ_MIN_SLOT_SHIFT;
-+	unsigned long vslot = q->V >> q->min_slot_shift;
-+	unsigned long old_vslot = q->oldV >> q->min_slot_shift;
- 
- 	if (vslot != old_vslot) {
- 		unsigned long mask = (1UL << fls(vslot ^ old_vslot)) - 1;
-@@ -672,34 +827,38 @@ static void qfq_make_eligible(struct qfq_sched *q, u64 old_V)
- 
- 
- /*
-- * If the weight and lmax (max_pkt_size) of the classes do not change,
-- * then QFQ guarantees that the slot index is never higher than
-- * 2 + ((1<<QFQ_MTU_SHIFT)/QFQ_MIN_LMAX) * (QFQ_MAX_WEIGHT/QFQ_MAX_WSUM).
-+ * The index of the slot in which the aggregate is to be inserted must
-+ * not be higher than QFQ_MAX_SLOTS-2. There is a '-2' and not a '-1'
-+ * because the start time of the group may be moved backward by one
-+ * slot after the aggregate has been inserted, and this would cause
-+ * non-empty slots to be right-shifted by one position.
-  *
-- * With the current values of the above constants, the index is
-- * then guaranteed to never be higher than 2 + 256 * (1 / 16) = 18.
-+ * If the weight and lmax (max_pkt_size) of the classes do not change,
-+ * then QFQ+ does meet the above contraint according to the current
-+ * values of its parameters. In fact, if the weight and lmax of the
-+ * classes do not change, then, from the theory, QFQ+ guarantees that
-+ * the slot index is never higher than
-+ * 2 + QFQ_MAX_AGG_CLASSES * ((1<<QFQ_MTU_SHIFT)/QFQ_MIN_LMAX) *
-+ * (QFQ_MAX_WEIGHT/QFQ_MAX_WSUM) = 2 + 8 * 128 * (1 / 64) = 18
-  *
-  * When the weight of a class is increased or the lmax of the class is
-- * decreased, a new class with smaller slot size may happen to be
-- * activated. The activation of this class should be properly delayed
-- * to when the service of the class has finished in the ideal system
-- * tracked by QFQ. If the activation of the class is not delayed to
-- * this reference time instant, then this class may be unjustly served
-- * before other classes waiting for service. This may cause
-- * (unfrequently) the above bound to the slot index to be violated for
-- * some of these unlucky classes.
-+ * decreased, a new aggregate with smaller slot size than the original
-+ * parent aggregate of the class may happen to be activated. The
-+ * activation of this aggregate should be properly delayed to when the
-+ * service of the class has finished in the ideal system tracked by
-+ * QFQ+. If the activation of the aggregate is not delayed to this
-+ * reference time instant, then this aggregate may be unjustly served
-+ * before other aggregates waiting for service. This may cause the
-+ * above bound to the slot index to be violated for some of these
-+ * unlucky aggregates.
-  *
-- * Instead of delaying the activation of the new class, which is quite
-- * complex, the following inaccurate but simple solution is used: if
-- * the slot index is higher than QFQ_MAX_SLOTS-2, then the timestamps
-- * of the class are shifted backward so as to let the slot index
-- * become equal to QFQ_MAX_SLOTS-2. This threshold is used because, if
-- * the slot index is above it, then the data structure implementing
-- * the bucket list either gets immediately corrupted or may get
-- * corrupted on a possible next packet arrival that causes the start
-- * time of the group to be shifted backward.
-+ * Instead of delaying the activation of the new aggregate, which is
-+ * quite complex, the following inaccurate but simple solution is used:
-+ * if the slot index is higher than QFQ_MAX_SLOTS-2, then the
-+ * timestamps of the aggregate are shifted backward so as to let the
-+ * slot index become equal to QFQ_MAX_SLOTS-2.
-  */
--static void qfq_slot_insert(struct qfq_group *grp, struct qfq_class *cl,
-+static void qfq_slot_insert(struct qfq_group *grp, struct qfq_aggregate *agg,
- 			    u64 roundedS)
- {
- 	u64 slot = (roundedS - grp->S) >> grp->slot_shift;
-@@ -708,22 +867,22 @@ static void qfq_slot_insert(struct qfq_group *grp, struct qfq_class *cl,
- 	if (unlikely(slot > QFQ_MAX_SLOTS - 2)) {
- 		u64 deltaS = roundedS - grp->S -
- 			((u64)(QFQ_MAX_SLOTS - 2)<<grp->slot_shift);
--		cl->S -= deltaS;
--		cl->F -= deltaS;
-+		agg->S -= deltaS;
-+		agg->F -= deltaS;
- 		slot = QFQ_MAX_SLOTS - 2;
- 	}
- 
- 	i = (grp->front + slot) % QFQ_MAX_SLOTS;
- 
--	hlist_add_head(&cl->next, &grp->slots[i]);
-+	hlist_add_head(&agg->next, &grp->slots[i]);
- 	__set_bit(slot, &grp->full_slots);
- }
- 
- /* Maybe introduce hlist_first_entry?? */
--static struct qfq_class *qfq_slot_head(struct qfq_group *grp)
-+static struct qfq_aggregate *qfq_slot_head(struct qfq_group *grp)
- {
- 	return hlist_entry(grp->slots[grp->front].first,
--			   struct qfq_class, next);
-+			   struct qfq_aggregate, next);
- }
- 
- /*
-@@ -731,20 +890,20 @@ static struct qfq_class *qfq_slot_head(struct qfq_group *grp)
-  */
- static void qfq_front_slot_remove(struct qfq_group *grp)
- {
--	struct qfq_class *cl = qfq_slot_head(grp);
-+	struct qfq_aggregate *agg = qfq_slot_head(grp);
- 
--	BUG_ON(!cl);
--	hlist_del(&cl->next);
-+	BUG_ON(!agg);
-+	hlist_del(&agg->next);
- 	if (hlist_empty(&grp->slots[grp->front]))
- 		__clear_bit(0, &grp->full_slots);
- }
- 
- /*
-- * Returns the first full queue in a group. As a side effect,
-- * adjust the bucket list so the first non-empty bucket is at
-- * position 0 in full_slots.
-+ * Returns the first aggregate in the first non-empty bucket of the
-+ * group. As a side effect, adjusts the bucket list so the first
-+ * non-empty bucket is at position 0 in full_slots.
-  */
--static struct qfq_class *qfq_slot_scan(struct qfq_group *grp)
-+static struct qfq_aggregate *qfq_slot_scan(struct qfq_group *grp)
- {
- 	unsigned int i;
- 
-@@ -780,7 +939,7 @@ static void qfq_slot_rotate(struct qfq_group *grp, u64 roundedS)
- 	grp->front = (grp->front - i) % QFQ_MAX_SLOTS;
- }
- 
--static void qfq_update_eligible(struct qfq_sched *q, u64 old_V)
-+static void qfq_update_eligible(struct qfq_sched *q)
- {
- 	struct qfq_group *grp;
- 	unsigned long ineligible;
-@@ -792,137 +951,226 @@ static void qfq_update_eligible(struct qfq_sched *q, u64 old_V)
- 			if (qfq_gt(grp->S, q->V))
- 				q->V = grp->S;
- 		}
--		qfq_make_eligible(q, old_V);
-+		qfq_make_eligible(q);
- 	}
- }
- 
--/*
-- * Updates the class, returns true if also the group needs to be updated.
-- */
--static bool qfq_update_class(struct qfq_group *grp, struct qfq_class *cl)
-+/* Dequeue head packet of the head class in the DRR queue of the aggregate. */
-+static void agg_dequeue(struct qfq_aggregate *agg,
-+			struct qfq_class *cl, unsigned int len)
- {
--	unsigned int len = qdisc_peek_len(cl->qdisc);
-+	qdisc_dequeue_peeked(cl->qdisc);
- 
--	cl->S = cl->F;
--	if (!len)
--		qfq_front_slot_remove(grp);	/* queue is empty */
--	else {
--		u64 roundedS;
-+	cl->deficit -= (int) len;
- 
--		cl->F = cl->S + (u64)len * cl->inv_w;
--		roundedS = qfq_round_down(cl->S, grp->slot_shift);
--		if (roundedS == grp->S)
--			return false;
--
--		qfq_front_slot_remove(grp);
--		qfq_slot_insert(grp, cl, roundedS);
-+	if (cl->qdisc->q.qlen == 0) /* no more packets, remove from list */
-+		list_del(&cl->alist);
-+	else if (cl->deficit < qdisc_pkt_len(cl->qdisc->ops->peek(cl->qdisc))) {
-+		cl->deficit += agg->lmax;
-+		list_move_tail(&cl->alist, &agg->active);
- 	}
-+}
-+
-+static inline struct sk_buff *qfq_peek_skb(struct qfq_aggregate *agg,
-+					   struct qfq_class **cl,
-+					   unsigned int *len)
-+{
-+	struct sk_buff *skb;
- 
--	return true;
-+	*cl = list_first_entry(&agg->active, struct qfq_class, alist);
-+	skb = (*cl)->qdisc->ops->peek((*cl)->qdisc);
-+	if (skb == NULL)
-+		WARN_ONCE(1, "qfq_dequeue: non-workconserving leaf\n");
-+	else
-+		*len = qdisc_pkt_len(skb);
-+
-+	return skb;
-+}
-+
-+/* Update F according to the actual service received by the aggregate. */
-+static inline void charge_actual_service(struct qfq_aggregate *agg)
-+{
-+	/* compute the service received by the aggregate */
-+	u32 service_received = agg->initial_budget - agg->budget;
-+
-+	agg->F = agg->S + (u64)service_received * agg->inv_w;
- }
- 
- static struct sk_buff *qfq_dequeue(struct Qdisc *sch)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
--	struct qfq_group *grp;
-+	struct qfq_aggregate *in_serv_agg = q->in_serv_agg;
- 	struct qfq_class *cl;
--	struct sk_buff *skb;
--	unsigned int len;
--	u64 old_V;
-+	struct sk_buff *skb = NULL;
-+	/* next-packet len, 0 means no more active classes in in-service agg */
-+	unsigned int len = 0;
- 
--	if (!q->bitmaps[ER])
-+	if (in_serv_agg == NULL)
- 		return NULL;
- 
--	grp = qfq_ffs(q, q->bitmaps[ER]);
-+	if (!list_empty(&in_serv_agg->active))
-+		skb = qfq_peek_skb(in_serv_agg, &cl, &len);
- 
--	cl = qfq_slot_head(grp);
--	skb = qdisc_dequeue_peeked(cl->qdisc);
--	if (!skb) {
--		WARN_ONCE(1, "qfq_dequeue: non-workconserving leaf\n");
--		return NULL;
-+	/*
-+	 * If there are no active classes in the in-service aggregate,
-+	 * or if the aggregate has not enough budget to serve its next
-+	 * class, then choose the next aggregate to serve.
-+	 */
-+	if (len == 0 || in_serv_agg->budget < len) {
-+		charge_actual_service(in_serv_agg);
-+
-+		/* recharge the budget of the aggregate */
-+		in_serv_agg->initial_budget = in_serv_agg->budget =
-+			in_serv_agg->budgetmax;
-+
-+		if (!list_empty(&in_serv_agg->active))
-+			/*
-+			 * Still active: reschedule for
-+			 * service. Possible optimization: if no other
-+			 * aggregate is active, then there is no point
-+			 * in rescheduling this aggregate, and we can
-+			 * just keep it as the in-service one. This
-+			 * should be however a corner case, and to
-+			 * handle it, we would need to maintain an
-+			 * extra num_active_aggs field.
-+			*/
-+			qfq_activate_agg(q, in_serv_agg, requeue);
-+		else if (sch->q.qlen == 0) { /* no aggregate to serve */
-+			q->in_serv_agg = NULL;
-+			return NULL;
-+		}
-+
-+		/*
-+		 * If we get here, there are other aggregates queued:
-+		 * choose the new aggregate to serve.
-+		 */
-+		in_serv_agg = q->in_serv_agg = qfq_choose_next_agg(q);
-+		skb = qfq_peek_skb(in_serv_agg, &cl, &len);
- 	}
-+	if (!skb)
-+		return NULL;
- 
- 	sch->q.qlen--;
- 	qdisc_bstats_update(sch, skb);
- 
--	old_V = q->V;
--	len = qdisc_pkt_len(skb);
-+	agg_dequeue(in_serv_agg, cl, len);
-+	in_serv_agg->budget -= len;
- 	q->V += (u64)len * IWSUM;
- 	pr_debug("qfq dequeue: len %u F %lld now %lld\n",
--		 len, (unsigned long long) cl->F, (unsigned long long) q->V);
-+		 len, (unsigned long long) in_serv_agg->F,
-+		 (unsigned long long) q->V);
- 
--	if (qfq_update_class(grp, cl)) {
--		u64 old_F = grp->F;
-+	return skb;
-+}
- 
--		cl = qfq_slot_scan(grp);
--		if (!cl)
--			__clear_bit(grp->index, &q->bitmaps[ER]);
--		else {
--			u64 roundedS = qfq_round_down(cl->S, grp->slot_shift);
--			unsigned int s;
-+static struct qfq_aggregate *qfq_choose_next_agg(struct qfq_sched *q)
-+{
-+	struct qfq_group *grp;
-+	struct qfq_aggregate *agg, *new_front_agg;
-+	u64 old_F;
- 
--			if (grp->S == roundedS)
--				goto skip_unblock;
--			grp->S = roundedS;
--			grp->F = roundedS + (2ULL << grp->slot_shift);
--			__clear_bit(grp->index, &q->bitmaps[ER]);
--			s = qfq_calc_state(q, grp);
--			__set_bit(grp->index, &q->bitmaps[s]);
--		}
-+	qfq_update_eligible(q);
-+	q->oldV = q->V;
-+
-+	if (!q->bitmaps[ER])
-+		return NULL;
-+
-+	grp = qfq_ffs(q, q->bitmaps[ER]);
-+	old_F = grp->F;
-+
-+	agg = qfq_slot_head(grp);
- 
--		qfq_unblock_groups(q, grp->index, old_F);
-+	/* agg starts to be served, remove it from schedule */
-+	qfq_front_slot_remove(grp);
-+
-+	new_front_agg = qfq_slot_scan(grp);
-+
-+	if (new_front_agg == NULL) /* group is now inactive, remove from ER */
-+		__clear_bit(grp->index, &q->bitmaps[ER]);
-+	else {
-+		u64 roundedS = qfq_round_down(new_front_agg->S,
-+					      grp->slot_shift);
-+		unsigned int s;
-+
-+		if (grp->S == roundedS)
-+			return agg;
-+		grp->S = roundedS;
-+		grp->F = roundedS + (2ULL << grp->slot_shift);
-+		__clear_bit(grp->index, &q->bitmaps[ER]);
-+		s = qfq_calc_state(q, grp);
-+		__set_bit(grp->index, &q->bitmaps[s]);
- 	}
- 
--skip_unblock:
--	qfq_update_eligible(q, old_V);
-+	qfq_unblock_groups(q, grp->index, old_F);
- 
--	return skb;
-+	return agg;
- }
- 
- /*
-- * Assign a reasonable start time for a new flow k in group i.
-+ * Assign a reasonable start time for a new aggregate in group i.
-  * Admissible values for \hat(F) are multiples of \sigma_i
-  * no greater than V+\sigma_i . Larger values mean that
-  * we had a wraparound so we consider the timestamp to be stale.
-  *
-  * If F is not stale and F >= V then we set S = F.
-  * Otherwise we should assign S = V, but this may violate
-- * the ordering in ER. So, if we have groups in ER, set S to
-- * the F_j of the first group j which would be blocking us.
-+ * the ordering in EB (see [2]). So, if we have groups in ER,
-+ * set S to the F_j of the first group j which would be blocking us.
-  * We are guaranteed not to move S backward because
-  * otherwise our group i would still be blocked.
-  */
--static void qfq_update_start(struct qfq_sched *q, struct qfq_class *cl)
-+static void qfq_update_start(struct qfq_sched *q, struct qfq_aggregate *agg)
- {
- 	unsigned long mask;
- 	u64 limit, roundedF;
--	int slot_shift = cl->grp->slot_shift;
-+	int slot_shift = agg->grp->slot_shift;
- 
--	roundedF = qfq_round_down(cl->F, slot_shift);
-+	roundedF = qfq_round_down(agg->F, slot_shift);
- 	limit = qfq_round_down(q->V, slot_shift) + (1ULL << slot_shift);
- 
--	if (!qfq_gt(cl->F, q->V) || qfq_gt(roundedF, limit)) {
-+	if (!qfq_gt(agg->F, q->V) || qfq_gt(roundedF, limit)) {
- 		/* timestamp was stale */
--		mask = mask_from(q->bitmaps[ER], cl->grp->index);
-+		mask = mask_from(q->bitmaps[ER], agg->grp->index);
- 		if (mask) {
- 			struct qfq_group *next = qfq_ffs(q, mask);
- 			if (qfq_gt(roundedF, next->F)) {
- 				if (qfq_gt(limit, next->F))
--					cl->S = next->F;
-+					agg->S = next->F;
- 				else /* preserve timestamp correctness */
--					cl->S = limit;
-+					agg->S = limit;
- 				return;
- 			}
- 		}
--		cl->S = q->V;
-+		agg->S = q->V;
- 	} else  /* timestamp is not stale */
--		cl->S = cl->F;
-+		agg->S = agg->F;
- }
- 
-+/*
-+ * Update the timestamps of agg before scheduling/rescheduling it for
-+ * service.  In particular, assign to agg->F its maximum possible
-+ * value, i.e., the virtual finish time with which the aggregate
-+ * should be labeled if it used all its budget once in service.
-+ */
-+static inline void
-+qfq_update_agg_ts(struct qfq_sched *q,
-+		    struct qfq_aggregate *agg, enum update_reason reason)
-+{
-+	if (reason != requeue)
-+		qfq_update_start(q, agg);
-+	else /* just charge agg for the service received */
-+		agg->S = agg->F;
-+
-+	agg->F = agg->S + (u64)agg->budgetmax * agg->inv_w;
-+}
-+
-+static void qfq_schedule_agg(struct qfq_sched *, struct qfq_aggregate *);
-+
- static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
- 	struct qfq_class *cl;
-+	struct qfq_aggregate *agg;
- 	int err = 0;
- 
- 	cl = qfq_classify(skb, sch, &err);
-@@ -934,11 +1182,13 @@ static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- 	}
- 	pr_debug("qfq_enqueue: cl = %x\n", cl->common.classid);
- 
--	if (unlikely(cl->lmax < qdisc_pkt_len(skb))) {
-+	if (unlikely(cl->agg->lmax < qdisc_pkt_len(skb))) {
- 		pr_debug("qfq: increasing maxpkt from %u to %u for class %u",
--			  cl->lmax, qdisc_pkt_len(skb), cl->common.classid);
--		qfq_update_reactivate_class(q, cl, cl->inv_w,
--					    qdisc_pkt_len(skb), 0);
-+			 cl->agg->lmax, qdisc_pkt_len(skb), cl->common.classid);
-+		err = qfq_change_agg(sch, cl, cl->agg->class_weight,
-+				     qdisc_pkt_len(skb));
-+		if (err)
-+			return err;
- 	}
- 
- 	err = qdisc_enqueue(skb, cl->qdisc);
-@@ -954,35 +1204,50 @@ static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- 	bstats_update(&cl->bstats, skb);
- 	++sch->q.qlen;
- 
--	/* If the new skb is not the head of queue, then done here. */
--	if (cl->qdisc->q.qlen != 1)
-+	agg = cl->agg;
-+	/* if the queue was not empty, then done here */
-+	if (cl->qdisc->q.qlen != 1) {
-+		if (unlikely(skb == cl->qdisc->ops->peek(cl->qdisc)) &&
-+		    list_first_entry(&agg->active, struct qfq_class, alist)
-+		    == cl && cl->deficit < qdisc_pkt_len(skb))
-+			list_move_tail(&cl->alist, &agg->active);
-+
- 		return err;
-+	}
-+
-+	/* schedule class for service within the aggregate */
-+	cl->deficit = agg->lmax;
-+	list_add_tail(&cl->alist, &agg->active);
- 
--	/* If reach this point, queue q was idle */
--	qfq_activate_class(q, cl, qdisc_pkt_len(skb));
-+	if (list_first_entry(&agg->active, struct qfq_class, alist) != cl)
-+		return err; /* aggregate was not empty, nothing else to do */
-+
-+	/* recharge budget */
-+	agg->initial_budget = agg->budget = agg->budgetmax;
-+
-+	qfq_update_agg_ts(q, agg, enqueue);
-+	if (q->in_serv_agg == NULL)
-+		q->in_serv_agg = agg;
-+	else if (agg != q->in_serv_agg)
-+		qfq_schedule_agg(q, agg);
- 
- 	return err;
- }
- 
- /*
-- * Handle class switch from idle to backlogged.
-+ * Schedule aggregate according to its timestamps.
-  */
--static void qfq_activate_class(struct qfq_sched *q, struct qfq_class *cl,
--			       unsigned int pkt_len)
-+static void qfq_schedule_agg(struct qfq_sched *q, struct qfq_aggregate *agg)
- {
--	struct qfq_group *grp = cl->grp;
-+	struct qfq_group *grp = agg->grp;
- 	u64 roundedS;
- 	int s;
- 
--	qfq_update_start(q, cl);
--
--	/* compute new finish time and rounded start. */
--	cl->F = cl->S + (u64)pkt_len * cl->inv_w;
--	roundedS = qfq_round_down(cl->S, grp->slot_shift);
-+	roundedS = qfq_round_down(agg->S, grp->slot_shift);
- 
- 	/*
--	 * insert cl in the correct bucket.
--	 * If cl->S >= grp->S we don't need to adjust the
-+	 * Insert agg in the correct bucket.
-+	 * If agg->S >= grp->S we don't need to adjust the
- 	 * bucket list and simply go to the insertion phase.
- 	 * Otherwise grp->S is decreasing, we must make room
- 	 * in the bucket list, and also recompute the group state.
-@@ -990,10 +1255,10 @@ static void qfq_activate_class(struct qfq_sched *q, struct qfq_class *cl,
- 	 * was in ER make sure to adjust V.
+-	if (!map->format.parse_val)
++	if (!map->format.parse_val || !map->bus)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+@@ -1021,7 +1071,7 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	/* No formatting is require if val_byte is 1 */
+ 	if (val_bytes == 1) {
+ 		wval = (void *)val;
+-	} else {
++	} else if (map->format.parse_val) {
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
+@@ -1037,10 +1087,17 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
  	 */
- 	if (grp->full_slots) {
--		if (!qfq_gt(grp->S, cl->S))
-+		if (!qfq_gt(grp->S, agg->S))
- 			goto skip_update;
- 
--		/* create a slot for this cl->S */
-+		/* create a slot for this agg->S */
- 		qfq_slot_rotate(grp, roundedS);
- 		/* group was surely ineligible, remove */
- 		__clear_bit(grp->index, &q->bitmaps[IR]);
-@@ -1008,46 +1273,61 @@ static void qfq_activate_class(struct qfq_sched *q, struct qfq_class *cl,
- 
- 	pr_debug("qfq enqueue: new state %d %#lx S %lld F %lld V %lld\n",
- 		 s, q->bitmaps[s],
--		 (unsigned long long) cl->S,
--		 (unsigned long long) cl->F,
-+		 (unsigned long long) agg->S,
-+		 (unsigned long long) agg->F,
- 		 (unsigned long long) q->V);
- 
- skip_update:
--	qfq_slot_insert(grp, cl, roundedS);
-+	qfq_slot_insert(grp, agg, roundedS);
+ 	if (map->use_single_rw) {
+ 		for (i = 0; i < val_count; i++) {
++			/*
++			   TODO: It looks like it could be a bug since
++			   returning at this point would not unlock
++			   regmap. Shouldn't it also be _regmap_raw_write
++			   since the map->lock has already been
++			   called? Need to investigate this further.
++			 */
+ 			ret = regmap_raw_write(map,
+-						reg + (i * map->reg_stride),
+-						val + (i * val_bytes),
+-						val_bytes);
++					       reg + (i * map->reg_stride),
++					       val + (i * val_bytes),
++					       val_bytes);
+ 			if (ret != 0)
+ 				return ret;
+ 		}
+@@ -1090,10 +1147,27 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	return ret;
  }
  
- 
-+/* Update agg ts and schedule agg for service */
-+static void qfq_activate_agg(struct qfq_sched *q, struct qfq_aggregate *agg,
-+			     enum update_reason reason)
++static int _regmap_bus_read(struct regmap *map, unsigned int reg,
++			    unsigned int *val)
 +{
-+	qfq_update_agg_ts(q, agg, reason);
-+	qfq_schedule_agg(q, agg);
++	int ret;
++
++	if (!map->format.parse_val)
++		return -EINVAL;
++
++	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
++	if (ret == 0)
++		*val = map->format.parse_val(map->work_buf);
++
++	return ret;
 +}
 +
- static void qfq_slot_remove(struct qfq_sched *q, struct qfq_group *grp,
--			    struct qfq_class *cl)
-+			    struct qfq_aggregate *agg)
+ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 			unsigned int *val)
  {
- 	unsigned int i, offset;
- 	u64 roundedS;
- 
--	roundedS = qfq_round_down(cl->S, grp->slot_shift);
-+	roundedS = qfq_round_down(agg->S, grp->slot_shift);
- 	offset = (roundedS - grp->S) >> grp->slot_shift;
+ 	int ret;
++	BUG_ON(!map->reg_read);
 +
- 	i = (grp->front + offset) % QFQ_MAX_SLOTS;
  
--	hlist_del(&cl->next);
-+	hlist_del(&agg->next);
- 	if (hlist_empty(&grp->slots[i]))
- 		__clear_bit(offset, &grp->full_slots);
- }
- 
- /*
-- * called to forcibly destroy a queue.
-- * If the queue is not in the front bucket, or if it has
-- * other queues in the front bucket, we can simply remove
-- * the queue with no other side effects.
-+ * Called to forcibly deschedule an aggregate.  If the aggregate is
-+ * not in the front bucket, or if the latter has other aggregates in
-+ * the front bucket, we can simply remove the aggregate with no other
-+ * side effects.
-  * Otherwise we must propagate the event up.
-  */
--static void qfq_deactivate_class(struct qfq_sched *q, struct qfq_class *cl)
-+static void qfq_deactivate_agg(struct qfq_sched *q, struct qfq_aggregate *agg)
- {
--	struct qfq_group *grp = cl->grp;
-+	struct qfq_group *grp = agg->grp;
- 	unsigned long mask;
- 	u64 roundedS;
- 	int s;
- 
--	cl->F = cl->S;
--	qfq_slot_remove(q, grp, cl);
-+	if (agg == q->in_serv_agg) {
-+		charge_actual_service(agg);
-+		q->in_serv_agg = qfq_choose_next_agg(q);
-+		return;
-+	}
-+
-+	agg->F = agg->S;
-+	qfq_slot_remove(q, grp, agg);
- 
- 	if (!grp->full_slots) {
- 		__clear_bit(grp->index, &q->bitmaps[IR]);
-@@ -1066,8 +1346,8 @@ static void qfq_deactivate_class(struct qfq_sched *q, struct qfq_class *cl)
- 		}
- 		__clear_bit(grp->index, &q->bitmaps[ER]);
- 	} else if (hlist_empty(&grp->slots[grp->front])) {
--		cl = qfq_slot_scan(grp);
--		roundedS = qfq_round_down(cl->S, grp->slot_shift);
-+		agg = qfq_slot_scan(grp);
-+		roundedS = qfq_round_down(agg->S, grp->slot_shift);
- 		if (grp->S != roundedS) {
- 			__clear_bit(grp->index, &q->bitmaps[ER]);
- 			__clear_bit(grp->index, &q->bitmaps[IR]);
-@@ -1080,7 +1360,7 @@ static void qfq_deactivate_class(struct qfq_sched *q, struct qfq_class *cl)
- 		}
+ 	if (!map->cache_bypass) {
+ 		ret = regcache_read(map, reg, val);
+@@ -1101,26 +1175,21 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 			return 0;
  	}
  
--	qfq_update_eligible(q, q->V);
-+	qfq_update_eligible(q);
- }
- 
- static void qfq_qlen_notify(struct Qdisc *sch, unsigned long arg)
-@@ -1092,6 +1372,32 @@ static void qfq_qlen_notify(struct Qdisc *sch, unsigned long arg)
- 		qfq_deactivate_class(q, cl);
- }
- 
-+static unsigned int qfq_drop_from_slot(struct qfq_sched *q,
-+				       struct hlist_head *slot)
-+{
-+	struct qfq_aggregate *agg;
-+	struct hlist_node *n;
-+	struct qfq_class *cl;
-+	unsigned int len;
-+
-+	hlist_for_each_entry(agg, n, slot, next) {
-+		list_for_each_entry(cl, &agg->active, alist) {
-+
-+			if (!cl->qdisc->ops->drop)
-+				continue;
-+
-+			len = cl->qdisc->ops->drop(cl->qdisc);
-+			if (len > 0) {
-+				if (cl->qdisc->q.qlen == 0)
-+					qfq_deactivate_class(q, cl);
-+
-+				return len;
-+			}
-+		}
-+	}
-+	return 0;
-+}
-+
- static unsigned int qfq_drop(struct Qdisc *sch)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
-@@ -1101,24 +1407,13 @@ static unsigned int qfq_drop(struct Qdisc *sch)
- 	for (i = 0; i <= QFQ_MAX_INDEX; i++) {
- 		grp = &q->groups[i];
- 		for (j = 0; j < QFQ_MAX_SLOTS; j++) {
--			struct qfq_class *cl;
--			struct hlist_node *n;
+-	if (!map->format.parse_val)
+-		return -EINVAL;
 -
--			hlist_for_each_entry(cl, n, &grp->slots[j], next) {
+ 	if (map->cache_only)
+ 		return -EBUSY;
+ 
+-	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
+-	if (ret == 0) {
+-		*val = map->format.parse_val(map->work_buf);
++	ret g= map->reg_read(map, reg, val);
+ 
++	if (ret == 0) {
+ #ifdef LOG_DEVICE
+ 		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 			dev_info(map->dev, "%x => %x\n", reg, *val);
+ #endif
 -
--				if (!cl->qdisc->ops->drop)
--					continue;
--
--				len = cl->qdisc->ops->drop(cl->qdisc);
--				if (len > 0) {
--					sch->q.qlen--;
--					if (!cl->qdisc->q.qlen)
--						qfq_deactivate_class(q, cl);
--
--					return len;
--				}
-+			len = qfq_drop_from_slot(q, &grp->slots[j]);
-+			if (len > 0) {
-+				sch->q.qlen--;
-+				return len;
- 			}
- 		}
-+
- 	}
- 
- 	return 0;
-@@ -1129,44 +1424,51 @@ static int qfq_init_qdisc(struct Qdisc *sch, struct nlattr *opt)
- 	struct qfq_sched *q = qdisc_priv(sch);
- 	struct qfq_group *grp;
- 	int i, j, err;
-+	u32 max_cl_shift, maxbudg_shift, max_classes;
- 
- 	err = qdisc_class_hash_init(&q->clhash);
- 	if (err < 0)
- 		return err;
- 
-+	if (qdisc_dev(sch)->tx_queue_len + 1 > QFQ_MAX_AGG_CLASSES)
-+		max_classes = QFQ_MAX_AGG_CLASSES;
-+	else
-+		max_classes = qdisc_dev(sch)->tx_queue_len + 1;
-+	/* max_cl_shift = floor(log_2(max_classes)) */
-+	max_cl_shift = __fls(max_classes);
-+	q->max_agg_classes = 1<<max_cl_shift;
-+
-+	/* maxbudg_shift = log2(max_len * max_classes_per_agg) */
-+	maxbudg_shift = QFQ_MTU_SHIFT + max_cl_shift;
-+	q->min_slot_shift = FRAC_BITS + maxbudg_shift - QFQ_MAX_INDEX;
-+
- 	for (i = 0; i <= QFQ_MAX_INDEX; i++) {
- 		grp = &q->groups[i];
- 		grp->index = i;
--		grp->slot_shift = QFQ_MTU_SHIFT + FRAC_BITS
--				   - (QFQ_MAX_INDEX - i);
-+		grp->slot_shift = q->min_slot_shift + i;
- 		for (j = 0; j < QFQ_MAX_SLOTS; j++)
- 			INIT_HLIST_HEAD(&grp->slots[j]);
- 	}
- 
-+	INIT_HLIST_HEAD(&q->nonfull_aggs);
-+
- 	return 0;
- }
- 
- static void qfq_reset_qdisc(struct Qdisc *sch)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
--	struct qfq_group *grp;
- 	struct qfq_class *cl;
--	struct hlist_node *n, *tmp;
--	unsigned int i, j;
-+	struct hlist_node *n;
-+	unsigned int i;
- 
--	for (i = 0; i <= QFQ_MAX_INDEX; i++) {
--		grp = &q->groups[i];
--		for (j = 0; j < QFQ_MAX_SLOTS; j++) {
--			hlist_for_each_entry_safe(cl, n, tmp,
--						  &grp->slots[j], next) {
-+	for (i = 0; i < q->clhash.hashsize; i++) {
-+		hlist_for_each_entry(cl, n, &q->clhash.hash[i], common.hnode) {
-+			if (cl->qdisc->q.qlen > 0)
- 				qfq_deactivate_class(q, cl);
--			}
--		}
+ 		trace_regmap_reg_read(map->dev, reg, *val);
 -	}
  
--	for (i = 0; i < q->clhash.hashsize; i++) {
--		hlist_for_each_entry(cl, n, &q->clhash.hash[i], common.hnode)
- 			qdisc_reset(cl->qdisc);
-+		}
- 	}
- 	sch->q.qlen = 0;
+-	if (ret == 0 && !map->cache_bypass)
+-		regcache_write(map, reg, *val);
++		if (!map->cache_bypass)
++			regcache_write(map, reg, *val);
++	}
+ 
+ 	return ret;
  }
+@@ -1171,6 +1240,8 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	unsigned int v;
+ 	int ret, i;
+ 
++	if (!map->bus)
++		return -EINVAL;
+ 	if (val_len % map->format.val_bytes)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+@@ -1222,7 +1293,7 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ 	size_t val_bytes = map->format.val_bytes;
+ 	bool vol = regmap_volatile_range(map, reg, val_count);
+ 
+-	if (!map->format.parse_val)
++	if (!map->format.parse_val || !map->bus)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+@@ -1418,3 +1489,4 @@ static int __init regmap_initcall(void)
+ 	return 0;
+ }
+ postcore_initcall(regmap_initcall);
++
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 7f7e00d..8e0e946 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -53,6 +53,8 @@ enum regmap_endian {
+ 	REGMAP_ENDIAN_NATIVE,
+ };
+ 
++struct regmap;
++
+ /**
+  * Configuration for the register map of a device.
+  *
+@@ -75,7 +77,12 @@ enum regmap_endian {
+  * @precious_reg: Optional callback returning true if the rgister
+  *                should not be read outside of a call from the driver
+  *                (eg, a clear on read interrupt status register).
+- *
++ * @reg_read: Optional, register read callback. For devices using
++ *            predefined "bus"(I2C, etc.) this is filled by the regmap
++ *            susbsytem.
++ * @reg_write: Optional, register write callback. For devices using
++ *             predefined "bus"(I2C, etc.) this is filled by the regmap
++ *             susbsytem.
+  * @max_register: Optional, specifies the maximum valid register index.
+  * @reg_defaults: Power on reset values for registers (for use with
+  *                register cache support).
+@@ -117,6 +124,9 @@ struct regmap_config {
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
+ 
++	int (*reg_read)(struct regmap *map, unsigned int reg, unsigned int *val);
++	int (*reg_write)(struct regmap *map, unsigned int reg, unsigned int val);
++
+ 	unsigned int max_register;
+ 	const struct reg_default *reg_defaults;
+ 	unsigned int num_reg_defaults;
 -- 
-1.7.9.5
+1.7.10.4
 
