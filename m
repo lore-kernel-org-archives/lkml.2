@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757743Ab2KWHSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 02:18:55 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57663 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753524Ab2KWHSy (ORCPT
+	id S1757801Ab2KWHTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 02:19:36 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60569 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab2KWHTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 02:18:54 -0500
-Message-ID: <50AF23AB.3010002@marvell.com>
-Date: Fri, 23 Nov 2012 15:20:11 +0800
-From: Qing Xu <qingx@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 23 Nov 2012 02:19:35 -0500
+Date: Thu, 22 Nov 2012 23:19:31 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] CLK: uninline clk_prepare() and clk_unprepare()
+Message-ID: <20121123071931.GB12631@core.coreip.homeip.net>
+References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1353403339-11679-2-git-send-email-dmitry.torokhov@gmail.com>
+ <CAKohpo=B_7rVwePziyNe0rTMokcib_FgEN28cy4nByAzbUyaqg@mail.gmail.com>
+ <20121121204324.21126.99677@nucleus>
+ <20121121205424.GA25470@core.coreip.homeip.net>
+ <20121121223859.GQ3290@n2100.arm.linux.org.uk>
+ <20121122021750.GD25470@core.coreip.homeip.net>
+ <20121122093033.GA5764@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Qing Xu <qingx@marvell.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        Chao Xie <cxie4@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH 3/7] mfd: max8925: fix onkey driver irq base
-References: <1352187570-9803-1-git-send-email-qingx@marvell.com>
-In-Reply-To: <1352187570-9803-1-git-send-email-qingx@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Nov 2012 07:18:48.0640 (UTC) FILETIME=[C8276400:01CDC94A]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122093033.GA5764@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 03:39 PM, Qing Xu wrote:
-> From: Qing Xu <qingx@marvell.com>
->
-> update onkey driver's irq base, it should get from max8925,
-> but not save in a private value
->
-> Signed-off-by: Qing Xu <qingx@marvell.com>
-> ---
->   drivers/input/misc/max8925_onkey.c |    3 ---
->   drivers/mfd/max8925-core.c         |    2 +-
->   2 files changed, 1 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
-> index 0a12b74..6527789 100644
-> --- a/drivers/input/misc/max8925_onkey.c
-> +++ b/drivers/input/misc/max8925_onkey.c
-> @@ -100,9 +100,6 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
->   	input->dev.parent = &pdev->dev;
->   	input_set_capability(input, EV_KEY, KEY_POWER);
->   
-> -	irq[0] += chip->irq_base;
-> -	irq[1] += chip->irq_base;
-> -
->   	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
->   				     IRQF_ONESHOT, "onkey-down", info);
->   	if (error < 0) {
-> diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
-> index b1eacae..37a372d 100644
-> --- a/drivers/mfd/max8925-core.c
-> +++ b/drivers/mfd/max8925-core.c
-> @@ -881,7 +881,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
->   
->   	ret = mfd_add_devices(chip->dev, 0, &onkey_devs[0],
->   			      ARRAY_SIZE(onkey_devs),
-> -			      NULL, 0, NULL);
-> +			      NULL, chip->irq_base, NULL);
->   	if (ret < 0) {
->   		dev_err(chip->dev, "Failed to add onkey subdev\n");
->   		goto out_dev;
-Hi Dmitry,
+On Thu, Nov 22, 2012 at 09:30:33AM +0000, Russell King - ARM Linux wrote:
+> On Wed, Nov 21, 2012 at 06:17:50PM -0800, Dmitry Torokhov wrote:
+> > > You've checked non-ARM architectures too?
+> > 
+> > Yes:
+> > 
+> > [dtor@dtor-d630 linux-next]$ grep -r HAVE_CLK_PREPARE .
+> > ./arch/arm/Kconfig:     select HAVE_CLK_PREPARE
+> > Binary file ./.git/objects/pack/pack-7dad5ee164f601f1327dc78648fa317772c2d872.pack matches
+> > ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> > ./include/linux/clk.h:#ifdef CONFIG_HAVE_CLK_PREPARE
+> > ./drivers/clk/Kconfig:config HAVE_CLK_PREPARE
+> > ./drivers/clk/Kconfig:  select HAVE_CLK_PREPARE
+> 
+> Err, no you haven't, not with that grep.  What you've found are the places
+> which enable this, and say "yes, I have clk_prepare".
+> 
+> What HAVE_CLK_PREPARE is about though is providing a transition path between
+> drivers using clk_prepare() to platforms which _don't_ have a clk_prepare()
+> implementation - and when it's unset, it provides a default implementation.
 
-Could you help to review my patch? Thanks a lot!
+Ahh, I see. Then I think my first patch was correct albeit it had bad changelog
+message. If provided stubs for clk_prepare()/clk_unprepare() for
+platforms that did not define HAVE_CLK and pushed the check for
+HAVE_CLK_PREPARE down into drivers/clk/clk.c so __clk_prepare() would
+either call platform implementation or just be an empty function.
 
--Qing
+Am I correct or I am still missing something?
 
+Thanks.
+
+-- 
+Dmitry
