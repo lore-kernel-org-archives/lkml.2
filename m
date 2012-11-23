@@ -1,197 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab2KWG36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:29:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47771 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab2KWG35 (ORCPT
+	id S1757630Ab2KWGnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:43:13 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59011 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab2KWGnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:29:57 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        lee.jones@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] input: stmpe-ts: Add DT support for stmpe touchscreen
-Date: Fri, 23 Nov 2012 11:59:46 +0530
-Message-Id: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Fri, 23 Nov 2012 01:43:10 -0500
+Message-ID: <50AF1B1A.4080009@linaro.org>
+Date: Fri, 23 Nov 2012 12:13:38 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, w.sang@pengutronix.de,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: Re: [PATCH 4/7] i2c: s3c2410: Convert to use devm_ioremap()
+References: <1353650353-17576-1-git-send-email-tushar.behera@linaro.org> <1353650353-17576-5-git-send-email-tushar.behera@linaro.org> <CAK9yfHyAWtuRFuygK2L53GrAaZ3k7rasTRt+N6TtU2+N-UHVTw@mail.gmail.com>
+In-Reply-To: <CAK9yfHyAWtuRFuygK2L53GrAaZ3k7rasTRt+N6TtU2+N-UHVTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On 11/23/2012 11:44 AM, Sachin Kamat wrote:
+> Hi Tushar,
+> 
+> On 23 November 2012 11:29, Tushar Behera <tushar.behera@linaro.org> wrote:
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> ---
+>>  drivers/i2c/busses/i2c-s3c2410.c |   13 ++++---------
+>>  1 files changed, 4 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+>> index a274ef7..3446af2 100644
+>> --- a/drivers/i2c/busses/i2c-s3c2410.c
+>> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+>> @@ -996,7 +996,7 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>>                 goto err_clk;
+>>         }
+>>
+>> -       i2c->regs = ioremap(res->start, resource_size(res));
+>> +       i2c->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+>>
+> 
+> request_mem_region and ioremap and be replaced using a single
+> devm_request_and_ioremap() call.
+> 
 
-This patch allows the STMPE Touchscreen driver to be successfully probed and
-initialised when Device Tree support is enabled. Bindings are mentioned in
-Documentation too.
+Thanks. I will redo the patch.
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- .../bindings/input/touchscreen/stmpe.txt           | 43 ++++++++++++++
- drivers/input/touchscreen/stmpe-ts.c               | 65 ++++++++++++++++------
- drivers/mfd/stmpe.c                                |  1 +
- 3 files changed, 91 insertions(+), 18 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/stmpe.txt
+> Also you may squash patches 2-5 into single convert to devm_* functions patch.
+> 
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/stmpe.txt b/Documentation/devicetree/bindings/input/touchscreen/stmpe.txt
-new file mode 100644
-index 0000000..127baa3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/stmpe.txt
-@@ -0,0 +1,43 @@
-+STMPE Touchscreen
-+----------------
-+
-+Required properties:
-+ - compatible: "st,stmpe-ts"
-+
-+Optional properties:
-+- st,sample-time: ADC converstion time in number of clock.  (0 -> 36 clocks, 1 ->
-+  44 clocks, 2 -> 56 clocks, 3 -> 64 clocks, 4 -> 80 clocks, 5 -> 96 clocks, 6
-+  -> 144 clocks), recommended is 4.
-+- st,mod-12b: ADC Bit mode (0 -> 10bit ADC, 1 -> 12bit ADC)
-+- st,ref-sel: ADC reference source (0 -> internal reference, 1 -> external
-+  reference)
-+- st,adc-freq: ADC Clock speed (0 -> 1.625 MHz, 1 -> 3.25 MHz, 2 || 3 -> 6.5 MHz)
-+- st,ave-ctrl: Sample average control (0 -> 1 sample, 1 -> 2 samples, 2 -> 4
-+  samples, 3 -> 8 samples)
-+- st,touch-det-delay: Touch detect interrupt delay (0 -> 10 us, 1 -> 50 us, 2 ->
-+  100 us, 3 -> 500 us, 4-> 1 ms, 5 -> 5 ms, 6 -> 10 ms, 7 -> 50 ms) recommended
-+  is 3
-+- st,settling: Panel driver settling time (0 -> 10 us, 1 -> 100 us, 2 -> 500 us, 3
-+  -> 1 ms, 4 -> 5 ms, 5 -> 10 ms, 6 for 50 ms, 7 -> 100 ms) recommended is 2
-+- st,fraction-z: Length of the fractional part in z (fraction-z ([0..7]) = Count of
-+  the fractional part) recommended is 7
-+- st,i-drive: current limit value of the touchscreen drivers (0 -> 20 mA typical 35
-+  mA max, 1 -> 50 mA typical 80 mA max)
-+
-+Node name must be stmpe_touchscreen and should be child node of stmpe node to
-+which it belongs.
-+
-+Example:
-+
-+	stmpe_touchscreen {
-+		compatible = "st,stmpe-ts";
-+		st,sample-time = <4>;
-+		st,mod-12b = <1>;
-+		st,ref-sel = <0>;
-+		st,adc-freq = <1>;
-+		st,ave-ctrl = <1>;
-+		st,touch-det-delay = <2>;
-+		st,settling = <2>;
-+		st,fraction-z = <7>;
-+		st,i-drive = <1>;
-+	};
-diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchscreen/stmpe-ts.c
-index b3f7503..8f4985a 100644
---- a/drivers/input/touchscreen/stmpe-ts.c
-+++ b/drivers/input/touchscreen/stmpe-ts.c
-@@ -17,6 +17,7 @@
- #include <linux/interrupt.h>
- #include <linux/init.h>
- #include <linux/device.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/input.h>
- #include <linux/slab.h>
-@@ -262,11 +263,53 @@ static void stmpe_ts_close(struct input_dev *dev)
- 			STMPE_TSC_CTRL_TSC_EN, 0);
- }
- 
--static int __devinit stmpe_input_probe(struct platform_device *pdev)
-+static void stmpe_ts_get_info(struct platform_device *pdev,
-+		struct stmpe_touch *ts)
- {
- 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
--	const struct stmpe_platform_data *pdata = stmpe->pdata;
--	const struct stmpe_ts_platform_data *ts_pdata = NULL;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct stmpe_ts_platform_data *ts_pdata = NULL;
-+
-+	ts->stmpe = stmpe;
-+
-+	if (stmpe->pdata && stmpe->pdata->ts) {
-+		ts_pdata = stmpe->pdata->ts;
-+
-+		ts->sample_time = ts_pdata->sample_time;
-+		ts->mod_12b = ts_pdata->mod_12b;
-+		ts->ref_sel = ts_pdata->ref_sel;
-+		ts->adc_freq = ts_pdata->adc_freq;
-+		ts->ave_ctrl = ts_pdata->ave_ctrl;
-+		ts->touch_det_delay = ts_pdata->touch_det_delay;
-+		ts->settling = ts_pdata->settling;
-+		ts->fraction_z = ts_pdata->fraction_z;
-+		ts->i_drive = ts_pdata->i_drive;
-+	} else if (np) {
-+		u32 val;
-+
-+		if (!of_property_read_u32(np, "st,sample-time", &val))
-+			ts->sample_time = val;
-+		if (!of_property_read_u32(np, "st,mod-12b", &val))
-+			ts->mod_12b = val;
-+		if (!of_property_read_u32(np, "st,ref-sel", &val))
-+			ts->ref_sel = val;
-+		if (!of_property_read_u32(np, "st,adc-freq", &val))
-+			ts->adc_freq = val;
-+		if (!of_property_read_u32(np, "st,ave-ctrl", &val))
-+			ts->ave_ctrl = val;
-+		if (!of_property_read_u32(np, "st,touch-det-delay", &val))
-+			ts->touch_det_delay = val;
-+		if (!of_property_read_u32(np, "st,settling", &val))
-+			ts->settling = val;
-+		if (!of_property_read_u32(np, "st,fraction-z", &val))
-+			ts->fraction_z = val;
-+		if (!of_property_read_u32(np, "st,i-drive", &val))
-+			ts->i_drive = val;
-+	}
-+}
-+
-+static int __devinit stmpe_input_probe(struct platform_device *pdev)
-+{
- 	struct stmpe_touch *ts;
- 	struct input_dev *idev;
- 	int error;
-@@ -285,24 +328,10 @@ static int __devinit stmpe_input_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	platform_set_drvdata(pdev, ts);
--	ts->stmpe = stmpe;
- 	ts->idev = idev;
- 	ts->dev = &pdev->dev;
- 
--	if (pdata)
--		ts_pdata = pdata->ts;
--
--	if (ts_pdata) {
--		ts->sample_time = ts_pdata->sample_time;
--		ts->mod_12b = ts_pdata->mod_12b;
--		ts->ref_sel = ts_pdata->ref_sel;
--		ts->adc_freq = ts_pdata->adc_freq;
--		ts->ave_ctrl = ts_pdata->ave_ctrl;
--		ts->touch_det_delay = ts_pdata->touch_det_delay;
--		ts->settling = ts_pdata->settling;
--		ts->fraction_z = ts_pdata->fraction_z;
--		ts->i_drive = ts_pdata->i_drive;
--	}
-+	stmpe_ts_get_info(pdev, ts);
- 
- 	INIT_DELAYED_WORK(&ts->work, stmpe_work);
- 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index c757ac3..3e3ca9c 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -410,6 +410,7 @@ static struct resource stmpe_ts_resources[] = {
- 
- static struct mfd_cell stmpe_ts_cell = {
- 	.name		= "stmpe-ts",
-+	.of_compatible	= "st,stmpe-ts",
- 	.resources	= stmpe_ts_resources,
- 	.num_resources	= ARRAY_SIZE(stmpe_ts_resources),
- };
+Ok. In that case, I will squash these patches to a single patch.
+
+> 
+>>         if (i2c->regs == NULL) {
+>>                 dev_err(&pdev->dev, "cannot map IO\n");
+>> @@ -1016,7 +1016,7 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>>
+>>         ret = s3c24xx_i2c_init(i2c);
+>>         if (ret != 0)
+>> -               goto err_iomap;
+>> +               goto err_clk;
+>>
+>>         /* find the IRQ for this unit (note, this relies on the init call to
+>>          * ensure no current IRQs pending
+>> @@ -1025,7 +1025,7 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>>         i2c->irq = ret = platform_get_irq(pdev, 0);
+>>         if (ret <= 0) {
+>>                 dev_err(&pdev->dev, "cannot find IRQ\n");
+>> -               goto err_iomap;
+>> +               goto err_clk;
+>>         }
+>>
+>>         ret = request_irq(i2c->irq, s3c24xx_i2c_irq, 0,
+>> @@ -1033,7 +1033,7 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>>
+>>         if (ret != 0) {
+>>                 dev_err(&pdev->dev, "cannot claim IRQ %d\n", i2c->irq);
+>> -               goto err_iomap;
+>> +               goto err_clk;
+>>         }
+>>
+>>         ret = s3c24xx_i2c_register_cpufreq(i2c);
+>> @@ -1073,9 +1073,6 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>>   err_irq:
+>>         free_irq(i2c->irq, i2c);
+>>
+>> - err_iomap:
+>> -       iounmap(i2c->regs);
+>> -
+>>   err_clk:
+>>         clk_disable_unprepare(i2c->clk);
+>>         return ret;
+>> @@ -1100,8 +1097,6 @@ static int s3c24xx_i2c_remove(struct platform_device *pdev)
+>>
+>>         clk_disable_unprepare(i2c->clk);
+>>
+>> -       iounmap(i2c->regs);
+>> -
+>>         s3c24xx_i2c_dt_gpio_free(i2c);
+>>
+>>         return 0;
+>> --
+>> 1.7.4.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
+
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+Tushar Behera
