@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab2KWBfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 20:35:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49881 "EHLO mail.zytor.com"
+	id S1756826Ab2KWBji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 20:39:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49904 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab2KWBfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 20:35:43 -0500
+	id S1756648Ab2KWBjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 20:39:37 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <50AEBF86.50501@citrix.com>
 References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com> <50AEBF86.50501@citrix.com>
@@ -15,7 +15,7 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 22 Nov 2012 17:34:56 -0800
+Date: Thu, 22 Nov 2012 17:38:33 -0800
 To: Andrew Cooper <andrew.cooper3@citrix.com>
 CC: "Eric W. Biederman" <ebiederm@xmission.com>,
         Daniel Kiper <daniel.kiper@oracle.com>,
@@ -29,12 +29,12 @@ CC: "Eric W. Biederman" <ebiederm@xmission.com>,
         "virtualization@lists.linux-foundation.org" 
 	<virtualization@lists.linux-foundation.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Message-ID: <a1f75604-1f52-4af1-9dd7-b469ed4ea7b6@email.android.com>
+Message-ID: <18e831d4-910d-4f58-8911-1398b96e3a47@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok... that *sort of* makes sense, but also underscores how utterly different this is from a normal kexec.
+I still don't really get why it can't be isolated from dom0, which would make more sense to me, even for a Xen crash.
 
 Andrew Cooper <andrew.cooper3@citrix.com> wrote:
 
