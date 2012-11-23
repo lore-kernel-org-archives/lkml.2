@@ -1,220 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030317Ab2KWJsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:48:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37429 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030264Ab2KWJsu (ORCPT
+	id S1161033Ab2KWJtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:49:19 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54525 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030283Ab2KWJtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:48:50 -0500
-Date: Fri, 23 Nov 2012 10:47:38 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: ebiederm@xmission.com
-Cc: andrew.cooper3@citrix.com, hpa@zytor.com, jbeulich@suse.com,
-        konrad.wilk@oracle.com, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-Message-ID: <20121123094516.GA2921@host-192-168-1-59.local.net-space.pl>
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
- <87lidwtego.fsf@xmission.com>
- <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
- <87txshx28b.fsf@xmission.com>
+	Fri, 23 Nov 2012 04:49:15 -0500
+Message-ID: <50AF4696.5040704@googlemail.com>
+Date: Fri, 23 Nov 2012 10:49:10 +0100
+From: Stefan Beller <stefanbeller@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txshx28b.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: rob@landley.net, jgarzik@pobox.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH] Rewrite Documentation/SubmittingPatches.
+References: <500BAFE0.8070108@googlemail.com> <500BB232.7000108@googlemail.com>
+In-Reply-To: <500BB232.7000108@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 04:15:48AM -0800, ebiederm@xmission.com wrote:
-> Daniel Kiper <daniel.kiper@oracle.com> writes:
->
-> > On Tue, Nov 20, 2012 at 08:40:39AM -0800, ebiederm@xmission.com wrote:
-> >> Daniel Kiper <daniel.kiper@oracle.com> writes:
-> >>
-> >> > Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
-> >> > functions or require some changes in behavior of kexec/kdump generic code.
-> >> > To cope with that problem kexec_ops struct was introduced. It allows
-> >> > a developer to replace all or some functions and control some
-> >> > functionality of kexec/kdump generic code.
-> >> >
-> >> > Default behavior of kexec/kdump generic code is not changed.
-> >>
-> >> Ick.
-> >>
-> >> > v2 - suggestions/fixes:
-> >> >    - add comment for kexec_ops.crash_alloc_temp_store member
-> >> >      (suggested by Konrad Rzeszutek Wilk),
-> >> >    - simplify kexec_ops usage
-> >> >      (suggested by Konrad Rzeszutek Wilk).
-> >> >
-> >> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> >> > ---
-> >> >  include/linux/kexec.h |   26 ++++++++++
-> >> >  kernel/kexec.c        |  131 +++++++++++++++++++++++++++++++++++++------------
-> >> >  2 files changed, 125 insertions(+), 32 deletions(-)
-> >> >
-> >> > diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> >> > index d0b8458..c8d0b35 100644
-> >> > --- a/include/linux/kexec.h
-> >> > +++ b/include/linux/kexec.h
-> >> > @@ -116,7 +116,33 @@ struct kimage {
-> >> >  #endif
-> >> >  };
-> >> >
-> >> > +struct kexec_ops {
-> >> > +	/*
-> >> > +	 * Some kdump implementations (e.g. Xen PVOPS dom0) could not access
-> >> > +	 * directly crash kernel memory area. In this situation they must
-> >> > +	 * allocate memory outside of it and later move contents from temporary
-> >> > +	 * storage to final resting places (usualy done by relocate_kernel()).
-> >> > +	 * Such behavior could be enforced by setting
-> >> > +	 * crash_alloc_temp_store member to true.
-> >> > +	 */
-> >>
-> >> Why in the world would Xen not be able to access crash kernel memory?
-> >> As currently defined it is normal memory that the kernel chooses not to
-> >> use.
-> >>
-> >> If relocate kernel can access that memory you definitely can access the
-> >> memory so the comment does not make any sense.
-> >
-> > Crash kernel memory is reserved by Xen hypervisor and Xen hypervisor
-> > only has access to it. dom0 does not have any mapping of this area.
-> > However, relocate_kernel() has access to crash kernel memory
-> > because it is executed by Xen hypervisor and whole machine
-> > memory is identity mapped.
->
-> This is all weird.  Doubly so since this code is multi-arch and you have
-> a set of requirements no other arch has had.
->
-> I recall that Xen uses kexec in a unique manner.  What is the hypervisor
-> interface and how is it used?
->
-> Is this for when the hypervisor crashes and we want a crash dump of
-> that?
+This updates the documentation on how to create patches and send
+these to the kernel mailing list.
 
-dom0 at boot gets some info about kexec/kdump configuration from Xen hypervisor
-(e.g. placement of crash kernel area). Later if you call kexec syscall most
-things are done in the same way as on baremetal. However, after placing image
-in memory, HYPERVISOR_kexec_op() hypercall must be called to inform hypervisor
-that image is loaded (new hook machine_kexec_load is used for this;
-machine_kexec_unload is used for unload). Then Xen establishes fixmap for pages
-found in page_list[] and returns control to dom0. If dom0 crashes or "kexec execute"
-is used by user then dom0 calls HYPERVISOR_kexec_op() to instruct hypervisor that
-kexec/kdump image should be executed immediately. Xen calls relocate_kernel()
-and all things runs as usual.
+The documentation before was written in times before git was there,
+so the crafting of the patch needed to be done manually by diff -up
+in the right directory.
 
-> >> > +	bool crash_alloc_temp_store;
-> >> > +	struct page *(*kimage_alloc_pages)(gfp_t gfp_mask,
-> >> > +						unsigned int order,
-> >> > +						unsigned long limit);
-> >> > +	void (*kimage_free_pages)(struct page *page);
-> >> > +	unsigned long (*page_to_pfn)(struct page *page);
-> >> > +	struct page *(*pfn_to_page)(unsigned long pfn);
-> >> > +	unsigned long (*virt_to_phys)(volatile void *address);
-> >> > +	void *(*phys_to_virt)(unsigned long address);
-> >> > +	int (*machine_kexec_prepare)(struct kimage *image);
-> >> > +	int (*machine_kexec_load)(struct kimage *image);
-> >> > +	void (*machine_kexec_cleanup)(struct kimage *image);
-> >> > +	void (*machine_kexec_unload)(struct kimage *image);
-> >> > +	void (*machine_kexec_shutdown)(void);
-> >> > +	void (*machine_kexec)(struct kimage *image);
-> >> > +};
-> >>
-> >> Ugh.  This is a nasty abstraction.
-> >>
-> >> You are mixing and matching a bunch of things together here.
-> >>
-> >> If you need to override machine_kexec_xxx please do that on a per
-> >> architecture basis.
-> >
-> > Yes, it is possible but I think that it is worth to do it at that
-> > level because it could be useful for other archs too (e.g. Xen ARM port
-> > is under development). Then we do not need to duplicate that functionality
-> > in arch code. Additionally, Xen requires machine_kexec_load and
-> > machine_kexec_unload hooks which are not available in current generic
-> > kexec/kdump code.
->
->
-> Let me be clear.  kexec_ops as you have implemented it is absolutely
-> unacceptable.
->
-> Your kexec_ops is not an abstraction but a hack that enshrines in stone
-> implementation details.
+This patch aims at simplifying the patch sending process, without
+breaking the output results.
 
-Roger.
+A discussion can be found at
+https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
 
-> >> Special case overrides of page_to_pfn, pfn_to_page, virt_to_phys,
-> >> phys_to_virt, and friends seem completely inappropriate.
-> >
-> > They are required in Xen PVOPS case. If we do not do that in that way
-> > then we at least need to duplicate almost all generic kexec/kdump existing
-> > code in arch depended files. I do not mention that we need to capture
-> > relevant syscall and other things. I think that this is wrong way.
->
-> A different definition of phys_to_virt and page_to_pfn for one specific
-> function is total nonsense.
->
-> It may actually be better to have a completely different code path.
-> This looks more like code abuse than code reuse.
->
-> Successful code reuse depends upon not breaking the assumptions on which
-> the code relies, or modifying the code so that the new modified
-> assumptions are clear.  In this case you might as well define up as down
-> for all of the sense kexec_ops makes.
+Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
+Acked-by: Jeff Garzik jgarzik@pobox.com
+---
+ Documentation/SubmittingPatches | 197 +++++++++++++++++++++++++---------------
+ 1 file changed, 122 insertions(+), 75 deletions(-)
 
-Hmmm... Well, problem with above mentioned functions is that they work
-on physical addresses. In Xen PVOPS (currently dom0 is PVOPS) they
-are useless in kexec/kdump case. It means that physical addresses
-must be converted to/from machine addresses which has a real meaning
-in Xen PVOPS case. That is why those funtions were introduced.
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index c379a2a..8b9fc21 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -20,57 +20,26 @@ Documentation/SubmittingDrivers.
+ SECTION 1 - CREATING AND SENDING YOUR CHANGE
+ --------------------------------------------
+ 
++If you don't have access to git for whatever reason and would like to
++submit a patch, you can use the diff tool. Replace step 1 and 5 by
++step 18.
+ 
+ 
+-1) "diff -up"
++1) Using git
+ ------------
+ 
+-Use "diff -up" or "diff -uprN" to create patches.
++Use the distributed version control git to commit your changes
++into your local git repository.
+ 
+-All changes to the Linux kernel occur in the form of patches, as
+-generated by diff(1).  When creating your patch, make sure to create it
+-in "unified diff" format, as supplied by the '-u' argument to diff(1).
+-Also, please use the '-p' argument which shows which C function each
+-change is in - that makes the resultant diff a lot easier to read.
+-Patches should be based in the root kernel source directory,
+-not in any lower subdirectory.
+-
+-To create a patch for a single file, it is often sufficient to do:
+-
+-	SRCTREE= linux-2.6
+-	MYFILE=  drivers/net/mydriver.c
+-
+-	cd $SRCTREE
+-	cp $MYFILE $MYFILE.orig
+-	vi $MYFILE	# make your change
+-	cd ..
+-	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
+-
+-To create a patch for multiple files, you should unpack a "vanilla",
+-or unmodified kernel source tree, and generate a diff against your
+-own source tree.  For example:
+-
+-	MYSRC= /devel/linux-2.6
+-
+-	tar xvfz linux-2.6.12.tar.gz
+-	mv linux-2.6.12 linux-2.6.12-vanilla
+-	diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
+-		linux-2.6.12-vanilla $MYSRC > /tmp/patch
+-
+-"dontdiff" is a list of files which are generated by the kernel during
+-the build process, and should be ignored in any diff(1)-generated
+-patch.  The "dontdiff" file is included in the kernel tree in
+-2.6.12 and later.  For earlier kernel versions, you can get it
+-from <http://www.xenotime.net/linux/doc/dontdiff>.
+-
+-Make sure your patch does not include any extra files which do not
+-belong in a patch submission.  Make sure to review your patch -after-
+-generated it with diff(1), to ensure accuracy.
++Make sure your commits do not include any extra files which do not
++belong in a commit submission.  Make sure to review your commits with
++a git viewer of your choice such as gitk, to ensure accuracy.
+ 
+ If your changes produce a lot of deltas, you may want to look into
+ splitting them into individual patches which modify things in
+ logical stages.  This will facilitate easier reviewing by other
+ kernel developers, very important if you want your patch accepted.
++
+ There are a number of scripts which can aid in this:
+ 
+ Quilt:
+@@ -83,7 +52,7 @@ tool (see above).
+ 
+ 
+ 
+-2) Describe your changes.
++2) A detour on "How to use git": Describe your changes.
+ 
+ Describe the technical detail of the change(s) your patch includes.
+ 
+@@ -91,10 +60,6 @@ Be as specific as possible.  The WORST descriptions possible include
+ things like "update driver X", "bug fix for driver X", or "this patch
+ includes updates for subsystem X.  Please apply."
+ 
+-The maintainer will thank you if you write your patch description in a
+-form which can be easily pulled into Linux's source code management
+-system, git, as a "commit log".  See #15, below.
+-
+ If your description starts to get long, that's a sign that you probably
+ need to split up your patch.  See #3, next.
+ 
+@@ -111,33 +76,34 @@ If the patch fixes a logged bug entry, refer to that bug entry by
+ number and URL.
+ 
+ 
+-3) Separate your changes.
++
++3) A detour on "How to use git": Separate your changes.
+ 
+ Separate _logical changes_ into a single patch file.
+ 
+ For example, if your changes include both bug fixes and performance
+ enhancements for a single driver, separate those changes into two
+-or more patches.  If your changes include an API update, and a new
+-driver which uses that new API, separate those into two patches.
++or more commits.  If your changes include an API update, and a new
++driver which uses that new API, separate those into two commits.
+ 
+ On the other hand, if you make a single change to numerous files,
+-group those changes into a single patch.  Thus a single logical change
+-is contained within a single patch.
++group those changes into a single commit.  Thus a single logical change
++is contained within a single commit.
+ 
+-If one patch depends on another patch in order for a change to be
+-complete, that is OK.  Simply note "this patch depends on patch X"
+-in your patch description.
++If one commit depends on another commit in order for a change to be
++complete, that is OK.  Simply note "this commit depends on commit X"
++in your commit description.
+ 
+-If you cannot condense your patch set into a smaller set of patches,
++If you cannot condense your commit set into a smaller set of commits,
+ then only post say 15 or so at a time and wait for review and integration.
+ 
+ 
+ 
+ 4) Style check your changes.
+ 
+-Check your patch for basic style violations, details of which can be
++Check your commit for basic style violations, details of which can be
+ found in Documentation/CodingStyle.  Failure to do so simply wastes
+-the reviewers time and will get your patch rejected, probably
++the reviewers time and will get your commit rejected, probably
+ without even being read.
+ 
+ At a minimum you should check your patches with the patch style
+@@ -146,7 +112,41 @@ be able to justify all violations that remain in your patch.
+ 
+ 
+ 
+-5) Select e-mail destination.
++5) "git format-patch"
++
++Now you need to prepare your patches for e-mail submission.
++Use "git format-patch origin" to extract all commits which have been applied,
++but are not yet in the origin repository.
++Alternatively use "git format-patch -20" to extract the last 20 patches from your
++git repository. They will be be saved in textfiles named
++
++    0001-Introduce-new-Feature.patch
++    0002-Improve-Documentation.patch
++
++The first lines of such a file might look like
++
++1   From d39e331c30cb563fd152f484f7ca1d14dc98d57e Mon Sep 17 00:00:00 2001
++2   From: Stefan Beller <stefanbeller@googlemail.com>
++3   Date: Fri, 13 Jul 2012 12:55:54 +0200
++4   Subject: [PATCH] Rewrite Documentation/SubmittingPatches.
++5
++6   This updates the documentation on how to create patches and send
++7   these to the kernel mailing list.
++8   ...
++
++Take the body of these files starting from line 6 as your email body and
++as email subject choose the subject as in line 4.
++In this example case the subject would be
++    [PATCH] Rewrite Documentation/SubmittingPatches.
++
++For further formatting of the email,
++see #8 (No MIME, no links, no compression, no attachments.  Just plain text.)
++
++Read the manpages of "git format-patch".
++Specially the options "--cover-letter" and "--subject-prefix='PATCH v4'"
++come handy.
++
++6) Select e-mail destination.
+ 
+ Look through the MAINTAINERS file and the source code, and determine
+ if your change applies to a specific subsystem of the kernel, with
+@@ -163,9 +163,9 @@ Do not send more than 15 patches at once to the vger mailing lists!!!
+ 
+ 
+ Linus Torvalds is the final arbiter of all changes accepted into the
+-Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>. 
++Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>.
+ He gets a lot of e-mail, so typically you should do your best to -avoid-
+-sending him e-mail. 
++sending him e-mail.
+ 
+ Patches which are bug fixes, are "obvious" changes, or similarly
+ require little discussion should be sent or CC'd to Linus.  Patches
+@@ -175,7 +175,7 @@ discussed should the patch then be submitted to Linus.
+ 
+ 
+ 
+-6) Select your CC (e-mail carbon copy) list.
++7) Select your CC (e-mail carbon copy) list.
+ 
+ Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
+ 
+@@ -216,7 +216,7 @@ Trivial patches must qualify for one of the following rules:
+ 
+ 
+ 
+-7) No MIME, no links, no compression, no attachments.  Just plain text.
++8) No MIME, no links, no compression, no attachments.  Just plain text.
+ 
+ Linus and other kernel developers need to be able to read and comment
+ on the changes you are submitting.  It is important for a kernel
+@@ -239,9 +239,9 @@ you to re-send them using MIME.
+ See Documentation/email-clients.txt for hints about configuring
+ your e-mail client so that it sends your patches untouched.
+ 
+-8) E-mail size.
++9) E-mail size.
+ 
+-When sending patches to Linus, always follow step #7.
++When sending patches to Linus, always follow step #8.
+ 
+ Large changes are not appropriate for mailing lists, and some
+ maintainers.  If your patch, uncompressed, exceeds 300 kB in size,
+@@ -250,7 +250,7 @@ server, and provide instead a URL (link) pointing to your patch.
+ 
+ 
+ 
+-9) Name your kernel version.
++10) Name your kernel version.
+ 
+ It is important to note, either in the subject line or in the patch
+ description, the kernel version to which this patch applies.
+@@ -260,7 +260,7 @@ Linus will not apply it.
+ 
+ 
+ 
+-10) Don't get discouraged.  Re-submit.
++11) Don't get discouraged.  Re-submit.
+ 
+ After you have submitted your change, be patient and wait.  If Linus
+ likes your change and applies it, it will appear in the next version
+@@ -276,8 +276,8 @@ That's the nature of the system.  If he drops your patch, it could be
+ due to
+ * Your patch did not apply cleanly to the latest kernel version.
+ * Your patch was not sufficiently discussed on linux-kernel.
+-* A style issue (see section 2).
+-* An e-mail formatting issue (re-read this section).
++* A style issue (see section #2, #3, #4).
++* An e-mail formatting issue (re-read this section or section #8).
+ * A technical problem with your change.
+ * He gets tons of e-mail, and yours got lost in the shuffle.
+ * You are being annoying.
+@@ -286,7 +286,7 @@ When in doubt, solicit comments on linux-kernel mailing list.
+ 
+ 
+ 
+-11) Include PATCH in the subject
++12) Include PATCH in the subject
+ 
+ Due to high e-mail traffic to Linus, and to linux-kernel, it is common
+ convention to prefix your subject line with [PATCH].  This lets Linus
+@@ -295,7 +295,7 @@ e-mail discussions.
+ 
+ 
+ 
+-12) Sign your work
++13) Sign your work
+ 
+ To improve tracking of who did what, especially with patches that can
+ percolate to their final resting place in the kernel through several
+@@ -341,7 +341,7 @@ using your real name (sorry, no pseudonyms or anonymous contributions.)
+ 
+ Some people also put extra tags at the end.  They'll just be ignored for
+ now, but you can do this to mark internal company procedures or just
+-point out some special detail about the sign-off. 
++point out some special detail about the sign-off.
+ 
+ If you are a subsystem or branch maintainer, sometimes you need to slightly
+ modify patches you receive in order to merge them, because the code is not
+@@ -390,7 +390,7 @@ tracking your trees, and to people trying to trouble-shoot bugs in your
+ tree.
+ 
+ 
+-13) When to use Acked-by: and Cc:
++14) When to use Acked-by: and Cc:
+ 
+ The Signed-off-by: tag indicates that the signer was involved in the
+ development of the patch, or that he/she was in the patch's delivery path.
+@@ -421,7 +421,7 @@ person it names.  This tag documents that potentially interested parties
+ have been included in the discussion
+ 
+ 
+-14) Using Reported-by:, Tested-by: and Reviewed-by:
++15) Using Reported-by:, Tested-by: and Reviewed-by:
+ 
+ If this patch fixes a problem reported by somebody else, consider adding a
+ Reported-by: tag to credit the reporter for their contribution.  Please
+@@ -470,7 +470,7 @@ understand the subject area and to perform thorough reviews, will normally
+ increase the likelihood of your patch getting into the kernel.
+ 
+ 
+-15) The canonical patch format
++16) The canonical patch format
+ 
+ The canonical patch subject line is:
+ 
+@@ -584,7 +584,7 @@ See more details on the proper patch format in the following
+ references.
+ 
+ 
+-16) Sending "git pull" requests  (from Linus emails)
++17) Sending "git pull" requests  (from Linus emails)
+ 
+ Please write the git repo address and branch name alone on the same line
+ so that I can't even by mistake pull from the wrong branch, and so
+@@ -612,6 +612,53 @@ new/deleted or renamed files.
+ With rename detection, the statistics are rather different [...]
+ because git will notice that a fair number of the changes are renames.
+ 
++
++18) Not using git? Another solution to send patches.
++
++A commit to the Linux kernel can also be prepared via the diff tool.
++Replace step 1 (commit into git) and step 5 ("git format-patch")
++by this one. The advice as given in 2 (Describe your changes.) and
++3 (Separate your changes.) also apply when making patches without git.
++
++When creating your patch, make sure to create it
++in "unified diff" format, as supplied by the '-u' argument to diff(1).
++Also, please use the '-p' argument which shows which C function each
++change is in - that makes the resultant diff a lot easier to read.
++Patches should be based in the root kernel source directory,
++not in any lower subdirectory.
++
++To create a patch for a single file, it is often sufficient to do:
++
++	SRCTREE= linux-2.6
++	MYFILE=  drivers/net/mydriver.c
++
++	cd $SRCTREE
++	cp $MYFILE $MYFILE.orig
++	vi $MYFILE	# make your change
++	cd ..
++	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
++
++To create a patch for multiple files, you should unpack a "vanilla",
++or unmodified kernel source tree, and generate a diff against your
++own source tree.  For example:
++
++	MYSRC= /devel/linux-2.6
++
++	tar xvfz linux-2.6.12.tar.gz
++	mv linux-2.6.12 linux-2.6.12-vanilla
++	diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
++		linux-2.6.12-vanilla $MYSRC > /tmp/patch
++
++"dontdiff" is a list of files which are generated by the kernel during
++the build process, and should be ignored in any diff(1)-generated
++patch.  The "dontdiff" file is included in the kernel tree in
++2.6.12 and later.  For earlier kernel versions, you can get it
++from <http://www.xenotime.net/linux/doc/dontdiff>.
++
++Make sure your patch does not include any extra files which do not
++belong in a patch submission.  Make sure to review your patch -after-
++generated it with diff(1), to ensure accuracy.
++
+ -----------------------------------
+ SECTION 2 - HINTS, TIPS, AND TRICKS
+ -----------------------------------
+-- 
+1.8.0.197.g5a90748
 
-> >> There may be a point to all of these but you are mixing and matching
-> >> things badly.
-> >
-> > Do you whish to split this kexec_ops struct to something which
-> > works with addresses and something which is reponsible for
-> > loading, unloading and executing kexec/kdump? I am able to change
-> > that but I would like to know a bit about your vision first.
->
-> My vision is that we should have code that makes sense.
->
-> My suspicion is that what you want is a cousin of the existing kexec
-> system call.  Perhaps what is needed is a flag to say use the firmware
-> kexec system call.
->
-> I absolutely do not understand what Xen is trying to do.  kexec by
-> design should not require any firmware specific hooks.  kexec at this
-> level should only need to care about the processor architeture.  Clearly
-> what you are doing with Xen requires special hooks separate even from
-> the normal paravirt hooks.  So I do not understand you are trying to do.
->
-> It needs to be clear from the code what is happening differently in the
-> Xen case.  Otherwise the code is unmaintainable as no one will be able
-> to understand it.
 
-I agree. I could remove all machine_* hooks from kexec_ops and call Xen
-specific functions from arch files. However, I need to add two new
-machine calls, machine_kexec_load and machine_kexec_unload, in the same
-manner as existing machine_* calls. In general they could be used to inform
-firmware (in this case Xen) that kexec/kdump image is loaded.
-
-kimage_alloc_pages, kimage_free_pages, page_to_pfn, pfn_to_page, virt_to_phys
-and phys_to_virt are worse. If we could not find good solution how to replace
-them then we end up with calling Xen specific version of kexec/kdump which
-would contain nearly full copy of exisiting kexec/kdump code. Not good.
-
-We could add some code to kernel/kexec.c which depends on CONFIG_XEN.
-It could contain above mentioned functions which later will be called
-by existing kexec code. This is not nice to be honest. However, I hope
-that we could find better solution for that problem.
-
-Daniel
