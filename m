@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab2KWGxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:53:13 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:36866 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932397Ab2KWGxL (ORCPT
+	id S932722Ab2KWGxR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:53:17 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53072 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932397Ab2KWGxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:53:11 -0500
-Subject: Re: [PATCH RFC v2 4/4] firmware: Install firmware signature files
- automatically
-From: joeyli <jlee@suse.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-In-Reply-To: <1352396109-3989-5-git-send-email-tiwai@suse.de>
-References: <s5hhap49den.wl%tiwai@suse.de>
-	 <1352396109-3989-1-git-send-email-tiwai@suse.de>
-	 <1352396109-3989-5-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Nov 2012 14:52:17 +0800
-Message-ID: <1353653537.21227.738.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 23 Nov 2012 01:53:14 -0500
+Date: Thu, 22 Nov 2012 22:50:02 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linaro-kernel@lists.linaro.org,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>, kernel-team@android.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 10/10] ARM: FIQ: Get rid of init_FIQ()
+Message-ID: <20121123065002.GB27827@lizard>
+References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net>
+ <1353642030.851395840@f20.mail.ru>
+ <20121123055328.GA21566@lizard>
+ <1353652071.755665772@f76.mail.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1353652071.755665772@f76.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2012-11-08 於 18:35 +0100，Takashi Iwai 提到：
-> ... when CONFIG_FIRMWARE_SIG is set.
+On Fri, Nov 23, 2012 at 10:27:51AM +0400, Alexander Shiyan wrote:
+> > On Fri, Nov 23, 2012 at 07:40:30AM +0400, Alexander Shiyan wrote:
+> > [...]
+> > > >  static unsigned long no_fiq_insn;
+> > > > +static int got_no_fiq_insn;
+> > > > @@ -78,11 +79,14 @@ void show_fiq_list(struct seq_file *p, int prec)
+> > > >  
+> > > >  void set_fiq_handler(void *start, unsigned int length)
+> > > >  {
+> > > > -#if defined(CONFIG_CPU_USE_DOMAINS)
+> > > > -	memcpy((void *)0xffff001c, start, length);
+> > > > -#else
+> > > > -	memcpy(vectors_page + 0x1c, start, length);
+> > > > +	unsigned long *addr = (void *)0xffff001c;
+> > > > +
+> > > > +#ifndef CONFIG_CPU_USE_DOMAINS
+> > > > +	addr = vectors_page + 0x1c;
+> > > >  #endif
+> > > > +	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
+> > > > +		no_fiq_insn = *addr;
+> > > > +	memcpy(addr, start, length);
+> > > >  	flush_icache_range(0xffff001c, 0xffff001c + length);
+> > > >  	if (!vectors_high())
+> > > >  		flush_icache_range(0x1c, 0x1c + length);
+> > > > @@ -126,8 +130,3 @@ EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
+> > > > -
+> > > > -void __init init_FIQ(void)
+> > > > -{
+> > > > -	no_fiq_insn = *(unsigned long *)0xffff001c;
+> > > 
+> > > it seems that this is wrong. In this case we have an uninitialized variable and
+> > > sequential call claim_fiq and release_fiq could be fatal. FIXME please.
+> > 
+> > Um... I don't think I understand, can you please elaborate?
 > 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> OK, I'll try to explain it.
+> At the end of the release_fiq function we have a call fiq_op. For the default
+> handler - is a fiq_def_op function, and we call this function with the option
+> "relinquish = 0", i.e. we want to restore old fiq_handler. But if we do not call
+> set_fiq_handler never before, we will have an uninitialized no_fiq_insn variable.
 
-Tested-by: Chun-Yi Lee <jlee@suse.com>
+It should not matter when or in what order anyone calls the
+set_fiq_handler(), since it stores "no FIQ instruction" into no_fiq_insn
+at its first invocation:
 
-Joey Lee
+	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
+		no_fiq_insn = *addr;
 
-> ---
->  Makefile                |  6 ++++++
->  scripts/Makefile.fwinst | 18 ++++++++++++++++--
->  2 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index a1ccf22..c6d7a3e 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -729,6 +729,12 @@ mod_sign_cmd = true
->  endif
->  export mod_sign_cmd
->  
-> +ifeq ($(CONFIG_FIRMWARE_SIG),y)
-> +fw_sign_cmd = perl $(srctree)/scripts/sign-file -f $(MODSECKEY) $(MODPUBKEY)
-> +else
-> +fw_sign_cmd = true
-> +endif
-> +export fw_sign_cmd
->  
->  ifeq ($(KBUILD_EXTMOD),)
->  core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/
-> diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
-> index 4d908d1..df256f0 100644
-> --- a/scripts/Makefile.fwinst
-> +++ b/scripts/Makefile.fwinst
-> @@ -29,6 +29,20 @@ installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
->  installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
->  installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
->  
-> +ifeq ($(CONFIG_FIRMWARE_SIG),y)
-> +installed-fw-sig := $(patsubst %,%.sig, $(installed-fw))
-> +installed-mod-fw-sig := $(patsubst %,%.sig, $(installed-mod-fw))
-> +else
-> +installed-fw-sig :=
-> +installed-mod-fw-sig :=
-> +endif
-> +
-> +quiet_cmd_fwsig = FWSIG $@
-> +      cmd_fwsig = $(fw_sign_cmd) $(patsubst %.sig,%,$@) $@
-> +
-> +%.sig: %
-> +	$(call cmd,fwsig)
-> +
->  # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
->  PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
->  $(INSTALL_FW_PATH)/$$(%): install-all-dirs
-> @@ -49,9 +63,9 @@ PHONY +=  __fw_install __fw_modinst FORCE
->  
->  .PHONY: $(PHONY)
->  
-> -__fw_install: $(installed-fw)
-> +__fw_install: $(installed-fw) $(installed-fw-sig)
->  
-> -__fw_modinst: $(installed-mod-fw)
-> +__fw_modinst: $(installed-mod-fw) $(installed-mod-fw-sig)
->  	@:
->  
->  __fw_modbuild: $(addprefix $(obj)/,$(mod-fw))
+If we never called set_fiq_handler() before, during release_fiq() we'll:
 
+1. Copy the initial instruction from the vector page to 'no_fiq_insn';
+2. Copy the initial instruction from 'no_fiq_insn' to the vector page;
 
+So no_fiq_insn gets initialized, then we just instantly write the same
+value back.
+
+Thanks,
+Anton.
