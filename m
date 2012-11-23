@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab2KWJfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:35:08 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56310 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759039Ab2KWJfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:35:05 -0500
+	id S1759121Ab2KWJfS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:35:18 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:45335 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759105Ab2KWJfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:35:09 -0500
+Message-ID: <50AF4343.6070002@parallels.com>
+Date: Fri, 23 Nov 2012 13:34:59 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1352894295-14339-4-git-send-email-alban.bedel@avionic-design.de>
-References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de>
-	<1352894295-14339-4-git-send-email-alban.bedel@avionic-design.de>
-Date: Fri, 23 Nov 2012 07:35:04 -0200
-Message-ID: <CAAAP30E6aFbeLq3uf8t2oiepaqouFRWtTt=Uc+TRir36acNKSA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pwm: lpc32xx - Set the chip base for dynamic allocation
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: azurIt <azurit@pobox.sk>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: memory-cgroup bug
+References: <20121121200207.01068046@pobox.sk>, <20121122152441.GA9609@dhcp22.suse.cz>, <20121122190526.390C7A28@pobox.sk>, <20121122214249.GA20319@dhcp22.suse.cz>, <20121122233434.3D5E35E6@pobox.sk> <20121123074023.GA24698@dhcp22.suse.cz> <20121123102137.10D6D653@pobox.sk>
+In-Reply-To: <20121123102137.10D6D653@pobox.sk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 9:58 AM, Alban Bedel
-<alban.bedel@avionic-design.de> wrote:
-> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+On 11/23/2012 01:21 PM, azurIt wrote:
+>> Either use gdb YOUR_VMLINUX and disassemble mem_cgroup_handle_oom or
+>> use objdump -d YOUR_VMLINUX and copy out only mem_cgroup_handle_oom
+>> function.
+> If 'YOUR_VMLINUX' is supposed to be my kernel image:
+> 
+> # gdb vmlinuz-3.2.34-grsec-1 
 
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+this is vmlinuz, not vmlinux. This is the compressed image.
 
-> ---
->  drivers/pwm/pwm-lpc32xx.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-> index f45ce2c..3e63689 100644
-> --- a/drivers/pwm/pwm-lpc32xx.c
-> +++ b/drivers/pwm/pwm-lpc32xx.c
-> @@ -121,6 +121,7 @@ static int lpc32xx_pwm_probe(struct platform_device *pdev)
->         lpc32xx->chip.dev = &pdev->dev;
->         lpc32xx->chip.ops = &lpc32xx_pwm_ops;
->         lpc32xx->chip.npwm = 2;
-> +       lpc32xx->chip.base = -1;
->
->         ret = pwmchip_add(&lpc32xx->chip);
->         if (ret < 0) {
-> --
-> 1.7.0.4
->
+> 
+> # file vmlinuz-3.2.34-grsec-1 
+> vmlinuz-3.2.34-grsec-1: Linux kernel x86 boot executable bzImage, version 3.2.34-grsec (root@server01) #1, RO-rootFS, swap_dev 0x3, Normal VGA
+> 
+> I'm probably doing something wrong :)
+
+You need this:
+
+[glauber@straightjacket linux-glommer]$ file vmlinux
+vmlinux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically
+linked, BuildID[sha1]=0xba936ee6b6096f9bc4c663f2a2ee0c2d2481c408, not
+stripped
+
+instead of bzImage.
+
