@@ -1,141 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161097Ab2KWKEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:04:47 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55158 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161040Ab2KWKEo (ORCPT
+	id S1161104Ab2KWKI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:08:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42592 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161050Ab2KWKIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:04:44 -0500
-Date: Fri, 23 Nov 2012 11:04:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: memory-cgroup bug
-Message-ID: <20121123100438.GF24698@dhcp22.suse.cz>
-References: <20121121200207.01068046@pobox.sk>
- <20121122152441.GA9609@dhcp22.suse.cz>
- <20121122190526.390C7A28@pobox.sk>
- <20121122214249.GA20319@dhcp22.suse.cz>
- <20121122233434.3D5E35E6@pobox.sk>
- <20121123074023.GA24698@dhcp22.suse.cz>
- <20121123102137.10D6D653@pobox.sk>
+	Fri, 23 Nov 2012 05:08:55 -0500
+Date: Fri, 23 Nov 2012 19:08:50 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: alsa-devel@alsa-project.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ASoC: fsl: fix miscompilation of snd-soc-imx-pcm
+Message-ID: <20121123100849.GC4529@opensource.wolfsonmicro.com>
+References: <20121123081307.GA4529@opensource.wolfsonmicro.com>
+ <1353661933-27659-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7gGkHNMELEOhSGF6"
 Content-Disposition: inline
-In-Reply-To: <20121123102137.10D6D653@pobox.sk>
+In-Reply-To: <1353661933-27659-1-git-send-email-LW@KARO-electronics.de>
+X-Cookie: Q:	How do you keep a moron in suspense?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-11-12 10:21:37, azurIt wrote:
-[...]
-> It, luckily, happend again so i have more info.
-> 
->  - there wasn't any logs in kernel from OOM for that cgroup
->  - there were 16 processes in cgroup
->  - processes in cgroup were taking togather 100% of CPU (it
->    was allowed to use only one core, so 100% of that core)
->  - memory.failcnt was groving fast
->  - oom_control:
-> oom_kill_disable 0
-> under_oom 0 (this was looping from 0 to 1)
 
-So there was an OOM going on but no messages in the log? Really strange.
-Kame already asked about oom_score_adj of the processes in the group but
-it didn't look like all the processes would have oom disabled, right?
+--7gGkHNMELEOhSGF6
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  - limit_in_bytes was set to 157286400
->  - content of stat (as you can see, the whole memory limit was used):
-> cache 0
-> rss 0
+On Fri, Nov 23, 2012 at 10:12:13AM +0100, Lothar Wa=DFmann wrote:
+> Due to a broken make rule, sound/soc/fsl/imx-pcm-dma.c or
+> sound/soc/fsl/imx-pcm-fiq.c (whatever is selected via Kconfig) will
+> not be compiled into imx-pcm.o when building as module, i.e.:
 
-This looks like a top-level group for your user.
+What I've been trying to do is get you to tell me what the problem is
+with the Makefile rule, it's really not clear to me what the issue is or
+why your change is better.  I can see the practical results but nothing
+about how they came to be which makes it very hard to tell if this is a
+good fix.
 
-> mapped_file 0
-> pgpgin 0
-> pgpgout 0
-> swap 0
-> pgfault 0
-> pgmajfault 0
-> inactive_anon 0
-> active_anon 0
-> inactive_file 0
-> active_file 0
-> unevictable 0
-> hierarchical_memory_limit 157286400
-> hierarchical_memsw_limit 157286400
-> total_cache 0
-> total_rss 157286400
+This is a common issue with stuff you send, there's lots of analysis
+missing so it's hard to understand the thought process behind the
+change.
 
-OK, so all the memory is anonymous and you have no swap so the oom is
-the only thing to do.
+--7gGkHNMELEOhSGF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> total_mapped_file 0
-> total_pgpgin 10326454
-> total_pgpgout 10288054
-> total_swap 0
-> total_pgfault 12939677
-> total_pgmajfault 4283
-> total_inactive_anon 0
-> total_active_anon 157286400
-> total_inactive_file 0
-> total_active_file 0
-> total_unevictable 0
-> 
-> 
-> i also grabber oom_adj, oom_score_adj and stack of all processes, here
-> it is:
-> http://www.watchdog.sk/lkml/memcg-bug.tar
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Hmm, all processes waiting for oom are stuck at the very same place:
-$ grep mem_cgroup_handle_oom -r [0-9]*
-30858/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-30859/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-30860/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-30892/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-30898/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-31588/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-32044/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-32358/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-6031/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-6534/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-7020/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+iQIcBAEBAgAGBQJQr0slAAoJELSic+t+oim94DMQAIClHuSnoyzOEEIVHJRL5DWm
+HiImZo8qkCixLmnSAZl3rlGglqqKTG+tH6jYVqsznhibGuILMe2F99Yo0kHHbmZf
+u8tkN33jcZyoaTVbEYeZDoPyQuTHLGYgVE7PLv4+W18rSWS3DDDdL/4hH0UJ/7vR
+hYsyAvpMkMEZMOLoOhZGHAzyUYiUf/0ejPrHczGo4DBphfZMA3/x7zuOI0FiCr82
+UA4b0j7/++N6sMW7+hFwMdLgqy2ootxMdL7S1EoxNe+hc8Pz8blWeC7733wgzELc
+KZl3zoE8JDXNIrnqFVzjBzGwSmIFJl7ejpdykRUhtBuMWZm6XVhcyZPR4/zqObUy
+PTJ7bh6BVpWeZgcXubi6O/c3gm8jWxe1HfwIMvvP9QPsh6fipmm3uD0Xi54I15ED
+cBdspbGaUyVpM1lOVO62fGDvW83hkliVcjuFbobruUxsgK8TT4s4AOScUvNmMh6G
+zKJoWUM1Stj2oFDpxSdsFvj0CRIt27IgoL1fgQvw3mgq1a22FIedERR6wct7odEt
+A9LgIxcIlusfmU7/+uEHTPZ3kYEJm1wU2RNHrY6Sgb04Ccg9GixwwKkNE9NcKWaL
+qfeqqlNJ7LP9U1eX0eZyWkrhKMOm3FWf6Lu2z5PsJC3KrXZlmxm925fD8OUH9Q/W
+CByFLB3JjtKgE8jdnTo5
+=2us+
+-----END PGP SIGNATURE-----
 
-We are taking memcg_oom_lock spinlock twice in that function + we can
-schedule. As none of the tasks is scheduled this would suggest that you
-are blocked at the first lock. But who got the lock then?
-This is really strange.
-Btw. is sysrq+t resp. sysrq+w showing the same traces as
-/proc/<pid>/stat?
- 
-> Notice that stack is different for few processes.
-
-Yes others are in VFS resp ext3. ext3_write_begin looks a bit dangerous
-but it grabs the page before it really starts a transaction.
-
-> Stack for all processes were NOT chaging and was still the same.
-
-Could you take few snapshots over time?
-
-> Btw, don't know if it matters but i was several cgroup subsystems
-> mounted and i'm also using them (i was not activating freezer in this
-> case, don't know if it can be active automatically by kernel or what,
-
-No
-
-> didn't checked if cgroup was freezed but i suppose it wasn't):
-> none            /cgroups        cgroup  defaults,cpuacct,cpuset,memory,freezer,task,blkio 0 0
-
-Do you see the same issue if only memory controller was mounted (resp.
-cpuset which you seem to use as well from your description).
-
-I know you said booting into a vanilla kernel would be problematic but
-could you at least rule out te cgroup patches that you have mentioned?
-If you need to move a task to a group based by an uid you can use
-cgrules daemon (libcgroup1 package) for that as well.
--- 
-Michal Hocko
-SUSE Labs
+--7gGkHNMELEOhSGF6--
