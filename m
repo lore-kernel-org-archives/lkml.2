@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab2KWGPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:15:21 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47523 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab2KWGPT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:15:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353650353-17576-1-git-send-email-tushar.behera@linaro.org>
-References: <1353650353-17576-1-git-send-email-tushar.behera@linaro.org>
-Date: Fri, 23 Nov 2012 11:45:18 +0530
-Message-ID: <CAM=Q2cs=oYq4e17LXxUEhATiYLAjnzoTH-+nsO5KNQwGj2qSBA@mail.gmail.com>
-Subject: Re: [PATCH 0/7] i2c: s3c2410: Add devm_* apis and cleanup
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, w.sang@pengutronix.de,
-        kgene.kim@samsung.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932442Ab2KWGWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:22:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:65468 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab2KWGWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 01:22:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
+   d="scan'208";a="246058166"
+Message-ID: <1353651716.2111.3.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
+Date: Fri, 23 Nov 2012 14:21:56 +0800
+In-Reply-To: <CAK44p22S6j43YnYWs-jgT2e0PCjtdX6ttV3aV5oKN8S+JvygrA@mail.gmail.com>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+	 <1353547324.2172.1.camel@rzhang1-mobl4>
+	 <CAK44p21mnUpWpHWui6yFqaE5mrjTHhx48j3Mgm0K-KL3EskaGA@mail.gmail.com>
+	 <1353571951.2297.7.camel@rzhang1-mobl4>
+	 <CAK44p22S6j43YnYWs-jgT2e0PCjtdX6ttV3aV5oKN8S+JvygrA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 11:29 AM, Tushar Behera
-<tushar.behera@linaro.org> wrote:
-> This patchset cleans up the probe function of i2c-s3c2410 driver.
-> These have been tested on Exynos4210 based Origen board.
->
-> Tushar Behera (7):
->   i2c: s3c2410: Remove unnecessary label err_noclk
->   i2c: s3c2410: Convert to use devm_clk_get()
->   i2c: s3c2410: Convert to use devm_request_mem_region()
->   i2c: s3c2410: Convert to use devm_ioremap()
->   i2c: s3c2410: Convert to use devm_request_irq()
+On Fri, 2012-11-23 at 09:35 +0530, Amit Kachhap wrote:
+> On 22 November 2012 13:42, Zhang Rui <rui.zhang@intel.com> wrote:
+> > On Thu, 2012-11-22 at 10:11 +0530, Amit Kachhap wrote:
+> >> On 22 November 2012 06:52, Zhang Rui <rui.zhang@intel.com> wrote:
+> >> > On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+> >> >> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
+> >> >> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
+> >> >> jump to the upper or lower cooling level instead of incremental increase
+> >> >> or decrease. This is needed for temperature sensors which support rising/falling
+> >> >> threshold interrupts and polling can be totally avoided.
+> >> >>
+> >> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> >> >> ---
+> >> >>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+> >> >>  include/linux/thermal.h     |    2 ++
+> >> >>  2 files changed, 17 insertions(+), 4 deletions(-)
+> >> >>
+> >> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> >> >> index 1242cff..0d2d8d6 100644
+> >> >> --- a/drivers/thermal/step_wise.c
+> >> >> +++ b/drivers/thermal/step_wise.c
+> >> >> @@ -35,6 +35,10 @@
+> >> >>   *       state for this trip point
+> >> >>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+> >> >>   *       state for this trip point
+> >> >> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+> >> >> + *       state for this trip point
+> >> >> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+> >> >> + *       state for this trip point
+> >> >>   */
+> >> >>  static unsigned long get_target_state(struct thermal_instance *instance,
+> >> >>                                       enum thermal_trend trend)
+> >> >> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+> >> >>       } else if (trend == THERMAL_TREND_DROPPING) {
+> >> >>               cur_state = cur_state > instance->lower ?
+> >> >>                           (cur_state - 1) : instance->lower;
+> >> >> -     }
+> >> >> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
+> >> >> +             cur_state = instance->upper;
+> >> >> +     else if (trend == THERMAL_TREND_DROP_FULL)
+> >> >> +             cur_state = instance->lower;
+> >> >>
+> >> >>       return cur_state;
+> >> >>  }
+> >> >> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
+> >> >>  }
+> >> >>
+> >> >>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> >> >> -                             int trip, enum thermal_trip_type trip_type)
+> >> >> +                             int trip, enum thermal_trip_type trip_type,
+> >> >> +                             enum thermal_trend trend)
+> >> >>  {
+> >> >>       struct thermal_instance *instance;
+> >> >>       struct thermal_cooling_device *cdev;
+> >> >> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> >> >>               cdev = instance->cdev;
+> >> >>               cdev->ops->get_cur_state(cdev, &cur_state);
+> >> >>
+> >> >> -             instance->target = cur_state > instance->lower ?
+> >> >> +             if (trend == THERMAL_TREND_DROP_FULL)
+> >> >> +                     instance->target = instance->lower;
+> >> >> +             else
+> >> >> +                     instance->target = cur_state > instance->lower ?
+> >> >>                           (cur_state - 1) : THERMAL_NO_TARGET;
+> >> >>
+> >> > what do you expect to happen if the trend is THERMAL_TREND_RAISE_FULL at
+> >> > this time?
+> >> >
+> >> Hi Rui,
+> >>
+> >> I suppose this is dethrotle routine and hence this will be called when
+> >> only drop in temperature happens. Also I did not used get_target_state
+> >> here because I thought it might cause regression in the other existing
+> >> thermal drivers(I am not sure) But I guess calling get_target_state is
+> >> the good way to know next target state and is fine if you agree.
+> >> Also one suggestion, 2 functions for throttle/dethrottle can be merged
+> >> as both look same and just get_target_state can be used in that
+> >> function
+> >>
+> > agree.
+> > patches have been refreshed, please review.
+> 
+> Thanks Rui, Your patches looks nice. I will re-base my patches against
+> your implementation and submit them shortly.
+> 
+great. please rebase your patch on top of thermal-thermal tree.
 
-You may want to consider request_and_ioremap.
+thanks,
+rui
 
-
->   i2c: s3c2410: Move location of clk_prepare_enable() call in probe
->     function
->   i2c: s3c2410: Remove err_cpufreq label
->
->  drivers/i2c/busses/i2c-s3c2410.c |   74 ++++++++++++--------------------------
->  1 files changed, 23 insertions(+), 51 deletions(-)
->
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
