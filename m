@@ -1,98 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758960Ab2KWDYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 22:24:43 -0500
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:47856 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab2KWDYl (ORCPT
+	id S1758965Ab2KWDpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 22:45:13 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40292 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754507Ab2KWDpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 22:24:41 -0500
-X-Greylist: delayed 2028 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Nov 2012 22:24:41 EST
-From: Barry Song <Barry.Song@csr.com>
-To: Baruch Siach <baruch@tkos.co.il>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC][PATCH] printk: add boot_quiet param to support deferred
- printk while booting
-Thread-Topic: [RFC][PATCH] printk: add boot_quiet param to support deferred
- printk while booting
-Thread-Index: AQHNySVPRE3AcvZbo0m2E69hzLyh9pf2NvGAgACKDgA=
-Date: Fri, 23 Nov 2012 03:24:15 +0000
-Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E9012297F567@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1353639022-13273-1-git-send-email-Barry.Song@csr.com>
- <20121123030729.GB4030@tarshish>
-In-Reply-To: <20121123030729.GB4030@tarshish>
-Accept-Language: zh-CN, en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.125.36.70]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Thu, 22 Nov 2012 22:45:09 -0500
+X-Sasl-enc: CLuKBdAxkgsaaZXwqDBHMGpTOFnEFtntSsLYVpBFxIl8 1353642308
+Message-ID: <1353642304.2309.25.camel@perseus.themaw.net>
+Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial
+ PID namespace
+From: Ian Kent <raven@themaw.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com, mszeredi@suse.cz
+Date: Fri, 23 Nov 2012 11:45:04 +0800
+In-Reply-To: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAN3Ow2F010712
 
-Hi Baruch,
-Thanks!
-
-> -----Original Message-----
-> From: Baruch Siach [mailto:baruch@tkos.co.il]
-> Sent: Friday, November 23, 2012 11:07 AM
-> To: Barry Song
-> Cc: gregkh@linuxfoundation.org; DL-SHA-WorkGroupLinux;
-> linux-pm@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
-> linux-arm-kernel@lists.infradead.org
-> Subject: Re: [RFC][PATCH] printk: add boot_quiet param to support deferred
-> printk while booting
+On Thu, 2012-11-22 at 17:24 +0100, Miklos Szeredi wrote:
+> Patches were tested by the customer.
 > 
-> Hi Barry,
-> 
-> On Fri, Nov 23, 2012 at 10:50:22AM +0800, Barry Song wrote:
-> 
-> [...]
-> 
-> > diff --git a/kernel/printk.c b/kernel/printk.c
-> > index 2d607f4..0b88d6bf 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -250,6 +250,9 @@ static u32 clear_idx;
-> >  #define LOG_ALIGN __alignof__(struct log)
-> >  #endif
-> >  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-> > +static char __boot_log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
-> 
-> Since we do not use this buffer when the system is running, is there a way to
-> release it once its content has been written to console?
-> 
+> Ian, Eric, do these patches look OK?
 
-Definitely yes. at this moment the code is just a RFC to get people's agreement about the idea.
+They look OK to me but I'm still a bit concerned about changing the way
+this behaves, but I also believe this is the way we want it to behave.
 
-i have a note in my RFC if you didn't miss :-)
-" Note: This is only a RFC, after we agree about the idea, i will move the boot_log_buf to __initdata."
+Give me a little bit more time to run a simple test to ensure we can at
+least do what we could previously, and that's nothing more than
+umounting duplicated mounts (which probably shouldn't be duplicated at
+all) in the container.
 
-> baruch
 > 
-> > +static int boot_log_len;
-> > +
-> >  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
-> >  static char *log_buf = __log_buf;
-> >  static u32 log_buf_len = __LOG_BUF_LEN;
-> > @@ -1247,6 +1250,16 @@ module_param(ignore_loglevel, bool, S_IRUGO |
-> S_IWUSR);
+> Thanks,
+> Miklos
+> ----
+> From: Sukadev Bhattiprolu <sukadev@us.ibm.com>
 > 
+> This patch enables autofs4 to work in a "container".  oz_pgrp is converted from
+> pid_t to struct pid and this is stored at mount time based on the "pgrp=" option
+> or if the option is missing then the current pgrp.
+> 
+> The "pgrp=" option is interpreted in the PID namespace of the current process.
+> This option is flawed in that it doesn't carry the namespace information, so it
+> should be deprecated.  AFAICS the autofs daemon always sends the current pgrp,
+> which is the default anyway.
+> 
+> The oz_pgrp is also set from the AUTOFS_DEV_IOCTL_SETPIPEFD_CMD ioctl.  This
+> ioctl sets oz_pgrp to the current pgrp.  It is not allowed to change the pid
+> namespace.
+> 
+> oz_pgrp is used mainly to determine whether the process traversing the autofs
+> mount tree is the autofs daemon itself or not.  This function now compares the
+> pid pointers instead of the pid_t values.
+> 
+> One other use of oz_pgrp is in autofs4_show_options.  There is shows the
+> virtual pid number (i.e. the one that is valid inside the PID namespace of the
+> calling process)
+> 
+> For debugging printk convert oz_pgrp to the value in the initial pid namespace.
+> 
+> Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+> Cc: Serge Hallyn <serue@us.ibm.com>
+> Cc: Eric Biederman <ebiederm@xmission.com>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> ---
+>  fs/autofs4/autofs_i.h  |    4 ++--
+>  fs/autofs4/dev-ioctl.c |   16 ++++++++++++++--
+>  fs/autofs4/inode.c     |   33 +++++++++++++++++++++++++--------
+>  3 files changed, 41 insertions(+), 12 deletions(-)
+> Index: linux-2.6/fs/autofs4/autofs_i.h
+> ===================================================================
+> --- linux-2.6.orig/fs/autofs4/autofs_i.h	2012-11-12 17:55:28.000000000 +0100
+> +++ linux-2.6/fs/autofs4/autofs_i.h	2012-11-12 19:09:40.000000000 +0100
+> @@ -104,7 +104,7 @@ struct autofs_sb_info {
+>  	u32 magic;
+>  	int pipefd;
+>  	struct file *pipe;
+> -	pid_t oz_pgrp;
+> +	struct pid *oz_pgrp;
+>  	int catatonic;
+>  	int version;
+>  	int sub_version;
+> @@ -139,7 +139,7 @@ static inline struct autofs_info *autofs
+>     filesystem without "magic".) */
+>  
+>  static inline int autofs4_oz_mode(struct autofs_sb_info *sbi) {
+> -	return sbi->catatonic || task_pgrp_nr(current) == sbi->oz_pgrp;
+> +	return sbi->catatonic || task_pgrp(current) == sbi->oz_pgrp;
+>  }
+>  
+>  /* Does a dentry have some pending activity? */
+> Index: linux-2.6/fs/autofs4/inode.c
+> ===================================================================
+> --- linux-2.6.orig/fs/autofs4/inode.c	2012-11-12 17:55:28.000000000 +0100
+> +++ linux-2.6/fs/autofs4/inode.c	2012-11-12 19:09:35.000000000 +0100
+> @@ -62,6 +62,8 @@ void autofs4_kill_sb(struct super_block
+>  	/* Free wait queues, close pipe */
+>  	autofs4_catatonic_mode(sbi);
+>  
+> +	put_pid(sbi->oz_pgrp);
+> +
+>  	sb->s_fs_info = NULL;
+>  	kfree(sbi);
+>  
+> @@ -83,7 +85,7 @@ static int autofs4_show_options(struct s
+>  		seq_printf(m, ",uid=%u", root_inode->i_uid);
+>  	if (root_inode->i_gid != 0)
+>  		seq_printf(m, ",gid=%u", root_inode->i_gid);
+> -	seq_printf(m, ",pgrp=%d", sbi->oz_pgrp);
+> +	seq_printf(m, ",pgrp=%d", pid_vnr(sbi->oz_pgrp));
+>  	seq_printf(m, ",timeout=%lu", sbi->exp_timeout/HZ);
+>  	seq_printf(m, ",minproto=%d", sbi->min_proto);
+>  	seq_printf(m, ",maxproto=%d", sbi->max_proto);
+> @@ -127,7 +129,8 @@ static const match_table_t tokens = {
+>  };
+>  
+>  static int parse_options(char *options, int *pipefd, uid_t *uid, gid_t *gid,
+> -		pid_t *pgrp, unsigned int *type, int *minproto, int *maxproto)
+> +			 int *pgrp, bool *pgrp_set, unsigned int *type,
+> +			 int *minproto, int *maxproto)
+>  {
+>  	char *p;
+>  	substring_t args[MAX_OPT_ARGS];
+> @@ -135,7 +138,6 @@ static int parse_options(char *options,
+>  
+>  	*uid = current_uid();
+>  	*gid = current_gid();
+> -	*pgrp = task_pgrp_nr(current);
+>  
+>  	*minproto = AUTOFS_MIN_PROTO_VERSION;
+>  	*maxproto = AUTOFS_MAX_PROTO_VERSION;
+> @@ -170,6 +172,7 @@ static int parse_options(char *options,
+>  			if (match_int(args, &option))
+>  				return 1;
+>  			*pgrp = option;
+> +			*pgrp_set = true;
+>  			break;
+>  		case Opt_minproto:
+>  			if (match_int(args, &option))
+> @@ -205,6 +208,8 @@ int autofs4_fill_super(struct super_bloc
+>  	int pipefd;
+>  	struct autofs_sb_info *sbi;
+>  	struct autofs_info *ino;
+> +	int pgrp;
+> +	bool pgrp_set = false;
+>  
+>  	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+>  	if (!sbi)
+> @@ -217,7 +222,7 @@ int autofs4_fill_super(struct super_bloc
+>  	sbi->pipe = NULL;
+>  	sbi->catatonic = 1;
+>  	sbi->exp_timeout = 0;
+> -	sbi->oz_pgrp = task_pgrp_nr(current);
+> +	sbi->oz_pgrp = NULL;
+>  	sbi->sb = s;
+>  	sbi->version = 0;
+>  	sbi->sub_version = 0;
+> @@ -254,12 +259,23 @@ int autofs4_fill_super(struct super_bloc
+>  
+>  	/* Can this call block? */
+>  	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
+> -				&sbi->oz_pgrp, &sbi->type, &sbi->min_proto,
+> -				&sbi->max_proto)) {
+> +			  &pgrp, &pgrp_set, &sbi->type, &sbi->min_proto,
+> +			  &sbi->max_proto)) {
+>  		printk("autofs: called with bogus options\n");
+>  		goto fail_dput;
+>  	}
+>  
+> +	if (pgrp_set) {
+> +		sbi->oz_pgrp = find_get_pid(pgrp);
+> +		if (!sbi->oz_pgrp) {
+> +			pr_warn("autofs: could not find process group %d\n",
+> +				pgrp);
+> +			goto fail_dput;
+> +		}
+> +	} else {
+> +		sbi->oz_pgrp = get_task_pid(current, PIDTYPE_PGID);
+> +	}
+> +
+>  	if (autofs_type_trigger(sbi->type))
+>  		__managed_dentry_set_managed(root);
+>  
+> @@ -283,9 +299,9 @@ int autofs4_fill_super(struct super_bloc
+>  		sbi->version = sbi->max_proto;
+>  	sbi->sub_version = AUTOFS_PROTO_SUBVERSION;
+>  
+> -	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, sbi->oz_pgrp);
+> +	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, pid_nr(sbi->oz_pgrp));
+>  	pipe = fget(pipefd);
+> -	
+> +
+>  	if (!pipe) {
+>  		printk("autofs: could not open pipe file descriptor\n");
+>  		goto fail_dput;
+> @@ -315,6 +331,7 @@ int autofs4_fill_super(struct super_bloc
+>  fail_ino:
+>  	kfree(ino);
+>  fail_free:
+> +	put_pid(sbi->oz_pgrp);
+>  	kfree(sbi);
+>  	s->s_fs_info = NULL;
+>  fail_unlock:
+> Index: linux-2.6/fs/autofs4/dev-ioctl.c
+> ===================================================================
+> --- linux-2.6.orig/fs/autofs4/dev-ioctl.c	2012-11-12 17:55:28.000000000 +0100
+> +++ linux-2.6/fs/autofs4/dev-ioctl.c	2012-11-12 20:41:26.000000000 +0100
+> @@ -346,6 +346,7 @@ static int autofs_dev_ioctl_setpipefd(st
+>  {
+>  	int pipefd;
+>  	int err = 0;
+> +	struct pid *new_pid = NULL;
+>  
+>  	if (param->setpipefd.pipefd == -1)
+>  		return -EINVAL;
+> @@ -357,7 +358,17 @@ static int autofs_dev_ioctl_setpipefd(st
+>  		mutex_unlock(&sbi->wq_mutex);
+>  		return -EBUSY;
+>  	} else {
+> -		struct file *pipe = fget(pipefd);
+> +		struct file *pipe;
+> +
+> +		new_pid = get_task_pid(current, PIDTYPE_PGID);
+> +
+> +		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
+> +			AUTOFS_WARN("Not allowed to change PID namespace");
+> +			err = -EINVAL;
+> +			goto out;
+> +		}
+> +
+> +		pipe = fget(pipefd);
+>  		if (!pipe) {
+>  			err = -EBADF;
+>  			goto out;
+> @@ -367,12 +378,13 @@ static int autofs_dev_ioctl_setpipefd(st
+>  			fput(pipe);
+>  			goto out;
+>  		}
+> -		sbi->oz_pgrp = task_pgrp_nr(current);
+> +		swap(sbi->oz_pgrp, new_pid);
+>  		sbi->pipefd = pipefd;
+>  		sbi->pipe = pipe;
+>  		sbi->catatonic = 0;
+>  	}
+>  out:
+> +	put_pid(new_pid);
+>  	mutex_unlock(&sbi->wq_mutex);
+>  	return err;
+>  }
 
--barry
 
-
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
