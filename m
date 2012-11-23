@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab2KWGzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:55:14 -0500
-Received: from nm20-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.165]:41896 "EHLO
-	nm20-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932612Ab2KWGzM (ORCPT
+	id S1755163Ab2KWG5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:57:10 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:45333 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932612Ab2KWG5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:55:12 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Nov 2012 01:55:12 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 756850.46014.bm@omp1014.access.mail.mud.yahoo.com
-X-YMail-OSG: G1u7OnUVM1knYxvwyZ6SIvscS4pq4zCYM4RpONf4sbccMwZ
- 7aLa04fEY9tq1Ua3BceF3_vNrWSG6rRVQIABCv3sTgtnAALjYdTXxdsmStMa
- ok01J6r7xIrV1MaFuz0p.xwobB2uUNwDegFf1Uha8y8r4tipS1I2OcEWs.vu
- l7F1JbqGgn6CPET1c74nIf6AvJngydhRVop7J2WxncpbCMWS8vSfl7nN77db
- ZrudPxeKLfZE6T0MINPiXbGdEWnKlADGR8C5.HV.sa2tW.3NOZw74ZQK7NuY
- Ez7CNuDD.0hzEdk9C9eyxxWu9yul6Hp_WXAHpTzO8H.chzlFOUbHk3MRQh_m
- IHEHn7j74JE2r9dClA_X9oNrjQY4vrCEH11ybnB2KvmNwLyyCKUzLLuZABhr
- y6Ygt3WijnHjHYy0Rs2_cwpqQaIvCMIG8HW3o0vJq1D0hRaW86RiDkrAlCnF
- XAcg1Xoqu1HSsMnd3kXb.oGfSD5sKU3kz8oZ21_qwbQk9CcnuitH_TyF9QPz
- Noax.yX4H8n0rTZo-
-X-RocketYMMF: webccsdsff
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.460
-Message-ID: <1353653311.73721.YahooMailClassic@web5702.biz.mail.ne1.yahoo.com>
-Date: Thu, 22 Nov 2012 22:48:31 -0800 (PST)
-From: KINGDOM NELSON <kingdomnelson1@gmail.com>
-Reply-To: nelson.kingdom@yahoo.com
-Subject: KINGDOM NELSON
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-1206156689-2097441888-1353653311=:73721"
+	Fri, 23 Nov 2012 01:57:08 -0500
+Subject: Re: [PATCH RFC v2 3/4] firmware: Add support for signature checks
+From: joeyli <jlee@suse.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+In-Reply-To: <1352396109-3989-4-git-send-email-tiwai@suse.de>
+References: <s5hhap49den.wl%tiwai@suse.de>
+	 <1352396109-3989-1-git-send-email-tiwai@suse.de>
+	 <1352396109-3989-4-git-send-email-tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Nov 2012 14:56:11 +0800
+Message-ID: <1353653771.21227.741.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----1206156689-2097441888-1353653311=:73721
-Content-Type: text/plain; charset=us-ascii
+於 四，2012-11-08 於 18:35 +0100，Takashi Iwai 提到：
+> +#ifdef CONFIG_FIRMWARE_SIG
+> +static int verify_sig_file(struct firmware_buf *buf, const char
+> *path)
+> +{
+> +       const unsigned long markerlen = sizeof(FIRMWARE_SIG_STRING) -
+> 1;
+> +       struct file *file;
+> +       void *sig_data;
+> +       size_t sig_size;
+> +       int ret;
+> +
+> +       file = filp_open(path, O_RDONLY, 0);
+> +       if (IS_ERR(file))
+> +               return -ENOKEY;
 
+I think there should return '-ENOENT', otherwise the firmware will show
+'Invalid firmware signature' even didn't find the sig file.
 
----1206156689-2097441888-1353653311=:73721
-Content-Type: application/msword; name=KINGDOM
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="KINGDOM NELSON.rtf"
+> +
+> +       ret = fw_read_file_contents(file, &sig_data, &sig_size);
+> +       fput(file); 
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgIEZST00gS0lOR0RPTSBORUxTT05ccGFyDQpHTEVORE9W
-RU4gRkFSTVMsIFpJTUJBQldFIERlYXIgUGFydG5lcixOYXR1cmFsbHksdGhp
-cyBsZXR0ZXIgd2lsbCBjb21lIHRvIHlvdSBhcyBhIHN1cnByaXNlIHNpbmNl
-IHdlIGhhdmUgbm90IG1ldCxwZXJtaXQgbWUgaG93ZXZlciB0byBpbnRyb2R1
-Y2UgbXlzZWxmLEkgYW0gS2luZ2RvbSBOZWxzb24sYSBibGFjayBaaW1iYWJ3
-ZWFuIGZhcm1lcixjdXJyZW50bHkgaW4gc291dGggYWZyaWNhIGFzIHJlZmZ1
-Z2UuIEkgdXNlZCB0byB3b3JrIGluIHRocmVlIHRvYmFjY28gZmFybXMgaW4g
-Q2hpcGluZ2UsYW5kIEkgd2FzIGFsc28gcGFydCBvd25lciBvZiB0aGVzZSBm
-YXJtcyB3aGljaCB3ZXJlIG93bmVkIGJ5IG15IGxhdGUgZmF0aGVyLiBJIGFt
-IGNvbnRhY3RpbmcgeW91IGFzIHRoZSBuZWVkIGZvciBtZSB0byBoYXZlIGEg
-Zm9yZWlnbiBwYXJ0bmVyIGluIHlvdXIgY291bnRyeSBoYXMgYmVjb21lIG5l
-Y2Vzc2FyeSBkdWUgdG8gbXkgcGxhbnMgdG8gcmVsb2NhdGUgdG8gdGhhdCBj
-b3VudHJ5IHNvIHRoYXQgSSBjYW4gcHVyY2hhc2Ugc29tZSBsYW5kIGFuZCBz
-dGFydCBmYXJtaW5nIGFsbCBvdmVyIGFnYWluLGFzIHRoZSBwcmVzZW50IHBv
-bGl0aWNhbCBpbnN0YWJpbGl0eSBpbiBaaW1iYWJ3ZSxkb2VzIG5vdCBlbmNv
-dXJhZ2UgZmluYW5jaWFsIGludmVzdG1lbnQgYXMgdGhlIGVudmlyb25tZW50
-IGlzIG5vIGxvbmdlciBjb25kdWNpdmUgZm9yIGZhcm1pbmcgaW52ZXN0bWVu
-dCBhbmQgbW9zdCBvZiBhbGwsc2VjdXJpdHkgaXMgbm90IGd1YXJhbnRlZWQs
-anVzdCBhcyByZXBvcnRlZCBieSBpbnRlcm5hdGlvbmFsIG1lZGlhLlRoaXMg
-cHJvYmxlbSBzdGFydGVkIHdoZW4gdGhlIFppbWJhYndlYW4gZ292ZXJubWVu
-dCB1bmRlciB0aGUgbGVhZGVyc2hpcCBvZiBQcmVzaWRlbnQgUm9iZXJ0IE11
-Z2FiZSBhbm5vdW5jZWQgYSBkZWNyZWUgb24gTWF5IDMxc3QgMjAwMCB0byBz
-ZWl6ZSBtb3JlIHRoYW44NDlccGFyDQp3aGl0ZS1vd25lZCBmYXJtcy5EdXJp
-bmcgdGhpcyBwZXJpb2QsYXMgcmVwb3J0ZWQgYnkgaW50ZXJuYXRpb25hbCBt
-ZWRpYSBhbmQgaGUgQ05OLG1vcmUgdGhhbiA2MDAgZmFybWVycyhpbmNsdWRp
-bmcgbXkgZmF0aGVyKSB3ZXJlIGtpbGxlZDsgdGhlIGdvdmVybm1lbnQgaXMg
-bm90IHN0b3BwaW5nIGF0IHRoaXMsIGFzIHRoZSBnb3Zlcm5tZW50IGhhcyBh
-bHJlYWR5IGFza2VkIGFsbCBmYXJtZXJzIHRvIGdpdmUgdXAgdGhlaXIgZmFy
-bXMgdG8gZ292ZXJubWVudCBvciByaXNrIGdvaW5nIHRvIHByaXNvbi5TbyBm
-YXIsbW9yZSB0aGFuIDEsNDAwIG93bmVkIGZhcm1zIGhhdmUgYmVlbiBpbnZh
-ZGVkIGFuZCBjb25maXNjYXRlZCxhcyB3ZWxsIGFzIGNsYWltaW5nIHRoZSBw
-cm9wZXJ0aWVzIG9mIHRoZSBmYXJtZXJzLiBBbHNvLGFib3V0IDEzMzMgZmFy
-bWVycyBhcnJlc3RlZCBmb3IgZGVmeWluZyB0aGUgb3JkZXJzIHRvIGxlYXZl
-IHRoZWlyIGZhcm1zIHVuZGVyIHRoZSBjb250cm92ZXJzaWFsIGxhbmQgcmVm
-b3JtIHByb2dyYW0gb2YgdGhlIGdvdmVybm1lbnQuIEhhdmluZyBsaXZlZCBp
-biB0aGlzIGNvdW50cnkgc291dGggYWZyaWNhIGZvciB5ZWFycyxBbSByZWZm
-dWdlIHNvbWUgeWVhcnMgdGhlcmVmb3JlLEkgZGVjaWRlZCB0byBjb250YWN0
-IHlvdSxmb3IgeW91ciBhc3Npc3RhbmNlLHNvIHRoYXQgSSBjYW4gZGl2ZXJ0
-IG15IGludGVyZXN0IGluIHNvdXRoIGFmcmljYSB0byBhIG1vcmUgc3RhYmxl
-IGNvdW50cnkgYXMgeW91cnMuIEFsc28sSSBtdXN0IHJlLWl0ZXJhdGUgdGhl
-IGltcG9ydGFuY2Ugb2YgaGF2aW5nIGEgY2l0aXplbiBvZiB5b3VyIGNvdW50
-cnkgdG8gZnJvbnQgb3IgbWUsc2luY2UgaSBpbnRlbmQgdG8gcHVyY2hhc2Ug
-c29tZSBsYW5kIGZvciBmYXJtaW5nLEkgZG8gbm90IGtub3cgbXVjaCBhYm91
-dCB5b3VyIGxhbmQtb3duZXJzaGlwIGxhd3MsSSB0aG91Z2h0IGl0IHdpc2Ug
-dG9ccGFyDQpzZWVrIHRoZSBoZWxwIG9mIGEgZm9yZWlnbmVyIHRvIGFjdCBh
-cyBwcm94eSBmb3IgbWUuRm9yIHRoaXMgcHVycG9zZSxJIGhhdmUgcHV0IGlu
-IGEgc2VjdXJpdHkgZGVwb3NpdCBhbGwgbW9uaWVzIGZyb20gdGhlIHNhbGUg
-b2YgbXkgZmFybWluZyBlcXVpcG1lbnQoaW5jbHVkaW5nIHRyYWN0b3JzIGV0
-YykgYW5kIGFsc28gYWxsIGZpbmFuY2lhbCBwcm9maXRzLkFsbCB0aGVzZSBh
-cmUgYSB0b3RhbCBvZiBVUyQxOC41bWlsbGlvbi5JIHdpbGwgdXBvbiByZWNl
-aXZpbmcgeW91ciBjb25zZW50IHByZXBhcmUgZXZlcnkgZG9jdW1lbnQgdG8g
-ZW5hYmxlIHlvdSByZWNlaXZlIHRoaXMgbW9uZXkgb24gbXkgYmVoYWxmLHBl
-bmRpbmcgbXkgYXJyaXZhbCB0byBtZWV0IHdpdGggeW91IGluIHlvdXIgY291
-bnRyeSBzbyB0aGF0IHdlIGNhbiBib3RoIG1ha2UgZnVydGhlciBhcnJhbmdl
-bWVudHMgd2l0aCByZWdhcmRzIHRvIHRoZSBwdXJjaGFzZSBvZiBsYW5kLkZv
-ciB5b3VyIGFzc2lzdGFuY2UgdG8gbWUseW91IHdpbGwgYmUgZW50aXRsZWQg
-dG8gYSBjb21taXNzaW9uIG9mIDE1JSBvZiB0aGUgdG90YWwgc3VtIHRoYXQg
-eW91IHdpbGwgYmUgcmVjZWl2aW5nIG9uIG15IGJlaGFsZiBmb3IgdGhlIGFi
-b3ZlIHB1cnBvc2UuSWYgeW91IGFyZSBpbnRlcmVzdGVkIGFuZCB3aWxsaW5n
-IHRvIGFzc2lzdCBtZSx5b3Ugc2hvdWxkIHBsZWFzZSBmb3J3YXJkIHRvIG1l
-IHRoZSBmb2xsb3dpbmcgaW5mb3JtYXRpb24gc28gdGhhdCBJIGNhbiByZWFj
-aCB5b3Ugb3IgY2FsbCBtZSBpbiB0aGlzIG51bWJlciArMjctNzg0MDIzMjA2
-IEkgd2lsbCB0ZWxsIHlvdSBtb3JlIGRldGFpbHMuIDEuIFlPVVIgQ09OVEFD
-VCBBRERSRVNTIDIuIFlPVVIgVEVMRVBIT05FIEFORCBGQVggTlVNQkVSLCAz
-LiBWQUxJRCBJRCBPRiBZT1VSU0VMRiwgSSBhbSB3YWl0aW5nIHVyZ2VudGx5
-IGZvciB5b3VyIHJlc3BvbnNlLHdoaWxlIGFsc29ccGFyDQpyZXF1ZXN0aW5n
-IHRoYXQgeW91IHRyZWF0IHRoaXMgbWF0dGVyIGluIHN0cmljdCBwcml2YWN5
-LkNoZWVycyBhbmQgR29kIGJsZXNzLiBJIHdpbGwgZ2l2ZSB5b3UgbW9yZSBk
-ZXRhaWxzIHdoZW4gaSBoZWFyIGZyb20geW91LllvdSBjYW4gY2xpY2sgb24g
-dGhlIGxpbmsgYmVsb3cgdG8gZ2V0IGEgYmV0dGVyIHVuZGVyc3RhbmRpbmcg
-bXkgc2l0dWF0aW9uIGFuZCB3aHkgaSBuZWVkIHRvIG1vdmUgb3V0IG15IG1v
-bmV5OiBodHRwOi8vbmV3cy5iYmMuY28udWsvMS9oaS93b3JsZC9hZnJpY2Ev
-MTA2ODUyOC5zdG0gQmVzdCBSZWdhcmRzXHBhcg0KXHBhcg0KS2luZ2RvbSBO
-ZWxzb25ccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQp9DQoA
+Tested-by: Chun-Yi Lee <jlee@suse.com>
 
+Thanks a lot!
+Joey Lee
 
----1206156689-2097441888-1353653311=:73721--
