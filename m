@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2KWOVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 09:21:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45040 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab2KWOVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 09:21:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,307,1352102400"; 
-   d="scan'208";a="171762320"
-Date: Fri, 23 Nov 2012 15:21:18 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] regulator: add a regulator driver for the AS3711
- PMIC
-Message-ID: <20121123142118.GI12685@sortiz-mobl>
-References: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
- <Pine.LNX.4.64.1211221110330.28453@axis700.grange>
- <20121123111515.GD12685@sortiz-mobl>
- <20121123114915.GG4529@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121123114915.GG4529@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754634Ab2KWOVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 09:21:34 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:40646 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2KWOVb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 09:21:31 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 0/3] cputime: Cleanups on adjusted cputime code
+Date: Fri, 23 Nov 2012 15:21:21 +0100
+Message-Id: <1353680484-7302-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 08:49:16PM +0900, Mark Brown wrote:
-> On Fri, Nov 23, 2012 at 12:15:15PM +0100, Samuel Ortiz wrote:
-> 
-> > Mark, does that look ok with you ? There's a build dependency with patch #1,
-> > so it would make sense for me to take it.
-> 
-> If there's a build dependency there's a problem - the Kconfig should
-> prevent the driver being selected without the MFD.
-It indeed does, sorry for the noise.
+Hi,
 
-Cheers,
-Samuel.
+Not vtime related that time, just a few supplementary cleanups on the part
+that computes the adjusted cputime values.
+
+Thanks.
+
+Frederic Weisbecker (3):
+  cputime: Move thread_group_cputime() to sched code
+  cputime: Rename thread_group_times to thread_group_cputime_adjusted
+  cputime: Consolidate cputime adjustment code
+
+ fs/proc/array.c           |    4 +-
+ include/linux/sched.h     |   13 +++++--
+ kernel/exit.c             |    4 +-
+ kernel/fork.c             |    2 +-
+ kernel/posix-cpu-timers.c |   24 -------------
+ kernel/sched/cputime.c    |   80 ++++++++++++++++++++++++++++++--------------
+ kernel/sys.c              |    6 ++--
+ 7 files changed, 71 insertions(+), 62 deletions(-)
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.5.4
+
