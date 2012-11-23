@@ -1,25 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab2KWBll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 20:41:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48658 "EHLO
+	id S1758477Ab2KWBov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 20:44:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48669 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756648Ab2KWBlk (ORCPT
+	by vger.kernel.org with ESMTP id S1756670Ab2KWBot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 20:41:40 -0500
-Date: Fri, 23 Nov 2012 10:41:36 +0900
+	Thu, 22 Nov 2012 20:44:49 -0500
+Date: Fri, 23 Nov 2012 10:44:44 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Qing Xu <qingx@marvell.com>
-Cc: lrg@ti.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: max8925: fix compiler warnings
-Message-ID: <20121123014135.GC4385@opensource.wolfsonmicro.com>
-References: <1353550266-21330-1-git-send-email-qingx@marvell.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-pm@vger.kernel.org,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Ola LILJA2 <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20121123014443.GD4385@opensource.wolfsonmicro.com>
+References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
+ <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
+ <20121120215429.B621F3E1821@localhost>
+ <20121121013133.GE4673@opensource.wolfsonmicro.com>
+ <CACRpkdaNmBpfONDpt7zFqLaqfiGm+ELpO-v5gZmM0rEi_AzijQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
+	protocol="application/pgp-signature"; boundary="jL2BoiuKMElzg3CS"
 Content-Disposition: inline
-In-Reply-To: <1353550266-21330-1-git-send-email-qingx@marvell.com>
+In-Reply-To: <CACRpkdaNmBpfONDpt7zFqLaqfiGm+ELpO-v5gZmM0rEi_AzijQ@mail.gmail.com>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,41 +41,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---DIOMP1UsTsWJauNi
+--jL2BoiuKMElzg3CS
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Nov 22, 2012 at 10:11:06AM +0800, Qing Xu wrote:
+On Thu, Nov 22, 2012 at 09:57:22AM +0100, Linus Walleij wrote:
 
-> -	int i, regulator_idx;
-> +	int i;
-> +	int regulator_idx = 0;
+> Is it correct to assume that this library will be useful also for ALSA
+> SoC type of devices?
 
-This sort of fix is rarely good without some analysis as to why this is
-a sensible initialisation to do, just unconditionally initialising may
-be masking a real issue in the control flow which the compiler has
-identified.
+ASoC has facilities for autogenerating the bulk of the sequences which
+with modern devices is all that you really need.
 
---DIOMP1UsTsWJauNi
+--jL2BoiuKMElzg3CS
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQrtQ8AAoJELSic+t+oim9t78QAJWyLIdWkjeYvCViIayUoTYQ
-Fll2ic72SvCxN6RHQmmSXytIWChoQYh3WJnJxe+Ge15K1g/7HK01SUyzRZKFgeKS
-ul83EC6dQDrVuRTgv21V/nIwwOv5yfmxEOpKFYrQ+THZKbw29lwDofSKBl81AsNl
-/1YLA5nuSMcvCm/BrJLcdtC1BzhiwRUicK0yF3CzjnYX6MTnqu0y8EEDHby13n35
-oi4zkO2cLTZGofTD++AqYrBWwJc1K0SXSMSoWIBWdyEXEs/svkANI67zcpIgu4jJ
-NMi7ssJL9WEGDIxT3PFJgQJgV4dZDUzyVGVstf24TZ9jOan+0cSZg365iOCzIOrn
-xkPIxBUEsasBZ2uA+Rw5cW9L3swB5iTm/9dB/VFGgfpZvoRxqerMeBioY53CCUlY
-Br3F/+nsEtbCOpZSEr4HZahi9tJeslJSRCITcNWIOBLyHzlcol8aUnJC4GBKM57i
-X6EeMTshBAhPatelhawhxBClHUAjapBsDVNJ+R9CNx4hW4MRPbzBp9AjRSj6ymrx
-CGsBBpSsaHrl1BaGidecCYOAtSsbgxWWVDQ8OPizsNO9pFgm+3XR1T5IW+gfjEA1
-EdEssxYxD3kFtxyLJpVVuS3WGO0ahxtgERtb49dTLeZFCrKHdpjenxFM3t78/jH+
-sqKLl93f5Ax8xQcnfvlH
-=x2xi
+iQIcBAEBAgAGBQJQrtUFAAoJELSic+t+oim9or0P/jeRd4BYe3ocqxtkm+e8e60Y
+blALWfdQExTsYg1gmoEASiBFm5vhQg9TDcmM1MdojCRV0+IfPem+a/Zo8DuLinqO
+QqNNY5pw/j7KLM2FflzoiFPtwz5w4Tg85eMZD9nsmmAUw//t+hlB1uCI6qo1RAQ7
+GAR4L6jCTNqe9q7osV5ydEw3rrKKTqo99MMO0inZ788wp+xzSCHcP5wljRwHZwSI
+3Q8vL3dQw+IGa6/XJM9pMAOd/IFwW8+5QCl89Z6hRLza9V+K9Ax7/Xgj4uv/E2CG
+ASe9HZ4hInv6kwJX0yUN4dQJPt5CH+ABnuRnB9WBEhxZ5EIeYDy3JIHfCBxevGiN
+j8g8mLQ8ihXQ3GcLHgHk6cXtxI/5EZhaOWDCN13sZ3FTnxKfm1xDQ9iQoEx/CTgR
+oirZajqnKJyVBI2j431JLtzwzsI37dS9gS12MLtudXTCMuuib/RZ1CtpqvUfV0Hq
+mTUaKqiUXl67Pu+nbbIlwUuvicPugTjMBJepjhQlXlrDwvOXGj6p2rX0ZHEJYel4
+/mzD0ZIlwhcHgfh7RUQefuDldbr2DLJSDveAi6mWPnS1/GuNn4KIKwJuKgRqNGgW
+dQvoKBvH5qEQvZpwEehl7HAt7UQ5blr8zcWMz4iQxv9q3WY4G3SmmgUIYLH9E+Qw
+31wJ1bVSScBxeHLbdGqf
+=yrHA
 -----END PGP SIGNATURE-----
 
---DIOMP1UsTsWJauNi--
+--jL2BoiuKMElzg3CS--
