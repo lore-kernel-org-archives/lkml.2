@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab2KWBcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 20:32:14 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45989 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab2KWBcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 20:32:13 -0500
-Message-ID: <50AED214.4000701@gmail.com>
-Date: Fri, 23 Nov 2012 09:32:04 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757377Ab2KWBfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 20:35:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49881 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756662Ab2KWBfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 20:35:43 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <50AEBF86.50501@citrix.com>
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com> <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com> <87lidwtego.fsf@xmission.com> <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl> <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com> <50AEBF86.50501@citrix.com>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: metin d <metdos@yahoo.com>, Jan Kara <jack@suse.cz>,
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 22 Nov 2012 17:34:56 -0800
+To: Andrew Cooper <andrew.cooper3@citrix.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        "jbeulich@suse.com" <jbeulich@suse.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Problem in Page Cache Replacement
-References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com> <20121120182500.GH1408@quack.suse.cz> <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com> <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com> <50AC9220.70202@gmail.com> <20121121090204.GA9064@localhost> <50ACA209.9000101@gmail.com> <20121122152611.GA11736@localhost>
-In-Reply-To: <20121122152611.GA11736@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Message-ID: <a1f75604-1f52-4af1-9dd7-b469ed4ea7b6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 11:26 PM, Fengguang Wu wrote:
-> Hi Jaegeuk,
->
-> Sorry for the delay. I'm traveling these days..
->
-> On Wed, Nov 21, 2012 at 05:42:33PM +0800, Jaegeuk Hanse wrote:
->> On 11/21/2012 05:02 PM, Fengguang Wu wrote:
->>> On Wed, Nov 21, 2012 at 04:34:40PM +0800, Jaegeuk Hanse wrote:
->>>> Cc Fengguang Wu.
->>>>
->>>> On 11/21/2012 04:13 PM, metin d wrote:
->>>>>>    Curious. Added linux-mm list to CC to catch more attention. If you run
->>>>>> echo 1 >/proc/sys/vm/drop_caches does it evict data-1 pages from memory?
->>>>> I'm guessing it'd evict the entries, but am wondering if we could run any more diagnostics before trying this.
->>>>>
->>>>> We regularly use a setup where we have two databases; one gets used frequently and the other one about once a month. It seems like the memory manager keeps unused pages in memory at the expense of frequently used database's performance.
->>>>> My understanding was that under memory pressure from heavily
->>>>> accessed pages, unused pages would eventually get evicted. Is there
->>>>> anything else we can try on this host to understand why this is
->>>>> happening?
->>> We may debug it this way.
->>>
->>> 1) run 'fadvise data-2 0 0 dontneed' to drop data-2 cached pages
->>>     (please double check via /proc/vmstat whether it does the expected work)
->>>
->>> 2) run 'page-types -r' with root, to view the page status for the
->>>     remaining pages of data-1
->>>
->>> The fadvise tool comes from Andrew Morton's ext3-tools. (source code attached)
->>> Please compile them with options "-Dlinux -I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
->>>
->>> page-types can be found in the kernel source tree tools/vm/page-types.c
->>>
->>> Sorry that sounds a bit twisted.. I do have a patch to directly dump
->>> page cache status of a user specified file, however it's not
->>> upstreamed yet.
->> Hi Fengguang,
+Ok... that *sort of* makes sense, but also underscores how utterly different this is from a normal kexec.
+
+Andrew Cooper <andrew.cooper3@citrix.com> wrote:
+
+>On 22/11/2012 17:47, H. Peter Anvin wrote:
+>> The other thing that should be considered here is how utterly 
+>> preposterous the notion of doing in-guest crash dumping is in a
+>system 
+>> that contains a hypervisor.  The reason for kdump is that on bare
+>metal 
+>> there are no other options, but in a hypervisor system the right
+>thing 
+>> should be for the hypervisor to do the dump (possibly spawning a
+>clean 
+>> I/O domain if the I/O domain is necessary to access the media.)
 >>
->> Thanks for you detail steps, I think metin can have a try.
+>> There is absolutely no reason to have a crashkernel sitting around in
+>
+>> each guest, consuming memory, and possibly get corrupt.
 >>
->>          flags    page-count       MB  symbolic-flags long-symbolic-flags
->> 0x0000000000000000        607699     2373
->> ___________________________________
->> 0x0000000100000000        343227     1340
->> _______________________r___________    reserved
->   
-> We don't need to care about the above two pages states actually.
-> Page cache pages will never be in the special reserved or
-> all-flags-cleared state.
-
-Hi Fengguang,
-
-Thanks for your response. But which kind of pages are in the special 
-reserved and which are all-flags-cleared?
-
-Regards,
-Jaegeuk
-
->
->> But I have some questions of the print of page-type:
+>> 	-hpa
 >>
->> Is 2373MB here mean total memory in used include page cache? I don't
->> think so.
->> Which kind of pages will be marked reserved?
->> Which line of long-symbolic-flags is for page cache?
-> The (lru && !anonymous) pages are page cache pages.
 >
-> Thanks,
-> Fengguang
+>(Your reply to my email which I can see on the xen devel archive
+>appears
+>to have gotten lost somewhere inside the citrix email system, so
+>apologies for replying out of order)
 >
->>>>> On Tue 20-11-12 09:42:42, metin d wrote:
->>>>>> I have two PostgreSQL databases named data-1 and data-2 that sit on the
->>>>>> same machine. Both databases keep 40 GB of data, and the total memory
->>>>>> available on the machine is 68GB.
->>>>>>
->>>>>> I started data-1 and data-2, and ran several queries to go over all their
->>>>>> data. Then, I shut down data-1 and kept issuing queries against data-2.
->>>>>> For some reason, the OS still holds on to large parts of data-1's pages
->>>>>> in its page cache, and reserves about 35 GB of RAM to data-2's files. As
->>>>>> a result, my queries on data-2 keep hitting disk.
->>>>>>
->>>>>> I'm checking page cache usage with fincore. When I run a table scan query
->>>>>> against data-2, I see that data-2's pages get evicted and put back into
->>>>>> the cache in a round-robin manner. Nothing happens to data-1's pages,
->>>>>> although they haven't been touched for days.
->>>>>>
->>>>>> Does anybody know why data-1's pages aren't evicted from the page cache?
->>>>>> I'm open to all kind of suggestions you think it might relate to problem.
->>>>>    Curious. Added linux-mm list to CC to catch more attention. If you run
->>>>> echo 1 >/proc/sys/vm/drop_caches
->>>>>    does it evict data-1 pages from memory?
->>>>>
->>>>>> This is an EC2 m2.4xlarge instance on Amazon with 68 GB of RAM and no
->>>>>> swap space. The kernel version is:
->>>>>>
->>>>>> $ uname -r
->>>>>> 3.2.28-45.62.amzn1.x86_64
->>>>>> Edit:
->>>>>>
->>>>>> and it seems that I use one NUMA instance, if  you think that it can a problem.
->>>>>>
->>>>>> $ numactl --hardware
->>>>>> available: 1 nodes (0)
->>>>>> node 0 cpus: 0 1 2 3 4 5 6 7
->>>>>> node 0 size: 70007 MB
->>>>>> node 0 free: 360 MB
->>>>>> node distances:
->>>>>> node   0
->>>>>>     0:  10
+>The kdump kernel loaded by dom0 is for when Xen crashes, not for when
+>dom0 crashes (although a dom0 crash does admittedly lead to a Xen
+>crash)
+>
+>There is no possible way it could be a separate domain; Xen completely
+>ceases to function as soon as jumps to the entry point of the kdump
+>image.
+>
+>~Andrew
 
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
