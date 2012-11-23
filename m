@@ -1,372 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab2KWJEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:04:35 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:59943 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758183Ab2KWJD7 (ORCPT
+	id S1758621Ab2KWJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:05:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64939 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758488Ab2KWJFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:03:59 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH 1/2] vfio powerpc: implemented IOMMU driver for VFIO
-Date: Fri, 23 Nov 2012 20:03:15 +1100
-Message-Id: <1353661396-14374-2-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353661396-14374-1-git-send-email-aik@ozlabs.ru>
-References: <1353435584.2234.87.camel@bling.home>
- <1353661396-14374-1-git-send-email-aik@ozlabs.ru>
+	Fri, 23 Nov 2012 04:05:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352187429-9711-1-git-send-email-qingx@marvell.com>
+References: <1352187429-9711-1-git-send-email-qingx@marvell.com>
+Date: Fri, 23 Nov 2012 17:05:15 +0800
+Message-ID: <CAN1soZwQ2bk_TteNvK=b0-CHBc=qs+EdbAHjtKA9gYD+p4XQUw@mail.gmail.com>
+Subject: Re: [PATCH 1/7] mfd: max8925: add irqdomain for dt
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, cxie4@marvell.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO implements platform independent stuff such as
-a PCI driver, BAR access (via read/write on a file descriptor
-or direct mapping when possible) and IRQ signaling.
+On Tue, Nov 6, 2012 at 3:37 PM, Qing Xu <qingx@marvell.com> wrote:
+> From: Qing Xu <qingx@marvell.com>
+>
+> Add irqdomains for max8925's main irq, and touch irq.
+> Wrap irq register operations into irqdomain's map func.
+> it is necessary for dt support.
+> Also, add dt support for max8925 driver.
+>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+>  drivers/mfd/max8925-core.c  |   87 ++++++++++++++++++++++++++++---------------
+>  drivers/mfd/max8925-i2c.c   |   32 +++++++++++++++-
+>  include/linux/mfd/max8925.h |   12 ++++-
+>  3 files changed, 96 insertions(+), 35 deletions(-)
+>
+> diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+> index 1e0ab0a..dcc218a 100644
+> --- a/drivers/mfd/max8925-core.c
+> +++ b/drivers/mfd/max8925-core.c
+> @@ -14,10 +14,14 @@
+>  #include <linux/i2c.h>
+>  #include <linux/irq.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/irqdomain.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/machine.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/mfd/max8925.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_irq.h>
+>
+>  static struct resource bk_resources[] __devinitdata = {
+>         { 0x84, 0x84, "mode control", IORESOURCE_REG, },
+> @@ -639,17 +643,34 @@ static struct irq_chip max8925_irq_chip = {
+>         .irq_disable    = max8925_irq_disable,
+>  };
+>
+> +static int max8925_irq_domain_map(struct irq_domain *d, unsigned int virq,
+> +                                irq_hw_number_t hw)
+> +{
+> +       irq_set_chip_data(virq, d->host_data);
+> +       irq_set_chip_and_handler(virq, &max8925_irq_chip, handle_edge_irq);
+> +       irq_set_nested_thread(virq, 1);
+> +#ifdef CONFIG_ARM
+> +       set_irq_flags(virq, IRQF_VALID);
+> +#else
+> +       irq_set_noprobe(virq);
+> +#endif
+> +       return 0;
+> +}
+> +
+> +static struct irq_domain_ops max8925_irq_domain_ops = {
+> +       .map    = max8925_irq_domain_map,
+> +       .xlate  = irq_domain_xlate_onetwocell,
+> +};
+> +
+> +
+>  static int max8925_irq_init(struct max8925_chip *chip, int irq,
+>                             struct max8925_platform_data *pdata)
+>  {
+>         unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
+> -       int i, ret;
+> -       int __irq;
+> +       int ret;
+> +       int tsc_irq;
+> +       struct device_node *node = chip->dev->of_node;
+>
+> -       if (!pdata || !pdata->irq_base) {
+> -               dev_warn(chip->dev, "No interrupt support on IRQ base\n");
+> -               return -EINVAL;
+> -       }
+>         /* clear all interrupts */
+>         max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ1);
+>         max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ2);
+> @@ -667,45 +688,51 @@ static int max8925_irq_init(struct max8925_chip *chip, int irq,
+>         max8925_reg_write(chip->rtc, MAX8925_RTC_IRQ_MASK, 0xff);
+>
+>         mutex_init(&chip->irq_lock);
+> -       chip->core_irq = irq;
+> -       chip->irq_base = pdata->irq_base;
+>
+> -       /* register with genirq */
+> -       for (i = 0; i < ARRAY_SIZE(max8925_irqs); i++) {
+> -               __irq = i + chip->irq_base;
+> -               irq_set_chip_data(__irq, chip);
+> -               irq_set_chip_and_handler(__irq, &max8925_irq_chip,
+> -                                        handle_edge_irq);
+> -               irq_set_nested_thread(__irq, 1);
+> -#ifdef CONFIG_ARM
+> -               set_irq_flags(__irq, IRQF_VALID);
+> -#else
+> -               irq_set_noprobe(__irq);
+> -#endif
+> -       }
+> -       if (!irq) {
+> -               dev_warn(chip->dev, "No interrupt support on core IRQ\n");
+> -               goto tsc_irq;
+> +       /* domain1: init charger/rtc/onkey irq domain*/
+> +       chip->irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_IRQS, 0);
+> +       if (chip->irq_base < 0) {
+> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
+> +                       chip->irq_base);
+> +               return -EBUSY;
+>         }
+>
+> +       irq_domain_add_legacy(node, MAX8925_NR_IRQS, chip->irq_base, 0,
+> +                             &max8925_irq_domain_ops, chip);
+> +       chip->core_irq = irq;
+> +       if (!chip->core_irq)
+> +               return -EBUSY;
+> +
+>         ret = request_threaded_irq(irq, NULL, max8925_irq, flags,
+>                                    "max8925", chip);
+>         if (ret) {
+>                 dev_err(chip->dev, "Failed to request core IRQ: %d\n", ret);
+>                 chip->core_irq = 0;
+> +               return -EBUSY;
+>         }
+>
+> -tsc_irq:
+> +       /* domain2: init touch irq domain*/
+>         /* mask TSC interrupt */
+>         max8925_reg_write(chip->adc, MAX8925_TSC_IRQ_MASK, 0x0f);
+>
+> -       if (!pdata->tsc_irq) {
+> +       chip->tsc_irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_TSC_IRQS, 0);
+> +       if (chip->tsc_irq < 0) {
+> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
+> +                       chip->tsc_irq_base);
+> +               return -EBUSY;
+> +       }
+> +
+> +       irq_domain_add_legacy(node, MAX8925_NR_TSC_IRQS, chip->tsc_irq_base, 0,
+> +                             &max8925_irq_domain_ops, chip);
+> +
+> +       tsc_irq = irq_of_parse_and_map(node, 1);
+> +
 
-The platform dependent part includes IOMMU initialization
-and handling. This patch implements an IOMMU driver for VFIO
-which does mapping/unmapping pages for the guest IO and
-provides information about DMA window (required by a POWERPC
-guest).
+I'm confused on this. Let's look at your definition in DTS.
 
-The counterpart in QEMU is required to support this functionality.
++                               pmic: max8925@3c {
++                                       compatible = "marvell,max8925";
++                                       reg = <0x3c>;
++                                       interrupts = <1 0>;
++                                       interrupt-parent = <&intcmux4>;
++                                       interrupt-controller;
++                                       #interrupt-cells = <1>;
++
+pmic is defined as interrupt controller. So it could be referenced as
+interrupt-parent
+by other drivers.
 
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- drivers/vfio/Kconfig                |    6 +
- drivers/vfio/Makefile               |    1 +
- drivers/vfio/vfio_iommu_spapr_tce.c |  247 +++++++++++++++++++++++++++++++++++
- include/linux/vfio.h                |   20 +++
- 4 files changed, 274 insertions(+)
- create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
+Now you split TSC_IRQS from original MAX8925_NR_IRQS. So TSC_IRQS are calculated
+from 0. How do you distinguish TSC_IRQS from normal MAX8925_IRQS? Only
+one phandle
+is defined in your DTS file.
 
-diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-index 7cd5dec..b464687 100644
---- a/drivers/vfio/Kconfig
-+++ b/drivers/vfio/Kconfig
-@@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
- 	depends on VFIO
- 	default n
- 
-+config VFIO_IOMMU_SPAPR_TCE
-+	tristate
-+	depends on VFIO && SPAPR_TCE_IOMMU
-+	default n
-+
- menuconfig VFIO
- 	tristate "VFIO Non-Privileged userspace driver framework"
- 	depends on IOMMU_API
- 	select VFIO_IOMMU_TYPE1 if X86
-+	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
- 	help
- 	  VFIO provides a framework for secure userspace device drivers.
- 	  See Documentation/vfio.txt for more details.
-diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-index 2398d4a..72bfabc 100644
---- a/drivers/vfio/Makefile
-+++ b/drivers/vfio/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_VFIO) += vfio.o
- obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
-+obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
- obj-$(CONFIG_VFIO_PCI) += pci/
-diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-new file mode 100644
-index 0000000..46a6298
---- /dev/null
-+++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-@@ -0,0 +1,247 @@
-+/*
-+ * VFIO: IOMMU DMA mapping support for TCE on POWER
-+ *
-+ * Copyright (C) 2012 IBM Corp.  All rights reserved.
-+ *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Derived from original vfio_iommu_type1.c:
-+ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
-+ *     Author: Alex Williamson <alex.williamson@redhat.com>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/err.h>
-+#include <linux/vfio.h>
-+#include <asm/iommu.h>
-+
-+#define DRIVER_VERSION  "0.1"
-+#define DRIVER_AUTHOR   "aik@ozlabs.ru"
-+#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
-+
-+static void tce_iommu_detach_group(void *iommu_data,
-+		struct iommu_group *iommu_group);
-+
-+/*
-+ * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
-+ */
-+
-+/*
-+ * The container descriptor supports only a single group per container.
-+ * Required by the API as the container is not supplied with the IOMMU group
-+ * at the moment of initialization.
-+ */
-+struct tce_container {
-+	struct mutex lock;
-+	struct iommu_table *tbl;
-+};
-+
-+static void *tce_iommu_open(unsigned long arg)
-+{
-+	struct tce_container *container;
-+
-+	if (arg != VFIO_SPAPR_TCE_IOMMU) {
-+		printk(KERN_ERR "tce_vfio: Wrong IOMMU type\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	container = kzalloc(sizeof(*container), GFP_KERNEL);
-+	if (!container)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_init(&container->lock);
-+
-+	return container;
-+}
-+
-+static void tce_iommu_release(void *iommu_data)
-+{
-+	struct tce_container *container = iommu_data;
-+
-+	WARN_ON(container->tbl && !container->tbl->it_group);
-+	if (container->tbl && container->tbl->it_group)
-+		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
-+
-+	mutex_destroy(&container->lock);
-+
-+	kfree(container);
-+}
-+
-+static long tce_iommu_ioctl(void *iommu_data,
-+				 unsigned int cmd, unsigned long arg)
-+{
-+	struct tce_container *container = iommu_data;
-+	unsigned long minsz;
-+
-+	switch (cmd) {
-+	case VFIO_CHECK_EXTENSION: {
-+		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
-+	}
-+	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
-+		struct vfio_iommu_spapr_tce_info info;
-+		struct iommu_table *tbl = container->tbl;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
-+				dma64_window_size);
-+
-+		if (copy_from_user(&info, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (info.argsz < minsz)
-+			return -EINVAL;
-+
-+		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
-+		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
-+		info.dma64_window_start = 0;
-+		info.dma64_window_size = 0;
-+		info.flags = 0;
-+
-+		if (copy_to_user((void __user *)arg, &info, minsz))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+	case VFIO_IOMMU_MAP_DMA: {
-+		vfio_iommu_spapr_tce_dma_map param;
-+		struct iommu_table *tbl = container->tbl;
-+		enum dma_data_direction direction = DMA_NONE;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
-+
-+		if (copy_from_user(&param, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (param.argsz < minsz)
-+			return -EINVAL;
-+
-+		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
-+				(param.flags & VFIO_DMA_MAP_FLAG_WRITE)) {
-+			direction = DMA_BIDIRECTIONAL;
-+		} else if (param.flags & VFIO_DMA_MAP_FLAG_READ) {
-+			direction = DMA_TO_DEVICE;
-+		} else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE) {
-+			direction = DMA_FROM_DEVICE;
-+		}
-+
-+		param.size += param.iova & ~IOMMU_PAGE_MASK;
-+		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
-+
-+		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-+				param.vaddr & IOMMU_PAGE_MASK, direction,
-+				param.size >> IOMMU_PAGE_SHIFT);
-+	}
-+	case VFIO_IOMMU_UNMAP_DMA: {
-+		vfio_iommu_spapr_tce_dma_unmap param;
-+		struct iommu_table *tbl = container->tbl;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
-+
-+		if (copy_from_user(&param, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (param.argsz < minsz)
-+			return -EINVAL;
-+
-+		param.size += param.iova & ~IOMMU_PAGE_MASK;
-+		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
-+
-+		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-+				0, DMA_NONE, param.size >> IOMMU_PAGE_SHIFT);
-+	}
-+	default:
-+		printk(KERN_WARNING "tce_vfio: unexpected cmd %x\n", cmd);
-+	}
-+
-+	return -ENOTTY;
-+}
-+
-+static int tce_iommu_attach_group(void *iommu_data,
-+		struct iommu_group *iommu_group)
-+{
-+	struct tce_container *container = iommu_data;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-+
-+	BUG_ON(!tbl);
-+	mutex_lock(&container->lock);
-+	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
-+			iommu_group_id(iommu_group), iommu_group);
-+	if (container->tbl) {
-+		printk(KERN_WARNING "tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
-+				iommu_group_id(container->tbl->it_group),
-+				iommu_group_id(iommu_group));
-+		mutex_unlock(&container->lock);
-+		return -EBUSY;
-+	}
-+
-+	container->tbl = tbl;
-+	mutex_unlock(&container->lock);
-+
-+	return 0;
-+}
-+
-+static void tce_iommu_detach_group(void *iommu_data,
-+		struct iommu_group *iommu_group)
-+{
-+	struct tce_container *container = iommu_data;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-+
-+	BUG_ON(!tbl);
-+	mutex_lock(&container->lock);
-+	if (tbl != container->tbl) {
-+		printk(KERN_WARNING "tce_vfio: detaching group #%u, expected group is #%u\n",
-+				iommu_group_id(iommu_group),
-+				iommu_group_id(tbl->it_group));
-+	} else {
-+
-+		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
-+				iommu_group_id(iommu_group), iommu_group);
-+
-+		iommu_put_tces(tbl, tbl->it_offset, 0, DMA_NONE, tbl->it_size);
-+		container->tbl = NULL;
-+	}
-+	mutex_unlock(&container->lock);
-+}
-+
-+const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
-+	.name		= "iommu-vfio-powerpc",
-+	.owner		= THIS_MODULE,
-+	.open		= tce_iommu_open,
-+	.release	= tce_iommu_release,
-+	.ioctl		= tce_iommu_ioctl,
-+	.attach_group	= tce_iommu_attach_group,
-+	.detach_group	= tce_iommu_detach_group,
-+};
-+
-+static int __init tce_iommu_init(void)
-+{
-+	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
-+}
-+
-+static void __exit tce_iommu_cleanup(void)
-+{
-+	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
-+}
-+
-+module_init(tce_iommu_init);
-+module_exit(tce_iommu_cleanup);
-+
-+MODULE_VERSION(DRIVER_VERSION);
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index 0a4f180..3ecd65c 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -99,6 +99,7 @@ extern void vfio_unregister_iommu_driver(
- /* Extensions */
- 
- #define VFIO_TYPE1_IOMMU		1
-+#define VFIO_SPAPR_TCE_IOMMU		2
- 
- /*
-  * The IOCTL interface is designed for extensibility by embedding the
-@@ -442,4 +443,23 @@ struct vfio_iommu_type1_dma_unmap {
- 
- #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
- 
-+/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
-+
-+struct vfio_iommu_spapr_tce_info {
-+	__u32 argsz;
-+	__u32 flags;
-+	__u32 dma32_window_start;
-+	__u32 dma32_window_size;
-+	__u64 dma64_window_start;
-+	__u64 dma64_window_size;
-+};
-+
-+#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+/* Reuse type1 map/unmap structs as they are the same at the moment */
-+typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
-+typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
-+
-+/* ***************************************************************** */
-+
- #endif /* VFIO_H */
--- 
-1.7.10.4
+So either you keep TSC_IRQS in MAX8925_NR_IRQS, or you add a child
+node to define
+a new interrupt controller for tsc irqs.
 
+> +       if (!tsc_irq) {
+>                 dev_warn(chip->dev, "No interrupt support on TSC IRQ\n");
+>                 return 0;
+>         }
+> -       chip->tsc_irq = pdata->tsc_irq;
+> -
+> -       ret = request_threaded_irq(chip->tsc_irq, NULL, max8925_tsc_irq,
+> +       chip->tsc_irq = tsc_irq;
+> +       ret = request_threaded_irq(tsc_irq, NULL, max8925_tsc_irq,
+>                                    flags, "max8925-tsc", chip);
+>         if (ret) {
+>                 dev_err(chip->dev, "Failed to request TSC IRQ: %d\n", ret);
+> @@ -876,7 +903,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
+>         if (pdata && pdata->power) {
+>                 ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
+>                                         ARRAY_SIZE(power_devs),
+> -                                     &power_supply_resources[0], 0, NULL);
+> +                                       &power_supply_resources[0], 0, NULL);
+>                 if (ret < 0) {
+>                         dev_err(chip->dev, "Failed to add power supply "
+>                                 "subdev\n");
+> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
+> index d9e4b36..b713be6 100644
+> --- a/drivers/mfd/max8925-i2c.c
+> +++ b/drivers/mfd/max8925-i2c.c
+> @@ -135,13 +135,35 @@ static const struct i2c_device_id max8925_id_table[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, max8925_id_table);
+>
+> +
+> +static int __devinit max8925_dt_init(struct device_node *np,
+> +                                   struct device *dev,
+> +                                   struct max8925_platform_data *pdata)
+> +{
+> +       return 0;
+> +}
+> +
+
+If you don't need this interface, you need define it.
+
+>  static int __devinit max8925_probe(struct i2c_client *client,
+>                                    const struct i2c_device_id *id)
+>  {
+>         struct max8925_platform_data *pdata = client->dev.platform_data;
+>         static struct max8925_chip *chip;
+> +       struct device_node *node = client->dev.of_node;
+> +       int ret;
+>
+> -       if (!pdata) {
+> +       if (node && !pdata) {
+> +               /* parse DT to get platform data */
+> +               pdata = devm_kzalloc(&client->dev,
+> +                                    sizeof(struct max8925_platform_data),
+> +                                    GFP_KERNEL);
+> +               if (!pdata)
+> +                       return -ENOMEM;
+> +               ret = max8925_dt_init(node, &client->dev, pdata);
+> +               if (ret) {
+> +                       pr_info("%s: failed to parse dt info\n", __func__);
+> +                       return -EINVAL;
+> +               }
+> +       } else if (!pdata) {
+>                 pr_info("%s: platform data is missing\n", __func__);
+>                 return -EINVAL;
+>         }
+> @@ -203,11 +225,18 @@ static int max8925_resume(struct device *dev)
+>
+>  static SIMPLE_DEV_PM_OPS(max8925_pm_ops, max8925_suspend, max8925_resume);
+>
+> +static const struct of_device_id max8925_dt_ids[] = {
+> +       { .compatible = "marvell,max8925", },
+max8925 isn't the product of Marvell. The vendor is maxium.
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, max8925_dt_ids);
+> +
+>  static struct i2c_driver max8925_driver = {
+>         .driver = {
+>                 .name   = "max8925",
+>                 .owner  = THIS_MODULE,
+>                 .pm     = &max8925_pm_ops,
+> +               .of_match_table = of_match_ptr(max8925_dt_ids),
+>         },
+>         .probe          = max8925_probe,
+>         .remove         = __devexit_p(max8925_remove),
+> @@ -217,7 +246,6 @@ static struct i2c_driver max8925_driver = {
+>  static int __init max8925_i2c_init(void)
+>  {
+>         int ret;
+> -
+>         ret = i2c_add_driver(&max8925_driver);
+>         if (ret != 0)
+>                 pr_err("Failed to register MAX8925 I2C driver: %d\n", ret);
+> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+> index 74d8e29..67bc540 100644
+> --- a/include/linux/mfd/max8925.h
+> +++ b/include/linux/mfd/max8925.h
+> @@ -185,11 +185,18 @@ enum {
+>         MAX8925_IRQ_GPM_SYSCKEN_R,
+>         MAX8925_IRQ_RTC_ALARM1,
+>         MAX8925_IRQ_RTC_ALARM0,
+> +       MAX8925_NR_IRQS,
+> +};
+> +
+> +/**/
+> +enum {
+>         MAX8925_IRQ_TSC_STICK,
+>         MAX8925_IRQ_TSC_NSTICK,
+> -       MAX8925_NR_IRQS,
+> +       MAX8925_NR_TSC_IRQS,
+>  };
+>
+> +
+> +
+>  struct max8925_chip {
+>         struct device           *dev;
+>         struct i2c_client       *i2c;
+> @@ -201,7 +208,7 @@ struct max8925_chip {
+>         int                     irq_base;
+>         int                     core_irq;
+>         int                     tsc_irq;
+> -
+> +       int                     tsc_irq_base;
+>         unsigned int            wakeup_flag;
+>  };
+>
+> @@ -259,7 +266,6 @@ struct max8925_platform_data {
+>         struct regulator_init_data      *ldo20;
+>
+>         int             irq_base;
+> -       int             tsc_irq;
+>  };
+>
+>  extern int max8925_reg_read(struct i2c_client *, int);
+> --
+> 1.7.0.4
+>
