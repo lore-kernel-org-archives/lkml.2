@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab2KWRpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 12:45:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16875 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab2KWRpa (ORCPT
+	id S1754243Ab2KWRtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 12:49:24 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62873 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752460Ab2KWRtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 12:45:30 -0500
-Message-ID: <50AFB632.10408@oracle.com>
-Date: Fri, 23 Nov 2012 11:45:22 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH v4 09/31] dio: create a dio_aligned() helper function
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com> <1353537671-26284-10-git-send-email-dave.kleikamp@oracle.com> <20121123081938.GB10731@infradead.org>
-In-Reply-To: <20121123081938.GB10731@infradead.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Nov 2012 12:49:23 -0500
+Message-ID: <1353692960.1420.26.camel@x61.thuisdomein>
+Subject: Re: nouveau driver fails to build
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Helmut Jarausch <jarausch@igpm.rwth-aachen.de>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Date: Fri, 23 Nov 2012 18:49:20 +0100
+In-Reply-To: <1353690805.30841.0@numa-i>
+References: <1353681769.29421.0@numa-i>
+	 <1353684679.1420.7.camel@x61.thuisdomein> <1353690805.30841.0@numa-i>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginalArrivalTime: 23 Nov 2012 17:49:20.0736 (UTC) FILETIME=[DDD71E00:01CDC9A2]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/23/2012 02:19 AM, Christoph Hellwig wrote:
-> On Wed, Nov 21, 2012 at 04:40:49PM -0600, Dave Kleikamp wrote:
->> From: Zach Brown <zab@zabbo.net>
->>
->> __blockdev_direct_IO() had two instances of the same code to determine
->> if a given offset wasn't aligned first to the inode's blkbits and then
->> to the underlying device's blkbits.   This was confusing enough but
->> we're about to add code that performs the same check on offsets in bvec
->> arrays.  Rather than add yet more copies of this code let's have
->> everyone call a helper.
->>
->> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
->> Cc: Zach Brown <zab@zabbo.net>
->> ---
->>  fs/direct-io.c | 59 ++++++++++++++++++++++++++++++++++++----------------------
->>  1 file changed, 37 insertions(+), 22 deletions(-)
->>
->> diff --git a/fs/direct-io.c b/fs/direct-io.c
->> index f86c720..035c0a3 100644
->> --- a/fs/direct-io.c
->> +++ b/fs/direct-io.c
->> @@ -1020,6 +1020,39 @@ static inline int drop_refcount(struct dio *dio)
->>  }
->>  
->>  /*
->> + * Returns true if the given offset is aligned to either the IO size
->> + * specified by the given blkbits or by the logical block size of the
->> + * given block device.
->> + *
->> + * If the given offset isn't aligned to the blkbits arguments as this is
->> + * called then blkbits is set to the block size of the specified block
->> + * device.  The call can then return either true or false.
->> + *
->> + * This bizarre calling convention matches the code paths that
->> + * duplicated the functionality that this helper was built from.  We
->> + * reproduce the behaviour to avoid introducing subtle bugs.
->> + */
->> +static int dio_aligned(unsigned long offset, unsigned *blkbits,
->> +		       struct block_device *bdev)
->> +{
->> +	unsigned mask = (1 << *blkbits) - 1;
->> +
->> +	/*
->> +	 * Avoid references to bdev if not absolutely needed to give
->> +	 * the early prefetch in the caller enough time.
->> +	 */
->> +
->> +	if (offset & mask) {
->> +		if (bdev)
->> +			*blkbits = blksize_bits(bdev_logical_block_size(bdev));
+On Fri, 2012-11-23 at 18:13 +0100, Helmut Jarausch wrote:
+> On 11/23/2012 04:31:19 PM, Paul Bolle wrote:
+> > On Fri, 2012-11-23 at 15:42 +0100, Helmut Jarausch wrote:
+> > > with 3.7_rc6 and
+> > >
+> > > CONFIG_ACPI_VIDEO=m
+> > > CONFIG_DRM=y
+> > > CONFIG_DRM_KMS_HELPER=y
+> > > CONFIG_DRM_TTM=y
+> > > CONFIG_DRM_NOUVEAU=y
+> > > CONFIG_NOUVEAU_DEBUG=5
+> > > CONFIG_NOUVEAU_DEBUG_DEFAULT=3
+> > > CONFIG_DRM_NOUVEAU_BACKLIGHT=y
+> > >
+> > > with/ without
+> > > CONFIG_DRM_LOAD_EDID_FIRMWARE=y
+> > >
+> > >
+> > > The kernel fails to build with
+> > > drivers/built-in.o: In function `nouveau_acpi_edid':
+> > > (.text+0x12bf21): undefined reference to `acpi_video_get_edid'
+> > >
+> > >
+> > > What am I missing?
+> > 
+> > I'd guess it should build (at least without this error) with
+> > CONFIG_ACPI_VIDEO=y. Is that correct?
 > 
-> I don't like having the blkbits assignment hidden in the helper,
-> shouldn't we have a:
+> Yes, but this is very unnatural.
 > 
-> 	if (bdev)
-> 		blkbits = blksize_bits(bdev_logical_block_size(bdev));
-> 	else
-> 		blkbits = inode->i_blkbits;
+> To get CONFIG_ACPI_VIDEO=y  I need to have VIDEO_OUTPUT_CONTROL=y
+> for which I have to select the Intel GMA500 Stub Driver although I don't
+> have such a device and therefore don't need that driver.
+> Furthermore, I had to chase through quite some flags to find this.
 > 
-> in the caller instead?
+> If it's not a bug, it's surprising, at least.
 
-Yeah, that absolutely makes more sense.
+0) It puzzles me too.
 
-Shaggy
+1) The problem is in Nouveau's Kconfig:
+    config DRM_NOUVEAU
+        tristate "Nouveau (nVidia) cards"
+        [...]
+        select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
+        [...]
+
+and its Makefile:
+    # other random bits
+    [...]
+    nouveau-$(CONFIG_ACPI) += nouveau_acpi.o
+    [...]
+
+    obj-$(CONFIG_DRM_NOUVEAU)+= nouveau.o
+
+2) Now, with DRM_NOUVEAU=y and ACPI_VIDEO=m nouveau_acpi.o will be made
+builtin (which fails with the error Helmut ran into). The puzzling part
+is that ACPI_VIDEO will only be selected (ie, made into a 'y') if all
+dependencies of that select statement are 'y' too. (Note that these
+dependencies are identical to the dependencies of ACPI_VIDEO's config
+entry. That can be no coincidence.)
+
+3) But I would expect ACPI_VIDEO to be selected if the dependencies of
+that select statement are either 'y' or 'm'. And then Helmut's .config
+should trigger some warning about selecting a symbol with unmet
+dependencies, or whatever, shouldn't it? (Because some of ACPI_VIDEO's
+dependencies are still 'm'.)
+
+4) I'm CC-ing the Kconfig people to tell us whether the current behavior
+is as designed or a bug. If it's not a bug the DRM_NOUVEAU config entry
+might need to be changed.
+
+
+Paul Bolle
+
