@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2KWCsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 21:48:21 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48455 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab2KWCsU (ORCPT
+	id S1758867Ab2KWCuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 21:50:11 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60838 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2KWCuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 21:48:20 -0500
-Message-ID: <50AEE3E9.8040805@gmail.com>
-Date: Fri, 23 Nov 2012 10:48:09 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 22 Nov 2012 21:50:09 -0500
+Message-ID: <50AEE45C.80603@ozlabs.ru>
+Date: Fri, 23 Nov 2012 13:50:04 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, benchan@chromium.org,
-        syahn@gctsemi.com, devendra.aaru@gmail.com, pstew@chromium.org,
-        devel@driverdev.osuosl.org, joe@perches.com
-CC: Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] drivers: gdm72xx: remove last usage of NIPQUAD and NIP6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [PATCH] powerpc/pseries: Fix kernel crash caused by NULL PE
+Content-Type: multipart/mixed;
+ boundary="------------010108090804080207040608"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shan Wei <davidshan@tencent.com>
+This is a multi-part message in MIME format.
+--------------010108090804080207040608
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 
-commit cf4ca4874fc45 removed the definition of NIPQUAD and NIPQUAD_FMT,
-and NIP6 also is out of date.
+While hooking MSI interrupts, the corresponding device tree node
+of the PE that the PCI device has been put into should be checked.
+However, those PCI devices (e.g. VirtIO based PCI devices) that
+don't have EEH capability shouldn't have the associated PE. So we
+shouldn't try to get the PE's device tree node. Otherwise, it
+would cause kernel crash.
 
-Because DEBUG_SDU is not defined in gdm_wimax.h, no error message when compiling
-this code.
+Actually, it was introduced by commit 66523d9f ("powerpc/eeh: Trace
+error based on PE from beginning").
 
-commit cf4ca4874fc45166198424384275f443a672d0b7
-Author: Joe Perches <joe@perches.com>
-Date:   Mon Aug 9 17:20:20 2010 -0700
-
-    kernel.h: remove unused NIPQUAD and NIPQUAD_FMT
-    There are no more uses of NIPQUAD or NIPQUAD_FMT.  Remove the definitions.
-
-Signed-off-by: Shan Wei <davidshan@tencent.com>
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
 ---
- drivers/staging/gdm72xx/gdm_wimax.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+  arch/powerpc/platforms/pseries/msi.c |   11 +++++++++--
+  1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 6cb8107..c0ec4d0 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -166,21 +166,13 @@ static void dump_eth_packet(const char *title, u8 *data, int len)
- 		get_ip_protocol_name(ip_protocol),
- 		get_port_name(port));
- 
--	#if 1
- 	if (!(data[0] == 0xff && data[1] == 0xff)) {
- 		if (protocol == ETH_P_IP) {
--			printk(KERN_DEBUG "     src=%u.%u.%u.%u\n",
--				NIPQUAD(ih->saddr));
-+			printk(KERN_DEBUG "     src=%pI4\n", &ih->saddr);
- 		} else if (protocol == ETH_P_IPV6) {
--			#ifdef NIP6
--			printk(KERN_DEBUG "     src=%x:%x:%x:%x:%x:%x:%x:%x\n",
--				NIP6(ih->saddr));
--			#else
- 			printk(KERN_DEBUG "     src=%pI6\n", &ih->saddr);
--			#endif
- 		}
- 	}
--	#endif
- 
- 	#if (DUMP_PACKET & DUMP_SDU_ALL)
- 	printk_hex(data, len);
+diff --git a/arch/powerpc/platforms/pseries/msi.c 
+b/arch/powerpc/platforms/pseries/msi.c
+index d19f497..9284e42 100644
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -218,9 +218,16 @@ static struct device_node *find_pe_dn(struct pci_dev 
+*dev, int *total)
+  	if (!dn)
+  		return NULL;
+  -	/* Get the top level device in the PE */
++	/*
++	 * Get the top level device in the PE, but some PCI devices
++	 * without EEH capability (e.g. VirtIO based PCI devices)
++	 * don't have the associated PE. So we should not get the
++	 * top level device from PE for those PCI devices.
++	 */
+  	edev = of_node_to_eeh_dev(dn);
+-	edev = list_first_entry(&edev->pe->edevs, struct eeh_dev, list);
++	if (edev->pe)
++		edev = list_first_entry(&edev->pe->edevs,
++				struct eeh_dev, list);
+  	dn = eeh_dev_to_of_node(edev);
+  	if (!dn)
+  		return NULL;
 -- 
-1.7.1
+1.7.5.4
 
+
+--------------010108090804080207040608
+Content-Type: text/plain; charset=UTF-8;
+ name="Attached Message Part"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Attached Message Part"
+
+
+--------------010108090804080207040608--
