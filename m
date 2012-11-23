@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab2KWLsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:48:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40454 "EHLO
+	id S1755247Ab2KWLtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:49:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40463 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755027Ab2KWLr7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754900Ab2KWLtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:47:59 -0500
-Date: Fri, 23 Nov 2012 20:47:54 +0900
+	Fri, 23 Nov 2012 06:49:19 -0500
+Date: Fri, 23 Nov 2012 20:49:16 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: alsa-devel@alsa-project.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ASoC: fsl: fix miscompilation of snd-soc-imx-pcm
-Message-ID: <20121123114603.GF4529@opensource.wolfsonmicro.com>
-References: <20121123081307.GA4529@opensource.wolfsonmicro.com>
- <1353661933-27659-1-git-send-email-LW@KARO-electronics.de>
- <20121123100849.GC4529@opensource.wolfsonmicro.com>
- <20655.20022.819710.39381@ipc1.ka-ro>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] regulator: add a regulator driver for the AS3711
+ PMIC
+Message-ID: <20121123114915.GG4529@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.64.1211221107520.28453@axis700.grange>
+ <Pine.LNX.4.64.1211221110330.28453@axis700.grange>
+ <20121123111515.GD12685@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6lCXDTVICvIQMz0h"
+	protocol="application/pgp-signature"; boundary="Ublo+h3cBgJ33ahC"
 Content-Disposition: inline
-In-Reply-To: <20655.20022.819710.39381@ipc1.ka-ro>
+In-Reply-To: <20121123111515.GD12685@sortiz-mobl>
 X-Cookie: Q:	How do you keep a moron in suspense?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,42 +30,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6lCXDTVICvIQMz0h
-Content-Type: text/plain; charset=iso-8859-1
+--Ublo+h3cBgJ33ahC
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Nov 23, 2012 at 11:21:42AM +0100, Lothar Wa=DFmann wrote:
+On Fri, Nov 23, 2012 at 12:15:15PM +0100, Samuel Ortiz wrote:
 
-> I already included the actual error messages I got when loading the
-> sound module.
-> I also mentioned, that in case of module build some source files
-> aren't being compiled with those rules. What else do you expect?
+> Mark, does that look ok with you ? There's a build dependency with patch #1,
+> so it would make sense for me to take it.
 
-The why part of things - what is the reason there was a problem and how
-does your change address it?  What is it that you believe your patch
-does to address the problem?
+If there's a build dependency there's a problem - the Kconfig should
+prevent the driver being selected without the MFD.
 
---6lCXDTVICvIQMz0h
+--Ublo+h3cBgJ33ahC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQr2JWAAoJELSic+t+oim9k8cQAJ5mpDe4I00wWL7kDz3puA9P
-1+4ZppccETzPo+FxWBeSirEla4FAkyN0puRsdHXalEwBh5D20x5oTnTWMYIrQInW
-fTJShL87bbWDNKFa7q/1fc66orsac4yw6PUYCICC1CFMMyIC29SDTkar+1TGAwKD
-vFGPpNkmA2acDaZ7Y9vicaU73IEREfnAfm4YMMF51hgtufGV9yMvu0T0IZEh2auG
-lhCwxcF1brzxVTusN8EbEVeY1bwyeAvh2mtlpjjKEl2oqxxYGvfXPZ7JN65qCulL
-H5CfQdxEcxvyMrWwS507Nxcw8+moOwCnKLvJzWD6++zs/+CmNTGm4DtCNaH6ae9M
-k+Iz1i3l9OfDUKHrWzG/XnLxb5BSuzVXLS1IaA4SE0nDJ0aYl/wXmKm4pgucldn5
-f3jMjAKXFx1OJtSlY3/GEZ9qZIiiXeCKlYsHTtyQFNy/nE0gcTZuWemxA1vFUSn0
-lSbdfJvKd/YWC0b/+mUclYvWlzF1KWBx0T5+FVmnZcVFUTHFa4hHy60UKKK/wjgu
-+1V+Fyo6a48jMSo4H/q5iJ3kbQ/DkrhmSimHX5sA59rQa5AFLnsZFUFeYzS+6CZt
-C7G4S0zF9em7xCLOkQXSzr3wifQO2XTevCKy03e7zpuMAtTarXgMHMybtJ9W1WFL
-2oyzSqVUw46866L/IShn
-=mixt
+iQIcBAEBAgAGBQJQr2KyAAoJELSic+t+oim9zFUQAI5kxYLHdr0Z/Yb8rKtAbDRG
+j5ovejuFGzLRrej4+9a2+RBA4Bq/Cl4+m6gg+LbmpDDIqA/6L97QmMTYQoOojEBP
+tSRWoOqsjTwiTwaO6BtgHluAJoMpI1EOZtwedKpocdLIyHDyZSCDANTmPF4X8Z4x
+emXzoGYTEVVzNrivD/yTHDP/F22IJn6eeTAIwxQ30HilLithLPf/B65lH+yd4R5d
+NPx2Y48zLq6MI96sQLwb9SgQLNJLyROpoiYiml3OC4tS0R756tfcwgIE6hu/zY5M
+gXqHbpQNeMZSxh7CBlVt4DinT3WbvtyN+CQTNK/Zl56zZRfy7a5XaUb/yPJT+C7R
+/jRs6FYVUmr0jn/ALUZsQs9SWTkKRBoEINKpOpKm8SfoPYZwHV4Z6CrQOLw5gEGq
+WXUK4t8nOU7f3UKqJEGHp8A0FsXPlcxP8lK/NkLSfXpjxHv2UqHgqaGWBVtmvZdh
+D68rcMmpOgyVPgBSTPmYR6BWMrgJf6tN+CYjNuTRJwBpQ1GsbVs2uHiONO5rM67/
+ldL475b/4ggFUgs02HOIh959jUq0B6uCqMVDYIYYs9TWXHvhzTfIEK9XY6gZbST9
+CkeabtoyLeV67z+/DRV6pRaJ2WhxY4Qu+WEKrA7q9Fgn2KPYxHMkLjndLIuTfOe7
+lPdoHZ/lBDRjNHzP47sT
+=FfST
 -----END PGP SIGNATURE-----
 
---6lCXDTVICvIQMz0h--
+--Ublo+h3cBgJ33ahC--
