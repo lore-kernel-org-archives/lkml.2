@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2KWQra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 11:47:30 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54665 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab2KWQr3 (ORCPT
+	id S1755985Ab2KWQu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 11:50:59 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53543 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab2KWQu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 11:47:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [RFC PATCH v1 24/40] metag: DMA
-Date: Fri, 23 Nov 2012 16:47:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1351700061-7203-1-git-send-email-james.hogan@imgtec.com> <50AF9C06.3010705@imgtec.com> <50AFA24D.4030501@imgtec.com>
-In-Reply-To: <50AFA24D.4030501@imgtec.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Fri, 23 Nov 2012 11:50:58 -0500
+Message-ID: <1353689452.3260.4.camel@phoenix>
+Subject: [PATCH 1/2] regulator: as3711: Fix valid min_uV/max_UV checking in
+ as3711_bound_check
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 24 Nov 2012 00:50:52 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211231647.27260.arnd@arndb.de>
-X-Provags-ID: V02:K0:MQJA6OfkA6LR7NMQqt8/rK7jVQVEpuHu4P4Uks/3Zf4
- T2SS1HNQYOYjvYS/+gSArkGjNIonw8quakObK9bnRsnjcN9pLq
- 0D0Zx+c+EkAnJER0l4J4C8XU59JKUKODvmC8B3ME0OMrWmHFj0
- xtmP05jjHiblW9jeWssvKgi14f9dKBM3bU1LpGJr9lD/7e4zEo
- JlKO/GRqESkMXuTWkmbuK915bhsFqhaiIRWy902G7RA+1eDDZZ
- 79loxuUMvNvd+LU+iF3MRav+lnl71r0gcPCquU3Uqfhqr+SlX2
- cn3UonOzyt3TSz2wc+uzFBezJlnBDnkPJqOS4Zh5MJSO5ZUJj1
- GwLhI91Bvgf9Ba40lF1c=
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 November 2012, James Hogan wrote:
-> Subject: [PATCH 1/1] asm-generic/io.h: check CONFIG_VIRT_TO_BUS
-> 
-> Make asm-generic/io.h check CONFIG_VIRT_TO_BUS before defining
-> virt_to_bus() and bus_to_virt(), otherwise it's easy to accidentally
-> have a silently failing incorrect direct mapped definition rather then
-> no definition at all.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Below cases are supposed to be valid:
 
-Good catch!
+min_uV == max_uV == info->max_uV
+min_uV == max_uV == rdev->desc->min_uV
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Don't return -EINVAL for above cases.
+
+This patch also includes below cleanups:
+- Use rdev_get_drvdata(rdev) instead of rdev->reg_data.
+- Remove unnecessary WARN_ON, it looks pointless.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/as3711-regulator.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
+index 81578bf..5e813b9 100644
+--- a/drivers/regulator/as3711-regulator.c
++++ b/drivers/regulator/as3711-regulator.c
+@@ -69,17 +69,14 @@ static int as3711_list_voltage_dldo(struct regulator_dev *rdev,
+ static int as3711_bound_check(struct regulator_dev *rdev,
+ 			      int *min_uV, int *max_uV)
+ {
+-	struct as3711_regulator_info *info = container_of(rdev->desc,
+-					struct as3711_regulator_info, desc);
+-	struct as3711_regulator *reg = rdev->reg_data;
+-
+-	WARN_ON(reg->reg_info != info);
++	struct as3711_regulator *reg = rdev_get_drvdata(rdev);
++	struct as3711_regulator_info *info = reg->reg_info;
+ 
+ 	dev_dbg(&rdev->dev, "%s(), %d, %d, %d\n", __func__,
+ 		*min_uV, rdev->desc->min_uV, info->max_uV);
+ 
+ 	if (*max_uV < *min_uV ||
+-	    *min_uV >= info->max_uV || rdev->desc->min_uV >= *max_uV)
++	    *min_uV > info->max_uV || rdev->desc->min_uV > *max_uV)
+ 		return -EINVAL;
+ 
+ 	if (rdev->desc->n_voltages == 1)
+-- 
+1.7.9.5
+
+
+
