@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab2KWKs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:48:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63857 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab2KWKpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:45:19 -0500
-X-IronPort-AV: E=Sophos;i="4.83,307,1352044800"; 
-   d="scan'208";a="6263516"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        jiang.liu@huawei.com, yinghai@kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v2 0/5] Add movablecore_map boot option
-Date: Fri, 23 Nov 2012 18:44:00 +0800
-Message-Id: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/23 18:44:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/23 18:44:51,
-	Serialize complete at 2012/11/23 18:44:51
+	id S1753919Ab2KWKvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:51:09 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47346 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab2KWKvC convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Fri, 23 Nov 2012 05:51:02 -0500
+Message-Id: <50AF635B02000078000AAD0C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 23 Nov 2012 10:51:55 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: "Andrew Cooper" <andrew.cooper3@citrix.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+ <87lidwtego.fsf@xmission.com>
+ <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
+ <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com>
+ <50AEBF86.50501@citrix.com>
+ <18e831d4-910d-4f58-8911-1398b96e3a47@email.android.com>
+ <50AED7B8.7040902@citrix.com>
+ <50AF55B102000078000AABF3@nat28.tlf.novell.com>
+ <20121123103726.GB2921@host-192-168-1-59.local.net-space.pl>
+In-Reply-To: <20121123103726.GB2921@host-192-168-1-59.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[What we are doing]
-This patchset provide a boot option for user to specify ZONE_MOVABLE memory
-map for each node in the system.
+>>> On 23.11.12 at 11:37, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> On Fri, Nov 23, 2012 at 09:53:37AM +0000, Jan Beulich wrote:
+>> >>> On 23.11.12 at 02:56, Andrew Cooper <andrew.cooper3@citrix.com> wrote:
+>> > On 23/11/2012 01:38, H. Peter Anvin wrote:
+>> >> I still don't really get why it can't be isolated from dom0, which would
+>> > make more sense to me, even for a Xen crash.
+>> >>
+>> >
+>> > The crash region (as specified by crashkernel= on the Xen command line)
+>> > is isolated from dom0.
+>> >
+>> > dom0 (using the kexec utility etc) has the task of locating the Xen
+>> > crash notes (using the kexec hypercall interface), constructing a binary
+>> > blob containing kernel, initram and gubbins, and asking Xen to put this
+>> > blob in the crash region (again, using the kexec hypercall interface).
+>> >
+>> > I do not see how this is very much different from the native case
+>> > currently (although please correct me if I am misinformed).  Linux has
+>> > extra work to do by populating /proc/iomem with the Xen crash regions
+>> > boot (so the kexec utility can reference their physical addresses when
+>> > constructing the blob), and should just act as a conduit between the
+>> > kexec system call and the kexec hypercall to load the blob.
+>>
+>> But all of this _could_ be done completely independent of the
+>> Dom0 kernel's kexec infrastructure (i.e. fully from user space,
+>> invoking the necessary hypercalls through the privcmd driver).
+> 
+> No, this is impossible. kexec/kdump image lives in dom0 kernel memory
+> until execution. That is why privcmd driver itself is not a solution
+> in this case.
 
-movablecore_map=nn[KMG]@ss[KMG]
+Even if so, there's no fundamental reason why that kernel image
+can't be put into Xen controlled space instead.
 
-This option make sure memory range from ss to ss+nn is movable memory.
-
-
-[Why we do this]
-If we hot remove a memroy, the memory cannot have kernel memory,
-because Linux cannot migrate kernel memory currently. Therefore,
-we have to guarantee that the hot removed memory has only movable
-memoroy.
-
-Linux has two boot options, kernelcore= and movablecore=, for
-creating movable memory. These boot options can specify the amount
-of memory use as kernel or movable memory. Using them, we can
-create ZONE_MOVABLE which has only movable memory.
-
-But it does not fulfill a requirement of memory hot remove, because
-even if we specify the boot options, movable memory is distributed
-in each node evenly. So when we want to hot remove memory which
-memory range is 0x80000000-0c0000000, we have no way to specify
-the memory as movable memory.
-
-So we proposed a new feature which specifies memory range to use as
-movable memory.
-
-
-[Ways to do this]
-There may be 2 ways to specify movable memory.
- 1. use firmware information
- 2. use boot option
-
-1. use firmware information
-  According to ACPI spec 5.0, SRAT table has memory affinity structure
-  and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
-  Affinity Structure". If we use the information, we might be able to
-  specify movable memory by firmware. For example, if Hot Pluggable
-  Filed is enabled, Linux sets the memory as movable memory.
-
-2. use boot option
-  This is our proposal. New boot option can specify memory range to use
-  as movable memory.
-
-
-[How we do this]
-We chose second way, because if we use first way, users cannot change
-memory range to use as movable memory easily. We think if we create
-movable memory, performance regression may occur by NUMA. In this case,
-user can turn off the feature easily if we prepare the boot option.
-And if we prepare the boot optino, the user can select which memory
-to use as movable memory easily. 
-
-
-[How to use]
-Specify the following boot option:
-movablecore_map=nn[KMG]@ss[KMG]
-
-That means physical address range from ss to ss+nn will be allocated as
-ZONE_MOVABLE.
-
-And the following points should be considered.
-
-1) If the range is involved in a single node, then from ss to the end of
-   the node will be ZONE_MOVABLE.
-2) If the range covers two or more nodes, then from ss to the end of
-   the node will be ZONE_MOVABLE, and all the other nodes will only
-   have ZONE_MOVABLE.
-3) If no range is in the node, then the node will have no ZONE_MOVABLE
-   unless kernelcore or movablecore is specified.
-4) This option could be specified at most MAX_NUMNODES times.
-5) If kernelcore or movablecore is also specified, movablecore_map will have
-   higher priority to be satisfied.
-6) This option has no conflict with memmap option.
-
-
-
-Tang Chen (4):
-  page_alloc: add movable_memmap kernel parameter
-  page_alloc: Introduce zone_movable_limit[] to keep movable limit for
-    nodes
-  page_alloc: Make movablecore_map has higher priority
-  page_alloc: Bootmem limit with movablecore_map
-
-Yasuaki Ishimatsu (1):
-  x86: get pg_data_t's memory from other node
-
- Documentation/kernel-parameters.txt |   17 +++
- arch/x86/mm/numa.c                  |   11 ++-
- include/linux/memblock.h            |    1 +
- include/linux/mm.h                  |   11 ++
- mm/memblock.c                       |   15 +++-
- mm/page_alloc.c                     |  216 ++++++++++++++++++++++++++++++++++-
- 6 files changed, 263 insertions(+), 8 deletions(-)
+Jan
 
