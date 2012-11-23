@@ -1,326 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab2KWJF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:05:27 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64939 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758488Ab2KWJFQ (ORCPT
+	id S1030292Ab2KWJE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:04:27 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:27180 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758305Ab2KWJEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:05:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352187429-9711-1-git-send-email-qingx@marvell.com>
-References: <1352187429-9711-1-git-send-email-qingx@marvell.com>
-Date: Fri, 23 Nov 2012 17:05:15 +0800
-Message-ID: <CAN1soZwQ2bk_TteNvK=b0-CHBc=qs+EdbAHjtKA9gYD+p4XQUw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] mfd: max8925: add irqdomain for dt
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Qing Xu <qingx@marvell.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, cxie4@marvell.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Nov 2012 04:04:14 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-bc-50af3c0ba470
+From: Byungho An <bh74.an@samsung.com>
+To: davem@davemloft.net, peppe.cavallaro@st.com, jeffrey.t.kirsher@intel.com
+Cc: netdev@vger.kernel.org, kgene.kim@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] net: stmmac: change GMAC control register for SGMII
+Date: Fri, 23 Nov 2012 18:04:11 +0900
+Message-id: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3JWYCZkX9I870WSxWSjQvpbUM78w==
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zQ11um/UBBr+OKVhc3jWHzeLYAjEH
+	Jo/Pm+QCGKO4bFJSczLLUov07RK4MjZdPMRa8J+rYt6O0+wNjNM4uxg5OSQETCRaVj5jh7DF
+	JC7cW8/WxcjFISSwjFHizOdT7DBFd5Z9YYJITGeUmHntOSOE84tR4sj5U2wgVWwCahLNMy+D
+	2SICPhI3lr9jAbGZBfwluicfBYsLC3hILNt/Acjm4GARUJV4+0IcxOQVsJHYMrMWpIJXQFDi
+	x+R7UJ1aEut3HmeCsOUlNq95ywxSLiGgLvHory7EIj2J948/sEKUiEjse/GOEcRmERCQ+Db5
+	EAtEuazEpgPMIAdLCHSzSyx+380I8ZakxMEVN1gmMIrNQrJ5FpLNs5BsnoVkxQJGllWMoqkF
+	yQXFSem5RnrFibnFpXnpesn5uZsYIfEivYNxVYPFIUYBDkYlHl7DsnUBQqyJZcWVuYcYJTiY
+	lUR4mcTWBwjxpiRWVqUW5ccXleakFh9i9AG6fCKzlGhyPjCW80riDY2NTcxMTE3MLU3NTXEI
+	K4nzNnukBAgJpCeWpGanphakFsGMY+LglGpgZLss/Tzu9/5bjuqnXxTIv/+x68rvj/MSu5vX
+	/ym07q9rFs7dXbAqOpn947dQnXYR1/3vjK6V2Fv8X3+xxDJSVeDbCovLP6u3sEk6Lg7c5SCt
+	PGmBmtc9qYM5vUtOtpzJ8VlRovpl/c/q+UXb3hx2apzgfGLKqRfRiwR/nOX+sN7MK0kjzOFE
+	iRJLcUaioRZzUXEiAJicUQrEAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQV1um/UBBr+eSFlc3jWHzeLYAjEH
+	Jo/Pm+QCGKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ0
+	3TJzgCYrKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDM2XTzEWvCfq2Le
+	jtPsDYzTOLsYOTkkBEwk7iz7wgRhi0lcuLeerYuRi0NIYDqjxMxrzxkhnF+MEkfOn2IDqWIT
+	UJNonnkZzBYR8JG4sfwdC4jNLOAv0T35KFhcWMBDYtn+C0A2BweLgKrE2xfiICavgI3Elpm1
+	IBW8AoISPybfg+rUkli/8zgThC0vsXnNW2aQcgkBdYlHf3UhFulJvH/8gRWiRERi34t3jBMY
+	BWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwND6T3sG4qsHi
+	EKMAB6MSD69h2boAIdbEsuLK3EOMEhzMSiK8TGLrA4R4UxIrq1KL8uOLSnNSiw8x+gC9OZFZ
+	SjQ5H5go8kriDY1NzIwsjcwsjEzMzXEIK4nzNnukBAgJpCeWpGanphakFsGMY+LglGpg5Nud
+	9VLm6vbU2bsSrnKbHln8LEpH/vKjRQcK+iMi+8ReX1T9EVpeWqWn+vXAz171sMwrTlpv3ZMS
+	rGw6Vkww2L3T/MOryxdLL56929hr1CtwjNHlYs/MntdhJv4fvslWb9FO8xL5M6G52E6G+1P7
+	phnn1S7q9H+7JPza+G3KvEfZl0625vQxKLEUZyQaajEXFScCAMguYbzzAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 3:37 PM, Qing Xu <qingx@marvell.com> wrote:
-> From: Qing Xu <qingx@marvell.com>
->
-> Add irqdomains for max8925's main irq, and touch irq.
-> Wrap irq register operations into irqdomain's map func.
-> it is necessary for dt support.
-> Also, add dt support for max8925 driver.
->
-> Signed-off-by: Qing Xu <qingx@marvell.com>
-> ---
->  drivers/mfd/max8925-core.c  |   87 ++++++++++++++++++++++++++++---------------
->  drivers/mfd/max8925-i2c.c   |   32 +++++++++++++++-
->  include/linux/mfd/max8925.h |   12 ++++-
->  3 files changed, 96 insertions(+), 35 deletions(-)
->
-> diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
-> index 1e0ab0a..dcc218a 100644
-> --- a/drivers/mfd/max8925-core.c
-> +++ b/drivers/mfd/max8925-core.c
-> @@ -14,10 +14,14 @@
->  #include <linux/i2c.h>
->  #include <linux/irq.h>
->  #include <linux/interrupt.h>
-> +#include <linux/irqdomain.h>
->  #include <linux/platform_device.h>
->  #include <linux/regulator/machine.h>
->  #include <linux/mfd/core.h>
->  #include <linux/mfd/max8925.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_irq.h>
->
->  static struct resource bk_resources[] __devinitdata = {
->         { 0x84, 0x84, "mode control", IORESOURCE_REG, },
-> @@ -639,17 +643,34 @@ static struct irq_chip max8925_irq_chip = {
->         .irq_disable    = max8925_irq_disable,
->  };
->
-> +static int max8925_irq_domain_map(struct irq_domain *d, unsigned int virq,
-> +                                irq_hw_number_t hw)
-> +{
-> +       irq_set_chip_data(virq, d->host_data);
-> +       irq_set_chip_and_handler(virq, &max8925_irq_chip, handle_edge_irq);
-> +       irq_set_nested_thread(virq, 1);
-> +#ifdef CONFIG_ARM
-> +       set_irq_flags(virq, IRQF_VALID);
-> +#else
-> +       irq_set_noprobe(virq);
-> +#endif
-> +       return 0;
-> +}
-> +
-> +static struct irq_domain_ops max8925_irq_domain_ops = {
-> +       .map    = max8925_irq_domain_map,
-> +       .xlate  = irq_domain_xlate_onetwocell,
-> +};
-> +
-> +
->  static int max8925_irq_init(struct max8925_chip *chip, int irq,
->                             struct max8925_platform_data *pdata)
->  {
->         unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
-> -       int i, ret;
-> -       int __irq;
-> +       int ret;
-> +       int tsc_irq;
-> +       struct device_node *node = chip->dev->of_node;
->
-> -       if (!pdata || !pdata->irq_base) {
-> -               dev_warn(chip->dev, "No interrupt support on IRQ base\n");
-> -               return -EINVAL;
-> -       }
->         /* clear all interrupts */
->         max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ1);
->         max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ2);
-> @@ -667,45 +688,51 @@ static int max8925_irq_init(struct max8925_chip *chip, int irq,
->         max8925_reg_write(chip->rtc, MAX8925_RTC_IRQ_MASK, 0xff);
->
->         mutex_init(&chip->irq_lock);
-> -       chip->core_irq = irq;
-> -       chip->irq_base = pdata->irq_base;
->
-> -       /* register with genirq */
-> -       for (i = 0; i < ARRAY_SIZE(max8925_irqs); i++) {
-> -               __irq = i + chip->irq_base;
-> -               irq_set_chip_data(__irq, chip);
-> -               irq_set_chip_and_handler(__irq, &max8925_irq_chip,
-> -                                        handle_edge_irq);
-> -               irq_set_nested_thread(__irq, 1);
-> -#ifdef CONFIG_ARM
-> -               set_irq_flags(__irq, IRQF_VALID);
-> -#else
-> -               irq_set_noprobe(__irq);
-> -#endif
-> -       }
-> -       if (!irq) {
-> -               dev_warn(chip->dev, "No interrupt support on core IRQ\n");
-> -               goto tsc_irq;
-> +       /* domain1: init charger/rtc/onkey irq domain*/
-> +       chip->irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_IRQS, 0);
-> +       if (chip->irq_base < 0) {
-> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
-> +                       chip->irq_base);
-> +               return -EBUSY;
->         }
->
-> +       irq_domain_add_legacy(node, MAX8925_NR_IRQS, chip->irq_base, 0,
-> +                             &max8925_irq_domain_ops, chip);
-> +       chip->core_irq = irq;
-> +       if (!chip->core_irq)
-> +               return -EBUSY;
-> +
->         ret = request_threaded_irq(irq, NULL, max8925_irq, flags,
->                                    "max8925", chip);
->         if (ret) {
->                 dev_err(chip->dev, "Failed to request core IRQ: %d\n", ret);
->                 chip->core_irq = 0;
-> +               return -EBUSY;
->         }
->
-> -tsc_irq:
-> +       /* domain2: init touch irq domain*/
->         /* mask TSC interrupt */
->         max8925_reg_write(chip->adc, MAX8925_TSC_IRQ_MASK, 0x0f);
->
-> -       if (!pdata->tsc_irq) {
-> +       chip->tsc_irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_TSC_IRQS, 0);
-> +       if (chip->tsc_irq < 0) {
-> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
-> +                       chip->tsc_irq_base);
-> +               return -EBUSY;
-> +       }
-> +
-> +       irq_domain_add_legacy(node, MAX8925_NR_TSC_IRQS, chip->tsc_irq_base, 0,
-> +                             &max8925_irq_domain_ops, chip);
-> +
-> +       tsc_irq = irq_of_parse_and_map(node, 1);
-> +
 
-I'm confused on this. Let's look at your definition in DTS.
+This patch changes GMAC control register (TC(Transmit
+Configuration) and PS(Port Selection) bit for SGMII.
+In case of SGMII, TC bit is '1' and PS bit is 0.
 
-+                               pmic: max8925@3c {
-+                                       compatible = "marvell,max8925";
-+                                       reg = <0x3c>;
-+                                       interrupts = <1 0>;
-+                                       interrupt-parent = <&intcmux4>;
-+                                       interrupt-controller;
-+                                       #interrupt-cells = <1>;
+Signed-off-by: Byungho An <bh74.an@samsung.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index c6cdbc4..a719c87 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1037,6 +1037,7 @@ static int stmmac_open(struct net_device *dev)
+ {
+ 	struct stmmac_priv *priv = netdev_priv(dev);
+ 	int ret;
++	u32 value;
+ 
+ #ifdef CONFIG_STMMAC_TIMER
+ 	priv->tm = kzalloc(sizeof(struct stmmac_timer *), GFP_KERNEL);
+@@ -1088,6 +1089,15 @@ static int stmmac_open(struct net_device *dev)
+ 	/* Initialize the MAC Core */
+ 	priv->hw->mac->core_init(priv->ioaddr);
+ 
++	if (priv->phydev->interface == PHY_INTERFACE_MODE_SGMII) {
++		value = readl(priv->ioaddr);
++		/* GMAC_CONTROL_TC : transmit config in RGMII/SGMII */
++		value |= 0x1000000;
++		/* GMAC_CONTROL_PS : Port Selection for GMII */
++		value &= ~(0x8000);
++		writel(value, priv->ioaddr);
++	}
 +
-pmic is defined as interrupt controller. So it could be referenced as
-interrupt-parent
-by other drivers.
+ 	/* Request the IRQ lines */
+ 	ret = request_irq(dev->irq, stmmac_interrupt,
+ 			 IRQF_SHARED, dev->name, dev);
+-- 
+1.7.9.5
 
-Now you split TSC_IRQS from original MAX8925_NR_IRQS. So TSC_IRQS are calculated
-from 0. How do you distinguish TSC_IRQS from normal MAX8925_IRQS? Only
-one phandle
-is defined in your DTS file.
-
-So either you keep TSC_IRQS in MAX8925_NR_IRQS, or you add a child
-node to define
-a new interrupt controller for tsc irqs.
-
-> +       if (!tsc_irq) {
->                 dev_warn(chip->dev, "No interrupt support on TSC IRQ\n");
->                 return 0;
->         }
-> -       chip->tsc_irq = pdata->tsc_irq;
-> -
-> -       ret = request_threaded_irq(chip->tsc_irq, NULL, max8925_tsc_irq,
-> +       chip->tsc_irq = tsc_irq;
-> +       ret = request_threaded_irq(tsc_irq, NULL, max8925_tsc_irq,
->                                    flags, "max8925-tsc", chip);
->         if (ret) {
->                 dev_err(chip->dev, "Failed to request TSC IRQ: %d\n", ret);
-> @@ -876,7 +903,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
->         if (pdata && pdata->power) {
->                 ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
->                                         ARRAY_SIZE(power_devs),
-> -                                     &power_supply_resources[0], 0, NULL);
-> +                                       &power_supply_resources[0], 0, NULL);
->                 if (ret < 0) {
->                         dev_err(chip->dev, "Failed to add power supply "
->                                 "subdev\n");
-> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-> index d9e4b36..b713be6 100644
-> --- a/drivers/mfd/max8925-i2c.c
-> +++ b/drivers/mfd/max8925-i2c.c
-> @@ -135,13 +135,35 @@ static const struct i2c_device_id max8925_id_table[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, max8925_id_table);
->
-> +
-> +static int __devinit max8925_dt_init(struct device_node *np,
-> +                                   struct device *dev,
-> +                                   struct max8925_platform_data *pdata)
-> +{
-> +       return 0;
-> +}
-> +
-
-If you don't need this interface, you need define it.
-
->  static int __devinit max8925_probe(struct i2c_client *client,
->                                    const struct i2c_device_id *id)
->  {
->         struct max8925_platform_data *pdata = client->dev.platform_data;
->         static struct max8925_chip *chip;
-> +       struct device_node *node = client->dev.of_node;
-> +       int ret;
->
-> -       if (!pdata) {
-> +       if (node && !pdata) {
-> +               /* parse DT to get platform data */
-> +               pdata = devm_kzalloc(&client->dev,
-> +                                    sizeof(struct max8925_platform_data),
-> +                                    GFP_KERNEL);
-> +               if (!pdata)
-> +                       return -ENOMEM;
-> +               ret = max8925_dt_init(node, &client->dev, pdata);
-> +               if (ret) {
-> +                       pr_info("%s: failed to parse dt info\n", __func__);
-> +                       return -EINVAL;
-> +               }
-> +       } else if (!pdata) {
->                 pr_info("%s: platform data is missing\n", __func__);
->                 return -EINVAL;
->         }
-> @@ -203,11 +225,18 @@ static int max8925_resume(struct device *dev)
->
->  static SIMPLE_DEV_PM_OPS(max8925_pm_ops, max8925_suspend, max8925_resume);
->
-> +static const struct of_device_id max8925_dt_ids[] = {
-> +       { .compatible = "marvell,max8925", },
-max8925 isn't the product of Marvell. The vendor is maxium.
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, max8925_dt_ids);
-> +
->  static struct i2c_driver max8925_driver = {
->         .driver = {
->                 .name   = "max8925",
->                 .owner  = THIS_MODULE,
->                 .pm     = &max8925_pm_ops,
-> +               .of_match_table = of_match_ptr(max8925_dt_ids),
->         },
->         .probe          = max8925_probe,
->         .remove         = __devexit_p(max8925_remove),
-> @@ -217,7 +246,6 @@ static struct i2c_driver max8925_driver = {
->  static int __init max8925_i2c_init(void)
->  {
->         int ret;
-> -
->         ret = i2c_add_driver(&max8925_driver);
->         if (ret != 0)
->                 pr_err("Failed to register MAX8925 I2C driver: %d\n", ret);
-> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-> index 74d8e29..67bc540 100644
-> --- a/include/linux/mfd/max8925.h
-> +++ b/include/linux/mfd/max8925.h
-> @@ -185,11 +185,18 @@ enum {
->         MAX8925_IRQ_GPM_SYSCKEN_R,
->         MAX8925_IRQ_RTC_ALARM1,
->         MAX8925_IRQ_RTC_ALARM0,
-> +       MAX8925_NR_IRQS,
-> +};
-> +
-> +/**/
-> +enum {
->         MAX8925_IRQ_TSC_STICK,
->         MAX8925_IRQ_TSC_NSTICK,
-> -       MAX8925_NR_IRQS,
-> +       MAX8925_NR_TSC_IRQS,
->  };
->
-> +
-> +
->  struct max8925_chip {
->         struct device           *dev;
->         struct i2c_client       *i2c;
-> @@ -201,7 +208,7 @@ struct max8925_chip {
->         int                     irq_base;
->         int                     core_irq;
->         int                     tsc_irq;
-> -
-> +       int                     tsc_irq_base;
->         unsigned int            wakeup_flag;
->  };
->
-> @@ -259,7 +266,6 @@ struct max8925_platform_data {
->         struct regulator_init_data      *ldo20;
->
->         int             irq_base;
-> -       int             tsc_irq;
->  };
->
->  extern int max8925_reg_read(struct i2c_client *, int);
-> --
-> 1.7.0.4
->
