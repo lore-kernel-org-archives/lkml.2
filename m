@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759049Ab2KWJcm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:32:42 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42420 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759018Ab2KWJck (ORCPT
+	id S1759065Ab2KWJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:33:57 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44700 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759018Ab2KWJd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:32:40 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: Rickard Andersson <rickard.andersson@stericsson.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH v4 2/2] cpufreq: ondemand: use all CPUs in update_sampling_rate
-Date: Fri, 23 Nov 2012 10:31:57 +0100
-Message-Id: <1353663117-10074-2-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1353663117-10074-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1353663117-10074-1-git-send-email-fabio.baltieri@linaro.org>
+	Fri, 23 Nov 2012 04:33:56 -0500
+Date: Fri, 23 Nov 2012 10:33:54 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Norbert Warmuth <nwarmuth@t-online.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [regression] 3.7+ suspend to RAM/offline CPU fails with
+ nmi_watchdog=0 (bisected)
+In-Reply-To: <86sj83pbwy.fsf@belegost.ivcecceob.t-online.de>
+Message-ID: <alpine.LFD.2.02.1211231033230.2701@ionos>
+References: <86sj83pbwy.fsf@belegost.ivcecceob.t-online.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify update_sampling_rate() to check, and eventually immediately
-schedule, all CPU's do_dbs_timer delayed work.
+On Wed, 21 Nov 2012, Norbert Warmuth wrote:
+> 3.7-rc6 booted with nmi_watchdog=0 fails to suspend to RAM or
+> offline CPUs. It's reproducable with a KVM guest and physical
+> system. 
 
-This is required in case of software coordinated CPUs, as we now have a
-separate delayed work for each CPU.
+Does the patch below fix it?
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- drivers/cpufreq/cpufreq_ondemand.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index 849788b..14339f6 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -286,7 +286,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 		policy = cpufreq_cpu_get(cpu);
- 		if (!policy)
- 			continue;
--		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
-+		dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
- 		cpufreq_cpu_put(policy);
+	tglx
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 9d4c8d5..e3ef521 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -368,6 +368,9 @@ static void watchdog_disable(unsigned int cpu)
+ {
+ 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
  
- 		mutex_lock(&dbs_info->timer_mutex);
-@@ -306,7 +306,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 			cancel_delayed_work_sync(&dbs_info->work);
- 			mutex_lock(&dbs_info->timer_mutex);
- 
--			schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
-+			schedule_delayed_work_on(cpu, &dbs_info->work,
- 						 usecs_to_jiffies(new_rate));
- 
- 		}
--- 
-1.7.12.1
-
++	if (!watchdog_enabled)
++		return;
++
+ 	watchdog_set_prio(SCHED_NORMAL, 0);
+ 	hrtimer_cancel(hrtimer);
+ 	/* disable the perf event */
