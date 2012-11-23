@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2KWP7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 10:59:45 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:49349 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab2KWP7o (ORCPT
+	id S1755410Ab2KWQEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 11:04:46 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56343 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab2KWQEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 10:59:44 -0500
+	Fri, 23 Nov 2012 11:04:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353683310-23654-7-git-send-email-ciminaghi@gnudd.com>
-References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com>
-	<1353683310-23654-7-git-send-email-ciminaghi@gnudd.com>
-Date: Fri, 23 Nov 2012 21:29:43 +0530
-X-Google-Sender-Auth: aF3rrWtVJDJxjA-IopLPkjZCH0g
-Message-ID: <CAOh2x=kXMcSXwNhRpUtm-4d-T_NfZkqK1EXyrWmdCqtZQ8SDVA@mail.gmail.com>
-Subject: Re: [PATCH 6/8] mmc: use the new <linux/sizes.h>
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org, rubini@gnudd.com,
-        wim@iguana.be, cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
+In-Reply-To: <1353678541-26839-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1353678541-26839-1-git-send-email-nicolas.ferre@atmel.com>
+Date: Fri, 23 Nov 2012 17:04:42 +0100
+Message-ID: <CAGhQ9Vw=Yk7RAMVsBM71QWNjsD99PnrTgRs5+pK8V2e=HirQqg@mail.gmail.com>
+Subject: Re: [PATCH] net/macb: GEM DMA configuration register update
+From: Joachim Eastwood <manabian@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 8:38 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
-> From: Alessandro Rubini <rubini@gnudd.com>
+On 23 November 2012 14:49, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> Add information to the DMA Configuration Register to
+> maximize system performance:
+> - rx/tx packet buffer full memory size
+> - allow possibility to use INCR16 if supported
 >
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Joachim Eastwood <manabian@gmail.com
+
+regards
+Joachim Eastwood
