@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab2KWCFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 21:05:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45594 "EHLO
+	id S1758880Ab2KWCGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 21:06:52 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56920 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab2KWCFW (ORCPT
+	by vger.kernel.org with ESMTP id S1756294Ab2KWCGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 21:05:22 -0500
-Date: Fri, 23 Nov 2012 11:05:18 +0900
+	Thu, 22 Nov 2012 21:06:51 -0500
+Date: Fri, 23 Nov 2012 11:06:36 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
 Cc: alsa-devel@alsa-project.org, Shawn Guo <shawn.guo@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX PATCH] ASoC: fsl: fix miscompilation of snd-soc-imx-pcm
-Message-ID: <20121123020517.GJ4385@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] ASoC: mxs-saif: export
+ mxs_saif_put_mclk,mxs_saif_get_mclk
+Message-ID: <20121123020635.GK4385@opensource.wolfsonmicro.com>
 References: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
+ <1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y+Z5jE7Arku/2GrR"
+	protocol="application/pgp-signature"; boundary="nrXiCraHbXeog9mY"
 Content-Disposition: inline
-In-Reply-To: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,48 +29,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Y+Z5jE7Arku/2GrR
+--nrXiCraHbXeog9mY
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 22, 2012 at 01:31:06PM +0100, Lothar Wa=DFmann wrote:
+On Thu, Nov 22, 2012 at 01:31:09PM +0100, Lothar Wa=DFmann wrote:
+>=20
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
 
->  obj-$(CONFIG_SND_SOC_IMX_PCM) +=3D snd-soc-imx-pcm.o
->  snd-soc-imx-pcm-y :=3D imx-pcm.o
-> -snd-soc-imx-pcm-$(CONFIG_SND_SOC_IMX_PCM_FIQ) +=3D imx-pcm-fiq.o
-> -snd-soc-imx-pcm-$(CONFIG_SND_SOC_IMX_PCM_DMA) +=3D imx-pcm-dma.o
-> +ifneq ($(CONFIG_SND_SOC_IMX_PCM_FIQ),)
-> +	snd-soc-imx-pcm-objs +=3D imx-pcm-fiq.o
-> +endif
-> +ifneq ($(CONFIG_SND_SOC_IMX_PCM_DMA),)
-> +	snd-soc-imx-pcm-objs +=3D imx-pcm-dma.o
-> +endif
+Why?
 
-What is the actual bug here?  This fix doesn't look obviously right, and
-if we do need to move to -objs for some reason then the block ought to
-be in the -objs section of the Makefile.
-
---Y+Z5jE7Arku/2GrR
+--nrXiCraHbXeog9mY
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQrtnJAAoJELSic+t+oim9oN4QAJThJQxMGp5w28hEwKUk2cv1
-xqHdFlKhz3b405mhKnknSbniWISsZTsodwW5U84xtcYA7x6aD0jneXeleV/UaIPS
-vOQbQe7Modz3fu5k4/F5lIdg5jG9imYixZJ52+qyqpcG+H1fFMQdwFF1s2d4cCwi
-NSgj3D+ki3dxQrMzPK9NOuhVD0Q+Hy4Uc4m/6PsrehnI6zT9zdz1WWX+jYUgOLxm
-gl4HsfgaYTGwMGNYOHFHwie4xrkofYWsKjLqalmTH1h7u9XxwGken4N1mI8oQVWi
-Mn4YQia3ZWPYm5kbK4nlpdOguAeOEtRGfEO3+64waFIm+4SwZICyUYmIst82zQKW
-cBT2dsQGPh6to+/ycXRiGZFiaazvscANtV6XW+CDdEChU3D8xlTgQhQbGMHDRE9o
-T3vTLRLqCMScHN9vosR9Xv5a1BiRCTZXG1u0EWIXGjJHu153IN7SGUUKsEM7oozm
-axvRWvCiJr0CVw4GLBhVyvLy3zLSz3U7udLYeLgKvtxZgowb+9rI28ZIM32xtXWe
-Tmz+/2y0J6TBxduiefxgKuQc1UA8+6LOKebHBu9MXX75sSObksaGxRO/P4XGuyQK
-zM4WRRWeJ+Isip3C0f1Kj7fLMuLIHN11gOEVcXJ6klGWzwSp1ggZBmEv5Uc4Vn4c
-Cr8Ny8dyT5JdcD+thQ7l
-=6z2r
+iQIcBAEBAgAGBQJQrtoaAAoJELSic+t+oim9VloQAIN02AOT+o5F1sAQUjWANdY3
+tVuzfGu/MA+eGTM9tX+Vzg4I6A6YO/lm6BJwx6wtzlRkTaiECxWbpcG+MtPgp8c9
+7wR9faUzH+w+jxLxXU7F/cxOglTk5Og6+0szROAmzNGDEG0r2IhyZ6azmW9201Q7
+5nzYKz/4cwljVmpc/XqliOmuREzQZiszqvev4hPI/Gj6nFRgzM84YFKOGa2HyHOS
+tjv0/CG81zFsoU/nmLbcd4iA8ZU8pkpMMlYypN31iUcqTnL2DxCNnep1dZPOfYKu
+7Jc2KvTxnPrR+j1MB4krxWA+9oX1E+YSdmn4cSn/KX7jyY5K0jER3AL7gTQsDI2P
+BWWtzUEZt4nB0OFRSpYkQho0dayNT5zVQU/jHU647u1E250Vznc063RFjkccNPuq
+EgajP8RLftUDyP1+LiMPiLM1vI6tofLx0UuFmLR6SDbpeN4QKtcGSIv4VoSqlJez
+nAk2700h3B/OjV+81gvxKIXOW866cOn86a7EC142tJyJdKu09iXmwX3LVKstl66k
+ITtF4NdbeUOTl/KrvqMgHijMon9vCGm0VDLu+NWDFhxEdscj6+Wa+jiStiVT8tzk
+MOcUO3AzHwi71XGMh0hsH3xlgqJh9Z6TcCjn75uoGPGMX7Ic+VdPKtF+CV1kcdi0
+lRgYvVyVU8d2l1m7Zw0B
+=qetv
 -----END PGP SIGNATURE-----
 
---Y+Z5jE7Arku/2GrR--
+--nrXiCraHbXeog9mY--
