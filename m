@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030331Ab2KWJvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:51:19 -0500
-Received: from antcom.de ([188.40.178.216]:35935 "EHLO chuck.antcom.de"
+	id S1161038Ab2KWJvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:51:48 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46044 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030282Ab2KWJvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:51:17 -0500
-Message-ID: <50AF4711.9040708@antcom.de>
-Date: Fri, 23 Nov 2012 10:51:13 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
+	id S1030298Ab2KWJvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:51:46 -0500
+Message-ID: <50AF472C.2050400@ti.com>
+Date: Fri, 23 Nov 2012 10:51:40 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Alban Bedel <alban.bedel@avionic-design.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] pwm: lpc32xx - Set the chip base for dynamic allocation
-References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de> <1352894295-14339-4-git-send-email-alban.bedel@avionic-design.de> <CAAAP30E6aFbeLq3uf8t2oiepaqouFRWtTt=Uc+TRir36acNKSA@mail.gmail.com>
-In-Reply-To: <CAAAP30E6aFbeLq3uf8t2oiepaqouFRWtTt=Uc+TRir36acNKSA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 3/3] pwm: New driver to support PWM driven LEDs on
+ TWL4030/6030 series of PMICs
+References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com> <1353405382-9226-4-git-send-email-peter.ujfalusi@ti.com> <50AB6F63.9040009@ti.com> <20121120115840.GA2500@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121120115840.GA2500@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 10:35 AM, Alexandre Pereira da Silva wrote:
-> On Wed, Nov 14, 2012 at 9:58 AM, Alban Bedel
-> <alban.bedel@avionic-design.de> wrote:
->> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+Hi Thierry,
+
+On 11/20/2012 12:58 PM, Thierry Reding wrote:
+>> Oh, I missed to save the updated comment before I commited the change.
+>> Can I just send and update patch instead of the whole series again?
 > 
-> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-
-Acked-by: Roland Stigge <stigge@antcom.de>
-
+> Sure.
 > 
->> ---
->>  drivers/pwm/pwm-lpc32xx.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
->> index f45ce2c..3e63689 100644
->> --- a/drivers/pwm/pwm-lpc32xx.c
->> +++ b/drivers/pwm/pwm-lpc32xx.c
->> @@ -121,6 +121,7 @@ static int lpc32xx_pwm_probe(struct platform_device *pdev)
->>         lpc32xx->chip.dev = &pdev->dev;
->>         lpc32xx->chip.ops = &lpc32xx_pwm_ops;
->>         lpc32xx->chip.npwm = 2;
->> +       lpc32xx->chip.base = -1;
->>
->>         ret = pwmchip_add(&lpc32xx->chip);
->>         if (ret < 0) {
->> --
->> 1.7.0.4
->>
+> Sorry for taking so long to review this. I'm rather busy with other
+> things but I'll try to find some time to review properly tonight or
+> tomorrow.
 
+I have sent the update patch for the series:
+https://lkml.org/lkml/2012/11/20/268
+
+I know you are busy, but would you be able to take a look at the series?
+
+Thank you,
+Péter
