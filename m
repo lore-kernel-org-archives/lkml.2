@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2KWNlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:41:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37560 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab2KWNlw (ORCPT
+	id S1753700Ab2KWNs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:48:27 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38150 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab2KWNs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:41:52 -0500
-Date: Fri, 23 Nov 2012 11:41:47 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Sage Weil <sage@inktank.com>,
-        Alex Elder <elder@inktank.com>
-Subject: Re: [ 117/171] libceph: drop ceph_con_get/put helpers and nref member
-Message-ID: <20121123134141.GB3759@herton-Z68MA-D2H-B3>
-References: <20121122004033.298367941@linuxfoundation.org>
- <20121122004045.096368181@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121122004045.096368181@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Nov 2012 08:48:26 -0500
+Date: Fri, 23 Nov 2012 13:53:33 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+Message-ID: <20121123135333.6b7a87f1@pyramind.ukuu.org.uk>
+In-Reply-To: <50AEAF20.3070001@ilyx.ru>
+References: <50AEAF20.3070001@ilyx.ru>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 04:41:03PM -0800, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Sage Weil <sage@inktank.com>
-> 
-> (cherry picked from commit d59315ca8c0de00df9b363f94a2641a30961ca1c)
-> 
-> These are no longer used.  Every ceph_connection instance is embedded in
-> another structure, and refcounts manipulated via the get/put ops.
-> 
-> Signed-off-by: Sage Weil <sage@inktank.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[...]
->  
->  /*
-> - * generic get/put
-> - */
-> -struct ceph_connection *ceph_con_get(struct ceph_connection *con)
-> -{
-> -	int nref = __atomic_add_unless(&con->nref, 1, 0);
-> -
-> -	dout("con_get %p nref = %d -> %d\n", con, nref, nref + 1);
-> -
-> -	return nref ? con : NULL;
-> -}
-> -
-> -void ceph_con_put(struct ceph_connection *con)
-> -{
-> -	int nref = atomic_dec_return(&con->nref);
-> -
-> -	BUG_ON(nref < 0);
-> -	if (nref == 0) {
-> -		BUG_ON(con->sock);
-> -		kfree(con);
-> -	}
-> -	dout("con_put %p nref = %d -> %d\n", con, nref + 1, nref);
-> -}
-> -
-> -/*
->   * initialize a new connection.
+On Fri, 23 Nov 2012 03:02:56 +0400
+Ilya Zykov <ilya@ilyx.ru> wrote:
 
-Although harmless in functionality not having it, may be it would be
-good to also apply with this also the following commit:
+> Regression 'tty: fix "IRQ45: nobody cared"'
+> Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
+> 
+>   Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
+> At the time of request we can have full buffers and throttled driver too. 
+> If we don't unthrottle driver, we can get forever throttled driver, because,
+> after request, we will have empty buffers and throttled driver and 
+> there is no place to unthrottle driver.
+> It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
+> and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
+> 
+> About 'tty: fix "IRQ45: nobody cared"':
+>   We don't call tty_unthrottle() if release last filp - ('tty->count == 0')
+> In other case it must be safely. 
+> 
+> Unfortunately, many drivers indirectly invoke tty_unthrottle() before TTY LAYER
+> decremented (tty->count).
+>   This Patch help us catch bugs in tty's drivers and invoke tty_unthrottle()
+> in right moment only.
 
-commit 261030215d970c62f799e6e508e3c68fc7ec2aa9
-Author: Alex Elder <elder@inktank.com>
-Date:   Thu Jun 21 12:49:23 2012 -0700
+This isn't really what I meant by fixing the problem. Simply declaring
+the known universe to disagree with your view and adding a WARN isn't a
+fix.
 
-    libceph: drop declaration of ceph_con_get()
-
-    For some reason the declaration of ceph_con_get() and
-    ceph_con_put() did not get deleted in this commit:
-        d59315ca libceph: drop ceph_con_get/put helpers and nref member
-    
-    Clean that up.
-
--- 
-[]'s
-Herton
+Alan
