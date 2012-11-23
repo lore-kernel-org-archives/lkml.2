@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932958Ab2KWHoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 02:44:14 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60464 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932907Ab2KWHoM (ORCPT
+	id S932963Ab2KWHqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 02:46:36 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45693 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932907Ab2KWHqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 02:44:12 -0500
+	Fri, 23 Nov 2012 02:46:34 -0500
+Date: Thu, 22 Nov 2012 23:46:30 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        lee.jones@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH] input: stmpe-ts: Add DT support for stmpe touchscreen
+Message-ID: <20121123074630.GE12631@core.coreip.homeip.net>
+References: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1353409479-3304-1-git-send-email-sachin.kamat@linaro.org>
-References: <1353409479-3304-1-git-send-email-sachin.kamat@linaro.org>
-Date: Fri, 23 Nov 2012 08:44:11 +0100
-Message-ID: <CACRpkdatVyDcTQnJ_qeZwckxJeApZBgw=_ivz98DJhNWjYFheA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pinctrl: pinctrl-single: Fix error check condition
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 12:04 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+On Fri, Nov 23, 2012 at 11:59:46AM +0530, Viresh Kumar wrote:
+> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> 
+> This patch allows the STMPE Touchscreen driver to be successfully probed and
+> initialised when Device Tree support is enabled. Bindings are mentioned in
+> Documentation too.
 
-> *map should be tested for NULL instead of map.
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Applied, thank you Viresh.
 
-Thanks, patch applied.
-
-As we are late in the kernel cycle and I haven't seen reports about
-regressions on this, it will wait for kernel v3.8.
-
-Yours,
-Linus Walleij
+-- 
+Dmitry
