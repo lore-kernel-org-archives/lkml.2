@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab2KWHQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 02:16:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63594 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab2KWHQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 02:16:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
-   d="scan'208";a="171630485"
-Message-ID: <50AF2244.7050501@intel.com>
-Date: Fri, 23 Nov 2012 15:14:12 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1757743Ab2KWHSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 02:18:55 -0500
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57663 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753524Ab2KWHSy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 02:18:54 -0500
+Message-ID: <50AF23AB.3010002@marvell.com>
+Date: Fri, 23 Nov 2012 15:20:11 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH] driver core: use initcall_debug to control shutdown info
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Qing Xu <qingx@marvell.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH 3/7] mfd: max8925: fix onkey driver irq base
+References: <1352187570-9803-1-git-send-email-qingx@marvell.com>
+In-Reply-To: <1352187570-9803-1-git-send-email-qingx@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Nov 2012 07:18:48.0640 (UTC) FILETIME=[C8276400:01CDC94A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+On 11/06/2012 03:39 PM, Qing Xu wrote:
+> From: Qing Xu <qingx@marvell.com>
+>
+> update onkey driver's irq base, it should get from max8925,
+> but not save in a private value
+>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+>   drivers/input/misc/max8925_onkey.c |    3 ---
+>   drivers/mfd/max8925-core.c         |    2 +-
+>   2 files changed, 1 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
+> index 0a12b74..6527789 100644
+> --- a/drivers/input/misc/max8925_onkey.c
+> +++ b/drivers/input/misc/max8925_onkey.c
+> @@ -100,9 +100,6 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
+>   	input->dev.parent = &pdev->dev;
+>   	input_set_capability(input, EV_KEY, KEY_POWER);
+>   
+> -	irq[0] += chip->irq_base;
+> -	irq[1] += chip->irq_base;
+> -
+>   	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
+>   				     IRQF_ONESHOT, "onkey-down", info);
+>   	if (error < 0) {
+> diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+> index b1eacae..37a372d 100644
+> --- a/drivers/mfd/max8925-core.c
+> +++ b/drivers/mfd/max8925-core.c
+> @@ -881,7 +881,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
+>   
+>   	ret = mfd_add_devices(chip->dev, 0, &onkey_devs[0],
+>   			      ARRAY_SIZE(onkey_devs),
+> -			      NULL, 0, NULL);
+> +			      NULL, chip->irq_base, NULL);
+>   	if (ret < 0) {
+>   		dev_err(chip->dev, "Failed to add onkey subdev\n");
+>   		goto out_dev;
+Hi Dmitry,
 
-syscore_shutdown uses initcall_debug to control the debug info output.
-It’s a good programming. But device_shutdown doesn’t. The patch changes
-device_shutdown to follow the style.
+Could you help to review my patch? Thanks a lot!
 
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- drivers/base/core.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+-Qing
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index abea76c..985f69c 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1840,10 +1840,12 @@ void device_shutdown(void)
- 		pm_runtime_barrier(dev);
- 
- 		if (dev->bus && dev->bus->shutdown) {
--			dev_dbg(dev, "shutdown\n");
-+			if (initcall_debug)
-+				dev_info(dev, "shutdown\n");
- 			dev->bus->shutdown(dev);
- 		} else if (dev->driver && dev->driver->shutdown) {
--			dev_dbg(dev, "shutdown\n");
-+			if (initcall_debug)
-+				dev_info(dev, "shutdown\n");
- 			dev->driver->shutdown(dev);
- 		}
- 
--- 
-1.7.1
