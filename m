@@ -1,128 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab2KWQO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 11:14:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35984 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab2KWQO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 11:14:57 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: linus.walleij@linaro.org, grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH Resend] gpio: stmpe: Add DT support for stmpe gpio
-Date: Fri, 23 Nov 2012 21:44:43 +0530
-Message-Id: <c0badc4f4021029a5de4393d7e3ca71494edb8ea.1353686946.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1755550Ab2KWQUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 11:20:34 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55657 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755208Ab2KWQUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 11:20:32 -0500
+Message-ID: <50AFA24D.4030501@imgtec.com>
+Date: Fri, 23 Nov 2012 16:20:29 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v1 24/40] metag: DMA
+References: <1351700061-7203-1-git-send-email-james.hogan@imgtec.com> <1351700061-7203-25-git-send-email-james.hogan@imgtec.com> <201211091425.13492.arnd@arndb.de> <50AF9C06.3010705@imgtec.com>
+In-Reply-To: <50AF9C06.3010705@imgtec.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_11_23_16_20_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On 23/11/12 15:53, James Hogan wrote:
+> On 09/11/12 14:25, Arnd Bergmann wrote:
+>> On Wednesday 31 October 2012, James Hogan wrote:
+>>> +static inline void
+>>> +dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
+>>> +                enum dma_data_direction direction)
+>>> +{
+>>> +       BUG_ON(!valid_dma_direction(direction));
+>>> +       dma_sync_for_cpu((void *)bus_to_virt(dma_addr), size, direction);
+>>> +}
+>>
+>> bus_to_virt is deprecated an should not be visible to device drivers
+>> any more for new stuff. Maybe you can remove the definition and introduce
+>> a __bus_to_virt() function for internal use that also returns a pointer
+>> type instead.
+> 
+> Hi Arnd,
+> 
+> Is there any reason not to just directly use phys_to_virt (which
+> bus_to_virt was defined as before)?
+> 
+> Thanks
+> James
+> 
 
-This patch allows the STMPE GPIO driver to be successfully probed and
-initialised when Device Tree support is enabled. Bindings are mentioned in
-Documentation too.
+asm-generic/io.h has bitten me. Does the following look reasonable?
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Thanks
+James
+
+Subject: [PATCH 1/1] asm-generic/io.h: check CONFIG_VIRT_TO_BUS
+
+Make asm-generic/io.h check CONFIG_VIRT_TO_BUS before defining
+virt_to_bus() and bus_to_virt(), otherwise it's easy to accidentally
+have a silently failing incorrect direct mapped definition rather then
+no definition at all.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
-V1->Resend:
-----------
-- Don't move asignment of stmpe_gpio->chip.base to if (pdata) block.
+ include/asm-generic/io.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- Documentation/devicetree/bindings/gpio/gpio-stmpe.txt | 18 ++++++++++++++++++
- drivers/gpio/gpio-stmpe.c                             | 10 ++++++++--
- drivers/mfd/stmpe.c                                   |  2 ++
- 3 files changed, 28 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
-new file mode 100644
-index 0000000..7f010e0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
-@@ -0,0 +1,18 @@
-+STMPE gpio
-+----------
-+
-+Required properties:
-+ - compatible: "st,stmpe-gpio"
-+
-+Optional properties:
-+ - norequest-mask: bitmask specifying which GPIOs should _not_ be requestable
-+   due to different usage (e.g. touch, keypad)
-+
-+Node name must be stmpe_gpio and should be child node of stmpe node to which it
-+belongs.
-+
-+Example:
-+	stmpe_gpio {
-+		compatible = "st,stmpe-gpio";
-+		st,norequest-mask = <0x20>;	//gpio 5 can't be used
-+	};
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index dce3472..522c90e 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -12,6 +12,7 @@
- #include <linux/gpio.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/of.h>
- #include <linux/mfd/stmpe.h>
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 616eea5..34823ef 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -350,6 +350,7 @@ extern void ioport_unmap(void __iomem *p);
+ #define xlate_dev_kmem_ptr(p)	p
+ #define xlate_dev_mem_ptr(p)	__va(p)
  
- /*
-@@ -304,6 +305,7 @@ static void stmpe_gpio_irq_remove(struct stmpe_gpio *stmpe_gpio)
- static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
++#ifdef CONFIG_VIRT_TO_BUS
+ #ifndef virt_to_bus
+ static inline unsigned long virt_to_bus(volatile void *address)
  {
- 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
-+	struct device_node *np = pdev->dev.of_node;
- 	struct stmpe_gpio_platform_data *pdata;
- 	struct stmpe_gpio *stmpe_gpio;
- 	int ret;
-@@ -321,13 +323,17 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+@@ -361,6 +362,7 @@ static inline void *bus_to_virt(unsigned long address)
+ 	return (void *) address;
+ }
+ #endif
++#endif
  
- 	stmpe_gpio->dev = &pdev->dev;
- 	stmpe_gpio->stmpe = stmpe;
--	stmpe_gpio->norequest_mask = pdata ? pdata->norequest_mask : 0;
--
- 	stmpe_gpio->chip = template_chip;
- 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
- 	stmpe_gpio->chip.dev = &pdev->dev;
- 	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
- 
-+	if (pdata)
-+		stmpe_gpio->norequest_mask = pdata->norequest_mask;
-+	else if (np)
-+		of_property_read_u32(np, "st,norequest-mask",
-+				&stmpe_gpio->norequest_mask);
-+
- 	if (irq >= 0)
- 		stmpe_gpio->irq_base = stmpe->irq_base + STMPE_INT_GPIO(0);
- 	else
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index fd64efc..3e3ca9c 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -298,12 +298,14 @@ static struct resource stmpe_gpio_resources[] = {
- 
- static struct mfd_cell stmpe_gpio_cell = {
- 	.name		= "stmpe-gpio",
-+	.of_compatible	= "st,stmpe-gpio",
- 	.resources	= stmpe_gpio_resources,
- 	.num_resources	= ARRAY_SIZE(stmpe_gpio_resources),
- };
- 
- static struct mfd_cell stmpe_gpio_cell_noirq = {
- 	.name		= "stmpe-gpio",
-+	.of_compatible	= "st,stmpe-gpio",
- 	/* gpio cell resources consist of an irq only so no resources here */
- };
- 
+ #define memset_io(a, b, c)	memset(__io_virt(a), (b), (c))
+ #define memcpy_fromio(a, b, c)	memcpy((a), __io_virt(b), (c))
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.7.6
 
