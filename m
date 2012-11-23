@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2KWKpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:45:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:12057 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab2KWKpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:45:22 -0500
-X-IronPort-AV: E=Sophos;i="4.83,307,1352044800"; 
-   d="scan'208";a="6263520"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        jiang.liu@huawei.com, yinghai@kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v2 4/5] page_alloc: Make movablecore_map has higher priority
-Date: Fri, 23 Nov 2012 18:44:04 +0800
-Message-Id: <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/23 18:44:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/23 18:44:52,
-	Serialize complete at 2012/11/23 18:44:52
+	id S1755252Ab2KWKq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:46:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59464 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab2KWKqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 05:46:25 -0500
+Date: Fri, 23 Nov 2012 10:46:20 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH] input: stmpe-ts: Add DT support for stmpe touchscreen
+Message-ID: <20121123104620.GQ17471@gmail.com>
+References: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <f56ddb18f4e9c92f6a94c6d3ae3f5fe30e0bd892.1353652106.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kernelcore or movablecore is specified at the same time
-with movablecore_map, movablecore_map will have higher
-priority to be satisfied.
-This patch will make find_zone_movable_pfns_for_nodes()
-calculate zone_movable_pfn[] with the limit from
-zone_movable_limit[].
+> +++ b/Documentation/devicetree/bindings/input/touchscreen/stmpe.txt
+> @@ -0,0 +1,43 @@
+> +STMPE Touchscreen
+> +----------------
+> +
+> +Required properties:
+> + - compatible: "st,stmpe-ts"
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- mm/page_alloc.c |   35 +++++++++++++++++++++++++++++++----
- 1 files changed, 31 insertions(+), 4 deletions(-)
+You shouldn't be specifying a compatible string in the DT.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f23d76a..05bafbb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4800,12 +4800,25 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 		required_kernelcore = max(required_kernelcore, corepages);
- 	}
- 
--	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
--	if (!required_kernelcore)
-+	/*
-+	 * No matter kernelcore/movablecore was limited or not, movable_zone
-+	 * should always be set to a usable zone index.
-+	 */
-+	find_usable_zone_for_movable();
-+
-+	/*
-+	 * If neither kernelcore/movablecore nor movablecore_map is specified,
-+	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
-+	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
-+	 */
-+	if (!required_kernelcore) {
-+		if (movablecore_map.nr_map)
-+			memcpy(zone_movable_pfn, zone_movable_limit,
-+				sizeof(zone_movable_pfn));
- 		goto out;
-+	}
- 
- 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
--	find_usable_zone_for_movable();
- 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
- 
- restart:
-@@ -4833,10 +4846,24 @@ restart:
- 		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
- 			unsigned long size_pages;
- 
-+			/*
-+			 * Find more memory for kernelcore in
-+			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
-+			 */
- 			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
- 			if (start_pfn >= end_pfn)
- 				continue;
- 
-+			if (zone_movable_limit[nid]) {
-+				end_pfn = min(end_pfn, zone_movable_limit[nid]);
-+				/* No range left for kernelcore in this node */
-+				if (start_pfn >= end_pfn) {
-+					zone_movable_pfn[nid] =
-+							zone_movable_limit[nid];
-+					break;
-+				}
-+			}
-+
- 			/* Account for what is only usable for kernelcore */
- 			if (start_pfn < usable_startpfn) {
- 				unsigned long kernel_pages;
-@@ -4896,12 +4923,12 @@ restart:
- 	if (usable_nodes && required_kernelcore > usable_nodes)
- 		goto restart;
- 
-+out:
- 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
- 	for (nid = 0; nid < MAX_NUMNODES; nid++)
- 		zone_movable_pfn[nid] =
- 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
- 
--out:
- 	/* restore the node_state */
- 	node_states[N_HIGH_MEMORY] = saved_node_state;
- }
+> +Example:
+> +
+> +	stmpe_touchscreen {
+> +		compatible = "st,stmpe-ts";
+
+This needs to be removed.
+
+> +		st,sample-time = <4>;
+> +		st,mod-12b = <1>;
+> +		st,ref-sel = <0>;
+> +		st,adc-freq = <1>;
+> +		st,ave-ctrl = <1>;
+> +		st,touch-det-delay = <2>;
+> +		st,settling = <2>;
+> +		st,fraction-z = <7>;
+> +		st,i-drive = <1>;
+> +	};
+
 -- 
-1.7.1
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
