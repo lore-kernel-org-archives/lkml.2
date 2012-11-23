@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2KWRux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 12:50:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60385 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab2KWRuw (ORCPT
+	id S1756141Ab2KWRvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 12:51:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35448 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab2KWRvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 12:50:52 -0500
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Cc: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Subject: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
-Date: Fri, 23 Nov 2012 18:50:37 +0100
-Message-Id: <1353693037-21704-4-git-send-email-vasilis.liaskovitis@profitbricks.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	Fri, 23 Nov 2012 12:51:06 -0500
+Message-ID: <50AFB749.8090507@oracle.com>
+Date: Fri, 23 Nov 2012 11:50:01 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v4 23/31] nfs: simplify swap
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com> <1353537671-26284-24-git-send-email-dave.kleikamp@oracle.com> <20121123082157.GC10731@infradead.org>
+In-Reply-To: <20121123082157.GC10731@infradead.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the following sequence of operations for a hotplugged memory device:
+On 11/23/2012 02:21 AM, Christoph Hellwig wrote:
+> On Wed, Nov 21, 2012 at 04:41:03PM -0600, Dave Kleikamp wrote:
+>> swap_writepage can now call nfs's write_iter f_op, eliminating the need to
+>> implement for the special-case direct_IO a_op. There is no longer a need to
+>> pass the uio flag through the direct write path.
+> 
+> This should also kill off the nasty REQ_KERNEL flag.
 
-1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-2. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/bind
-3. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+Right. Missed that.
 
-The driver is successfully re-bound to the device in step 2. However step 3 will
-not attempt to remove the memory. This is because the acpi_memory_info enabled
-bit for the newly bound driver has not been set to 1. This bit needs to be set
-in the case where the memory is already used by the kernel (add_memory returns
--EEXIST)
-
-Setting the enabled bit in this case (in acpi_memory_enable_device) makes the
-driver function properly after a rebind of the driver i.e. eject operation
-attempts to remove memory after a successful rebind.
-
-I am not sure if this breaks some other usage of the enabled bit (see commit
-65479472). When is it possible for the memory to be in use by the kernel but
-not managed by the acpi driver, apart from a driver unbind scenario?
-
-Perhaps the patch is not needed, depending on expected semantics of re-binding.
-Is the newly bound driver supposed to manage the device, if it was earlier
-managed by the same driver?
-
-This patch is only specific to this scenario, and can be dropped from the patch
-series if needed.
-
-Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
----
- drivers/acpi/acpi_memhotplug.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index d0cfbd9..0562cb4 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -271,12 +271,11 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 			continue;
- 		}
- 
--		if (!result)
--			info->enabled = 1;
- 		/*
- 		 * Add num_enable even if add_memory() returns -EEXIST, so the
- 		 * device is bound to this driver.
- 		 */
-+		info->enabled = 1;
- 		num_enabled++;
- 	}
- 	if (!num_enabled) {
--- 
-1.7.9
-
+Shaggy
