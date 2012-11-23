@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab2KWBTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 20:19:05 -0500
-Received: from mga14.intel.com ([143.182.124.37]:60502 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758462Ab2KWBTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 20:19:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,304,1352102400"; 
-   d="scan'208";a="221242496"
-Subject: [PATCH] serial:ifx6x60:Delete SPI timer when shut down port
-From: chao bi <chao.bi@intel.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: richardx.r.gorby@intel.com, jun.d.chen@intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1758624Ab2KWB0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Nov 2012 20:26:08 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44147 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756862Ab2KWB0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Nov 2012 20:26:07 -0500
+Message-ID: <1353633954.7586.1.camel@phoenix>
+Subject: [PATCH] regulator: tps80031: Implement list_voltage and set
+ n_voltages = 1 for fixed regulators
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 Nov 2012 09:25:54 +0800
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Nov 2012 09:33:33 +0800
-Message-ID: <1353634413.22077.15.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Implement list_voltage for fixed regulators, otherwise
+regulator_is_supported_voltage() returns 0.
 
-When shut down SPI port, it's possible that MRDY has been asserted and a SPI
-timer was activated waiting for SRDY assert, in the case, it needs to delete
-this timer.
-
-Signed-off-by: Chen Jun <jun.d.chen@intel.com>
-Signed-off-by: channing <chao.bi@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/tty/serial/ifx6x60.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/regulator/tps80031-regulator.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/ifx6x60.c b/drivers/tty/serial/ifx6x60.c
-index 5b9bc19..f5e9666 100644
---- a/drivers/tty/serial/ifx6x60.c
-+++ b/drivers/tty/serial/ifx6x60.c
-@@ -552,6 +552,7 @@ static void ifx_port_shutdown(struct tty_port *port)
- 		container_of(port, struct ifx_spi_device, tty_port);
+diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
+index 6d5f203..50f89b0 100644
+--- a/drivers/regulator/tps80031-regulator.c
++++ b/drivers/regulator/tps80031-regulator.c
+@@ -407,15 +407,18 @@ static struct regulator_ops tps80031_ldo_ops = {
+ };
  
- 	mrdy_set_low(ifx_dev);
-+	del_timer(&ifx_dev->spi_timer);
- 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
- 	tasklet_kill(&ifx_dev->io_work_tasklet);
- }
+ static struct regulator_ops tps80031_vbus_sw_ops = {
++	.list_voltage	= regulator_list_voltage_linear,
+ 	.enable		= tps80031_vbus_enable,
+ 	.disable	= tps80031_vbus_disable,
+ 	.is_enabled	= tps80031_vbus_is_enabled,
+ };
+ 
+ static struct regulator_ops tps80031_vbus_hw_ops = {
++	.list_voltage	= regulator_list_voltage_linear,
+ };
+ 
+ static struct regulator_ops tps80031_ext_reg_ops = {
++	.list_voltage	= regulator_list_voltage_linear,
+ 	.enable		= tps80031_reg_enable,
+ 	.disable	= tps80031_reg_disable,
+ 	.is_enabled	= tps80031_reg_is_enabled,
+@@ -477,7 +480,8 @@ static struct regulator_ops tps80031_ext_reg_ops = {
+ 	.desc = {						\
+ 		.name = "tps80031_"#_id,			\
+ 		.id = TPS80031_REGULATOR_##_id,			\
+-		.n_voltages = 2,				\
++		.min_uV = max_mV * 1000,			\
++		.n_voltages = 1,				\
+ 		.ops = &_ops,					\
+ 		.type = REGULATOR_VOLTAGE,			\
+ 		.owner = THIS_MODULE,				\
 -- 
-1.7.1
+1.7.9.5
 
 
 
