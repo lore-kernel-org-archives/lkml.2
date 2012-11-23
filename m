@@ -1,169 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab2KWOZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 09:25:25 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58444 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab2KWOY1 (ORCPT
+	id S1754781Ab2KWOat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 09:30:49 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:39706 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab2KWOar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 09:24:27 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v7 3/4] media: coda: use genalloc API
-Date: Fri, 23 Nov 2012 15:24:14 +0100
-Message-Id: <1353680655-21624-4-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
-References: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 23 Nov 2012 09:30:47 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ian Kent <raven@themaw.net>
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com
+Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial PID namespace
+References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+	<1353642304.2309.25.camel@perseus.themaw.net>
+	<1353672540.6699.18.camel@perseus.themaw.net>
+Date: Fri, 23 Nov 2012 15:30:39 +0100
+In-Reply-To: <1353672540.6699.18.camel@perseus.themaw.net> (Ian Kent's message
+	of "Fri, 23 Nov 2012 20:09:00 +0800")
+Message-ID: <874nkgwfw0.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch depends on "genalloc: add a global pool list,
-allow to find pools by phys address", which provides the
-of_get_named_gen_pool function.
+Ian Kent <raven@themaw.net> writes:
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/media/platform/Kconfig |    3 +--
- drivers/media/platform/coda.c  |   47 ++++++++++++++++++++++++++++------------
- 2 files changed, 34 insertions(+), 16 deletions(-)
+> On Fri, 2012-11-23 at 11:45 +0800, Ian Kent wrote:
+>> On Thu, 2012-11-22 at 17:24 +0100, Miklos Szeredi wrote:
+>> > Patches were tested by the customer.
+>> > 
+>> > Ian, Eric, do these patches look OK?
+>> 
+>> They look OK to me but I'm still a bit concerned about changing the way
+>> this behaves, but I also believe this is the way we want it to behave.
+>
+> OK, I ran the autofs Connectathon tests that I often use on a kernel
+> with these patches and they worked fine. So, AFAICS. the patches
+> shouldn't introduce regressions.
 
-diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
-index 181c768..09d45c6 100644
---- a/drivers/media/platform/Kconfig
-+++ b/drivers/media/platform/Kconfig
-@@ -130,10 +130,9 @@ if V4L_MEM2MEM_DRIVERS
- 
- config VIDEO_CODA
- 	tristate "Chips&Media Coda multi-standard codec IP"
--	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
-+	depends on VIDEO_DEV && VIDEO_V4L2
- 	select VIDEOBUF2_DMA_CONTIG
- 	select V4L2_MEM2MEM_DEV
--	select IRAM_ALLOC if SOC_IMX53
- 	---help---
- 	   Coda is a range of video codec IPs that supports
- 	   H.264, MPEG-4, and other video formats.
-diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
-index cd04ae2..f17b659 100644
---- a/drivers/media/platform/coda.c
-+++ b/drivers/media/platform/coda.c
-@@ -14,6 +14,7 @@
- #include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/firmware.h>
-+#include <linux/genalloc.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irq.h>
-@@ -24,7 +25,6 @@
- #include <linux/videodev2.h>
- #include <linux/of.h>
- 
--#include <mach/iram.h>
- #include <media/v4l2-ctrls.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-ioctl.h>
-@@ -43,6 +43,7 @@
- #define CODA7_WORK_BUF_SIZE	(512 * 1024 + CODA_FMO_BUF_SIZE * 8 * 1024)
- #define CODA_PARA_BUF_SIZE	(10 * 1024)
- #define CODA_ISRAM_SIZE	(2048 * 2)
-+#define CODADX6_IRAM_SIZE	0xb000
- #define CODA7_IRAM_SIZE		0x14000 /* 81920 bytes */
- 
- #define CODA_MAX_FRAMEBUFFERS	2
-@@ -128,7 +129,10 @@ struct coda_dev {
- 
- 	struct coda_aux_buf	codebuf;
- 	struct coda_aux_buf	workbuf;
-+	struct gen_pool		*iram_pool;
-+	long unsigned int	iram_vaddr;
- 	long unsigned int	iram_paddr;
-+	unsigned long		iram_size;
- 
- 	spinlock_t		irqlock;
- 	struct mutex		dev_mutex;
-@@ -1958,6 +1962,22 @@ static int __devinit coda_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
-+	/* Without device tree, get SRAM paddr from second memory resource */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (res != NULL)
-+		dev->iram_pool = gen_pool_find_by_phys(res->start);
-+#ifdef CONFIG_OF
-+	if (!dev->iram_pool) {
-+		struct device_node *np = pdev->dev.of_node;
-+
-+		dev->iram_pool = of_get_named_gen_pool(np, "iram", 0);
-+	}
-+#endif
-+	if (!dev->iram_pool) {
-+		dev_err(&pdev->dev, "iram pool not available\n");
-+		return -ENOMEM;
-+	}
-+
- 	ret = v4l2_device_register(&pdev->dev, &dev->v4l2_dev);
- 	if (ret)
- 		return ret;
-@@ -1992,18 +2012,17 @@ static int __devinit coda_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	if (dev->devtype->product == CODA_DX6) {
--		dev->iram_paddr = 0xffff4c00;
--	} else {
--		void __iomem *iram_vaddr;
--
--		iram_vaddr = iram_alloc(CODA7_IRAM_SIZE,
--					&dev->iram_paddr);
--		if (!iram_vaddr) {
--			dev_err(&pdev->dev, "unable to alloc iram\n");
--			return -ENOMEM;
--		}
-+	if (dev->devtype->product == CODA_DX6)
-+		dev->iram_size = CODADX6_IRAM_SIZE;
-+	else
-+		dev->iram_size = CODA7_IRAM_SIZE;
-+	dev->iram_vaddr = gen_pool_alloc(dev->iram_pool, dev->iram_size);
-+	if (!dev->iram_vaddr) {
-+		dev_err(&pdev->dev, "unable to alloc iram\n");
-+		return -ENOMEM;
- 	}
-+	dev->iram_paddr = gen_pool_virt_to_phys(dev->iram_pool,
-+						dev->iram_vaddr);
- 
- 	platform_set_drvdata(pdev, dev);
- 
-@@ -2020,8 +2039,8 @@ static int coda_remove(struct platform_device *pdev)
- 	if (dev->alloc_ctx)
- 		vb2_dma_contig_cleanup_ctx(dev->alloc_ctx);
- 	v4l2_device_unregister(&dev->v4l2_dev);
--	if (dev->iram_paddr)
--		iram_free(dev->iram_paddr, CODA7_IRAM_SIZE);
-+	if (dev->iram_vaddr)
-+		gen_pool_free(dev->iram_pool, dev->iram_vaddr, dev->iram_size);
- 	if (dev->codebuf.vaddr)
- 		dma_free_coherent(&pdev->dev, dev->codebuf.size,
- 				  &dev->codebuf.vaddr, dev->codebuf.paddr);
--- 
-1.7.10.4
+And the reason for that is the patches introduce no behavioral changes
+at all if the automount daemon was started in the initial namespace.
+
+They only change (and fix) semantics of the case when automount is
+started in a cloned pid namespace.
+
+>
+>> 
+>> Give me a little bit more time to run a simple test to ensure we can at
+>> least do what we could previously, and that's nothing more than
+>> umounting duplicated mounts (which probably shouldn't be duplicated at
+>> all) in the container.
+>
+> Interestingly the simple container test program I have also worked in
+> the same way it does on current kernels so again I didn't see a problem
+> adding the patches.
+>
+> But I do have a couple of questions that are a little related.
+>
+> Calling clone(2) with flags
+> CLONE_NEWPID|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|SIGCHLD|CLONE_NEWNET
+> will result in a copy of the existing set of mounts. The autofs mounts
+> can be umounted if they are not needed.
+>
+> But, on Fedora systemd sets "/" as shared at boot which prevents the
+> umount of these autofs mounts, unless you mark "/" as private in the
+> clone, after which the mounts can be umounted.
+>
+> Does having "/" marked as shared in the root namespace mean that further
+> mounts in the root namespace will also appear in the clone and that
+> mounts done in the clone will appear in the root namespace?
+
+Yes.
+
+>
+> Will mounting all autofs mounts with MS_PRIVATE prevent the autofs
+> mounts and any mounts under them from appearing in the root namespace?
+
+Changing autofs mounts to MS_PRIVATE will prevent submounts of these
+from being propagated to/from the root namespace.
+
+>
+> I assume there is no way for autofs to stop the propagation from the
+> root namespace, is that correct?
+
+Not for the children of the shared mount.  For the children of the
+autofs mounts, they can be prevented, which is really what you want, I
+guess.
+
+Thanks,
+Miklos
 
