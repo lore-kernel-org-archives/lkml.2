@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030321Ab2KWJuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:50:09 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35669 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030282Ab2KWJuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:50:06 -0500
-Date: Fri, 23 Nov 2012 09:50:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>, rob.herring@calxeda.com,
-        robherring2@gmail.com, francescolavra.fl@gmail.com, arnd@arndb.de,
-        linus.walleij@stericsson.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, STEricsson_nomadik_linux@list.st.com,
-        rajanikanth.hv@stericsson.com
-Subject: Re: [PATCH 1/4] mfd: ab8500: add devicetree support for fuelgauge
-Message-ID: <20121123095000.GI17471@gmail.com>
-References: <1353609827-8218-1-git-send-email-rajanikanth.hv@linaro.org>
- <1353609827-8218-2-git-send-email-rajanikanth.hv@linaro.org>
- <20121122200841.GB12397@lizard>
+	id S1030331Ab2KWJvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:51:19 -0500
+Received: from antcom.de ([188.40.178.216]:35935 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030282Ab2KWJvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:51:17 -0500
+Message-ID: <50AF4711.9040708@antcom.de>
+Date: Fri, 23 Nov 2012 10:51:13 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121122200841.GB12397@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: Alban Bedel <alban.bedel@avionic-design.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] pwm: lpc32xx - Set the chip base for dynamic allocation
+References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de> <1352894295-14339-4-git-send-email-alban.bedel@avionic-design.de> <CAAAP30E6aFbeLq3uf8t2oiepaqouFRWtTt=Uc+TRir36acNKSA@mail.gmail.com>
+In-Reply-To: <CAAAP30E6aFbeLq3uf8t2oiepaqouFRWtTt=Uc+TRir36acNKSA@mail.gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/23/2012 10:35 AM, Alexandre Pereira da Silva wrote:
+> On Wed, Nov 14, 2012 at 9:58 AM, Alban Bedel
+> <alban.bedel@avionic-design.de> wrote:
+>> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+> 
+> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-> On Fri, Nov 23, 2012 at 12:13:44AM +0530, Rajanikanth H.V wrote:
-> [...]
-> > +/*
-> > + * Note that the batres_vs_temp table must be strictly sorted by falling
-> > + * temperature values to work.
-> > + */
-> > +struct batres_vs_temp temp_to_batres_tbl_thermistor[] = {
-> 
-> It must be static.
-> 
-> [..]
-> > +struct batres_vs_temp temp_to_batres_tbl_ext_thermistor[] = {
-> 
-> Ditto.
-> 
-> > +	{ 60, 300},
-> > +	{ 30, 300},
-> > +	{ 20, 300},
-> > +	{ 10, 300},
-> > +	{ 00, 300},
-> > +	{-10, 300},
-> > +	{-20, 300},
-> > +};
-> > +
-> > +/* battery resistance table for LI ION 9100 battery */
-> > +struct batres_vs_temp temp_to_batres_tbl_9100[] = {
-> 
-> Ditto.
-> 
-> There are other issues, which I fixed in my tree for the previous series.
-> So the previous series already merged, please post patches on top of it.
+Acked-by: Roland Stigge <stigge@antcom.de>
 
-Ah, I see now. My apologies, I'll re-comment.
+> 
+>> ---
+>>  drivers/pwm/pwm-lpc32xx.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+>> index f45ce2c..3e63689 100644
+>> --- a/drivers/pwm/pwm-lpc32xx.c
+>> +++ b/drivers/pwm/pwm-lpc32xx.c
+>> @@ -121,6 +121,7 @@ static int lpc32xx_pwm_probe(struct platform_device *pdev)
+>>         lpc32xx->chip.dev = &pdev->dev;
+>>         lpc32xx->chip.ops = &lpc32xx_pwm_ops;
+>>         lpc32xx->chip.npwm = 2;
+>> +       lpc32xx->chip.base = -1;
+>>
+>>         ret = pwmchip_add(&lpc32xx->chip);
+>>         if (ret < 0) {
+>> --
+>> 1.7.0.4
+>>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
