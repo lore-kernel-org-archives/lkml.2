@@ -1,105 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab2KWFuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 00:50:00 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52232 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab2KWFt7 (ORCPT
+	id S932210Ab2KWFvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 00:51:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42746 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2KWFvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 00:49:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <50AE5D79.8040803@oracle.com>
-References: <50AE5D79.8040803@oracle.com>
-Date: Thu, 22 Nov 2012 21:49:58 -0800
-Message-ID: <CANN689G-VRTvFoRNMXx080=0VwTGqOw5YGVGaE7u64QKvh0rHw@mail.gmail.com>
-Subject: Re: Is augmented rbtree propagation broken?
-From: Michel Lespinasse <walken@google.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Nov 2012 00:51:17 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: linus.walleij@linaro.org, grant.likely@secretlab.ca
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, lee.jones@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] gpio: stmpe: Add DT support for stmpe gpio
+Date: Fri, 23 Nov 2012 11:21:01 +0530
+Message-Id: <912d88b8906ce87cf5459cf3d5798e03bfce34c7.1353649737.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 9:14 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Hi Michel,
->
-> I've noticed a bug regarding search of ioports in the KVM tool. Since the KVM tool is
-> using kernel's augmented rbtree implementation to represent an interval rbtree I dug a
-> bit into the new implementation in the kernel, and noticed the following odd behaviour.
->
-> Let's take a simple case where we have 2 intervals with the 3rd parameter being the
-> 'max_high' field used by interval rbtrees: (1,2,0) , (3,4,0). Let's add them one by one:
->
-> 1.               (1,2,2)
->                 /       \
->              NULL       NULL
->
-> 2.               (1,2,4)
->                 /       \
->              NULL       (3,4,4)
->
-> On the 2nd stage we'd expect that the new (3,4) interval will be added to the right
-> subtree (which happens correctly), and that the insertion will be propagated to the
-> root of the tree to update max_high (which doesn't happen).
->
-> Basically, at stage 2, the tree we're left with is:
->
->                  (1,2,2)
->                 /       \
->              NULL       (3,4,4)
->
-> Which is wrong.
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
-You are absolutely correct that one needs to update the ancestors
-augmented information on insertion, and that rb_insert_augmented
-doesn't do that.
+This patch allows the STMPE GPIO driver to be successfully probed and
+initialised when Device Tree support is enabled. Bindings are mentioned in
+Documentation too.
 
-> I suspect that this happens because we never propagate upon insertion, which sounds
-> quite odd to me, but I might be missing something.
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ Documentation/devicetree/bindings/gpio/gpio-stmpe.txt | 18 ++++++++++++++++++
+ drivers/gpio/gpio-stmpe.c                             | 15 ++++++++++++---
+ drivers/mfd/stmpe.c                                   |  2 ++
+ 3 files changed, 32 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
 
-What we are supposed to do (and what other call sites are doing), is
-that before insertion we do a search down the rbtree to find the
-correct insertion point. During that search, we already look at nodes
-on the desired path, so it is the ideal time to update their augmented
-information as well (max_high in the case you are talking about).
-
-> The following patch fixed the problem for me:
->
-> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-> index 214caa3..5cfdca6 100644
-> --- a/include/linux/rbtree_augmented.h
-> +++ b/include/linux/rbtree_augmented.h
-> @@ -47,6 +47,7 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
->                     const struct rb_augment_callbacks *augment)
->  {
->         __rb_insert_augmented(node, root, augment->rotate);
-> +       augment->propagate(node, NULL);
->  }
-
-This would work, but would slow down all sites which already take care
-of updating the augmented information before calling
-rb_insert_augmented, so please don't do that.
-
-The simplest fix would be to add the propagate call where your
-rb_insert_augmented() call site is; the better fix would be to do the
-update incrementally as you search down the tree for the insertion
-point; and the best fix may be to just avoid duplicating that code and
-use interval_tree.h (if your keys are longs) or
-interval_tree_generic.h to generate the proper insert / remove
-functions.
-
-I would send you patches if the code was in linus's tree, but as it's
-not I want to ask - what trees do these new augmented rbtree call
-sites live in ? Are we talking perf and kvm git trees on kernel.org,
-or are there others I should be aware of ?
-
-Also in the case of ioports, are your intervals ever overlapping ?
-
-Thanks,
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
+new file mode 100644
+index 0000000..7f010e0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
+@@ -0,0 +1,18 @@
++STMPE gpio
++----------
++
++Required properties:
++ - compatible: "st,stmpe-gpio"
++
++Optional properties:
++ - norequest-mask: bitmask specifying which GPIOs should _not_ be requestable
++   due to different usage (e.g. touch, keypad)
++
++Node name must be stmpe_gpio and should be child node of stmpe node to which it
++belongs.
++
++Example:
++	stmpe_gpio {
++		compatible = "st,stmpe-gpio";
++		st,norequest-mask = <0x20>;	//gpio 5 can't be used
++	};
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index dce3472..91455d4 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -12,6 +12,7 @@
+ #include <linux/gpio.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/of.h>
+ #include <linux/mfd/stmpe.h>
+ 
+ /*
+@@ -304,6 +305,7 @@ static void stmpe_gpio_irq_remove(struct stmpe_gpio *stmpe_gpio)
+ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
++	struct device_node *np = pdev->dev.of_node;
+ 	struct stmpe_gpio_platform_data *pdata;
+ 	struct stmpe_gpio *stmpe_gpio;
+ 	int ret;
+@@ -321,12 +323,19 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+ 
+ 	stmpe_gpio->dev = &pdev->dev;
+ 	stmpe_gpio->stmpe = stmpe;
+-	stmpe_gpio->norequest_mask = pdata ? pdata->norequest_mask : 0;
+-
+ 	stmpe_gpio->chip = template_chip;
+ 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
+ 	stmpe_gpio->chip.dev = &pdev->dev;
+-	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
++
++	if (pdata) {
++		stmpe_gpio->norequest_mask = pdata->norequest_mask;
++		stmpe_gpio->chip.base = pdata->gpio_base;
++	} else {
++		stmpe_gpio->chip.base = -1;
++		if (np)
++			of_property_read_u32(np, "st,norequest-mask",
++					&pdata->norequest_mask);
++	}
+ 
+ 	if (irq >= 0)
+ 		stmpe_gpio->irq_base = stmpe->irq_base + STMPE_INT_GPIO(0);
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index e2c0dda..c757ac3 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -298,12 +298,14 @@ static struct resource stmpe_gpio_resources[] = {
+ 
+ static struct mfd_cell stmpe_gpio_cell = {
+ 	.name		= "stmpe-gpio",
++	.of_compatible	= "st,stmpe-gpio",
+ 	.resources	= stmpe_gpio_resources,
+ 	.num_resources	= ARRAY_SIZE(stmpe_gpio_resources),
+ };
+ 
+ static struct mfd_cell stmpe_gpio_cell_noirq = {
+ 	.name		= "stmpe-gpio",
++	.of_compatible	= "st,stmpe-gpio",
+ 	/* gpio cell resources consist of an irq only so no resources here */
+ };
+ 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.12.rc2.18.g61b472e
+
