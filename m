@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab2KWJeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:34:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50901 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759018Ab2KWJd6 (ORCPT
+	id S1759108Ab2KWJe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:34:27 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57188 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759095Ab2KWJeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:33:58 -0500
-Date: Fri, 23 Nov 2012 09:33:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
-Message-ID: <20121123093352.GC17471@gmail.com>
-References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
- <b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
- <20121122112451.GE4328@gmail.com>
- <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
- <20121122154612.GC10986@gmail.com>
- <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
- <20121123034557.GB5384@localhost.localdomain>
+	Fri, 23 Nov 2012 04:34:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121123034557.GB5384@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352894295-14339-2-git-send-email-alban.bedel@avionic-design.de>
+References: <1352894295-14339-1-git-send-email-alban.bedel@avionic-design.de>
+	<1352894295-14339-2-git-send-email-alban.bedel@avionic-design.de>
+Date: Fri, 23 Nov 2012 07:34:23 -0200
+Message-ID: <CAAAP30GUM31pcHxXfWJnuUBN2jYHbWz0XFX7o6x=_2wNtbHroQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pwm: lpc32xx - Fix the PWM polarity
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Shiraz Hashim wrote:
+On Wed, Nov 14, 2012 at 9:58 AM, Alban Bedel
+<alban.bedel@avionic-design.de> wrote:
+> The duty cycles value goes from 1 (99% HIGH) to 256 (0% HIGH) but it
+> is stored modulo 256 in the register as it is only 8 bits wide.
+>
+> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
 
-> On Thu, Nov 22, 2012 at 10:31:48PM +0530, Viresh Kumar wrote:
-> > On 22 November 2012 21:16, Lee Jones <lee.jones@linaro.org> wrote:
-> > > The STMPE GPIO controller can't be used by Device Tree yet in
-> > > any case, because it doesn't have an IRQ domain. This is
-> > > compulsory, or it won't work. Have you tried to test this
-> > > functionality yet?
-> > 
-> > I don't have SPEAr board to test it anymore. I have moved out of
-> > ST now and working in linaro as ARM asignee. Just pushing these
-> > as an part time activity.
-> > 
-> > Though ST guys would have tested stmpe, but stmpe-gpio, i am not
-> > sure about.
-> 
-> Let me bring some more information here. I totally understand
-> Jones concerns, but the way stmpe (and may be other mfd devices)
-> are handled is this that the parent block (i.e. stmpe) decides on
-> the variants (say by probing device itself) and then prepares
-> associated data for the (probed) variant and creates a platform
-> device for the same.
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-I realise this, but now we're using Device Tree, there's no need
-to stuff pdata in the parent driver now. It's better that the
-child devices are self sufficient.
-
-> For the interrupts case also, it is stmpe which registers the
-> irq domain. This is because, stmpe driver probes variant and
-> populates its platform data and stmpe-gpio may not be aware of the
-> variant it serves. At the same time, it (stmpe) needs few of the
-> (virtual) interrupts for its internal purpose also.
-
-I know. I wrote the IRQ domain for STMPE. ;)
-
-STMPE needs its own one too, which I will work on now.
-
-STMPE-GPIO doesn't need to be aware of anything, the device
-which wishes to use its GPIOs/IRQs will reference it from
-Device Tree in the manor previously explained.
-
-> Hence stmpe passes irq_base to the stmpe-gpio driver while
-> allocating and registering irq domain by itself.
-
-Not anymore it doesn't. There are no irq_base:s with DT. All
-IRQs are dynamic, hence why STMPE requires its own domain to
-play with. I can fix that.
-
-> With this approach we have tested the functionality on SPEAr
-> platform.
-
-You'll need to test it again with the new DT approach too. :)
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> ---
+>  drivers/pwm/pwm-lpc32xx.c |   17 ++++++++++++++++-
+>  1 files changed, 16 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+> index adb87f0..03ec3ff 100644
+> --- a/drivers/pwm/pwm-lpc32xx.c
+> +++ b/drivers/pwm/pwm-lpc32xx.c
+> @@ -49,9 +49,24 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>                 c = 0; /* 0 set division by 256 */
+>         period_cycles = c;
+>
+> +       /* The duty value is a follow:
+> +        *
+> +        *  DUTY     HIGH LEVEL
+> +        *   1         99.9%
+> +        *   25        90.0%
+> +        *   128       50.0%
+> +        *   220       10.0%
+> +        *   255        0.1%
+> +        *   0          0.0%
+> +        *
+> +        * In other word the in-register value is duty % 256 with duty
+> +        * in the range 1-256.
+> +        */
+>         c = 256 * duty_ns;
+>         do_div(c, period_ns);
+> -       duty_cycles = c;
+> +       if (c > 255)
+> +               c = 255;
+> +       duty_cycles = 256 - c;
+>
+>         writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
+>                 lpc32xx->base + (pwm->hwpwm << 2));
+> --
+> 1.7.0.4
+>
