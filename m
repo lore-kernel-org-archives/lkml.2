@@ -1,188 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab2KWL2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:28:32 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35410 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab2KWL2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:28:30 -0500
+	id S1754481Ab2KWLag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:30:36 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49837 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896Ab2KWLae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 06:30:34 -0500
+Message-ID: <50AF5E53.9060108@ti.com>
+Date: Fri, 23 Nov 2012 13:30:27 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1353600769-28693-1-git-send-email-fabio.estevam@freescale.com>
-References: <1353600769-28693-1-git-send-email-fabio.estevam@freescale.com>
-Date: Fri, 23 Nov 2012 12:28:28 +0100
-Message-ID: <CACKLOr296rVjv3ECL_WyV2eS7OHEKFzBomz=i-6dJWOvJQ9pkQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] ARM: imx27_visstrim_m10: Do not reserve DMA pools
- on board file
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [GIT PULL] OMAPDSS fixes for 3.7-rc
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enigA448A0F3739DAEE5C8E3BB6E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
-have you actually tested CMA with mx2_camera and coda drivers in i.MX27?
+--------------enigA448A0F3739DAEE5C8E3BB6E
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+Here are a few OMAPDSS fixes for the next -rc. I'm sending these directly=
+
+to you, and quite late, as the fbdev tree maintainer (Florian) has been
+busy with his work and hasn't had time to manage the fb patches.
+
+ Tomi
+
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd=
+37:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+
+  git://gitorious.org/linux-omap-dss2/linux.git tags/omapdss-for-3.7-rc
+
+for you to fetch changes up to 8ad9375f8b7c709b89f7de4de413bb2644ba3c24:
+
+  OMAPDSS: do not fail if dpll4_m4_ck is missing (2012-11-22 17:23:12 +02=
+00)
+
+----------------------------------------------------------------
+omapdss fixes for 3.7-rc
+
+----------------------------------------------------------------
+Aaro Koskinen (1):
+      OMAPDSS: do not fail if dpll4_m4_ck is missing
+
+Laurent Pinchart (1):
+      omapdss: dss: Fix clocks on OMAP363x
+
+Tomi Valkeinen (1):
+      OMAPDSS: DSI: fix dsi_get_dsidev_from_id()
+
+Tushar Behera (1):
+      OMAPFB: Fix possible null pointer dereferencing
+
+Wei Yongjun (1):
+      OMAPDSS: HDMI: fix missing unlock on error in hdmi_dump_regs()
+
+ drivers/video/omap2/dss/dsi.c             |   13 +++++++++++--
+ drivers/video/omap2/dss/dss.c             |   18 +++++++++++-------
+ drivers/video/omap2/dss/hdmi.c            |    4 +++-
+ drivers/video/omap2/omapfb/omapfb-ioctl.c |    2 +-
+ 4 files changed, 26 insertions(+), 11 deletions(-)
 
 
-On 22 November 2012 17:12, Fabio Estevam <fabio.estevam@freescale.com> wrote:
-> Do not reserve DMA pools on board file as this can be done via CMA.
->
-> The motivation for doing this is to allow to register the VPU driver via a common
-> SoC file instead of per board.
->
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
-> This applies against 20121115 linux-next.
->
-> Changes since v3:
-> - Remove all the DMA pools
-> Changes since v2:
-> - No changes. Newly introduced on this series
->  arch/arm/mach-imx/mach-imx27_visstrim_m10.c |   66 ++-------------------------
->  1 file changed, 3 insertions(+), 63 deletions(-)
->
-> diff --git a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> index b744226..914b2f8 100644
-> --- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> +++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> @@ -30,7 +30,6 @@
->  #include <linux/input.h>
->  #include <linux/gpio.h>
->  #include <linux/delay.h>
-> -#include <linux/dma-mapping.h>
->  #include <linux/leds.h>
->  #include <linux/platform_data/asoc-mx27vis.h>
->  #include <media/soc_camera.h>
-> @@ -39,7 +38,6 @@
->  #include <asm/mach/arch.h>
->  #include <asm/mach/time.h>
->  #include <asm/system_info.h>
-> -#include <asm/memblock.h>
->
->  #include "common.h"
->  #include "devices-imx27.h"
-> @@ -234,14 +232,8 @@ static struct mx2_camera_platform_data visstrim_camera = {
->         .clk = 100000,
->  };
->
-> -static phys_addr_t mx2_camera_base __initdata;
-> -#define MX2_CAMERA_BUF_SIZE SZ_8M
-> -
->  static void __init visstrim_camera_init(void)
->  {
-> -       struct platform_device *pdev;
-> -       int dma;
-> -
->         gpio_set_value(TVP5150_PWDN, 1);
->         ndelay(1);
->         gpio_set_value(TVP5150_RSTN, 0);
-> @@ -249,23 +241,7 @@ static void __init visstrim_camera_init(void)
->         gpio_set_value(TVP5150_RSTN, 1);
->         ndelay(200000);
->
-> -       pdev = imx27_add_mx2_camera(&visstrim_camera);
-> -       if (IS_ERR(pdev))
-> -               return;
-> -
-> -       dma = dma_declare_coherent_memory(&pdev->dev,
-> -                               mx2_camera_base, mx2_camera_base,
-> -                               MX2_CAMERA_BUF_SIZE,
-> -                               DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-> -       if (!(dma & DMA_MEMORY_MAP))
-> -               return;
-> -}
-> -
-> -static void __init visstrim_reserve(void)
-> -{
-> -       /* reserve 4 MiB for mx2-camera */
-> -       mx2_camera_base = arm_memblock_steal(3 * MX2_CAMERA_BUF_SIZE,
-> -                       MX2_CAMERA_BUF_SIZE);
-> +       imx27_add_mx2_camera(&visstrim_camera);
->  }
->
->  /* GPIOs used as events for applications */
-> @@ -434,47 +410,12 @@ static const struct imx_ssi_platform_data visstrim_m10_ssi_pdata __initconst = {
->         .flags                  = IMX_SSI_DMA | IMX_SSI_SYN,
->  };
->
-> -/* coda */
-> -
-> -static void __init visstrim_coda_init(void)
-> -{
-> -       struct platform_device *pdev;
-> -       int dma;
-> -
-> -       pdev = imx27_add_coda();
-> -       dma = dma_declare_coherent_memory(&pdev->dev,
-> -                                         mx2_camera_base + MX2_CAMERA_BUF_SIZE,
-> -                                         mx2_camera_base + MX2_CAMERA_BUF_SIZE,
-> -                                         MX2_CAMERA_BUF_SIZE,
-> -                                         DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-> -       if (!(dma & DMA_MEMORY_MAP))
-> -               return;
-> -}
-> -
->  /* DMA deinterlace */
->  static struct platform_device visstrim_deinterlace = {
->         .name = "m2m-deinterlace",
->         .id = 0,
->  };
->
-> -static void __init visstrim_deinterlace_init(void)
-> -{
-> -       int ret = -ENOMEM;
-> -       struct platform_device *pdev = &visstrim_deinterlace;
-> -       int dma;
-> -
-> -       ret = platform_device_register(pdev);
-> -
-> -       dma = dma_declare_coherent_memory(&pdev->dev,
-> -                                         mx2_camera_base + 2 * MX2_CAMERA_BUF_SIZE,
-> -                                         mx2_camera_base + 2 * MX2_CAMERA_BUF_SIZE,
-> -                                         MX2_CAMERA_BUF_SIZE,
-> -                                         DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-> -       if (!(dma & DMA_MEMORY_MAP))
-> -               return;
-> -}
-> -
-> -
->  /* Audio */
->  static const struct snd_mx27vis_platform_data snd_mx27vis_pdata __initconst = {
->         .amp_gain0_gpio = AMP_GAIN_0,
-> @@ -546,9 +487,9 @@ static void __init visstrim_m10_board_init(void)
->         platform_device_register_resndata(NULL, "soc-camera-pdrv", 0, NULL, 0,
->                                       &iclink_tvp5150, sizeof(iclink_tvp5150));
->         gpio_led_register_device(0, &visstrim_m10_led_data);
-> -       visstrim_deinterlace_init();
-> +       platform_device_register(&visstrim_deinterlace);
->         visstrim_camera_init();
-> -       visstrim_coda_init();
-> +       imx27_add_coda();
->  }
->
->  static void __init visstrim_m10_timer_init(void)
-> @@ -562,7 +503,6 @@ static struct sys_timer visstrim_m10_timer = {
->
->  MACHINE_START(IMX27_VISSTRIM_M10, "Vista Silicon Visstrim_M10")
->         .atag_offset = 0x100,
-> -       .reserve = visstrim_reserve,
->         .map_io = mx27_map_io,
->         .init_early = imx27_init_early,
->         .init_irq = mx27_init_irq,
-> --
-> 1.7.9.5
->
->
+--------------enigA448A0F3739DAEE5C8E3BB6E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
+iQIcBAEBAgAGBQJQr15TAAoJEPo9qoy8lh71Hd8QAIpyBjUhkApqd4Iq7oqsLrnd
+w3+upaV03DVZLLMIkd8nkkinRaOZ+wMkHcV692nkZr+8lVu0v7CjyvTg41SU7M/B
+fJuxyh6FB/2OdbCF1piEmU/j2SOCB2F+1rtyiC6VeGG5QhCRMxxAjhgV040jcolP
+D+0SOiwcjB7Lm/6/9tEMnNqkJFGc79pNHu2UrXxfh3Tm4sTROuyUBv11AtO2AsVH
+XM2py5B8OK8YIdgAAGDw9w27Flf/e20wLKDKiJ5kuJwKZ+SDecJP3QzvsbWWbmFb
+P1Vzy9EVSntCqtippe3Mf2lgggeiMDIyH5U19E18XKUIsyFdvk7dWsRI3Xj/Y9ih
+4pyP7Cwr754AvQCnScfI7soZ0jn0lCRqLUL5+lEpSCFmy/Hel/fZZmYHdP71OHVy
+t+Z1TBi/8uYRkJ866vapEF5eWEzmy4mqfLPV3l/ucXyS/SMk5qdpckD4TJaZQPTK
+84SRdd7LLSiD1jx00fXgyxOyMDMKSRcS9iLNKHlQ6dVG6H2wHiuYKlGM/whkjivB
+5gRulzEokfUvGA2aSVuL+G/tZLVS7G+UztHyhJDSoPLOfZ3JF+zZguh8qOxOHbPw
+ugM/ipw4rgNhcLVeIa8+ekYsfYDc/s/3XoWsn4VJvyXuEuNEK78vYW8rXFU/LM2K
+sXKA1P7EN3COuUC9nSnA
+=vHfN
+-----END PGP SIGNATURE-----
 
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+--------------enigA448A0F3739DAEE5C8E3BB6E--
