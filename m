@@ -1,231 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161080Ab2KWKEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:04:08 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57304 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161040Ab2KWKEE (ORCPT
+	id S1161097Ab2KWKEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:04:47 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55158 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161040Ab2KWKEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:04:04 -0500
-Date: Fri, 23 Nov 2012 10:03:59 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
-Message-ID: <20121123100359.GK17471@gmail.com>
-References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
- <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+	Fri, 23 Nov 2012 05:04:44 -0500
+Date: Fri, 23 Nov 2012 11:04:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: memory-cgroup bug
+Message-ID: <20121123100438.GF24698@dhcp22.suse.cz>
+References: <20121121200207.01068046@pobox.sk>
+ <20121122152441.GA9609@dhcp22.suse.cz>
+ <20121122190526.390C7A28@pobox.sk>
+ <20121122214249.GA20319@dhcp22.suse.cz>
+ <20121122233434.3D5E35E6@pobox.sk>
+ <20121123074023.GA24698@dhcp22.suse.cz>
+ <20121123102137.10D6D653@pobox.sk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+In-Reply-To: <20121123102137.10D6D653@pobox.sk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Viresh Kumar wrote:
-
-> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On Fri 23-11-12 10:21:37, azurIt wrote:
+[...]
+> It, luckily, happend again so i have more info.
 > 
-> This patch extends existing DT support for stmpe devices. This updates:
-> - DT support from stmpe SPI and I2C drivers
-> - missing header files in stmpe.c
-> - stmpe_of_probe() with pwm, rotator and new bindings.
-> - Bindings are updated in binding document.
+>  - there wasn't any logs in kernel from OOM for that cgroup
+>  - there were 16 processes in cgroup
+>  - processes in cgroup were taking togather 100% of CPU (it
+>    was allowed to use only one core, so 100% of that core)
+>  - memory.failcnt was groving fast
+>  - oom_control:
+> oom_kill_disable 0
+> under_oom 0 (this was looping from 0 to 1)
+
+So there was an OOM going on but no messages in the log? Really strange.
+Kame already asked about oom_score_adj of the processes in the group but
+it didn't look like all the processes would have oom disabled, right?
+
+>  - limit_in_bytes was set to 157286400
+>  - content of stat (as you can see, the whole memory limit was used):
+> cache 0
+> rss 0
+
+This looks like a top-level group for your user.
+
+> mapped_file 0
+> pgpgin 0
+> pgpgout 0
+> swap 0
+> pgfault 0
+> pgmajfault 0
+> inactive_anon 0
+> active_anon 0
+> inactive_file 0
+> active_file 0
+> unevictable 0
+> hierarchical_memory_limit 157286400
+> hierarchical_memsw_limit 157286400
+> total_cache 0
+> total_rss 157286400
+
+OK, so all the memory is anonymous and you have no swap so the oom is
+the only thing to do.
+
+> total_mapped_file 0
+> total_pgpgin 10326454
+> total_pgpgout 10288054
+> total_swap 0
+> total_pgfault 12939677
+> total_pgmajfault 4283
+> total_inactive_anon 0
+> total_active_anon 157286400
+> total_inactive_file 0
+> total_active_file 0
+> total_unevictable 0
 > 
-> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> V2->V3:
-> ------
-> - Removed sub-modules DT bindings from this patch
-> - Retain original work done by Lee Jones
 > 
->  Documentation/devicetree/bindings/mfd/stmpe.txt | 12 ++++++++----
->  drivers/mfd/stmpe-i2c.c                         | 15 +++++++++++++++
->  drivers/mfd/stmpe-spi.c                         | 15 +++++++++++++++
->  drivers/mfd/stmpe.c                             | 21 +++++++++++++++------
->  4 files changed, 53 insertions(+), 10 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-> index 8f0aeda..8f65c8d 100644
-> --- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-> +++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-> @@ -1,13 +1,17 @@
-> -* STMPE Multi-Functional Device
-> +* ST Microelectronics STMPE Multi-Functional Device
-> +
-> +STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
-> +touchscreen, adc, pwm, rotator.
->  
->  Required properties:
-> - - compatible                   : "st,stmpe[811|1601|2401|2403]"
-> - - reg                          : I2C address of the device
-> + - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
-> + - reg                          : I2C/SPI address of the device
->  
->  Optional properties:
->   - interrupts                   : The interrupt outputs from the controller
-> - - interrupt-controller         : Marks the device node as an interrupt controller
+> i also grabber oom_adj, oom_score_adj and stack of all processes, here
+> it is:
+> http://www.watchdog.sk/lkml/memcg-bug.tar
 
-On closer inspection, this is actually incorrect.
+Hmm, all processes waiting for oom are stuck at the very same place:
+$ grep mem_cgroup_handle_oom -r [0-9]*
+30858/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+30859/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+30860/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+30892/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+30898/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+31588/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+32044/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+32358/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+6031/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+6534/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+7020/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
 
-The STMPE _is_ an interrupt-controller.
+We are taking memcg_oom_lock spinlock twice in that function + we can
+schedule. As none of the tasks is scheduled this would suggest that you
+are blocked at the first lock. But who got the lock then?
+This is really strange.
+Btw. is sysrq+t resp. sysrq+w showing the same traces as
+/proc/<pid>/stat?
+ 
+> Notice that stack is different for few processes.
 
->   - interrupt-parent             : Specifies which IRQ controller we're connected to
-> + - irq-trigger			: IRQ trigger to use for the interrupt to the host
-> + - irq-invert-polarity		: bool, IRQ line is connected with reversed polarity
+Yes others are in VFS resp ext3. ext3_write_begin looks a bit dangerous
+but it grabs the page before it really starts a transaction.
 
-I've told you about this already. ;)
+> Stack for all processes were NOT chaging and was still the same.
 
->   - i2c-client-wake              : Marks the input device as wakable
->   - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
->  
-> diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-> index c734dc3..003c49b 100644
-> --- a/drivers/mfd/stmpe-i2c.c
-> +++ b/drivers/mfd/stmpe-i2c.c
-> @@ -13,6 +13,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
->  #include <linux/types.h>
->  #include "stmpe.h"
->  
-> @@ -81,6 +82,19 @@ static const struct i2c_device_id stmpe_i2c_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, stmpe_id);
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id stmpe_dt_ids[] = {
-> +	{ .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
-> +	{ .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
-> +	{ .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
-> +	{ .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
-> +	{ .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
-> +	{ .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-> +#endif
-> +
->  static struct i2c_driver stmpe_i2c_driver = {
->  	.driver = {
->  		.name = "stmpe-i2c",
-> @@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
->  #ifdef CONFIG_PM
->  		.pm = &stmpe_dev_pm_ops,
->  #endif
-> +		.of_match_table = of_match_ptr(stmpe_dt_ids),
->  	},
->  	.probe		= stmpe_i2c_probe,
->  	.remove		= __devexit_p(stmpe_i2c_remove),
-> diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
-> index f86e3fc..e482f5f 100644
-> --- a/drivers/mfd/stmpe-spi.c
-> +++ b/drivers/mfd/stmpe-spi.c
-> @@ -10,6 +10,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
->  #include <linux/spi/spi.h>
->  #include <linux/types.h>
->  #include "stmpe.h"
-> @@ -119,6 +120,19 @@ static const struct spi_device_id stmpe_spi_id[] = {
->  };
->  MODULE_DEVICE_TABLE(spi, stmpe_id);
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id stmpe_dt_ids[] = {
-> +	{ .compatible = "st,stmpe610", .data = (void *)STMPE610, },
-> +	{ .compatible = "st,stmpe801", .data = (void *)STMPE801, },
-> +	{ .compatible = "st,stmpe811", .data = (void *)STMPE811, },
-> +	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
-> +	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
-> +	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-> +#endif
-> +
->  static struct spi_driver stmpe_spi_driver = {
->  	.driver = {
->  		.name	= "stmpe-spi",
-> @@ -126,6 +140,7 @@ static struct spi_driver stmpe_spi_driver = {
->  #ifdef CONFIG_PM
->  		.pm	= &stmpe_dev_pm_ops,
->  #endif
-> +		.of_match_table = of_match_ptr(stmpe_dt_ids),
->  	},
->  	.probe		= stmpe_spi_probe,
->  	.remove		= __devexit_p(stmpe_spi_remove),
-> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> index 6086481..e2c0dda 100644
-> --- a/drivers/mfd/stmpe.c
-> +++ b/drivers/mfd/stmpe.c
-> @@ -7,6 +7,7 @@
->   * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
->   */
->  
-> +#include <linux/err.h>
->  #include <linux/export.h>
->  #include <linux/gpio.h>
->  #include <linux/interrupt.h>
-> @@ -14,6 +15,8 @@
->  #include <linux/irqdomain.h>
->  #include <linux/kernel.h>
->  #include <linux/mfd/core.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
->  #include <linux/pm.h>
->  #include <linux/slab.h>
->  #include "stmpe.h"
-> @@ -1028,18 +1031,24 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
->  
->  	pdata->autosleep = (pdata->autosleep_timeout) ? true : false;
->  
-> +	of_property_read_u32(np, "irq-trigger", &pdata->irq_trigger);
-> +
-> +	if (of_property_read_bool(np, "irq-invert-polarity"))
-> +		pdata->irq_invert_polarity = true;
-> +
+Could you take few snapshots over time?
 
-You don't need these.
+> Btw, don't know if it matters but i was several cgroup subsystems
+> mounted and i'm also using them (i was not activating freezer in this
+> case, don't know if it can be active automatically by kernel or what,
 
->  	for_each_child_of_node(np, child) {
->  		if (!strcmp(child->name, "stmpe_gpio")) {
->  			pdata->blocks |= STMPE_BLOCK_GPIO;
-> -		}
-> -		if (!strcmp(child->name, "stmpe_keypad")) {
-> +		} else if (!strcmp(child->name, "stmpe_keypad")) {
->  			pdata->blocks |= STMPE_BLOCK_KEYPAD;
-> -		}
-> -		if (!strcmp(child->name, "stmpe_touchscreen")) {
-> +		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
->  			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
-> -		}
-> -		if (!strcmp(child->name, "stmpe_adc")) {
-> +		} else if (!strcmp(child->name, "stmpe_adc")) {
->  			pdata->blocks |= STMPE_BLOCK_ADC;
-> +		} else if (!strcmp(child->name, "stmpe_pwm")) {
-> +			pdata->blocks |= STMPE_BLOCK_PWM;
-> +		} else if (!strcmp(child->name, "stmpe_rotator")) {
-> +			pdata->blocks |= STMPE_BLOCK_ROTATOR;
->  		}
->  	}
->  }
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
+No
 
+> didn't checked if cgroup was freezed but i suppose it wasn't):
+> none            /cgroups        cgroup  defaults,cpuacct,cpuset,memory,freezer,task,blkio 0 0
+
+Do you see the same issue if only memory controller was mounted (resp.
+cpuset which you seem to use as well from your description).
+
+I know you said booting into a vanilla kernel would be problematic but
+could you at least rule out te cgroup patches that you have mentioned?
+If you need to move a task to a group based by an uid you can use
+cgrules daemon (libcgroup1 package) for that as well.
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
