@@ -1,34 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964900Ab2KWHe3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 02:34:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46164 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964780Ab2KWHe2 (ORCPT
+	id S964906Ab2KWHfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 02:35:04 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:47995 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964780Ab2KWHfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 02:34:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353048646-10935-8-git-send-email-tushar.behera@linaro.org>
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
-	<1353048646-10935-8-git-send-email-tushar.behera@linaro.org>
-Date: Fri, 23 Nov 2012 08:34:27 +0100
-Message-ID: <CACRpkdbQ6T842-vfzEgjSK_Kv-SM=w1yOFXtxqkRpiU9nNmsUg@mail.gmail.com>
-Subject: Re: [PATCH 07/14] pinctrl: SPEAr: Update error check for unsigned variables
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Nov 2012 02:35:01 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-cb-50af27236e0d
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, t.figa@samsung.com
+Subject: [PATCH 0/3] regulator: max8997: minor updates and device tree support
+Date: Fri, 23 Nov 2012 13:33:12 +0530
+Message-id: <1353657795-1725-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAJMWRmVeSWpSXmKPExsVy+t9jQV1l9fUBBnOeGlpc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGVs73/MVnCDreLDj6vsDYw/WboYOTkkBEwk+iefY4Sw
+	xSQu3FvP1sXIxSEkMJ1RYsrBQ4wQThuTxNG2XlaQKjYBA4lHC9+xg9giAgoSm3ufsYIUMQvs
+	YJS40DKDCSQhLOAnceb8HbCxLAKqEnPX/ABbxyvgIbH2QzfUOiWJDb1HmSYwci9gZFjFKJpa
+	kFxQnJSea6hXnJhbXJqXrpecn7uJEezPZ1I7GFc2WBxiFOBgVOLhNSxbFyDEmlhWXJl7iFGC
+	g1lJhJdJbH2AEG9KYmVValF+fFFpTmrxIUZpDhYlcd5mj5QAIYH0xJLU7NTUgtQimCwTB6dU
+	AyN33LT7O5iO67/l3m7NPq/ly1rB503W820fZt77vUhzmqD8z7l6lyYU6S9Q2ie6NtK+TTK/
+	xEPe/VM585+HPRe/BzRPcTvZmV+a9E6HoyM0Y7IOi+06bbF1fFcezE38o7ksz0UptVdURGk5
+	T+Tx4mNzyoSlHGs5t8l9Y9HRYBE65FjJeibJSomlOCPRUIu5qDgRABbui1jjAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 7:50 AM, Tushar Behera <tushar.behera@linaro.org> wrote:
+This patch series includes two minor updates to the gpio dvs code in max8997
+regulator driver and adds device tree support for the same driver.
 
-> Checking '< 0' for unsigned variables always returns false. For error
-> codes, use IS_ERR_VALUE() instead.
->
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Thomas Abraham (3):
+  regulator: max8997: reorder buck1/2/5 dvs setup code
+  regulator: max8997: limit the number of dvs registers programmed in non-dvs mode
+  regulator: add device tree support for max8997
 
-Patch applied with Viresh's ACK, thanks!
-Linus Walleij
+ .../bindings/regulator/max8997-regulator.txt       |  146 ++++++++++++++++
+ drivers/mfd/max8997.c                              |   73 ++++++++-
+ drivers/regulator/max8997.c                        |  181 ++++++++++++++++++--
+ include/linux/mfd/max8997-private.h                |    1 +
+ include/linux/mfd/max8997.h                        |    1 +
+ 5 files changed, 384 insertions(+), 18 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8997-regulator.txt
+
