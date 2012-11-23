@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2KWNbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:31:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45021 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2KWNbt (ORCPT
+	id S1753558Ab2KWNlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:41:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:37560 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab2KWNlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:31:49 -0500
-Date: Fri, 23 Nov 2012 14:31:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alex Shi <lkml.alex@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-Message-ID: <20121123133138.GA28058@gmail.com>
-References: <20121119162909.GL8218@suse.de>
- <20121119191339.GA11701@gmail.com>
- <20121119211804.GM8218@suse.de>
- <20121119223604.GA13470@gmail.com>
- <CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
- <20121120071704.GA14199@gmail.com>
- <20121120152933.GA17996@gmail.com>
- <20121120175647.GA23532@gmail.com>
- <CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
- <20121122012122.GA7938@gmail.com>
+	Fri, 23 Nov 2012 08:41:52 -0500
+Date: Fri, 23 Nov 2012 11:41:47 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Sage Weil <sage@inktank.com>,
+        Alex Elder <elder@inktank.com>
+Subject: Re: [ 117/171] libceph: drop ceph_con_get/put helpers and nref member
+Message-ID: <20121123134141.GB3759@herton-Z68MA-D2H-B3>
+References: <20121122004033.298367941@linuxfoundation.org>
+ <20121122004045.096368181@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121122012122.GA7938@gmail.com>
+In-Reply-To: <20121122004045.096368181@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> * Alex Shi <lkml.alex@gmail.com> wrote:
+On Wed, Nov 21, 2012 at 04:41:03PM -0800, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
 > 
-> > >
-> > > Those of you who would like to test all the latest patches are
-> > > welcome to pick up latest bits at tip:master:
-> > >
-> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
-> > >
-> > 
-> > I am wondering if it is a problem, but it still exists on HEAD: c418de93e39891
-> > http://article.gmane.org/gmane.linux.kernel.mm/90131/match=compiled+with+name+pl+and+start+it+on+my
-> > 
-> > like when just start 4 pl tasks, often 3 were running on node 
-> > 0, and 1 was running on node 1. The old balance will average 
-> > assign tasks to different node, different core.
+> ------------------
 > 
-> This is "normal" in the sense that the current mainline 
-> scheduler is (supposed to be) doing something similar: if the 
-> node is still within capacity, then there's no reason to move 
-> those threads.
+> From: Sage Weil <sage@inktank.com>
 > 
-> OTOH, I think with NUMA balancing we indeed want to spread 
-> them better, if those tasks do not share memory with each 
-> other but use their own memory. If they share memory then they 
-> should remain on the same node if possible.
+> (cherry picked from commit d59315ca8c0de00df9b363f94a2641a30961ca1c)
+> 
+> These are no longer used.  Every ceph_connection instance is embedded in
+> another structure, and refcounts manipulated via the get/put ops.
+> 
+> Signed-off-by: Sage Weil <sage@inktank.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[...]
+>  
+>  /*
+> - * generic get/put
+> - */
+> -struct ceph_connection *ceph_con_get(struct ceph_connection *con)
+> -{
+> -	int nref = __atomic_add_unless(&con->nref, 1, 0);
+> -
+> -	dout("con_get %p nref = %d -> %d\n", con, nref, nref + 1);
+> -
+> -	return nref ? con : NULL;
+> -}
+> -
+> -void ceph_con_put(struct ceph_connection *con)
+> -{
+> -	int nref = atomic_dec_return(&con->nref);
+> -
+> -	BUG_ON(nref < 0);
+> -	if (nref == 0) {
+> -		BUG_ON(con->sock);
+> -		kfree(con);
+> -	}
+> -	dout("con_put %p nref = %d -> %d\n", con, nref + 1, nref);
+> -}
+> -
+> -/*
+>   * initialize a new connection.
 
-Could you please check tip:master with -v17:
+Although harmless in functionality not having it, may be it would be
+good to also apply with this also the following commit:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
+commit 261030215d970c62f799e6e508e3c68fc7ec2aa9
+Author: Alex Elder <elder@inktank.com>
+Date:   Thu Jun 21 12:49:23 2012 -0700
 
-?
+    libceph: drop declaration of ceph_con_get()
 
-It should place your workload better than v16 did.
+    For some reason the declaration of ceph_con_get() and
+    ceph_con_put() did not get deleted in this commit:
+        d59315ca libceph: drop ceph_con_get/put helpers and nref member
+    
+    Clean that up.
 
-Note, you might be able to find other combinations of tasks that 
-are not scheduled NUMA-perfectly yet, as task group placement is 
-not exhaustive yet.
-
-You might want to check which combination looks the weirdest to 
-you and report it, so I can fix any remaining placement 
-inefficiencies in order of importance.
-
-Thanks,
-
-	Ingo
+-- 
+[]'s
+Herton
