@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161084Ab2KWJz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:55:59 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45525 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964867Ab2KWJz6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 23 Nov 2012 04:55:58 -0500
-Message-Id: <50AF567402000078000AABF6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 23 Nov 2012 09:56:52 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <andrew.cooper3@citrix.com>, <x86@kernel.org>, <tglx@linutronix.de>,
-        <kexec@lists.infradead.org>,
-        <virtualization@lists.linux-foundation.org>,
-        <xen-devel@lists.xensource.com>,
-        "Daniel Kiper" <daniel.kiper@oracle.com>, <konrad.wilk@oracle.com>,
-        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
-References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
- <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
- <87lidwtego.fsf@xmission.com>
- <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
- <87txshx28b.fsf@xmission.com> <50AE62E9.3000602@zytor.com>
-In-Reply-To: <50AE62E9.3000602@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1161064Ab2KWKC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:02:27 -0500
+Received: from science.horizon.com ([71.41.210.146]:49864 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1030282Ab2KWKCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 05:02:23 -0500
+Date: 23 Nov 2012 05:02:22 -0500
+Message-ID: <20121123100222.21774.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, mgorman@suse.de
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Cc: dave@linux.vnet.ibm.com, jack@suse.cz, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20121123085137.GA646@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.11.12 at 18:37, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> I actually talked to Ian Jackson at LCE, and mentioned among other 
-> things the bogosity of requiring a PUD page for three-level paging in 
-> Linux -- a bogosity which has spread from Xen into native.  It's a page 
-> wasted for no good reason, since it only contains 32 bytes worth of 
-> data, *inherently*.  Furthermore, contrary to popular belief, it is 
-> *not* pa page table per se.
+tl;dr: Have installed Dave Hansen's patch as requested, rebooted.
+       Now it's a matter of waiting for lockup...
+
+Mel Gorman wrote:
+> heh, those P4s are great for keeping the room warm in winter. Legacy
+> high five?
+
+I wanted a physically separate box for some lightly used outside-facing
+network services, and it was lying around.  Since then, if it ain't broke,
+don't fix it.
+
+If you want *legacy*, a few months ago I installed recent kernels on
+an original F00F-bug Pentium (96 MB RAM,bit only 64 MB cacheable!),
+and an original MCM PPro.  They aren't actually in service, though.
+
+> Joking aside, the UP aspect of this is the most relevant.
+
+Yeah, I wondered how much testing that got these days. :-)
+
+>> It's kind of a funny lockup.  Some things work:
+>> 
+>> - TCP SYN handshake
+>> - Alt-SysRq
+>> 
+>> And others don't:
+>> 
+>> - Caps lock
+>> - Shift-PgUp
+>> - Alt-Fn
+>> - Screen unblanking
+>> - Actually talking to a daemon
+>> 
+
+> So basically interrupts work but the machine has otherwise locked up. On
+> a uniprocessor, it's possible it is infinite looping in kswapd and
+> nothing else is getting the chance to run if it never hits a
+> cond_resched().
+
+Did caps lock LED handling get moved to something above interrupt context?
+I used to use that as the test of "is the machine locked hard".
+
+It might be worth seeing if that functionality can be restored.  The fact
+that I can make the console scroll down with Alt-SysRq, but can't scroll
+back up to see what just got printed, is maddening.
+
+> Ok, is there any chance you can capture more of sysrq+m, particularly the
+> bits that say how much free memory there is and many pages of each order
+> that is free? If you can't, it's ok. I ask because my kernel bug dowsing
+> rod is twitching in the direction of the recent free page accounting bug
+> Dave Hansen identified and fixed -- https://lkml.org/lkml/2012/11/21/504
+
+Will do when I get in front of the machine again.  I had rebooted with
+2.6.5, but I can remotely reboot with 2.7-rc6, then it's just a matter
+of waiting.
+
+> You might have a machine that is able to hit this particular bug faster. It's
+> not a memory leak as such, but it acts like one. The kernel would think
+> the watermarks are not met because it's using NR_FREE_PAGES instead of
+> checking the free lists.
 > 
-> Ian told me: "I didn't know we did that, and we shouldn't have to." 
-> Here we have suffered this overhead for at least six years, ...
+> Can you try that patch out please?
 
-Even the Xen kernel only needs the full page when running on a
-64-bit hypervisor (now that we don't have a 32-bit hypervisor
-anymore, that of course basically means always). But yes, I too
-never liked this enforced over-allocation for native kernels (and
-was surprised that it was allowed in at all).
+Okay, so I've cherry-picked ef6c5be658f6a70c1256fbd18e18ee0dc24c3386
+from mainline, and rebooted.
 
-Jan
+I've never tried disabling console blanking remotely, though.  I did
+	# echo '^[[9;0]' > /dev/tty0
+	# echo '^[[9;0]' > /dev/tty1
+	# echo '^[[14;0]' > /dev/tty1
+	# echo '^[[14;0]' > /dev/tty0
+I hope that works...
 
+> The interesting information in this case is further up. First look for
+> the line that looks kinda like this
+
+Will do if it locks up again.  I did notice that all three zones had
+at least one free page of size 4096kb, FWIW.
+
+> The free page counter and these free lists should be close together. If
+> there is a big gap then it's almost certainly the bug Dave identified.
+> 
+> There is another potential infinite loop in kswapd that Johannes has
+> identified and it could also be that. However, lets rule out Dave's bug
+> first.
+
+Thanks a lot!
