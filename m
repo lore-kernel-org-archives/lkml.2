@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2KWNMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 08:12:51 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50098 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab2KWNMt (ORCPT
+	id S1751541Ab2KWNNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 08:13:51 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:42502 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750790Ab2KWNNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 08:12:49 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: ondemand: fix wrong delay sampling rate
-Date: Fri, 23 Nov 2012 14:12:38 +0100
-Message-Id: <1353676358-4385-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
+	Fri, 23 Nov 2012 08:13:49 -0500
+Date: Fri, 23 Nov 2012 15:13:44 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        laurent.pinchart@ideasonboard.com, hverkuil@xs4all.nl
+Subject: Re: [PATCH v2 00/12] Media Controller capture driver for DM365
+Message-ID: <20121123131344.GA31879@valkosipuli.retiisi.org.uk>
+References: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restore the correct delay value for ondemand's od_dbs_timer, as it was
-changed erroneously in 83f0e55.
+Hi Prabhakar and others,
 
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- drivers/cpufreq/cpufreq_ondemand.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+(Just resending; Laurent's e-mail address corrected, cc Hans, too.)
 
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index bdaab92..cca3e9f 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -234,7 +234,8 @@ static void od_dbs_timer(struct work_struct *work)
- 			dbs_info->sample_type = OD_SUB_SAMPLE;
- 			delay = dbs_info->freq_hi_jiffies;
- 		} else {
--			delay = delay_for_sampling_rate(dbs_info->rate_mult);
-+			delay = delay_for_sampling_rate(od_tuners.sampling_rate
-+						* dbs_info->rate_mult);
- 		}
- 	}
- 
+On Fri, Nov 16, 2012 at 08:15:02PM +0530, Prabhakar Lad wrote:
+> From: Manjunath Hadli <manjunath.hadli@ti.com>
+> 
+> This patch set adds media controller based capture driver for
+> DM365.
+> 
+> This driver bases its design on Laurent Pinchart's Media Controller Design
+> whose patches for Media Controller and subdev enhancements form the base.
+> The driver also takes copious elements taken from Laurent Pinchart and
+> others' OMAP ISP driver based on Media Controller. So thank you all the
+> people who are responsible for the Media Controller and the OMAP ISP driver.
+> 
+> Also, the core functionality of the driver comes from the arago vpfe capture
+> driver of which the isif capture was based on V4L2, with other drivers like
+> ipipe, ipipeif and Resizer.
+> 
+> Changes for v2:
+> 1: Migrated the driver for videobuf2 usage pointed Hans.
+> 2: Changed the design as pointed by Laurent, Exposed one more subdevs
+>    ipipeif and split the resizer subdev into three subdevs.
+> 3: Rearrganed the patch sequence and changed the commit messages.
+> 4: Changed the file architecture as pointed by Laurent.
+> 
+> Manjunath Hadli (12):
+>   davinci: vpfe: add v4l2 capture driver with media interface
+>   davinci: vpfe: add v4l2 video driver support
+>   davinci: vpfe: dm365: add IPIPEIF driver based on media framework
+>   davinci: vpfe: dm365: add ISIF driver based on media framework
+>   davinci: vpfe: dm365: add IPIPE support for media controller driver
+>   davinci: vpfe: dm365: add IPIPE hardware layer support
+>   davinci: vpfe: dm365: resizer driver based on media framework
+>   davinci: vpss: dm365: enable ISP registers
+>   davinci: vpss: dm365: set vpss clk ctrl
+>   davinci: vpss: dm365: add vpss helper functions to be used in the
+>     main driver for setting hardware parameters
+>   davinci: vpfe: dm365: add build infrastructure for capture driver
+>   davinci: vpfe: Add documentation
+
+As discussed, here's the todo list for inclusion to staging.
+
+- User space interface refinement
+	- Controls should be used when possible rather than private ioctl
+	- No enums should be used
+	- Use of MC and V4L2 subdev APIs when applicable
+	- Single interface header might suffice
+	- Current interface forces to configure everything at once
+- Get rid of the dm365_ipipe_hw.[ch] layer
+- Active external sub-devices defined by link configuration; no strcmp
+  needed
+- More generic platform data (i2c adapters)
+- The driver should have no knowledge of possible external subdevs; see
+  struct vpfe_subdev_id
+- Some of the hardware control should be refactorede
+- Check proper serialisation (through mutexes and spinlocks)
+- Names that are visible in kernel global namespace should have a common
+  prefix (or a few)
+
+This list likely isn't complete, but some items such as the locking one is
+there simply because I'm not certain of the state of it.
+
 -- 
-1.7.12.1
+Kind regards,
 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
