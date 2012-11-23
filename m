@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab2KWV0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 16:26:25 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35557 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504Ab2KWV0Y (ORCPT
+	id S1756495Ab2KWV3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 16:29:17 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:39783 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab2KWV3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 16:26:24 -0500
-Date: Fri, 23 Nov 2012 23:26:00 +0200
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: <linux-mtd@lists.infradead.org>, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: [RFC/PATCH] ubi: Replace wear leveling thread with a workqueue
-Message-ID: <20121123232600.5e0c5aab.shmulik.ladkani@gmail.com>
-In-Reply-To: <1353672809-4768-1-git-send-email-elezegarcia@gmail.com>
-References: <1353672809-4768-1-git-send-email-elezegarcia@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 23 Nov 2012 16:29:15 -0500
+Message-ID: <1353706142.5270.93.camel@lorien2>
+Subject: [PATCH 0/9] dma_debug: add debug_dma_mapping_error support to
+ architectures that support DMA_DEBUG_API
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Joerg Roedel <joro@8bytes.org>, a-jacquiot@ti.com, fenghua.yu@intel.com,
+        catalin.marinas@arm.com, lethal@linux-sh.org, benh@kernel.crashing.org,
+        ralf@linux-mips.org, tony.luck@intel.com, davem@davemloft.net,
+        m.szyprowski@samsung.com, msalter@redhat.com, monstr@monstr.eu,
+        Ming Lei <ming.lei@canonical.com>
+Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-c6x-dev@linux-c6x.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        microblaze-uclinux@itee.uq.edu.au, shuahkhan@gmail.com
+Date: Fri, 23 Nov 2012 14:29:02 -0700
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+An earlier patch added dma mapping error debug feature to dma_debug
+infrastructure. References:
 
-On Fri, 23 Nov 2012 09:13:29 -0300 Ezequiel Garcia <elezegarcia@gmail.com> wrote:
->  /**
-> - * ubi_thread - UBI background thread.
-> + * ubi_wl_do_work - UBI background wl worker function.
->   * @u: the UBI device description object pointer
->   */
-> -int ubi_thread(void *u)
-> +void ubi_wl_do_work(struct work_struct *work)
->  {
-> +	int err;
->  	int failures = 0;
-> -	struct ubi_device *ubi = u;
-> -
-> -	ubi_msg("background thread \"%s\" started, PID %d",
-> -		ubi->bgt_name, task_pid_nr(current));
-> -
-> -	set_freezable();
-> -	for (;;) {
-> -		int err;
-> -
-> -		if (kthread_should_stop())
-> -			break;
-> +	struct ubi_device *ubi = container_of(work, struct ubi_device, work);
->  
-> -		if (try_to_freeze())
-> -			continue;
-> -
-> -		spin_lock(&ubi->wl_lock);
-> -		if (list_empty(&ubi->works) || ubi->ro_mode ||
+https://lkml.org/lkml/2012/10/8/296
+https://lkml.org/lkml/2012/11/3/219
 
-Originally, 'ubi_thread' did nothing if 'ubi->ro_mode'.
-This filtering is missing from 'ubi_wl_do_work' implementation.
-How do we guarantee 'ubi_wl_do_work' is never queued when in RO mode?
+The following series of patches adds the call to debug_dma_mapping_error() to
+architecture specific dma_mapping_error() interfaces on the following
+architectures that support CONFIG_DMA_API_DEBUG.
 
-> -		    !ubi->thread_enabled || ubi_dbg_is_bgt_disabled(ubi)) {
-> -			set_current_state(TASK_INTERRUPTIBLE);
-> -			spin_unlock(&ubi->wl_lock);
-> -			schedule();
-> -			continue;
-> -		}
-> -		spin_unlock(&ubi->wl_lock);
-> +	err = do_work(ubi);
-> +	if (!err)
-> +		return;
->  
-> -		err = do_work(ubi);
-> -		if (err) {
-> -			ubi_err("%s: work failed with error code %d",
-> -				ubi->bgt_name, err);
-> -			if (failures++ > WL_MAX_FAILURES) {
-> -				/*
-> -				 * Too many failures, disable the thread and
-> -				 * switch to read-only mode.
-> -				 */
-> -				ubi_msg("%s: %d consecutive failures",
-> -					ubi->bgt_name, WL_MAX_FAILURES);
-> -				ubi_ro_mode(ubi);
-> -				ubi->thread_enabled = 0;
-> -				continue;
-> -			}
-> -		} else
-> -			failures = 0;
-> -
-> -		cond_resched();
-> +	ubi_err("%s: work failed with error code %d",
-> +		ubi->wq_name, err);
-> +	if (failures++ > WL_MAX_FAILURES) {
-> +		/*
-> +		 * Too many failures, disable the workqueue and
-> +		 * switch to read-only mode.
-> +		 */
+arm64
+c6x
+ia64
+microblaze
+mips
+powerpc
+sh
+sparc
+tile
 
-This condition will never be met (after your change), since 'failures'
-is local to 'ubi_wl_do_work' (per work invocation).
+arm - Change is already in Marek's dma-mapping tree[1] 
+https://patchwork.kernel.org/patch/1625601/
 
-Formerly, 'failures' was local to 'ubi_thread' (per ubi device's
-thread), hence it was possible that several 'do_works()' calls have
-failed during thread's lifetime, reaching the WL_MAX_FAILURES limit.
+microblaze - Change is already in linux-next. Including it for completeness
+linux-next commit f229605441030bcd315c21d97b25889d63ed0130
 
-If we'd like to preseve the 'failures' semantics, 'failures' should be
-an 'ubi_device' property.
+x86 - done in the first patch that added the feature.
 
-One last thing:
-Some variables and functions (debug and sysfs) are still named *bgt*,
-which is confusing.
+ARM64: dma_debug: add debug_dma_mapping_error support
+c6x: dma_debug: add debug_dma_mapping_error support
+ia64: dma_debug: add debug_dma_mapping_error support
+microblaze: dma-mapping: support debug_dma_mapping_error
+mips: dma_debug: add debug_dma_mapping_error support
+powerpc: dma_debug: add debug_dma_mapping_error support
+sh: dma_debug: add debug_dma_mapping_error support
+sparc: dma_debug: add debug_dma_mapping_error support
+tile: dma_debug: add debug_dma_mapping_error support
 
-Regards,
-Shmulik
+Thanks,
+-- Shuah
+
