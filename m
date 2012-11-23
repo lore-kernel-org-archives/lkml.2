@@ -1,112 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab2KWEz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Nov 2012 23:55:57 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:4261
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755339Ab2KWEzz (ORCPT
+	id S1750961Ab2KWFIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 00:08:47 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45343 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2KWFIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Nov 2012 23:55:55 -0500
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I328cM542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2fh2a8h683h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h15d0l1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.244.37;KIP:(null);UIP:(null);(null);H:CH1PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "thozza@redhat.com" <thozza@redhat.com>,
-        "dcbw@redhat.com" <dcbw@redhat.com>
-Subject: RE: [PATCH V5 3/6] Tools: hv: Add an example script to configure an
- interface
-Thread-Topic: [PATCH V5 3/6] Tools: hv: Add an example script to configure
- an interface
-Thread-Index: AQHNi6XMrsHNkFWoG02f6IPXlEG3epf21PMAgAB2TMA=
-Date: Fri, 23 Nov 2012 04:39:13 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930E4EB18@CH1PRD0310MB381.namprd03.prod.outlook.com>
-References: <1346878188-30822-1-git-send-email-kys@microsoft.com>
- <1346878215-30863-1-git-send-email-kys@microsoft.com>
- <1346878215-30863-3-git-send-email-kys@microsoft.com>
- <20121122211248.GA18828@aepfle.de>
-In-Reply-To: <20121122211248.GA18828@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.144]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 23 Nov 2012 00:08:46 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-90-50af04dc88b1
+Date: Fri, 23 Nov 2012 14:09:04 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Sonny Rao <sonnyrao@google.com>
+Subject: Re: [PATCH] mm: vmscan: Check for fatal signals iff the process was
+ throttled
+Message-ID: <20121123050904.GA13626@bbox>
+References: <20121102223630.GA2070@barrios>
+ <20121105144614.GJ8218@suse.de>
+ <20121106002550.GA3530@barrios>
+ <20121106085822.GN8218@suse.de>
+ <20121106101719.GA2005@barrios>
+ <20121109095024.GI8218@suse.de>
+ <20121112133218.GA3156@barrios>
+ <20121112140631.GV8218@suse.de>
+ <20121113133109.GA5204@barrios>
+ <20121121153824.GG8218@suse.de>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: CH1PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121121153824.GG8218@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAN4u46k011034
 
+On Wed, Nov 21, 2012 at 03:38:24PM +0000, Mel Gorman wrote:
+> commit 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
+> are low and swap is backed by network storage") introduced a check for
+> fatal signals after a process gets throttled for network storage. The
+> intention was that if a process was throttled and got killed that it
+> should not trigger the OOM killer. As pointed out by Minchan Kim and
+> David Rientjes, this check is in the wrong place and too broad. If a
+> system is in am OOM situation and a process is exiting, it can loop in
+> __alloc_pages_slowpath() and calling direct reclaim in a loop. As the
+> fatal signal is pending it returns 1 as if it is making forward progress
+> and can effectively deadlock.
+> 
+> This patch moves the fatal_signal_pending() check after throttling to
+> throttle_direct_reclaim() where it belongs. If the process is killed
+> while throttled, it will return immediately without direct reclaim
+> except now it will have TIF_MEMDIE set and will use the PFMEMALLOC
+> reserves.
+> 
+> Minchan pointed out that it may be better to direct reclaim before returning
+> to avoid using the reserves because there may be pages that can easily
+> reclaim that would avoid using the reserves. However, we do no such targetted
+> reclaim and there is no guarantee that suitable pages are available. As it
 
+I think we could mimic the target reclaim by checking the number of
+(NR_FILE_PAGES - NR_SHMEM) and sc.may_swap = false but I am not strong now.
+If some problem happens by this, we could consider this.
+Now, just want to remain history in case of forgetting.
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, November 22, 2012 4:13 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; ben@decadent.org.uk;
-> thozza@redhat.com; dcbw@redhat.com
-> Subject: Re: [PATCH V5 3/6] Tools: hv: Add an example script to configure an
-> interface
+> is expected that this throttling happens when swap-over-NFS is used there
+> is a possibility that the process will instead swap which may allocate
+> network buffers from the PFMEMALLOC reserves. Hence, in the swap-over-nfs
+> case where a process can be throtted and be killed it can use the reserves
+> to exit or it can potentially use reserves to swap a few pages and then
+> exit. This patch takes the option of using the reserves if necessary to
+> allow the process exit quickly.
 > 
-> On Wed, Sep 05, K. Y. Srinivasan wrote:
+> If this patch passes review it should be considered a -stable candidate
+> for 3.6.
 > 
-> > To keep the KVP daemon code free of distro specific details, we invoke an
-> > external script to configure the interface. This is an example script that
-> > was used to test the KVP code. This script has to be implemented in a Distro
-> > specific fashion. For instance on distros that ship with Network Manager
-> enabled,
-> > this script can be based on NM APIs.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  tools/hv/hv_set_ifconfig.sh |   68
-> +++++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 68 insertions(+), 0 deletions(-)
-> >  create mode 100755 tools/hv/hv_set_ifconfig.sh
-> 
-> This already went in, but I overlooked this part:
-> 
-> > +# GATEWAY=ipaddr1
-> 
-> I guest GATEWAY means the default gateway.
-> 
-> > +# GATEWAY_x=ipaddry (where y = x + 1)
-> 
-> How can there be multiple gateways?
-> Or: What does GATEWAY_n mean here?
-> 
-Olaf,
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-On windows, we can support multiple default gateways (I think). This is 
-really implementing the host protocol. Minimally we can have an ipv4 default
-and an ipv6 default gateway.
+Thanks, Mel.
 
-Hope this helps,
+> ---
+>  mm/vmscan.c |   37 +++++++++++++++++++++++++++----------
+>  1 file changed, 27 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 48550c6..cbf84e1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2207,9 +2207,12 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+>   * Throttle direct reclaimers if backing storage is backed by the network
+>   * and the PFMEMALLOC reserve for the preferred node is getting dangerously
+>   * depleted. kswapd will continue to make progress and wake the processes
+> - * when the low watermark is reached
+> + * when the low watermark is reached.
+> + *
+> + * Returns true if a fatal signal was delivered during throttling. If this
+> + * happens, the page allocator should not consider triggering the OOM killer.
+>   */
+> -static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> +static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+>  					nodemask_t *nodemask)
+>  {
+>  	struct zone *zone;
+> @@ -2224,13 +2227,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+>  	 * processes to block on log_wait_commit().
+>  	 */
+>  	if (current->flags & PF_KTHREAD)
+> -		return;
+> +		goto out;
+> +
+> +	/*
+> +	 * If a fatal signal is pending, this process should not throttle.
+> +	 * It should return quickly so it can exit and free its memory
+> +	 */
+> +	if (fatal_signal_pending(current))
+> +		goto out;
+>  
+>  	/* Check if the pfmemalloc reserves are ok */
+>  	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+>  	pgdat = zone->zone_pgdat;
+>  	if (pfmemalloc_watermark_ok(pgdat))
+> -		return;
+> +		goto out;
+>  
+>  	/* Account for the throttling */
+>  	count_vm_event(PGSCAN_DIRECT_THROTTLE);
+> @@ -2246,12 +2256,20 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+>  	if (!(gfp_mask & __GFP_FS)) {
+>  		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
+>  			pfmemalloc_watermark_ok(pgdat), HZ);
+> -		return;
+> +
+> +		goto check_pending;
+>  	}
+>  
+>  	/* Throttle until kswapd wakes the process */
+>  	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+>  		pfmemalloc_watermark_ok(pgdat));
+> +
+> +check_pending:
+> +	if (fatal_signal_pending(current))
+> +		return true;
+> +
+> +out:
+> +	return false;
+>  }
+>  
+>  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> @@ -2273,13 +2291,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  		.gfp_mask = sc.gfp_mask,
+>  	};
+>  
+> -	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+> -
+>  	/*
+> -	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
+> -	 * that the page allocator does not consider triggering OOM
+> +	 * Do not enter reclaim if fatal signal was delivered while throttled.
+> +	 * 1 is returned so that the page allocator does not OOM kill at this
+> +	 * point.
+>  	 */
+> -	if (fatal_signal_pending(current))
+> +	if (throttle_direct_reclaim(gfp_mask, zonelist, nodemask))
+>  		return 1;
+>  
+>  	trace_mm_vmscan_direct_reclaim_begin(order,
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Regards,
-
-K. Y
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Kind regards,
+Minchan Kim
