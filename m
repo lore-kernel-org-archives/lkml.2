@@ -1,367 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab2KWOrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 09:47:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab2KWOrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 09:47:15 -0500
-Message-ID: <50AF8C47.6010306@redhat.com>
-Date: Fri, 23 Nov 2012 15:46:31 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752196Ab2KWO6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 09:58:51 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53232 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab2KWO6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 09:58:50 -0500
+Date: Fri, 23 Nov 2012 15:58:45 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 2/3] pwm: New driver to support PWMs on TWL4030/6030
+ series of PMICs
+Message-ID: <20121123145844.GA16810@avionic-0098.adnet.avionic-design.de>
+References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com>
+ <1353405382-9226-3-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Lockdep complain for zram
-References: <20121121083737.GB5121@bbox> <50AE08D4.7040602@redhat.com> <20121122233444.GE5121@bbox>
-In-Reply-To: <20121122233444.GE5121@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <1353405382-9226-3-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:mzfyoTcOr8tFaf6dnffByUvLB5m4XIPfCUutMJIDpxA
+ lX8ZL6gYMdDoWCsxp4hTcN8b7a0HKVrfJJ/Sit7Hf5ZXo4avPU
+ xWEm3mj2TQ1iiV6iV0yCxDrnLmVlXvJptpPZupXXewrPq27ZWY
+ 69CnOeQLUU+peTGHjFB/Q086pgPYMvoJyNz7Mo3tNC5lTRmyiF
+ V6eSA8ntnt2ZOAOld4SuJ7v6Yd3EYTskU4+QDSGPRlJ72iC4Bc
+ OJO9nAzCQuwzk/cfOW2q3siRbra4IYLxO6rj7sIvAr5YzZin+7
+ /9ThZkEXA68xyeZ9qYv/dUAft5BAsyTLbOxUg5Tkcc6LbEd3jm
+ Af74Er0gAFlUTBOKaAqqwHJdXtX6cMoKXAQZ6cK8iqDRuEZBRP
+ jPRSn9ILj7EEbE5K4t9/dlWlO5y03qAoeaamFobPQ38WVXwxLx
+ PGRS+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 12:34 AM, Minchan Kim wrote:
-> On Thu, Nov 22, 2012 at 12:13:24PM +0100, Jerome Marchand wrote:
->> On 11/21/2012 09:37 AM, Minchan Kim wrote:
->>> Hi alls,
->>>
->>> Today, I saw below complain of lockdep.
->>> As a matter of fact, I knew it long time ago but forgot that.
->>> The reason lockdep complains is that now zram uses GFP_KERNEL
->>> in reclaim path(ex, __zram_make_request) :(
->>> I can fix it via replacing GFP_KERNEL with GFP_NOIO.
->>> But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
->>> Of course, I can change it with __vmalloc which can receive gfp_t.
->>> But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
->>> allocation of GFP_KERNEL. That's why I sent the patch.
->>> https://lkml.org/lkml/2012/4/23/77
->>> Since then, I forgot it, saw the bug today and poped the question again.
->>>
->>> Yes. Fundamental problem is utter crap API vmalloc.
->>> If we can fix it, everyone would be happy. But life isn't simple like seeing
->>> my thread of the patch.
->>>
->>> So next option is to move zram_init_device into setting disksize time.
->>> But it makes unnecessary metadata waste until zram is used really(That's why
->>> Nitin move zram_init_device from disksize setting time to make_request) and
->>> it makes user should set the disksize before using, which are behavior change.
->>>
->>> I would like to clean up this issue before promoting because it might change
->>> usage behavior.
->>>
->>> Do you have any idea?
->>
->> This is a false positive due to the memory allocation in
->> zram_init_device() called from zram_make_request(). It appears to
->> lockdep that the allocation might trigger a request on the device that
->> would try to take init_lock again, but in fact it doesn't. The device
->> is not initialized yet, even less swapped on.
-> 
-> That's not a only swap case.
-> Let's think following usecase.
-> 
-> 1) Booting
-> 2) echo $((DISKSIZE)) > /sys/block/zram0/disksize
-> 3) dd if=/dev/zero of=/dev/zram0 bs=4K count=1
-> 4) Written 4K page(page-A) is still page cache and isn't submitted
->    to zram block device.
-> 5) Memory pressure happen by some memory hogger.
-> 6) VM start to reclaim and write page-A to zram0.
-> 7) zram_init_device is called at last.
-> 8) allocate GFP_KERNEL in zram_init_device
-> 9) goto reclaim path again.
-> 10) deadlock.
-> 
-> So I think it's not false positive.
 
-I guess you're right. That's a scenario I haven't imagined. At any rate, my
-patch fixes that.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Even if it is, I think lock split isn't a good idea to just avoid
-> lockdep warn. It makes code unnecessary complicated and it would be more
-> error-prone. Let's not add another lock without performance trouble report
-> by the lock.
-> 
-> As I discussed with Nitin in this thread, lazy initialization don't have
-> much point and disksize setting option isn't consistent for user behavior.
-> And I expect Nitin will send patch "diet of table" soonish.
-> 
-> So just moving the initialzation part from reclaim context to process's one
-> is simple and clear solution, I believe.
+On Tue, Nov 20, 2012 at 10:56:21AM +0100, Peter Ujfalusi wrote:
+> The driver supports the following PWM outputs:
+> TWL4030 PWM0 and PWM1
+> TWL6030 PWM1 and PWM2
+>=20
+> On TWL4030 the PWM signals are muxed. Upon requesting the PWM the driver
+> will select the correct mux so the PWM can be used. When the PWM has been
+> freed the original configuration going to be restored.
 
-Although that would avoid deadlocks (I guess, I'm not sure anymore...), it
-won't stop lockdep from complaining. It still makes an allocation while
-holding a lock that is also taken in a reclaim context.
-Anyway, I like the idea to removes the lazy initialization. It makes things
-more complicated without any actual advantage.
+"configuration is going to be"
 
-Jerome
+> +config PWM_TWL
+> +	tristate "TWL4030/6030 PWM support"
+> +	select HAVE_PWM
 
-> 
->>
->> The following (quickly tested) patch should prevent lockdep complain.  
->>
->> Jerome
->>
->> ---
->> >From ebb3514c4ee18276da7c5ca08025991b493ac204 Mon Sep 17 00:00:00 2001
->> From: Jerome Marchand <jmarchan@redhat.com>
->> Date: Thu, 22 Nov 2012 09:07:40 +0100
->> Subject: [PATCH] staging: zram: Avoid lockdep warning
->>
->> zram triggers a lockdep warning. The cause of it is the call to
->> zram_init_device() from zram_make_request(). The memory allocation in
->> zram_init_device() could start a memory reclaim which in turn could
->> cause swapout and (as it appears to lockdep) a call to
->> zram_make_request(). However this is a false positive: an
->> unititialized device can't be used as swap.
->> A solution is to split init_lock in two lock. One mutex that protects
->> init, reset and size setting and a rw_semaphore that protects requests
->> and reset. Thus init and request would be protected by different locks
->> and lockdep will be happy.
->>
->> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
->> ---
->>  drivers/staging/zram/zram_drv.c   |   41 +++++++++++++++++++-----------------
->>  drivers/staging/zram/zram_drv.h   |   16 ++++++++++---
->>  drivers/staging/zram/zram_sysfs.c |   20 +++++++++---------
->>  3 files changed, 44 insertions(+), 33 deletions(-)
->>
->> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
->> index fb4a7c9..b3bc3c4 100644
->> --- a/drivers/staging/zram/zram_drv.c
->> +++ b/drivers/staging/zram/zram_drv.c
->> @@ -470,11 +470,11 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
->>  {
->>  	struct zram *zram = queue->queuedata;
->>  
->> -	if (unlikely(!zram->init_done) && zram_init_device(zram))
->> +	if (unlikely(!is_initialized(zram)) && zram_init_device(zram))
->>  		goto error;
->>  
->> -	down_read(&zram->init_lock);
->> -	if (unlikely(!zram->init_done))
->> +	down_read(&zram->req_lock);
->> +	if (unlikely(!is_initialized(zram)))
->>  		goto error_unlock;
->>  
->>  	if (!valid_io_request(zram, bio)) {
->> @@ -483,12 +483,12 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
->>  	}
->>  
->>  	__zram_make_request(zram, bio, bio_data_dir(bio));
->> -	up_read(&zram->init_lock);
->> +	up_read(&zram->req_lock);
->>  
->>  	return;
->>  
->>  error_unlock:
->> -	up_read(&zram->init_lock);
->> +	up_read(&zram->req_lock);
->>  error:
->>  	bio_io_error(bio);
->>  }
->> @@ -497,7 +497,7 @@ void __zram_reset_device(struct zram *zram)
->>  {
->>  	size_t index;
->>  
->> -	zram->init_done = 0;
->> +	atomic_set(&zram->init_done, 0);
->>  
->>  	/* Free various per-device buffers */
->>  	kfree(zram->compress_workmem);
->> @@ -529,9 +529,12 @@ void __zram_reset_device(struct zram *zram)
->>  
->>  void zram_reset_device(struct zram *zram)
->>  {
->> -	down_write(&zram->init_lock);
->> -	__zram_reset_device(zram);
->> -	up_write(&zram->init_lock);
->> +	mutex_lock(&zram->init_lock);
->> +	down_write(&zram->req_lock);
->> +	if (is_initialized(zram))
->> +		__zram_reset_device(zram);
->> +	up_write(&zram->req_lock);
->> +	mutex_unlock(&zram->init_lock);
->>  }
->>  
->>  int zram_init_device(struct zram *zram)
->> @@ -539,10 +542,10 @@ int zram_init_device(struct zram *zram)
->>  	int ret;
->>  	size_t num_pages;
->>  
->> -	down_write(&zram->init_lock);
->> +	mutex_lock(&zram->init_lock);
->>  
->> -	if (zram->init_done) {
->> -		up_write(&zram->init_lock);
->> +	if (is_initialized(zram)) {
->> +		mutex_unlock(&zram->init_lock);
->>  		return 0;
->>  	}
->>  
->> @@ -583,8 +586,8 @@ int zram_init_device(struct zram *zram)
->>  		goto fail;
->>  	}
->>  
->> -	zram->init_done = 1;
->> -	up_write(&zram->init_lock);
->> +	atomic_set(&zram->init_done, 1);
->> +	mutex_unlock(&zram->init_lock);
->>  
->>  	pr_debug("Initialization done!\n");
->>  	return 0;
->> @@ -594,7 +597,7 @@ fail_no_table:
->>  	zram->disksize = 0;
->>  fail:
->>  	__zram_reset_device(zram);
->> -	up_write(&zram->init_lock);
->> +	mutex_unlock(&zram->init_lock);
->>  	pr_err("Initialization failed: err=%d\n", ret);
->>  	return ret;
->>  }
->> @@ -619,7 +622,8 @@ static int create_device(struct zram *zram, int device_id)
->>  	int ret = 0;
->>  
->>  	init_rwsem(&zram->lock);
->> -	init_rwsem(&zram->init_lock);
->> +	mutex_init(&zram->init_lock);
->> +	init_rwsem(&zram->req_lock);
->>  	spin_lock_init(&zram->stat64_lock);
->>  
->>  	zram->queue = blk_alloc_queue(GFP_KERNEL);
->> @@ -672,7 +676,7 @@ static int create_device(struct zram *zram, int device_id)
->>  		goto out;
->>  	}
->>  
->> -	zram->init_done = 0;
->> +	atomic_set(&zram->init_done, 0);
->>  
->>  out:
->>  	return ret;
->> @@ -755,8 +759,7 @@ static void __exit zram_exit(void)
->>  		zram = &zram_devices[i];
->>  
->>  		destroy_device(zram);
->> -		if (zram->init_done)
->> -			zram_reset_device(zram);
->> +		zram_reset_device(zram);
->>  	}
->>  
->>  	unregister_blkdev(zram_major, "zram");
->> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
->> index df2eec4..f6bcead 100644
->> --- a/drivers/staging/zram/zram_drv.h
->> +++ b/drivers/staging/zram/zram_drv.h
->> @@ -96,9 +96,12 @@ struct zram {
->>  				   * against concurrent read and writes */
->>  	struct request_queue *queue;
->>  	struct gendisk *disk;
->> -	int init_done;
->> -	/* Prevent concurrent execution of device init, reset and R/W request */
->> -	struct rw_semaphore init_lock;
->> +	atomic_t init_done;
->> +	/* Prevent concurrent execution of device init, reset and
->> +	 * disksize_store */
->> +	struct mutex init_lock;
->> +	/* Prevent concurent execution device reset and R/W requests */
->> +	struct rw_semaphore req_lock;
->>  	/*
->>  	 * This is the limit on amount of *uncompressed* worth of data
->>  	 * we can store in a disk.
->> @@ -108,6 +111,11 @@ struct zram {
->>  	struct zram_stats stats;
->>  };
->>  
->> +static inline int is_initialized(struct zram *zram)
->> +{
->> +	return atomic_read(&zram->init_done);
->> +}
->> +
->>  extern struct zram *zram_devices;
->>  unsigned int zram_get_num_devices(void);
->>  #ifdef CONFIG_SYSFS
->> @@ -115,6 +123,6 @@ extern struct attribute_group zram_disk_attr_group;
->>  #endif
->>  
->>  extern int zram_init_device(struct zram *zram);
->> -extern void __zram_reset_device(struct zram *zram);
->> +extern void zram_reset_device(struct zram *zram);
->>  
->>  #endif
->> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
->> index de1eacf..b300881 100644
->> --- a/drivers/staging/zram/zram_sysfs.c
->> +++ b/drivers/staging/zram/zram_sysfs.c
->> @@ -62,16 +62,19 @@ static ssize_t disksize_store(struct device *dev,
->>  	if (!disksize)
->>  		return -EINVAL;
->>  
->> -	down_write(&zram->init_lock);
->> -	if (zram->init_done) {
->> -		up_write(&zram->init_lock);
->> +	mutex_lock(&zram->init_lock);
->> +	down_write(&zram->req_lock);
->> +	if (is_initialized(zram)) {
->> +		up_write(&zram->req_lock);
->> +		mutex_unlock(&zram->init_lock);
->>  		pr_info("Cannot change disksize for initialized device\n");
->>  		return -EBUSY;
->>  	}
->>  
->>  	zram->disksize = PAGE_ALIGN(disksize);
->>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
->> -	up_write(&zram->init_lock);
->> +	up_write(&zram->req_lock);
->> +	mutex_unlock(&zram->init_lock);
->>  
->>  	return len;
->>  }
->> @@ -81,7 +84,7 @@ static ssize_t initstate_show(struct device *dev,
->>  {
->>  	struct zram *zram = dev_to_zram(dev);
->>  
->> -	return sprintf(buf, "%u\n", zram->init_done);
->> +	return sprintf(buf, "%u\n", atomic_read(&zram->init_done));
->>  }
->>  
->>  static ssize_t reset_store(struct device *dev,
->> @@ -110,10 +113,7 @@ static ssize_t reset_store(struct device *dev,
->>  	if (bdev)
->>  		fsync_bdev(bdev);
->>  
->> -	down_write(&zram->init_lock);
->> -	if (zram->init_done)
->> -		__zram_reset_device(zram);
->> -	up_write(&zram->init_lock);
->> +	zram_reset_device(zram);
->>  
->>  	return len;
->>  }
->> @@ -186,7 +186,7 @@ static ssize_t mem_used_total_show(struct device *dev,
->>  	u64 val = 0;
->>  	struct zram *zram = dev_to_zram(dev);
->>  
->> -	if (zram->init_done)
->> +	if (is_initialized(zram))
->>  		val = zs_get_total_size_bytes(zram->mem_pool);
->>  
->>  	return sprintf(buf, "%llu\n", val);
->> -- 
->> 1.7.7.6
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Why do you select HAVE_PWM?
 
+> +static int twl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +			      int duty_ns, int period_ns)
+> +{
+> +	int duty_cycle =3D DIV_ROUND_UP(duty_ns * TWL_PWM_MAX, period_ns);
+> +	u8 pwm_config[2] =3D {1, 0};
+> +	int base, ret;
+> +
+> +	/*
+> +	 * To configure the duty period:
+> +	 * On-cycle is set to 1 (the minimum allowed value)
+> +	 * The off time of 0 is not configurable, so the mapping is:
+> +	 * 0 -> off cycle =3D 2,
+> +	 * 1 -> off cycle =3D 2,
+> +	 * 2 -> off cycle =3D 3,
+> +	 * 126 - > off cycle 127,
+> +	 * 127 - > off cycle 1
+> +	 * When on cycle =3D=3D off cycle the PWM will be always on
+> +	 */
+> +	duty_cycle +=3D 1;
+
+The canonical form to write this would be "duty_cycle++", but maybe it
+would even be better to add it to the expression that defines
+duty_cycle?
+
+> +static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *=
+pwm)
+> +{
+> +	int ret;
+> +	u8 val;
+> +
+> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+> +		return ret;
+> +	}
+> +
+> +	val |=3D TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
+> +
+> +	val |=3D TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
+> +
+> +	return ret;
+> +}
+
+Does this perhaps need some locking to make sure the read-modify-write
+sequence isn't interrupted?
+
+> +static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device=
+ *pwm)
+> +{
+> +	int ret;
+> +	u8 val;
+> +
+> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+> +		return;
+> +	}
+> +
+> +	val &=3D ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
+> +
+> +	val &=3D ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
+> +}
+
+Same here.
+
+> +static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device =
+*pwm)
+> +{
+> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
+> +						chip);
+
+This could use a macro like to_twl(chip).
+
+> +	int ret;
+> +	u8 val, mask, bits;
+> +
+> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
+> +		return ret;
+> +	}
+> +
+> +	if (pwm->hwpwm) {
+> +		/* PWM 1 */
+> +		mask =3D TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
+> +		bits =3D TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
+> +	} else {
+> +		/* PWM 0 */
+> +		mask =3D TWL4030_GPIO6_PWM0_MUTE_MASK;
+> +		bits =3D TWL4030_GPIO6_PWM0_MUTE_PWM0;
+> +	}
+> +
+> +	/* Save the current MUX configuration for the PWM */
+> +	twl->twl4030_pwm_mux &=3D ~mask;
+> +	twl->twl4030_pwm_mux |=3D (val & mask);
+> +
+> +	/* Select PWM functionality */
+> +	val &=3D ~mask;
+> +	val |=3D bits;
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to request PWM\n", pwm->label);
+> +
+> +	return ret;
+> +}
+
+Again, more read-modify-write without locking.
+
+> +
+> +static void twl4030_pwm_free(struct pwm_chip *chip, struct pwm_device *p=
+wm)
+> +{
+> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
+> +						chip);
+> +	int ret;
+> +	u8 val, mask;
+> +
+> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
+> +		return;
+> +	}
+> +
+> +	if (pwm->hwpwm)
+> +		/* PWM 1 */
+> +		mask =3D TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
+> +	else
+> +		/* PWM 0 */
+> +		mask =3D TWL4030_GPIO6_PWM0_MUTE_MASK;
+
+I'm not sure how useful these comments are. You have both an explicit
+check for pwm->hwpwm to make it obvious that it isn't 0 and the mask
+macros contain the PWM0 and PWM1 substrings respectively.
+
+You could make it even more explicit perhaps by turning the check into:
+
+	if (pwm->hwpwm =3D=3D 1)
+
+But either way I think you can drop the /* PWM 1 */ and /* PWM 0 */
+comments.
+
+> +
+> +	/* Restore the MUX configuration for the PWM */
+> +	val &=3D ~mask;
+> +	val |=3D (twl->twl4030_pwm_mux & mask);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
+> +	if (ret < 0)
+> +		dev_err(chip->dev, "%s: Failed to free PWM\n", pwm->label);
+> +}
+> +
+> +static int twl6030_pwm_enable(struct pwm_chip *chip, struct pwm_device *=
+pwm)
+> +{
+> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
+> +						chip);
+> +	int ret;
+> +	u8 val;
+> +
+> +	val =3D twl->twl6030_toggle3;
+> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
+> +	val &=3D ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
+> +		return ret;
+> +	}
+> +
+> +	twl->twl6030_toggle3 =3D val;
+> +
+> +	return 0;
+> +}
+> +
+> +static void twl6030_pwm_disable(struct pwm_chip *chip, struct pwm_device=
+ *pwm)
+> +{
+> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
+> +						chip);
+> +	int ret;
+> +	u8 val;
+> +
+> +	val =3D twl->twl6030_toggle3;
+> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
+> +	val &=3D ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN=
+);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to read TOGGLE3\n", pwm->label);
+> +		return;
+> +	}
+> +
+> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
+> +
+> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
+> +	if (ret < 0) {
+> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
+> +		return;
+> +	}
+> +
+> +	twl->twl6030_toggle3 =3D val;
+> +}
+> +
+> +static struct pwm_ops twl_pwm_ops =3D {
+> +	.config =3D twl_pwm_config,
+> +};
+
+It might actually be worth to split this into two pwm_ops structures,
+one for 4030 and one for 6030. In that case you would still be able to
+make them const, which probably outweighs the space savings here.
+
+Actually, I think this is even potentially buggy since you may have more
+than one instance of this driver. For instance if you have a TWL6030 and
+a TWL4030 in a single system this will break horribly since you'll over-
+write the pwm_ops of one of them.
+
+> +	if (twl_class_is_4030()) {
+> +		twl_pwm_ops.enable =3D twl4030_pwm_enable;
+> +		twl_pwm_ops.disable =3D twl4030_pwm_disable;
+> +		twl_pwm_ops.request =3D twl4030_pwm_request;
+> +		twl_pwm_ops.free =3D twl4030_pwm_free;
+
+This would become:
+
+		twl->chip.ops =3D &twl4030_pwm_ops;
+
+> +	} else {
+> +		twl_pwm_ops.enable =3D twl6030_pwm_enable;
+> +		twl_pwm_ops.disable =3D twl6030_pwm_disable;
+
+and:
+		twl->chip.ops =3D &twl6030_pwm_ops;
+
+> +static struct of_device_id twl_pwm_of_match[] =3D {
+> +	{ .compatible =3D "ti,twl4030-pwm" },
+> +	{ .compatible =3D "ti,twl6030-pwm" },
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, twl_pwm_of_match);
+
+Nit: I think the blank line between "};" and "MODULE_DEVICE_TABLE(...)"
+can go away. And you might want to protect this with an "#ifdef
+CONFIG_OF" since you don't depend on OF.
+
+Thierry
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQr48kAAoJEN0jrNd/PrOhEQ8P/ib0KABVnAiOnU7W5E8DVIMw
+QxiyM4mjzCNHvr+tAwYAk6cYngcbSVxNQcHkh/v6gu7rdfKIecuYYZIuJ+ky821L
++RZcH9PWKfZk2vl9adxWezli9pOhIGlYqvLNQXDGw18afyMH1wRxVP7gkY/kANEI
+mdgMaLxXYc3JQS5undMU5mnShwy2Q0TUaMf0isVU4wJeUKlCGJIgvvECftq3SQ9u
+7TvkE0zayu1Pzfz+s4RiGe2nLNjwYbF2wekQbr/lImsUxzZ4LHM+htK3PMH1J3zq
+mz+opdCAhFoF5oK6bxWxdnNDABGtMNjZlEyWKaxgUDKvbBJYgJI4DSRCaZ/NMMBB
+YXDiQgK08r1QbPs8o18bs/5kvryrnhA3FCgvty75LSD2HiA9O1mjIOgcgd1q40+p
+0YAxsqLwsj2cZsERlZjOle6uKhPHY/fyvFWb7rYl6llnNO9nXObsPVloOKfRWngU
+52+TzkHspdlkYrtQBEuhfaZGz7OnZFn7bESyzSsQPTIyoz8ewWGLaHj2ev7Vvhqv
+0x6wRmKP9bOuhmVreOFM703pD/gAbAUo7S3gSoWzOrZmWS4wUwLA5HUwmbh3CmrP
+gd2g2WtvBooO0KR4V9diHkGaY3dtardTEUXwdpaCkHFD4nMgjM93/PGCh2KMBtYo
+/3sRUailrpChUSW5enxe
+=uj7x
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
