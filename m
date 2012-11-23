@@ -1,349 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab2KWO6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 09:58:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53232 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab2KWO6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 09:58:50 -0500
-Date: Fri, 23 Nov 2012 15:58:45 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 2/3] pwm: New driver to support PWMs on TWL4030/6030
- series of PMICs
-Message-ID: <20121123145844.GA16810@avionic-0098.adnet.avionic-design.de>
-References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com>
- <1353405382-9226-3-git-send-email-peter.ujfalusi@ti.com>
+	id S1752314Ab2KWO7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 09:59:10 -0500
+Received: from gmmr5.centrum.cz ([46.255.225.250]:44340 "EHLO gmmr5.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714Ab2KWO7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 09:59:08 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_memory=2Dcgroup_bug?=
+Date: Fri, 23 Nov 2012 15:59:04 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>
+References: <20121121200207.01068046@pobox.sk>, <20121122152441.GA9609@dhcp22.suse.cz>, <20121122190526.390C7A28@pobox.sk>, <20121122214249.GA20319@dhcp22.suse.cz>, <20121122233434.3D5E35E6@pobox.sk>, <20121123074023.GA24698@dhcp22.suse.cz>, <20121123102137.10D6D653@pobox.sk> <20121123100438.GF24698@dhcp22.suse.cz>
+In-Reply-To: <20121123100438.GF24698@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-In-Reply-To: <1353405382-9226-3-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:mzfyoTcOr8tFaf6dnffByUvLB5m4XIPfCUutMJIDpxA
- lX8ZL6gYMdDoWCsxp4hTcN8b7a0HKVrfJJ/Sit7Hf5ZXo4avPU
- xWEm3mj2TQ1iiV6iV0yCxDrnLmVlXvJptpPZupXXewrPq27ZWY
- 69CnOeQLUU+peTGHjFB/Q086pgPYMvoJyNz7Mo3tNC5lTRmyiF
- V6eSA8ntnt2ZOAOld4SuJ7v6Yd3EYTskU4+QDSGPRlJ72iC4Bc
- OJO9nAzCQuwzk/cfOW2q3siRbra4IYLxO6rj7sIvAr5YzZin+7
- /9ThZkEXA68xyeZ9qYv/dUAft5BAsyTLbOxUg5Tkcc6LbEd3jm
- Af74Er0gAFlUTBOKaAqqwHJdXtX6cMoKXAQZ6cK8iqDRuEZBRP
- jPRSn9ILj7EEbE5K4t9/dlWlO5y03qAoeaamFobPQ38WVXwxLx
- PGRS+
+Message-Id: <20121123155904.490039C5@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>If you could instrument mem_cgroup_handle_oom with some printks (before
+>we take the memcg_oom_lock, before we schedule and into
+>mem_cgroup_out_of_memory)
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 20, 2012 at 10:56:21AM +0100, Peter Ujfalusi wrote:
-> The driver supports the following PWM outputs:
-> TWL4030 PWM0 and PWM1
-> TWL6030 PWM1 and PWM2
->=20
-> On TWL4030 the PWM signals are muxed. Upon requesting the PWM the driver
-> will select the correct mux so the PWM can be used. When the PWM has been
-> freed the original configuration going to be restored.
+If you send me patch i can do it. I'm, unfortunately, not able to code it.
 
-"configuration is going to be"
 
-> +config PWM_TWL
-> +	tristate "TWL4030/6030 PWM support"
-> +	select HAVE_PWM
 
-Why do you select HAVE_PWM?
+>> It, luckily, happend again so i have more info.
+>> 
+>>  - there wasn't any logs in kernel from OOM for that cgroup
+>>  - there were 16 processes in cgroup
+>>  - processes in cgroup were taking togather 100% of CPU (it
+>>    was allowed to use only one core, so 100% of that core)
+>>  - memory.failcnt was groving fast
+>>  - oom_control:
+>> oom_kill_disable 0
+>> under_oom 0 (this was looping from 0 to 1)
+>
+>So there was an OOM going on but no messages in the log? Really strange.
+>Kame already asked about oom_score_adj of the processes in the group but
+>it didn't look like all the processes would have oom disabled, right?
 
-> +static int twl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +			      int duty_ns, int period_ns)
-> +{
-> +	int duty_cycle =3D DIV_ROUND_UP(duty_ns * TWL_PWM_MAX, period_ns);
-> +	u8 pwm_config[2] =3D {1, 0};
-> +	int base, ret;
-> +
-> +	/*
-> +	 * To configure the duty period:
-> +	 * On-cycle is set to 1 (the minimum allowed value)
-> +	 * The off time of 0 is not configurable, so the mapping is:
-> +	 * 0 -> off cycle =3D 2,
-> +	 * 1 -> off cycle =3D 2,
-> +	 * 2 -> off cycle =3D 3,
-> +	 * 126 - > off cycle 127,
-> +	 * 127 - > off cycle 1
-> +	 * When on cycle =3D=3D off cycle the PWM will be always on
-> +	 */
-> +	duty_cycle +=3D 1;
 
-The canonical form to write this would be "duty_cycle++", but maybe it
-would even be better to add it to the expression that defines
-duty_cycle?
+There were no messages telling that some processes were killed because of OOM.
 
-> +static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *=
-pwm)
-> +{
-> +	int ret;
-> +	u8 val;
-> +
-> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
-> +		return ret;
-> +	}
-> +
-> +	val |=3D TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-> +
-> +	val |=3D TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-> +
-> +	return ret;
-> +}
 
-Does this perhaps need some locking to make sure the read-modify-write
-sequence isn't interrupted?
+>>  - limit_in_bytes was set to 157286400
+>>  - content of stat (as you can see, the whole memory limit was used):
+>> cache 0
+>> rss 0
+>
+>This looks like a top-level group for your user.
 
-> +static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device=
- *pwm)
-> +{
-> +	int ret;
-> +	u8 val;
-> +
-> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
-> +		return;
-> +	}
-> +
-> +	val &=3D ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-> +
-> +	val &=3D ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-> +}
 
-Same here.
+Yes, it was from /cgroup/<user-id>/
 
-> +static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device =
-*pwm)
-> +{
-> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
-> +						chip);
 
-This could use a macro like to_twl(chip).
+>> mapped_file 0
+>> pgpgin 0
+>> pgpgout 0
+>> swap 0
+>> pgfault 0
+>> pgmajfault 0
+>> inactive_anon 0
+>> active_anon 0
+>> inactive_file 0
+>> active_file 0
+>> unevictable 0
+>> hierarchical_memory_limit 157286400
+>> hierarchical_memsw_limit 157286400
+>> total_cache 0
+>> total_rss 157286400
+>
+>OK, so all the memory is anonymous and you have no swap so the oom is
+>the only thing to do.
 
-> +	int ret;
-> +	u8 val, mask, bits;
-> +
-> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
-> +		return ret;
-> +	}
-> +
-> +	if (pwm->hwpwm) {
-> +		/* PWM 1 */
-> +		mask =3D TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
-> +		bits =3D TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
-> +	} else {
-> +		/* PWM 0 */
-> +		mask =3D TWL4030_GPIO6_PWM0_MUTE_MASK;
-> +		bits =3D TWL4030_GPIO6_PWM0_MUTE_PWM0;
-> +	}
-> +
-> +	/* Save the current MUX configuration for the PWM */
-> +	twl->twl4030_pwm_mux &=3D ~mask;
-> +	twl->twl4030_pwm_mux |=3D (val & mask);
-> +
-> +	/* Select PWM functionality */
-> +	val &=3D ~mask;
-> +	val |=3D bits;
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to request PWM\n", pwm->label);
-> +
-> +	return ret;
-> +}
 
-Again, more read-modify-write without locking.
+What will happen if the same situation occurs globally? No swap, every bit of memory used. Will kernel be able to start OOM killer? Maybe the same thing is happening in cgroup - there's simply no space to run OOM killer. And maybe this is why it's happening rarely - usually there are still at least few KBs of memory left to start OOM killer.
 
-> +
-> +static void twl4030_pwm_free(struct pwm_chip *chip, struct pwm_device *p=
-wm)
-> +{
-> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
-> +						chip);
-> +	int ret;
-> +	u8 val, mask;
-> +
-> +	ret =3D twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
-> +		return;
-> +	}
-> +
-> +	if (pwm->hwpwm)
-> +		/* PWM 1 */
-> +		mask =3D TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
-> +	else
-> +		/* PWM 0 */
-> +		mask =3D TWL4030_GPIO6_PWM0_MUTE_MASK;
 
-I'm not sure how useful these comments are. You have both an explicit
-check for pwm->hwpwm to make it obvious that it isn't 0 and the mask
-macros contain the PWM0 and PWM1 substrings respectively.
+>Hmm, all processes waiting for oom are stuck at the very same place:
+>$ grep mem_cgroup_handle_oom -r [0-9]*
+>30858/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>30859/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>30860/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>30892/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>30898/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>31588/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>32044/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>32358/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>6031/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>6534/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>7020/stack:[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+>
+>We are taking memcg_oom_lock spinlock twice in that function + we can
+>schedule. As none of the tasks is scheduled this would suggest that you
+>are blocked at the first lock. But who got the lock then?
+>This is really strange.
+>Btw. is sysrq+t resp. sysrq+w showing the same traces as
+>/proc/<pid>/stat?
 
-You could make it even more explicit perhaps by turning the check into:
 
-	if (pwm->hwpwm =3D=3D 1)
+Unfortunately i'm connecting remotely to the servers (SSH).
 
-But either way I think you can drop the /* PWM 1 */ and /* PWM 0 */
-comments.
 
-> +
-> +	/* Restore the MUX configuration for the PWM */
-> +	val &=3D ~mask;
-> +	val |=3D (twl->twl4030_pwm_mux & mask);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
-> +	if (ret < 0)
-> +		dev_err(chip->dev, "%s: Failed to free PWM\n", pwm->label);
-> +}
-> +
-> +static int twl6030_pwm_enable(struct pwm_chip *chip, struct pwm_device *=
-pwm)
-> +{
-> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
-> +						chip);
-> +	int ret;
-> +	u8 val;
-> +
-> +	val =3D twl->twl6030_toggle3;
-> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
-> +	val &=3D ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-> +		return ret;
-> +	}
-> +
-> +	twl->twl6030_toggle3 =3D val;
-> +
-> +	return 0;
-> +}
-> +
-> +static void twl6030_pwm_disable(struct pwm_chip *chip, struct pwm_device=
- *pwm)
-> +{
-> +	struct twl_pwm_chip *twl =3D container_of(chip, struct twl_pwm_chip,
-> +						chip);
-> +	int ret;
-> +	u8 val;
-> +
-> +	val =3D twl->twl6030_toggle3;
-> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
-> +	val &=3D ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN=
-);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to read TOGGLE3\n", pwm->label);
-> +		return;
-> +	}
-> +
-> +	val |=3D TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
-> +
-> +	ret =3D twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-> +		return;
-> +	}
-> +
-> +	twl->twl6030_toggle3 =3D val;
-> +}
-> +
-> +static struct pwm_ops twl_pwm_ops =3D {
-> +	.config =3D twl_pwm_config,
-> +};
+>> Notice that stack is different for few processes.
+>
+>Yes others are in VFS resp ext3. ext3_write_begin looks a bit dangerous
+>but it grabs the page before it really starts a transaction.
 
-It might actually be worth to split this into two pwm_ops structures,
-one for 4030 and one for 6030. In that case you would still be able to
-make them const, which probably outweighs the space savings here.
 
-Actually, I think this is even potentially buggy since you may have more
-than one instance of this driver. For instance if you have a TWL6030 and
-a TWL4030 in a single system this will break horribly since you'll over-
-write the pwm_ops of one of them.
+Maybe these processes were throttled by cgroup-blkio at the same time and are still keeping the lock? So the problem occurs when there are low on memory and cgroup is doing IO out of it's limits. Only guessing and telling my thoughts.
 
-> +	if (twl_class_is_4030()) {
-> +		twl_pwm_ops.enable =3D twl4030_pwm_enable;
-> +		twl_pwm_ops.disable =3D twl4030_pwm_disable;
-> +		twl_pwm_ops.request =3D twl4030_pwm_request;
-> +		twl_pwm_ops.free =3D twl4030_pwm_free;
 
-This would become:
+>> Stack for all processes were NOT chaging and was still the same.
+>
+>Could you take few snapshots over time?
 
-		twl->chip.ops =3D &twl4030_pwm_ops;
 
-> +	} else {
-> +		twl_pwm_ops.enable =3D twl6030_pwm_enable;
-> +		twl_pwm_ops.disable =3D twl6030_pwm_disable;
+Will do next time but i can't keep services freezed for a long time or customers will be angry.
 
-and:
-		twl->chip.ops =3D &twl6030_pwm_ops;
 
-> +static struct of_device_id twl_pwm_of_match[] =3D {
-> +	{ .compatible =3D "ti,twl4030-pwm" },
-> +	{ .compatible =3D "ti,twl6030-pwm" },
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, twl_pwm_of_match);
+>> didn't checked if cgroup was freezed but i suppose it wasn't):
+>> none            /cgroups        cgroup  defaults,cpuacct,cpuset,memory,freezer,task,blkio 0 0
+>
+>Do you see the same issue if only memory controller was mounted (resp.
+>cpuset which you seem to use as well from your description).
 
-Nit: I think the blank line between "};" and "MODULE_DEVICE_TABLE(...)"
-can go away. And you might want to protect this with an "#ifdef
-CONFIG_OF" since you don't depend on OF.
 
-Thierry
+Uh, we are using all mounted subsystems :( I will be able to umount only freezer and maybe blkio for some time. Will it help?
 
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+>I know you said booting into a vanilla kernel would be problematic but
+>could you at least rule out te cgroup patches that you have mentioned?
+>If you need to move a task to a group based by an uid you can use
+>cgrules daemon (libcgroup1 package) for that as well.
 
-iQIcBAEBAgAGBQJQr48kAAoJEN0jrNd/PrOhEQ8P/ib0KABVnAiOnU7W5E8DVIMw
-QxiyM4mjzCNHvr+tAwYAk6cYngcbSVxNQcHkh/v6gu7rdfKIecuYYZIuJ+ky821L
-+RZcH9PWKfZk2vl9adxWezli9pOhIGlYqvLNQXDGw18afyMH1wRxVP7gkY/kANEI
-mdgMaLxXYc3JQS5undMU5mnShwy2Q0TUaMf0isVU4wJeUKlCGJIgvvECftq3SQ9u
-7TvkE0zayu1Pzfz+s4RiGe2nLNjwYbF2wekQbr/lImsUxzZ4LHM+htK3PMH1J3zq
-mz+opdCAhFoF5oK6bxWxdnNDABGtMNjZlEyWKaxgUDKvbBJYgJI4DSRCaZ/NMMBB
-YXDiQgK08r1QbPs8o18bs/5kvryrnhA3FCgvty75LSD2HiA9O1mjIOgcgd1q40+p
-0YAxsqLwsj2cZsERlZjOle6uKhPHY/fyvFWb7rYl6llnNO9nXObsPVloOKfRWngU
-52+TzkHspdlkYrtQBEuhfaZGz7OnZFn7bESyzSsQPTIyoz8ewWGLaHj2ev7Vvhqv
-0x6wRmKP9bOuhmVreOFM703pD/gAbAUo7S3gSoWzOrZmWS4wUwLA5HUwmbh3CmrP
-gd2g2WtvBooO0KR4V9diHkGaY3dtardTEUXwdpaCkHFD4nMgjM93/PGCh2KMBtYo
-/3sRUailrpChUSW5enxe
-=uj7x
------END PGP SIGNATURE-----
 
---yrj/dFKFPuw6o+aM--
+We are using cgroup-uid cos it's MUCH MUCH MUCH more efective and better. For example, i don't believe that cgroup-task will work with that daemon. What will happen if cgrules won't be able to add process into cgroup because of task limit? Process will probably continue and will run outside of any cgroup which is wrong. With cgroup-task + cgroup-uid, such processes cannot be even started (and this is what we need).
