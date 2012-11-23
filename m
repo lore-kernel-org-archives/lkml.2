@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab2KWGWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 01:22:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65468 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab2KWGWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 01:22:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
-   d="scan'208";a="246058166"
-Message-ID: <1353651716.2111.3.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
- quick cooling
-From: Zhang Rui <rui.zhang@intel.com>
-To: Amit Kachhap <amit.kachhap@linaro.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
-Date: Fri, 23 Nov 2012 14:21:56 +0800
-In-Reply-To: <CAK44p22S6j43YnYWs-jgT2e0PCjtdX6ttV3aV5oKN8S+JvygrA@mail.gmail.com>
-References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
-	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
-	 <1353547324.2172.1.camel@rzhang1-mobl4>
-	 <CAK44p21mnUpWpHWui6yFqaE5mrjTHhx48j3Mgm0K-KL3EskaGA@mail.gmail.com>
-	 <1353571951.2297.7.camel@rzhang1-mobl4>
-	 <CAK44p22S6j43YnYWs-jgT2e0PCjtdX6ttV3aV5oKN8S+JvygrA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S932483Ab2KWG21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 01:28:27 -0500
+Received: from fallback3.mail.ru ([94.100.176.58]:48671 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab2KWG2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 01:28:25 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QW50b24gVm9yb250c292?= <anton.vorontsov@linaro.org>
+Cc: =?UTF-8?B?QW5kcmV3IE1vcnRvbg==?= <akpm@linux-foundation.org>,
+        linaro-kernel@lists.linaro.org,
+        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?Sm9obiBTdHVsdHo=?= <john.stultz@linaro.org>,
+        =?UTF-8?B?SmFzb24gV2Vzc2Vs?= <jason.wessel@windriver.com>,
+        kernel-team@android.com, linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCAxMC8xMF0gQVJNOiBGSVE6IEdldCByaWQgb2YgaW5p?=
+ =?UTF-8?B?dF9GSVEoKQ==?=
 Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [217.119.30.118]
+Date: Fri, 23 Nov 2012 10:27:51 +0400
+References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net> <1353642030.851395840@f20.mail.ru> <20121123055328.GA21566@lizard>
+In-Reply-To: <20121123055328.GA21566@lizard>
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1353652071.755665772@f76.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAN6SY0b011296
 
-On Fri, 2012-11-23 at 09:35 +0530, Amit Kachhap wrote:
-> On 22 November 2012 13:42, Zhang Rui <rui.zhang@intel.com> wrote:
-> > On Thu, 2012-11-22 at 10:11 +0530, Amit Kachhap wrote:
-> >> On 22 November 2012 06:52, Zhang Rui <rui.zhang@intel.com> wrote:
-> >> > On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
-> >> >> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
-> >> >> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
-> >> >> jump to the upper or lower cooling level instead of incremental increase
-> >> >> or decrease. This is needed for temperature sensors which support rising/falling
-> >> >> threshold interrupts and polling can be totally avoided.
-> >> >>
-> >> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> >> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> >> >> ---
-> >> >>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
-> >> >>  include/linux/thermal.h     |    2 ++
-> >> >>  2 files changed, 17 insertions(+), 4 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
-> >> >> index 1242cff..0d2d8d6 100644
-> >> >> --- a/drivers/thermal/step_wise.c
-> >> >> +++ b/drivers/thermal/step_wise.c
-> >> >> @@ -35,6 +35,10 @@
-> >> >>   *       state for this trip point
-> >> >>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
-> >> >>   *       state for this trip point
-> >> >> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
-> >> >> + *       state for this trip point
-> >> >> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
-> >> >> + *       state for this trip point
-> >> >>   */
-> >> >>  static unsigned long get_target_state(struct thermal_instance *instance,
-> >> >>                                       enum thermal_trend trend)
-> >> >> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
-> >> >>       } else if (trend == THERMAL_TREND_DROPPING) {
-> >> >>               cur_state = cur_state > instance->lower ?
-> >> >>                           (cur_state - 1) : instance->lower;
-> >> >> -     }
-> >> >> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
-> >> >> +             cur_state = instance->upper;
-> >> >> +     else if (trend == THERMAL_TREND_DROP_FULL)
-> >> >> +             cur_state = instance->lower;
-> >> >>
-> >> >>       return cur_state;
-> >> >>  }
-> >> >> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
-> >> >>  }
-> >> >>
-> >> >>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
-> >> >> -                             int trip, enum thermal_trip_type trip_type)
-> >> >> +                             int trip, enum thermal_trip_type trip_type,
-> >> >> +                             enum thermal_trend trend)
-> >> >>  {
-> >> >>       struct thermal_instance *instance;
-> >> >>       struct thermal_cooling_device *cdev;
-> >> >> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
-> >> >>               cdev = instance->cdev;
-> >> >>               cdev->ops->get_cur_state(cdev, &cur_state);
-> >> >>
-> >> >> -             instance->target = cur_state > instance->lower ?
-> >> >> +             if (trend == THERMAL_TREND_DROP_FULL)
-> >> >> +                     instance->target = instance->lower;
-> >> >> +             else
-> >> >> +                     instance->target = cur_state > instance->lower ?
-> >> >>                           (cur_state - 1) : THERMAL_NO_TARGET;
-> >> >>
-> >> > what do you expect to happen if the trend is THERMAL_TREND_RAISE_FULL at
-> >> > this time?
-> >> >
-> >> Hi Rui,
-> >>
-> >> I suppose this is dethrotle routine and hence this will be called when
-> >> only drop in temperature happens. Also I did not used get_target_state
-> >> here because I thought it might cause regression in the other existing
-> >> thermal drivers(I am not sure) But I guess calling get_target_state is
-> >> the good way to know next target state and is fine if you agree.
-> >> Also one suggestion, 2 functions for throttle/dethrottle can be merged
-> >> as both look same and just get_target_state can be used in that
-> >> function
-> >>
-> > agree.
-> > patches have been refreshed, please review.
+> On Fri, Nov 23, 2012 at 07:40:30AM +0400, Alexander Shiyan wrote:
+> [...]
+> > >  static unsigned long no_fiq_insn;
+> > > +static int got_no_fiq_insn;
+> > > @@ -78,11 +79,14 @@ void show_fiq_list(struct seq_file *p, int prec)
+> > >  
+> > >  void set_fiq_handler(void *start, unsigned int length)
+> > >  {
+> > > -#if defined(CONFIG_CPU_USE_DOMAINS)
+> > > -	memcpy((void *)0xffff001c, start, length);
+> > > -#else
+> > > -	memcpy(vectors_page + 0x1c, start, length);
+> > > +	unsigned long *addr = (void *)0xffff001c;
+> > > +
+> > > +#ifndef CONFIG_CPU_USE_DOMAINS
+> > > +	addr = vectors_page + 0x1c;
+> > >  #endif
+> > > +	if (!cmpxchg(&got_no_fiq_insn, 0, 1))
+> > > +		no_fiq_insn = *addr;
+> > > +	memcpy(addr, start, length);
+> > >  	flush_icache_range(0xffff001c, 0xffff001c + length);
+> > >  	if (!vectors_high())
+> > >  		flush_icache_range(0x1c, 0x1c + length);
+> > > @@ -126,8 +130,3 @@ EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
+> > > -
+> > > -void __init init_FIQ(void)
+> > > -{
+> > > -	no_fiq_insn = *(unsigned long *)0xffff001c;
+> > 
+> > it seems that this is wrong. In this case we have an uninitialized variable and
+> > sequential call claim_fiq and release_fiq could be fatal. FIXME please.
 > 
-> Thanks Rui, Your patches looks nice. I will re-base my patches against
-> your implementation and submit them shortly.
-> 
-great. please rebase your patch on top of thermal-thermal tree.
+> Um... I don't think I understand, can you please elaborate?
 
-thanks,
-rui
+OK, I'll try to explain it.
+At the end of the release_fiq function we have a call fiq_op. For the default
+handler - is a fiq_def_op function, and we call this function with the option
+"relinquish = 0", i.e. we want to restore old fiq_handler. But if we do not call
+set_fiq_handler never before, we will have an uninitialized no_fiq_insn variable.
 
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
