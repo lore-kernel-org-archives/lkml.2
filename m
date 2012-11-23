@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2KWLM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 06:12:29 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56755 "EHLO multi.imgtec.com"
+	id S1756045Ab2KWLNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 06:13:37 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57934 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab2KWLMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 06:12:25 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: David Airlie <airlied@linux.ie>
-CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        "James Hogan" <james.hogan@imgtec.com>
-Subject: [PATCH 1/1] drm: only build ati_pcigart if PCI enabled
-Date: Fri, 23 Nov 2012 11:12:10 +0000
-Message-ID: <1353669130-32610-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755779Ab2KWLNe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 06:13:34 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "paul@pwsan.com" <paul@pwsan.com>, "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Subject: RE: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
+Thread-Topic: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
+Thread-Index: AQHNx+n+ghztK6SWoUidSxrU/c+AZZf1/JEAgAEx05D//7Z5AIAAYKdw
+Date: Fri, 23 Nov 2012 11:12:15 +0000
+Deferred-Delivery: Fri, 23 Nov 2012 11:12:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9EEAAA@DBDE01.ent.ti.com>
+References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
+ <1353503469-18634-6-git-send-email-avinashphilip@ti.com>
+ <20121122205944.GC16716@avionic-0098.adnet.avionic-design.de>
+ <518397C60809E147AF5323E0420B992E3E9EE991@DBDE01.ent.ti.com>
+ <20121123105110.GA6884@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121123105110.GA6884@avionic-0098.adnet.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_11_23_11_12_23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent ati_pcigart.c being built unless PCI is enabled. The exported
-functions in this file are only used by drivers which depend on PCI
-(namely r128 and radeon), and it tries to use PCI specific functions
-(pci_unmap_page, pci_map_page, and pci_dma_mapping_error) that cause
-compiler errors when PCI is disabled.
+On Fri, Nov 23, 2012 at 16:21:10, Thierry Reding wrote:
+> On Fri, Nov 23, 2012 at 10:34:02AM +0000, Philip, Avinash wrote:
+> > On Fri, Nov 23, 2012 at 02:29:44, Thierry Reding wrote:
+> > > On Wed, Nov 21, 2012 at 06:41:02PM +0530, Philip, Avinash wrote:
+> > > [...]
+> > > > +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> > > > +	if (IS_ERR(pinctrl))
+> > > > +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
+> > > 
+> > > I think we already discussed this, but shouldn't this be a fatal error?
+> > 
+> > I had checked relevant discussion and found this can be warning message.
+> > This is because most boards don't have pinctrl implemented at this point,
+> > or may never have.
+> > 
+> > https://lkml.org/lkml/2012/9/11/369
+> > 
+> > Any way I will change to
+> > dev_warn(&pdev->dev, "unable to select pin group\n");
+> > as in other drivers.
+> 
+> But in case pinctrl isn't implemented, shouldn't the implementation of
+> devm_pinctrl_get_select_default() just be a no-op?
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: David Airlie <airlied@linux.ie>
----
- drivers/gpu/drm/Makefile |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+So driver can still exist but pin mux functionality missing. Then warning
+message will give hints.
+I am also ok with error message & failure of driver with EPROBE_DEFER,
+if you want?
 
-diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
-index 2ff5cef..3e303b1b 100644
---- a/drivers/gpu/drm/Makefile
-+++ b/drivers/gpu/drm/Makefile
-@@ -8,7 +8,7 @@ drm-y       :=	drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
- 		drm_context.o drm_dma.o \
- 		drm_drv.o drm_fops.o drm_gem.o drm_ioctl.o drm_irq.o \
- 		drm_lock.o drm_memory.o drm_proc.o drm_stub.o drm_vm.o \
--		drm_agpsupport.o drm_scatter.o ati_pcigart.o drm_pci.o \
-+		drm_agpsupport.o drm_scatter.o drm_pci.o \
- 		drm_platform.o drm_sysfs.o drm_hashtab.o drm_mm.o \
- 		drm_crtc.o drm_modes.o drm_edid.o \
- 		drm_info.o drm_debugfs.o drm_encoder_slave.o \
-@@ -16,6 +16,7 @@ drm-y       :=	drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
- 
- drm-$(CONFIG_COMPAT) += drm_ioc32.o
- drm-$(CONFIG_DRM_GEM_CMA_HELPER) += drm_gem_cma_helper.o
-+drm-$(CONFIG_PCI) += ati_pcigart.o
- 
- drm-usb-y   := drm_usb.o
- 
--- 
-1.7.7.6
+Thanks
+Avinash
 
+> 
+> Thierry
+> 
 
