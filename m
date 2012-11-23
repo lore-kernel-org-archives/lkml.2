@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758720Ab2KWJVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:21:44 -0500
-Received: from gmmr7.centrum.cz ([46.255.225.249]:49402 "EHLO gmmr7.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab2KWJVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 04:21:40 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_memory=2Dcgroup_bug?=
-Date: Fri, 23 Nov 2012 10:21:37 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>
-References: <20121121200207.01068046@pobox.sk>, <20121122152441.GA9609@dhcp22.suse.cz>, <20121122190526.390C7A28@pobox.sk>, <20121122214249.GA20319@dhcp22.suse.cz>, <20121122233434.3D5E35E6@pobox.sk> <20121123074023.GA24698@dhcp22.suse.cz>
-In-Reply-To: <20121123074023.GA24698@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1759014Ab2KWJXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:23:37 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36110 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758442Ab2KWJXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 04:23:33 -0500
+Date: Fri, 23 Nov 2012 09:23:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH V2 2/2] mfd: stmpe: Extend DT support in stmpe driver
+Message-ID: <20121123092328.GB17471@gmail.com>
+References: <f1d508c64a01dfd492a1ab1fda28af4b7647d8ab.1353560936.git.viresh.kumar@linaro.org>
+ <b81641051dad9660b72b0028d001e5620d901160.1353560936.git.viresh.kumar@linaro.org>
+ <20121122112451.GE4328@gmail.com>
+ <CAKohpo=F91sZ7St3XVXqwAEgmSWXjAxxXwRs1RD5qPyW99P1vA@mail.gmail.com>
+ <20121122154612.GC10986@gmail.com>
+ <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
 MIME-Version: 1.0
-Message-Id: <20121123102137.10D6D653@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohpok6v65TH5yZAthyxcH7bCVgF8A8m2bY_mp3yS_Y_yH1Xw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Either use gdb YOUR_VMLINUX and disassemble mem_cgroup_handle_oom or
->use objdump -d YOUR_VMLINUX and copy out only mem_cgroup_handle_oom
->function.
-If 'YOUR_VMLINUX' is supposed to be my kernel image:
+On Thu, 22 Nov 2012, Viresh Kumar wrote:
 
-# gdb vmlinuz-3.2.34-grsec-1 
-GNU gdb (GDB) 7.0.1-debian
-Copyright (C) 2009 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "x86_64-linux-gnu".
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>...
-"/root/bug/vmlinuz-3.2.34-grsec-1": not in executable format: File format not recognized
+> On 22 November 2012 21:16, Lee Jones <lee.jones@linaro.org> wrote:
+> >> >> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+> >> >> +- irq-over-gpio: bool, true if gpio is used to get irq
+> >> >> +- irq-gpios: gpio number over which irq will be requested (significant only if
+> >> >> +  irq-over-gpio is true)
+> >> >
+> >> > You don't need these. Use gpio_to_irq() instead.
+> >>
+> >> I am passing gpio numbers here and am doing gpio_to_irq() in driver.
+> >> Didn't get this one :(
+> >
+> > For a start you have 'irq-over-gpio' in the binding document and Device Tree
+> > and 'irq_over_gpio' in the code. Has it even been tested?
+> >
+> > GPIOs are used as IRQ lines in many other previously DT:ed drivers. Take a
+> > look to see how they are handled without adding unnecessary DT bindings.
+> 
+> I already knew it, should have picked that up. :(
+> 
+> >> stmpe is an interrupt controller for the IP's which are present inside
+> >> it: gpio, adc.
+> >> But interrupt lines for them are managed by stmpe driver internally. So should
+> >> we really add interrupt-controller for it?
+> >
+> > You can't manage IRQ lines internally, you have to go through
+> > the IRQ subsystem. When you request an IRQ via device tree you
+> > will do so like this:
+> 
+> By that i meant, there is no external node which would have stmpe as
+> interrupt controller. Because all of them would be its child node.
+> 
+> This is guaranteed because stmpe is an external device is present on board.
+> So, it will have its entry in board dts file, and so wouldn't be
+> scattered in different
+> files.
 
+It doesn't matter how it's wired up. 
 
-# objdump -d vmlinuz-3.2.34-grsec-1 
-objdump: vmlinuz-3.2.34-grsec-1: File format not recognized
+If another node references it as it's IRQ controller you have to
+declare it as one using the interrupt-controller binding.
 
+> > The STMPE GPIO controller can't be used by Device Tree yet in any case,
+> > because it doesn't have an IRQ domain. This is compulsory, or it won't
+> > work. Have you tried to test this functionality yet?
+> 
+> I don't have SPEAr board to test it anymore. I have moved out of ST now and
+> working in linaro as ARM asignee. Just pushing these as an part time activity.
 
-# file vmlinuz-3.2.34-grsec-1 
-vmlinuz-3.2.34-grsec-1: Linux kernel x86 boot executable bzImage, version 3.2.34-grsec (root@server01) #1, RO-rootFS, swap_dev 0x3, Normal VGA
+Surely you can't push patches which haven't been tested?!
 
-I'm probably doing something wrong :)
+Try to get yourself some hardware. Does anyone near you have an HREF?
 
+In the mean-time, I will write you an IRQ domain.
 
+> Though ST guys would have tested stmpe, but stmpe-gpio, i am not sure about.
 
-It, luckily, happend again so i have more info.
+It needs to be tested before being accpeted.
 
- - there wasn't any logs in kernel from OOM for that cgroup
- - there were 16 processes in cgroup
- - processes in cgroup were taking togather 100% of CPU (it was allowed to use only one core, so 100% of that core)
- - memory.failcnt was groving fast
- - oom_control:
-oom_kill_disable 0
-under_oom 0 (this was looping from 0 to 1)
- - limit_in_bytes was set to 157286400
- - content of stat (as you can see, the whole memory limit was used):
-cache 0
-rss 0
-mapped_file 0
-pgpgin 0
-pgpgout 0
-swap 0
-pgfault 0
-pgmajfault 0
-inactive_anon 0
-active_anon 0
-inactive_file 0
-active_file 0
-unevictable 0
-hierarchical_memory_limit 157286400
-hierarchical_memsw_limit 157286400
-total_cache 0
-total_rss 157286400
-total_mapped_file 0
-total_pgpgin 10326454
-total_pgpgout 10288054
-total_swap 0
-total_pgfault 12939677
-total_pgmajfault 4283
-total_inactive_anon 0
-total_active_anon 157286400
-total_inactive_file 0
-total_active_file 0
-total_unevictable 0
+> > I didn't go through them, but are you sure that:
+> >
+> > 1. Can I do without them?
+> >    1.1 Can I derive the configuration from other things?
+> >    2.2 Are they _really_ required, or am I just blindly copying platform data?
+> > 2. Does a similar binding already exist?
+> > 3. Can other drivers make use of them?
+> >    3.1 If so, create a generic binding
+> >    3.2 If not, prepend the binding with "<vendor>,"
+> 
+> I will go through them again.
 
+Thanks.
 
-i also grabber oom_adj, oom_score_adj and stack of all processes, here it is:
-http://www.watchdog.sk/lkml/memcg-bug.tar
-
-Notice that stack is different for few processes. Stack for all processes were NOT chaging and was still the same.
-
-Btw, don't know if it matters but i was several cgroup subsystems mounted and i'm also using them (i was not activating freezer in this case, don't know if it can be active automatically by kernel or what, didn't checked if cgroup was freezed but i suppose it wasn't):
-none            /cgroups        cgroup  defaults,cpuacct,cpuset,memory,freezer,task,blkio 0 0
-
-Thank you.
-
-azur
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
