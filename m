@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161062Ab2KWJwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 04:52:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53296 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161019Ab2KWJwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161048Ab2KWJwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 04:52:46 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37253 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161014Ab2KWJwo convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
 	Fri, 23 Nov 2012 04:52:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,306,1352102400"; 
-   d="scan'208";a="246132448"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Henrik Rydberg <rydberg@bitmath.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: Linux 3.7-rc6
-In-Reply-To: <20121122205352.GA500@polaris.bitmath.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <CA+55aFxdin9yatcyRkTqG--fdBS-KHh0eXnK5RmONw_uJe8sfQ@mail.gmail.com> <20121120103905.GA3908@polaris.bitmath.org> <CAKMK7uEemJg=h3aY2xfTRaEqC9t5ADgS2-FSasAvdC66zbz1Vw@mail.gmail.com> <20121122111825.GA7188@polaris.bitmath.org> <CAKMK7uFr8jHALagnzJp26Sn-WMuj4VcMF0e+q0GKgyRbW0h-wg@mail.gmail.com> <20121122182325.GA777@polaris.bitmath.org> <CAKMK7uH1=vA7YCh9eZSyW=ewF3kYkdgT45LhYqnigPg0whe5aA@mail.gmail.com> <20121122205352.GA500@polaris.bitmath.org>
-User-Agent: Notmuch/0.14+81~gb5c1e13 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 23 Nov 2012 11:53:16 +0200
-Message-ID: <877gpchchf.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Message-Id: <50AF55B102000078000AABF3@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 23 Nov 2012 09:53:37 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andrew Cooper" <andrew.cooper3@citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Daniel Kiper" <daniel.kiper@oracle.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+ <1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+ <87lidwtego.fsf@xmission.com>
+ <20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
+ <87txshx28b.fsf@xmission.com> <50AE6542.3020302@zytor.com>
+ <50AEBF86.50501@citrix.com>
+ <18e831d4-910d-4f58-8911-1398b96e3a47@email.android.com>
+ <50AED7B8.7040902@citrix.com>
+In-Reply-To: <50AED7B8.7040902@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012, Henrik Rydberg <rydberg@euromail.se> wrote:
->> Yeah, the utter lack of a vbt fits very nicely, thanks for checking,
->> I've merged the patch into drm-intel-fixes and will forward it for
->> inclusion into 3.7 rsn.
->
-> Great, thanks. One thing about that patch: if we would ever encounter
-> a non-zero edp.bpp < 3, display_bpc would not be clamped. I suppose
-> monochrome screens went out of fashion twenty years ago, but who
-> knows...
+>>> On 23.11.12 at 02:56, Andrew Cooper <andrew.cooper3@citrix.com> wrote:
+> On 23/11/2012 01:38, H. Peter Anvin wrote:
+>> I still don't really get why it can't be isolated from dom0, which would 
+> make more sense to me, even for a Xen crash.
+>>
+> 
+> The crash region (as specified by crashkernel= on the Xen command line)
+> is isolated from dom0.
+> 
+> dom0 (using the kexec utility etc) has the task of locating the Xen
+> crash notes (using the kexec hypercall interface), constructing a binary
+> blob containing kernel, initram and gubbins, and asking Xen to put this
+> blob in the crash region (again, using the kexec hypercall interface).
+> 
+> I do not see how this is very much different from the native case
+> currently (although please correct me if I am misinformed).  Linux has
+> extra work to do by populating /proc/iomem with the Xen crash regions
+> boot (so the kexec utility can reference their physical addresses when
+> constructing the blob), and should just act as a conduit between the
+> kexec system call and the kexec hypercall to load the blob.
 
-ATM, edp.bpp is known to be 18, 24, or 30. It's mapped from a two-bit
-value in the VBT.
+But all of this _could_ be done completely independent of the
+Dom0 kernel's kexec infrastructure (i.e. fully from user space,
+invoking the necessary hypercalls through the privcmd driver).
+It's just that parts of the kexec infrastructure can be re-used
+(and hence that mechanism probably seemed the easier approach
+to the implementer of the original kexec-on-Xen). If the kernel
+folks dislike that re-use (quite understandably looking at how
+much of it needs to be re-done), that shouldn't prevent us from
+looking into the existing alternatives.
 
-Glad to hear the patch works for you.
+Jan
 
-BR,
-Jani.
