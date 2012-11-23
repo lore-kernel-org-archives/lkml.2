@@ -1,66 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab2KWMIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 07:08:52 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56728 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab2KWMIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 07:08:50 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Joe Perches" <joe@perches.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jean Delvare <khali@linux-fr.org>, Ralf Baechle <ralf@linux-mips.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH 1/2] linux/kernel.h: define SYMBOL_PREFIX
-Date: Fri, 23 Nov 2012 12:08:15 +0000
-Message-ID: <1353672496-10789-2-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1353672496-10789-1-git-send-email-james.hogan@imgtec.com>
-References: <1353672496-10789-1-git-send-email-james.hogan@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_11_23_12_08_41
+	id S1754089Ab2KWMJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 07:09:13 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:35386 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753838Ab2KWMJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 07:09:05 -0500
+X-Sasl-enc: LjWqmvPSBiLIp7tPNvFIEBMGWkxxyuWmD26pl8IoUnu5 1353672543
+Message-ID: <1353672540.6699.18.camel@perseus.themaw.net>
+Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial
+ PID namespace
+From: Ian Kent <raven@themaw.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com, mszeredi@suse.cz
+Date: Fri, 23 Nov 2012 20:09:00 +0800
+In-Reply-To: <1353642304.2309.25.camel@perseus.themaw.net>
+References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+	 <1353642304.2309.25.camel@perseus.themaw.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define SYMBOL_PREFIX to be the same as CONFIG_SYMBOL_PREFIX if set by
-the architecture, or "" otherwise. This avoids the need for ugly #ifdefs
-whenever symbols are referenced in asm blocks.
+On Fri, 2012-11-23 at 11:45 +0800, Ian Kent wrote:
+> On Thu, 2012-11-22 at 17:24 +0100, Miklos Szeredi wrote:
+> > Patches were tested by the customer.
+> > 
+> > Ian, Eric, do these patches look OK?
+> 
+> They look OK to me but I'm still a bit concerned about changing the way
+> this behaves, but I also believe this is the way we want it to behave.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Mike Frysinger <vapier@gentoo.org>
----
- include/linux/kernel.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+OK, I ran the autofs Connectathon tests that I often use on a kernel
+with these patches and they worked fine. So, AFAICS. the patches
+shouldn't introduce regressions.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index a123b13..7d8dfc7 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -701,6 +701,13 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- #define COMPACTION_BUILD 0
- #endif
- 
-+/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
-+#ifdef CONFIG_SYMBOL_PREFIX
-+#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
-+#else
-+#define SYMBOL_PREFIX ""
-+#endif
-+
- /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
--- 
-1.7.7.6
+> 
+> Give me a little bit more time to run a simple test to ensure we can at
+> least do what we could previously, and that's nothing more than
+> umounting duplicated mounts (which probably shouldn't be duplicated at
+> all) in the container.
+
+Interestingly the simple container test program I have also worked in
+the same way it does on current kernels so again I didn't see a problem
+adding the patches.
+
+But I do have a couple of questions that are a little related.
+
+Calling clone(2) with flags
+CLONE_NEWPID|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|SIGCHLD|CLONE_NEWNET
+will result in a copy of the existing set of mounts. The autofs mounts
+can be umounted if they are not needed.
+
+But, on Fedora systemd sets "/" as shared at boot which prevents the
+umount of these autofs mounts, unless you mark "/" as private in the
+clone, after which the mounts can be umounted.
+
+Does having "/" marked as shared in the root namespace mean that further
+mounts in the root namespace will also appear in the clone and that
+mounts done in the clone will appear in the root namespace?
+
+Will mounting all autofs mounts with MS_PRIVATE prevent the autofs
+mounts and any mounts under them from appearing in the root namespace?
+
+I assume there is no way for autofs to stop the propagation from the
+root namespace, is that correct?
+
+> 
+> > 
+> > Thanks,
+> > Miklos
+> > ----
+> > From: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+> > 
+> > This patch enables autofs4 to work in a "container".  oz_pgrp is converted from
+> > pid_t to struct pid and this is stored at mount time based on the "pgrp=" option
+> > or if the option is missing then the current pgrp.
+> > 
+> > The "pgrp=" option is interpreted in the PID namespace of the current process.
+> > This option is flawed in that it doesn't carry the namespace information, so it
+> > should be deprecated.  AFAICS the autofs daemon always sends the current pgrp,
+> > which is the default anyway.
+> > 
+> > The oz_pgrp is also set from the AUTOFS_DEV_IOCTL_SETPIPEFD_CMD ioctl.  This
+> > ioctl sets oz_pgrp to the current pgrp.  It is not allowed to change the pid
+> > namespace.
+> > 
+> > oz_pgrp is used mainly to determine whether the process traversing the autofs
+> > mount tree is the autofs daemon itself or not.  This function now compares the
+> > pid pointers instead of the pid_t values.
+> > 
+> > One other use of oz_pgrp is in autofs4_show_options.  There is shows the
+> > virtual pid number (i.e. the one that is valid inside the PID namespace of the
+> > calling process)
+> > 
+> > For debugging printk convert oz_pgrp to the value in the initial pid namespace.
+> > 
+> > Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+> > Cc: Serge Hallyn <serue@us.ibm.com>
+> > Cc: Eric Biederman <ebiederm@xmission.com>
+> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> > ---
+> >  fs/autofs4/autofs_i.h  |    4 ++--
+> >  fs/autofs4/dev-ioctl.c |   16 ++++++++++++++--
+> >  fs/autofs4/inode.c     |   33 +++++++++++++++++++++++++--------
+> >  3 files changed, 41 insertions(+), 12 deletions(-)
+> > Index: linux-2.6/fs/autofs4/autofs_i.h
+> > ===================================================================
+> > --- linux-2.6.orig/fs/autofs4/autofs_i.h	2012-11-12 17:55:28.000000000 +0100
+> > +++ linux-2.6/fs/autofs4/autofs_i.h	2012-11-12 19:09:40.000000000 +0100
+> > @@ -104,7 +104,7 @@ struct autofs_sb_info {
+> >  	u32 magic;
+> >  	int pipefd;
+> >  	struct file *pipe;
+> > -	pid_t oz_pgrp;
+> > +	struct pid *oz_pgrp;
+> >  	int catatonic;
+> >  	int version;
+> >  	int sub_version;
+> > @@ -139,7 +139,7 @@ static inline struct autofs_info *autofs
+> >     filesystem without "magic".) */
+> >  
+> >  static inline int autofs4_oz_mode(struct autofs_sb_info *sbi) {
+> > -	return sbi->catatonic || task_pgrp_nr(current) == sbi->oz_pgrp;
+> > +	return sbi->catatonic || task_pgrp(current) == sbi->oz_pgrp;
+> >  }
+> >  
+> >  /* Does a dentry have some pending activity? */
+> > Index: linux-2.6/fs/autofs4/inode.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/autofs4/inode.c	2012-11-12 17:55:28.000000000 +0100
+> > +++ linux-2.6/fs/autofs4/inode.c	2012-11-12 19:09:35.000000000 +0100
+> > @@ -62,6 +62,8 @@ void autofs4_kill_sb(struct super_block
+> >  	/* Free wait queues, close pipe */
+> >  	autofs4_catatonic_mode(sbi);
+> >  
+> > +	put_pid(sbi->oz_pgrp);
+> > +
+> >  	sb->s_fs_info = NULL;
+> >  	kfree(sbi);
+> >  
+> > @@ -83,7 +85,7 @@ static int autofs4_show_options(struct s
+> >  		seq_printf(m, ",uid=%u", root_inode->i_uid);
+> >  	if (root_inode->i_gid != 0)
+> >  		seq_printf(m, ",gid=%u", root_inode->i_gid);
+> > -	seq_printf(m, ",pgrp=%d", sbi->oz_pgrp);
+> > +	seq_printf(m, ",pgrp=%d", pid_vnr(sbi->oz_pgrp));
+> >  	seq_printf(m, ",timeout=%lu", sbi->exp_timeout/HZ);
+> >  	seq_printf(m, ",minproto=%d", sbi->min_proto);
+> >  	seq_printf(m, ",maxproto=%d", sbi->max_proto);
+> > @@ -127,7 +129,8 @@ static const match_table_t tokens = {
+> >  };
+> >  
+> >  static int parse_options(char *options, int *pipefd, uid_t *uid, gid_t *gid,
+> > -		pid_t *pgrp, unsigned int *type, int *minproto, int *maxproto)
+> > +			 int *pgrp, bool *pgrp_set, unsigned int *type,
+> > +			 int *minproto, int *maxproto)
+> >  {
+> >  	char *p;
+> >  	substring_t args[MAX_OPT_ARGS];
+> > @@ -135,7 +138,6 @@ static int parse_options(char *options,
+> >  
+> >  	*uid = current_uid();
+> >  	*gid = current_gid();
+> > -	*pgrp = task_pgrp_nr(current);
+> >  
+> >  	*minproto = AUTOFS_MIN_PROTO_VERSION;
+> >  	*maxproto = AUTOFS_MAX_PROTO_VERSION;
+> > @@ -170,6 +172,7 @@ static int parse_options(char *options,
+> >  			if (match_int(args, &option))
+> >  				return 1;
+> >  			*pgrp = option;
+> > +			*pgrp_set = true;
+> >  			break;
+> >  		case Opt_minproto:
+> >  			if (match_int(args, &option))
+> > @@ -205,6 +208,8 @@ int autofs4_fill_super(struct super_bloc
+> >  	int pipefd;
+> >  	struct autofs_sb_info *sbi;
+> >  	struct autofs_info *ino;
+> > +	int pgrp;
+> > +	bool pgrp_set = false;
+> >  
+> >  	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+> >  	if (!sbi)
+> > @@ -217,7 +222,7 @@ int autofs4_fill_super(struct super_bloc
+> >  	sbi->pipe = NULL;
+> >  	sbi->catatonic = 1;
+> >  	sbi->exp_timeout = 0;
+> > -	sbi->oz_pgrp = task_pgrp_nr(current);
+> > +	sbi->oz_pgrp = NULL;
+> >  	sbi->sb = s;
+> >  	sbi->version = 0;
+> >  	sbi->sub_version = 0;
+> > @@ -254,12 +259,23 @@ int autofs4_fill_super(struct super_bloc
+> >  
+> >  	/* Can this call block? */
+> >  	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
+> > -				&sbi->oz_pgrp, &sbi->type, &sbi->min_proto,
+> > -				&sbi->max_proto)) {
+> > +			  &pgrp, &pgrp_set, &sbi->type, &sbi->min_proto,
+> > +			  &sbi->max_proto)) {
+> >  		printk("autofs: called with bogus options\n");
+> >  		goto fail_dput;
+> >  	}
+> >  
+> > +	if (pgrp_set) {
+> > +		sbi->oz_pgrp = find_get_pid(pgrp);
+> > +		if (!sbi->oz_pgrp) {
+> > +			pr_warn("autofs: could not find process group %d\n",
+> > +				pgrp);
+> > +			goto fail_dput;
+> > +		}
+> > +	} else {
+> > +		sbi->oz_pgrp = get_task_pid(current, PIDTYPE_PGID);
+> > +	}
+> > +
+> >  	if (autofs_type_trigger(sbi->type))
+> >  		__managed_dentry_set_managed(root);
+> >  
+> > @@ -283,9 +299,9 @@ int autofs4_fill_super(struct super_bloc
+> >  		sbi->version = sbi->max_proto;
+> >  	sbi->sub_version = AUTOFS_PROTO_SUBVERSION;
+> >  
+> > -	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, sbi->oz_pgrp);
+> > +	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, pid_nr(sbi->oz_pgrp));
+> >  	pipe = fget(pipefd);
+> > -	
+> > +
+> >  	if (!pipe) {
+> >  		printk("autofs: could not open pipe file descriptor\n");
+> >  		goto fail_dput;
+> > @@ -315,6 +331,7 @@ int autofs4_fill_super(struct super_bloc
+> >  fail_ino:
+> >  	kfree(ino);
+> >  fail_free:
+> > +	put_pid(sbi->oz_pgrp);
+> >  	kfree(sbi);
+> >  	s->s_fs_info = NULL;
+> >  fail_unlock:
+> > Index: linux-2.6/fs/autofs4/dev-ioctl.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/autofs4/dev-ioctl.c	2012-11-12 17:55:28.000000000 +0100
+> > +++ linux-2.6/fs/autofs4/dev-ioctl.c	2012-11-12 20:41:26.000000000 +0100
+> > @@ -346,6 +346,7 @@ static int autofs_dev_ioctl_setpipefd(st
+> >  {
+> >  	int pipefd;
+> >  	int err = 0;
+> > +	struct pid *new_pid = NULL;
+> >  
+> >  	if (param->setpipefd.pipefd == -1)
+> >  		return -EINVAL;
+> > @@ -357,7 +358,17 @@ static int autofs_dev_ioctl_setpipefd(st
+> >  		mutex_unlock(&sbi->wq_mutex);
+> >  		return -EBUSY;
+> >  	} else {
+> > -		struct file *pipe = fget(pipefd);
+> > +		struct file *pipe;
+> > +
+> > +		new_pid = get_task_pid(current, PIDTYPE_PGID);
+> > +
+> > +		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
+> > +			AUTOFS_WARN("Not allowed to change PID namespace");
+> > +			err = -EINVAL;
+> > +			goto out;
+> > +		}
+> > +
+> > +		pipe = fget(pipefd);
+> >  		if (!pipe) {
+> >  			err = -EBADF;
+> >  			goto out;
+> > @@ -367,12 +378,13 @@ static int autofs_dev_ioctl_setpipefd(st
+> >  			fput(pipe);
+> >  			goto out;
+> >  		}
+> > -		sbi->oz_pgrp = task_pgrp_nr(current);
+> > +		swap(sbi->oz_pgrp, new_pid);
+> >  		sbi->pipefd = pipefd;
+> >  		sbi->pipe = pipe;
+> >  		sbi->catatonic = 0;
+> >  	}
+> >  out:
+> > +	put_pid(new_pid);
+> >  	mutex_unlock(&sbi->wq_mutex);
+> >  	return err;
+> >  }
+> 
 
 
