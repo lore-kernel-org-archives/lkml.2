@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2KWKpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 05:45:21 -0500
+	id S1754836Ab2KWKpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 05:45:36 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:63857 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab2KWKpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 05:45:14 -0500
+	id S1753964Ab2KWKpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 05:45:22 -0500
 X-IronPort-AV: E=Sophos;i="4.83,307,1352044800"; 
-   d="scan'208";a="6263515"
+   d="scan'208";a="6263518"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
         isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
@@ -17,232 +17,122 @@ To: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
         rientjes@google.com, rusty@rustcorp.com.au
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-doc@vger.kernel.org
-Subject: [PATCH v2 2/5] page_alloc: add movable_memmap kernel parameter
-Date: Fri, 23 Nov 2012 18:44:02 +0800
-Message-Id: <1353667445-7593-3-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 3/5] page_alloc: Introduce zone_movable_limit[] to keep movable limit for nodes
+Date: Fri, 23 Nov 2012 18:44:03 +0800
+Message-Id: <1353667445-7593-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/11/23 18:44:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/23 18:44:51,
-	Serialize complete at 2012/11/23 18:44:51
+ 2012/11/23 18:44:52,
+	Serialize complete at 2012/11/23 18:44:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds functions to parse movablecore_map boot option. Since the
-option could be specified more then once, all the maps will be stored in
-the global variable movablecore_map.map array.
-
-And also, we keep the array in monotonic increasing order by start_pfn.
-And merge all overlapped ranges.
+This patch introduces a new array zone_movable_limit[] to store the
+ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+The function sanitize_zone_movable_limit() will find out to which
+node the ranges in movable_map.map[] belongs, and calculates the
+low boundary of ZONE_MOVABLE for each node.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
 ---
- Documentation/kernel-parameters.txt |   17 +++++
- include/linux/mm.h                  |   11 +++
- mm/page_alloc.c                     |  126 +++++++++++++++++++++++++++++++++++
- 3 files changed, 154 insertions(+), 0 deletions(-)
+ mm/page_alloc.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 55 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 9776f06..785f878 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1620,6 +1620,23 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
-+	movablecore_map=nn[KMG]@ss[KMG]
-+			[KNL,X86,IA-64,PPC] This parameter is similar to
-+			memmap except it specifies the memory map of
-+			ZONE_MOVABLE.
-+			If more areas are all within one node, then from
-+			lowest ss to the end of the node will be ZONE_MOVABLE.
-+			If an area covers two or more nodes, the area from
-+			ss to the end of the 1st node will be ZONE_MOVABLE,
-+			and all the rest nodes will only have ZONE_MOVABLE.
-+			If memmap is specified at the same time, the
-+			movablecore_map will be limited within the memmap
-+			areas. If kernelcore or movablecore is also specified,
-+			movablecore_map will have higher priority to be
-+			satisfied. So the administrator should be careful that
-+			the amount of movablecore_map areas are not too large.
-+			Otherwise kernel won't have enough memory to start.
-+
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fa06804..647c980 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1328,6 +1328,17 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- extern void sparse_memory_present_with_active_regions(int nid);
- 
-+#define MOVABLECORE_MAP_MAX MAX_NUMNODES
-+struct movablecore_entry {
-+	unsigned long start;    /* start pfn of memory segment */
-+	unsigned long end;      /* end pfn of memory segment */
-+};
-+
-+struct movablecore_map {
-+	int nr_map;
-+	struct movablecore_entry map[MOVABLECORE_MAP_MAX];
-+};
-+
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
- 
- #if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5b74de6..fb5cf12 100644
+index fb5cf12..f23d76a 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -198,6 +198,9 @@ static unsigned long __meminitdata nr_all_pages;
- static unsigned long __meminitdata dma_reserve;
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-+/* Movable memory ranges, will also be used by memblock subsystem. */
-+struct movablecore_map movablecore_map;
-+
- static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
- static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+@@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
  static unsigned long __initdata required_kernelcore;
-@@ -4986,6 +4989,129 @@ static int __init cmdline_parse_movablecore(char *p)
- early_param("kernelcore", cmdline_parse_kernelcore);
- early_param("movablecore", cmdline_parse_movablecore);
+ static unsigned long __initdata required_movablecore;
+ static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
++static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+ 
+ /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+ int movable_zone;
+@@ -4323,6 +4324,55 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+ 	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+ }
  
 +/**
-+ * insert_movablecore_map - Insert a memory range in to movablecore_map.map.
-+ * @start_pfn: start pfn of the range
-+ * @end_pfn: end pfn of the range
++ * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
 + *
-+ * This function will also merge the overlapped ranges, and sort the array
-+ * by start_pfn in monotonic increasing order.
-+ */
-+static void __init insert_movablecore_map(unsigned long start_pfn,
-+					  unsigned long end_pfn)
-+{
-+	int pos, overlap;
-+
-+	/*
-+	 * pos will be at the 1st overlapped range, or the position
-+	 * where the element should be inserted.
-+	 */
-+	for (pos = 0; pos < movablecore_map.nr_map; pos++)
-+		if (start_pfn <= movablecore_map.map[pos].end)
-+			break;
-+
-+	/* If there is no overlapped range, just insert the element. */
-+	if (pos == movablecore_map.nr_map ||
-+	    end_pfn < movablecore_map.map[pos].start) {
-+		/*
-+		 * If pos is not the end of array, we need to move all
-+		 * the rest elements backward.
-+		 */
-+		if (pos < movablecore_map.nr_map)
-+			memmove(&movablecore_map.map[pos+1],
-+				&movablecore_map.map[pos],
-+				sizeof(struct movablecore_entry) *
-+				(movablecore_map.nr_map - pos));
-+		movablecore_map.map[pos].start = start_pfn;
-+		movablecore_map.map[pos].end = end_pfn;
-+		movablecore_map.nr_map++;
-+		return;
-+	}
-+
-+	/* overlap will be at the last overlapped range */
-+	for (overlap = pos + 1; overlap < movablecore_map.nr_map; overlap++)
-+		if (end_pfn < movablecore_map.map[overlap].start)
-+			break;
-+
-+	/*
-+	 * If there are more ranges overlapped, we need to merge them,
-+	 * and move the rest elements forward.
-+	 */
-+	overlap--;
-+	movablecore_map.map[pos].start = min(start_pfn,
-+					     movablecore_map.map[pos].start);
-+	movablecore_map.map[pos].end = max(end_pfn,
-+					     movablecore_map.map[overlap].end);
-+
-+	if (pos != overlap && overlap + 1 != movablecore_map.nr_map)
-+		memmove(&movablecore_map.map[pos+1],
-+			&movablecore_map.map[overlap+1],
-+			sizeof(struct movablecore_entry) *
-+			(movablecore_map.nr_map - overlap - 1));
-+
-+	movablecore_map.nr_map -= overlap - pos;
-+}
-+
-+/**
-+ * movablecore_map_add_region - Add a memory range into movablecore_map.
-+ * @start: physical start address of range
-+ * @end: physical end address of range
++ * zone_movable_limit is initialized as 0. This function will try to get
++ * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
++ * assigne them to zone_movable_limit.
++ * zone_movable_limit[nid] == 0 means no limit for the node.
 + *
-+ * This function transform the physical address into pfn, and then add the
-+ * range into movablecore_map by calling insert_movablecore_map().
++ * Note: Each range is represented as [start_pfn, end_pfn)
 + */
-+static void __init movablecore_map_add_region(u64 start, u64 size)
++static void __meminit sanitize_zone_movable_limit(void)
 +{
++	int map_pos = 0, i, nid;
 +	unsigned long start_pfn, end_pfn;
 +
-+	/* In case size == 0 or start + size overflows */
-+	if (start + size <= start)
++	if (!movablecore_map.nr_map)
 +		return;
 +
-+	if (movablecore_map.nr_map >= ARRAY_SIZE(movablecore_map.map)) {
-+		pr_err("movable_memory_map: too many entries;"
-+			" ignoring [mem %#010llx-%#010llx]\n",
-+			(unsigned long long) start,
-+			(unsigned long long) (start + size - 1));
-+		return;
++	/* Iterate all ranges from minimum to maximum */
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid) {
++		/*
++		 * If we have found lowest pfn of ZONE_MOVABLE of the node
++		 * specified by user, just go on to check next range.
++		 */
++		if (zone_movable_limit[nid])
++			continue;
++
++		while (map_pos < movablecore_map.nr_map) {
++			if (end_pfn <= movablecore_map.map[map_pos].start)
++				break;
++
++			if (start_pfn >= movablecore_map.map[map_pos].end) {
++				map_pos++;
++				continue;
++			}
++
++			/*
++			 * The start_pfn of ZONE_MOVABLE is either the minimum
++			 * pfn specified by movablecore_map, or 0, which means
++			 * the node has no ZONE_MOVABLE.
++			 */
++			zone_movable_limit[nid] = max(start_pfn,
++					movablecore_map.map[map_pos].start);
++
++			break;
++		}
 +	}
-+
-+	start_pfn = PFN_DOWN(start);
-+	end_pfn = PFN_UP(start + size);
-+	insert_movablecore_map(start_pfn, end_pfn);
 +}
 +
-+/*
-+ * movablecore_map=nn[KMG]@ss[KMG] sets the region of memory to be used as
-+ * movable memory.
-+ */
-+static int __init cmdline_parse_movablecore_map(char *p)
+ #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+ 					unsigned long zone_type,
+@@ -4341,6 +4391,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+ 	return zholes_size[zone_type];
+ }
+ 
++static void __meminit sanitize_zone_movable_limit(void)
 +{
-+	char *oldp;
-+	u64 start_at, mem_size;
-+
-+	if (!p)
-+		goto err;
-+
-+	oldp = p;
-+	mem_size = memparse(p, &p);
-+	if (p == oldp)
-+		goto err;
-+
-+	if (*p == '@') {
-+		oldp = ++p;
-+		start_at = memparse(p, &p);
-+		if (p == oldp || *p != '\0')
-+			goto err;
-+
-+		movablecore_map_add_region(start_at, mem_size);
-+		return 0;
-+	}
-+err:
-+	return -EINVAL;
 +}
-+early_param("movablecore_map", cmdline_parse_movablecore_map);
 +
  #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
  
- /**
+ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+@@ -4906,6 +4960,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 
+ 	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+ 	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
++	sanitize_zone_movable_limit();
+ 	find_zone_movable_pfns_for_nodes();
+ 
+ 	/* Print out the zone ranges */
 -- 
 1.7.1
 
