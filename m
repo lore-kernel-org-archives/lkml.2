@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab2KXAVL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 19:21:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44274 "EHLO
+	id S932550Ab2KXAWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 19:22:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44282 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932337Ab2KXAVI (ORCPT
+	with ESMTP id S932404Ab2KXAVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 19:21:08 -0500
+	Fri, 23 Nov 2012 19:21:10 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>, linuxppc-dev@ozlabs.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/8] tools: Pass the target in descend
-Date: Fri, 23 Nov 2012 21:20:49 -0300
-Message-Id: <1353716453-9693-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/8] perf powerpc: Use uapi/unistd.h to fix build error
+Date: Fri, 23 Nov 2012 21:20:50 -0300
+Message-Id: <1353716453-9693-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353716453-9693-1-git-send-email-acme@infradead.org>
 References: <1353716453-9693-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset="utf-8"
-X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
- Fixing:
+Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
 
-  [acme@sandy linux]$ cd tools
-  [acme@sandy tools]$ make clean
-      DESCEND power/cpupower
-    CC       lib/cpufreq.o
-    CC       lib/sysfs.o
-    LD       libcpupower.so.0.0.0
-    CC       utils/helpers/amd.o
-  utils/helpers/amd.c:7:21: error: pci/pci.h: No such file or directory
-  In file included from utils/helpers/amd.c:9:
-  ./utils/helpers/helpers.h:137: warning: ‘struct pci_access’ declared inside parameter list
-  ./utils/helpers/helpers.h:137: warning: its scope is only this definition or declaration, which is probably not what you want
-  ./utils/helpers/helpers.h:139: warning: ‘struct pci_access’ declared inside parameter list
-  utils/helpers/amd.c: In function ‘amd_pci_get_num_boost_states’:
-  utils/helpers/amd.c:120: warning: passing argument 1 of ‘pci_slot_func_init’ from incompatible pointer type
-  ./utils/helpers/helpers.h:138: note: expected ‘struct pci_access **’ but argument is of type ‘struct pci_access **’
-  utils/helpers/amd.c:125: warning: implicit declaration of function ‘pci_read_byte’
-  utils/helpers/amd.c:132: warning: implicit declaration of function ‘pci_cleanup’
-  make[1]: *** [utils/helpers/amd.o] Error 1
-  make: *** [cpupower_clean] Error 2
-  [acme@sandy tools]$
-
-Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-tviyimq6x6nm77sj5lt4t19f@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20121107191818.GA16211@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/scripts/Makefile.include |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/perf.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index 87467b1..2964b96 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -51,7 +51,7 @@ endif
- #
- descend = \
- 	+mkdir -p $(OUTPUT)$(1) && \
--	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
-+	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index c50985e..e2ba8f0 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -26,7 +26,7 @@ void get_term_dimensions(struct winsize *ws);
+ #endif
  
- QUIET_SUBDIR0  = +$(MAKE) $(COMMAND_O) -C # space to separate -C and subdir
- QUIET_SUBDIR1  =
-@@ -72,6 +72,6 @@ ifndef V
- 	descend = \
- 		@echo '   ' DESCEND $(1); \
- 		mkdir -p $(OUTPUT)$(1) && \
--		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
-+		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
- endif
- endif
+ #ifdef __powerpc__
+-#include "../../arch/powerpc/include/asm/unistd.h"
++#include "../../arch/powerpc/include/uapi/asm/unistd.h"
+ #define rmb()		asm volatile ("sync" ::: "memory")
+ #define cpu_relax()	asm volatile ("" ::: "memory");
+ #define CPUINFO_PROC	"cpu"
 -- 
 1.7.9.2.358.g22243
 
