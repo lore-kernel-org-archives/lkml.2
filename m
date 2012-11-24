@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2KXCNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 21:13:36 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:20080 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab2KXCNf (ORCPT
+	id S1753129Ab2KXCXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 21:23:39 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54524 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750880Ab2KXCXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 21:13:35 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-c4-50b02d4e02ff
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Cesar Eduardo Barros'" <cesarb@cesarb.net>, linux-kernel@vger.kernel.org
-Cc: "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Rob Herring'" <rob.herring@calxeda.com>, rtc-linux@googlegroups.com,
-        devicetree-discuss@lists.ozlabs.org
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
- <1353716808-16375-22-git-send-email-cesarb@cesarb.net>
-In-reply-to: <1353716808-16375-22-git-send-email-cesarb@cesarb.net>
-Subject: RE: [PATCH 21/24] MAINTAINERS: fix drivers/rtc/rtc-sec.c
-Date: Sat, 24 Nov 2012 11:13:28 +0900
-Message-id: <000101cdc9e9$4e521ea0$eaf65be0$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3J2pCePGyNuRsZSWO2wHRLjPNsNQACjlPA
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zA10/3Q0BBl/2c1hc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mpgn9rAVTmCs+7jRuYNzG1MXIySEhYCLReO02K4QtJnHh3no2
-	EFtIYBmjxOGnjjA1f2ftYexi5AKKT2eU+PbjMTuEM5dJonnta3aQKjYBDYmVu9+CdYsI+Ejc
-	a74G1sEscJJR4k3naWaIsVUSEzfPA1vHKeAscXvLX0YQW1jAUWL6/b9gJ7EIqErsWPoEzOYV
-	MJSYe2AnM4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW+BajiATlWXePRXF+IGI4kFC5dClYtI
-	7HvxjhFivIDEt8mHWCDKZSU2HWAGOVNCYBm7RPfaR9CQkJQ4uOIGywRGiVlINs9CsnkWks2z
-	kKxYwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyMksqR2MK5ssDjEKMDBqMTDe+Dq+gAh
-	1sSy4srcQ4wSHMxKIrxfK4BCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M+rySeENjYxMz
-	E1MTc0tTc1McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGKvXT/p/fKeC0+ufOdcdJrj9
-	uWbJ/6xHS6RBq3Tqs1tZ56bFvt3RGDjd+EbNJO2SxqMvIqa9vfR7k1OBhdJCncn/mhfssPHd
-	3snz2mf1Cx8mSa6A9yovbx7oMd7xYM76zE8df7sk3kQ6qigd6PjHKNp+0TVsW33G998n+y1j
-	dNjOcPYuDxFpDVFiKc5INNRiLipOBADtfzZO2QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jQV0/3Q0BBvc+slhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjKYJ/awFU5grPu40bmDc
-	xtTFyMkhIWAi8XfWHkYIW0ziwr31bF2MXBxCAtMZJb79eMwO4cxlkmhe+5odpIpNQENi5e63
-	bCC2iICPxL3ma4wgRcwCJxkl3nSeZgZJCAlUSUzcPI8VxOYUcJa4veUv2AphAUeJ6ff/gq1m
-	EVCV2LH0CZjNK2AoMffATmYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveAtVwAJ2qLvHory7E
-	DUYSCxYuhSoXkdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqX
-	rpecn7uJERy5z6R2MK5ssDjEKMDBqMTDe+Dq+gAh1sSy4srcQ4wSHMxKIrxfK4BCvCmJlVWp
-	RfnxRaU5qcWHGH2AHp3ILCWanA9MKnkl8YbGJmZGlkZmFkYm5uY4hJXEeZs9UgKEBNITS1Kz
-	U1MLUotgxjFxcEo1ME4p/90Rf3zBvxVHjp7faBOy/nXA7FVbU/L6YuoCf+6Pq1wfeXHqoSWs
-	903K9l5k+eJ4PYr934VT8Y0eK+YnepfNu6aQMGHT3eL0mQ8mZJ7yqrv10HnNnwjdTz9ivzC+
-	rJK7kHzx9Oaf9V5nnBIXXneqs3pcHbLCaPMutsnVeZHRi5x+Cyx7/OadEktxRqKhFnNRcSIA
-	0VS8+QkDAAA=
-X-CFilter-Loop: Reflected
+	Fri, 23 Nov 2012 21:23:37 -0500
+X-Sasl-enc: TmCVuRwqVfuW4edAjit6OpgO6pw5Hxp3T53mbc03rm2K 1353723816
+Message-ID: <1353723813.2348.48.camel@perseus.themaw.net>
+Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial
+ PID namespace
+From: Ian Kent <raven@themaw.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com
+Date: Sat, 24 Nov 2012 10:23:33 +0800
+In-Reply-To: <874nkgwfw0.fsf@tucsk.pomaz.szeredi.hu>
+References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+	 <1353642304.2309.25.camel@perseus.themaw.net>
+	 <1353672540.6699.18.camel@perseus.themaw.net>
+	 <874nkgwfw0.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 9:27 AM , Cesar Eduardo Barros wrote:
+On Fri, 2012-11-23 at 15:30 +0100, Miklos Szeredi wrote:
+> Ian Kent <raven@themaw.net> writes:
+> 
+> > On Fri, 2012-11-23 at 11:45 +0800, Ian Kent wrote:
+> >> On Thu, 2012-11-22 at 17:24 +0100, Miklos Szeredi wrote:
+> >> > Patches were tested by the customer.
+> >> > 
+> >> > Ian, Eric, do these patches look OK?
+> >> 
+> >> They look OK to me but I'm still a bit concerned about changing the way
+> >> this behaves, but I also believe this is the way we want it to behave.
+> >
+> > OK, I ran the autofs Connectathon tests that I often use on a kernel
+> > with these patches and they worked fine. So, AFAICS. the patches
+> > shouldn't introduce regressions.
+> 
+> And the reason for that is the patches introduce no behavioral changes
+> at all if the automount daemon was started in the initial namespace.
 
-> I am guessing that this was a typo for rtc-s3c. Please NACK this patch
-> if I am wrong.
+Sure but I had to check.
 
-rtc-sec and rtc-s3c is different one.
-rtc-sec is driver of Samsung mfd.
-Rtc-s3c is driver of Samsung SoC.
+> 
+> They only change (and fix) semantics of the case when automount is
+> started in a cloned pid namespace.
+> 
+> >
+> >> 
+> >> Give me a little bit more time to run a simple test to ensure we can at
+> >> least do what we could previously, and that's nothing more than
+> >> umounting duplicated mounts (which probably shouldn't be duplicated at
+> >> all) in the container.
+> >
+> > Interestingly the simple container test program I have also worked in
+> > the same way it does on current kernels so again I didn't see a problem
+> > adding the patches.
+> >
+> > But I do have a couple of questions that are a little related.
+> >
+> > Calling clone(2) with flags
+> > CLONE_NEWPID|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|SIGCHLD|CLONE_NEWNET
+> > will result in a copy of the existing set of mounts. The autofs mounts
+> > can be umounted if they are not needed.
+> >
+> > But, on Fedora systemd sets "/" as shared at boot which prevents the
+> > umount of these autofs mounts, unless you mark "/" as private in the
+> > clone, after which the mounts can be umounted.
+> >
+> > Does having "/" marked as shared in the root namespace mean that further
+> > mounts in the root namespace will also appear in the clone and that
+> > mounts done in the clone will appear in the root namespace?
+> 
+> Yes.
+> 
+> >
+> > Will mounting all autofs mounts with MS_PRIVATE prevent the autofs
+> > mounts and any mounts under them from appearing in the root namespace?
+> 
+> Changing autofs mounts to MS_PRIVATE will prevent submounts of these
+> from being propagated to/from the root namespace.
 
-Currently, We had just done rtc-sec coding.
-It just keep on my repo.
-Sooner or later, I will post rtc-sec.
+Right, but maybe I don't understand what you mean by the "from" here.
 
-Thanks,
-Sangbeom.
+AFAICS autofs mounts mounted with MS_PRIVATE in the initial namespace do
+propagate to the clone when it's created so I'm assuming subsequent
+mounts would also. If these mounts are busy in some way they can't be
+umounted in the clone unless "/" is marked private before attempting the
+umount.
+
+> 
+> >
+> > I assume there is no way for autofs to stop the propagation from the
+> > root namespace, is that correct?
+> 
+> Not for the children of the shared mount.  For the children of the
+> autofs mounts, they can be prevented, which is really what you want, I
+> guess.
+
+I think that's what is needed but it's only one direction.
+
+It seems to me that people using containers and wanting to run an
+instance of automount within them can't run automount in the initial
+namespace if they wish to use systemd (or if "/" is marked shared for
+some other reason). And from the discussion here it appears there really
+isn't anything I can do within autofs to remove that restriction.
+
+Ian
+
 
