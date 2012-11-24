@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2KXS7Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 13:59:16 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10319 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751901Ab2KXS7P (ORCPT
+	id S1752238Ab2KXTSE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 14:18:04 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:46046 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752173Ab2KXTSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 13:59:15 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/zz/2MTWxjn2HU2ZY8crpKV4OtZLEk7bU=
-Date: Sat, 24 Nov 2012 13:59:06 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
-Message-ID: <20121124185906.GT15800@titan.lakedaemon.net>
-References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <20121124023942.GO15800@titan.lakedaemon.net>
- <20121124080240.3f600e89@skate>
- <20121124150004.GQ15800@titan.lakedaemon.net>
- <20121124191024.4b5d5b4c@skate>
+	Sat, 24 Nov 2012 14:18:02 -0500
+X-Sasl-enc: 3KogAsxsYo5VnAoJO+Aiu4c5Je9FoUovsn+j5E5qaBgR 1353784680
+Message-ID: <50B11D5C.2000802@imap.cc>
+Date: Sat, 24 Nov 2012 20:17:48 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121124191024.4b5d5b4c@skate>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: possible regression in kernel 3.6: system hangs during nightly
+ tape backup
+References: <50AACB7E.8060601@imap.cc>
+In-Reply-To: <50AACB7E.8060601@imap.cc>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigA3D7281D7207FDA9F1649708"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 07:10:24PM +0100, Thomas Petazzoni wrote:
-> Dear Jason Cooper,
-> 
-> On Sat, 24 Nov 2012 10:00:04 -0500, Jason Cooper wrote:
-> 
-> > Yes, so that's what I thought happened.  This would have made orion/dt
-> > depend upon mvebu/everything.  It already had two other dependencies.
-> > Not ideal.
-> > 
-> > The good thing is, the build is not broken.  Once v3.8-rc1 drops with
-> > all of our stuff merged, I'll post a fixup patch adding this back in.
-> 
-> It unfortunately means that Dove will be basically unbootable in
-> 3.8-rc1, as the driver will not be clk_get()ing its gatable clock, and
-> the clock driver will disable it. Maybe we can just live with it, I
-> don't know.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigA3D7281D7207FDA9F1649708
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I thought as much after I sent this reply.  Definitely a choice of
-the lesser of two evils.  As long as we don't break the build or have
-horrendous merge conflicts, I think it's tolerable.
+Any ideas on that? I'm currently avoiding the 3.6 series because
+of that problem but would be willing to reproduce the hang if I'd
+know what to do once it happens, ie. what kind of information to
+collect in order to identify the cause of the problem.
+I may also try 3.7-rc if there's any interest.
 
-Any one who is booting -rc1's is typically bug hunting.  This means
-Sebastian, who has been CC'd on all of this.  I don't want to rely on
-this in the future, but doing it once due to the circumstances is
-something I'm comfortable answering to.
+Am 20.11.2012 01:14, schrieb Tilman Schmidt:
+> For the 4th time now after switching to kernel 3.6, my system became
+> unresponsive during the nightly Bacula backup run. It looks as if
+> all disk accesses are suddenly blocked:
+> - Desktop apps stop responding one after another, starting with
+>   Firefox followed by other "heavy" apps, while Konsole windows
+>   continue being usable for a while.
+> - "top" shows the load average steadily increasing with no process
+>   actually consuming relevant quantities of CPU.
+> - I can do "dmesg > /root/dmesg.out" followed by "less /root/dmesg.out"=
 
-thx,
+>   in a Konsole window just fine, but after the inevitable hard reset
+>   the file /root/dmesg.out isn't there.
+> - The "sync" command hangs indefinitely.
+> - The "shutdown" command and ctrl/alt/Del emit "system going down"
+>   broadcast messages but never get anywhere.
+> - Killing processes manually works for some (bacula-sd even ejects
+>   the tape before exiting) but most remain in state D or Z.
+> - Eventually, all text consoles are blocked and a hardware reset is
+>   the only remaining option.
+> - After the reboot, a Bacula spool file is left behind in
+>   /var/spool/bacula, proof that the hang happened during the backup.
+>=20
+> This does not happen during every backup run, but frequently enough
+> to be annoying. (About once per week.) It never happened with kernel
+> 3.5. For comparison went back to kernel 3.5.7 for a week and it
+> never happened during that time. Last night I booted 3.6.7 and the
+> very next backup caused the hang again. The last kernel message that
+> made it to the syslog on disk was
+>=20
+> Nov 19 23:05:04 xenon kernel: [73877.128546] st0: Block limits 256 -
+> 524288 bytes.
+>=20
+> triggered by the start of the backup. In dmesg the next message was
+>=20
+> [74401.249091] INFO: task flush-253:2:1320 blocked for more than 120
+> seconds.
+>=20
+> followed by a backtrace. I have photos of the remaining dmesg output
+> which I'll try to upload somewhere accessible tomorrow.
+>=20
+> Hardware configuration:
+> Intel Pentium D, Intel DQ965GF mainboard, 6 GB RAM
+> onboard S-ATA controller driving two 500 GB S-ATA disks
+> and a Pioneer DVR-216D DVD-RW drive
+> Adaptec 29160B Ultra160 SCSI adapter driving a
+> Tandberg TS400 LTO-2 tape drive
+>=20
+> Disk configuration: md RAID1, LVM, ext3 and ext4 volumes
+>=20
+> Software: Opensuse 11.4 64 bit, vanilla kernel 3.5.7 and 3.6.7,
+> Bacula 5.2.12
+>=20
+> HTH
+> T.
+>=20
 
-Jason.
+
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+
+
+
+--------------enigA3D7281D7207FDA9F1649708
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlCxHWgACgkQMdB4Whm86/kORgCaA6NyoHFP2YVirQVdGDVhV70+
+jiEAnRfCRWIBnY49KVFR+SvXHlwC0sk9
+=wcMI
+-----END PGP SIGNATURE-----
+
+--------------enigA3D7281D7207FDA9F1649708--
