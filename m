@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab2KXQXw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 11:23:52 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65067 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2KXQXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 11:23:50 -0500
-Message-ID: <50B0F493.3000103@gmail.com>
-Date: Sun, 25 Nov 2012 00:23:47 +0800
-From: Wen Congyang <wencongyang@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 2/3] acpi_memhotplug: Add prepare_remove operation
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <1353693037-21704-3-git-send-email-vasilis.liaskovitis@profitbricks.com>
-In-Reply-To: <1353693037-21704-3-git-send-email-vasilis.liaskovitis@profitbricks.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	id S1751935Ab2KXQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 11:58:54 -0500
+Received: from mail.ddl.dyc.edu ([67.151.215.230]:54983 "EHLO ddl.dyc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab2KXQ6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 11:58:52 -0500
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Nov 2012 11:58:52 EST
+From: "Anthony G. Basile" <basile@opensource.dyc.edu>
+To: linux-kernel@vger.kernel.org
+Cc: rob@landley.net, jj@chaosbits.net, jkosina@suse.cz,
+        linux-doc@vger.kernel.org, embedded@gentoo.org, kernel@gentoo.org,
+        "Anthony G. Basile" <basile@opensource.dyc.edu>
+Subject: [PATCH] Remove unnecessary declarations from Documentation/accounting/getdelays.c
+Date: Sat, 24 Nov 2012 11:54:24 -0500
+Message-Id: <1353776064-25815-1-git-send-email-basile@opensource.dyc.edu>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 2012/11/24 1:50, Vasilis Liaskovitis Wrote:
-> Offlining and removal of memory is now done in the prepare_remove callback,
-> not in the remove callback.
-> 
-> The prepare_remove callback will be called when trying to remove a memory device
-> with the following ways:
-> 
-> 1. send eject request by SCI
-> 2. echo 1>/sys/bus/pci/devices/PNP0C80:XX/eject
-> 
-> Note that unbinding the acpi driver from a memory device with:
-> echo "PNP0C80:XX">  /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> 
-> will no longer try to remove the memory. This is in compliance with normal
-> unbind driver core semantics, see the discussion in v2 of this patchset:
-> https://lkml.org/lkml/2012/11/16/649
+From: "Anthony G. Basile" <basile@opensource.dyc.edu>
 
-If we don't remove it when unbinding it, it may cause kernel panicked.
+stime and utime are declared __u64 but are never used.  On a glibc system
+this is harmless lint, but on a uClibc system, because of the difference
+in they way header files stack, including stdio.h brings in time.h and
+this causes a name collision with stime.  Since these are useless anyhow,
+we remove them.
 
-I have explained in another mail.
+Signed-off-by: Anthony G. Basile <basile@opensource.dyc.edu>
+---
+ Documentation/accounting/getdelays.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Thanks
-Wen Congyang
+diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
+index 6f706ac..f8ebcde 100644
+--- a/Documentation/accounting/getdelays.c
++++ b/Documentation/accounting/getdelays.c
+@@ -51,7 +51,6 @@ int dbg;
+ int print_delays;
+ int print_io_accounting;
+ int print_task_context_switch_counts;
+-__u64 stime, utime;
+ 
+ #define PRINTF(fmt, arg...) {			\
+ 	    if (dbg) {				\
+-- 
+1.7.6.1
 
-> 
-> After a successful unbind of the driver:
-> - OSPM ejects of the memory device cannot proceed, as acpi_eject_store will
-> return -ENODEV on missing driver.
-> - SCI ejects of the memory device also cannot proceed, as they will also get
-> a "driver data is NULL" error.
-> So the memory can continue to be used safely after unbind.
-> 
-> Signed-off-by: Vasilis Liaskovitis<vasilis.liaskovitis@profitbricks.com>
-> ---
->   drivers/acpi/acpi_memhotplug.c |   18 ++++++++++++++++--
->   1 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index eb30e5a..d0cfbd9 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -55,6 +55,7 @@ MODULE_LICENSE("GPL");
-> 
->   static int acpi_memory_device_add(struct acpi_device *device);
->   static int acpi_memory_device_remove(struct acpi_device *device, int type);
-> +static int acpi_memory_device_prepare_remove(struct acpi_device *device);
-> 
->   static const struct acpi_device_id memory_device_ids[] = {
->   	{ACPI_MEMORY_DEVICE_HID, 0},
-> @@ -69,6 +70,7 @@ static struct acpi_driver acpi_memory_device_driver = {
->   	.ops = {
->   		.add = acpi_memory_device_add,
->   		.remove = acpi_memory_device_remove,
-> +		.prepare_remove = acpi_memory_device_prepare_remove,
->   		},
->   };
-> 
-> @@ -448,6 +450,20 @@ static int acpi_memory_device_add(struct acpi_device *device)
->   static int acpi_memory_device_remove(struct acpi_device *device, int type)
->   {
->   	struct acpi_memory_device *mem_device = NULL;
-> +
-> +	if (!device || !acpi_driver_data(device))
-> +		return -EINVAL;
-> +
-> +	mem_device = acpi_driver_data(device);
-> +
-> +	acpi_memory_device_free(mem_device);
-> +
-> +	return 0;
-> +}
-> +
-> +static int acpi_memory_device_prepare_remove(struct acpi_device *device)
-> +{
-> +	struct acpi_memory_device *mem_device = NULL;
->   	int result;
-> 
->   	if (!device || !acpi_driver_data(device))
-> @@ -459,8 +475,6 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
->   	if (result)
->   		return result;
-> 
-> -	acpi_memory_device_free(mem_device);
-> -
->   	return 0;
->   }
-> 
