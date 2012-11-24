@@ -1,111 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2KXCh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 21:37:27 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44822 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751511Ab2KXChZ (ORCPT
+	id S1754049Ab2KXCjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 21:39:53 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:46403 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752243Ab2KXCjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 21:37:25 -0500
-X-Sasl-enc: /tNegCgbkeLYNy3xD0UJlRevj/8jfj6kml/gfjc7QNIL 1353724644
-Message-ID: <1353724641.2348.56.camel@perseus.themaw.net>
-Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial
- PID namespace
-From: Ian Kent <raven@themaw.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com
-Date: Sat, 24 Nov 2012 10:37:21 +0800
-In-Reply-To: <1353723813.2348.48.camel@perseus.themaw.net>
-References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
-	 <1353642304.2309.25.camel@perseus.themaw.net>
-	 <1353672540.6699.18.camel@perseus.themaw.net>
-	 <874nkgwfw0.fsf@tucsk.pomaz.szeredi.hu>
-	 <1353723813.2348.48.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 23 Nov 2012 21:39:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX185zq5F/HKqySAkA13gW5Seid96n8Ny6Sc=
+Date: Fri, 23 Nov 2012 21:39:42 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
+Message-ID: <20121124023942.GO15800@titan.lakedaemon.net>
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-24 at 10:23 +0800, Ian Kent wrote:
-> On Fri, 2012-11-23 at 15:30 +0100, Miklos Szeredi wrote:
-> > Ian Kent <raven@themaw.net> writes:
-> > 
-> > > On Fri, 2012-11-23 at 11:45 +0800, Ian Kent wrote:
-> > >> On Thu, 2012-11-22 at 17:24 +0100, Miklos Szeredi wrote:
-> > >> > Patches were tested by the customer.
-> > >> > 
-> > >> > Ian, Eric, do these patches look OK?
-> > >> 
-> > >> They look OK to me but I'm still a bit concerned about changing the way
-> > >> this behaves, but I also believe this is the way we want it to behave.
-> > >
-> > > OK, I ran the autofs Connectathon tests that I often use on a kernel
-> > > with these patches and they worked fine. So, AFAICS. the patches
-> > > shouldn't introduce regressions.
-> > 
-> > And the reason for that is the patches introduce no behavioral changes
-> > at all if the automount daemon was started in the initial namespace.
+On Mon, Nov 19, 2012 at 10:39:55AM +0100, Sebastian Hesselbarth wrote:
+> Following the ongoing conversion of Orion SoCs to DT, make use of
+> gpio and pinctrl drivers through DT. The main dtsi for Dove is prepared
+> to allow board specific descriptors to make use of pinctrl muxing.
 > 
-> Sure but I had to check.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Cc: Axel Lin <axel.lin@ingics.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/Kconfig            |    2 ++
+>  arch/arm/boot/dts/dove.dtsi |   20 +++++++++++++++++---
+>  2 files changed, 19 insertions(+), 3 deletions(-)
 > 
-> > 
-> > They only change (and fix) semantics of the case when automount is
-> > started in a cloned pid namespace.
-> > 
-> > >
-> > >> 
-> > >> Give me a little bit more time to run a simple test to ensure we can at
-> > >> least do what we could previously, and that's nothing more than
-> > >> umounting duplicated mounts (which probably shouldn't be duplicated at
-> > >> all) in the container.
-> > >
-> > > Interestingly the simple container test program I have also worked in
-> > > the same way it does on current kernels so again I didn't see a problem
-> > > adding the patches.
-> > >
-> > > But I do have a couple of questions that are a little related.
-> > >
-> > > Calling clone(2) with flags
-> > > CLONE_NEWPID|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|SIGCHLD|CLONE_NEWNET
-> > > will result in a copy of the existing set of mounts. The autofs mounts
-> > > can be umounted if they are not needed.
-> > >
-> > > But, on Fedora systemd sets "/" as shared at boot which prevents the
-> > > umount of these autofs mounts, unless you mark "/" as private in the
-> > > clone, after which the mounts can be umounted.
-> > >
-> > > Does having "/" marked as shared in the root namespace mean that further
-> > > mounts in the root namespace will also appear in the clone and that
-> > > mounts done in the clone will appear in the root namespace?
-> > 
-> > Yes.
-> > 
-> > >
-> > > Will mounting all autofs mounts with MS_PRIVATE prevent the autofs
-> > > mounts and any mounts under them from appearing in the root namespace?
-> > 
-> > Changing autofs mounts to MS_PRIVATE will prevent submounts of these
-> > from being propagated to/from the root namespace.
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index d5a28da..bb9a85d 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -539,6 +539,8 @@ config ARCH_DOVE
+>  	select CPU_V7
+>  	select GENERIC_CLOCKEVENTS
+>  	select MIGHT_HAVE_PCI
+> +	select PINCTRL
+> +	select PINCTRL_DOVE
+>  	select PLAT_ORION_LEGACY
+>  	select USB_ARCH_HAS_EHCI
+>  	help
+> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> index 8c8ab62..c457480 100644
+> --- a/arch/arm/boot/dts/dove.dtsi
+> +++ b/arch/arm/boot/dts/dove.dtsi
+> @@ -4,6 +4,12 @@
+>  	compatible = "marvell,dove";
+>  	model = "Marvell Armada 88AP510 SoC";
+>  
+> +	aliases {
+> +		gpio0 = &gpio0;
+> +		gpio1 = &gpio1;
+> +		gpio2 = &gpio2;
+> +	};
+> +
+>  	soc@f1000000 {
+>  		compatible = "simple-bus";
+>  		#address-cells = <1>;
+> @@ -85,7 +91,8 @@
+>  			#gpio-cells = <2>;
+>  			gpio-controller;
+>  			reg = <0xd0400 0x20>;
+> -			ngpio = <32>;
+> +			ngpios = <32>;
+> +			interrupt-controller;
+>  			interrupts = <12>, <13>, <14>, <60>;
+>  		};
+>  
+> @@ -94,7 +101,8 @@
+>  			#gpio-cells = <2>;
+>  			gpio-controller;
+>  			reg = <0xd0420 0x20>;
+> -			ngpio = <32>;
+> +			ngpios = <32>;
+> +			interrupt-controller;
+>  			interrupts = <61>;
+>  		};
+>  
+> @@ -103,7 +111,13 @@
+>  			#gpio-cells = <2>;
+>  			gpio-controller;
+>  			reg = <0xe8400 0x0c>;
+> -			ngpio = <8>;
+> +			ngpios = <8>;
+> +		};
+> +
+> +		pinctrl: pinctrl@d0200 {
+> +			compatible = "marvell,dove-pinctrl";
+> +			reg = <0xd0200 0x10>;
+> +			clocks = <&gate_clk 22>;
+
+The above line broke the dtbs build target for dove_defconfig.  I have
+removed it.  Please let me know if that is not the correct answer.  This
+was the only occurence of 'clk' in arch/arm/boot/dts/dove* .
+
+thx,
+
+Jason.
+
+>  		};
+>  
+>  		spi0: spi@10600 {
+> -- 
+> 1.7.10.4
 > 
-> Right, but maybe I don't understand what you mean by the "from" here.
 > 
-> AFAICS autofs mounts mounted with MS_PRIVATE in the initial namespace do
-> propagate to the clone when it's created so I'm assuming subsequent
-> mounts would also. If these mounts are busy in some way they can't be
-> umounted in the clone unless "/" is marked private before attempting the
-> umount.
-
-This may sound stupid but if there something like, say, MS_NOPROPAGATE
-then the problem I see would pretty much just go away. No more need to
-umount existing mounts and container instances would be isolated. But, I
-guess, I'm not considering the possibility of cloned of processes as
-well .... if that makes sense, ;)
-
-Ian
-
-
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
