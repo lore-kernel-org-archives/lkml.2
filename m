@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030325Ab2KXJqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 04:46:17 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:46992 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030191Ab2KXJqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 04:46:14 -0500
-Date: Sat, 24 Nov 2012 10:46:10 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] sound fixes for 3.7-rc7
-Message-ID: <20121124094610.GA221@x4>
-References: <s5hboeojvwj.wl%tiwai@suse.de>
+	id S1030258Ab2KXJ7B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 04:59:01 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:35781 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964821Ab2KXJ67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 04:58:59 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Rob Herring <rob.herring@calxeda.com>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] cpuidle: add Calxeda SOC idle support
+Date: Sat, 24 Nov 2012 11:03:30 +0100
+Message-ID: <2676657.zDjyfqIDdm@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <201211122200.07901.arnd@arndb.de>
+References: <1352330622-13616-1-git-send-email-robherring2@gmail.com> <201211122200.07901.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5hboeojvwj.wl%tiwai@suse.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.11.23 at 14:23 +0100, Takashi Iwai wrote:
-> Sound fixes for 3.7-rc7
+On Monday, November 12, 2012 10:00:07 PM Arnd Bergmann wrote:
+> On Wednesday 07 November 2012, Rob Herring wrote:
+> > From: Rob Herring <rob.herring@calxeda.com>
+> > 
+> > Add support for core powergating on Calxeda platforms. Initially, this
+> > supports ECX-1000 (highbank), but support will be added for ECX-2000
+> > later.
+> > 
+> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Len Brown <len.brown@intel.com>
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 > 
-> The highlight of this update is the fixes for ASoC kirkwood by Russell.
-> In addition to that, a couple of regression fixes for HD-audio due to
-> the runtime PM support on 3.7, and other driver-specific regression
-> fixes like USB MIDI on non-standard USB audio drivers.
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> Takashi Iwai (2):
->       ALSA: hda - Fix recursive suspend/resume call
+> > It's not really clear where we want ARM cpuidle drivers. We're moving
+> > everything else out of arch/arm, and my understanding is Len doesn't want
+> > them in drivers/idle. It seems kind of silly to me to have the framework
+> > and drivers in 2 places. I've put this in drivers/cpuidle, but it doesn't
+> > make any difference to me.
+> 
+> Fine with me. I just don't want in in arch/arm because I'm guessing this will
+> be shared with arm64, which in turn shares idle (and other) drivers with various
+> powerpc, mips and x86 socs.
 
-This commit causes with !CONFIG_PM:
+Applied to linux-pm.git/linux-next as v3.8 material.
 
-ound/pci/hda/hda_codec.c: In function ‘codec_exec_verb’:
-sound/pci/hda/hda_codec.c:231:12: error: ‘struct hda_codec’ has no member named ‘in_pm’
-  if (!codec->in_pm && res && *res == -1 && bus->rirb_error) {
-            ^
-sound/pci/hda/hda_codec.c:241:19: error: ‘struct hda_codec’ has no member named ‘in_pm’
-  if (!err || codec->in_pm)
-                   ^
-make[3]: *** [sound/pci/hda/hda_codec.o] Error 1
+Thanks,
+Rafael
 
 
 -- 
-Markus
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
