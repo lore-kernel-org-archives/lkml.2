@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2KXRth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 12:49:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42249 "EHLO
+	id S1751970Ab2KXRz6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 12:55:58 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34323 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751864Ab2KXRtg (ORCPT
+	by vger.kernel.org with ESMTP id S1751864Ab2KXRz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 12:49:36 -0500
-Date: Sat, 24 Nov 2012 18:49:32 +0100
+	Sat, 24 Nov 2012 12:55:57 -0500
+Date: Sat, 24 Nov 2012 18:55:55 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps65090: Add MODULE_ALIAS
-Message-ID: <20121124174932.GE4719@opensource.wolfsonmicro.com>
-References: <1353685636.3260.1.camel@phoenix>
+To: Qing Xu <qingx@marvell.com>
+Cc: "lrg@ti.com" <lrg@ti.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: max8925: fix compiler warnings
+Message-ID: <20121124175554.GF4719@opensource.wolfsonmicro.com>
+References: <1353550266-21330-1-git-send-email-qingx@marvell.com>
+ <20121123014135.GC4385@opensource.wolfsonmicro.com>
+ <50AEDF00.7060709@marvell.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="brEuL7wsLY8+TuWz"
+	protocol="application/pgp-signature"; boundary="eDB11BtaWSyaBkpc"
 Content-Disposition: inline
-In-Reply-To: <1353685636.3260.1.camel@phoenix>
+In-Reply-To: <50AEDF00.7060709@marvell.com>
 X-Cookie: You will get what you deserve.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,35 +31,58 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---brEuL7wsLY8+TuWz
+--eDB11BtaWSyaBkpc
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Nov 23, 2012 at 11:47:16PM +0800, Axel Lin wrote:
-> This driver can be built as a module, add MODULE_ALIAS for it.
+On Fri, Nov 23, 2012 at 10:27:12AM +0800, Qing Xu wrote:
 
-Applied, thanks.
+> But, in fact, it is not necessary to initialize regulator_idx.
 
---brEuL7wsLY8+TuWz
+>         for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+>                 ri = &max8925_regulator_info[i];
+>                 if (ri->vol_reg == res->start) {
+
+> ****** if regulator_idx can not get a match "i" here, it will return
+> -EINVAL in below code
+
+>                         regulator_idx = i;
+>                         break;
+>                 }
+>         }
+
+>         if (i == ARRAY_SIZE(max8925_regulator_info)) {
+>                 dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+>                         (unsigned long long)res->start);
+>                 return -EINVAL;
+>         }
+
+> How to solve such compiler warning?
+
+Typically by reporting a compiler bug, though sometimes in the process
+of doing that one finds out that there's some non-obvious way in which
+the code can break.
+
+--eDB11BtaWSyaBkpc
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQsQiXAAoJELSic+t+oim9kasP/0v06vGKv+AH4QWhU1/EnF7s
-8GUEW6fk4w/D5czVx4tvi3Ta8rrL1JJPIaLvrNJemUJlAKB9TXU0lxLR1HjXAj8X
-W2fwqkAmfzT+y3iafAIeJLmdWP5ybj/x1cdtmJxCnjFenuZ7MTegsiNOlJ60vSsX
-YuFQ+wWgfAPbFFoKphhu2imcYwh0KRMQ6ac5xUXPWlkDpYOKNL3XuvmaEDWwoy+B
-wOZDE45rz7QPmVsow0t7wilMVqble6Q7OKnJdzM0RDrM0lrdVxlbK3Ygrq2tCk1m
-Xkb8LDeXmnjbGNXTq16a5SL55v8JYT6w3wZS6EGf1ur61CzTGv/VJT0N5XuwQpxX
-e0nWsPWzRCFKM3FBYkal+8/GukCeN3C6F/PDjffNG/JFVX3pO18NdrsM7AmuawAk
-zUFH3r7uusKg2XeJXv1z6QbT/WQ87nfDE7jsf9wTTb2RADTfWC4sP0gEOCB0zFkf
-A81clmjnNH5sUCXPluBPGzR+vQnpUArrUDT8cTmXIkAwi8l7L7L4lwtPmunVFIVj
-JhKeC58zRa3jd5lcB01xYLNXHrLAz5olAzFXsgJ4J9sFp9OzuRV0zVB9PWN6psB7
-23x5xUStkb1s6Ow0Y6/RNI+VXUJ3aTuk2rzzHlZYr7LYi0+SjWjNBl1VqghsxwRq
-6P5H/CaW9NIKoO8oEF5E
-=u2pf
+iQIcBAEBAgAGBQJQsQokAAoJELSic+t+oim9j0gP/A76CAu0nv1vHLiMJ7QCu1Rj
+Rx48koFd0jMjH13oHkvfmDc6xIqECAaFM0bd/9yt0j5oiqAO1C+x/Z4J+45rectT
+I4FDhD5m12rgzmBJQM09ietdTtC0ZgK2PvhurtGueOq2lj6tf3U0bBueihpkUQto
+mB4lN5OKTMXi2l4Ez/Cu+cLJXBfluqX4l5k4BJbjz42EYbo8zLCskFpqJTn0wqDO
+IRg85hZHw6EFrDRNgZYazKgk/e5/G7uZbpfHuunZhxGo5lbVJdi1OIcpflUtTpAf
+dcfiJi+J1ik57zmtbhbHTn8L2oDMsEWNNzjPhlYzL7p5iW5xa09HaBu6ggCUByoH
+9V1ypxlxDWG3k9MMxgrk6iCjIoit9Jju1WRMYHpwRkDiMvvSn7zFAHv4ISUbmi/b
+VCrKet6ZvBPJ+1eHvn05+P7IF95E5lk53/Sd9g4MKK0RfWrjKfpRLbVh6VoKoi79
+tyWJMjdN6iFZVo5wBXYeDB7krLfxVo5dJJdXOR8evYS3yeZ1y7YHBEp57a4cq2U+
+7cQtKFadCeLh3KwwWWve/g9cXcF33MrKUDhaITHCFwDBVovCkzxKb/xF5NYvkw4+
+WjloMYJP9YFVjDB0sllqVnlvuJvJSf27nJ6MXfPyHET+5JyhLI8ZbcAwjFqJbqYA
+XYPrtUGjojXIHXQ6ce5J
+=KCen
 -----END PGP SIGNATURE-----
 
---brEuL7wsLY8+TuWz--
+--eDB11BtaWSyaBkpc--
