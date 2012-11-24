@@ -1,44 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030252Ab2KXJnG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 04:43:06 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53307 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030189Ab2KXJnE (ORCPT
+	id S1030245Ab2KXJpO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 04:45:14 -0500
+Received: from mail-gw11.york.ac.uk ([144.32.129.150]:41306 "EHLO
+	mail-gw11.york.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030191Ab2KXJpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 04:43:04 -0500
+	Sat, 24 Nov 2012 04:45:12 -0500
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Nov 2012 04:45:12 EST
+X-Authenticated-User: socs25
+Message-ID: <05283e38-41237-06b84433856366@eddy-pc>
+Reply-To: "Norman Chan" <2259806502@qq.com>
+From: "Norman Chan" <socs25@york.ac.uk>
+To: linux-kernel@vger.kernel.org
+Subject: CONFIDENTAIL BUSINESS
+Date: Sat, 24 Nov 2012 10:37:37 +0100
 MIME-Version: 1.0
-In-Reply-To: <20121124083138.174041677@redhat.com>
-References: <20121124082918.671430919@redhat.com>
-	<20121124083138.174041677@redhat.com>
-Date: Sat, 24 Nov 2012 11:43:03 +0200
-X-Google-Sender-Auth: qSOBAHoAHXtfxyDUG8gM5ry8IJg
-Message-ID: <CAOJsxLGqb0=L+MgRJ=WGuz+XCec5TM1TXZ95=Ga4TCMXWoubVA@mail.gmail.com>
-Subject: Re: [patch 3/8] cpu-hotplug selftests: print failure status instead
- of cause make error
-From: Pekka Enberg <penberg@kernel.org>
-To: dyoung@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-Mailer: My email client v3.3
+X-MimeOLE: Produced by my email client v3.3
+X-Antivirus: avast! (VPS 121123-2, 11/23/2012), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 10:29 AM,  <dyoung@redhat.com> wrote:
->   bash-4.1$ make -C cpu-hotplug run_tests
->   make: Entering directory `/home/dave/git/linux-2.6/tools/testing/selftests/cpu-hotplug'
->   ./on-off-test.sh
->   make: execvp: ./on-off-test.sh: Permission denied
->   make: *** [run_tests] Error 127
->   make: Leaving directory `/home/dave/git/linux-2.6/tools/testing/selftests/cpu-hotplug'
->
-> After applying the patch:
->   bash-4.1$ make -C cpu-hotplug run_tests
->   make: Entering directory `/home/dave/git/linux-2.6/tools/testing/selftests/cpu-hotplug'
->   /bin/sh: ./on-off-test.sh: Permission denied
->   cpu-hotplug selftests: [FAIL]
->   make: Leaving directory `/home/dave/git/linux-2.6/tools/testing/selftests/cpu-hotplug'
->
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+I'm Norman Chan,I have a deal worth $47.1M USD. Interested? Reply Back To Me If Interested.Reply me.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
