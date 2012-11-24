@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab2KXAYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 19:24:05 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:54707 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab2KXAYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 19:24:03 -0500
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: viresh.linux@gmail.com
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org, rubini@gnudd.com,
-        wim@iguana.be, cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: [PATCH 3/8 v3] pl080.h: moved from arm/include/asm/hardware to include/linux/amba/
-Date: Sat, 24 Nov 2012 01:22:56 +0100
-Message-Id: <1353716576-19783-1-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <CAOh2x=keCbnPQzxB+AT5hEt_ukQ6GhPLuxkaQJCML27H9LbWwg@mail.gmail.com>
-References: <CAOh2x=keCbnPQzxB+AT5hEt_ukQ6GhPLuxkaQJCML27H9LbWwg@mail.gmail.com>
+	id S932438Ab2KXA0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 19:26:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39545 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2KXA0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Nov 2012 19:26:09 -0500
+Date: Fri, 23 Nov 2012 22:26:01 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Jacob Keller <jacob.e.keller@intel.com>,
+        Richard Cochran <richard.cochran@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 05/38] ptp: update adjfreq callback description
+Message-ID: <20121124002600.GA12014@herton-Z68MA-D2H-B3>
+References: <20121122003904.262382971@linuxfoundation.org>
+ <20121122003904.841717525@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122003904.841717525@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alessandro Rubini <rubini@gnudd.com>
+On Wed, Nov 21, 2012 at 04:39:48PM -0800, Greg Kroah-Hartman wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Jacob Keller <jacob.e.keller@intel.com>
+> 
+> commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
+> 
+> This patch updates the adjfreq callback description to include a note that the
+> delta in ppb is always relative to the base frequency, and not to the current
+> frequency of the hardware clock.
+> 
+> Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+> CC: Richard Cochran <richard.cochran@gmail.com>
+> CC: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  include/linux/ptp_clock_kernel.h |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- a/include/linux/ptp_clock_kernel.h
+> +++ b/include/linux/ptp_clock_kernel.h
+> @@ -50,7 +50,8 @@ struct ptp_clock_request {
+>   * clock operations
+>   *
+>   * @adjfreq:  Adjusts the frequency of the hardware clock.
+> - *            parameter delta: Desired period change in parts per billion.
+> + *            parameter delta: Desired frequency offset from nominal frequency
+> + *            in parts per billion
+>   *
+>   * @adjtime:  Shifts the time of the hardware clock.
+>   *            parameter delta: Desired change in nanoseconds.
 
-The header is used by drivers/dma/amba-pl08x.c, which can be compiled
-under x86, where PL080 exists under a PCI-to-AMBA bridge. This patche
-moves it where it can be accessed by other architectures, and fixes
-all users.
+This was marked for only 3.5 or later on the original changelog:
+"CC: stable@vger.kernel.org [v3.5+]"
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
----
-
-As requested by Viresh Kumar, this is 3/8 again, generated with
-
-git format-patch -C -M
-
-Since the patch is not identical to the previous 3/8, I added "v3"
-to the subject.
-
-
- arch/arm/mach-s3c64xx/dma.c                                   |    2 +-
- arch/arm/mach-spear3xx/spear3xx.c                             |    2 +-
- arch/arm/mach-spear6xx/spear6xx.c                             |    2 +-
- drivers/dma/amba-pl08x.c                                      |    2 +-
- {arch/arm/include/asm/hardware => include/linux/amba}/pl080.h |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
- rename {arch/arm/include/asm/hardware => include/linux/amba}/pl080.h (99%)
-
-diff --git a/arch/arm/mach-s3c64xx/dma.c b/arch/arm/mach-s3c64xx/dma.c
-index f2a7a17..a77f521 100644
---- a/arch/arm/mach-s3c64xx/dma.c
-+++ b/arch/arm/mach-s3c64xx/dma.c
-@@ -23,6 +23,7 @@
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/amba/pl080.h>
- 
- #include <mach/dma.h>
- #include <mach/map.h>
-@@ -30,7 +31,6 @@
- 
- #include <mach/regs-sys.h>
- 
--#include <asm/hardware/pl080.h>
- 
- /* dma channel state information */
- 
-diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-index 98144ba..ba61129 100644
---- a/arch/arm/mach-spear3xx/spear3xx.c
-+++ b/arch/arm/mach-spear3xx/spear3xx.c
-@@ -15,9 +15,9 @@
- 
- #include <linux/amba/pl022.h>
- #include <linux/amba/pl08x.h>
-+#include <linux/amba/pl080.h>
- #include <linux/of_irq.h>
- #include <linux/io.h>
--#include <asm/hardware/pl080.h>
- #include <asm/hardware/vic.h>
- #include <plat/pl080.h>
- #include <mach/generic.h>
-diff --git a/arch/arm/mach-spear6xx/spear6xx.c b/arch/arm/mach-spear6xx/spear6xx.c
-index 5a5a52d..8ce65a2 100644
---- a/arch/arm/mach-spear6xx/spear6xx.c
-+++ b/arch/arm/mach-spear6xx/spear6xx.c
-@@ -20,7 +20,7 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
--#include <asm/hardware/pl080.h>
-+#include <linux/amba/pl080.h>
- #include <asm/hardware/vic.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/time.h>
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 6eb6a5c..8bad254 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -83,7 +83,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <asm/hardware/pl080.h>
-+#include <linux/amba/pl080.h>
- 
- #include "dmaengine.h"
- #include "virt-dma.h"
-diff --git a/arch/arm/include/asm/hardware/pl080.h b/include/linux/amba/pl080.h
-similarity index 99%
-rename from arch/arm/include/asm/hardware/pl080.h
-rename to include/linux/amba/pl080.h
-index 4eea210..3e7b62f 100644
---- a/arch/arm/include/asm/hardware/pl080.h
-+++ b/include/linux/amba/pl080.h
-@@ -1,4 +1,4 @@
--/* arch/arm/include/asm/hardware/pl080.h
-+/* include/linux/amba/pl080.h
-  *
-  * Copyright 2008 Openmoko, Inc.
-  * Copyright 2008 Simtec Electronics
 -- 
-1.7.10.4
-
+[]'s
+Herton
