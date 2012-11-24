@@ -1,141 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2KXUgd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:36:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47251 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab2KXUg0 (ORCPT
+	id S1752646Ab2KXUgb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:36:31 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18261 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab2KXUg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:36:26 -0500
+	Sat, 24 Nov 2012 15:36:27 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 04/11] x86: Merge early_reserve_initrd for 32bit and 64bit
-Date: Sat, 24 Nov 2012 12:35:30 -0800
-Message-Id: <1353789337-19409-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 07/11] x86, boot: move checking of cmd_line_ptr out of common path
+Date: Sat, 24 Nov 2012 12:35:33 -0800
+Message-Id: <1353789337-19409-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
 References: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the same, could move them out from head32/64.c to setup.c.
+cmdline.c::__cmdline_find_option... are shared between
+16-bit setup code and 32/64 bit decompressor code.
 
-We are using memblock, and it could handle overlapping properly, so
-we don't need to reserve some at first to hold the location, and just
-need to make sure we reserve them before we are using memblock to find
-free mem to use.
+for 32/64 only path via kexec, we should not check if ptr less 1M.
+as those cmdline could be put above 1M, or even 4G.
+
+Move out accessible checking out of __cmdline_find_option()
+So decompressor in misc.c can parse cmdline correctly.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/kernel/head32.c |   11 -----------
- arch/x86/kernel/head64.c |   11 -----------
- arch/x86/kernel/setup.c  |   22 ++++++++++++++++++----
- 3 files changed, 18 insertions(+), 26 deletions(-)
+ arch/x86/boot/boot.h    |   14 ++++++++++++--
+ arch/x86/boot/cmdline.c |    8 ++++----
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index c18f59d..4c52efc 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -33,17 +33,6 @@ void __init i386_start_kernel(void)
- 	memblock_reserve(__pa_symbol(&_text),
- 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
- 
--#ifdef CONFIG_BLK_DEV_INITRD
--	/* Reserve INITRD */
--	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
--		/* Assume only end is not page aligned */
--		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
--		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
--		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
--	}
--#endif
--
- 	/* Call the subarch specific early setup function */
- 	switch (boot_params.hdr.hardware_subarch) {
- 	case X86_SUBARCH_MRST:
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 037df57..00e612a 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -100,17 +100,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
- 	memblock_reserve(__pa_symbol(&_text),
- 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
- 
--#ifdef CONFIG_BLK_DEV_INITRD
--	/* Reserve INITRD */
--	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
--		/* Assume only end is not page aligned */
--		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
--		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
--		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
--		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
--	}
--#endif
--
- 	reserve_ebda_region();
- 
- 	/*
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 6d29d1f..ee6d267 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -364,6 +364,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- 
- 	return mapped_pages << PAGE_SHIFT;
- }
-+static void __init early_reserve_initrd(void)
-+{
-+	/* Assume only end is not page aligned */
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
-+
-+	if (!boot_params.hdr.type_of_loader ||
-+	    !ramdisk_image || !ramdisk_size)
-+		return;		/* No initrd provided by bootloader */
-+
-+	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
-+}
- static void __init reserve_initrd(void)
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 18997e5..7fadf80 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
+ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
+ static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
  {
- 	/* Assume only end is not page aligned */
-@@ -390,10 +403,6 @@ static void __init reserve_initrd(void)
- 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
- 				PFN_DOWN(ramdisk_end))) {
- 		/* All are mapped, easy case */
--		/*
--		 * don't need to reserve again, already reserved early
--		 * in i386_start_kernel
--		 */
- 		initrd_start = ramdisk_image + PAGE_OFFSET;
- 		initrd_end = initrd_start + ramdisk_size;
- 		return;
-@@ -404,6 +413,9 @@ static void __init reserve_initrd(void)
- 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
- }
- #else
-+static void __init early_reserve_initrd(void)
-+{
-+}
- static void __init reserve_initrd(void)
- {
- }
-@@ -665,6 +677,8 @@ early_param("reservelow", parse_reservelow);
- 
- void __init setup_arch(char **cmdline_p)
- {
-+	early_reserve_initrd();
+-	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
++	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
 +
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
++	if (cmd_line_ptr >= 0x100000)
++		return -1;      /* inaccessible */
++
++	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
+ }
+ 
+ static inline int cmdline_find_option_bool(const char *option)
+ {
+-	return __cmdline_find_option_bool(boot_params.hdr.cmd_line_ptr, option);
++	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++
++	if (cmd_line_ptr >= 0x100000)
++		return -1;      /* inaccessible */
++
++	return __cmdline_find_option_bool(cmd_line_ptr, option);
+ }
+ 
+ 
+diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
+index 6b3b6f7..768f00f 100644
+--- a/arch/x86/boot/cmdline.c
++++ b/arch/x86/boot/cmdline.c
+@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
+ 		st_bufcpy	/* Copying this to buffer */
+ 	} state = st_wordstart;
+ 
+-	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
+-		return -1;	/* No command line, or inaccessible */
++	if (!cmdline_ptr)
++		return -1;      /* No command line */
+ 
+ 	cptr = cmdline_ptr & 0xf;
+ 	set_fs(cmdline_ptr >> 4);
+@@ -111,8 +111,8 @@ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
+ 		st_wordskip,	/* Miscompare, skip */
+ 	} state = st_wordstart;
+ 
+-	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
+-		return -1;	/* No command line, or inaccessible */
++	if (!cmdline_ptr)
++		return -1;      /* No command line */
+ 
+ 	cptr = cmdline_ptr & 0xf;
+ 	set_fs(cmdline_ptr >> 4);
 -- 
 1.7.7
 
