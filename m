@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632Ab2KXPAS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 10:00:18 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22590 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751448Ab2KXPAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 10:00:16 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX187NYUmxPh0GtkBbwJzIEgMC/XYuu7GNbc=
-Date: Sat, 24 Nov 2012 10:00:04 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
-Message-ID: <20121124150004.GQ15800@titan.lakedaemon.net>
-References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <20121124023942.GO15800@titan.lakedaemon.net>
- <20121124080240.3f600e89@skate>
+	id S1751703Ab2KXPE0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 10:04:26 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:5168 "EHLO smtp4.mundo-r.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab2KXPEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 10:04:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmEFAMfgsFBbdWOb/2dsb2JhbABEhWG6XBZzgh4BAQUyAUUBEAsYCRYPCQMCAQIBRQYNAQUCAogNvjKMNwmEOAOWAZBEgnCBXg
+Message-ID: <50B0E1FB.7000105@igalia.com>
+Date: Sat, 24 Nov 2012 16:04:27 +0100
+From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121124080240.3f600e89@skate>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+CC: linux-kernel@vger.kernel.org, Teddy Wang <teddy.wang@siliconmotion.com.cn>
+Subject: Re: [PATCH 23/24] MAINTAINERS: fix drivers/staging/sm7xx/
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net> <1353716808-16375-24-git-send-email-cesarb@cesarb.net>
+In-Reply-To: <1353716808-16375-24-git-send-email-cesarb@cesarb.net>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 08:02:40AM +0100, Thomas Petazzoni wrote:
-> Dear Jason Cooper,
-> 
-> On Fri, 23 Nov 2012 21:39:42 -0500, Jason Cooper wrote:
-> > > +		pinctrl: pinctrl@d0200 {
-> > > +			compatible = "marvell,dove-pinctrl";
-> > > +			reg = <0xd0200 0x10>;
-> > > +			clocks = <&gate_clk 22>;
-> > 
-> > The above line broke the dtbs build target for dove_defconfig.  I have
-> > removed it.  Please let me know if that is not the correct answer.  This
-> > was the only occurence of 'clk' in arch/arm/boot/dts/dove* .
-> 
-> Are you sure you merged
-> 
->  [PATCH 7/8] ARM: dove: switch to DT clock providers ?
-> 
-> This one clearly adds gate_clk in dove.dtsi. This patch was part of the
-> pull request:
-> 
-> Subject: [GIT PULL v3] core, cpu and gated clocks for mvebu
-> Date: Tue, 20 Nov 2012 15:31:08 +0100
+Acked-by: Javier Muñoz <jmunhoz@igalia.com>
 
-Yes, so that's what I thought happened.  This would have made orion/dt
-depend upon mvebu/everything.  It already had two other dependencies.
-Not ideal.
+Thanks Cesar!
 
-The good thing is, the build is not broken.  Once v3.8-rc1 drops with
-all of our stuff merged, I'll post a fixup patch adding this back in.
+Javier
 
-thx,
+On 11/24/2012 01:26 AM, Cesar Eduardo Barros wrote:
+> This directory was moved to drivers/staging/sm7xxfb/ by commit 925aa66
+> (staging: sm7xxfb: sm7xx becomes sm7xxfb).
+> 
+> Cc: Teddy Wang <teddy.wang@siliconmotion.com.cn>
+> Cc: Javier M. Mellid <jmunhoz@igalia.com>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> ---
+>  MAINTAINERS | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 328ba4f..e8990d2 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7073,7 +7073,7 @@ F:	drivers/staging/rtl8712/
+>  STAGING - SILICON MOTION SM7XX FRAME BUFFER DRIVER
+>  M:	Teddy Wang <teddy.wang@siliconmotion.com.cn>
+>  S:	Odd Fixes
+> -F:	drivers/staging/sm7xx/
+> +F:	drivers/staging/sm7xxfb/
+>  
+>  STAGING - SOFTLOGIC 6x10 MPEG CODEC
+>  M:	Ben Collins <bcollins@bluecherry.net>
 
-Jason.
