@@ -1,87 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab2KXUgW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:36:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18247 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab2KXUgV (ORCPT
+	id S1752830Ab2KXUgh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:36:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47269 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2KXUge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:36:21 -0500
+	Sat, 24 Nov 2012 15:36:34 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 00/11] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
-Date: Sat, 24 Nov 2012 12:35:26 -0800
-Message-Id: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v4 10/11] x86, boot: add fields to support load bzImage and ramdisk above 4G
+Date: Sat, 24 Nov 2012 12:35:36 -0800
+Message-Id: <1353789337-19409-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
+References: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have limit kdump reseved under 896M, because kexec has the limitation.
-and also bzImage need to stay under 4g.
+ext_ramdisk_image/size will record high 32bits for ramdisk info.
 
-To make kexec/kdump could use range above 4g, we need to make bzImage and
-ramdisk could be loaded above 4g.
-During booting bzImage will be unpacked on same postion and stay high.
+xloadflags bit0 will be set if relocatable with 64bit.
 
-The patches add fields in setup_header and boot_params to
-1. get info about ramdisk position info above 4g from bootloader/kexec
-2. get info about cmd_line_ptr info above 4g from bootloader/kexec
-2. set xloadflags bit0 in header for bzImage and bootloader/kexec load
-   could check that to decide if it could to put bzImage high.
+Let get_ramdisk_image/size to use ext_ramdisk_image/size to get
+right positon for ramdisk.
 
-This patches is tested with kexec tools with local changes and they are sent
-to kexec list.
+bootloader will fill value to ext_ramdisk_image/size when it load
+ramdisk above 4G.
 
-could be found at:
+Also bootloader will check if xloadflags bit0 is set to decicde if
+it could load ramdisk high above 4G.
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
+Update header version to 2.12.
 
-and it is on top of for-x86-mm
+-v2: add ext_cmd_line_ptr for above 4G support.
+-v3: update to xloadflags from HPA.
+-v4: use fields from bootparam instead setup_header accoring to HPA.
 
--v2: add ext_cmd_line_ptr support, and handle boot_param/cmd_line is above
-     4G case.
--v3: according to hpa, use xloadflags instead code32_start_offset.
-     0x200 will not be changed...
--v4: move ext_ramdisk_image/ext_ramdisk_size/ext_cmd_line_ptr to boot_params.
-     add handling cross GB boundary case.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Matt Fleming <matt.fleming@intel.com>
+---
+ Documentation/x86/boot.txt         |   15 ++++++++++++++-
+ Documentation/x86/zero-page.txt    |    3 +++
+ arch/x86/boot/compressed/cmdline.c |    2 ++
+ arch/x86/boot/header.S             |   12 ++++++++++--
+ arch/x86/include/asm/bootparam.h   |    8 ++++++--
+ arch/x86/kernel/head64.c           |    2 ++
+ arch/x86/kernel/setup.c            |    4 ++++
+ 7 files changed, 41 insertions(+), 5 deletions(-)
 
-Thanks
-
-Yinghai
-
-Yinghai Lu (11):
-  x86, boot: move verify_cpu.S after 0x200
-  x86, boot: Move lldt/ltr out of 64bit code section
-  x86, 64bit: Set extra ident mapping for whole kernel range
-  x86: Merge early_reserve_initrd for 32bit and 64bit
-  x86: add get_ramdisk_image/size()
-  x86, boot: add get_cmd_line_ptr()
-  x86, boot: move checking of cmd_line_ptr out of common path
-  x86, boot: update cmd_line_ptr to unsigned long
-  x86: use io_remap to access real_mode_data
-  x86, boot: add fields to support load bzImage and ramdisk above 4G
-  x86: remove 1024G limitation for kexec buffer on 64bit
-
- Documentation/x86/boot.txt         |   15 +++-
- Documentation/x86/zero-page.txt    |    3 +
- arch/x86/boot/boot.h               |   18 +++-
- arch/x86/boot/cmdline.c            |   12 ++--
- arch/x86/boot/compressed/cmdline.c |   12 +++-
- arch/x86/boot/compressed/head_64.S |   14 ++-
- arch/x86/boot/header.S             |   12 +++-
- arch/x86/include/asm/bootparam.h   |    8 ++-
- arch/x86/include/asm/kexec.h       |    6 +-
- arch/x86/kernel/head32.c           |   11 ---
- arch/x86/kernel/head64.c           |   41 ++++++----
- arch/x86/kernel/head_64.S          |  153 +++++++++++++++++++++++++++++++++---
- arch/x86/kernel/setup.c            |   53 ++++++++++---
- 13 files changed, 285 insertions(+), 73 deletions(-)
-
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 9efceff..b2d95ae 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -57,6 +57,9 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
+ Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
+ 		protocol entry point.
+ 
++Protocol 2.12:	(Kernel 3.9) Added three fields for loading bzImage and
++		 ramdisk above 4G with 64bit in bootparam.
++
+ **** MEMORY LAYOUT
+ 
+ The traditional memory map for the kernel loader, used for Image or
+@@ -182,7 +185,7 @@ Offset	Proto	Name		Meaning
+ 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
+ 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
+ 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
+-0236/2	N/A	pad3		Unused
++0236/2	2.12+	xloadflags	Boot protocol option flags
+ 0238/4	2.06+	cmdline_size	Maximum size of the kernel command line
+ 023C/4	2.07+	hardware_subarch Hardware subarchitecture
+ 0240/8	2.07+	hardware_subarch_data Subarchitecture-specific data
+@@ -581,6 +584,16 @@ Protocol:	2.10+
+   misaligned kernel.  Therefore, a loader should typically try each
+   power-of-two alignment from kernel_alignment down to this alignment.
+ 
++Field name:     xloadflags
++Type:           modify (obligatory)
++Offset/size:    0x236/2
++Protocol:       2.12+
++
++  This field is a bitmask.
++
++  Bit 0 (read): LOADED_ABOVE_4G
++        - If 1, kernel/boot_params/cmdline/ramdisk could be above 4g
++
+ Field name:	cmdline_size
+ Type:		read
+ Offset/size:	0x238/4
+diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
+index cf5437d..0e19657 100644
+--- a/Documentation/x86/zero-page.txt
++++ b/Documentation/x86/zero-page.txt
+@@ -19,6 +19,9 @@ Offset	Proto	Name		Meaning
+ 090/010	ALL	hd1_info	hd1 disk parameter, OBSOLETE!!
+ 0A0/010	ALL	sys_desc_table	System description table (struct sys_desc_table)
+ 0B0/010	ALL	olpc_ofw_header	OLPC's OpenFirmware CIF and friends
++0C0/004 ALL	ext_ramdisk_image ramdisk_image high 32bits
++0C4/004 ALL	ext_ramdisk_size  ramdisk_size high 32bits
++0C8/004 ALL	ext_cmd_line_ptr  cmd_line_ptr high 32bits
+ 140/080	ALL	edid_info	Video mode setup (struct edid_info)
+ 1C0/020	ALL	efi_info	EFI 32 information (struct efi_info)
+ 1E0/004	ALL	alk_mem_k	Alternative mem check, in KB
+diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+index b4c913c..bffd73b 100644
+--- a/arch/x86/boot/compressed/cmdline.c
++++ b/arch/x86/boot/compressed/cmdline.c
+@@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
+ {
+ 	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+ 
++	cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
++
+ 	return cmd_line_ptr;
+ }
+ int cmdline_find_option(const char *option, char *buffer, int bufsize)
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 2a01744..ae5b00d 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -279,7 +279,7 @@ _start:
+ 	# Part 2 of the header, from the old setup.S
+ 
+ 		.ascii	"HdrS"		# header signature
+-		.word	0x020b		# header version number (>= 0x0105)
++		.word	0x020c		# header version number (>= 0x0105)
+ 					# or else old loadlin-1.5 will fail)
+ 		.globl realmode_swtch
+ realmode_swtch:	.word	0, 0		# default_switch, SETUPSEG
+@@ -369,7 +369,15 @@ relocatable_kernel:    .byte 1
+ relocatable_kernel:    .byte 0
+ #endif
+ min_alignment:		.byte MIN_KERNEL_ALIGN_LG2	# minimum alignment
+-pad3:			.word 0
++
++xloadflags:
++LOADED_ABOVE_4G	= 1			# If set, the kernel/boot_param/
++					# ramdisk could be loaded above 4g
++#if defined(CONFIG_X86_64) && defined(CONFIG_RELOCATABLE)
++			.word LOADED_ABOVE_4G
++#else
++			.word 0
++#endif
+ 
+ cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
+                                                 #added with boot protocol
+diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
+index 2ad874c..c83ecc8 100644
+--- a/arch/x86/include/asm/bootparam.h
++++ b/arch/x86/include/asm/bootparam.h
+@@ -57,7 +57,8 @@ struct setup_header {
+ 	__u32	initrd_addr_max;
+ 	__u32	kernel_alignment;
+ 	__u8	relocatable_kernel;
+-	__u8	_pad2[3];
++	__u8	min_alignment;
++	__u16	xloadflags;
+ 	__u32	cmdline_size;
+ 	__u32	hardware_subarch;
+ 	__u64	hardware_subarch_data;
+@@ -105,7 +106,10 @@ struct boot_params {
+ 	__u8  hd1_info[16];	/* obsolete! */		/* 0x090 */
+ 	struct sys_desc_table sys_desc_table;		/* 0x0a0 */
+ 	struct olpc_ofw_header olpc_ofw_header;		/* 0x0b0 */
+-	__u8  _pad4[128];				/* 0x0c0 */
++	__u32 ext_ramdisk_image;			/* 0x0c0 */
++	__u32 ext_ramdisk_size;				/* 0x0c4 */
++	__u32 ext_cmd_line_ptr;				/* 0x0c8 */
++	__u8  _pad4[116];				/* 0x0cc */
+ 	struct edid_info edid_info;			/* 0x140 */
+ 	struct efi_info efi_info;			/* 0x1c0 */
+ 	__u32 alt_mem_k;				/* 0x1e0 */
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 735cd47..7b941be 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -45,6 +45,8 @@ static unsigned long get_cmd_line_ptr(void)
+ {
+ 	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ 
++	cmd_line_ptr |= (u64)boot_params.ext_cmd_line_ptr << 32;
++
+ 	return cmd_line_ptr;
+ }
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 573fa7d7..166d30b 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -302,12 +302,16 @@ static u64 __init get_ramdisk_image(void)
+ {
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 
++	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++
+ 	return ramdisk_image;
+ }
+ static u64 __init get_ramdisk_size(void)
+ {
+ 	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
+ 
++	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++
+ 	return ramdisk_size;
+ }
+ 
 -- 
 1.7.7
 
