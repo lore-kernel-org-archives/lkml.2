@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab2KXAcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 19:32:35 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:60673 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab2KXA1I (ORCPT
+	id S932541Ab2KXAmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 19:42:55 -0500
+Received: from smtp-01.mandic.com.br ([200.225.81.132]:55487 "EHLO
+	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932416Ab2KXAmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 19:27:08 -0500
+	Fri, 23 Nov 2012 19:42:54 -0500
+Message-ID: <50B0180A.3020702@cesarb.net>
+Date: Fri, 23 Nov 2012 22:42:50 -0200
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 02/24] MAINTAINERS: remove arch/arm/common/time-acorn.c
-Date: Fri, 23 Nov 2012 22:26:26 -0200
-Message-Id: <1353716808-16375-3-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 10/24] MAINTAINERS: remove include/linux/ext3*
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net> <1353716808-16375-11-git-send-email-cesarb@cesarb.net>
+In-Reply-To: <1353716808-16375-11-git-send-email-cesarb@cesarb.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file was moved to arch/arm/mach-rpc/time.c by commit a1be5d6 (ARM:
-riscpc: move time-acorn.c to mach-rpc), and the pattern for
-arch/arm/mach-rpc/ already exists.
+Em 23-11-2012 22:26, Cesar Eduardo Barros escreveu:
+> Moved to fs/ext3/ext3.h by commit 4613ad1 (ext3: move headers to
+> fs/ext3/).
+>
+> Cc: linux-ext4@vger.kernel.or
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
----
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+Typo here (in fact a copy-paste error). Should be
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c2fc7af..041872a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1050,7 +1050,6 @@ M:	Russell King <linux@arm.linux.org.uk>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.arm.linux.org.uk/
- S:	Maintained
--F:	arch/arm/common/time-acorn.c
- F:	arch/arm/include/asm/hardware/entry-macro-iomd.S
- F:	arch/arm/include/asm/hardware/ioc.h
- F:	arch/arm/include/asm/hardware/iomd.h
+Cc: linux-ext4@vger.kernel.org
+
 -- 
-1.7.11.7
-
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
