@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2KXPE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 10:04:26 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:5168 "EHLO smtp4.mundo-r.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2KXPEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 10:04:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmEFAMfgsFBbdWOb/2dsb2JhbABEhWG6XBZzgh4BAQUyAUUBEAsYCRYPCQMCAQIBRQYNAQUCAogNvjKMNwmEOAOWAZBEgnCBXg
-Message-ID: <50B0E1FB.7000105@igalia.com>
-Date: Sat, 24 Nov 2012 16:04:27 +0100
-From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	id S1751807Ab2KXPGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 10:06:32 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:41920 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2KXPGa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 10:06:30 -0500
 MIME-Version: 1.0
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-CC: linux-kernel@vger.kernel.org, Teddy Wang <teddy.wang@siliconmotion.com.cn>
-Subject: Re: [PATCH 23/24] MAINTAINERS: fix drivers/staging/sm7xx/
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net> <1353716808-16375-24-git-send-email-cesarb@cesarb.net>
-In-Reply-To: <1353716808-16375-24-git-send-email-cesarb@cesarb.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121122154107.GB11736@localhost>
+References: <1353433362.85184.YahooMailNeo@web141101.mail.bf1.yahoo.com>
+ <20121120182500.GH1408@quack.suse.cz> <1353485020.53500.YahooMailNeo@web141104.mail.bf1.yahoo.com>
+ <1353485630.17455.YahooMailNeo@web141106.mail.bf1.yahoo.com>
+ <50AC9220.70202@gmail.com> <20121121090204.GA9064@localhost>
+ <50ACA209.9000101@gmail.com> <1353491880.11679.YahooMailNeo@web141102.mail.bf1.yahoo.com>
+ <50ACA634.5000007@gmail.com> <CAJOrxZBpefqtkXr+XTxEZ6qy-6SCwQJ11makD=Lg_M4itY5Ang@mail.gmail.com>
+ <20121122154107.GB11736@localhost>
+From: =?UTF-8?B?TWV0aW4gRMO2xZ9sw7w=?= <metindoslu@gmail.com>
+Date: Sat, 24 Nov 2012 17:06:09 +0200
+Message-ID: <CAJOrxZBp52a_7Rx6nxoSkMTTLHxA4pDnyfirLgN7BZXC8BxBzQ@mail.gmail.com>
+Subject: Re: Problem in Page Cache Replacement
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Javier Mu�oz <jmunhoz@igalia.com>
+On Thu, Nov 22, 2012 at 5:41 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Wed, Nov 21, 2012 at 12:07:22PM +0200, Metin Döşlü wrote:
+>> On Wed, Nov 21, 2012 at 12:00 PM, Jaegeuk Hanse <jaegeuk.hanse@gmail.com> wrote:
+>> >
+>> > On 11/21/2012 05:58 PM, metin d wrote:
+>> >
+>> > Hi Fengguang,
+>> >
+>> > I run tests and attached the results. The line below I guess shows the data-1 page caches.
+>> >
+>> > 0x000000080000006c       6584051    25718  __RU_lA___________________P________    referenced,uptodate,lru,active,private
+>> >
+>> >
+>> > I thinks this is just one state of page cache pages.
+>>
+>> But why these page caches are in this state as opposed to other page
+>> caches. From the results I conclude that:
+>>
+>> data-1 pages are in state : referenced,uptodate,lru,active,private
+>
+> I wonder if it's this code that stops data-1 pages from being
+> reclaimed:
+>
+> shrink_page_list():
+>
+>                 if (page_has_private(page)) {
+>                         if (!try_to_release_page(page, sc->gfp_mask))
+>                                 goto activate_locked;
+>
+> What's the filesystem used?
 
-Thanks Cesar!
+It was ext3.
 
-Javier
+>> data-2 pages are in state : referenced,uptodate,lru,mappedtodisk
+>
+> Thanks,
+> Fengguang
 
-On 11/24/2012 01:26 AM, Cesar Eduardo Barros wrote:
-> This directory was moved to drivers/staging/sm7xxfb/ by commit 925aa66
-> (staging: sm7xxfb: sm7xx becomes sm7xxfb).
-> 
-> Cc: Teddy Wang <teddy.wang@siliconmotion.com.cn>
-> Cc: Javier M. Mellid <jmunhoz@igalia.com>
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> ---
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 328ba4f..e8990d2 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -7073,7 +7073,7 @@ F:	drivers/staging/rtl8712/
->  STAGING - SILICON MOTION SM7XX FRAME BUFFER DRIVER
->  M:	Teddy Wang <teddy.wang@siliconmotion.com.cn>
->  S:	Odd Fixes
-> -F:	drivers/staging/sm7xx/
-> +F:	drivers/staging/sm7xxfb/
->  
->  STAGING - SOFTLOGIC 6x10 MPEG CODEC
->  M:	Ben Collins <bcollins@bluecherry.net>
 
+
+-- 
+Metin Döşlü
