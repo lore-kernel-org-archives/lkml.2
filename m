@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030319Ab2KXJqB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 04:46:01 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64976 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030191Ab2KXJp7 (ORCPT
+	id S1030325Ab2KXJqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 04:46:17 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:46992 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030191Ab2KXJqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 04:45:59 -0500
+	Sat, 24 Nov 2012 04:46:14 -0500
+Date: Sat, 24 Nov 2012 10:46:10 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] sound fixes for 3.7-rc7
+Message-ID: <20121124094610.GA221@x4>
+References: <s5hboeojvwj.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20121124083140.791341108@redhat.com>
-References: <20121124082918.671430919@redhat.com>
-	<20121124083140.791341108@redhat.com>
-Date: Sat, 24 Nov 2012 11:45:59 +0200
-X-Google-Sender-Auth: PBf6NrCxgESdCnXkOKoJEr2Tm1s
-Message-ID: <CAOJsxLGqzBq9RP3A+9DU8ondpfV-rkKOXR46+SOo0TzQrzH=AQ@mail.gmail.com>
-Subject: Re: [patch 8/8] breakpoint selftests: print failure status instead of
- cause make error
-From: Pekka Enberg <penberg@kernel.org>
-To: dyoung@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <s5hboeojvwj.wl%tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 10:29 AM,  <dyoung@redhat.com> wrote:
-> In case breakpoint test exit non zero value it will cause make error.
-> Better way is just print the test failure status.
->
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+On 2012.11.23 at 14:23 +0100, Takashi Iwai wrote:
+> Sound fixes for 3.7-rc7
+> 
+> The highlight of this update is the fixes for ASoC kirkwood by Russell.
+> In addition to that, a couple of regression fixes for HD-audio due to
+> the runtime PM support on 3.7, and other driver-specific regression
+> fixes like USB MIDI on non-standard USB audio drivers.
+> 
+> Takashi Iwai (2):
+>       ALSA: hda - Fix recursive suspend/resume call
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+This commit causes with !CONFIG_PM:
 
-> ---
->  tools/testing/selftests/breakpoints/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- linux-2.6.orig/tools/testing/selftests/breakpoints/Makefile 2012-11-23 22:37:04.749058409 +0800
-> +++ linux-2.6/tools/testing/selftests/breakpoints/Makefile      2012-11-23 22:38:43.221858269 +0800
-> @@ -17,7 +17,7 @@ else
->  endif
->
->  run_tests:
-> -       ./breakpoint_test
-> +       @./breakpoint_test || echo "breakpoints selftests: [FAIL]"
->
->  clean:
->         rm -fr breakpoint_test
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ound/pci/hda/hda_codec.c: In function ‘codec_exec_verb’:
+sound/pci/hda/hda_codec.c:231:12: error: ‘struct hda_codec’ has no member named ‘in_pm’
+  if (!codec->in_pm && res && *res == -1 && bus->rirb_error) {
+            ^
+sound/pci/hda/hda_codec.c:241:19: error: ‘struct hda_codec’ has no member named ‘in_pm’
+  if (!err || codec->in_pm)
+                   ^
+make[3]: *** [sound/pci/hda/hda_codec.o] Error 1
+
+
+-- 
+Markus
