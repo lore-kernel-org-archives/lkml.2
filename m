@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab2KXOPB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 09:15:01 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:36768 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab2KXOPA (ORCPT
+	id S1751632Ab2KXPAS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 10:00:18 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22590 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751448Ab2KXPAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 09:15:00 -0500
-Subject: Re: arch_check_bp_in_kernelspace: fix the range check
-To: oleg@redhat.com (Oleg Nesterov)
-Date: Sun, 25 Nov 2012 01:14:58 +1100 (EST)
-Cc: gorcunov@openvz.org (Cyrill Gorcunov),
-        xemul@parallels.com (Pavel Emelyanov),
-        rostedt@goodmis.org (Steven Rostedt),
-        fweisbec@gmail.com (Frederic Weisbecker),
-        mingo@redhat.com (Ingo Molnar),
-        a.p.zijlstra@chello.nl (Peter Zijlstra), linux-kernel@vger.kernel.org
-Reply-To: u3557@dialix.com.au
-In-Reply-To: <20121123170553.GA1664@redhat.com>
-X-Mailer: ELM [version 2.5 PL8]
+	Sat, 24 Nov 2012 10:00:16 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187NYUmxPh0GtkBbwJzIEgMC/XYuu7GNbc=
+Date: Sat, 24 Nov 2012 10:00:04 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
+Message-ID: <20121124150004.GQ15800@titan.lakedaemon.net>
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20121124023942.GO15800@titan.lakedaemon.net>
+ <20121124080240.3f600e89@skate>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20121124141458.CB215592076@miso.sublimeip.com>
-From: u3557@miso.sublimeip.com (Amnon Shiloh)
+Content-Disposition: inline
+In-Reply-To: <20121124080240.3f600e89@skate>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
-
-This patch may look ugly, but it is one way to solve my problem.
-
-This way, "strace" too, which is broken since the introduction of
-the vsyscall page, will again be able to report when the program
-calls "time()" or "gettimeofday()" - currently it cannot!
-
-I think that allowing to set the x86 debug-registers to the
-vsyscall page is more elegant - but do whatever you prefer.
-
-Best Regards,
-Amnon.
-
-
-
-> forgot to mention...
+On Sat, Nov 24, 2012 at 08:02:40AM +0100, Thomas Petazzoni wrote:
+> Dear Jason Cooper,
 > 
-> On 11/23, Oleg Nesterov wrote:
-> >
-> > On 11/23, Amnon Shiloh wrote:
-> > >
-> > > Or, there is an alternative: if only I (the ptracer or the traced process)
-> > > was allowed to munmap the vsyscall page,
-> >
-> > It is not possible to unmap it. The kernel (swapper_pg_dir) has this
-> > mapping, not the process. Unlike vdso. IOW, you can only "unmap" it
-> > globally and obviously you can't do this from the userspace.
+> On Fri, 23 Nov 2012 21:39:42 -0500, Jason Cooper wrote:
+> > > +		pinctrl: pinctrl@d0200 {
+> > > +			compatible = "marvell,dove-pinctrl";
+> > > +			reg = <0xd0200 0x10>;
+> > > +			clocks = <&gate_clk 22>;
+> > 
+> > The above line broke the dtbs build target for dove_defconfig.  I have
+> > removed it.  Please let me know if that is not the correct answer.  This
+> > was the only occurence of 'clk' in arch/arm/boot/dts/dove* .
 > 
-> And even if this were possible, this can't help. Please look at
-> __bad_area_nosemaphore()->emulate_vsyscall(), the process won't get
-> SIGSEGV. IOW, in fact EMULATE already "unmaps" this page (sets _NX)
-> to trigger the fault.
+> Are you sure you merged
 > 
-> Sure, we can do something like below, but it doesn't look very nice
-> too.
+>  [PATCH 7/8] ARM: dove: switch to DT clock providers ?
 > 
-> Oleg.
+> This one clearly adds gate_clk in dove.dtsi. This patch was part of the
+> pull request:
 > 
-> --- x/arch/x86/mm/fault.c
-> +++ x/arch/x86/mm/fault.c
-> @@ -744,7 +744,8 @@ __bad_area_nosemaphore(struct pt_regs *r
->  		 */
->  		if (unlikely((error_code & PF_INSTR) &&
->  			     ((address & ~0xfff) == VSYSCALL_START))) {
-> -			if (emulate_vsyscall(regs, address))
-> +			if (!(tsk->ptrace & PTRACE_O_DONTEMULATE) &&
-> +			    emulate_vsyscall(regs, address))
->  				return;
->  		}
->  #endif
-> 
-> 
+> Subject: [GIT PULL v3] core, cpu and gated clocks for mvebu
+> Date: Tue, 20 Nov 2012 15:31:08 +0100
 
+Yes, so that's what I thought happened.  This would have made orion/dt
+depend upon mvebu/everything.  It already had two other dependencies.
+Not ideal.
+
+The good thing is, the build is not broken.  Once v3.8-rc1 drops with
+all of our stuff merged, I'll post a fixup patch adding this back in.
+
+thx,
+
+Jason.
