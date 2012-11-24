@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab2KXTuq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 14:50:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41430 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151Ab2KXTup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 14:50:45 -0500
-Message-ID: <50B124E9.400@zytor.com>
-Date: Sat, 24 Nov 2012 11:50:01 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <87haofi3d3.fsf@xmission.com> <50B104BC.90208@zytor.com>
-In-Reply-To: <50B104BC.90208@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752276Ab2KXU21 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:28:27 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55462 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752207Ab2KXU20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 15:28:26 -0500
+Message-ID: <1353788903.1420.38.camel@x61.thuisdomein>
+Subject: Re: [PATCH 22/24] MAINTAINERS: fix BAST
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Sanders <vince@simtec.co.uk>,
+        Simtec Linux Team <linux@simtec.co.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Date: Sat, 24 Nov 2012 21:28:23 +0100
+In-Reply-To: <1353716808-16375-23-git-send-email-cesarb@cesarb.net>
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
+	 <1353716808-16375-23-git-send-email-cesarb@cesarb.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Nov 2012 20:28:24.0690 (UTC) FILETIME=[40E4AD20:01CDCA82]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2012 09:32 AM, H. Peter Anvin wrote:
-> On 11/24/2012 04:37 AM, Eric W. Biederman wrote:
->>
->> Certainly /sbin/kexec isn't bothering to calculate the end of the setup
->> header and just being far more conservative and using all of the 16bit
->> real mode code as it's initializer.
->>
->
-> That's not conservative... that's just plain wrong.  It means you're
-> initializing the fields in struct boot_params with garbage instead of a
-> predictable value (zero).
->
-> We could work around it with a sentinel hack... except you *also*
-> probably modify *some* fields and now we have a horrid mix of
-> initialized and uninitialized fields to sort out... and there really
-> isn't any sane way for the kernel to sort that out.
->
-> We have a huge problem on our hands now because of it.
->
+On Fri, 2012-11-23 at 22:26 -0200, Cesar Eduardo Barros wrote:
+> These files were renamed by commit 85fd6d6 (ARM: S3C2410: move
+> mach-s3c2410/* into mach-s3c24xx/).
 
-So, given the mess we now have on our hands... any suggestions how to 
-best solve it?  There is the option of simply declaring old kexec 
-binaries broken; they will then not work reliably with newer kernels, if 
-they even work reliably now -- it is hard to know for certain.
+I submitted an identical patch in https://lkml.org/lkml/2012/6/25/154 .
+In a reaction on that patch Kukjin Kim wondered whether "Simtec Linux
+Team and Vincent are still supporting BAST". No-one bothered to reply on
+Kukjin's message, which suggests BAST is unsupported and this entry
+might as well be dropped entirely.
 
-Another option is the sentinel hack I mentioned... permanently reserve a 
-field that if it is nonzero we will have the kernel erase the remainder 
-of struct boot_params... except for *some fields* to be defined.  This 
-is a total hack workaround and will not work if we have the same class 
-of problems in another bootloader which initializes different fields, 
-but, well, it might provide some value and might solve problems with 
-other bootloaders which have similar enough misbehavior.
 
-The final idea would be to declare the current struct boot_params frozen 
-indefinitely, and instead create a whole new set of data structures 
-going forward, perhaps inserting them into the linked list.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Paul Bolle
 
