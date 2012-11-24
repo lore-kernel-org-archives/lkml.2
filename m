@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab2KXTkD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 14:40:03 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37536 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab2KXTkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 14:40:02 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <support@Supermicro.com>, <linux-kernel@vger.kernel.org>
-Subject: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware bug question
-Date: Sat, 24 Nov 2012 14:40:00 -0500
-Message-ID: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
+	id S1752243Ab2KXTuq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 14:50:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41430 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752151Ab2KXTup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 14:50:45 -0500
+Message-ID: <50B124E9.400@zytor.com>
+Date: Sat, 24 Nov 2012 11:50:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <87haofi3d3.fsf@xmission.com> <50B104BC.90208@zytor.com>
+In-Reply-To: <50B104BC.90208@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac3Ke2TzLd2ZWvJxSwKOvsyzrTSI6g==
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/24/2012 09:32 AM, H. Peter Anvin wrote:
+> On 11/24/2012 04:37 AM, Eric W. Biederman wrote:
+>>
+>> Certainly /sbin/kexec isn't bothering to calculate the end of the setup
+>> header and just being far more conservative and using all of the 16bit
+>> real mode code as it's initializer.
+>>
+>
+> That's not conservative... that's just plain wrong.  It means you're
+> initializing the fields in struct boot_params with garbage instead of a
+> predictable value (zero).
+>
+> We could work around it with a sentinel hack... except you *also*
+> probably modify *some* fields and now we have a horrid mix of
+> initialized and uninitialized fields to sort out... and there really
+> isn't any sane way for the kernel to sort that out.
+>
+> We have a huge problem on our hands now because of it.
+>
 
-Is the following normal on an X9SRL-F board (bios 1.0a)?
+So, given the mess we now have on our hands... any suggestions how to 
+best solve it?  There is the option of simply declaring old kexec 
+binaries broken; they will then not work reliably with newer kernels, if 
+they even work reliably now -- it is hard to know for certain.
 
-In the manual it states:
+Another option is the sentinel hack I mentioned... permanently reserve a 
+field that if it is nonzero we will have the kernel erase the remainder 
+of struct boot_params... except for *some fields* to be defined.  This 
+is a total hack workaround and will not work if we have the same class 
+of problems in another bootloader which initializes different fields, 
+but, well, it might provide some value and might solve problems with 
+other bootloaders which have similar enough misbehavior.
 
-Data Direct I/O
-Select Enabled to enable Intel I/OAT (I/O Acceleration Technology), which
-significantly reduces CPU overhead by leveraging CPU architectural
-improvements and freeing the system resource for other tasks. The options
-are Disabled and Enabled.
+The final idea would be to declare the current struct boot_params frozen 
+indefinitely, and instead create a whole new set of data structures 
+going forward, perhaps inserting them into the linked list.
 
-Default is Enabled.
+	-hpa
 
-When enabled in the kernel, I see the following:
-
-[    0.696357] ioatdma: Intel(R) QuickData Technology Driver 4.00
-[    0.696487] ioatdma 0000:00:04.0: channel error register unreachable
-[    0.696546] ioatdma 0000:00:04.0: channel enumeration error
-[    0.696604] ioatdma 0000:00:04.0: Intel(R) I/OAT DMA Engine init failed
-[    0.696721] ioatdma 0000:00:04.1: channel error register unreachable
-[    0.696779] ioatdma 0000:00:04.1: channel enumeration error
-[    0.697522] ioatdma 0000:00:04.1: Intel(R) I/OAT DMA Engine init failed
-[    0.697617] ioatdma 0000:00:04.2: channel error register unreachable
-[    0.697681] ioatdma 0000:00:04.2: channel enumeration error
-[    0.697739] ioatdma 0000:00:04.2: Intel(R) I/OAT DMA Engine init failed
-[    0.697831] ioatdma 0000:00:04.3: channel error register unreachable
-[    0.697890] ioatdma 0000:00:04.3: channel enumeration error
-[    0.697948] ioatdma 0000:00:04.3: Intel(R) I/OAT DMA Engine init failed
-[    0.698037] ioatdma 0000:00:04.4: channel error register unreachable
-[    0.698095] ioatdma 0000:00:04.4: channel enumeration error
-[    0.698153] ioatdma 0000:00:04.4: Intel(R) I/OAT DMA Engine init failed
-[    0.698245] ioatdma 0000:00:04.5: channel error register unreachable
-[    0.698303] ioatdma 0000:00:04.5: channel enumeration error
-[    0.698360] ioatdma 0000:00:04.5: Intel(R) I/OAT DMA Engine init failed
-[    0.698449] ioatdma 0000:00:04.6: channel error register unreachable
-[    0.698508] ioatdma 0000:00:04.6: channel enumeration error
-[    0.698565] ioatdma 0000:00:04.6: Intel(R) I/OAT DMA Engine init failed
-[    0.698676] ioatdma 0000:00:04.7: channel error register unreachable
-[    0.698735] ioatdma 0000:00:04.7: channel enumeration error
-[    0.698792] ioatdma 0000:00:04.7: Intel(R) I/OAT DMA Engine init failed
-
---
-
-Also, I tried using ASPM (enabled in BIOS), but since ACPI Linux query is
-ignored, it fails to work:
-[    0.562229] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-
-I assume this is something Supermicro has to fix?
-
-Justin.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
