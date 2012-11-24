@@ -1,91 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289Ab2K0JZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 04:25:33 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63387 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933031Ab2K0JZb (ORCPT
+	id S933299Ab2K0J0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 04:26:25 -0500
+Received: from static-ip-115-9-148-203.anlai.com ([203.148.9.115]:62947 "EHLO
+	spam.mail.tew.com.cn" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S933031Ab2K0J0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 04:25:31 -0500
+	Tue, 27 Nov 2012 04:26:23 -0500
+Reply-To: <s.vandermerwe@rocketmail.com>
+From: "Ms.Susan van der Merwe" <test@vger.kernel.org>
+Subject: Re:Attention 
+Date: Sat, 24 Nov 2012 16:38:01 +0100
 MIME-Version: 1.0
-In-Reply-To: <50B4711D.3060702@samsung.com>
-References: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
- <50B46A83.8020703@samsung.com> <CA+V-a8tLvO2dywNNS8ykpsiCMiuSuVNF2QPCk+CrevVtDxxxsg@mail.gmail.com>
- <50B4711D.3060702@samsung.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 27 Nov 2012 14:55:10 +0530
-Message-ID: <CA+V-a8v+PkvPSo-kO=s0ZZRCf6WHUfo3bicRC+Svr1XVu0XSVQ@mail.gmail.com>
-Subject: Re: [PATCH] media: fix a typo CONFIG_HAVE_GENERIC_DMA_COHERENT in videobuf2-dma-contig.c
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <MAILjbBzkUfdvlQVXkS00000bd3@mail.tew.com.cn>
+X-OriginalArrivalTime: 24 Nov 2012 15:27:48.0285 (UTC) FILETIME=[425BAED0:01CDCA58]
+X-MAIL: spam.mail.tew.com.cn qAOFc4oN012669
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Nov 27, 2012 at 1:21 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
->
-> On 11/27/2012 8:39 AM, Prabhakar Lad wrote:
->>
->> Hi Marek,
->>
->> On Tue, Nov 27, 2012 at 12:53 PM, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
->> > Hello,
->> >
->> >
->> > On 11/27/2012 6:59 AM, Prabhakar Lad wrote:
->> >>
->> >> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->> >>
->> >> from commit 93049b9368a2e257ace66252ab2cc066f3399cad, which adds
->> >> a check HAVE_GENERIC_DMA_COHERENT for dma ops, the check was wrongly
->> >> made it should have been HAVE_GENERIC_DMA_COHERENT but it was
->> >> CONFIG_HAVE_GENERIC_DMA_COHERENT.
->> >> This patch fixes the typo, which was causing following build error:
->> >>
->> >> videobuf2-dma-contig.c:743: error: 'vb2_dc_get_dmabuf' undeclared here
->> >> (not in a function)
->> >> make[3]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
->> >>
->> >> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> >> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> >
->> >
->> > The CONFIG_HAVE_GENERIC_DMA_COHERENT based patch was a quick workaround
->> > for the build problem in linux-next and should be reverted now. The
->> > correct patch has been posted for drivers/base/dma-mapping.c to LKML,
->> > see http://www.spinics.net/lists/linux-next/msg22890.html
->>
->> I was referring to this patch from Mauro,
->>
->> http://git.linuxtv.org/media_tree.git/commitdiff/93049b9368a2e257ace66252ab2cc066f3399cad
->> which introduced this build error.
->
->
-> I know, with my patch the workaround introduced by Mauro is not needed at
-> all.
->
-Thanks for clarifying I'll drop this patch,  I hope Mauro will revert
-his changes.
 
-Regards,
---Prabhakar
+Please can you assist me to receive and invest this US$20,000,000,00 Million, I will give you details as soon as I hear from you.
 
->
-> Best regards
-> --
-> Marek Szyprowski
-> Samsung Poland R&D Center
->
->
+Regard,
+
+Ms.Susan van der Merwe
+
+
