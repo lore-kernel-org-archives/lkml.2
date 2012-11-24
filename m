@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab2KXHA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 02:00:57 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63874 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2KXHA4 (ORCPT
+	id S1751609Ab2KXHCx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 02:02:53 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:38046 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2KXHCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 02:00:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <874nkh3mip.fsf@xmission.com>
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-	<1353482170-10160-2-git-send-email-yinghai@kernel.org>
-	<50AD0E22.3020807@zytor.com>
-	<CAE9FiQVreVFJ5tASirYkzTUvYw1XombdArqN3N1HnAP9wLijhQ@mail.gmail.com>
-	<50AD307C.6060008@zytor.com>
-	<CAE9FiQUaajsWe3854xxUOyPEZ7Dbt3GE0VWs8KvQbtqVrOXQdw@mail.gmail.com>
-	<87d2z6jigs.fsf@xmission.com>
-	<3178cb29-0e9e-44d2-b21f-45c53f38980a@email.android.com>
-	<874nkh3mip.fsf@xmission.com>
-Date: Fri, 23 Nov 2012 23:00:54 -0800
-X-Google-Sender-Auth: GDp4-Rzx0GK_V7bGWzhQ6YW9gNk
-Message-ID: <CAE9FiQWEjAd5HrreT+nLjuPX1to06Tf+UDfsKL3Wr+Qy4gF+CA@mail.gmail.com>
-Subject: Re: [PATCH v3 01/12] x86, boot: move verify_cpu.S after 0x200
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 24 Nov 2012 02:02:52 -0500
+Date: Sat, 24 Nov 2012 08:02:40 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
+Message-ID: <20121124080240.3f600e89@skate>
+In-Reply-To: <20121124023942.GO15800@titan.lakedaemon.net>
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20121124023942.GO15800@titan.lakedaemon.net>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 3:27 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->
->> Quite certain something depends on it.
->
-> It would not surprise me at all that there is a dependency, if we have
-> not had a better way to report the 64bit entry point.  I just wanted to
-> make the context clear as that was confused in the discussion.
->
-> Note that having a 32bit entry point at offset 0 is as much of an ABI.
->
-> I am surprised that there are legitimate reasons to bulk up the 32bit
-> entry point code before the 0x200.  Everything that we are doing at that
-> point is architectural.
+Dear Jason Cooper,
 
-arch/x86/boot/header.S has bzImage 16 bit entry, and it is 0x200
+On Fri, 23 Nov 2012 21:39:42 -0500, Jason Cooper wrote:
+> > +		pinctrl: pinctrl@d0200 {
+> > +			compatible = "marvell,dove-pinctrl";
+> > +			reg = <0xd0200 0x10>;
+> > +			clocks = <&gate_clk 22>;
+> 
+> The above line broke the dtbs build target for dove_defconfig.  I have
+> removed it.  Please let me know if that is not the correct answer.  This
+> was the only occurence of 'clk' in arch/arm/boot/dts/dove* .
 
-arch/x86/boot/compressed/head_64.S has bzImage 32bit entry and 64bit entry.
-loader need to find out the setup_code size at first aka kern16_size.
-then from kern16_size will be 32bit code/64 bit code, will be aligned
-to kernel_align
-then from there 0: will be 32bit entry, 0x200 will be 64bit entry.
+Are you sure you merged
 
-Actually kexec does not support bzImage booting directly from 64bit
-before this patch set.
+ [PATCH 7/8] ARM: dove: switch to DT clock providers ?
 
-So are there any 64 bit boot loader that load bzImage and boot
-directly from that second 0x200
-64 bit entry ?
+This one clearly adds gate_clk in dove.dtsi. This patch was part of the
+pull request:
 
-If there is no such bootloader there, we may change that position, and
-add one field in setup_header
-for it.
+Subject: [GIT PULL v3] core, cpu and gated clocks for mvebu
+Date: Tue, 20 Nov 2012 15:31:08 +0100
 
-Thanks
+Best regards,
 
-Yinghai
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
