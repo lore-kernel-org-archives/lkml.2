@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2KXAac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 19:30:32 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:33944 "EHLO
+	id S932875Ab2KXAav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 19:30:51 -0500
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:52930 "EHLO
 	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932450Ab2KXA1f (ORCPT
+	with ESMTP id S932462Ab2KXA1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 19:27:35 -0500
+	Fri, 23 Nov 2012 19:27:32 -0500
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
 To: linux-kernel@vger.kernel.org
 Cc: Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 12/24] MAINTAINERS: remove drivers/staging/hv/
-Date: Fri, 23 Nov 2012 22:26:36 -0200
-Message-Id: <1353716808-16375-13-git-send-email-cesarb@cesarb.net>
+        Sascha Hauer <kernel@pengutronix.de>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 11/24] MAINTAINERS: fix .../plat-mxc/include/mach/imxfb.h
+Date: Fri, 23 Nov 2012 22:26:35 -0200
+Message-Id: <1353716808-16375-12-git-send-email-cesarb@cesarb.net>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
 References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
@@ -23,30 +22,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This directory was removed by commit 89ae7d7 (hv: storvsc: Move the
-storage driver out of the staging area).
+This file was moved to include/linux/platform_data/video-imxfb.h by
+commit 82906b1 (ARM: imx: move platform_data definitions).
 
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: linux-fbdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
 Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 887d717..91feba2 100644
+index a67a67a..887d717 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -3619,7 +3619,6 @@ S:	Maintained
- F:	drivers/hv/
- F:	drivers/hid/hid-hyperv.c
- F:	drivers/net/hyperv/
--F:	drivers/staging/hv/
+@@ -3137,7 +3137,7 @@ M:	Sascha Hauer <kernel@pengutronix.de>
+ L:	linux-fbdev@vger.kernel.org
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+-F:	arch/arm/plat-mxc/include/mach/imxfb.h
++F:	include/linux/platform_data/video-imxfb.h
+ F:	drivers/video/imxfb.c
  
- I2C OVER PARALLEL PORT
- M:	Jean Delvare <khali@linux-fr.org>
+ FREESCALE SOC FS_ENET DRIVER
 -- 
 1.7.11.7
 
