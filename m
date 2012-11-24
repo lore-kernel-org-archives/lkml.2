@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab2KXNBM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 08:01:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44625 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2KXNBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 08:01:10 -0500
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v6 6/6] USB: forbid memory allocation with I/O during bus reset
-Date: Sat, 24 Nov 2012 20:59:18 +0800
-Message-Id: <1353761958-12810-7-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+	id S1751412Ab2KXNEY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 08:04:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52985 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056Ab2KXNEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 08:04:23 -0500
+Date: Sat, 24 Nov 2012 13:04:19 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] balancenuma: add stats for huge pmd numa faults
+Message-ID: <20121124130419.GA8218@suse.de>
+References: <CAJd=RBCzydfXGBPLdkyvKaGZPK9H-pKa1-vk38dnZpeiZM8n3w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBCzydfXGBPLdkyvKaGZPK9H-pKa1-vk38dnZpeiZM8n3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If one storage interface or usb network interface(iSCSI case)
-exists in current configuration, memory allocation with
-GFP_KERNEL during usb_device_reset() might trigger I/O transfer
-on the storage interface itself and cause deadlock because
-the 'us->dev_mutex' is held in .pre_reset() and the storage
-interface can't do I/O transfer when the reset is triggered
-by other interface, or the error handling can't be completed
-if the reset is triggered by the storage itself(error handling path).
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-v5:
-        - use inline memalloc_noio_save()
-v4:
-	- mark current memalloc_noio for every usb device reset
----
- drivers/usb/core/hub.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+On Sat, Nov 24, 2012 at 12:17:03PM +0800, Hillf Danton wrote:
+> A thp contributes 512 times more than a regular page to numa fault stats,
+> so deserves its own vm event counter. THP migration is also accounted.
+> 
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 90accde..2d5cc1c 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -5040,6 +5040,7 @@ int usb_reset_device(struct usb_device *udev)
- {
- 	int ret;
- 	int i;
-+	unsigned int noio_flag;
- 	struct usb_host_config *config = udev->actconfig;
- 
- 	if (udev->state == USB_STATE_NOTATTACHED ||
-@@ -5049,6 +5050,17 @@ int usb_reset_device(struct usb_device *udev)
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * Don't allocate memory with GFP_KERNEL in current
-+	 * context to avoid possible deadlock if usb mass
-+	 * storage interface or usbnet interface(iSCSI case)
-+	 * is included in current configuration. The easist
-+	 * approach is to do it for every device reset,
-+	 * because the device 'memalloc_noio' flag may have
-+	 * not been set before reseting the usb device.
-+	 */
-+	noio_flag = memalloc_noio_save();
-+
- 	/* Prevent autosuspend during the reset */
- 	usb_autoresume_device(udev);
- 
-@@ -5093,6 +5105,7 @@ int usb_reset_device(struct usb_device *udev)
- 	}
- 
- 	usb_autosuspend_device(udev);
-+	memalloc_noio_restore(noio_flag);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(usb_reset_device);
+I agree and mentioned it needed fixing. I did not create a new counter
+but I properly account for PGMIGRATE_SUCCESS and PGMIGRATE_FAIL now. I
+did not create a new NUMA_PAGE_MIGRATE counter because I didn't feel it
+was necessary. Instead I just do this
+
+        count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
+        count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
+
+> [A duplicated computation of page node idx is cleaned up]
+> 
+
+Got it. Thanks
+
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
