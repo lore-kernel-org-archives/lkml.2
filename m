@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751060Ab2KXFzF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 00:55:05 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54996 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab2KXFzE (ORCPT
+	id S964780Ab2KXGuN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 01:50:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:65070 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab2KXGuM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 00:55:04 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: bhutchings@solarflare.com, davem@davemloft.net, akpm@linux-foundation.org
-Cc: netdev@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 resend] net: dsa/slave: Fix compilation warnings
-Date: Sat, 24 Nov 2012 11:23:54 +0530
-Message-Id: <ecc711bf44722707f57188ee953bbde2f1e20c8c.1353736229.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Sat, 24 Nov 2012 01:50:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,312,1352102400"; 
+   d="scan'208";a="251743356"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 17/24] MAINTAINERS: fix Documentation/mei/
+Thread-Topic: [PATCH 17/24] MAINTAINERS: fix Documentation/mei/
+Thread-Index: AQHNydsoUkzA7siCGEue0O2s3oTwx5f4i8Pg
+Date: Sat, 24 Nov 2012 06:50:07 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1BB53D41@HASMSX106.ger.corp.intel.com>
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
+ <1353716808-16375-18-git-send-email-cesarb@cesarb.net>
+In-Reply-To: <1353716808-16375-18-git-send-email-cesarb@cesarb.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
-CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
 
-net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used [-Wunused-function]
-net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used [-Wunused-function]
-net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used [-Wunused-function]
-net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined but not used [-Wunused-function]
-net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but not used [-Wunused-function]
-net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined but not used [-Wunused-function]
-net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not used [-Wunused-function]
 
-Earlier approach to fix this was discussed here:
+> Subject: [PATCH 17/24] MAINTAINERS: fix Documentation/mei/
+> 
+> The documentation was moved to Documentation/misc-devices/mei/
+> instead.
+> 
+> Cc: Tomas Winkler <tomas.winkler@intel.com>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+ACK
 
-lkml.org/lkml/2012/10/29/549
-
-This is another approach to fix it. This is done by some changes in config
-options, which make more sense than the earlier approach. As, atleast one
-tagging option must always be selected for using net/dsa/ infrastructure, this
-patch selects NET_DSA from tagging configs instead of having it as an selectable
-config.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-I am resending it as the earlier thread is lost somewhere in Maintainers mailbox
-:)
-
- drivers/net/dsa/Kconfig |  1 -
- net/dsa/Kconfig         | 16 +++++++++-------
- 2 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
-index dd151d5..96eae22 100644
---- a/drivers/net/dsa/Kconfig
-+++ b/drivers/net/dsa/Kconfig
-@@ -1,5 +1,4 @@
- menu "Distributed Switch Architecture drivers"
--	depends on NET_DSA
- 
- config NET_DSA_MV88E6XXX
- 	tristate
-diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
-index 9c09f6e..3588e54 100644
---- a/net/dsa/Kconfig
-+++ b/net/dsa/Kconfig
-@@ -1,5 +1,5 @@
- config NET_DSA
--	tristate "Distributed Switch Architecture support"
-+	tristate
- 	default n
- 	depends on NETDEVICES && !S390
- 	select PHYLIB
-@@ -8,19 +8,21 @@ config NET_DSA
- 	  the Distributed Switch Architecture.
- 
- 
--if NET_DSA
-+menu "Distributed Switch Architecture support"
- 
- # tagging formats
- config NET_DSA_TAG_DSA
--	bool
-+	bool "Original DSA packet tagging format"
-+	select NET_DSA
- 	default n
- 
- config NET_DSA_TAG_EDSA
--	bool
-+	bool "Ethertype DSA packet tagging format"
-+	select NET_DSA
- 	default n
- 
- config NET_DSA_TAG_TRAILER
--	bool
-+	bool "Trailer DSA packet tagging format"
-+	select NET_DSA
- 	default n
--
--endif
-+endmenu
--- 
-1.7.12.rc2.18.g61b472e
 
