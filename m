@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964831Ab2KXIfu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 03:35:50 -0500
-Received: from fep23.mx.upcmail.net ([62.179.121.43]:46268 "EHLO
-	fep23.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab2KXIft (ORCPT
+	id S932799Ab2KXIo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 03:44:26 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:16361 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932756Ab2KXIoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 03:35:49 -0500
-X-Greylist: delayed 1021 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Nov 2012 03:35:49 EST
-X-SourceIP: 84.242.78.234
-From: Pavel Pisa <ppisa@pikron.com>
+	Sat, 24 Nov 2012 03:44:25 -0500
+Date: Sat, 24 Nov 2012 09:44:13 +0100
+From: Jean Delvare <khali@linux-fr.org>
 To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: Re: [PATCH 18/24] MAINTAINERS: remove drivers/mmc/host/imxmmc.*
-Date: Sat, 24 Nov 2012 09:18:42 +0100
-User-Agent: KMail/1.9.9
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net> <1353716808-16375-19-git-send-email-cesarb@cesarb.net>
-In-Reply-To: <1353716808-16375-19-git-send-email-cesarb@cesarb.net>
-Organization: PiKRON Ltd.
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+Cc: linux-kernel@vger.kernel.org, "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 13/24] MAINTAINERS: fix drivers/i2c/busses/i2c-stub.c
+Message-ID: <20121124094413.35547dab@endymion.delvare>
+In-Reply-To: <1353716808-16375-14-git-send-email-cesarb@cesarb.net>
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
+	<1353716808-16375-14-git-send-email-cesarb@cesarb.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201211240918.42930.ppisa@pikron.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 November 2012 01:26:42 Cesar Eduardo Barros wrote:
-> This driver was removed by commit 6187fee (mmc: remove imxmmc driver).
->
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Pavel Pisa <ppisa@pikron.com>
-> Cc: linux-arm-kernel@lists.infradead.org
+Hi Cesar,
+
+On Fri, 23 Nov 2012 22:26:37 -0200, Cesar Eduardo Barros wrote:
+> This file was moved to drivers/i2c/i2c-stub.c by commit 31d178b
+> (i2c-stub: Move to drivers/i2c).
+> 
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
+> Cc: linux-i2c@vger.kernel.org
 > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 > ---
->  MAINTAINERS | 6 ------
->  1 file changed, 6 deletions(-)
->
+>  MAINTAINERS | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
 > diff --git a/MAINTAINERS b/MAINTAINERS
-> index fc646ef..cac8e49 100644
+> index 91feba2..eaf1a59 100644
 > --- a/MAINTAINERS
 > +++ b/MAINTAINERS
-> @@ -4905,12 +4905,6 @@ F:	Documentation/video4linux/meye.txt
->  F:	drivers/media/pci/meye/
->  F:	include/uapi/linux/meye.h
->
-> -MOTOROLA IMX MMC/SD HOST CONTROLLER INTERFACE DRIVER
-> -M:	Pavel Pisa <ppisa@pikron.com>
-> -L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> -S:	Maintained
-> -F:	drivers/mmc/host/imxmmc.*
-> -
->  MOXA SMARTIO/INDUSTIO/INTELLIO SERIAL CARD
->  M:	Jiri Slaby <jirislaby@gmail.com>
+> @@ -3667,7 +3667,7 @@ I2C/SMBUS STUB DRIVER
+>  M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
+>  L:	linux-i2c@vger.kernel.org
 >  S:	Maintained
+> -F:	drivers/i2c/busses/i2c-stub.c
+> +F:	drivers/i2c/i2c-stub.c
 
-Acked-by: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+Right. I thought I had fixed it meanwhile, but either I forgot or it
+got lost along the way. Applied, thanks.
 
-I have still the hardware but have lack resources to keep with current
-kernel development for that old HW. We plan to switch to newer i.MX
-hardware - hopefully with more bug free MMC/SD support, because MX1
-has taken me yer a year of fighting with its bugs (on Linux and RTEMS
-as well).
+BTW, Mark has been away from linux kernel development for years now and
+he did even not reply to my latest e-mail, so maybe it would be better
+to drop his entries from MAINTAINERS altogether. Mark, please speak up.
 
-Best wishes,
-
-
-                Pavel Pisa
-    e-mail:     pisa@cmp.felk.cvut.cz
-    www:        http://cmp.felk.cvut.cz/~pisa
-    university: http://dce.fel.cvut.cz/
-    company:    http://www.pikron.com/
+-- 
+Jean Delvare
