@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202Ab2KXJSt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 04:18:49 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:44868 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab2KXJSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 04:18:46 -0500
+	id S1030218Ab2KXJZb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 04:25:31 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:35736 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964780Ab2KXJZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 04:25:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: [PATCH] PM / QoS: Rename local variable in dev_pm_qos_add_ancestor_request()
+Date: Sat, 24 Nov 2012 10:30 +0100
+Message-ID: <1379506.4xjF1qmrAD@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
 MIME-Version: 1.0
-Date: Sat, 24 Nov 2012 10:18:44 +0100
-Message-ID: <CAPVoSvQNVnz=NrkNaZ4G_k76WuVaAJ24uEXkAyJvDNLHHPs1Kw@mail.gmail.com>
-Subject: Hang in md-raid1 with 3.7-rcX
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After my system got stuck with 3.7.0-rc2 as reported in
-http://marc.info/?l=linux-kernel&m=135142236520624 LOCKDEP seem to
-blame XFS, because it found 2 possible deadlocks. But after these
-locking issues where fixed, my system got stuck again with 3.7.0-rc6
-as reported in http://marc.info/?l=linux-kernel&m=135344072325490
-Dave Chinner thinks its an issue within md, that it gets stuck and
-that will then prevent any further xfs activity, and that I should
-report it to the raid mailing list.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The issue seems to be that multiple processes (kswapd0, xfsaild/md4
-and flush-9:4) get stuck in md_super_wait() like this:
-[<ffffffff816b1224>] schedule+0x24/0x60
-[<ffffffff814f9dad>] md_super_wait+0x4d/0x80
-[<ffffffff8105ca30>] ? __init_waitqueue_head+0x60/0x60
-[<ffffffff81500753>] bitmap_unplug+0x173/0x180
-[<ffffffff810b6acf>] ? write_cache_pages+0x12f/0x420
-[<ffffffff810b6700>] ? set_page_dirty_lock+0x60/0x60
-[<ffffffff814e8eb8>] raid1_unplug+0x98/0x110
-[<ffffffff81278a6d>] blk_flush_plug_list+0xad/0x240
-[<ffffffff81278c13>] blk_finish_plug+0x13/0x50
+Local variable 'error' in dev_pm_qos_add_ancestor_request() need
+not contain error codes only, so rename it to 'ret'.
 
-The full hung-tasks stack traces and the output from SysRq+W can be
-found at http://marc.info/?l=linux-kernel&m=135344072325490 or in the
-LKML thread 'Hang in XFS reclaim on 3.7.0-rc3'.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/power/qos.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-I tried to understand how this could happen, but I don't see anything
-wrong. Only that md_super_wait() looks like an open coded version of
-__wait_event() and could be replaced by using it.
+Index: linux/drivers/base/power/qos.c
+===================================================================
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -542,19 +542,19 @@ int dev_pm_qos_add_ancestor_request(stru
+ 				    struct dev_pm_qos_request *req, s32 value)
+ {
+ 	struct device *ancestor = dev->parent;
+-	int error = -ENODEV;
++	int ret = -ENODEV;
+ 
+ 	while (ancestor && !ancestor->power.ignore_children)
+ 		ancestor = ancestor->parent;
+ 
+ 	if (ancestor)
+-		error = dev_pm_qos_add_request(ancestor, req,
+-					       DEV_PM_QOS_LATENCY, value);
++		ret = dev_pm_qos_add_request(ancestor, req,
++					     DEV_PM_QOS_LATENCY, value);
+ 
+-	if (error < 0)
++	if (ret < 0)
+ 		req->dev = NULL;
+ 
+-	return error;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(dev_pm_qos_add_ancestor_request);
+ 
 
-http://marc.info/?l=linux-raid&m=135283030027665 looks like the same
-issue, but using ext4 instead of xfs.
-
-My setup wrt. md is two normal sata disks on a normal ahci controller
-(AMD SB850 southbridge).
-Both disks are divided into 4 partitions and each one assembled into a
-separate raid1.
-One (md5) is used for swap, the others hold xfs filesystems for /boot/
-(md4), / (md6) and /home/ (md7).
-
-I will try to provide any information you ask, but I can't reproduce
-the hang on demand so gathering more information about that state is
-not so easy, but I will try.
-
-Thanks for looking into this,
-
-Torsten
