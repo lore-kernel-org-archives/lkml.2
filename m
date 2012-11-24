@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2KXWdO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 17:33:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43085 "EHLO mail.zytor.com"
+	id S1752775Ab2KXWd3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 17:33:29 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:36131 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635Ab2KXWdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 17:33:12 -0500
-Message-ID: <50B14AFB.3040500@zytor.com>
-Date: Sat, 24 Nov 2012 14:32:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1752387Ab2KXWd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 17:33:27 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
+Date: Sat, 24 Nov 2012 23:37:59 +0100
+Message-ID: <9351429.9B119055GG@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1534747.XBnkTFzSlv@vostro.rjw.lan>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <1352406227-32629-2-git-send-email-toshi.kani@hp.com> <1534747.XBnkTFzSlv@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org> <1353482170-10160-12-git-send-email-yinghai@kernel.org> <50AD0CA1.8000904@zytor.com> <CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com> <50AD291A.10600@zytor.com> <CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com> <a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com> <CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com> <CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com> <a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com> <CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com> <50AE70E7.6060204@zytor.com> <87haofi3d3.fsf@xmission.com> <50B104BC.90208@zytor.com> <50B124E9.400@zytor.com> <CAE9FiQWKzH+BLwak5-n2px1Yhti872o=Qte-v_8N_5X3YSJ=5A@mail.gmail.com> <50B13E53.4060003@zytor.com> <CAE9FiQWoCyuGNqHSAZU_NXwjci3BJZQmmAUnWPn_pKCzEt8h7g@mail.gmail.com>
-In-Reply-To: <CAE9FiQWoCyuGNqHSAZU_NXwjci3BJZQmmAUnWPn_pKCzEt8h7g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2012 02:18 PM, Yinghai Lu wrote:
->>
->> Careful... consider the people who use a kexec-based solution as
->> bootloaders.
->
-> yes, those may not update kexec in the flash...
->
-> then, may need to use another bit in xloadflags to tell new kernel if
-> need to check ext_...
->
-> Field name:     xloadflags
-> Type:           modify (obligatory)
-> Offset/size:    0x236/2
-> Protocol:       2.12+
->
->    This field is a bitmask.
->
->    Bit 0 (read): CAN_BE_LOADED_ABOVE_4G
->          - If 1, kernel/boot_params/cmdline/ramdisk can be above 4g,
->                  set by kernel.
->
->    Bit 1 (write): LOADED_ABOVE_4G
->          - If 1, kernel/boot_params/cmdline/ramdisk is loaded above 4g,
->                  set by bootloader, and kernel will check ext_ramdisk_image,
->                  ext_ramdisk_size and ext_cmd_line_ptr.
->
+On Saturday, November 24, 2012 11:01:56 PM Rafael J. Wysocki wrote:
+> On Thursday, November 08, 2012 01:23:44 PM Toshi Kani wrote:
+> > Added a new .sys_notify interface, which allows ACPI drivers to
+> > register their system-level (ex. hotplug) notify handlers through
+> > their acpi_driver table.  This removes redundant ACPI namespace
+> > walks from ACPI drivers for faster booting.
+> > 
+> > The global notify handler acpi_bus_notify() is called for all
+> > system-level ACPI notifications, which then calls an appropriate
+> > driver's handler if any.  ACPI drivers no longer need to register
+> > or unregister driver's handler to each ACPI device object.  It also
+> > supports dynamic ACPI namespace with LoadTable & Unload opcode
+> > without any modification in ACPI drivers.
+> > 
+> > Added a common system notify handler acpi_bus_sys_notify(), which
+> > allows ACPI drivers to set it to .sys_notify when this function is
+> > fully implemented.
+> 
+> I don't really understand this.
+> 
+> > It removes functional conflict between driver's
+> > notify handler and the global notify handler acpi_bus_notify().
+> > 
+> > Note that the changes maintain backward compatibility for ACPI
+> > drivers.  Any drivers registered their hotplug handler through the
+> > existing interfaces, such as acpi_install_notify_handler() and
+> > register_acpi_bus_notifier(), will continue to work as before.
+> 
+> I really wouldn't like to add new callbacks to struct acpi_device_ops, because
+> I'd like that whole thing to go away entirely eventually, along with struct
+> acpi_driver.
+> 
+> Moreover, in this particular case, it really is not useful to have to define
+> a struct acpi_driver so that one can register for receiving system
+> notifications from ACPI.  It would be really nice if non-ACPI drivers, such
+> as PCI or platform, could do that too.
 
-Well, that solves the problem for *this specific instance* but I fear 
-therein lies madness in the general case.
+Which they do by using acpi_install_notify_handler() directly.
 
-	-hpa
+> Besides, acpi_os_execute_deferred() is always run on CPU0, because of some
+> SMI-related peculiarity, which is not very efficient as far as the events
+> handling is concerned, but we can improve the situation a bit by queing the
+> execution of the registered handlers in a different workqueue.  Maybe it's
+> worth considering if we're going to change this code anyway?
+
+Well, perhaps we really don't need to change it after all?  Maybe we can just
+switch everyone to using acpi_install_notify_handler() and then we can just
+drop that code entirely?
+
+Thanks,
+Rafael
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
