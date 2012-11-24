@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab2KXCNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 21:13:37 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:59610 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab2KXCNf (ORCPT
+	id S1756854Ab2KXCNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 21:13:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:20080 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756815Ab2KXCNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Nov 2012 21:13:35 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-cf-50b02d4de01d
+X-AuditID: cbfee61a-b7fa66d0000004cf-c4-50b02d4e02ff
 From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>, lrg@ti.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: s2mps11: Fix ramp delay value shift operation
+To: "'Cesar Eduardo Barros'" <cesarb@cesarb.net>, linux-kernel@vger.kernel.org
+Cc: "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Rob Herring'" <rob.herring@calxeda.com>, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
+ <1353716808-16375-22-git-send-email-cesarb@cesarb.net>
+In-reply-to: <1353716808-16375-22-git-send-email-cesarb@cesarb.net>
+Subject: RE: [PATCH 21/24] MAINTAINERS: fix drivers/rtc/rtc-sec.c
 Date: Sat, 24 Nov 2012 11:13:28 +0900
-Message-id: <000001cdc9e9$4e417cd0$eac47670$@com>
+Message-id: <000101cdc9e9$4e521ea0$eaf65be0$@com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3J6EY5fSr2LcPeQ2GVDsPSb5Av/Q==
+Thread-index: Ac3J2pCePGyNuRsZSWO2wHRLjPNsNQACjlPA
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zI11f3Q0BBl+O21hc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MDd1b2Qqmcle0bZrB3MC4j7OLkZNDQsBE4v3WB0wQtpjEhXvr
-	2boYuTiEBJYxSszbe5YVpmj15V1MEInpjBJHzn6EqprLJNG89jU7SBWbgIbEyt1v2UBsEQEn
-	ib+Ne1lAbGYBBYlf9zaBTRIW8JRo6L7OCGKzCKhK7Fj6BGw1r4ChxPQ9+9kgbEGJH5PvQfVq
-	SazfeZwJwpaX2LzmLXMXIwfQReoSj/7qQqzSk7i04hozRImIxL4X76DGC0h8m3yIBaJcVmLT
-	AWaQkyUEmtklfq18wQjxmKTEwRU3WCYwis1CsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ6blG
-	esWJucWleel6yfm5mxghsSK9g3FVg8UhRgEORiUe3gNX1wcIsSaWFVfmHmKU4GBWEuH9WgEU
-	4k1JrKxKLcqPLyrNSS0+xOgDdPlEZinR5HxgHOeVxBsaG5uYmZiamFuampviEFYS5232SAkQ
-	EkhPLEnNTk0tSC2CGcfEwSnVwMi/+paHQG/+SevobpOjszW35L50e7h92cIHyxTZLOaEXejc
-	NYu5jldtV4d2rnN4wh/Bsz3RnAF6Qe+3NyaVm6h8vnP3gPYlO7H5gZMDOaT+3TmRHzrX/K7c
-	OcVssdnT+F8+PVD3OHZWrAzX77xX3x8/W79Ap0O3VYZ1L+sD3sQ3ilo8xraC95RYijMSDbWY
-	i4oTASu45XbCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jQV1f3Q0BBvP7LCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoburWwFU7kr2jbNYG5g
-	3MfZxcjJISFgIrH68i4mCFtM4sK99WxdjFwcQgLTGSWOnP0I5cxlkmhe+5odpIpNQENi5e63
-	bCC2iICTxN/GvSwgNrOAgsSve5tYQWxhAU+Jhu7rjCA2i4CqxI6lT8A28AoYSkzfs58NwhaU
-	+DH5HlSvlsT6nceZIGx5ic1r3jJ3MXIAXaQu8eivLsQqPYlLK64xQ5SISOx78Y5xAqPALCST
-	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7EZ9I7GFc1WBxiFOBg
-	VOLhPXB1fYAQa2JZcWXuIUYJDmYlEd6vFUAh3pTEyqrUovz4otKc1OJDjD5Aj05klhJNzgcm
-	ibySeENjEzMjSyMzCyMTc3McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGAVvsHb8Xt7/
-	qDvwP++FtT26JSZLq+f2mgvvjP0jsUFSs49pv8bevR/WfpCLe729TS9iUzPPB92a0hIN3Q9n
-	1Z7ZiDTsOiq91kQ5zEnISzDy/yfHFC13SYa4EsNFXW+tvtZtCzzE9WLBHmf39xe3lzG7/9hf
-	J/qwKi7tyvvWlb6bb15gMHGrVmIpzkg01GIuKk4EAK9iA6HxAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zA10/3Q0BBl/2c1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mpgn9rAVTmCs+7jRuYNzG1MXIySEhYCLReO02K4QtJnHh3no2
+	EFtIYBmjxOGnjjA1f2ftYexi5AKKT2eU+PbjMTuEM5dJonnta3aQKjYBDYmVu9+CdYsI+Ejc
+	a74G1sEscJJR4k3naWaIsVUSEzfPA1vHKeAscXvLX0YQW1jAUWL6/b9gJ7EIqErsWPoEzOYV
+	MJSYe2AnM4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW+BajiATlWXePRXF+IGI4kFC5dClYtI
+	7HvxjhFivIDEt8mHWCDKZSU2HWAGOVNCYBm7RPfaR9CQkJQ4uOIGywRGiVlINs9CsnkWks2z
+	kKxYwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyMksqR2MK5ssDjEKMDBqMTDe+Dq+gAh
+	1sSy4srcQ4wSHMxKIrxfK4BCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M+rySeENjYxMz
+	E1MTc0tTc1McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGKvXT/p/fKeC0+ufOdcdJrj9
+	uWbJ/6xHS6RBq3Tqs1tZ56bFvt3RGDjd+EbNJO2SxqMvIqa9vfR7k1OBhdJCncn/mhfssPHd
+	3snz2mf1Cx8mSa6A9yovbx7oMd7xYM76zE8df7sk3kQ6qigd6PjHKNp+0TVsW33G998n+y1j
+	dNjOcPYuDxFpDVFiKc5INNRiLipOBADtfzZO2QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jQV0/3Q0BBvc+slhc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjKYJ/awFU5grPu40bmDc
+	xtTFyMkhIWAi8XfWHkYIW0ziwr31bF2MXBxCAtMZJb79eMwO4cxlkmhe+5odpIpNQENi5e63
+	bCC2iICPxL3ma4wgRcwCJxkl3nSeZgZJCAlUSUzcPI8VxOYUcJa4veUv2AphAUeJ6ff/gq1m
+	EVCV2LH0CZjNK2AoMffATmYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveAtVwAJ2qLvHory7E
+	DUYSCxYuhSoXkdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqX
+	rpecn7uJERy5z6R2MK5ssDjEKMDBqMTDe+Dq+gAh1sSy4srcQ4wSHMxKIrxfK4BCvCmJlVWp
+	RfnxRaU5qcWHGH2AHp3ILCWanA9MKnkl8YbGJmZGlkZmFkYm5uY4hJXEeZs9UgKEBNITS1Kz
+	U1MLUotgxjFxcEo1ME4p/90Rf3zBvxVHjp7faBOy/nXA7FVbU/L6YuoCf+6Pq1wfeXHqoSWs
+	903K9l5k+eJ4PYr934VT8Y0eK+YnepfNu6aQMGHT3eL0mQ8mZJ7yqrv10HnNnwjdTz9ivzC+
+	rJK7kHzx9Oaf9V5nnBIXXneqs3pcHbLCaPMutsnVeZHRi5x+Cyx7/OadEktxRqKhFnNRcSIA
+	0VS8+QkDAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the abnormal ramp delay setting.
-The shift operation was wrong.
+On Sat, Nov 24, 2012 at 9:27 AM , Cesar Eduardo Barros wrote:
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
----
- drivers/regulator/s2mps11.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+> I am guessing that this was a typo for rtc-s3c. Please NACK this patch
+> if I am wrong.
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 85fc086..bd062a2 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -269,16 +269,16 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 
- 	if (ramp_enable) {
- 		if (s2mps11->buck2_ramp)
--			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay2) >> 6;
-+			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay2) << 6;
- 		if (s2mps11->buck3_ramp || s2mps11->buck4_ramp)
--			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay34) >> 4;
-+			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay34) << 4;
- 		sec_reg_write(iodev, S2MPS11_REG_RAMP, ramp_reg | ramp_enable);
- 	}
- 
- 	ramp_reg &= 0x00;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay5) >> 6;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay16) >> 4;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay7810) >> 2;
-+	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay5) << 6;
-+	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay16) << 4;
-+	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay7810) << 2;
- 	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay9);
- 	sec_reg_write(iodev, S2MPS11_REG_RAMP_BUCK, ramp_reg);
- 
--- 
-1.7.4.1
+rtc-sec and rtc-s3c is different one.
+rtc-sec is driver of Samsung mfd.
+Rtc-s3c is driver of Samsung SoC.
 
+Currently, We had just done rtc-sec coding.
+It just keep on my repo.
+Sooner or later, I will post rtc-sec.
+
+Thanks,
+Sangbeom.
 
