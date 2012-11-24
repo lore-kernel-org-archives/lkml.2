@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab2KXSDG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 13:03:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab2KXSCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 13:02:35 -0500
-Date: Sat, 24 Nov 2012 19:02:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] uprobes: Change filter_chain() to iterate ->consumers
-	list
-Message-ID: <20121124180231.GA30983@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121124180213.GA30963@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752141Ab2KXSKk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 13:10:40 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:39670 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab2KXSKj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 13:10:39 -0500
+Date: Sat, 24 Nov 2012 19:10:24 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
+Message-ID: <20121124191024.4b5d5b4c@skate>
+In-Reply-To: <20121124150004.GQ15800@titan.lakedaemon.net>
+References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20121124023942.GO15800@titan.lakedaemon.net>
+	<20121124080240.3f600e89@skate>
+	<20121124150004.GQ15800@titan.lakedaemon.net>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that it safe to use ->consumer_rwsem under ->mmap_sem we can
-almost finish the implementation of filter_chain(). It still lacks
-the actual uc->filter(...) call but othewrwise it is ready, just
-it pretends that ->filter() always returns true.
+Dear Jason Cooper,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+On Sat, 24 Nov 2012 10:00:04 -0500, Jason Cooper wrote:
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 03ffbb5..873c993 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -614,14 +614,19 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
- 
- static bool filter_chain(struct uprobe *uprobe)
- {
--	/*
--	 * TODO:
--	 *	for_each_consumer(uc)
--	 *		if (uc->filter(...))
--	 *			return true;
--	 *	return false;
--	 */
--	return uprobe->consumers != NULL;
-+	struct uprobe_consumer *uc;
-+	bool ret = false;
-+
-+	down_read(&uprobe->consumer_rwsem);
-+	for (uc = uprobe->consumers; uc; uc = uc->next) {
-+		/* TODO: ret = uc->filter(...) */
-+		ret = true;
-+		if (ret)
-+			break;
-+	}
-+	up_read(&uprobe->consumer_rwsem);
-+
-+	return ret;
- }
- 
- static int
+> Yes, so that's what I thought happened.  This would have made orion/dt
+> depend upon mvebu/everything.  It already had two other dependencies.
+> Not ideal.
+> 
+> The good thing is, the build is not broken.  Once v3.8-rc1 drops with
+> all of our stuff merged, I'll post a fixup patch adding this back in.
+
+It unfortunately means that Dove will be basically unbootable in
+3.8-rc1, as the driver will not be clk_get()ing its gatable clock, and
+the clock driver will disable it. Maybe we can just live with it, I
+don't know.
+
+Thomas
 -- 
-1.5.5.1
-
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
