@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab2KXUga (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:36:30 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47249 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab2KXUg0 (ORCPT
+	id S1752429Ab2KXUh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:37:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18272 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab2KXUg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:36:26 -0500
+	Sat, 24 Nov 2012 15:36:29 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH v4 01/11] x86, boot: move verify_cpu.S after 0x200
-Date: Sat, 24 Nov 2012 12:35:27 -0800
-Message-Id: <1353789337-19409-2-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 08/11] x86, boot: update cmd_line_ptr to unsigned long
+Date: Sat, 24 Nov 2012 12:35:34 -0800
+Message-Id: <1353789337-19409-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
 References: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
@@ -23,43 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are short of space before 0x200 that is entry for startup_64.
+boot/compressed/misc.c could be with 64 bit, and cmd_line_ptr could
+above 4g.
 
-According to hpa, we can not change startup_64 to other offset and
-that become ABI now.
-
-We could move function verify_cpu down, and that could avoid extra
-code of jmp back and forth if we would move other lines.
+So change to unsigned long instead, that will be 64bit in 64bit path
+and 32bit in 32bit path.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/compressed/head_64.S |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/boot/boot.h    |    8 ++++----
+ arch/x86/boot/cmdline.c |    4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 2c4b171..2c3cee4 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -182,8 +182,6 @@ no_longmode:
- 	hlt
- 	jmp     1b
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 7fadf80..5b75319 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -285,11 +285,11 @@ struct biosregs {
+ void intcall(u8 int_no, const struct biosregs *ireg, struct biosregs *oreg);
  
--#include "../../kernel/verify_cpu.S"
--
- 	/*
- 	 * Be careful here startup_64 needs to be at a predictable
- 	 * address so I can export it in an ELF header.  Bootloaders
-@@ -349,6 +347,9 @@ relocated:
+ /* cmdline.c */
+-int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize);
+-int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
++int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize);
++int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option);
+ static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
+ {
+-	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ 
+ 	if (cmd_line_ptr >= 0x100000)
+ 		return -1;      /* inaccessible */
+@@ -299,7 +299,7 @@ static inline int cmdline_find_option(const char *option, char *buffer, int bufs
+ 
+ static inline int cmdline_find_option_bool(const char *option)
+ {
+-	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ 
+ 	if (cmd_line_ptr >= 0x100000)
+ 		return -1;      /* inaccessible */
+diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
+index 768f00f..625d21b 100644
+--- a/arch/x86/boot/cmdline.c
++++ b/arch/x86/boot/cmdline.c
+@@ -27,7 +27,7 @@ static inline int myisspace(u8 c)
+  * Returns the length of the argument (regardless of if it was
+  * truncated to fit in the buffer), or -1 on not found.
   */
- 	jmp	*%rbp
- 
-+	.code32
-+#include "../../kernel/verify_cpu.S"
-+
- 	.data
- gdt:
- 	.word	gdt_end - gdt
+-int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize)
++int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize)
+ {
+ 	addr_t cptr;
+ 	char c;
+@@ -99,7 +99,7 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
+  * Returns the position of that option (starts counting with 1)
+  * or 0 on not found
+  */
+-int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
++int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option)
+ {
+ 	addr_t cptr;
+ 	char c;
 -- 
 1.7.7
 
