@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2KXUia (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:38:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18266 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab2KXUg2 (ORCPT
+	id S1752317Ab2KXUww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:52:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:64778 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab2KXUwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:36:28 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 05/11] x86: add get_ramdisk_image/size()
-Date: Sat, 24 Nov 2012 12:35:31 -0800
-Message-Id: <1353789337-19409-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
-References: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sat, 24 Nov 2012 15:52:51 -0500
+Date: Sat, 24 Nov 2012 21:52:44 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iio: adc: Add Texas Instruments ADC081C021/027 support
+Message-ID: <20121124205244.GA27042@avionic-0098.adnet.avionic-design.de>
+References: <1353683583-19779-1-git-send-email-thierry.reding@avionic-design.de>
+ <50B0A74B.10707@kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <50B0A74B.10707@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:1eYQOxq1F0zuLp1pzHos+IcLWg4qL0J77qc7TBCLLgu
+ T1fq06WA37ordTPF04MIffMVoBTdP4VwnZ89oTgYr+cHl7yLP1
+ 74ArBUqagHr67aJfx7F/ci769Lv7w9xtMGTkwuXqaOHfVyB4F8
+ cQi1ygRoNiKycsH6ZNXDdJcSbobwW6RTav8Qqmx/05Axc5HgyT
+ o0M6YbioSrCX94CQM0Ub1fXuWUrHy/Xm3zzq1XS0ZKfITd2mE2
+ KQxqXsKpQz3O1KPCzdLcsGmv+BY3ffNmkroAeY9bQC2gnzJ/DM
+ ZBhUBDHXj+K06H7pwBcQHWy2w49T06GtJvleI5dvwQvlDdhYGW
+ TtxF9SfxXqEDhc45DSmzdFKern8y6b7yX3//QyjRFCLbxn5wkL
+ eBYk+HAfh3MRrKspiUz58qoi3Z2op5OrnwWBPClALw5GU1k5sS
+ 2rfks
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There several places to find ramdisk information early for reserving
-and relocating.
 
-Use functions to make code more readable and consistent.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+On Sat, Nov 24, 2012 at 10:54:03AM +0000, Jonathan Cameron wrote:
+> On 11/23/2012 03:13 PM, Thierry Reding wrote:
+> > Add support for reading conversion results from the ADC and provide them
+> > through a single IIO channel. A proper scaling factor is also exported
+> > based on the reference voltage provided by a regulator.
+> >
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> Looks good to me.  I think timing is against you (depending on what Linus
+> says with his next rc).  IIO patches are routed through Greg KH. His cut
+> off is 1 week before the merge window opens.  Mine tends to as a result
+> be a few days before that.  Linus stated in last rc message that the one =
+he'll
+> do today or tomorrow will be the last for this cycle (and hence merge win=
+dow
+> will open in a week from now). Hence this will probably hit linux next af=
+ter
+> the merge window closes and merge in the 3.9 cycle.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+Not a problem. I wasn't relying on getting this merged for 3.8. Official
+support for the board that uses this driver is still some way out, so no
+need to hurry in any way.
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ee6d267..194e151 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -298,12 +298,25 @@ static void __init reserve_brk(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+
-+	return ramdisk_image;
-+}
-+static u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -342,8 +355,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
- 
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -367,8 +380,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -380,8 +393,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
--- 
-1.7.7
+Thanks for merging and thanks for reviewing, Lars-Peter.
 
+Thierry
+
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQsTOcAAoJEN0jrNd/PrOhe6EP/1edWQawxCXyL9BVzNxWnI8Z
+CoIUX4e2/4qWE/rWvcIYfOJHeW+JfDCVpE5KL5HkTw8z7pQHmHo+A3ZtmH3Fxd69
+Pt8h6WV8cGu97trRJrx2B7nQcZvfB9Y9LYb3oaUsp7+HqT2QS6bDKpSgkUDlc80n
+EhRAmH3ZmQsEo+JA/JbU7cpSDx89YejkMZBOY1qynZsIWn7/+gRN/1PLrDuY5W7S
+vq6MpNb9+E8In7TrziuCUgV1udHw7cA2/zhd9v5g3oooECp4Ss/My42d/8EETe5K
+nFwegC8U8AlW5XriveyjWst8HVBYfkaB38FyVHWMgE/3s12vj+3/Pdx3Igzym4/Q
+UHeDQzHCWryAytO/GMfv3ThJbC78e+dBMsi/ovUny9gYL1kPlTiVYU4YAnnDoPJb
+NLZhe7w5N1nEkBQwTsmJ2kgmCmofSp+Tc/3KerpJnRlm4m+57NCJW/0r/iQmjHvw
+VHm068X/lqGnbGR8q3qUC7jxuKfqwmol21A/SoPtWN5mGdt4sudbA7RbJr/fGz8t
+pnTxWPiGtNZYprXfnbpWScAsYQ2xFln2UoFp+1n/MrahrsPSBdztdqKrinMJQC6x
+ck4UupJEzEcWNW87c8vKQ20w2YtlhByM3SqrhhvvBoScIx4qsHDeT8Lg/pFSDKAu
+n1isXTzFd3KO7q+S/TeV
+=BMJJ
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
