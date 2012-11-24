@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2KXUic (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:38:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18264 "EHLO
+	id S1752650Ab2KXUia (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 15:38:30 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18266 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab2KXUg1 (ORCPT
+	with ESMTP id S1752460Ab2KXUg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:36:27 -0500
+	Sat, 24 Nov 2012 15:36:28 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 06/11] x86, boot: add get_cmd_line_ptr()
-Date: Sat, 24 Nov 2012 12:35:32 -0800
-Message-Id: <1353789337-19409-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 05/11] x86: add get_ramdisk_image/size()
+Date: Sat, 24 Nov 2012 12:35:31 -0800
+Message-Id: <1353789337-19409-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
 References: <1353789337-19409-1-git-send-email-yinghai@kernel.org>
@@ -23,69 +23,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-later will check ext_cmd_line_ptr at the same time.
+There several places to find ramdisk information early for reserving
+and relocating.
+
+Use functions to make code more readable and consistent.
+
+Later will add ext_ramdisk_image/size in those functions to support
+loading ramdisk above 4g.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/boot/compressed/cmdline.c |   10 ++++++++--
- arch/x86/kernel/head64.c           |   13 +++++++++++--
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
-index 10f6b11..b4c913c 100644
---- a/arch/x86/boot/compressed/cmdline.c
-+++ b/arch/x86/boot/compressed/cmdline.c
-@@ -13,13 +13,19 @@ static inline char rdfs8(addr_t addr)
- 	return *((char *)(fs + addr));
- }
- #include "../cmdline.c"
-+static unsigned long get_cmd_line_ptr(void)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ee6d267..194e151 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -298,12 +298,25 @@ static void __init reserve_brk(void)
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
++static u64 __init get_ramdisk_image(void)
 +{
-+	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
 +
-+	return cmd_line_ptr;
++	return ramdisk_image;
 +}
- int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
-+	return __cmdline_find_option(get_cmd_line_ptr(), option, buffer, bufsize);
- }
- int cmdline_find_option_bool(const char *option)
- {
--	return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
-+	return __cmdline_find_option_bool(get_cmd_line_ptr(), option);
- }
- 
- #endif
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 00e612a..3ac6cad 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -41,13 +41,22 @@ static void __init clear_bss(void)
- 	       (unsigned long) __bss_stop - (unsigned long) __bss_start);
- }
- 
-+static unsigned long get_cmd_line_ptr(void)
++static u64 __init get_ramdisk_size(void)
 +{
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
 +
-+	return cmd_line_ptr;
++	return ramdisk_size;
 +}
 +
- static void __init copy_bootdata(char *real_mode_data)
+ #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
+ static void __init relocate_initrd(void)
  {
- 	char * command_line;
-+	unsigned long cmd_line_ptr;
- 
- 	memcpy(&boot_params, real_mode_data, sizeof boot_params);
--	if (boot_params.hdr.cmd_line_ptr) {
--		command_line = __va(boot_params.hdr.cmd_line_ptr);
-+	cmd_line_ptr = get_cmd_line_ptr();
-+	if (cmd_line_ptr) {
-+		command_line = __va(cmd_line_ptr);
- 		memcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+@@ -342,8 +355,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
  	}
- }
+ 
+-	ramdisk_image = boot_params.hdr.ramdisk_image;
+-	ramdisk_size  = boot_params.hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image();
++	ramdisk_size  = get_ramdisk_size();
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -367,8 +380,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -380,8 +393,8 @@ static void __init early_reserve_initrd(void)
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
+ 
 -- 
 1.7.7
 
