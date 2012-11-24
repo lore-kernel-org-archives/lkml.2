@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab2KXXY4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 18:24:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41774 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2KXXYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 18:24:55 -0500
+	id S1752800Ab2KXX2O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 18:28:14 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:36158 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752635Ab2KXX2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 18:28:13 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] cpuidle: add Calxeda SOC idle support
+Date: Sun, 25 Nov 2012 00:32:46 +0100
+Message-ID: <2198449.YMGY5GKIXr@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAOesGMgUsmjZCpMN8WpYk2LpYpfxp-wyCwajw4TikgU8ve2g0A@mail.gmail.com>
+References: <1352330622-13616-1-git-send-email-robherring2@gmail.com> <2676657.zDjyfqIDdm@vostro.rjw.lan> <CAOesGMgUsmjZCpMN8WpYk2LpYpfxp-wyCwajw4TikgU8ve2g0A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50B14AFB.3040500@zytor.com>
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
-	<50AD0CA1.8000904@zytor.com>
-	<CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
-	<50AD291A.10600@zytor.com>
-	<CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com>
-	<a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
-	<CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com>
-	<CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
-	<a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com>
-	<CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
-	<50AE70E7.6060204@zytor.com>
-	<87haofi3d3.fsf@xmission.com>
-	<50B104BC.90208@zytor.com>
-	<50B124E9.400@zytor.com>
-	<CAE9FiQWKzH+BLwak5-n2px1Yhti872o=Qte-v_8N_5X3YSJ=5A@mail.gmail.com>
-	<50B13E53.4060003@zytor.com>
-	<CAE9FiQWoCyuGNqHSAZU_NXwjci3BJZQmmAUnWPn_pKCzEt8h7g@mail.gmail.com>
-	<50B14AFB.3040500@zytor.com>
-Date: Sat, 24 Nov 2012 15:24:54 -0800
-X-Google-Sender-Auth: dSBeAD9JR6OL_-5Vnxo2IfpZX08
-Message-ID: <CAE9FiQXF+00J+UaqWM1BrYGn++6L3Y0a78xC5mPSpZTzXY+azw@mail.gmail.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 2:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/24/2012 02:18 PM, Yinghai Lu wrote:
+On Saturday, November 24, 2012 03:21:49 PM Olof Johansson wrote:
+> Rafael,
+> 
+> On Sat, Nov 24, 2012 at 2:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, November 12, 2012 10:00:07 PM Arnd Bergmann wrote:
+> >> On Wednesday 07 November 2012, Rob Herring wrote:
+> >> > From: Rob Herring <rob.herring@calxeda.com>
+> >> >
+> >> > Add support for core powergating on Calxeda platforms. Initially, this
+> >> > supports ECX-1000 (highbank), but support will be added for ECX-2000
+> >> > later.
+> >> >
+> >> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> >> > Cc: Len Brown <len.brown@intel.com>
+> >> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> >>
+> >> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> >>
+> >> > It's not really clear where we want ARM cpuidle drivers. We're moving
+> >> > everything else out of arch/arm, and my understanding is Len doesn't want
+> >> > them in drivers/idle. It seems kind of silly to me to have the framework
+> >> > and drivers in 2 places. I've put this in drivers/cpuidle, but it doesn't
+> >> > make any difference to me.
+> >>
+> >> Fine with me. I just don't want in in arch/arm because I'm guessing this will
+> >> be shared with arm64, which in turn shares idle (and other) drivers with various
+> >> powerpc, mips and x86 socs.
+> >
+> > Applied to linux-pm.git/linux-next as v3.8 material.
+> 
+> We already have it in arm-soc. Since there's no maintainer listed for
+> the directory, it didn't seem like there were any better merge paths.
 
-> Well, that solves the problem for *this specific instance* but I fear
-> therein lies madness in the general case.
->
+Cool, I'll drop it then.
 
-use
+Thanks,
+Rafael
 
-   Bit 0 (read): CAN_BE_LOADED_ABOVE_4G
-         - If 1, kernel/boot_params/cmdline/ramdisk can be above 4g,
-                 set by kernel.
 
-   Bit 1 (write): USE_EXT_BOOT_PARAMS
-         - If 1, set by bootloader, and kernel could check new fields
-in boot_params
-                  that are added from 2.12 safely.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
