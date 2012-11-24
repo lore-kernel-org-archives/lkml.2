@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab2KXSCi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 13:02:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34616 "EHLO mx1.redhat.com"
+	id S1752276Ab2KXSCp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 13:02:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29465 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab2KXSCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 13:02:36 -0500
-Date: Sat, 24 Nov 2012 19:02:33 +0100
+	id S1752238Ab2KXSCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 13:02:43 -0500
+Date: Sat, 24 Nov 2012 19:02:36 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] uprobes: Kill UPROBE_RUN_HANDLER flag
-Message-ID: <20121124180233.GA30990@redhat.com>
+Subject: [PATCH 4/4] uprobes: Kill uprobe->copy_mutex
+Message-ID: <20121124180236.GA30993@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,74 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply remove UPROBE_RUN_HANDLER and the corresponding code.
+Now that ->register_rwsem is safe under ->mmap_sem we can kill
+->copy_mutex and abuse down_write(&uprobe->consumer_rwsem).
 
-It can only help if uprobe has a single consumer, and in fact
-it is no longer needed after handler_chain() was changed to use
-->register_rwsem, we simply can not race with uprobe_register().
+This makes prepare_uprobe() even more ugly, but we should kill
+it anyway.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   23 +++++------------------
- 1 files changed, 5 insertions(+), 18 deletions(-)
+ kernel/events/uprobes.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 873c993..97c3874 100644
+index 97c3874..1e047f8 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -83,10 +83,8 @@ static atomic_t uprobe_events = ATOMIC_INIT(0);
+@@ -91,7 +91,6 @@ struct uprobe {
+ 	atomic_t		ref;
+ 	struct rw_semaphore	register_rwsem;
+ 	struct rw_semaphore	consumer_rwsem;
+-	struct mutex		copy_mutex;	/* TODO: kill me and UPROBE_COPY_INSN */
+ 	struct list_head	pending_list;
+ 	struct uprobe_consumer	*consumers;
+ 	struct inode		*inode;		/* Also hold a ref to inode */
+@@ -450,7 +449,6 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+ 	uprobe->offset = offset;
+ 	init_rwsem(&uprobe->register_rwsem);
+ 	init_rwsem(&uprobe->consumer_rwsem);
+-	mutex_init(&uprobe->copy_mutex);
+ 	/* For now assume that the instruction need not be single-stepped */
+ 	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
  
- /* Have a copy of original instruction */
- #define UPROBE_COPY_INSN	0
--/* Dont run handlers when first register/ last unregister in progress*/
--#define UPROBE_RUN_HANDLER	1
- /* Can skip singlestep */
--#define UPROBE_SKIP_SSTEP	2
-+#define UPROBE_SKIP_SSTEP	1
+@@ -578,7 +576,8 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+ 	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
+ 		return ret;
  
- struct uprobe {
- 	struct rb_node		rb_node;	/* node in the rb tree */
-@@ -475,9 +473,6 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
- {
- 	struct uprobe_consumer *uc;
+-	mutex_lock(&uprobe->copy_mutex);
++	/* TODO: move this into _register, until then we abuse this sem. */
++	down_write(&uprobe->consumer_rwsem);
+ 	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
+ 		goto out;
  
--	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
--		return;
--
- 	down_read(&uprobe->register_rwsem);
- 	for (uc = uprobe->consumers; uc; uc = uc->next)
- 		uc->handler(uc, regs);
-@@ -825,13 +820,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+@@ -602,7 +601,7 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+ 	set_bit(UPROBE_COPY_INSN, &uprobe->flags);
  
- static int __uprobe_register(struct uprobe *uprobe, struct uprobe_consumer *uc)
- {
--	int err;
--
- 	consumer_add(uprobe, uc);
--	err = register_for_each_vma(uprobe, true);
--	if (!err) /* TODO: pointless unless the first consumer */
--		set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
--	return err;
-+	return register_for_each_vma(uprobe, true);
+  out:
+-	mutex_unlock(&uprobe->copy_mutex);
++	up_write(&uprobe->consumer_rwsem);
+ 
+ 	return ret;
  }
- 
- static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
-@@ -842,12 +832,9 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
- 		return;
- 
- 	err = register_for_each_vma(uprobe, false);
--	if (!uprobe->consumers) {
--		clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
--		/* TODO : cant unregister? schedule a worker thread */
--		if (!err)
--			delete_uprobe(uprobe);
--	}
-+	/* TODO : cant unregister? schedule a worker thread */
-+	if (!uprobe->consumers && !err)
-+		delete_uprobe(uprobe);
- }
- 
- /*
 -- 
 1.5.5.1
 
