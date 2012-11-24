@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab2KXA2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Nov 2012 19:28:23 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:56676 "EHLO
+	id S932915Ab2KXA2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Nov 2012 19:28:42 -0500
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:42205 "EHLO
 	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932871Ab2KXA2I (ORCPT
+	with ESMTP id S932840Ab2KXA2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Nov 2012 19:28:08 -0500
+	Fri, 23 Nov 2012 19:28:03 -0500
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
 To: linux-kernel@vger.kernel.org
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 24/24] MAINTAINERS: remove drivers/block/ub.c
-Date: Fri, 23 Nov 2012 22:26:48 -0200
-Message-Id: <1353716808-16375-25-git-send-email-cesarb@cesarb.net>
+Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Sanders <vince@simtec.co.uk>,
+        Simtec Linux Team <linux@simtec.co.uk>
+Subject: [PATCH 22/24] MAINTAINERS: fix BAST
+Date: Fri, 23 Nov 2012 22:26:46 -0200
+Message-Id: <1353716808-16375-23-git-send-email-cesarb@cesarb.net>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
 References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
@@ -21,33 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver was removed by commit 68a5059 (block: remove the deprecated
-ub driver).
+These files were renamed by commit 85fd6d6 (ARM: S3C2410: move
+mach-s3c2410/* into mach-s3c24xx/).
 
-Cc: Pete Zaitcev <zaitcev@redhat.com>
-Cc: linux-usb@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Vincent Sanders <vince@simtec.co.uk>
+Cc: Simtec Linux Team <linux@simtec.co.uk>
 Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
- MAINTAINERS | 6 ------
- 1 file changed, 6 deletions(-)
+ MAINTAINERS | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index e8990d2..f4934bd 100644
+index fb245ea..328ba4f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -7624,12 +7624,6 @@ L:	linux-scsi@vger.kernel.org
+@@ -6639,9 +6639,9 @@ P:	Vincent Sanders <vince@simtec.co.uk>
+ M:	Simtec Linux Team <linux@simtec.co.uk>
+ W:	http://www.simtec.co.uk/products/EB2410ITX/
  S:	Supported
- F:	drivers/usb/storage/uas.c
+-F:	arch/arm/mach-s3c2410/mach-bast.c
+-F:	arch/arm/mach-s3c2410/bast-ide.c
+-F:	arch/arm/mach-s3c2410/bast-irq.c
++F:	arch/arm/mach-s3c24xx/mach-bast.c
++F:	arch/arm/mach-s3c24xx/bast-ide.c
++F:	arch/arm/mach-s3c24xx/bast-irq.c
  
--USB BLOCK DRIVER (UB ub)
--M:	Pete Zaitcev <zaitcev@redhat.com>
--L:	linux-usb@vger.kernel.org
--S:	Supported
--F:	drivers/block/ub.c
--
- USB CDC ETHERNET DRIVER
- M:	Oliver Neukum <oliver@neukum.org>
- L:	linux-usb@vger.kernel.org
+ TI DAVINCI MACHINE SUPPORT
+ M:	Sekhar Nori <nsekhar@ti.com>
 -- 
 1.7.11.7
 
