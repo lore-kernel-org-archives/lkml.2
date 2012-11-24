@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab2KXSKk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 13:10:40 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:39670 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab2KXSKj (ORCPT
+	id S1752157Ab2KXSQx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 13:16:53 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:36676 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab2KXSQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 13:10:39 -0500
-Date: Sat, 24 Nov 2012 19:10:24 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
-Message-ID: <20121124191024.4b5d5b4c@skate>
-In-Reply-To: <20121124150004.GQ15800@titan.lakedaemon.net>
-References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20121124023942.GO15800@titan.lakedaemon.net>
-	<20121124080240.3f600e89@skate>
-	<20121124150004.GQ15800@titan.lakedaemon.net>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 24 Nov 2012 13:16:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121124175954.GI4719@opensource.wolfsonmicro.com>
+References: <1353657795-1725-1-git-send-email-thomas.abraham@linaro.org>
+	<1353657795-1725-4-git-send-email-thomas.abraham@linaro.org>
+	<20121124175954.GI4719@opensource.wolfsonmicro.com>
+Date: Sat, 24 Nov 2012 23:46:51 +0530
+Message-ID: <CAJuYYwThsFutYnYg2scmfqUAGxBM2pWmRmoTww+OyZgUuA-7vg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] regulator: add device tree support for max8997
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        myungjoo.ham@samsung.com, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, t.figa@samsung.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jason Cooper,
+On 24 November 2012 23:29, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Nov 23, 2012 at 01:33:15PM +0530, Thomas Abraham wrote:
+>
+>> This v6 patch is rebased to the latest max8997 driver code and there are no
+>> functional changes from v5.
+>
+> That doesn't seem to be in mainline yet so the patch won't apply.
 
-On Sat, 24 Nov 2012 10:00:04 -0500, Jason Cooper wrote:
+Hi Mark,
 
-> Yes, so that's what I thought happened.  This would have made orion/dt
-> depend upon mvebu/everything.  It already had two other dependencies.
-> Not ideal.
-> 
-> The good thing is, the build is not broken.  Once v3.8-rc1 drops with
-> all of our stuff merged, I'll post a fixup patch adding this back in.
+The max8997 driver is mainlined. I actually meant to say that, this v6
+version of dt support patch for max8997, is similar in functionality
+to the v5 version of this patch. I did prepare this patch based on
+your latest for-next branch.
 
-It unfortunately means that Dove will be basically unbootable in
-3.8-rc1, as the driver will not be clk_get()ing its gatable clock, and
-the clock driver will disable it. Maybe we can just live with it, I
-don't know.
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Thanks,
+Thomas.
