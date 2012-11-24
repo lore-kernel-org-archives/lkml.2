@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab2KXUww (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 15:52:52 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64778 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab2KXUwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 15:52:51 -0500
-Date: Sat, 24 Nov 2012 21:52:44 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] iio: adc: Add Texas Instruments ADC081C021/027 support
-Message-ID: <20121124205244.GA27042@avionic-0098.adnet.avionic-design.de>
-References: <1353683583-19779-1-git-send-email-thierry.reding@avionic-design.de>
- <50B0A74B.10707@kernel.org>
+	id S1752316Ab2KXVKg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 16:10:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249Ab2KXVKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 16:10:34 -0500
+Date: Sat, 24 Nov 2012 16:09:37 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+cc: Jens Axboe <axboe@kernel.dk>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Recent kernel "mount" slow
+In-Reply-To: <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+ <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
+ <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+ <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-In-Reply-To: <50B0A74B.10707@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:1eYQOxq1F0zuLp1pzHos+IcLWg4qL0J77qc7TBCLLgu
- T1fq06WA37ordTPF04MIffMVoBTdP4VwnZ89oTgYr+cHl7yLP1
- 74ArBUqagHr67aJfx7F/ci769Lv7w9xtMGTkwuXqaOHfVyB4F8
- cQi1ygRoNiKycsH6ZNXDdJcSbobwW6RTav8Qqmx/05Axc5HgyT
- o0M6YbioSrCX94CQM0Ub1fXuWUrHy/Xm3zzq1XS0ZKfITd2mE2
- KQxqXsKpQz3O1KPCzdLcsGmv+BY3ffNmkroAeY9bQC2gnzJ/DM
- ZBhUBDHXj+K06H7pwBcQHWy2w49T06GtJvleI5dvwQvlDdhYGW
- TtxF9SfxXqEDhc45DSmzdFKern8y6b7yX3//QyjRFCLbxn5wkL
- eBYk+HAfh3MRrKspiUz58qoi3Z2op5OrnwWBPClALw5GU1k5sS
- 2rfks
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, Nov 24, 2012 at 10:54:03AM +0000, Jonathan Cameron wrote:
-> On 11/23/2012 03:13 PM, Thierry Reding wrote:
-> > Add support for reading conversion results from the ADC and provide them
-> > through a single IIO channel. A proper scaling factor is also exported
-> > based on the reference voltage provided by a regulator.
+On Sat, 24 Nov 2012, Jeff Chua wrote:
+
+> On Fri, Nov 23, 2012 at 9:24 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> > On 2012-11-22 20:21, Linus Torvalds wrote:
+> >> Doesn't sound like a fsdevel issue since it seems to be independent of
+> >> filesystems. More like some generic block layer thing. Adding Jens
+> >> (and quoting the whole thing)
+> >>
+> >> Jens, any ideas? Most of your stuff came in after -rc2, which would
+> >> fit with the fact that most of the slowdown seems to be after -rc2
+> >> according to Jeff.
 > >
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> Looks good to me.  I think timing is against you (depending on what Linus
-> says with his next rc).  IIO patches are routed through Greg KH. His cut
-> off is 1 week before the merge window opens.  Mine tends to as a result
-> be a few days before that.  Linus stated in last rc message that the one =
-he'll
-> do today or tomorrow will be the last for this cycle (and hence merge win=
-dow
-> will open in a week from now). Hence this will probably hit linux next af=
-ter
-> the merge window closes and merge in the 3.9 cycle.
+> > No ideas. Looking at what went in from my side, only the rq plug sorting
+> > is a core change, and that should not cause any change in behaviour for
+> > a single device. That's commit 975927b9.
+> >
+> >> Jeff, more bisecting would be good, though.
+> >
+> > Probably required, yes...
+> 
+> 
+> This one slows mount from 0.012s to 0.168s.
+> 
+> commit 62ac665ff9fc07497ca524bd20d6a96893d11071
+> Author: Mikulas Patocka <mpatocka@redhat.com>
+> Date:   Wed Sep 26 07:46:43 2012 +0200
+> 
+>     blockdev: turn a rw semaphore into a percpu rw semaphore
+> 
+> 
+> There were couple of more changes to percpu-rw-semaphores after
+> 3.7.0-rc2 and those slows mount further from 0.168s to 0.500s. I don't
+> really know, but I'm suspecting these. Still bisecting.
 
-Not a problem. I wasn't relying on getting this merged for 3.8. Official
-support for the board that uses this driver is still some way out, so no
-need to hurry in any way.
+The problem there is that you either use normal semaphores and slow down 
+I/O or you use percpu-semaphores, you don't slow down I/O, but you slow 
+down mount.
 
-Thanks for merging and thanks for reviewing, Lars-Peter.
+So it's better to slow down mount.
 
-Thierry
+(if you don't use any semaphore at all, as it was in 3.6 kernel and 
+before, there is a race condition that can crash the kernel if someone 
+does mount and direct I/O read on the same device at the same time)
 
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature
+You can improve mount time if you change all occurences of 
+synchronize_sched() in include/linux/percpu-rwsem.h to 
+synchronize_sched_expedited().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+But some people say that synchronize_sched_expedited() is bad for real 
+time latency. (can there be something like: if (realtime) 
+synchronize_sched(); else synchronize_sched_expedited(); ?)
 
-iQIcBAEBAgAGBQJQsTOcAAoJEN0jrNd/PrOhe6EP/1edWQawxCXyL9BVzNxWnI8Z
-CoIUX4e2/4qWE/rWvcIYfOJHeW+JfDCVpE5KL5HkTw8z7pQHmHo+A3ZtmH3Fxd69
-Pt8h6WV8cGu97trRJrx2B7nQcZvfB9Y9LYb3oaUsp7+HqT2QS6bDKpSgkUDlc80n
-EhRAmH3ZmQsEo+JA/JbU7cpSDx89YejkMZBOY1qynZsIWn7/+gRN/1PLrDuY5W7S
-vq6MpNb9+E8In7TrziuCUgV1udHw7cA2/zhd9v5g3oooECp4Ss/My42d/8EETe5K
-nFwegC8U8AlW5XriveyjWst8HVBYfkaB38FyVHWMgE/3s12vj+3/Pdx3Igzym4/Q
-UHeDQzHCWryAytO/GMfv3ThJbC78e+dBMsi/ovUny9gYL1kPlTiVYU4YAnnDoPJb
-NLZhe7w5N1nEkBQwTsmJ2kgmCmofSp+Tc/3KerpJnRlm4m+57NCJW/0r/iQmjHvw
-VHm068X/lqGnbGR8q3qUC7jxuKfqwmol21A/SoPtWN5mGdt4sudbA7RbJr/fGz8t
-pnTxWPiGtNZYprXfnbpWScAsYQ2xFln2UoFp+1n/MrahrsPSBdztdqKrinMJQC6x
-ck4UupJEzEcWNW87c8vKQ20w2YtlhByM3SqrhhvvBoScIx4qsHDeT8Lg/pFSDKAu
-n1isXTzFd3KO7q+S/TeV
-=BMJJ
------END PGP SIGNATURE-----
-
---azLHFNyN32YCQGCU--
+Mikulas
