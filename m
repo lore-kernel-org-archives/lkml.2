@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab2KYIrR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 03:47:17 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54132 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2KYIrQ (ORCPT
+	id S1752659Ab2KYJD3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 04:03:29 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53891 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2KYJDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 03:47:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121123173205.GZ8218@suse.de>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
-	<20121123173205.GZ8218@suse.de>
-Date: Sun, 25 Nov 2012 16:47:15 +0800
-Message-ID: <CAJd=RBCUZn4gvzAME0Xm98TCBRnY_201R3dkKaWMySYr4hNmFA@mail.gmail.com>
-Subject: Re: Comparison between three trees (was: Latest numa/core release, v17)
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 25 Nov 2012 04:03:25 -0500
+X-Nat-Received: from [202.181.97.72]:51396 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1353834167.27203
+To: dhowells@redhat.com, sam@ravnborg.org
+Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        davej@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201211192202.IBE48444.VHFLtOSOQFOMJF@I-love.SAKURA.ne.jp>
+	<201211172227.BHB30739.OVOMFtFLHOFSQJ@I-love.SAKURA.ne.jp>
+	<24020.1353323415@warthog.procyon.org.uk>
+	<26846.1353334165@warthog.procyon.org.uk>
+	<201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
+Message-Id: <201211251802.BEJ43247.SHFOJOFVQLFtOM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 25 Nov 2012 18:02:37 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 25112012 #8516623, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/12, Mel Gorman <mgorman@suse.de> wrote:
-> Warning: This is an insanely long mail and there a lot of data here. Get
-> 	coffee or something.
->
-> This is another round of comparisons between the latest released versions
-> of each of three automatic numa balancing trees that are out there.
->
-> From the series "Automatic NUMA Balancing V5", the kernels tested were
->
-> stats-v5r1	Patches 1-10. TLB optimisations, migration stats
-> thpmigrate-v5r1	Patches 1-37. Basic placement policy, PMD handling, THP
-> migration etc.
-> adaptscan-v5r1	Patches 1-38. Heavy handed PTE scan reduction
-> delaystart-v5r1 Patches 1-40. Delay the PTE scan until running on a new
-> node
->
-> If I just say balancenuma, I mean the "delaystart-v5r1" kernel. The other
-> kernels are included so you can see the impact the scan rate adaption
-> patch has and what that might mean for a placement policy using a proper
-> feedback mechanism.
->
-> The other two kernels were
->
-> numacore-20121123 It was no longer clear what the deltas between releases
-> and
-> 	the dependencies might be so I just pulled tip/master on November
-> 	23rd, 2012. An earlier pull had serious difficulties and the patch
-> 	responsible has been dropped since. This is not a like-with-like
-> 	comparison as the tree contains numerous other patches but it's
-> 	the best available given the timeframe
->
-> autonuma-v28fast This is a rebased version of Andrea's autonuma-v28fast
-> 	branch with Hugh's THP migration patch on top.
+Tetsuo Handa wrote:
+> Linux 3.6 builds fine. I can't use "git bisect" until Linux 3.7-rc6 but
+> possibly caused by either commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into
+> the user header installation and checking" or commit 40f1d4c2 "UAPI: Remove the
+> objhdr-y export list".
 
-FYI, based on how target huge page is selected,
-
-+
-+	new_page = alloc_pages_node(numa_node_id(),
-+		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
-
-the thp replacement policy is changed to be MORON,
-
-+	/* Migrate the page towards the node whose CPU is referencing it */
-+	if (pol->flags & MPOL_F_MORON)
-+		polnid = numa_node_id();
-
-
-described in
-	[PATCH 29/46] mm: numa: Migrate on reference policy
-	https://lkml.org/lkml/2012/11/21/228
-
-Hillf
+Bisected to commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into the user header
+installation and checking".
