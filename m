@@ -1,110 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2KZARo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 19:17:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753737Ab2KZARm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 19:17:42 -0500
-Date: Sun, 25 Nov 2012 19:16:45 -0500
-From: Rik van Riel <riel@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
-        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
-        mm-commits@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH] mm,vmscan: only loop back if compaction would fail in all
- zones
-Message-ID: <20121125191645.0ebc6d59@annuminas.surriel.com>
-In-Reply-To: <20121125224433.GB2799@cmpxchg.org>
-References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
-	<20121125175728.3db4ac6a@fem.tu-ilmenau.de>
-	<20121125132950.11b15e38@annuminas.surriel.com>
-	<20121125224433.GB2799@cmpxchg.org>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
+	id S1753829Ab2KZAUj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 19:20:39 -0500
+Received: from treacle.ucs.ed.ac.uk ([129.215.16.102]:39520 "EHLO
+	treacle.ucs.ed.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab2KZAUi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 19:20:38 -0500
+X-Greylist: delayed 3287 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Nov 2012 19:20:38 EST
+From: FISHER Patricia <Pat.Fisher@ed.ac.uk>
+Date: Sun, 25 Nov 2012 23:13:12 +0000
+Subject: Respond to : un_claimsdesk@hotmail.com
+Thread-Topic: Respond to : un_claimsdesk@hotmail.com
+Thread-Index: AQHNy2Jwn9/6PXTHZ0+8xdd7IuywBA==
+Message-ID: <3E331D27B3AC754B9028802BFC8D9F8A1C2739FF9C@EXSEEDMD.is.ed.ac.uk>
+Accept-Language: en-US, en-GB
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-Edinburgh-Scanned: at treacle.ucs.ed.ac.uk
+    with MIMEDefang 2.60, Sophie, Sophos Anti-Virus, Clam AntiVirus
+Content-Disposition: inline
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Nov 2012 17:44:33 -0500
-Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
+Our $1,000,000.00 USD donation to you,Contact us via our personal email for more details (un_claimsdesk@hotmail.com<mailto:un_claimsdesk@hotmail.com>) for more info..
 
-> > Could you try this patch?
-> 
-> It's not quite enough because it's not reaching the conditions you
-> changed, see analysis in https://lkml.org/lkml/2012/11/20/567
+-- 
+The University of Edinburgh is a charitable body, registered in
+Scotland, with registration number SC005336.
 
-Johannes,
-
-does the patch below fix your problem?
-
-I suspect it would, because kswapd should only ever run into this
-particular problem when we have a tiny memory zone in a pgdat,
-and in that case we will also have a larger zone nearby, where
-compaction would just succeed.
-
----8<---
-
-Subject: mm,vmscan: only loop back if compaction would fail in all zones
-
-Kswapd frees memory to satisfy two goals:
-1) allow allocations to succeed, and
-2) balance memory pressure between zones 
-
-Currently, kswapd has an issue where it will loop back to free
-more memory if any memory zone in the pgdat has not enough free
-memory for compaction.  This can lead to unnecessary overhead,
-and even infinite loops in kswapd.
-
-It is better to only loop back to free more memory if all of
-the zones in the pgdat have insufficient free memory for
-compaction.  That satisfies both of kswapd's goals with less
-overhead.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b99ecba..f0d111b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2790,6 +2790,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 	 */
- 	if (order) {
- 		int zones_need_compaction = 1;
-+		int compaction_needs_memory = 1;
- 
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
-@@ -2801,10 +2802,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 			    sc.priority != DEF_PRIORITY)
- 				continue;
- 
--			/* Would compaction fail due to lack of free memory? */
-+			/* Is there enough memory for compaction? */
- 			if (COMPACTION_BUILD &&
--			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
--				goto loop_again;
-+			    compaction_suitable(zone, order) != COMPACT_SKIPPED)
-+				compaction_needs_memory = 0;
- 
- 			/* Confirm the zone is balanced for order-0 */
- 			if (!zone_watermark_ok(zone, 0,
-@@ -2822,6 +2823,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 			zone_clear_flag(zone, ZONE_CONGESTED);
- 		}
- 
-+		/* None of the zones had enough free memory for compaction. */
-+		if (compaction_needs_memory)
-+			goto loop_again;
-+
- 		if (zones_need_compaction)
- 			compact_pgdat(pgdat, order);
- 	}
