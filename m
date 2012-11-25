@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2KYP2z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 10:28:55 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:15420 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751610Ab2KYP2x (ORCPT
+	id S1753248Ab2KYQ1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 11:27:46 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41072 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab2KYQ1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 10:28:53 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+1pfA4ZJHw75yhwtPVcP0kvSQCgRFzp30=
-Date: Sun, 25 Nov 2012 10:28:45 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: Dove: Convert to DT GPIO and pinctrl
-Message-ID: <20121125152845.GV15800@titan.lakedaemon.net>
-References: <1353317996-20841-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1353317996-20841-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <20121124023942.GO15800@titan.lakedaemon.net>
- <20121124080240.3f600e89@skate>
- <20121124150004.GQ15800@titan.lakedaemon.net>
- <20121124191024.4b5d5b4c@skate>
- <20121124185906.GT15800@titan.lakedaemon.net>
- <50B1F842.2080500@gmail.com>
+	Sun, 25 Nov 2012 11:27:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B1F842.2080500@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201211231501.52852.hverkuil@xs4all.nl>
+References: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
+ <CA+V-a8t5ZJ2Zb+dWkifjjOHOrv1LAvgaJR2x24xKJXrTJs9+jg@mail.gmail.com>
+ <20121123135753.GB31879@valkosipuli.retiisi.org.uk> <201211231501.52852.hverkuil@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sun, 25 Nov 2012 21:57:23 +0530
+Message-ID: <CA+V-a8sFW7-dkjS=NxM2uJhhOBwTXQ5zGk9hBsA++w6P1PzFMQ@mail.gmail.com>
+Subject: Re: [PATCH v2 00/12] Media Controller capture driver for DM365
+To: Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 25, 2012 at 11:51:46AM +0100, Sebastian Hesselbarth wrote:
-> On 11/24/2012 07:59 PM, Jason Cooper wrote:
-> >On Sat, Nov 24, 2012 at 07:10:24PM +0100, Thomas Petazzoni wrote:
-> >>On Sat, 24 Nov 2012 10:00:04 -0500, Jason Cooper wrote:
-> >>>Yes, so that's what I thought happened.  This would have made orion/dt
-> >>>depend upon mvebu/everything.  It already had two other dependencies.
-> >>>Not ideal.
-> >>>
-> >>>The good thing is, the build is not broken.  Once v3.8-rc1 drops with
-> >>>all of our stuff merged, I'll post a fixup patch adding this back in.
-> >>
-> >>It unfortunately means that Dove will be basically unbootable in
-> >>3.8-rc1, as the driver will not be clk_get()ing its gatable clock, and
-> >>the clock driver will disable it. Maybe we can just live with it, I
-> >>don't know.
-> >
-> >Yes, I thought as much after I sent this reply.  Definitely a choice of
-> >the lesser of two evils.  As long as we don't break the build or have
-> >horrendous merge conflicts, I think it's tolerable.
-> >
-> >Any one who is booting -rc1's is typically bug hunting.  This means
-> >Sebastian, who has been CC'd on all of this.  I don't want to rely on
-> >this in the future, but doing it once due to the circumstances is
-> >something I'm comfortable answering to.
-> 
-> sorry for the late answer. I merged all pull reqs in the order posted
-> on top of latest linux/master. Thomas is right, removing the clk_gate
-> from pinctrl potentially could have broken boot on dove. I tried it and
-> it _does_ boot, because the clk used by pinctrl is optional in pinctrl-dove
-> and there is no pinhog/device touching the register clocked by the clock.
-> 
-> As soon as I 'cat pinconf-groups' in debugfs, the register is read and
-> my cubox hangs as expected.
-> 
-> So, finally a fixup patch for 3.8-rc1 is ok for me.
+Hi,
 
-Great!  I'm glad to hear it's not as bad as I feared.
+On Fri, Nov 23, 2012 at 7:31 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Fri November 23 2012 14:57:53 Sakari Ailus wrote:
+>> Hi Prabhakar,
+>>
+>> On Fri, Nov 23, 2012 at 06:51:28PM +0530, Prabhakar Lad wrote:
+>> > Hi Sakari,
+>> >
+>> > On Fri, Nov 23, 2012 at 6:43 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+>> > > Hi Prabhakar and others,
+>> > >
+>> > > (Just resending; Laurent's e-mail address corrected, cc Hans, too.)
+>> > >
+>> > > On Fri, Nov 16, 2012 at 08:15:02PM +0530, Prabhakar Lad wrote:
+>> > >> From: Manjunath Hadli <manjunath.hadli@ti.com>
+>> > >>
+>> > >> This patch set adds media controller based capture driver for
+>> > >> DM365.
+>> > >>
+>> > >> This driver bases its design on Laurent Pinchart's Media Controller Design
+>> > >> whose patches for Media Controller and subdev enhancements form the base.
+>> > >> The driver also takes copious elements taken from Laurent Pinchart and
+>> > >> others' OMAP ISP driver based on Media Controller. So thank you all the
+>> > >> people who are responsible for the Media Controller and the OMAP ISP driver.
+>> > >>
+>> > >> Also, the core functionality of the driver comes from the arago vpfe capture
+>> > >> driver of which the isif capture was based on V4L2, with other drivers like
+>> > >> ipipe, ipipeif and Resizer.
+>> > >>
+>> > >> Changes for v2:
+>> > >> 1: Migrated the driver for videobuf2 usage pointed Hans.
+>> > >> 2: Changed the design as pointed by Laurent, Exposed one more subdevs
+>> > >>    ipipeif and split the resizer subdev into three subdevs.
+>> > >> 3: Rearrganed the patch sequence and changed the commit messages.
+>> > >> 4: Changed the file architecture as pointed by Laurent.
+>> > >>
+>> > >> Manjunath Hadli (12):
+>> > >>   davinci: vpfe: add v4l2 capture driver with media interface
+>> > >>   davinci: vpfe: add v4l2 video driver support
+>> > >>   davinci: vpfe: dm365: add IPIPEIF driver based on media framework
+>> > >>   davinci: vpfe: dm365: add ISIF driver based on media framework
+>> > >>   davinci: vpfe: dm365: add IPIPE support for media controller driver
+>> > >>   davinci: vpfe: dm365: add IPIPE hardware layer support
+>> > >>   davinci: vpfe: dm365: resizer driver based on media framework
+>> > >>   davinci: vpss: dm365: enable ISP registers
+>> > >>   davinci: vpss: dm365: set vpss clk ctrl
+>> > >>   davinci: vpss: dm365: add vpss helper functions to be used in the
+>> > >>     main driver for setting hardware parameters
+>> > >>   davinci: vpfe: dm365: add build infrastructure for capture driver
+>> > >>   davinci: vpfe: Add documentation
+>> > >
+>> > > As discussed, here's the todo list for inclusion to staging.
+>> > >
+>> > > - User space interface refinement
+>> > >         - Controls should be used when possible rather than private ioctl
+>> > >         - No enums should be used
+>> > >         - Use of MC and V4L2 subdev APIs when applicable
+>> > >         - Single interface header might suffice
+>> > >         - Current interface forces to configure everything at once
+>> > > - Get rid of the dm365_ipipe_hw.[ch] layer
+>> > > - Active external sub-devices defined by link configuration; no strcmp
+>> > >   needed
+>> > > - More generic platform data (i2c adapters)
+>> > > - The driver should have no knowledge of possible external subdevs; see
+>> > >   struct vpfe_subdev_id
+>> > > - Some of the hardware control should be refactorede
+>> > > - Check proper serialisation (through mutexes and spinlocks)
+>> > > - Names that are visible in kernel global namespace should have a common
+>> > >   prefix (or a few)
+>> > >
+>> > > This list likely isn't complete, but some items such as the locking one is
+>> > > there simply because I'm not certain of the state of it.
+>> > >
+>> > Thanks a lot. I'll include this TODO's in documentation patch itself,
+>> > But I am not sure if the driver is going in staging, the documentation
+>> > file would still be present under Documentation directory  or even
+>> > this should go in staging directory itself ?
+>>
+>> I think it should go under staging, the same directory as the driver.
+>>
+>> Hans, Mauro: could you confirm this?
+>
+> I agree with that, that way things stay together in one directory.
+>
+Ok I'll have the documentation in staging folder itself. What about
+the header file which is added
+to include/media/davinci/xxx.h, these header files are used by machine
+file and drivers
+only, I think also moving them to staging wont make sense and also
+these files are expected
+not to change, what are your suggestion on this ?
 
-thx,
+Regards,
+--Prabhakar Lad
 
-Jason.
+> Regards,
+>
+>         Hans
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
