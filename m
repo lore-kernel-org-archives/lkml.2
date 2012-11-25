@@ -1,63 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab2KYDCs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 22:02:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab2KYDCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 22:02:47 -0500
-Date: Sun, 25 Nov 2012 11:02:31 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [patch 6/8] kcmp selftests: build fix
-Message-ID: <20121125030231.GA2101@darkstar.nay.redhat.com>
-References: <20121124082918.671430919@redhat.com>
- <20121124083139.691424172@redhat.com>
- <CAOJsxLGQ+UQnFnbcn9oMTUBd0HB+CSfRy_R0Ze2UOJJfR1+K=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLGQ+UQnFnbcn9oMTUBd0HB+CSfRy_R0Ze2UOJJfR1+K=w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752981Ab2KYDfk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 22:35:40 -0500
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:46069 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab2KYDfj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Nov 2012 22:35:39 -0500
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        benchan@chromium.org, Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH] staging: gdm72xx: protect access of rx / tx structs
+Date: Sat, 24 Nov 2012 19:35:36 -0800
+Message-Id: <1353814536-3224-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 11:41:23AM +0200, Pekka Enberg wrote:
-> On Sat, Nov 24, 2012 at 10:29 AM,  <dyoung@redhat.com> wrote:
-> > For old glibc there's no the syscall number this tests will cause
-> > make run_tests fail.
-> > Add a macro to define the number. This should be ok because it will be
-> > built in latest kernel source.
-> >
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  tools/testing/selftests/kcmp/kcmp_test.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> >
-> > --- linux-2.6.orig/tools/testing/selftests/kcmp/kcmp_test.c     2012-11-23 22:37:04.789058192 +0800
-> > +++ linux-2.6/tools/testing/selftests/kcmp/kcmp_test.c  2012-11-23 22:38:43.195191747 +0800
-> > @@ -17,6 +17,9 @@
-> >  #include <sys/stat.h>
-> >  #include <sys/wait.h>
-> >
-> > +#ifndef __NR_kcmp
-> > +#define __NR_kcmp 272
-> > +#endif
-> 
-> Is the syscall number really going to be the same across all architectures?
+This patch applies spinlock to protect access to rx / tx structs in
+certain call sites, which fixes the following crash in gdm_suspend.
+It also fixes usb_set_intfdata() in gdm_usb_probe to avoid setting an
+already freed phy_dev.
 
-Oh, they are different. self NACK. Please ignore this patch.
+<5>[ 4996.815018] [<7f0074b0>] (gdm_suspend+0x1c/0x2b4 [gdmwm]) from [<803020a4>] (usb_suspend_both+0x80/0x1a0)
+<5>[ 4996.815055] [<803020a4>] (usb_suspend_both+0x80/0x1a0) from [<80302c84>] (usb_runtime_suspend+0x38/0x64)
+<5>[ 4996.815089] [<80302c84>] (usb_runtime_suspend+0x38/0x64) from [<802becc0>] (__rpm_callback+0x48/0x78)
+<5>[ 4996.815118] [<802becc0>] (__rpm_callback+0x48/0x78) from [<802bf8dc>] (rpm_suspend+0x394/0x5ec)
+<5>[ 4996.815145] [<802bf8dc>] (rpm_suspend+0x394/0x5ec) from [<802c0550>] (pm_runtime_work+0x8c/0xa4)
+<5>[ 4996.815177] [<802c0550>] (pm_runtime_work+0x8c/0xa4) from [<800456cc>] (process_one_work+0x264/0x438)
+<5>[ 4996.815209] [<800456cc>] (process_one_work+0x264/0x438) from [<80045acc>] (worker_thread+0x22c/0x3b8)
+<5>[ 4996.815239] [<80045acc>] (worker_thread+0x22c/0x3b8) from [<8004a43c>] (kthread+0x9c/0xa8)
+<5>[ 4996.815270] [<8004a43c>] (kthread+0x9c/0xa8) from [<8000f160>] (kernel_thread_exit+0x0/0x8)
+<0>[ 4996.815295] Code: e92d4000 e8bd4000 e2800020 eb4ab9a1 (e5905000)
 
-> 
-> >  static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
-> >  {
-> >         return syscall(__NR_kcmp, pid1, pid2, type, fd1, fd2);
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Ben Chan <benchan@chromium.org>
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ drivers/staging/gdm72xx/gdm_usb.c |   52 ++++++++++++++++++++++++++++++++-----
+ 1 files changed, 45 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
+index 0cc6317..4426941 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.c
++++ b/drivers/staging/gdm72xx/gdm_usb.c
+@@ -186,6 +186,7 @@ static int init_usb(struct usbwm_dev *udev)
+ 	struct rx_cxt	*rx = &udev->rx;
+ 	struct usb_tx	*t;
+ 	struct usb_rx	*r;
++	unsigned long flags;
+ 
+ 	INIT_LIST_HEAD(&tx->free_list);
+ 	INIT_LIST_HEAD(&tx->sdu_list);
+@@ -200,6 +201,7 @@ static int init_usb(struct usbwm_dev *udev)
+ 	spin_lock_init(&tx->lock);
+ 	spin_lock_init(&rx->lock);
+ 
++	spin_lock_irqsave(&tx->lock, flags);
+ 	for (i = 0; i < MAX_NR_SDU_BUF; i++) {
+ 		t = alloc_tx_struct(tx);
+ 		if (t == NULL) {
+@@ -208,6 +210,7 @@ static int init_usb(struct usbwm_dev *udev)
+ 		}
+ 		list_add(&t->list, &tx->free_list);
+ 	}
++	spin_unlock_irqrestore(&tx->lock, flags);
+ 
+ 	r = alloc_rx_struct(rx);
+ 	if (r == NULL) {
+@@ -215,7 +218,9 @@ static int init_usb(struct usbwm_dev *udev)
+ 		goto fail;
+ 	}
+ 
++	spin_lock_irqsave(&rx->lock, flags);
+ 	list_add(&r->list, &rx->free_list);
++	spin_unlock_irqrestore(&rx->lock, flags);
+ 	return ret;
+ 
+ fail:
+@@ -229,6 +234,9 @@ static void release_usb(struct usbwm_dev *udev)
+ 	struct rx_cxt	*rx = &udev->rx;
+ 	struct usb_tx	*t, *t_next;
+ 	struct usb_rx	*r, *r_next;
++	unsigned long flags;
++
++	spin_lock_irqsave(&tx->lock, flags);
+ 
+ 	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
+ 		list_del(&t->list);
+@@ -245,6 +253,10 @@ static void release_usb(struct usbwm_dev *udev)
+ 		free_tx_struct(t);
+ 	}
+ 
++	spin_unlock_irqrestore(&tx->lock, flags);
++
++	spin_lock_irqsave(&rx->lock, flags);
++
+ 	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
+ 		list_del(&r->list);
+ 		free_rx_struct(r);
+@@ -254,6 +266,8 @@ static void release_usb(struct usbwm_dev *udev)
+ 		list_del(&r->list);
+ 		free_rx_struct(r);
+ 	}
++
++	spin_unlock_irqrestore(&rx->lock, flags);
+ }
+ 
+ static void __gdm_usb_send_complete(struct urb *urb)
+@@ -302,7 +316,7 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
+ 	int no_spc = 0, ret;
+ 	u8 *pkt = data;
+ 	u16 cmd_evt;
+-	unsigned long flags;
++	unsigned long flags, flags2;
+ 
+ 	if (!udev->usbdev) {
+ 		dev_err(&usbdev->dev, "%s: No such device\n", __func__);
+@@ -371,13 +385,16 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
+ 
+ 		rx = &udev->rx;
+ 
++		spin_lock_irqsave(&rx->lock, flags2);
+ 		list_for_each_entry(r, &rx->used_list, list)
+ 			usb_unlink_urb(r->urb);
++		spin_unlock_irqrestore(&rx->lock, flags2);
++
+ 		udev->bw_switch = 1;
+ 
+-		spin_lock(&k_lock);
++		spin_lock_irqsave(&k_lock, flags2);
+ 		list_add_tail(&udev->list, &k_list);
+-		spin_unlock(&k_lock);
++		spin_unlock_irqrestore(&k_lock, flags2);
+ 
+ 		wake_up(&k_wait);
+ 	}
+@@ -416,7 +433,7 @@ static void gdm_usb_rcv_complete(struct urb *urb)
+ 	struct tx_cxt *tx = &udev->tx;
+ 	struct usb_tx *t;
+ 	u16 cmd_evt;
+-	unsigned long flags;
++	unsigned long flags, flags2;
+ 
+ #ifdef CONFIG_WIMAX_GDM72XX_USB_PM
+ 	struct usb_device *dev = urb->dev;
+@@ -462,9 +479,9 @@ static void gdm_usb_rcv_complete(struct urb *urb)
+ 	if (!urb->status && r->callback)
+ 		r->callback(r->cb_data, r->buf, urb->actual_length);
+ 
+-	spin_lock(&rx->lock);
++	spin_lock_irqsave(&rx->lock, flags2);
+ 	put_rx_struct(rx, r);
+-	spin_unlock(&rx->lock);
++	spin_unlock_irqrestore(&rx->lock, flags2);
+ 
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 
+@@ -619,8 +636,9 @@ out:
+ 	if (ret) {
+ 		kfree(phy_dev);
+ 		kfree(udev);
++	} else {
++		usb_set_intfdata(intf, phy_dev);
+ 	}
+-	usb_set_intfdata(intf, phy_dev);
+ 	return ret;
+ }
+ 
+@@ -660,14 +678,22 @@ static int gdm_suspend(struct usb_interface *intf, pm_message_t pm_msg)
+ 	struct usbwm_dev *udev;
+ 	struct rx_cxt *rx;
+ 	struct usb_rx *r;
++	unsigned long flags;
+ 
+ 	phy_dev = usb_get_intfdata(intf);
++	if (!phy_dev)
++		return 0;
++
+ 	udev = phy_dev->priv_dev;
+ 	rx = &udev->rx;
+ 
++	spin_lock_irqsave(&rx->lock, flags);
++
+ 	list_for_each_entry(r, &rx->used_list, list)
+ 		usb_unlink_urb(r->urb);
+ 
++	spin_unlock_irqrestore(&rx->lock, flags);
++
+ 	return 0;
+ }
+ 
+@@ -677,14 +703,22 @@ static int gdm_resume(struct usb_interface *intf)
+ 	struct usbwm_dev *udev;
+ 	struct rx_cxt *rx;
+ 	struct usb_rx *r;
++	unsigned long flags;
+ 
+ 	phy_dev = usb_get_intfdata(intf);
++	if (!phy_dev)
++		return 0;
++
+ 	udev = phy_dev->priv_dev;
+ 	rx = &udev->rx;
+ 
++	spin_lock_irqsave(&rx->lock, flags);
++
+ 	list_for_each_entry(r, &rx->used_list, list)
+ 		usb_submit_urb(r->urb, GFP_ATOMIC);
+ 
++	spin_unlock_irqrestore(&rx->lock, flags);
++
+ 	return 0;
+ }
+ 
+@@ -719,9 +753,13 @@ static int k_mode_thread(void *arg)
+ 			while (jiffies < expire)
+ 				schedule_timeout(K_WAIT_TIME);
+ 
++			spin_lock_irqsave(&rx->lock, flags);
++
+ 			list_for_each_entry(r, &rx->used_list, list)
+ 				usb_submit_urb(r->urb, GFP_ATOMIC);
+ 
++			spin_unlock_irqrestore(&rx->lock, flags);
++
+ 			spin_lock_irqsave(&tx->lock, flags);
+ 
+ 			list_for_each_entry_safe(t, temp, &tx->pending_list,
+-- 
+1.7.7.3
+
