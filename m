@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab2KYVMa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 16:12:30 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40752 "EHLO
+	id S1753476Ab2KYVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 16:15:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40770 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab2KYVM3 (ORCPT
+	with ESMTP id S1753390Ab2KYVP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 16:12:29 -0500
-Date: Sun, 25 Nov 2012 16:12:22 -0500 (EST)
-Message-Id: <20121125.161222.556166144789386280.davem@davemloft.net>
-To: viresh.kumar@linaro.org
-Cc: bhutchings@solarflare.com, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH V2 resend] net: dsa/slave: Fix compilation warnings
+	Sun, 25 Nov 2012 16:15:27 -0500
+Date: Sun, 25 Nov 2012 16:15:19 -0500 (EST)
+Message-Id: <20121125.161519.2093456773586153692.davem@davemloft.net>
+To: joe@perches.com
+Cc: steve.glendinning@shawell.net, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smsc: Add logging message newlines
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <ecc711bf44722707f57188ee953bbde2f1e20c8c.1353736229.git.viresh.kumar@linaro.org>
-References: <ecc711bf44722707f57188ee953bbde2f1e20c8c.1353736229.git.viresh.kumar@linaro.org>
+In-Reply-To: <1353756469.6558.3.camel@joe-AO722>
+References: <1353756469.6558.3.camel@joe-AO722>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,30 +25,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
-Date: Sat, 24 Nov 2012 11:23:54 +0530
+From: Joe Perches <joe@perches.com>
+Date: Sat, 24 Nov 2012 03:27:49 -0800
 
-> Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
-> CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
+> Avoid any possible message logging interleaving by adding
+> missing newlines.
 > 
-> net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used [-Wunused-function]
-> net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used [-Wunused-function]
-> net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used [-Wunused-function]
-> net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined but not used [-Wunused-function]
-> net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but not used [-Wunused-function]
-> net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined but not used [-Wunused-function]
-> net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not used [-Wunused-function]
+> Align arguments.
 > 
-> Earlier approach to fix this was discussed here:
-> 
-> lkml.org/lkml/2012/10/29/549
-> 
-> This is another approach to fix it. This is done by some changes in config
-> options, which make more sense than the earlier approach. As, atleast one
-> tagging option must always be selected for using net/dsa/ infrastructure, this
-> patch selects NET_DSA from tagging configs instead of having it as an selectable
-> config.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied to net-next, thanks.
+Applied.
