@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab2KYQca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 11:32:30 -0500
-Received: from bootes.telenet.ru ([94.31.183.22]:40399 "EHLO bootes"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753111Ab2KYQc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 11:32:28 -0500
-X-Greylist: delayed 1526 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Nov 2012 11:32:28 EST
-From: Alex Volkov <alex@bootes.telenet.ru>
-To: linux-media@vger.kernel.org
-Subject: [PATCH/RFC] remote control type initialization in saa7134-input.c
-Date: Sun, 25 Nov 2012 22:06:56 +0600
-User-Agent: KMail/1.13.7 (Linux/3.2.32-custom1-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, michael@mihu.de,
-        Jonathan Nieder <jrnieder@gmail.com>
+	id S1753309Ab2KYSlH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 13:41:07 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42727 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab2KYSlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 13:41:04 -0500
+Date: Sun, 25 Nov 2012 10:42:25 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, "Svahn, Kai" <kai.svahn@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Huang Ying <ying.huang@intel.com>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during
+ probe/remove/shutdown
+Message-ID: <20121125184225.GA1423@kroah.com>
+References: <1672179.qgDUs0YdYu@vostro.rjw.lan>
+ <6227446.8xPtqi6yHi@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211252206.57134.alex@bootes.telenet.ru>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6227446.8xPtqi6yHi@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function saa7134_probe_i2c_ir(..) in saa7134-input.c does not set any RC type
-for Pinnacle PCTV 110i (and perhaps other) remote controls. For some other RCs
-the setting (assinging some value to "type" member of the device structure)
-is done either in this function or elsewhere (AFAIR), but not for PCTV.
+On Sun, Nov 25, 2012 at 03:58:14PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Drivers usually expect that the devices they are supposed to handle
+> will be operational when their .probe() routines are called, but that
+> need not be the case on some ACPI-based systems with ACPI-based
+> device enumeration where the BIOSes don't put devices into D0 by
+> default.  To work around this problem it is sufficient to change
+> bus type .probe() routines to ensure that devices will be powered
+> on before the drivers' .probe() routines run (and their .remove()
+> and .shutdown() routines accordingly).
+> 
+> Modify platform_drv_probe() to run acpi_dev_pm_attach() for devices
+> whose ACPI handles are present, so that ACPI power management is used
+> to change their power states and change their power states to D0
+> before driver probing.  Analogously, modify platform_drv_remove() and
+> platform_drv_shutdown() to call acpi_dev_pm_detach() for those
+> devices, so that they are not subject to ACPI PM any more.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This renders PCTV's remote control unavailable as input device in all kernels
-since 2.6.37 to the 3.2.32 at least (which I tested), and I believe this
-remains this way in current 3.6.x too.
-
-The patch attached here (made against 3.2.32) puts RC's type initialization
-(to RC_TYPE_OTHER) before board type testing "switch". (Perhaps, putting it
-to 110i's "case" would be more correct, but it seem to work anyway.)
-
-Signed-off-by: Alex Volkov <alex@bootes.telenet.ru>
-
---- 
---- a/drivers/media/video/saa7134/saa7134-input.c	2012-10-17 08:50:15.000000000 +0600
-+++ b/drivers/media/video/saa7134/saa7134-input.c	2012-11-25 21:49:42.000000000 +0600
-@@ -858,6 +858,7 @@ void saa7134_probe_i2c_ir(struct saa7134
- 	memset(&info, 0, sizeof(struct i2c_board_info));
- 	memset(&dev->init_data, 0, sizeof(dev->init_data));
- 	strlcpy(info.type, "ir_video", I2C_NAME_SIZE);
-+	dev->init_data.type = RC_TYPE_OTHER;
- 
- 	switch (dev->board) {
- 	case SAA7134_BOARD_PINNACLE_PCTV_110i:
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
