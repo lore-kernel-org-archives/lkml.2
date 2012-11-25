@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab2KYOZG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 09:25:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51917 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752712Ab2KYOZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 09:25:03 -0500
-Message-ID: <1353853489.4266.1.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: kmemleak report on isp1763 and sierra MC8705
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Richard Retanubun <richardretanubun@ruggedcom.com>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Tang Nguyen <TangNguyen@ruggedcom.com>,
-        linux-usb mailing list <linux-usb@vger.kernel.org>,
-        stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sun, 25 Nov 2012 15:24:49 +0100
-In-Reply-To: <20121121011544.GA5381@kroah.com>
-References: <Pine.LNX.4.44L0.1210291806360.31151-100000@netrider.rowland.org>
-	 <509D804A.7080807@ruggedcom.com>
-	 <CAMgPeKUPeJSKas2VOqbG+Nt5MOtdA3jUUCsFwUcDVhwDJJCr6A@mail.gmail.com>
-	 <50A3D0E1.4060209@ruggedcom.com> <20121114175218.GA2912@localhost>
-	 <20121121011544.GA5381@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-I+GAmT5iZJ7ZJlmc094q"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 163.5.223.200
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753197Ab2KYO04 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 09:26:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753046Ab2KYO0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 09:26:55 -0500
+Date: Sun, 25 Nov 2012 16:26:42 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v8 0/2] x86: vmclear vmcss on all cpus when doing kdump
+ if necessary
+Message-ID: <20121125142642.GC25516@redhat.com>
+References: <50ADE0C2.1000106@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50ADE0C2.1000106@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 22, 2012 at 04:22:26PM +0800, Zhang Yanfei wrote:
+> Currently, kdump just makes all the logical processors leave VMX operation by
+> executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> executing the VMXOFF instruction.
+> 
+> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> vmcore updated and non-corrupted.
+> 
+Looks fine to me, but kexec part should get acks from exec maintainers.
 
---=-I+GAmT5iZJ7ZJlmc094q
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Changelog from v7 to v8:
+> 1. KEXEC: regression for using name crash_notifier_list
+>    and remove comments related to KVM
+>    and just call function atomic_notifier_call_chain directly.
+> 
+> Changelog from v6 to v7:
+> 1. KVM-INTEL: in hardware_disable, we needn't disable the
+>    vmclear, so remove it.
+> 
+> Changelog from v5 to v6:
+> 1. KEXEC: the atomic notifier list renamed:
+>    crash_notifier_list --> vmclear_notifier_list
+> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
+>    not defined and remove unnecessary #ifdef's.
+> 
+> Changelog from v4 to v5:
+> 1. use an atomic notifier instead of function call, so
+>    have all the vmclear codes in vmx.c.
+> 
+> Changelog from v3 to v4:
+> 1. add a new percpu variable vmclear_skipped to skip
+>    vmclear in kdump in some conditions.
+> 
+> Changelog from v2 to v3:
+> 1. remove unnecessary conditions in function
+>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+> 
+> Changelog from v1 to v2:
+> 1. remove the sysctl and clear VMCSs unconditionally.
+> 
+> Zhang Yanfei (2):
+>   x86/kexec: add a new atomic notifier list for kdump
+>   KVM-INTEL: add a notifier and a bitmap to support VMCLEAR in kdump
+> 
+>  arch/x86/include/asm/kexec.h |    2 +
+>  arch/x86/kernel/crash.c      |    9 +++++
+>  arch/x86/kvm/vmx.c           |   70 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 81 insertions(+), 0 deletions(-)
 
-On Tue, 2012-11-20 at 17:15 -0800, Greg Kroah-Hartman wrote:
-> On Wed, Nov 14, 2012 at 06:52:18PM +0100, Johan Hovold wrote:
-> > On Wed, Nov 14, 2012 at 12:12:01PM -0500, Richard Retanubun wrote:
-> > > On 10/11/12 09:30 AM, Johan Hovold wrote:
-> > > Hi Johan,
-> > >=20
-> > > > There was a reference-count fix for the probe error path that went =
-in to
-> > > > v3.5. Haven't read all the details on how you trigger your leak, bu=
-t at
-> > > > the face of it, it could be related.
-> > > >
-> > > > Have a look at 0658a3366db7e27fa ("usb: use usb_serial_put in
-> > > > usb_serial_probe errors). If related, you should be seeing "Ignorin=
-g
-> > > > blacklisted interface #n" messages when you enable debug (e.g. #def=
-ine
-> > > > DEBUG) in the sierra driver.
-> > >=20
-> > > That was it! Thanks so much for the research.
-> > > I can apply it cleanly to 3.0.22 and see usb_release_dev() being
-> > > called and thus no more kmemleak.
-> > >=20
-> > > >
-> > > > Greg, it seems to me that the fix referred to above should be backp=
-orted
-> > > > to the earlier stable trees either way.
-> > > I would vote "yes" for this also.
-> > >=20
-> > > While my setup circumstances may be a corner case, (modem kept
-> > > resetting to re-establish PPP connection) it was leaking 1192 bytes
-> > > per occurrence.
-> >=20
-> > The leak affects every failed probe, for example due to blacklisted
-> > interfaces which is quite common, so commit 0658a3366db7 ("usb: use
-> > usb_serial_put in usb_serial_probe errors) should be backported to the
-> > <=3D 3.4 stable trees.
->=20
-> Thanks, now applied.
-
-Also queued up for 3.2.
-
-Ben.
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-I+GAmT5iZJ7ZJlmc094q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULIqMee/yOyVhhEJAQpKlw/+OOjr2lt+WLTJ9q7orzrNddVNhfWRcbZR
-b3UWEJe9jj+hJfUdKUzeD3j1W0YXFKqjisMTqveWYwIYOBNTxPcySpfHC0S+Yd/g
-mbUBwXzhO0PsKeFUcwhoEC+iSfkYmOc9eQOeEVb/X2MHDZrU/EBWA/EZffdMdRBD
-ry23kT2ZFmCvhorTNk/sjyhjOYIUVX0gdx+cKmpwTgDtIMwVz0+DUtJTo3SKWcuV
-W7tDL0uXNd/QvtfTCHjjahXIhlHR7rO/ZPwtC0ZzXRsCU767XCKGGgwfRPCDKceB
-K2ew7weuKMCYScp7cVQ1GJqXqJLDD+KkrsoR0BQb0qCH/UfqygxqQmgJhZT9meLT
-iSixV8DEC9dn8lRS8BqMym0wvNZMqctySrqXqreGgSJE7fd0FncLofGg2DAo4uWW
-t2QInjBGmpWWcjcR1Uk4kB8PmY2JoM72XixMLy5LvB4Vl02lunS7IGqENpSpUxEu
-ZOR2pXfMb/Q6mHcut/sxXiNEw3ckgAydFig8qYdURffNWJCv8z0xFX+Hj4LJehjR
-Q9fiCoKM4nA6JMRdJChUnsRdQVDTyLQjgUDjfkjxMZhrtXepEjdTqcOYBh77DnGk
-wAAliqojktFDbidfLA1ge5zaF0BWYBwi7LwTQSMeHbPCRMAQkWmc5gJKo9wu20eO
-O1ev/6woiPo=
-=Gooh
------END PGP SIGNATURE-----
-
---=-I+GAmT5iZJ7ZJlmc094q--
+--
+			Gleb.
