@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2KYVe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 16:34:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49668 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab2KYVeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 16:34:24 -0500
-Date: Sun, 25 Nov 2012 22:34:24 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tilman Schmidt <tilman@imap.cc>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>
-Subject: Re: possible regression in kernel 3.6: system hangs during nightly
- tape backup
-Message-ID: <20121125213424.GA32348@x1.alien8.de>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tilman Schmidt <tilman@imap.cc>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-ide <linux-ide@vger.kernel.org>
-References: <50AACB7E.8060601@imap.cc>
- <50B11D5C.2000802@imap.cc>
+	id S1753527Ab2KYVrH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 16:47:07 -0500
+Received: from nm39-vm2.bullet.mail.sg3.yahoo.com ([106.10.151.173]:28569 "EHLO
+	nm39-vm2.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753476Ab2KYVrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 16:47:05 -0500
+X-Yahoo-Newman-Id: 740213.36660.bm@smtp126.mail.sg3.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6B7RllIVM1nA5z._WrjwYpx65rbwy63mh.4zhT7nDosgVCe
+ rAS4mmMrHQVwh58vvSElrzwEh6UG3h4ITXiZPex_ZFVzM852apf3oAJvjo0i
+ PaxjjJf9gTjYafTI8Yli1MUj.M_Cf9hFCyZCnA6hhRnLXgjY5Gg9Hz00xmht
+ vJnrIdIwZDfa_qf36ZSCL4kFpjJtDgrARBfgd9b22ml06wlmuO41a2Yjn5RX
+ R1BC_qfMIJyy2HIG8U9KPuhWsxDlnhKI6IYZbP3PEbHbh2YmLeQdG99UnzyL
+ b9jHTNga740oiTylKqWB28M9Fv._Mz1PVLEYB9JHZAsIV17QrEv6Sb6AQ0p4
+ Fz6m5uhE2ilJMYp93lznX0I8SVEGIj0wM96L8BUlWq2hl2TtyqQSj9ZGoI6r
+ .d3Zb
+X-Yahoo-SMTP: MVwgtHSswBAfoQBcT0Y1_mgll6u1rg--
+From: "Lakd" <koxuvttng@yahoo.com>
+To: "jthgkj" <jthgkj@163.com>
+Subject: xpfD16elp2w1x1y2a2b3c3
+Message-ID: <201211260549144847168@yahoo.com>
+Date: Mon, 26 Nov 2012 05:49:14 +0800
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50B11D5C.2000802@imap.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="----=qettb352_9667_398659757.525426"
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ linux-ide
+This is a multi-part message in MIME format.
 
-On Sat, Nov 24, 2012 at 08:17:48PM +0100, Tilman Schmidt wrote:
-> Any ideas on that? I'm currently avoiding the 3.6 series because
-> of that problem but would be willing to reproduce the hang if I'd
-> know what to do once it happens, ie. what kind of information to
-> collect in order to identify the cause of the problem.
-> I may also try 3.7-rc if there's any interest.
-> 
-> Am 20.11.2012 01:14, schrieb Tilman Schmidt:
-> > For the 4th time now after switching to kernel 3.6, my system became
-> > unresponsive during the nightly Bacula backup run. It looks as if
-> > all disk accesses are suddenly blocked:
-> > - Desktop apps stop responding one after another, starting with
-> >   Firefox followed by other "heavy" apps, while Konsole windows
-> >   continue being usable for a while.
-> > - "top" shows the load average steadily increasing with no process
-> >   actually consuming relevant quantities of CPU.
-> > - I can do "dmesg > /root/dmesg.out" followed by "less /root/dmesg.out"
-> >   in a Konsole window just fine, but after the inevitable hard reset
-> >   the file /root/dmesg.out isn't there.
-> > - The "sync" command hangs indefinitely.
-> > - The "shutdown" command and ctrl/alt/Del emit "system going down"
-> >   broadcast messages but never get anywhere.
-> > - Killing processes manually works for some (bacula-sd even ejects
-> >   the tape before exiting) but most remain in state D or Z.
-> > - Eventually, all text consoles are blocked and a hardware reset is
-> >   the only remaining option.
-> > - After the reboot, a Bacula spool file is left behind in
-> >   /var/spool/bacula, proof that the hang happened during the backup.
-> > 
-> > This does not happen during every backup run, but frequently enough
-> > to be annoying. (About once per week.) It never happened with kernel
-> > 3.5. For comparison went back to kernel 3.5.7 for a week and it
-> > never happened during that time. Last night I booted 3.6.7 and the
-> > very next backup caused the hang again. The last kernel message that
-> > made it to the syslog on disk was
-> > 
-> > Nov 19 23:05:04 xenon kernel: [73877.128546] st0: Block limits 256 -
-> > 524288 bytes.
-> > 
-> > triggered by the start of the backup. In dmesg the next message was
-> > 
-> > [74401.249091] INFO: task flush-253:2:1320 blocked for more than 120
-> > seconds.
-> > 
-> > followed by a backtrace. I have photos of the remaining dmesg output
-> > which I'll try to upload somewhere accessible tomorrow.
-> > 
-> > Hardware configuration:
-> > Intel Pentium D, Intel DQ965GF mainboard, 6 GB RAM
-> > onboard S-ATA controller driving two 500 GB S-ATA disks
-> > and a Pioneer DVR-216D DVD-RW drive
-> > Adaptec 29160B Ultra160 SCSI adapter driving a
-> > Tandberg TS400 LTO-2 tape drive
-> > 
-> > Disk configuration: md RAID1, LVM, ext3 and ext4 volumes
-> > 
-> > Software: Opensuse 11.4 64 bit, vanilla kernel 3.5.7 and 3.6.7,
-> > Bacula 5.2.12
-> > 
-> > HTH
-> > T.
-> > 
-> 
-> 
-> -- 
-> Tilman Schmidt                    E-Mail: tilman@imap.cc
-> Bonn, Germany
-> Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-> Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
-> 
-> 
+------=qettb352_9667_398659757.525426
+Content-Type: text/plain;
+	charset="GB2312"
+Content-Transfer-Encoding: base64
+
+NcT609C4vbz+RQ==
 
 
+------=qettb352_9667_398659757.525426
+Content-Type: text/plain;
+	name="Muvdhk3898.txt"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="Muvdhk3898.txt"
 
--- 
-Regards/Gruss,
-Boris.
+=B1=BE=B9=AB=CB=BE=CF=D6=D3=D0=B0=EC=C0=ED=A1=BE=B7=A2=A1=BF=A1=BE=C6=
+=B1=A1=BF=D2=B5=CE=F1=C1=AA=CF=B5=A3=BA
+136-1295-2166  =B3=C2=BE=AD=C0=ED
+    QQ=A3=BA614494123
+                =BB=B6=D3=AD=C0=B4=B5=E7=C7=A2=CC=B8=A3=A1
+=B2=BB=D2=AA=C0=CF=CB=B5=B1=F0=C8=CB=B5=C4=C0=CF=C6=C5=C8=E7=BA=CE=C8=
+=E7=BA=CE=BA=C3=A3=AC=B1=F0=CA=FD=C2=E4=CB=FD=B2=BB=C6=AF=C1=C1=A3=AC=
+=CB=FD=C4=DC=BC=DE=B8=F8=C4=E3=C4=C7=CA=C7=C4=E3=B5=C4=B8=A3=C6=F8=A3=
+=AC=C4=E3=BB=B9=D5=E2=C3=B4=CB=B5=A3=AC=D5=E6=CA=C7=BA=DC=B2=BB=D3=A6=
+=B8=C3=A1=A3=B6=D4=B4=F3=B6=E0=CA=FD=C5=AE=C8=CB=C0=B4=CB=B5=A3=AC=CC=
+=FD=B5=BD=D7=D4=BC=BA=D7=EE=B0=AE=B5=C4=C8=CB=CB=B5=CB=FD=B5=C4=D2=BB=
+=BE=E4=BA=C3=C4=C7=CA=C7=B1=C8=CB=F9=D3=D0=C8=CB=CB=B5=CB=FD=B5=C4=BA=
+=C3=BC=D3=C6=F0=C0=B4=BB=B9=CA=DC=D3=C3=A1=A3=BA=CE=BF=F6=A3=AC=B0=AE=
+=CB=FD=BB=B9=C8=CC=D0=C4=C9=CB=BA=A6=CB=FD=C2=F0=A3=BF
+
+------=qettb352_9667_398659757.525426--
