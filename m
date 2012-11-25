@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab2KYOMT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 09:12:19 -0500
-Received: from mailq1.tnnet.fi ([217.112.240.127]:53123 "EHLO mailq1.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712Ab2KYOMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 09:12:17 -0500
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Nov 2012 09:12:17 EST
-Message-ID: <50B22586.323A283A@users.sourceforge.net>
-Date: Sun, 25 Nov 2012 16:04:54 +0200
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.6g file/swap crypto package
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753158Ab2KYONf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 09:13:35 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42783 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab2KYONd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 09:13:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <50B22662.4070503@odi.ch>
+References: <50B22662.4070503@odi.ch>
+Date: Sun, 25 Nov 2012 09:13:32 -0500
+Message-ID: <CAHdPZaNmODLfRJoJ-vt8PEQT+3n8p1CqXsZf3TUJV7pBgA8jEg@mail.gmail.com>
+Subject: Re: [PATCH] HID: hid-input: battery quirk for Apple keyboard
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Fixed bug that could cause hang if backing device is stacking device, for
-  example /dev/md* device. Many thanks to Norbert Warmuth for reporting and
-  chasing this bug.
-
-bzip2 compressed tarball is here:
-
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6g.tar.bz2
-    md5sum ffe4aee7004cdac8d181f2d64f4d51a8
-
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6g.tar.bz2.sign
-
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+i think you should simply do a  cc: stable@vger.kernel.org just right
+above your signedoff-by, which is the way that stable patches gets
+into i think.
