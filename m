@@ -1,234 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab2KYDfk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 22:35:40 -0500
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:46069 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab2KYDfj (ORCPT
+	id S1751028Ab2KYFuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 00:50:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49730 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab2KYFuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 22:35:39 -0500
-From: Ben Chan <benchan@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        benchan@chromium.org, Sameer Nanda <snanda@chromium.org>
-Subject: [PATCH] staging: gdm72xx: protect access of rx / tx structs
-Date: Sat, 24 Nov 2012 19:35:36 -0800
-Message-Id: <1353814536-3224-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Sun, 25 Nov 2012 00:50:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQUUsQ3hn-xTeXsN+qA5YSSNbftoRbxHpdX0HWYmVHqfEA@mail.gmail.com>
+References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
+	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
+	<50AD0CA1.8000904@zytor.com>
+	<CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
+	<50AD291A.10600@zytor.com>
+	<CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com>
+	<a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
+	<CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com>
+	<CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
+	<a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com>
+	<CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
+	<50AE70E7.6060204@zytor.com>
+	<87haofi3d3.fsf@xmission.com>
+	<50B104BC.90208@zytor.com>
+	<50B124E9.400@zytor.com>
+	<87vccud0i5.fsf@xmission.com>
+	<50B16080.7040809@zytor.com>
+	<CAE9FiQUUsQ3hn-xTeXsN+qA5YSSNbftoRbxHpdX0HWYmVHqfEA@mail.gmail.com>
+Date: Sat, 24 Nov 2012 21:50:01 -0800
+X-Google-Sender-Auth: V8S1rGVd3raWQGF00_8WlkaN2lE
+Message-ID: <CAE9FiQXvFXrvmATUfv682Ob7Jo7-fvs_1edxVhiNSS_Wmx4qcA@mail.gmail.com>
+Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
+ and ramdisk high
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch applies spinlock to protect access to rx / tx structs in
-certain call sites, which fixes the following crash in gdm_suspend.
-It also fixes usb_set_intfdata() in gdm_usb_probe to avoid setting an
-already freed phy_dev.
+On Sat, Nov 24, 2012 at 4:11 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sat, Nov 24, 2012 at 4:04 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> It sounds like we are leaning toward some form of the sentinel hack, which
+>> means we need an enumerated list of things that should *not* be zeroed if
+>> the sentinel is present.
+>>
+>> The option of declaring the list frozen makes me a bit nervous, because it
+>> isn't clear that we don't already have fields that will be misinterpreted by
+>> the kernel if filled in from the file.
+>
+> USE_EXT_BOOT_PARAMS bit in xloadflags should work.
 
-<5>[ 4996.815018] [<7f0074b0>] (gdm_suspend+0x1c/0x2b4 [gdmwm]) from [<803020a4>] (usb_suspend_both+0x80/0x1a0)
-<5>[ 4996.815055] [<803020a4>] (usb_suspend_both+0x80/0x1a0) from [<80302c84>] (usb_runtime_suspend+0x38/0x64)
-<5>[ 4996.815089] [<80302c84>] (usb_runtime_suspend+0x38/0x64) from [<802becc0>] (__rpm_callback+0x48/0x78)
-<5>[ 4996.815118] [<802becc0>] (__rpm_callback+0x48/0x78) from [<802bf8dc>] (rpm_suspend+0x394/0x5ec)
-<5>[ 4996.815145] [<802bf8dc>] (rpm_suspend+0x394/0x5ec) from [<802c0550>] (pm_runtime_work+0x8c/0xa4)
-<5>[ 4996.815177] [<802c0550>] (pm_runtime_work+0x8c/0xa4) from [<800456cc>] (process_one_work+0x264/0x438)
-<5>[ 4996.815209] [<800456cc>] (process_one_work+0x264/0x438) from [<80045acc>] (worker_thread+0x22c/0x3b8)
-<5>[ 4996.815239] [<80045acc>] (worker_thread+0x22c/0x3b8) from [<8004a43c>] (kthread+0x9c/0xa8)
-<5>[ 4996.815270] [<8004a43c>] (kthread+0x9c/0xa8) from [<8000f160>] (kernel_thread_exit+0x0/0x8)
-<0>[ 4996.815295] Code: e92d4000 e8bd4000 e2800020 eb4ab9a1 (e5905000)
+new kexec will clean around bit around setup head, and set that bit,
+if it is not with real_mode entry.
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
-Signed-off-by: Sameer Nanda <snanda@chromium.org>
----
- drivers/staging/gdm72xx/gdm_usb.c |   52 ++++++++++++++++++++++++++++++++-----
- 1 files changed, 45 insertions(+), 7 deletions(-)
+32bit and 64bit entry:
+old kernel has no idea of this bit, and still use old ramdisk_image,
+cmd_line_ptr in setup header.
+new kernel will check that bit before it use ext_ramdisk_image, and
+ext_cmd_line_ptr.
 
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 0cc6317..4426941 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -186,6 +186,7 @@ static int init_usb(struct usbwm_dev *udev)
- 	struct rx_cxt	*rx = &udev->rx;
- 	struct usb_tx	*t;
- 	struct usb_rx	*r;
-+	unsigned long flags;
- 
- 	INIT_LIST_HEAD(&tx->free_list);
- 	INIT_LIST_HEAD(&tx->sdu_list);
-@@ -200,6 +201,7 @@ static int init_usb(struct usbwm_dev *udev)
- 	spin_lock_init(&tx->lock);
- 	spin_lock_init(&rx->lock);
- 
-+	spin_lock_irqsave(&tx->lock, flags);
- 	for (i = 0; i < MAX_NR_SDU_BUF; i++) {
- 		t = alloc_tx_struct(tx);
- 		if (t == NULL) {
-@@ -208,6 +210,7 @@ static int init_usb(struct usbwm_dev *udev)
- 		}
- 		list_add(&t->list, &tx->free_list);
- 	}
-+	spin_unlock_irqrestore(&tx->lock, flags);
- 
- 	r = alloc_rx_struct(rx);
- 	if (r == NULL) {
-@@ -215,7 +218,9 @@ static int init_usb(struct usbwm_dev *udev)
- 		goto fail;
- 	}
- 
-+	spin_lock_irqsave(&rx->lock, flags);
- 	list_add(&r->list, &rx->free_list);
-+	spin_unlock_irqrestore(&rx->lock, flags);
- 	return ret;
- 
- fail:
-@@ -229,6 +234,9 @@ static void release_usb(struct usbwm_dev *udev)
- 	struct rx_cxt	*rx = &udev->rx;
- 	struct usb_tx	*t, *t_next;
- 	struct usb_rx	*r, *r_next;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tx->lock, flags);
- 
- 	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
- 		list_del(&t->list);
-@@ -245,6 +253,10 @@ static void release_usb(struct usbwm_dev *udev)
- 		free_tx_struct(t);
- 	}
- 
-+	spin_unlock_irqrestore(&tx->lock, flags);
-+
-+	spin_lock_irqsave(&rx->lock, flags);
-+
- 	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
- 		list_del(&r->list);
- 		free_rx_struct(r);
-@@ -254,6 +266,8 @@ static void release_usb(struct usbwm_dev *udev)
- 		list_del(&r->list);
- 		free_rx_struct(r);
- 	}
-+
-+	spin_unlock_irqrestore(&rx->lock, flags);
- }
- 
- static void __gdm_usb_send_complete(struct urb *urb)
-@@ -302,7 +316,7 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
- 	int no_spc = 0, ret;
- 	u8 *pkt = data;
- 	u16 cmd_evt;
--	unsigned long flags;
-+	unsigned long flags, flags2;
- 
- 	if (!udev->usbdev) {
- 		dev_err(&usbdev->dev, "%s: No such device\n", __func__);
-@@ -371,13 +385,16 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
- 
- 		rx = &udev->rx;
- 
-+		spin_lock_irqsave(&rx->lock, flags2);
- 		list_for_each_entry(r, &rx->used_list, list)
- 			usb_unlink_urb(r->urb);
-+		spin_unlock_irqrestore(&rx->lock, flags2);
-+
- 		udev->bw_switch = 1;
- 
--		spin_lock(&k_lock);
-+		spin_lock_irqsave(&k_lock, flags2);
- 		list_add_tail(&udev->list, &k_list);
--		spin_unlock(&k_lock);
-+		spin_unlock_irqrestore(&k_lock, flags2);
- 
- 		wake_up(&k_wait);
- 	}
-@@ -416,7 +433,7 @@ static void gdm_usb_rcv_complete(struct urb *urb)
- 	struct tx_cxt *tx = &udev->tx;
- 	struct usb_tx *t;
- 	u16 cmd_evt;
--	unsigned long flags;
-+	unsigned long flags, flags2;
- 
- #ifdef CONFIG_WIMAX_GDM72XX_USB_PM
- 	struct usb_device *dev = urb->dev;
-@@ -462,9 +479,9 @@ static void gdm_usb_rcv_complete(struct urb *urb)
- 	if (!urb->status && r->callback)
- 		r->callback(r->cb_data, r->buf, urb->actual_length);
- 
--	spin_lock(&rx->lock);
-+	spin_lock_irqsave(&rx->lock, flags2);
- 	put_rx_struct(rx, r);
--	spin_unlock(&rx->lock);
-+	spin_unlock_irqrestore(&rx->lock, flags2);
- 
- 	spin_unlock_irqrestore(&tx->lock, flags);
- 
-@@ -619,8 +636,9 @@ out:
- 	if (ret) {
- 		kfree(phy_dev);
- 		kfree(udev);
-+	} else {
-+		usb_set_intfdata(intf, phy_dev);
- 	}
--	usb_set_intfdata(intf, phy_dev);
- 	return ret;
- }
- 
-@@ -660,14 +678,22 @@ static int gdm_suspend(struct usb_interface *intf, pm_message_t pm_msg)
- 	struct usbwm_dev *udev;
- 	struct rx_cxt *rx;
- 	struct usb_rx *r;
-+	unsigned long flags;
- 
- 	phy_dev = usb_get_intfdata(intf);
-+	if (!phy_dev)
-+		return 0;
-+
- 	udev = phy_dev->priv_dev;
- 	rx = &udev->rx;
- 
-+	spin_lock_irqsave(&rx->lock, flags);
-+
- 	list_for_each_entry(r, &rx->used_list, list)
- 		usb_unlink_urb(r->urb);
- 
-+	spin_unlock_irqrestore(&rx->lock, flags);
-+
- 	return 0;
- }
- 
-@@ -677,14 +703,22 @@ static int gdm_resume(struct usb_interface *intf)
- 	struct usbwm_dev *udev;
- 	struct rx_cxt *rx;
- 	struct usb_rx *r;
-+	unsigned long flags;
- 
- 	phy_dev = usb_get_intfdata(intf);
-+	if (!phy_dev)
-+		return 0;
-+
- 	udev = phy_dev->priv_dev;
- 	rx = &udev->rx;
- 
-+	spin_lock_irqsave(&rx->lock, flags);
-+
- 	list_for_each_entry(r, &rx->used_list, list)
- 		usb_submit_urb(r->urb, GFP_ATOMIC);
- 
-+	spin_unlock_irqrestore(&rx->lock, flags);
-+
- 	return 0;
- }
- 
-@@ -719,9 +753,13 @@ static int k_mode_thread(void *arg)
- 			while (jiffies < expire)
- 				schedule_timeout(K_WAIT_TIME);
- 
-+			spin_lock_irqsave(&rx->lock, flags);
-+
- 			list_for_each_entry(r, &rx->used_list, list)
- 				usb_submit_urb(r->urb, GFP_ATOMIC);
- 
-+			spin_unlock_irqrestore(&rx->lock, flags);
-+
- 			spin_lock_irqsave(&tx->lock, flags);
- 
- 			list_for_each_entry_safe(t, temp, &tx->pending_list,
--- 
-1.7.7.3
+old kexec and new kernel is safe too, because that bit is not set, new
+kernel will not use ex_...
 
+later all new kernel need to check USE_EXT_BOOT_PARAMS bit for all new
+added field in boot_params.
