@@ -1,149 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab2KYMFa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 07:05:30 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39261 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab2KYMF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 07:05:28 -0500
-Date: Sun, 25 Nov 2012 13:05:24 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: memory-cgroup bug
-Message-ID: <20121125120524.GB10623@dhcp22.suse.cz>
-References: <20121121200207.01068046@pobox.sk>
- <20121122152441.GA9609@dhcp22.suse.cz>
- <20121122190526.390C7A28@pobox.sk>
- <20121122214249.GA20319@dhcp22.suse.cz>
- <20121122233434.3D5E35E6@pobox.sk>
- <20121123074023.GA24698@dhcp22.suse.cz>
- <20121123102137.10D6D653@pobox.sk>
- <20121123100438.GF24698@dhcp22.suse.cz>
- <20121125011047.7477BB5E@pobox.sk>
+	id S1751961Ab2KYMWV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 07:22:21 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:38290 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab2KYMWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 07:22:20 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Andrea Adami <andrea.adami@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: pxa: pxa27x.c: add dummy SA1100 rtc clock
+References: <1353712328-15830-1-git-send-email-andrea.adami@gmail.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sun, 25 Nov 2012 13:21:52 +0100
+In-Reply-To: <1353712328-15830-1-git-send-email-andrea.adami@gmail.com>
+	(Andrea Adami's message of "Sat, 24 Nov 2012 00:12:08 +0100")
+Message-ID: <87ehjh3man.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121125011047.7477BB5E@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding Kamezawa into CC]
+Andrea Adami <andrea.adami@gmail.com> writes:
+> * Using pxa27x you could now build both RTC_DRV_PXA and RTC_DRV_SA1100.
+> * Make sure you don't use both together: link /dev/rtc0 or /dev/rtc1
+> * to /dev/rtc according to your requirement.
+Weird to have stars at the beginning of each line in the patch description.
+But anyway :
+Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
 
-On Sun 25-11-12 01:10:47, azurIt wrote:
-> >Could you take few snapshots over time?
-> 
-> 
-> Here it is, now from different server, snapshot was taken every second
-> for 10 minutes (hope it's enough):
-> www.watchdog.sk/lkml/memcg-bug-2.tar.gz
-
-Hmm, interesting:
-$ grep . */memory.failcnt | cut -d: -f2 | awk 'BEGIN{min=666666}{if (prev>0) {diff=$1-prev; if (diff>max) max=diff; if (diff<min) min=diff; sum+=diff; n++} prev=$1}END{printf "min:%d max:%d avg:%f\n", min, max, sum/n}'
-min:16281 max:224048 avg:18818.943119
-
-So there is a lot of attempts to allocate which fail, every second!
-Will get to that later.
-
-The number of tasks in the group is stable (20):
-$ for i in *; do ls -d1 $i/[0-9]* | wc -l; done | sort | uniq -c
-    546 20
-
-And no task has been killed or spawned:
-$ for i in *; do ls -d1 $i/[0-9]* | cut -d/ -f2; done | sort | uniq
-24495
-24762
-24774
-24796
-24798
-24805
-24813
-24827
-24831
-24841
-24842
-24863
-24892
-24924
-24931
-25130
-25131
-25192
-25193
-25243
-
-$ for stack in [0-9]*/[0-9]*
-do 
-	head -n1 $stack/stack
-done | sort | uniq -c
-   9841 [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-    546 [<ffffffff811109b8>] do_truncate+0x58/0xa0
-    533 [<ffffffffffffffff>] 0xffffffffffffffff
-
-Tells us that the stacks are pretty much stable.
-$ grep do_truncate -r [0-9]* | cut -d/ -f2 | sort | uniq -c
-    546 24495
-
-So 24495 is stuck in do_truncate
-[<ffffffff811109b8>] do_truncate+0x58/0xa0
-[<ffffffff81121c90>] do_last+0x250/0xa30
-[<ffffffff81122547>] path_openat+0xd7/0x440
-[<ffffffff811229c9>] do_filp_open+0x49/0xa0
-[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
-[<ffffffff8110f950>] sys_open+0x20/0x30
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-I suspect it is waiting for i_mutex. Who is holding that lock?
-Other tasks are blocked on the mem_cgroup_handle_oom either coming from
-the page fault path so i_mutex can be exluded or vfs_write (24796) and
-that one is interesting:
-[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
-[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
-[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
-[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
-[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
-[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
-[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
-[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
-[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0		# takes &inode->i_mutex
-[<ffffffff8111156a>] do_sync_write+0xea/0x130
-[<ffffffff81112183>] vfs_write+0xf3/0x1f0
-[<ffffffff81112381>] sys_write+0x51/0x90
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-This smells like a deadlock. But kind strange one. The rapidly
-increasing failcnt suggests that somebody still tries to allocate but
-who when all of them hung in the mem_cgroup_handle_oom. This can be
-explained though.
-Memcg OOM killer let's only one process (which is able to lock the
-hierarchy by mem_cgroup_oom_lock) call mem_cgroup_out_of_memory and kill
-a process, while others are waiting on the wait queue. Once the killer
-is done it calls memcg_wakeup_oom which wakes up other tasks waiting on
-the queue. Those retry the charge, in a hope there is some memory freed
-in the meantime which hasn't happened so they get into OOM again (and
-again and again).
-This all usually works out except in this particular case I would bet
-my hat that the OOM selected task is pid 24495 which is blocked on the
-mutex which is held by one of the oom killer task so it cannot finish -
-thus free a memory.
-
-It seems that the current Linus' tree is affected as well.
-
-I will have to think about a solution but it sounds really tricky. It is
-not just ext3 that is affected.
-
-I guess we need to tell mem_cgroup_cache_charge that it should never
-reach OOM from add_to_page_cache_locked. This sounds quite intrusive to
-me. On the other hand it is really weird that an excessive writer might
-trigger a memcg OOM killer.
 -- 
-Michal Hocko
-SUSE Labs
+Robert
