@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab2KYTaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 14:30:06 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:46705 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753305Ab2KYTaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 14:30:05 -0500
-X-Authenticated: #4463548
-X-Provags-ID: V01U2FsdGVkX1+FqNQnYSiFSHSMcXNX2JAlgPOUqJSQLHVQs0Q7Tg
-	bCWVPlI/RmmbqK
-Message-ID: <1353871800.22969.28.camel@soupermouf>
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-From: Dimitrios Apostolou <jimis@gmx.net>
-To: linux-kernel@vger.kernel.org
-Date: Sun, 25 Nov 2012 21:30:00 +0200
-In-Reply-To: <1353851735.22969.18.camel@soupermouf>
-References: <1353851735.22969.18.camel@soupermouf>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753390Ab2KYTxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 14:53:15 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:36530 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329Ab2KYTxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 14:53:13 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, "Svahn, Kai" <kai.svahn@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Huang Ying <ying.huang@intel.com>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during probe/remove/shutdown
+Date: Sun, 25 Nov 2012 20:57:46 +0100
+Message-ID: <41045610.NbbIJWgXLK@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121125184225.GA1423@kroah.com>
+References: <1672179.qgDUs0YdYu@vostro.rjw.lan> <6227446.8xPtqi6yHi@vostro.rjw.lan> <20121125184225.GA1423@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-11-25 at 15:55 +0200, Dimitrios Apostolou wrote:
-> on an old PIII-500MHz laptop, 128MB RAM, kernel 3.6.6, I started a
-> backup process (tar|xz -4, nice'd and ionice'd -c3) from ext4 on local
-> ATA disk to ext3 on external USB disk (USB-2.0 port on PCMCIA card).
-> Even though earlier system load was minimal, free memory was plenty, the
-> system now is unresponsive and is thrashing the disk, but the swapfile
-> is rarely touched.
+On Sunday, November 25, 2012 10:42:25 AM Greg Kroah-Hartman wrote:
+> On Sun, Nov 25, 2012 at 03:58:14PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Drivers usually expect that the devices they are supposed to handle
+> > will be operational when their .probe() routines are called, but that
+> > need not be the case on some ACPI-based systems with ACPI-based
+> > device enumeration where the BIOSes don't put devices into D0 by
+> > default.  To work around this problem it is sufficient to change
+> > bus type .probe() routines to ensure that devices will be powered
+> > on before the drivers' .probe() routines run (and their .remove()
+> > and .shutdown() routines accordingly).
+> > 
+> > Modify platform_drv_probe() to run acpi_dev_pm_attach() for devices
+> > whose ACPI handles are present, so that ACPI power management is used
+> > to change their power states and change their power states to D0
+> > before driver probing.  Analogously, modify platform_drv_remove() and
+> > platform_drv_shutdown() to call acpi_dev_pm_detach() for those
+> > devices, so that they are not subject to ACPI PM any more.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I'm now having the same experience even though I replaced xz (which
-needed ~50MB RAM) with gzip. Even though I feel the realtime root shell
-is a bit more responsive than before, the OOM killer is out killing 
-small processes like syslog-ng and systemd-logind... The
-ext4_inode_cache slab is taking almost all my memory (117MB). Please
-advise!
+Thanks!
 
 
-Thanks,
-Dimitris
-
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
