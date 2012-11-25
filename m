@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab2KYXO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 18:14:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31167 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab2KYXO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 18:14:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,316,1352102400"; 
-   d="scan'208";a="252314261"
-Date: Mon, 26 Nov 2012 00:14:07 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Axel Lin <axel.lin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        David Dajun Chen <dchen@diasemi.com>
-Subject: Re: [Patch v1 1/1] mfd: fix for i2c issue DA9052/53 PMIC
-Message-ID: <20121125231407.GK12685@sortiz-mobl>
-References: <1351853246.32389.8.camel@dhruva>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351853246.32389.8.camel@dhruva>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753726Ab2KYXSx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 18:18:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34286 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab2KYXSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 18:18:51 -0500
+Date: Mon, 26 Nov 2012 10:18:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Subject: Re: [RESEND] Request f2fs filesystem inclusion in linux-next
+Message-Id: <20121126101839.cdea3cebc6534722072e3fd0@canb.auug.org.au>
+In-Reply-To: <1353734925.26584.43.camel@kjgkr>
+References: <1353734925.26584.43.camel@kjgkr>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_10_18_39_+1100_P3fqq93jN2=mGFco"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish,
+--Signature=_Mon__26_Nov_2012_10_18_39_+1100_P3fqq93jN2=mGFco
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Nov 02, 2012 at 04:17:26PM +0530, Ashish Jangam wrote:
-> There is an issue where the DA9052/53-AA/BA/BB PMIC either locks up or fails to
-> respond following a system Reset. This could result in a second write
-> in which the bus writes the current content of the write buffer to address
-> of the last I2C access.
-> 
-> The failure case is where this unwanted write transfers incorrect data to
-> a critical register.
-> 
-> This patch fixes this issue by following any read or write with a dummy read
-> to a safe register address. A safe register address is one where the contents
-> will not affect the operation of the system.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
->  drivers/mfd/da9052-i2c.c          |   56 +++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/da9052/da9052.h |   47 ++++++++++++++++++++++++++++--
->  include/linux/mfd/da9052/reg.h    |    3 ++
->  3 files changed, 102 insertions(+), 4 deletions(-)
-Applied to my for-linus branch.
+Hi,
 
+On Sat, 24 Nov 2012 14:28:45 +0900 Jaegeuk Kim <jaegeuk.kim@samsung.com> wr=
+ote:
+>
+> About two month ago, I submitted a new file system, namely
+> flash-friendly file system (f2fs) to LKML.
+>  http://en.wikipedia.org/wiki/F2FS
+>  http://lkml.org/lkml/2012/10/5/205
+>  http://lwn.net/Articles/518718/
+>=20
+> In the mean time, many folks have pointed out several essential issues
+> on f2fs, and now I think most of them have been resolved moderately.
+>=20
+> So, I'd like to request a new branch being included in linux-next for
+> the purpose of merging into the next mainline kernel.
+
+I have no problem adding this to linux-next (and noone has screamed aver
+the past few days, so that is a good sign) except that the branch you
+have submitted is actually based on linux-next itself.  You cannot base
+anything on linux-next as it rebases every day.  You need to base your
+tree in Linus' tree (or some other *stable* tree).
+
+--=20
 Cheers,
-Samuel.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--Signature=_Mon__26_Nov_2012_10_18_39_+1100_P3fqq93jN2=mGFco
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQsqdPAAoJEECxmPOUX5FEJgEQAIYei3cz4opyK72tB+EZSUAU
++7P+Di2hzYr/WRqM27D2SU1AXKtsb8jHAD2YwhuHtFzgqvcau9URTT+/YM2npqmi
+ioZDmQDUpxqYCvBADUv1TgpXDKHLDzEDPKhxaaPKpqcFoogBeFttMnmxX31ebXah
+4RlGnBVCzGIQMATV4DatSmQPAXSjlqKU3HOCMahHk1EZ2c95RFl3gRbMOB1qpXtr
+pXjFMRGhRyh/V59QYlc8NEvy1zGF58UpaZjI//aWjmhQ+Ch2l+nLT7XUFl7xmiFP
+nawYOEyMkjjaSwHTIRwUAz82HWeoG7lakwKjz39lSGJccWYNI+OQ5BcfsOSMXglp
+T7C9gEsixaMOlgFKuXHr1gJogkm3dzYeX0YLE3NLZx7Vd/+fXDuSVfoBMS6RsXae
+xmRvHmvO/lwHMfNXMI+cVC8/xnt0SaK465hUT/FFw7uVaD/C2dnLd3fwhmVm8p6J
+aDOgkoGeS3yoA/pzqISoHhxzNm9y5EeqslOOfVMS08K5N9NbhVCo8kHAH9c7gqp5
+5edYirjVh2XA2NspIp/93K01YFZc7YOYTD+JcylwH442UWWZajC1+hPblA3sc+p4
+Qu3OlIC212nmnClEcaFHjtyiwnuUMn53LU+Mvsz4fngTdqb9bQlljK6nsWYdjWjV
+RasBv86C6Eo3ZDbiDeia
+=tHjI
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__26_Nov_2012_10_18_39_+1100_P3fqq93jN2=mGFco--
