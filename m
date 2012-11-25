@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2KYSlH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 13:41:07 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42727 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2KYSlE (ORCPT
+	id S1753320Ab2KYTJl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 14:09:41 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:45169 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab2KYTJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 13:41:04 -0500
-Date: Sun, 25 Nov 2012 10:42:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, "Svahn, Kai" <kai.svahn@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>, "Zheng, Lv" <lv.zheng@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during
- probe/remove/shutdown
-Message-ID: <20121125184225.GA1423@kroah.com>
-References: <1672179.qgDUs0YdYu@vostro.rjw.lan>
- <6227446.8xPtqi6yHi@vostro.rjw.lan>
+	Sun, 25 Nov 2012 14:09:39 -0500
+Date: Sun, 25 Nov 2012 14:09:09 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/3] cputime: Consolidate cputime adjustment code
+Message-ID: <20121125190909.GA1866@windriver.com>
+References: <1353680484-7302-1-git-send-email-fweisbec@gmail.com>
+ <1353680484-7302-4-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <6227446.8xPtqi6yHi@vostro.rjw.lan>
+In-Reply-To: <1353680484-7302-4-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 25, 2012 at 03:58:14PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Drivers usually expect that the devices they are supposed to handle
-> will be operational when their .probe() routines are called, but that
-> need not be the case on some ACPI-based systems with ACPI-based
-> device enumeration where the BIOSes don't put devices into D0 by
-> default.  To work around this problem it is sufficient to change
-> bus type .probe() routines to ensure that devices will be powered
-> on before the drivers' .probe() routines run (and their .remove()
-> and .shutdown() routines accordingly).
-> 
-> Modify platform_drv_probe() to run acpi_dev_pm_attach() for devices
-> whose ACPI handles are present, so that ACPI power management is used
-> to change their power states and change their power states to D0
-> before driver probing.  Analogously, modify platform_drv_remove() and
-> platform_drv_shutdown() to call acpi_dev_pm_detach() for those
-> devices, so that they are not subject to ACPI PM any more.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[[PATCH 3/3] cputime: Consolidate cputime adjustment code] On 23/11/2012 (Fri 15:21) Frederic Weisbecker wrote:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> task_cputime_adjusted() and thread_group_cputime_adjusted()
+> essentially share the same code. They just don't use the same
+> source:
+> 
+> * The first function uses the cputime in the task struct and the
+> previous adjusted snapshot that ensures monotonicity.
+> 
+> * The second adds the cputime of all tasks in the group and the
+> previous adjusted snapshot of the whole group from the signal
+> structure.
+> 
+> Just consolidate the common code that does the adjustment. These
+> functions just need to fetch the values from the appropriate
+> source.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/sched.h  |    9 +++++++--
+>  kernel/fork.c          |    2 +-
+>  kernel/sched/cputime.c |   46 +++++++++++++++++++++++-----------------------
+>  3 files changed, 31 insertions(+), 26 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index e75cab5..d23204f 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -433,6 +433,11 @@ struct cpu_itimer {
+>  	u32 incr_error;
+>  };
+>  
+> +struct cputime {
+> +	cputime_t utime;
+> +	cputime_t stime;
+> +};
+> +
+
+Hi Frederic,
+
+This new struct cputime is a 2/3 subset of the three variable struct
+task_cputime we see right below.  Maybe this is a stupid question, but I
+was wondering why you didn't re-use task_cputime, and ignore the
+sum_exec_runtime field -- vs. introducing this very similar struct?
+
+Or maybe there is another way to consolidate the structs?  With the
+two being so similar, I wonder if it will be confusing when to use which
+one of the two.
+
+Thanks,
+Paul.
+--
+
+/**
+ * struct task_cputime - collected CPU time counts
+ * @utime:		time spent in user mode, in &cputime_t units
+ * @stime:              time spent in kernel mode, in &cputime_t units
+ * @sum_exec_runtime:   total time spent on the CPU, in nanoseconds
+ *
+ * This structure groups together three kinds of CPU time that are
+ * tracked for threads and thread groups.  Most things considering
+ * CPU time want to group these counts together and treat all three
+ * of them in parallel.
+ */
+struct task_cputime {
+        cputime_t utime;
+        cputime_t stime;
+        unsigned long long sum_exec_runtime;
+};
+
