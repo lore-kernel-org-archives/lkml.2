@@ -1,56 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2KYGJx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 01:09:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47207 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2KYGJu (ORCPT
+	id S1751086Ab2KYGJr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 01:09:47 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61190 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab2KYGJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 01:09:50 -0500
+	Sun, 25 Nov 2012 01:09:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <46262b07-80f0-48ab-a0a2-0b8a9a21c726@email.android.com>
-References: <1353482170-10160-1-git-send-email-yinghai@kernel.org>
-	<1353482170-10160-12-git-send-email-yinghai@kernel.org>
-	<50AD0CA1.8000904@zytor.com>
-	<CAE9FiQUSjRT-r5ZE3WHVaKkUOhwFWkm9CTCv1Aa63DOsfMQMiQ@mail.gmail.com>
-	<50AD291A.10600@zytor.com>
-	<CAE9FiQVed0tXhbtmc_Gug0gFZ=s=j=N4B5Vr2_ZTmSj6L-65dw@mail.gmail.com>
-	<a1ca794a-09d4-4d36-8c8c-67100cb3696e@email.android.com>
-	<CAE9FiQXJO8uxT9Gzjv9e8XeiLzwBX7fwTFzDVy=oPfboG4L=3Q@mail.gmail.com>
-	<CAE9FiQWeGz2TkLBrBZcoPrNABx51XK3xk58P+Zam_LRGoJdSiw@mail.gmail.com>
-	<a8b15bf0-4e3b-4fde-9190-26890f9abf77@email.android.com>
-	<CAE9FiQUoj9k0Tbqp8LC8Wb21_s_x8naiWX4zkX9pJG-oFnAQ9g@mail.gmail.com>
-	<50AE70E7.6060204@zytor.com>
-	<87haofi3d3.fsf@xmission.com>
-	<50B104BC.90208@zytor.com>
-	<50B124E9.400@zytor.com>
-	<87vccud0i5.fsf@xmission.com>
-	<50B16080.7040809@zytor.com>
-	<CAE9FiQUUsQ3hn-xTeXsN+qA5YSSNbftoRbxHpdX0HWYmVHqfEA@mail.gmail.com>
-	<CAE9FiQXvFXrvmATUfv682Ob7Jo7-fvs_1edxVhiNSS_Wmx4qcA@mail.gmail.com>
-	<46262b07-80f0-48ab-a0a2-0b8a9a21c726@email.android.com>
-Date: Sat, 24 Nov 2012 22:09:49 -0800
-X-Google-Sender-Auth: SQWNFDp8zq1uBz1zx6-77dwqOpk
-Message-ID: <CAE9FiQU3jzKDfszggnWvFPXYzh=VTEod7HmSPtNpz6mrrbyNYg@mail.gmail.com>
-Subject: Re: [PATCH v3 11/12] x86, boot: add fields to support load bzImage
- and ramdisk high
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
+In-Reply-To: <1353083121-4560-5-git-send-email-mingo@kernel.org>
+References: <1353083121-4560-1-git-send-email-mingo@kernel.org>
+	<1353083121-4560-5-git-send-email-mingo@kernel.org>
+Date: Sun, 25 Nov 2012 11:39:45 +0530
+Message-ID: <CAMjzKwXge8jW9ceGnQPT94vVczGgeLJBLyPB74MTUeQg3fHfJA@mail.gmail.com>
+Subject: Re: [PATCH 04/19] sched, numa, mm: Describe the NUMA scheduling
+ problem formally
+From: abhishek agarwal <abhigem.126@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mike Galbraith <efault@gmx.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 9:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> But it doesn't solve the bigger problem, and it is just begging to be gotten wrong.
->>
->>later all new kernel need to check USE_EXT_BOOT_PARAMS bit for all new
->>added field in boot_params.
+as per 4) move towards where "most" memory. If we have a large shared
+memory than private memnory. Why not we just move the process towrds
+the memory.. instead of the memory moving towards the node. This will
+i guess be less cumbersome, then moving all the shared memory
 
-Do you mean
-later someone would forget checking USE_EXT_BOOT_PARAMS when accessing
-new added fields in boot_params?
+On Fri, Nov 16, 2012 at 9:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
+> This is probably a first: formal description of a complex high-level
+> computing problem, within the kernel source.
+>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Rik van Riel <riel@redhat.com>
+> Link: http://lkml.kernel.org/n/tip-mmnlpupoetcatimvjEld16Pb@git.kernel.org
+> [ Next step: generate the kernel source from such formal descriptions and retire to a tropical island! ]
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  Documentation/scheduler/numa-problem.txt | 230 +++++++++++++++++++++++++++++++
+>  1 file changed, 230 insertions(+)
+>  create mode 100644 Documentation/scheduler/numa-problem.txt
+>
+> diff --git a/Documentation/scheduler/numa-problem.txt b/Documentation/scheduler/numa-problem.txt
+> new file mode 100644
+> index 0000000..a5d2fee
+> --- /dev/null
+> +++ b/Documentation/scheduler/numa-problem.txt
+> @@ -0,0 +1,230 @@
+> +
+> +
+> +Effective NUMA scheduling problem statement, described formally:
+> +
+> + * minimize interconnect traffic
+> +
+> +For each task 't_i' we have memory, this memory can be spread over multiple
+> +physical nodes, let us denote this as: 'p_i,k', the memory task 't_i' has on
+> +node 'k' in [pages].
+> +
+> +If a task shares memory with another task let us denote this as:
+> +'s_i,k', the memory shared between tasks including 't_i' residing on node
+> +'k'.
+> +
+> +Let 'M' be the distribution that governs all 'p' and 's', ie. the page placement.
+> +
+> +Similarly, lets define 'fp_i,k' and 'fs_i,k' resp. as the (average) usage
+> +frequency over those memory regions [1/s] such that the product gives an
+> +(average) bandwidth 'bp' and 'bs' in [pages/s].
+> +
+> +(note: multiple tasks sharing memory naturally avoid duplicat accounting
+> +       because each task will have its own access frequency 'fs')
+> +
+> +(pjt: I think this frequency is more numerically consistent if you explicitly
+> +      restrict p/s above to be the working-set. (It also makes explicit the
+> +      requirement for <C0,M0> to change about a change in the working set.)
+> +
+> +      Doing this does have the nice property that it lets you use your frequency
+> +      measurement as a weak-ordering for the benefit a task would receive when
+> +      we can't fit everything.
+> +
+> +      e.g. task1 has working set 10mb, f=90%
+> +           task2 has working set 90mb, f=10%
+> +
+> +      Both are using 9mb/s of bandwidth, but we'd expect a much larger benefit
+> +      from task1 being on the right node than task2. )
+> +
+> +Let 'C' map every task 't_i' to a cpu 'c_i' and its corresponding node 'n_i':
+> +
+> +  C: t_i -> {c_i, n_i}
+> +
+> +This gives us the total interconnect traffic between nodes 'k' and 'l',
+> +'T_k,l', as:
+> +
+> +  T_k,l = \Sum_i bp_i,l + bs_i,l + \Sum bp_j,k + bs_j,k where n_i == k, n_j == l
+> +
+> +And our goal is to obtain C0 and M0 such that:
+> +
+> +  T_k,l(C0, M0) =< T_k,l(C, M) for all C, M where k != l
+> +
+> +(note: we could introduce 'nc(k,l)' as the cost function of accessing memory
+> +       on node 'l' from node 'k', this would be useful for bigger NUMA systems
+> +
+> + pjt: I agree nice to have, but intuition suggests diminishing returns on more
+> +      usual systems given factors like things like Haswell's enormous 35mb l3
+> +      cache and QPI being able to do a direct fetch.)
+> +
+> +(note: do we need a limit on the total memory per node?)
+> +
+> +
+> + * fairness
+> +
+> +For each task 't_i' we have a weight 'w_i' (related to nice), and each cpu
+> +'c_n' has a compute capacity 'P_n', again, using our map 'C' we can formulate a
+> +load 'L_n':
+> +
+> +  L_n = 1/P_n * \Sum_i w_i for all c_i = n
+> +
+> +using that we can formulate a load difference between CPUs
+> +
+> +  L_n,m = | L_n - L_m |
+> +
+> +Which allows us to state the fairness goal like:
+> +
+> +  L_n,m(C0) =< L_n,m(C) for all C, n != m
+> +
+> +(pjt: It can also be usefully stated that, having converged at C0:
+> +
+> +   | L_n(C0) - L_m(C0) | <= 4/3 * | G_n( U(t_i, t_j) ) - G_m( U(t_i, t_j) ) |
+> +
+> +      Where G_n,m is the greedy partition of tasks between L_n and L_m. This is
+> +      the "worst" partition we should accept; but having it gives us a useful
+> +      bound on how much we can reasonably adjust L_n/L_m at a Pareto point to
+> +      favor T_n,m. )
+> +
+> +Together they give us the complete multi-objective optimization problem:
+> +
+> +  min_C,M [ L_n,m(C), T_k,l(C,M) ]
+> +
+> +
+> +
+> +Notes:
+> +
+> + - the memory bandwidth problem is very much an inter-process problem, in
+> +   particular there is no such concept as a process in the above problem.
+> +
+> + - the naive solution would completely prefer fairness over interconnect
+> +   traffic, the more complicated solution could pick another Pareto point using
+> +   an aggregate objective function such that we balance the loss of work
+> +   efficiency against the gain of running, we'd want to more or less suggest
+> +   there to be a fixed bound on the error from the Pareto line for any
+> +   such solution.
+> +
+> +References:
+> +
+> +  http://en.wikipedia.org/wiki/Mathematical_optimization
+> +  http://en.wikipedia.org/wiki/Multi-objective_optimization
+> +
+> +
+> +* warning, significant hand-waving ahead, improvements welcome *
+> +
+> +
+> +Partial solutions / approximations:
+> +
+> + 1) have task node placement be a pure preference from the 'fairness' pov.
+> +
+> +This means we always prefer fairness over interconnect bandwidth. This reduces
+> +the problem to:
+> +
+> +  min_C,M [ T_k,l(C,M) ]
+> +
+> + 2a) migrate memory towards 'n_i' (the task's node).
+> +
+> +This creates memory movement such that 'p_i,k for k != n_i' becomes 0 --
+> +provided 'n_i' stays stable enough and there's sufficient memory (looks like
+> +we might need memory limits for this).
+> +
+> +This does however not provide us with any 's_i' (shared) information. It does
+> +however remove 'M' since it defines memory placement in terms of task
+> +placement.
+> +
+> +XXX properties of this M vs a potential optimal
+> +
+> + 2b) migrate memory towards 'n_i' using 2 samples.
+> +
+> +This separates pages into those that will migrate and those that will not due
+> +to the two samples not matching. We could consider the first to be of 'p_i'
+> +(private) and the second to be of 's_i' (shared).
+> +
+> +This interpretation can be motivated by the previously observed property that
+> +'p_i,k for k != n_i' should become 0 under sufficient memory, leaving only
+> +'s_i' (shared). (here we loose the need for memory limits again, since it
+> +becomes indistinguishable from shared).
+> +
+> +XXX include the statistical babble on double sampling somewhere near
+> +
+> +This reduces the problem further; we loose 'M' as per 2a, it further reduces
+> +the 'T_k,l' (interconnect traffic) term to only include shared (since per the
+> +above all private will be local):
+> +
+> +  T_k,l = \Sum_i bs_i,l for every n_i = k, l != k
+> +
+> +[ more or less matches the state of sched/numa and describes its remaining
+> +  problems and assumptions. It should work well for tasks without significant
+> +  shared memory usage between tasks. ]
+> +
+> +Possible future directions:
+> +
+> +Motivated by the form of 'T_k,l', try and obtain each term of the sum, so we
+> +can evaluate it;
+> +
+> + 3a) add per-task per node counters
+> +
+> +At fault time, count the number of pages the task faults on for each node.
+> +This should give an approximation of 'p_i' for the local node and 's_i,k' for
+> +all remote nodes.
+> +
+> +While these numbers provide pages per scan, and so have the unit [pages/s] they
+> +don't count repeat access and thus aren't actually representable for our
+> +bandwidth numberes.
+> +
+> + 3b) additional frequency term
+> +
+> +Additionally (or instead if it turns out we don't need the raw 'p' and 's'
+> +numbers) we can approximate the repeat accesses by using the time since marking
+> +the pages as indication of the access frequency.
+> +
+> +Let 'I' be the interval of marking pages and 'e' the elapsed time since the
+> +last marking, then we could estimate the number of accesses 'a' as 'a = I / e'.
+> +If we then increment the node counters using 'a' instead of 1 we might get
+> +a better estimate of bandwidth terms.
+> +
+> + 3c) additional averaging; can be applied on top of either a/b.
+> +
+> +[ Rik argues that decaying averages on 3a might be sufficient for bandwidth since
+> +  the decaying avg includes the old accesses and therefore has a measure of repeat
+> +  accesses.
+> +
+> +  Rik also argued that the sample frequency is too low to get accurate access
+> +  frequency measurements, I'm not entirely convinced, event at low sample
+> +  frequencies the avg elapsed time 'e' over multiple samples should still
+> +  give us a fair approximation of the avg access frequency 'a'.
+> +
+> +  So doing both b&c has a fair chance of working and allowing us to distinguish
+> +  between important and less important memory accesses.
+> +
+> +  Experimentation has shown no benefit from the added frequency term so far. ]
+> +
+> +This will give us 'bp_i' and 'bs_i,k' so that we can approximately compute
+> +'T_k,l' Our optimization problem now reads:
+> +
+> +  min_C [ \Sum_i bs_i,l for every n_i = k, l != k ]
+> +
+> +And includes only shared terms, this makes sense since all task private memory
+> +will become local as per 2.
+> +
+> +This suggests that if there is significant shared memory, we should try and
+> +move towards it.
+> +
+> + 4) move towards where 'most' memory is
+> +
+> +The simplest significance test is comparing the biggest shared 's_i,k' against
+> +the private 'p_i'. If we have more shared than private, move towards it.
+> +
+> +This effectively makes us move towards where most our memory is and forms a
+> +feed-back loop with 2. We migrate memory towards us and we migrate towards
+> +where 'most' memory is.
+> +
+> +(Note: even if there were two tasks fully trashing the same shared memory, it
+> +       is very rare for there to be an 50/50 split in memory, lacking a perfect
+> +       split, the small will move towards the larger. In case of the perfect
+> +       split, we'll tie-break towards the lower node number.)
+> +
+> + 5) 'throttle' 4's node placement
+> +
+> +Since per 2b our 's_i,k' and 'p_i' require at least two scans to 'stabilize'
+> +and show representative numbers, we should limit node-migration to not be
+> +faster than this.
+> +
+> + n) poke holes in previous that require more stuff and describe it.
+> --
+> 1.7.11.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
