@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab2KYCkt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Nov 2012 21:40:49 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51910 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab2KYCks (ORCPT
+	id S1752909Ab2KYCoh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Nov 2012 21:44:37 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35277 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2KYCog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Nov 2012 21:40:48 -0500
-MIME-Version: 1.0
-Date: Sat, 24 Nov 2012 18:40:46 -0800
-Message-ID: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com>
-Subject: [PATCH 0/3] remove kvm's use of augmented rbtree
+	Sat, 24 Nov 2012 21:44:36 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Sasha Levin <sasha.levin@oracle.com>
 Cc: Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] kvm: ensure non-overlapping intervals in rb_int_insert()
+Date: Sat, 24 Nov 2012 18:44:22 -0800
+Message-Id: <1353811464-6462-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com>
+References: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 9:49 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Thu, Nov 22, 2012 at 9:14 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> The following patch fixed the problem for me:
->>
->> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
->> index 214caa3..5cfdca6 100644
->> --- a/include/linux/rbtree_augmented.h
->> +++ b/include/linux/rbtree_augmented.h
->> @@ -47,6 +47,7 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
->>                     const struct rb_augment_callbacks *augment)
->>  {
->>         __rb_insert_augmented(node, root, augment->rotate);
->> +       augment->propagate(node, NULL);
->>  }
->
-> This would work, but would slow down all sites which already take care
-> of updating the augmented information before calling
-> rb_insert_augmented, so please don't do that.
->
-> The simplest fix would be to add the propagate call where your
-> rb_insert_augmented() call site is; the better fix would be to do the
-> update incrementally as you search down the tree for the insertion
-> point; and the best fix may be to just avoid duplicating that code and
-> use interval_tree.h (if your keys are longs) or
-> interval_tree_generic.h to generate the proper insert / remove
-> functions.
+The rbtree interval API is designed for handling non-overlapping intervals;
+modify rb_int_insert() to guarantee this property is maintained by
+returning -EEXIST when attempting to insert a new interval that overlaps
+an existing interval.
 
-So I had a quick look at linux-next, and my understanding is that the
-rbtree-interval API in kvm always stores non-overlapping intervals.
-Based on this, the use of augmented rbtrees isn't really justified; it
-is just as easy to use a simple rbtree of intervals sorted by the
-addresses they cover.
+Also fix an issue where the computation of 'result' could trigger an
+integer overflow which would break the rbtree ordering.
 
-This patchset was generated against the current linux-next. I only
-verified that kvm still compiled; obviously this would need more
-testing. On the other hand, there are currently some correctness
-issues in kvm's implementatin of rbtree intervals, so I think this
-simplification should be beneficial.
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Michel Lespinasse (3):
-  kvm: ensure non-overlapping intervals in rb_int_insert()
-  kvm: rb_int_search_single simplification
-  kvm: remove max_high field in rb_int_node structure
+---
+ tools/kvm/util/rbtree-interval.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
- tools/kvm/include/kvm/rbtree-interval.h |   13 +++--
- tools/kvm/util/rbtree-interval.c        |   86 ++++---------------------------
- 2 files changed, 18 insertions(+), 81 deletions(-)
-
-Sasha, could you please check my logic and apply this to the kvm tree ?
-
-Thanks,
-
+diff --git a/tools/kvm/util/rbtree-interval.c b/tools/kvm/util/rbtree-interval.c
+index d7fa96a06a92..fd69252bea02 100644
+--- a/tools/kvm/util/rbtree-interval.c
++++ b/tools/kvm/util/rbtree-interval.c
+@@ -99,13 +99,13 @@ int rb_int_insert(struct rb_root *root, struct rb_int_node *i_node)
+ 	struct rb_node **node = &root->rb_node, *parent = NULL;
+ 
+ 	while (*node) {
+-		int result = i_node->low - rb_int(*node)->low;
++		struct rb_int_node *cur = rb_int(*node);
+ 
+ 		parent = *node;
+-		if (result < 0)
+-			node	= &((*node)->rb_left);
+-		else if (result > 0)
+-			node	= &((*node)->rb_right);
++		if (i_node->high <= cur->low)
++			node = &cur->node.rb_left;
++		else if (cur->high <= i_node->low)
++			node = &cur->node.rb_right;
+ 		else
+ 			return -EEXIST;
+ 	}
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.7.3
