@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab2KZRGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:06:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47514 "EHLO
+	id S932980Ab2KZRGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:06:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47522 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932794Ab2KZRGe (ORCPT
+	with ESMTP id S932794Ab2KZRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:06:34 -0500
+	Mon, 26 Nov 2012 12:06:42 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 108/270] libceph: don't touch con state in con_close_socket()
-Date: Mon, 26 Nov 2012 14:56:38 -0200
-Message-Id: <1353949160-26803-109-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 110/270] libceph: clear NEGOTIATING when done
+Date: Mon, 26 Nov 2012 14:56:40 -0200
+Message-Id: <1353949160-26803-111-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,53 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit 456ea46865787283088b23a8a7f69244513b95f0 upstream.
+commit 3ec50d1868a9e0493046400bb1fdd054c7f64ebd upstream.
 
-In con_close_socket(), a connection's SOCK_CLOSED flag gets set and
-then cleared while its shutdown method is called and its reference
-gets dropped.
+A connection state's NEGOTIATING bit gets set while in CONNECTING
+state after we have successfully exchanged a ceph banner and IP
+addresses with the connection's peer (the server).  But that bit
+is not cleared again--at least not until another connection attempt
+is initiated.
 
-Previously, that flag got set only if it had not already been set,
-so setting it in con_close_socket() might have prevented additional
-processing being done on a socket being shut down.  We no longer set
-SOCK_CLOSED in the socket event routine conditionally, so setting
-that bit here no longer provides whatever benefit it might have
-provided before.
-
-A race condition could still leave the SOCK_CLOSED bit set even
-after we've issued the call to con_close_socket(), so we still clear
-that bit after shutting the socket down.  Add a comment explaining
-the reason for this.
+Instead, clear it as soon as the connection is fully established.
+Also, clear it when a socket connection gets prematurely closed
+in the midst of establishing a ceph connection (in case we had
+reached the point where it was set).
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/ceph/messenger.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index cd1aaa8..dfff350 100644
+index 5e8033f..9e586ea 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -392,10 +392,16 @@ static int con_close_socket(struct ceph_connection *con)
- 	dout("con_close_socket on %p sock %p\n", con, con->sock);
- 	if (!con->sock)
- 		return 0;
--	set_bit(SOCK_CLOSED, &con->flags);
- 	rc = con->sock->ops->shutdown(con->sock, SHUT_RDWR);
- 	sock_release(con->sock);
- 	con->sock = NULL;
-+
-+	/*
-+	 * Forcibly clear the SOCK_CLOSE flag.  It gets set
-+	 * independent of the connection mutex, and we could have
-+	 * received a socket close event before we had the chance to
-+	 * shut the socket down.
-+	 */
- 	clear_bit(SOCK_CLOSED, &con->flags);
- 	con_sock_state_closed(con);
- 	return rc;
+@@ -1562,6 +1562,7 @@ static int process_connect(struct ceph_connection *con)
+ 			fail_protocol(con);
+ 			return -1;
+ 		}
++		clear_bit(NEGOTIATING, &con->state);
+ 		clear_bit(CONNECTING, &con->state);
+ 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
+ 		con->connect_seq++;
+@@ -1951,7 +1952,6 @@ more:
+ 
+ 	/* open the socket first? */
+ 	if (con->sock == NULL) {
+-		clear_bit(NEGOTIATING, &con->state);
+ 		set_bit(CONNECTING, &con->state);
+ 
+ 		con_out_kvec_reset(con);
+@@ -2190,10 +2190,12 @@ static void con_work(struct work_struct *work)
+ 	mutex_lock(&con->mutex);
+ restart:
+ 	if (test_and_clear_bit(SOCK_CLOSED, &con->flags)) {
+-		if (test_and_clear_bit(CONNECTING, &con->state))
++		if (test_and_clear_bit(CONNECTING, &con->state)) {
++			clear_bit(NEGOTIATING, &con->state);
+ 			con->error_msg = "connection failed";
+-		else
++		} else {
+ 			con->error_msg = "socket closed";
++		}
+ 		goto fault;
+ 	}
+ 
 -- 
 1.7.9.5
 
