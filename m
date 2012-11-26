@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2KZMCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:02:30 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:58991 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab2KZMC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:02:28 -0500
-Message-ID: <50B35A4D.8080501@compulab.co.il>
-Date: Mon, 26 Nov 2012 14:02:21 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.7) Gecko/20121022 Thunderbird/10.0.7
-MIME-Version: 1.0
-To: Alessio Igor Bogani <alessio.bogani@elettra.trieste.it>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: Conditionally compile counter_32k
-References: <1353922083-1094-1-git-send-email-alessio.bogani@elettra.trieste.it>
-In-Reply-To: <1353922083-1094-1-git-send-email-alessio.bogani@elettra.trieste.it>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754627Ab2KZMKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:10:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56462 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab2KZMKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 07:10:33 -0500
+Date: Mon, 26 Nov 2012 10:10:24 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20121126101024.1c5a7f13@infradead.org>
+In-Reply-To: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
+References: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/12 11:28, Alessio Igor Bogani wrote:
-> The 32K timer isn't available on all OMAP devices.
+Hi Stephen,
+
+Em Mon, 26 Nov 2012 13:31:53 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+
+> Hi Mauro,
 > 
-> Signed-off-by: Alessio Igor Bogani <alessio.bogani@elettra.trieste.it>
-> ---
->  arch/arm/plat-omap/Makefile |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> diff --git a/arch/arm/plat-omap/Makefile b/arch/arm/plat-omap/Makefile
-> index 8d88584..b1b321c 100644
-> --- a/arch/arm/plat-omap/Makefile
-> +++ b/arch/arm/plat-omap/Makefile
-> @@ -3,11 +3,13 @@
->  #
->  
->  # Common support
-> -obj-y := sram.o dma.o fb.o counter_32k.o
-> +obj-y := sram.o dma.o fb.o
->  obj-m :=
->  obj-n :=
->  obj-  :=
->  
-> +obj-$(CONFIG_OMAP_32K_TIMER) += counter_32k.o
+> ERROR: "dma_common_get_sgtable" [drivers/media/v4l2-core/videobuf2-dma-contig.ko] undefined!
+> 
+> Caused by commit 9ef2cbeb8192 ("[media] v4l: vb2-dma-contig: add support
+> for DMABUF exporting").  dma_common_get_sgtable() is called from the
+> inline dma_get_sgtable_attrs() and dma_get_sgtable_attrs() is "called
+> from" dma_get_sgtable().  dma_common_get_sgtable() is only defined if
+> ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY is set which depends on
+> CONFIG_HAVE_GENERIC_DMA_COHERENT being set which it isn't for this build.
+> 
+> I have used the v4l-dvb tree form next-20121026 for today.
+> 
+> Please try testing your tree with an x86_64 allmodconfig build.
 
-We are moving away from this config option in favor of runtime detection,
-so I don't think this patch is appropriate.
+My tree does compile here with allmodconfig on x86_64.
 
-Why do you need this?
+A quick fix is to just disable support for DMABUF if !HAVE_GENERIC_DMA_COHERENT.
 
-> +
->  # omap_device support (OMAP2+ only at the moment)
->  
->  obj-$(CONFIG_OMAP_DM_TIMER) += dmtimer.o
-
--- 
 Regards,
-Igor.
+Mauro
+
+-
+
+videobuf2-dma-contig: Only support if  HAVE_GENERIC_DMA_COHERENT
+
+As reported by Stephen:
+
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> ERROR: "dma_common_get_sgtable" [drivers/media/v4l2-core/videobuf2-dma-contig.ko] undefined!
+>
+> Caused by commit 9ef2cbeb8192 ("[media] v4l: vb2-dma-contig: add support
+> for DMABUF exporting").  dma_common_get_sgtable() is called from the
+> inline dma_get_sgtable_attrs() and dma_get_sgtable_attrs() is "called
+> from" dma_get_sgtable().  dma_common_get_sgtable() is only defined if
+> ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY is set which depends on
+> CONFIG_HAVE_GENERIC_DMA_COHERENT being set which it isn't for this build.
+
+The simplest fix is to just not support DMABUF with vb2-contig, on archs
+where this symbol doesn't exist. Some latter patch can rewrite it to
+support this outside -arm.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+index 10beaee..5729450 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+@@ -226,6 +226,8 @@ static int vb2_dc_mmap(void *buf_priv, struct vm_area_struct *vma)
+ /*         DMABUF ops for exporters          */
+ /*********************************************/
+ 
++#ifdef HAVE_GENERIC_DMA_COHERENT
++
+ struct vb2_dc_attachment {
+ 	struct sg_table sgt;
+ 	enum dma_data_direction dir;
+@@ -416,6 +418,8 @@ static struct dma_buf *vb2_dc_get_dmabuf(void *buf_priv)
+ 	return dbuf;
+ }
+ 
++#endif
++
+ /*********************************************/
+ /*       callbacks for USERPTR buffers       */
+ /*********************************************/
+@@ -735,7 +739,9 @@ static void *vb2_dc_attach_dmabuf(void *alloc_ctx, struct dma_buf *dbuf,
+ const struct vb2_mem_ops vb2_dma_contig_memops = {
+ 	.alloc		= vb2_dc_alloc,
+ 	.put		= vb2_dc_put,
++#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
+ 	.get_dmabuf	= vb2_dc_get_dmabuf,
++#endif
+ 	.cookie		= vb2_dc_cookie,
+ 	.vaddr		= vb2_dc_vaddr,
+ 	.mmap		= vb2_dc_mmap,
