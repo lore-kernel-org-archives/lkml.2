@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab2KZQne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:43:34 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40950 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588Ab2KZQmI (ORCPT
+	id S1755688Ab2KZQnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:43:55 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38967 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284Ab2KZQmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 11:42:08 -0500
+	Mon, 26 Nov 2012 11:42:06 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org
-In-Reply-To: <50AF4584.7020604@ti.com>
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com>
-Date: Mon, 26 Nov 2012 15:46:00 +0000
-Message-Id: <20121126154600.765E03E1AFD@localhost>
+Subject: Re: [PATCH] of: Have of_device_add call platform_device_add rather than device_add
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+In-Reply-To: <20121122173020.GA8473@obsidianresearch.com>
+References: <20121121072448.GG19837@obsidianresearch.com> <20121121155104.726B83E0AE2@localhost> <20121121174453.GD6406@obsidianresearch.com> <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com> <20121121181430.GE6406@obsidianresearch.com> <20121122153621.452CA3E129E@localhost> <20121122173020.GA8473@obsidianresearch.com>
+Date: Mon, 26 Nov 2012 15:28:48 +0000
+Message-Id: <20121126152848.57CB73E1A30@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012 10:44:36 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Hi Grant,
+On Thu, 22 Nov 2012 10:30:20 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> On Thu, Nov 22, 2012 at 03:36:21PM +0000, Grant Likely wrote:
 > 
-> On 11/23/2012 10:13 AM, Peter Ujfalusi wrote:
-> > Hi Grant,
-> > 
-> > On 11/23/2012 08:55 AM, Grant Likely wrote:
-> >> Ugh. and this is why I wanted the PWM and GPIO subsystems to use the
-> >> same namespace and binding. <grumble, mutter> But that's not your fault.
-> >>
-> >> It's pretty horrible to have a separate translator node to convert a PWM
-> >> into a GPIO (with output only of course). The gpio properties should
-> >> appear directly in the PWM node itself and the translation code should
-> >> be in either the pwm or the gpio core. I don't think it should look like
-> >> a separate device.
-> > 
-> > Let me see if I understand your suggestion correctly. In the DT you suggest
-> > something like this:
-> > 
-> > twl_pwmled: pwmled {
-> > 	compatible = "ti,twl4030-pwmled";
-> > 	#pwm-cells = <2>;
-> > 	#gpio-cells = <2>;
-> > 	gpio-controller;
-> > };
+> > Hmm... I've not tried it with assigned-address. I tried with two sibling
+> > platform devices using just the 'reg' property. That the kernel will
+> > complain about. For powerpc-only, the patch I posted allows the device
+> > to get registered anyway even though the range incorrectly overlaps.
 > 
-> After I thought about this.. Is this what we really want?
-> After all what we have here is a PWM generator used to emulate a GPIO signal.
-> The PWM itself can be used for driving a LED (standard LED or backlight and we
-> have DT bindings for these already), vibra motor, or other things.
-> If we combine the PWM with GPIO we should go and 'bloat' the DT node to also
-> include all sort of other uses of PWM at once?
+> My second example was done with the reg property..
 > 
-> IMHO it is better to keep them as separate things.
-> pwm node to describe the PWM generator,
-> separate nodes to describe it's uses like led, backlight, motor and gpio.
+>                 gpio0: gpio@10100 {
+>                         compatible = "marvell,orion-gpio";
+>                         #gpio-cells = <2>;
+>                         gpio-controller;
+>                         reg = <0x10100 0x40>;
+>                 }
+>                 chip_cfg@0 {
+>                         compatible = "orc,chip_config";
+>                         // Doubles up on gpio0
+>                         reg = <0x10100 0x4>;
+>                 };
+> 
+> 
+> f1010100-f101013f : /internal@f1000000/gpio@10100
+>   f1010100-f1010103 : /internal@f1000000/chip_cfg@0
+> 
+> What did you try? Maybe order matters?
 
-You're effectively asking the pwm layer to behave like a gpio (which
-is completely reasonable). Having a completely separate translation node
-really doesn't make sense because it is entirely a software construct.
-In fact, the way your using it is *entirely* to make the Linux driver
-model instantiate the translation code. It has *nothing* to do with the
-structure of the hardware. It makes complete sense that if a PWM is
-going to be used as a GPIO, then the PWM node should conform to the GPIO
-binding.
+(Sorry for not replying to my own mail; I'm doing this offline and my
+sent mail doesn't show)
+
+Looks like it is by design. With my dummy devices I see this:
+
+10200c00-102023ff : /amba/overlap@10200c00
+  10201000-10201fff : /amba/dummy@10201000
+    10201400-10201bff : /amba/overlap@10201400
+
+All three of those devices are siblings in the device tree.
 
 g.
