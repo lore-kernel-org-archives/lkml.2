@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2KZDLs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 22:11:48 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:44854 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab2KZDLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 22:11:47 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Mon, 26 Nov 2012 04:11:40 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Dimitrios Apostolou <jimis@gmx.net>, linux-kernel@vger.kernel.org
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-Message-ID: <20121126031140.GA26738@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Dimitrios Apostolou <jimis@gmx.net>, linux-kernel@vger.kernel.org
-References: <1353851735.22969.18.camel@soupermouf>
- <1353871800.22969.28.camel@soupermouf>
- <20121125225954.GA14653@mobil.systemanalysen.net>
- <20121125235651.2f73a539@pyramind.ukuu.org.uk>
+	id S1753921Ab2KZDQL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 22:16:11 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35029 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789Ab2KZDQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 22:16:10 -0500
+Date: Sun, 25 Nov 2012 22:15:18 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
+        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm,vmscan: only loop back if compaction would fail in
+ all zones
+Message-ID: <20121126031518.GC2799@cmpxchg.org>
+References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
+ <20121125175728.3db4ac6a@fem.tu-ilmenau.de>
+ <20121125132950.11b15e38@annuminas.surriel.com>
+ <20121125224433.GB2799@cmpxchg.org>
+ <20121125191645.0ebc6d59@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121125235651.2f73a539@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121125191645.0ebc6d59@annuminas.surriel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 25, 2012 at 07:16:45PM -0500, Rik van Riel wrote:
+> On Sun, 25 Nov 2012 17:44:33 -0500
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
+> 
+> > > Could you try this patch?
+> > 
+> > It's not quite enough because it's not reaching the conditions you
+> > changed, see analysis in https://lkml.org/lkml/2012/11/20/567
+> 
+> Johannes,
+> 
+> does the patch below fix your problem?
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I can not reproduce the problem anymore with my smoke test.
 
-On 2012-11-25 Sunday at 23:56 +0000 Alan Cox wrote:
-> > Does anybody know a x86 distribution or live-CD using a 2.6.27.* kernel?
->=20
-> Probably not a good idea, there are known exploitable holes in 2.6.27 era
-> kernels and nobody maintains anything that old.
+> I suspect it would, because kswapd should only ever run into this
+> particular problem when we have a tiny memory zone in a pgdat,
+> and in that case we will also have a larger zone nearby, where
+> compaction would just succeed.
 
-=E2=80=9Cold=E2=80=9D is relative =E2=80=A6
+What if there is a higher order GFP_DMA allocation when the other
+zones in the system meet the high watermark for this order?
 
-cd git/linux-stable  && git log -1 --date=3Diso v2.6.27.62
-=2E.......................................................
-commit bc4e1a77b06519a01e7aed1125695598e27ddeb2
-Author: Willy Tarreau <w@1wt.eu>
-Date:   2012-03-17 14:03:53 +0100
-
-    Linux 2.6.27.62
-
-    Signed-off-by: Willy Tarreau <w@1wt.eu>
-
-
-=E2=80=A6 and surely less exploitable than a system suffering oom-killer ac=
-tions.
-
-Google "linux-2.6.27 download" gives some Ubuntu hits =E2=80=A6
-
-
-> I guess RHEL/Centos might work for you.
->
-> I've not had any problems with leaks in 3.6 but there have been a few
-> reports and its clear that some obscure configurations trigger something
-> bad.
->=20
-> Gnome 3 on the other hand leaks like a sieve.
-
-For a system with 128 M total RAM, Gnome is obviously off topic.
-
-
---=20
-Roland
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlCy3ewACgkQdN/hKfT7G/JE7QCdHXVognKD9q2kIVat5nd21vio
-bdoAn0xutxExvYZFZqOgJZSPaBgf1Kf6
-=dbVK
------END PGP SIGNATURE-----
-
---qDbXVdCdHGoSgWSk--
+There is something else that worries me: if the preliminary zone scan
+finds the high watermark of all zones alright, end_zone is at its
+initialization value, 0.  The final compaction loop at `if (order)'
+goes through all zones up to and including end_zone, which was never
+really set to anything meaningful(?) and the only zone considered is
+the DMA zone again.  Very unlikely, granted, but if you'd ever hit
+that race and kswapd gets stuck, this will be fun to debug...
