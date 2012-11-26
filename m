@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2KZA2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 19:28:07 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:42961 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753646Ab2KZA2F (ORCPT
+	id S1753870Ab2KZA2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 19:28:25 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:28131 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753840Ab2KZA2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 19:28:05 -0500
-Date: Mon, 26 Nov 2012 02:28:00 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH v2 00/12] Media Controller capture driver for DM365
-Message-ID: <20121126002800.GE31879@valkosipuli.retiisi.org.uk>
-References: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
- <CA+V-a8t5ZJ2Zb+dWkifjjOHOrv1LAvgaJR2x24xKJXrTJs9+jg@mail.gmail.com>
- <20121123135753.GB31879@valkosipuli.retiisi.org.uk>
- <201211231501.52852.hverkuil@xs4all.nl>
- <CA+V-a8sFW7-dkjS=NxM2uJhhOBwTXQ5zGk9hBsA++w6P1PzFMQ@mail.gmail.com>
+	Sun, 25 Nov 2012 19:28:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvMJADS3slB5LBva/2dsb2JhbABEhT+0ZIYEF3OCHgEBAQQBAjccEgYLEAgYMRQUEQM0iAwNvUgUjCyBEYMnA5NUgiyQRYMDgUsg
+Date: Mon, 26 Nov 2012 11:28:14 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+Message-ID: <20121126002814.GM32450@dastard>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+V-a8sFW7-dkjS=NxM2uJhhOBwTXQ5zGk9hBsA++w6P1PzFMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fs: revert commit bbdd6808 to fallocate UAPI
 
-Hi Prabhakar,
-On Sun, Nov 25, 2012 at 09:57:23PM +0530, Prabhakar Lad wrote:
-> On Fri, Nov 23, 2012 at 7:31 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> > On Fri November 23 2012 14:57:53 Sakari Ailus wrote:
-...
-> >> I think it should go under staging, the same directory as the driver.
-> >>
-> >> Hans, Mauro: could you confirm this?
-> >
-> > I agree with that, that way things stay together in one directory.
-> >
-> Ok I'll have the documentation in staging folder itself. What about
-> the header file which is added
-> to include/media/davinci/xxx.h, these header files are used by machine
-> file and drivers
-> only, I think also moving them to staging wont make sense and also
-> these files are expected
-> not to change, what are your suggestion on this ?
+From: Dave Chinner <dchinner@redhat.com>
 
-I'd put them to staging if they're related to the driver ifself rather than
-e.g. resource definitions. What would go under arch/arm then?
+Commit bbdd6808 ("fs: reserve fallocate flag codepoint") changes the
+fallocate(2) syscall interface. The flag that is reserved by this
+commit is for functionality that has previously been NAKed on the
+-fsdevel mailing list, and so exists out-of-tree.
 
--- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+The reserved syscall flag is completely undocumented, the commit
+message doesn't tell us why the patches that use it exist out of
+tree, or even why the flag needs to be in the kernel code and not
+part of the out-of-tree patches. Further, the flag is not
+implemented in any in-tree filesystems and probably never will be
+due to the truck-sized security hole it opens up. Finally, we don't
+change syscalls purely to support out-of-tree patches or kernel
+modules.
+
+The change to the syscall API was written and committed directly to
+the ext4 tree by the ext4 maintainer, and merged through that tree
+via the ext4 merge without review.  According to the commit message,
+this was discussed at the Plumber's conference but no documentary
+evidence of that discussion exists.  However, whether or not this
+discussion took place is irrelevant as the proper venue for
+discussion of this change is linux-fsdevel; discussions at a
+conference are no substitute for a full airing of the change on the
+appropriate mailing list.
+
+The method of pushing of such a commit (i.e. written, committed and
+pushed by a tree maintainer as part of a larger subsystem merge)
+could be seen as designed to avoid review and discussion of a
+controversial change that is likely to be NAKed. A long-term
+subsystem maintainer should know better than to push changes in this
+manner.
+
+The lack of formal review and discussion for a syscall API change is
+grounds for reverting patch, especially given the controversial
+nature of the feature and the previous discussions and NAKs. The way
+the change was pushed into mainline borders on an abuse of the trust
+we place in maintainers and hence as a matter of principle this
+change should be reverted.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+
+Reason for resend:
+- No response to orignal posting here:
+
+	http://www.spinics.net/lists/linux-fsdevel/msg59937.html
+
+ include/uapi/linux/falloc.h |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/uapi/linux/falloc.h b/include/uapi/linux/falloc.h
+index 990c4cc..8a7935f 100644
+--- a/include/uapi/linux/falloc.h
++++ b/include/uapi/linux/falloc.h
+@@ -3,7 +3,6 @@
+ 
+ #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
+ #define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
+-#define FALLOC_FL_NO_HIDE_STALE	0x04 /* reserved codepoint */
+ 
+ 
+ #endif /* _UAPI_FALLOC_H_ */
