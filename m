@@ -1,57 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab2KZSav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:30:51 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:57832 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2KZSat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:30:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-References: <20121127001320.12439806f19c9b6ccce4e895@canb.auug.org.au>
-Date: Mon, 26 Nov 2012 12:30:31 -0600
-In-Reply-To: <20121127001320.12439806f19c9b6ccce4e895@canb.auug.org.au>
-	(Stephen Rothwell's message of "Tue, 27 Nov 2012 00:13:20 +1100")
-Message-ID: <87624stdx4.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751413Ab2KZSde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:33:34 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35086 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795Ab2KZSdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:33:32 -0500
+Date: Mon, 26 Nov 2012 13:32:42 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: George Spelvin <linux@horizon.com>
+Cc: mgorman@suse.de, dave@linux.vnet.ibm.com, jack@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Message-ID: <20121126183242.GA9894@cmpxchg.org>
+References: <20121126100102.GH8218@suse.de>
+ <20121126130504.29434.qmail@science.horizon.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18tBq3FBfvueX1SBiy8uJ74Qm/T5+EC3sk=
-X-SA-Exim-Connect-IP: 75.135.205.0
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
-X-Spam-Relay-Country: 
-Subject: Re: linux-next: manual merge of the akpm tree with the userns tree
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126130504.29434.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
+Hi George,
 
-> Hi Andrew,
->
-> Today's linux-next merge of the akpm tree got a conflict in kernel/fork.c
-> between commit b2e0d98705e6 ("userns: Implement unshare of the user
-> namespace") from the userns tree and commit  ("fork: unshare: remove dead
-> cod") from the akpm tree.
->
-> I fixed it up (I think - see below) and can carry the fix as necessary (no action
-> is required).
+On Mon, Nov 26, 2012 at 08:05:04AM -0500, George Spelvin wrote:
+> Mel Gorman <mgorman@suse.de> wrote:
+> > Ok, can you try this patch from Rik on top as well please? This is in
+> > addition to Dave Hansen's accounting fix.
+> > 
+> > ---8<---
+> > From: Rik van Riel <riel@redhat.com>
+> > Subject: mm,vmscan: only loop back if compaction would fail in all zones
+> 
+> Booted and running.  Judging from the patch, the expected result is
+> "stops hanging", as opposed to more informative diagnostics, so I'll
+> keep you posted.
+> 
+> Peraonally, I like to use "bool" for such flags where possible;
+> it helps document the intent of the variable better.
 
-Your resolution looks correct to me.  This was just of case of two patches
-changing each others context. 
+Any chance you could test with this fix instead, in addition to Dave's
+accounting fix?  It's got bool and everything!
 
-Eric
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
+
+Kswapd does not in all places have the same criteria for when it
+considers a zone balanced.  This leads to zones being not reclaimed
+because they are considered just fine and other checks to loop over
+the zonelist again because they are considered unbalanced.
+
+Add a function, zone_balanced(), that checks the watermark, and, for
+higher order allocations, if compaction has enough free memory.  Then
+use it uniformly for when kswapd needs to check if a zone is balanced.
+
+Reported-by: George Spelvin <linux@horizon.com>
+Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: stable@kernel.org [3.4+]
+---
+ mm/vmscan.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 48550c6..3b0aef4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
+ 	} while (memcg);
+ }
+ 
++static bool zone_balanced(struct zone *zone, int order,
++			  unsigned long balance_gap, int classzone_idx)
++{
++	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
++				    balance_gap, classzone_idx, 0))
++		return false;
++
++	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
++		return false;
++
++	return true;
++}
++
+ /*
+  * pgdat_balanced is used when checking if a node is balanced for high-order
+  * allocations. Only zones that meet watermarks and are in a zone allowed
+@@ -2475,8 +2488,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ 			continue;
+ 		}
+ 
+-		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
+-							i, 0))
++		if (!zone_balanced(zone, order, 0, i))
+ 			all_zones_ok = false;
+ 		else
+ 			balanced += zone->present_pages;
+@@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				break;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), 0, 0)) {
++			if (!zone_balanced(zone, order, 0, 0)) {
+ 				end_zone = i;
+ 				break;
+ 			} else {
+@@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				testorder = 0;
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+-				    !zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0)) {
++			    !zone_balanced(zone, testorder,
++					   balance_gap, end_zone)) {
+ 				shrink_zone(zone, &sc);
+ 
+ 				reclaim_state->reclaimed_slab = 0;
+@@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				continue;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone), end_zone, 0)) {
++			if (!zone_balanced(zone, testorder, 0, end_zone)) {
+ 				all_zones_ok = 0;
+ 				/*
+ 				 * We are still under min water mark.  This
+-- 
+1.7.11.7
 
