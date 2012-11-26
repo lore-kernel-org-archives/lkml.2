@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab2KZSHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:07:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47376 "EHLO
+	id S932462Ab2KZSHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:07:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47364 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377Ab2KZREY (ORCPT
+	with ESMTP id S932349Ab2KZREO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:04:24 -0500
+	Mon, 26 Nov 2012 12:04:14 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Elder <elder@inktank.com>,
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 075/270] libceph: kill bad_proto ceph connection op
-Date: Mon, 26 Nov 2012 14:56:05 -0200
-Message-Id: <1353949160-26803-76-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 072/270] xen/bootup: allow read_tscp call for Xen PV guests.
+Date: Mon, 26 Nov 2012 14:56:02 -0200
+Message-Id: <1353949160-26803-73-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,51 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 6384bb8b8e88a9c6bf2ae0d9517c2c0199177c34 upstream.
+commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
 
-No code sets a bad_proto method in its ceph connection operations
-vector, so just get rid of it.
+The hypervisor will trap it. However without this patch,
+we would crash as the .read_tscp is set to NULL. This patch
+fixes it and sets it to the native_read_tscp call.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- include/linux/ceph/messenger.h |    3 ---
- net/ceph/messenger.c           |    5 -----
- 2 files changed, 8 deletions(-)
+ arch/x86/xen/enlighten.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-index 6a1dc80..ce7a483 100644
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -31,9 +31,6 @@ struct ceph_connection_operations {
- 	int (*verify_authorizer_reply) (struct ceph_connection *con, int len);
- 	int (*invalidate_authorizer)(struct ceph_connection *con);
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 405307f..93dcfdc 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1131,6 +1131,8 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
+ 	.read_tsc = native_read_tsc,
+ 	.read_pmc = native_read_pmc,
  
--	/* protocol version mismatch */
--	void (*bad_proto) (struct ceph_connection *con);
--
- 	/* there was some error on the socket (disconnect, whatever) */
- 	void (*fault) (struct ceph_connection *con);
- 
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index ad2eaad..18f69a8 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -1360,11 +1360,6 @@ static void fail_protocol(struct ceph_connection *con)
- {
- 	reset_connection(con);
- 	set_bit(CLOSED, &con->state);  /* in case there's queued work */
--
--	mutex_unlock(&con->mutex);
--	if (con->ops->bad_proto)
--		con->ops->bad_proto(con);
--	mutex_lock(&con->mutex);
- }
- 
- static int process_connect(struct ceph_connection *con)
++	.read_tscp = native_read_tscp,
++
+ 	.iret = xen_iret,
+ 	.irq_enable_sysexit = xen_sysexit,
+ #ifdef CONFIG_X86_64
 -- 
 1.7.9.5
 
