@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933443Ab2KZRJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:09:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47733 "EHLO
+	id S933457Ab2KZRJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:09:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47738 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933419Ab2KZRJl (ORCPT
+	with ESMTP id S933365Ab2KZRJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:09:41 -0500
+	Mon, 26 Nov 2012 12:09:46 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 157/270] usb: Send Set SEL before enabling parent U1/U2 timeout.
-Date: Mon, 26 Nov 2012 14:57:27 -0200
-Message-Id: <1353949160-26803-158-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 158/270] ASoC: fsi: don't reschedule DMA from an atomic context
+Date: Mon, 26 Nov 2012 14:57:28 -0200
+Message-Id: <1353949160-26803-159-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,74 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 65a95b75bc5afa7bbb844e222481044c1c4767eb upstream.
+commit 57451e437796548d658d03c2c4aab659eafcd799 upstream.
 
-The Set SEL control transfer tells a device the exit latencies
-associated with a device-initated U1 or U2 exit.  Since a parent hub may
-initiate a transition to U1 soon after a downstream port's U1 timeout is
-set, we need to make sure the device receives the Set SEL transfer
-before the parent hub timeout is set.
+shdma doesn't support transfer re-scheduling or triggering from callbacks
+or from atomic context. The fsi driver issues DMA transfers from a tasklet
+context, which is a bug. To fix it convert tasklet to a work.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
-enable/disable USB3 link states."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Do Q.Thang <dq-thang@jinso.co.jp>
+Tested-by: Do Q.Thang <dq-thang@jinso.co.jp>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/core/hub.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ sound/soc/sh/fsi.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 209815a..c16230b 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3199,16 +3199,6 @@ static int usb_set_device_initiated_lpm(struct usb_device *udev,
+diff --git a/sound/soc/sh/fsi.c b/sound/soc/sh/fsi.c
+index 2ef9853..e96c395 100644
+--- a/sound/soc/sh/fsi.c
++++ b/sound/soc/sh/fsi.c
+@@ -20,6 +20,7 @@
+ #include <linux/sh_dma.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/workqueue.h>
+ #include <sound/soc.h>
+ #include <sound/sh_fsi.h>
  
- 	if (enable) {
- 		/*
--		 * First, let the device know about the exit latencies
--		 * associated with the link state we're about to enable.
--		 */
--		ret = usb_req_set_sel(udev, state);
--		if (ret < 0) {
--			dev_warn(&udev->dev, "Set SEL for device-initiated "
--					"%s failed.\n", usb3_lpm_names[state]);
--			return -EBUSY;
--		}
--		/*
- 		 * Now send the control transfer to enable device-initiated LPM
- 		 * for either U1 or U2.
- 		 */
-@@ -3293,7 +3283,7 @@ static int usb_set_lpm_timeout(struct usb_device *udev,
- static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
- 		enum usb3_link_state state)
+@@ -223,7 +224,7 @@ struct fsi_stream {
+ 	 */
+ 	struct dma_chan		*chan;
+ 	struct sh_dmae_slave	slave; /* see fsi_handler_init() */
+-	struct tasklet_struct	tasklet;
++	struct work_struct	work;
+ 	dma_addr_t		dma;
+ };
+ 
+@@ -1085,9 +1086,9 @@ static void fsi_dma_complete(void *data)
+ 	snd_pcm_period_elapsed(io->substream);
+ }
+ 
+-static void fsi_dma_do_tasklet(unsigned long data)
++static void fsi_dma_do_work(struct work_struct *work)
  {
--	int timeout;
-+	int timeout, ret;
- 	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
- 	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
+-	struct fsi_stream *io = (struct fsi_stream *)data;
++	struct fsi_stream *io = container_of(work, struct fsi_stream, work);
+ 	struct fsi_priv *fsi = fsi_stream_to_priv(io);
+ 	struct dma_chan *chan;
+ 	struct snd_soc_dai *dai;
+@@ -1140,7 +1141,7 @@ static void fsi_dma_do_tasklet(unsigned long data)
+ 	 * FIXME
+ 	 *
+ 	 * In DMAEngine case, codec and FSI cannot be started simultaneously
+-	 * since FSI is using tasklet.
++	 * since FSI is using the scheduler work queue.
+ 	 * Therefore, in capture case, probably FSI FIFO will have got
+ 	 * overflow error in this point.
+ 	 * in that case, DMA cannot start transfer until error was cleared.
+@@ -1164,7 +1165,7 @@ static bool fsi_dma_filter(struct dma_chan *chan, void *param)
  
-@@ -3305,6 +3295,17 @@ static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
- 			(state == USB3_LPM_U2 && u2_mel == 0))
- 		return;
+ static int fsi_dma_transfer(struct fsi_priv *fsi, struct fsi_stream *io)
+ {
+-	tasklet_schedule(&io->tasklet);
++	schedule_work(&io->work);
  
-+	/*
-+	 * First, let the device know about the exit latencies
-+	 * associated with the link state we're about to enable.
-+	 */
-+	ret = usb_req_set_sel(udev, state);
-+	if (ret < 0) {
-+		dev_warn(&udev->dev, "Set SEL for device-initiated %s failed.\n",
-+				usb3_lpm_names[state]);
-+		return;
-+	}
-+
- 	/* We allow the host controller to set the U1/U2 timeout internally
- 	 * first, so that it can change its schedule to account for the
- 	 * additional latency to send data to a device in a lower power
+ 	return 0;
+ }
+@@ -1195,14 +1196,14 @@ static int fsi_dma_probe(struct fsi_priv *fsi, struct fsi_stream *io)
+ 	if (!io->chan)
+ 		return -EIO;
+ 
+-	tasklet_init(&io->tasklet, fsi_dma_do_tasklet, (unsigned long)io);
++	INIT_WORK(&io->work, fsi_dma_do_work);
+ 
+ 	return 0;
+ }
+ 
+ static int fsi_dma_remove(struct fsi_priv *fsi, struct fsi_stream *io)
+ {
+-	tasklet_kill(&io->tasklet);
++	cancel_work_sync(&io->work);
+ 
+ 	fsi_stream_stop(fsi, io);
+ 
 -- 
 1.7.9.5
 
