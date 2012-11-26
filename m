@@ -1,82 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab2KZG7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 01:59:54 -0500
-Received: from plane.gmane.org ([80.91.229.3]:45895 "EHLO plane.gmane.org"
+	id S1754330Ab2KZHJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 02:09:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab2KZG7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 01:59:53 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Woody Wu <narkewoody@gmail.com>
-Subject: The ethernet driver doesn't get probed
-Date: Mon, 26 Nov 2012 06:59:36 +0000 (UTC)
-Message-ID: <slrnkb64p3.2k6.narkewoody@zuhnb712.local.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 59.37.26.98
-User-Agent: slrn/0.9.9p1 (Linux)
+	id S1754228Ab2KZHJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 02:09:38 -0500
+Date: Mon, 26 Nov 2012 12:39:33 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+In-Reply-To: <CAGXu5jL8zCt5ghW4ODPL9+SyC9+mbuw=4JMUngepY5fC8pSikQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1211261237490.6682@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz> <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com> <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
+ <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com> <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz> <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com> <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz>
+ <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com> <alpine.LFD.2.02.1211182211350.5012@wniryva.cad.erqung.pbz> <CAGXu5jJ4ZuviFMQcFocLWfcMreZSt4kCHFNm-PNW+yuy+v+FiQ@mail.gmail.com> <alpine.LFD.2.02.1211191158550.5042@wniryva.cad.erqung.pbz>
+ <CAGXu5jKY90dsnUjLcjC43Djoe53HEAffugtaEfsBphtp7j_A7g@mail.gmail.com> <alpine.LFD.2.02.1211221934220.19768@wniryva.cad.erqung.pbz> <CAGXu5jL8zCt5ghW4ODPL9+SyC9+mbuw=4JMUngepY5fC8pSikQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, List
++-- On Sat, 24 Nov 2012, Kees Cook wrote --+
+| Well, "ever" meaning "if depth is hit, always fail out", yes. This is 
+| intentional. We do not want to attempt module loading if we hit a recursion 
+| limit.
 
-I enabled an ax88796 Ethernet driver in the kernel configuration menu.
-Kernel version is 3.4.19. The arch is ARM and the system type is
-Samsung S3C2410.
+  Ah yes, that's right!
 
-In my debugging, I found the probe function of the driver did not get
-invoked.
-
-This driver is declared as platform_driver
-
-static struct platform_driver axdrv = {
-	.driver	= {
-		.name		= "ax88796",
-		.owner		= THIS_MODULE,
-	},
-	.probe		= ax_probe,
-	.remove		= ax_remove,
-	.suspend	= ax_suspend,
-	.resume		= ax_resume,
-};
-
-module_platform_driver(axdrv);
-
-So, its driver init function actually goes through
-platform_driver_register() and then driver_register(), which eventually
-call driver_attach() trying to attach the driver to the "platform" bus.
-But, on the platform bus, there is no any device that can match the
-ax88796 driver, hence the driver failed in attaching.
-
-I discovered the full list of devices found on the platform bus:
-
-    s3c2410-ohci,
-    s3c2410-lcd,
-    s3c2410-wdt,
-    s3c2410-i2c,
-    s3c24xx-iis,
-    s3c2410-nand,
-    s3c24xx_led,
-    s3c2410-uart,
-
-You see, in the list, there is no a device looks like ax88796. All these
-already existed devices on the platform bus are build-in peripherals on
-the SoC of s3c2410, they are compiled into the code by enabling some
-kernel configuration options.
-
-My question is, in terms of Linux driver technology, how to enable a
-non-PCI and not on-chip device driver? I think the ax_probe function
-must be called somehow, is this thinking right? If yes, I think before
-the driver get initialized, the corresponding device has to appear on
-the bus, but now it seems not.
-
-Thanks in advance.
-
--- 
-woody
-I can't go back to yesterday - because I was a different person then.
-
+Thanks so much! :)
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
