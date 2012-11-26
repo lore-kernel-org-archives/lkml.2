@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab2KZNp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:45:56 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56816 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab2KZNpz (ORCPT
+	id S1754369Ab2KZNqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:46:07 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44618 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab2KZNqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:45:55 -0500
-Date: Mon, 26 Nov 2012 14:45:52 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Axel Lin <axel.lin@ingics.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: as3711: Fix valid min_uV/max_UV checking
- in as3711_bound_check
-In-Reply-To: <1353689452.3260.4.camel@phoenix>
-Message-ID: <Pine.LNX.4.64.1211261445320.11501@axis700.grange>
-References: <1353689452.3260.4.camel@phoenix>
+	Mon, 26 Nov 2012 08:46:05 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:lgJaZGSfHUxhwi17onnDwmT0nOWvvUpACcb6osgec9B
- evwQo4J3oGYMuYv53KuWknkjSJBbfd+nGJC0dj/9PjbORB7Mzn
- NrrYPzgg181czNIkjJofsSam1wTtb60+3soduwiBdyGm4PUlep
- aYaa3+ru11PlJ6WHQDmJEUtwVBL3hKU/+BIvh1V2S0AvOk+VcZ
- Ydpj3JEDyPEb8g7zE2byVtbcqeFvICwLAykLdd6g374mQUnevv
- oCfeWngbBeZYoUtj8BYfbCFRijeR2cetU7A0tE1cvdcu7XwTVK
- 81J4dTHClm6qO6JTfYB+2Pn42lakZWDHyhCcJibXtgvz9jc2fT
- Litb8MYHyW3gQk092c8m6W5KaJU3YNrjTHv2RhGiVweHncRg1o
- wJQGATC+/Xkgg==
+In-Reply-To: <20121126095141.GC9411@opensource.wolfsonmicro.com>
+References: <1353657795-1725-1-git-send-email-thomas.abraham@linaro.org>
+	<1353657795-1725-4-git-send-email-thomas.abraham@linaro.org>
+	<20121124175954.GI4719@opensource.wolfsonmicro.com>
+	<CAJuYYwThsFutYnYg2scmfqUAGxBM2pWmRmoTww+OyZgUuA-7vg@mail.gmail.com>
+	<20121126095141.GC9411@opensource.wolfsonmicro.com>
+Date: Mon, 26 Nov 2012 19:16:04 +0530
+Message-ID: <CAJuYYwTt+1-zU3092GmrK2GHR=5QDGT-diVcm_0pe3=oqhuQdA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] regulator: add device tree support for max8997
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        myungjoo.ham@samsung.com, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, t.figa@samsung.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Nov 2012, Axel Lin wrote:
+On 26 November 2012 15:21, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Nov 24, 2012 at 11:46:51PM +0530, Thomas Abraham wrote:
+>
+>> The max8997 driver is mainlined. I actually meant to say that, this v6
+>> version of dt support patch for max8997, is similar in functionality
+>> to the v5 version of this patch. I did prepare this patch based on
+>> your latest for-next branch.
+>
+> I find it hard to believe that this was generated against for-next, this
+> was where I tried to apply it...
 
-> Below cases are supposed to be valid:
-> 
-> min_uV == max_uV == info->max_uV
-> min_uV == max_uV == rdev->desc->min_uV
-> 
-> Don't return -EINVAL for above cases.
-> 
-> This patch also includes below cleanups:
-> - Use rdev_get_drvdata(rdev) instead of rdev->reg_data.
-> - Remove unnecessary WARN_ON, it looks pointless.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+I tried again to apply this patch on 'for-next' branch of your
+regulator tree (git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git)
 
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+on top of commit 6aa588f43d4a (Merge remote-tracking branches
+'regulator/fix/wm831x', 'regulator/topic/as3711',
+'regulator/topic/da9055', 'regulator/topic/hotplug',
+'regulator/topic/lp8788'.....)
 
-Thanks
-Guennadi
+and this patch applied cleanly. Could you please let me know if there
+is anything I need to be doing differently for this.
 
-> ---
->  drivers/regulator/as3711-regulator.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-> index 81578bf..5e813b9 100644
-> --- a/drivers/regulator/as3711-regulator.c
-> +++ b/drivers/regulator/as3711-regulator.c
-> @@ -69,17 +69,14 @@ static int as3711_list_voltage_dldo(struct regulator_dev *rdev,
->  static int as3711_bound_check(struct regulator_dev *rdev,
->  			      int *min_uV, int *max_uV)
->  {
-> -	struct as3711_regulator_info *info = container_of(rdev->desc,
-> -					struct as3711_regulator_info, desc);
-> -	struct as3711_regulator *reg = rdev->reg_data;
-> -
-> -	WARN_ON(reg->reg_info != info);
-> +	struct as3711_regulator *reg = rdev_get_drvdata(rdev);
-> +	struct as3711_regulator_info *info = reg->reg_info;
->  
->  	dev_dbg(&rdev->dev, "%s(), %d, %d, %d\n", __func__,
->  		*min_uV, rdev->desc->min_uV, info->max_uV);
->  
->  	if (*max_uV < *min_uV ||
-> -	    *min_uV >= info->max_uV || rdev->desc->min_uV >= *max_uV)
-> +	    *min_uV > info->max_uV || rdev->desc->min_uV > *max_uV)
->  		return -EINVAL;
->  
->  	if (rdev->desc->n_voltages == 1)
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Thanks,
+Thomas.
