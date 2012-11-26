@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2KZQkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:40:33 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18494 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab2KZQkb (ORCPT
+	id S1755486Ab2KZQkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:40:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54311 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab2KZQks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 11:40:31 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0Dr-bvbIo-YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=r0ZjosXJyycA:10 a=KKAkSRfTAAAA:8 a=Vt2AcnKqAAAA:8 a=gQGbs8_HAAAA:8 a=L5T9VTwNJepWW_80ed4A:9 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353948027.6276.38.camel@gandalf.local.home>
-Subject: Re: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for
- workqueues and timers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Date: Mon, 26 Nov 2012 11:40:27 -0500
-In-Reply-To: <CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	 <CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 11:40:48 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Rickard Andersson <rickard.andersson@stericsson.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 2/5] cpufreq: star/stop cpufreq timers on cpu hotplug
+Date: Mon, 26 Nov 2012 17:39:53 +0100
+Message-Id: <1353947996-26723-3-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1353947996-26723-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1353947996-26723-1-git-send-email-fabio.baltieri@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-26 at 20:30 +0530, Viresh Kumar wrote:
-> On 6 November 2012 16:08, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > This is V2 Resend of my sched_select_cpu() work. Resend because didn't got much
-> > attention on V2. Including more guys now in cc :)
-> >
-> > In order to save power, it would be useful to schedule work onto non-IDLE cpus
-> > instead of waking up an IDLE one.
-> >
-> > To achieve this, we need scheduler to guide kernel frameworks (like: timers &
-> > workqueues) on which is the most preferred CPU that must be used for these
-> > tasks.
-> >
-> > This patchset is about implementing this concept.
-> >
-> > - The first patch adds sched_select_cpu() routine which returns the preferred
-> >   cpu which is non-idle.
-> > - Second patch removes idle_cpu() calls from timer & hrtimer.
-> > - Third patch is about adapting this change in workqueue framework.
-> > - Fourth patch add migration capability in running timer
-> >
-> > Earlier discussions over v1 can be found here:
-> > http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
-> >
-> > Earlier discussions over this concept were done at last LPC:
-> > http://summit.linuxplumbersconf.org/lpc-2012/meeting/90/lpc2012-sched-timer-workqueue/
-> >
-> > Module created for testing this behavior is present here:
-> > http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
-> 
-> Ping!!
+Add a CPU notifier to start and stop individual core timers on CPU
+hotplug events when running on CPUs with SW coordinated frequency.
 
-This is a really bad time of year to post new patches :-/
-A lot of people are trying to get their own work done by year end and
-then there's holidays and such that are also distractions. Not to
-mention that a new merge window will be opening soon.
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/cpufreq/cpufreq_governor.c | 51 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
 
-That said...
-
-As workqueues are set off by the CPU that queued it, what real benefit
-does this give? A CPU was active when it queued the work and the work
-should be done before it gets back to sleep.
-
-OK, an interrupt happens on an idle CPU and queues some work. That work
-should execute before the CPU gets back to sleep, right? I fail to see
-the benefit of trying to move that work elsewhere. The CPU had to wake
-up to execute the interrupt. It's no longer in a deep sleep (or any
-sleep for that matter).
-
-To me it seems best to avoid waking up an idle CPU in the first place.
-
-I'm still working off a turkey overdose, so maybe I'm missing something
-obvious.
-
--- Steve
-
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index a00f02d..b7c1f89 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -25,9 +25,12 @@
+ #include <linux/tick.h>
+ #include <linux/types.h>
+ #include <linux/workqueue.h>
++#include <linux/cpu.h>
+ 
+ #include "cpufreq_governor.h"
+ 
++static DEFINE_PER_CPU(struct dbs_data *, cpu_cur_dbs);
++
+ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+ {
+ 	u64 idle_time;
+@@ -193,6 +196,46 @@ static inline void dbs_timer_exit(struct cpu_dbs_common_info *cdbs)
+ 	cancel_delayed_work_sync(&cdbs->work);
+ }
+ 
++static int __cpuinit cpu_callback(struct notifier_block *nfb,
++		unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++	struct device *cpu_dev = get_cpu_device(cpu);
++	struct dbs_data *dbs_data = per_cpu(cpu_cur_dbs, cpu);
++	struct cpu_dbs_common_info *cpu_cdbs = dbs_data->get_cpu_cdbs(cpu);
++	unsigned int sampling_rate;
++
++	if (dbs_data->governor == GOV_CONSERVATIVE) {
++		struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
++		sampling_rate = cs_tuners->sampling_rate;
++	} else {
++		struct od_dbs_tuners *od_tuners = dbs_data->tuners;
++		sampling_rate = od_tuners->sampling_rate;
++	}
++
++	if (cpu_dev) {
++		switch (action) {
++		case CPU_ONLINE:
++		case CPU_ONLINE_FROZEN:
++		case CPU_DOWN_FAILED:
++		case CPU_DOWN_FAILED_FROZEN:
++			dbs_timer_init(dbs_data, cpu_cdbs,
++					sampling_rate, cpu);
++			break;
++		case CPU_DOWN_PREPARE:
++		case CPU_DOWN_PREPARE_FROZEN:
++			dbs_timer_exit(cpu_cdbs);
++			break;
++		}
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __refdata ondemand_cpu_notifier = {
++	.notifier_call = cpu_callback,
++};
++
+ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 		struct cpufreq_policy *policy, unsigned int event)
+ {
+@@ -304,7 +347,11 @@ second_time:
+ 				j_cdbs = dbs_data->get_cpu_cdbs(j);
+ 				dbs_timer_init(dbs_data, j_cdbs,
+ 					       *sampling_rate, j);
++
++				per_cpu(cpu_cur_dbs, j) = dbs_data;
+ 			}
++
++			register_hotcpu_notifier(&ondemand_cpu_notifier);
+ 		} else {
+ 			dbs_timer_init(dbs_data, cpu_cdbs, *sampling_rate, cpu);
+ 		}
+@@ -315,11 +362,15 @@ second_time:
+ 			cs_dbs_info->enable = 0;
+ 
+ 		if (dbs_sw_coordinated_cpus(cpu_cdbs)) {
++			unregister_hotcpu_notifier(&ondemand_cpu_notifier);
++
+ 			for_each_cpu(j, policy->cpus) {
+ 				struct cpu_dbs_common_info *j_cdbs;
+ 
+ 				j_cdbs = dbs_data->get_cpu_cdbs(j);
+ 				dbs_timer_exit(j_cdbs);
++
++				per_cpu(cpu_cur_dbs, j) = NULL;
+ 			}
+ 		} else {
+ 			dbs_timer_exit(cpu_cdbs);
+-- 
+1.7.12.1
 
