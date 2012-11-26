@@ -1,135 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2KZLhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 06:37:13 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55705 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab2KZLhK (ORCPT
+	id S1755327Ab2KZLiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:38:10 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:31229 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab2KZLiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 06:37:10 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: linus.walleij@linaro.org, grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2] gpio: stmpe: Add DT support for stmpe gpio
-Date: Mon, 26 Nov 2012 17:06:51 +0530
-Message-Id: <1e773c8f35fed89f6eb6cc44f393fb76ba4ae3e2.1353929710.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 26 Nov 2012 11:36:59.0418 (UTC) FILETIME=[589DC7A0:01CDCBCA]
-X-MC-Unique: 112112611370108601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 26 Nov 2012 06:38:08 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-03-50b3549df64d
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1353929860.26584.63.camel@kjgkr>
+Subject: Re: [RESEND] Request f2fs filesystem inclusion in linux-next
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Date: Mon, 26 Nov 2012 20:37:40 +0900
+In-reply-to: <20121126101839.cdea3cebc6534722072e3fd0@canb.auug.org.au>
+References: <1353734925.26584.43.camel@kjgkr>
+ <20121126101839.cdea3cebc6534722072e3fd0@canb.auug.org.au>
+Organization: samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zI915IZsDDF6s57bYs/cki8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4e+UeU8EpmYr9axazNzDuEe5i5OSQEDCRWP//DzuE
+	LSZx4d56ti5GLg4hgWWMEv+n9jB1MXKAFV3/pgYRn84o8W/DNxaQBl4BQYkfk++B2cwC6hKT
+	5i1ihrBFJBbN6WaFsLUlli18zQzR/JpR4uiJZVDNuhIfXk0As4UFXCV2PtnNBrKMDahh834D
+	kLCQgKLE2/13WUHCIkDhA78FQMYwCzxklJhz8wTY0SwCqhJP2rrZQGxOAXeJ0w8PMkL0Zkms
+	WLobbDy/gKjEydZPjBBPKknsbu+E6hWQ+Db5EAvEj7ISmw6AnSkhsI5d4u7ap8wQ9ZISB1fc
+	YJnAKDkLycuzkLw8C8nLs5C8vICRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGSOxJ72Bc
+	1WBxiFGAg1GJh1fy2KYAIdbEsuLK3EOMEhzMSiK8Z703BwjxpiRWVqUW5ccXleakFh9i9AG6
+	fCKzlGhyPjAt5JXEGxobm5iZmJqYW5qam+IQVhLnbfZICRASSE8sSc1OTS1ILYIZx8TBKdXA
+	KPyv53BkgpWOpLfoj1nBKpwrUoMr2yrYTDyfPXoZuuHc2sy963bUKc3h1DWpTnjreXqmtt5q
+	nr2B/9MXen2zdfjyQLH56Auby2dOKk6vOHF4hteE7+yTpv08/EKE12hNZ82nuCsHT008YqQm
+	vWlyOrt1gWR05el7qXNv9n67ckW9w9Py/BfBQ0osxRmJhlrMRcWJAPofZEDqAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t9jQd25IZsDDF71mVvs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmXLq+nqngkEzF
+	w9eL2BoYtwh3MXJwSAiYSFz/ptbFyAlkiklcuLeerYuRi0NIYDqjxL8N31hAErwCghI/Jt9j
+	AalnFpCXOHIpGyTMLKAuMWneImaI+teMEkdPLIOq15X48GoCmC0s4Cqx88luNpBeNgFtic37
+	DUDCQgKKEm/332UFCYsAhQ/8FgAZwyzwkFFizs0T7CA1LAKqEk/autlAbE4Bd4nTDw8yQvRm
+	SaxYuhtsPL+AqMTJ1k+MEPcrSexu72SfwCg0C8nVsxCunoXk6gWMzKsYRVMLkguKk9JzjfSK
+	E3OLS/PS9ZLzczcxgqP0mfQOxlUNFocYBTgYlXh4JY9tChBiTSwrrsw9xCjBwawkwnvWe3OA
+	EG9KYmVValF+fFFpTmrxIUYfoMMnMkuJJucDE0heSbyhsYmZkaWRmYWRibk5DmElcd5mj5QA
+	IYH0xJLU7NTUgtQimHFMHJxSDYxNJyad3/lv3rT2+EZV9ZvP5UzjM7N+OVr07nU2Cc2c4Daj
+	qO5s6LJXsasTVop5XpptdmVDn23AjYkhUv/yVO8/lAnatdTIvNnRYqKGRc017QObrePEbN41
+	6CbEHY55M7Fhpp3n7iOzq7e2JuWosv60yfbc0tvMe+rskYXPr/gf3Nj5/eriHWeVWIozEg21
+	mIuKEwEZN3CN/wIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qAQBbHFX023763
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+Hi,
 
-This patch allows the STMPE GPIO driver to be successfully probed and
-initialised when Device Tree support is enabled. Bindings are mentioned in
-Documentation too.
+2012-11-26 (월), 10:18 +1100, Stephen Rothwell:
+> Hi,
+> 
+> On Sat, 24 Nov 2012 14:28:45 +0900 Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+> >
+> > About two month ago, I submitted a new file system, namely
+> > flash-friendly file system (f2fs) to LKML.
+> >  http://en.wikipedia.org/wiki/F2FS
+> >  http://lkml.org/lkml/2012/10/5/205
+> >  http://lwn.net/Articles/518718/
+> > 
+> > In the mean time, many folks have pointed out several essential issues
+> > on f2fs, and now I think most of them have been resolved moderately.
+> > 
+> > So, I'd like to request a new branch being included in linux-next for
+> > the purpose of merging into the next mainline kernel.
+> 
+> I have no problem adding this to linux-next (and noone has screamed aver
+> the past few days, so that is a good sign) except that the branch you
+> have submitted is actually based on linux-next itself.  You cannot base
+> anything on linux-next as it rebases every day.  You need to base your
+> tree in Linus' tree (or some other *stable* tree).
+> 
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V1->V2:
-- Fixed norequest-mask as st,norequest-mask in Binding Documentation
-- Added Acked-by from Lee Jones
+I've done making a correct tree.
+Could you please merge the following f2fs patches?
 
- Documentation/devicetree/bindings/gpio/gpio-stmpe.txt | 18 ++++++++++++++++++
- drivers/gpio/gpio-stmpe.c                             | 10 ++++++++--
- drivers/mfd/stmpe.c                                   |  2 ++
- 3 files changed, 28 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
+1. tree
+git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
-new file mode 100644
-index 0000000..a0e4cf8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-stmpe.txt
-@@ -0,0 +1,18 @@
-+STMPE gpio
-+----------
-+
-+Required properties:
-+ - compatible: "st,stmpe-gpio"
-+
-+Optional properties:
-+ - st,norequest-mask: bitmask specifying which GPIOs should _not_ be requestable
-+   due to different usage (e.g. touch, keypad)
-+
-+Node name must be stmpe_gpio and should be child node of stmpe node to which it
-+belongs.
-+
-+Example:
-+	stmpe_gpio {
-+		compatible = "st,stmpe-gpio";
-+		st,norequest-mask = <0x20>;	//gpio 5 can't be used
-+	};
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index dce3472..522c90e 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -12,6 +12,7 @@
- #include <linux/gpio.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/of.h>
- #include <linux/mfd/stmpe.h>
- 
- /*
-@@ -304,6 +305,7 @@ static void stmpe_gpio_irq_remove(struct stmpe_gpio *stmpe_gpio)
- static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- {
- 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
-+	struct device_node *np = pdev->dev.of_node;
- 	struct stmpe_gpio_platform_data *pdata;
- 	struct stmpe_gpio *stmpe_gpio;
- 	int ret;
-@@ -321,13 +323,17 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 
- 	stmpe_gpio->dev = &pdev->dev;
- 	stmpe_gpio->stmpe = stmpe;
--	stmpe_gpio->norequest_mask = pdata ? pdata->norequest_mask : 0;
--
- 	stmpe_gpio->chip = template_chip;
- 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
- 	stmpe_gpio->chip.dev = &pdev->dev;
- 	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
- 
-+	if (pdata)
-+		stmpe_gpio->norequest_mask = pdata->norequest_mask;
-+	else if (np)
-+		of_property_read_u32(np, "st,norequest-mask",
-+				&stmpe_gpio->norequest_mask);
-+
- 	if (irq >= 0)
- 		stmpe_gpio->irq_base = stmpe->irq_base + STMPE_INT_GPIO(0);
- 	else
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 0d5f7b7..8b164f3 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -295,12 +295,14 @@ static struct resource stmpe_gpio_resources[] = {
- 
- static struct mfd_cell stmpe_gpio_cell = {
- 	.name		= "stmpe-gpio",
-+	.of_compatible	= "st,stmpe-gpio",
- 	.resources	= stmpe_gpio_resources,
- 	.num_resources	= ARRAY_SIZE(stmpe_gpio_resources),
- };
- 
- static struct mfd_cell stmpe_gpio_cell_noirq = {
- 	.name		= "stmpe-gpio",
-+	.of_compatible	= "st,stmpe-gpio",
- 	/* gpio cell resources consist of an irq only so no resources here */
- };
- 
+2. branch
+dev
+
+3. Contact
+Jaegeuk Kim <jaegeuk.kim@samsung.com>
+
+4. Short log
+
+Greg Kroah-Hartman (1):
+  f2fs: move proc files to debugfs
+
+Jaegeuk Kim (16):
+  f2fs: add document
+  f2fs: add on-disk layout
+  f2fs: add superblock and major in-memory structure
+  f2fs: add super block operations
+  f2fs: add checkpoint operations
+  f2fs: add node operations
+  f2fs: add segment operations
+  f2fs: add file operations
+  f2fs: add address space operations for data
+  f2fs: add core inode operations
+  f2fs: add inode operations for special inodes
+  f2fs: add core directory operations
+  f2fs: add xattr and acl functionalities
+  f2fs: add garbage collection functions
+  f2fs: add recovery routines for roll-forward
+  f2fs: update Kconfig and Makefile
+
+ Documentation/filesystems/00-INDEX |    2 + 
+ Documentation/filesystems/f2fs.txt |  417 +++++++++
+ fs/Kconfig                         |    1 + 
+ fs/Makefile                        |    1 + 
+ fs/f2fs/Kconfig                    |   52 ++
+ fs/f2fs/Makefile                   |    7 + 
+ fs/f2fs/acl.c                      |  465 ++++++++++
+ fs/f2fs/acl.h                      |   57 ++
+ fs/f2fs/checkpoint.c               |  792 ++++++++++++++++
+ fs/f2fs/data.c                     |  701 ++++++++++++++
+ fs/f2fs/debug.c                    |  361 ++++++++
+ fs/f2fs/dir.c                      |  672 ++++++++++++++
+ fs/f2fs/f2fs.h                     | 1062 +++++++++++++++++++++
+ fs/f2fs/file.c                     |  637 +++++++++++++
+ fs/f2fs/gc.c                       |  742 +++++++++++++++
+ fs/f2fs/gc.h                       |  117 +++
+ fs/f2fs/hash.c                     |   98 ++
+ fs/f2fs/inode.c                    |  266 ++++++
+ fs/f2fs/namei.c                    |  504 ++++++++++
+ fs/f2fs/node.c                     | 1763
++++++++++++++++++++++++++++++++++++
+ fs/f2fs/node.h                     |  353 +++++++
+ fs/f2fs/recovery.c                 |  375 ++++++++
+ fs/f2fs/segment.c                  | 1798
+++++++++++++++++++++++++++++++++++++
+ fs/f2fs/segment.h                  |  615 ++++++++++++
+ fs/f2fs/super.c                    |  656 +++++++++++++
+ fs/f2fs/xattr.c                    |  389 ++++++++
+ fs/f2fs/xattr.h                    |  145 +++
+ include/linux/f2fs_fs.h            |  410 ++++++++
+ include/uapi/linux/magic.h         |    1 +
+ 29 files changed, 13459 insertions(+)
+
+
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+Jaegeuk Kim
+Samsung
 
