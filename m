@@ -1,44 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab2KZRin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:38:43 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:52922 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab2KZRij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:38:39 -0500
-Date: Mon, 26 Nov 2012 09:37:28 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't
- free skb immediately after sent
-Message-ID: <20121126093728.0a10f97f@nehalam.linuxnetplumber.net>
-In-Reply-To: <1353916612-6357-1-git-send-email-jasowang@redhat.com>
-References: <1353916612-6357-1-git-send-email-jasowang@redhat.com>
-Organization: Vyatta
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755000Ab2KZRjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:39:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47883 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2KZRLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 12:11:22 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 183/270] cfg80211/mac80211: avoid state mishmash on deauth
+Date: Mon, 26 Nov 2012 14:57:53 -0200
+Message-Id: <1353949160-26803-184-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Nov 2012 15:56:52 +0800
-Jason Wang <jasowang@redhat.com> wrote:
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-> Some deivces do not free the old tx skbs immediately after it has been sent
-> (usually in tx interrupt). One such example is virtio-net which optimizes for
-> virt and only free the possible old tx skbs during the next packet sending. This
-> would lead the pktgen to wait forever in the refcount of the skb if no other
-> pakcet will be sent afterwards.
-> 
-> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY which could
-> notify the pktgen that the device does not free skb immediately after it has
-> been sent and let it not to wait for the refcount to be one.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+------------------
 
-Another alternative would be using skb_orphan() and skb->destructor.
-There are other cases where skb's are not freed right away.
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+
+commit 6863255bd0e48bc41ae5a066d5c771801e92735a upstream.
+
+Avoid situation when we are on associate state in mac80211 and
+on disassociate state in cfg80211. This can results on crash
+during modules unload (like showed on this thread:
+http://marc.info/?t=134373976300001&r=1&w=2) and possibly other
+problems.
+
+Reported-by: Pedro Francisco <pedrogfrancisco@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[herton: use the patch for 3.6 stable]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ include/net/cfg80211.h |    1 +
+ net/mac80211/mlme.c    |    5 +++--
+ net/wireless/mlme.c    |   12 +++---------
+ 3 files changed, 7 insertions(+), 11 deletions(-)
+
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 0289d4c..e225dcc 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -1130,6 +1130,7 @@ struct cfg80211_deauth_request {
+ 	const u8 *ie;
+ 	size_t ie_len;
+ 	u16 reason_code;
++	bool local_state_change;
+ };
+ 
+ /**
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 92028de..6d79367 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3467,6 +3467,7 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
+ {
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+ 	u8 frame_buf[DEAUTH_DISASSOC_LEN];
++	bool tx = !req->local_state_change;
+ 
+ 	mutex_lock(&ifmgd->mtx);
+ 
+@@ -3483,11 +3484,11 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
+ 	if (ifmgd->associated &&
+ 	    ether_addr_equal(ifmgd->associated->bssid, req->bssid))
+ 		ieee80211_set_disassoc(sdata, IEEE80211_STYPE_DEAUTH,
+-				       req->reason_code, true, frame_buf);
++				       req->reason_code, tx, frame_buf);
+ 	else
+ 		ieee80211_send_deauth_disassoc(sdata, req->bssid,
+ 					       IEEE80211_STYPE_DEAUTH,
+-					       req->reason_code, true,
++					       req->reason_code, tx,
+ 					       frame_buf);
+ 	mutex_unlock(&ifmgd->mtx);
+ 
+diff --git a/net/wireless/mlme.c b/net/wireless/mlme.c
+index eb90988..b6626d9 100644
+--- a/net/wireless/mlme.c
++++ b/net/wireless/mlme.c
+@@ -441,20 +441,14 @@ int __cfg80211_mlme_deauth(struct cfg80211_registered_device *rdev,
+ 		.reason_code = reason,
+ 		.ie = ie,
+ 		.ie_len = ie_len,
++		.local_state_change = local_state_change,
+ 	};
+ 
+ 	ASSERT_WDEV_LOCK(wdev);
+ 
+-	if (local_state_change) {
+-		if (wdev->current_bss &&
+-		    ether_addr_equal(wdev->current_bss->pub.bssid, bssid)) {
+-			cfg80211_unhold_bss(wdev->current_bss);
+-			cfg80211_put_bss(&wdev->current_bss->pub);
+-			wdev->current_bss = NULL;
+-		}
+-
++	if (local_state_change && (!wdev->current_bss ||
++	    !ether_addr_equal(wdev->current_bss->pub.bssid, bssid)))
+ 		return 0;
+-	}
+ 
+ 	return rdev->ops->deauth(&rdev->wiphy, dev, &req);
+ }
+-- 
+1.7.9.5
+
