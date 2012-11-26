@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab2KZUhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 15:37:34 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45885 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756408Ab2KZUha (ORCPT
+	id S1756626Ab2KZUil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 15:38:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53771 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab2KZUik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 15:37:30 -0500
-Subject: [PATCH 5/5] Add an ioctl to communicate the consign limit to the
- host.
-To: linux-kernel@vger.kernel.org
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
-Cc: riel@redhat.com, kvm@vger.kernel.org, peterz@infradead.org,
-        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
-Date: Mon, 26 Nov 2012 14:37:17 -0600
-Message-ID: <20121126203717.28840.77239.stgit@lambeau>
-In-Reply-To: <20121126203603.28840.38736.stgit@lambeau>
-References: <20121126203603.28840.38736.stgit@lambeau>
-User-Agent: StGit/0.16
+	Mon, 26 Nov 2012 15:38:40 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bill Pemberton <wfp5p@virginia.edu>
+Subject: new warnings from partial __devexit removal
+Date: Mon, 26 Nov 2012 20:38:32 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112620-5564-0000-0000-00000584AB87
+Message-Id: <201211262038.32276.arnd@arndb.de>
+X-Provags-ID: V02:K0:/XwJ/YUP+2XlDCOBVjDNrcgquuO2CDbwmq/s9mM/AIH
+ IgbYGh2nu4T/w5ZXKzHnJMWTpLIY1IVy5Qwejac4ZyClz55ArF
+ 2oXlEsyYuQrqfYpdm9pkPbe0q8wKMkJglk5/gtYESrO+d4Du97
+ 3ws4jy7FbIuWY1Qy8GdATKOy/4YBeX+Orgqg6Je+ijeXSggY72
+ SeUj8luOcxQa2UAHCP8vq7H4ZZ5QDljUS3iUOf9yosnhYNsM9t
+ zxwTwfEsIiIOnzVZoGksxWNqoT1BeScDwsDj0P5iLTHHtWefnZ
+ bgliIZHPuyXJEWAMOgyKKiE3XBBOcCWLs7o5uWsjeMl0tSEb2F
+ vo85EZ0+y9LRvsFxa2Vo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an ioctl to communicate the consign limit to the host.
+This is probably known and fixed already, but in case it's not, let me just
+mention that I saw two new warnings with ARM allyesconfig about a
+__devexit being removed but the __devexit_p() still being there:
 
-Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
----
- arch/x86/kvm/x86.c       |    6 ++++++
- include/linux/kvm_host.h |    2 ++
- include/uapi/linux/kvm.h |    2 ++
- virt/kvm/kvm_main.c      |    7 +++++++
- 4 files changed, 17 insertions(+)
+drivers/tty/serial/xilinx_uartps.c:1000:12: error: 'xuartps_remove' defined but not used [-Werror=unused-function]
+drivers/usb/gadget/mv_udc_core.c:2131:12: error: 'mv_udc_remove' defined but not used [-Werror=unused-function]
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c91f4c9..5d57469 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5938,6 +5938,12 @@ int kvm_arch_vcpu_ioctl_translate(struct kvm_vcpu *vcpu,
- 	return 0;
- }
- 
-+int kvm_arch_vcpu_ioctl_set_entitlement(struct kvm_vcpu *vcpu, long entitlement)
-+{
-+	vcpu->arch.consigned_limit = entitlement;
-+	return 0;
-+}
-+
- int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- {
- 	struct i387_fxsave_struct *fxsave =
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 0e2212f..de13648 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -590,6 +590,8 @@ void kvm_arch_hardware_unsetup(void);
- void kvm_arch_check_processor_compat(void *rtn);
- int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu);
- int kvm_arch_vcpu_should_kick(struct kvm_vcpu *vcpu);
-+int kvm_arch_vcpu_ioctl_set_entitlement(struct kvm_vcpu *vcpu,
-+					long entitlement);
- 
- void kvm_free_physmem(struct kvm *kvm);
- 
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index 0a6d6ba..86f24bb 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -921,6 +921,8 @@ struct kvm_s390_ucas_mapping {
- #define KVM_SET_ONE_REG		  _IOW(KVMIO,  0xac, struct kvm_one_reg)
- /* VM is being stopped by host */
- #define KVM_KVMCLOCK_CTRL	  _IO(KVMIO,   0xad)
-+/* Set the consignment limit which will be used to separete steal time */
-+#define KVM_SET_ENTITLEMENT	  _IOW(KVMIO, 0xae, unsigned long)
- 
- #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
- #define KVM_DEV_ASSIGN_PCI_2_3		(1 << 1)
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index be70035..c712fe5 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -2062,6 +2062,13 @@ out_free2:
- 		r = 0;
- 		break;
- 	}
-+	case KVM_SET_ENTITLEMENT: {
-+		r = kvm_arch_vcpu_ioctl_set_entitlement(vcpu, arg);
-+		if (r)
-+			goto out;
-+		r = 0;
-+		break;
-+	}
- 	default:
- 		r = kvm_arch_vcpu_ioctl(filp, ioctl, arg);
- 	}
+Both patches were merged by Greg on Nov 19. I assume that there are a
+few more, but I have not checked. These were the only ones that
+caused warnings for me.
 
+	Arnd
