@@ -1,186 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2KZMUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:20:24 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:2052 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab2KZMUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:20:04 -0500
-Subject: [PATCH 5/5] nfsd: call state init and shutdown twice
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 26 Nov 2012 15:22:18 +0300
-Message-ID: <20121126122218.955.65863.stgit@localhost.localdomain>
-In-Reply-To: <20121126121907.955.25349.stgit@localhost.localdomain>
-References: <20121126121907.955.25349.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1755233Ab2KZMXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:23:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54440 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab2KZMXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 07:23:18 -0500
+Message-ID: <50B35F0E.1090905@gmail.com>
+Date: Mon, 26 Nov 2012 20:22:38 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split NFSv4 state init and shutdown into two different calls: per-net one and
-generic one.
-Per-net cwinit/shutdown pair have to be called for any namespace, generic pair
-- only once on NSFd kthreads start and shutdown respectively.
+On 2012-11-23 18:44, Tang Chen wrote:
+> This patch make sure bootmem will not allocate memory from areas that
+> may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+> Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+> ---
+>  include/linux/memblock.h |    1 +
+>  mm/memblock.c            |   15 ++++++++++++++-
+>  2 files changed, 15 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index d452ee1..6e25597 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -42,6 +42,7 @@ struct memblock {
+>  
+>  extern struct memblock memblock;
+>  extern int memblock_debug;
+> +extern struct movablecore_map movablecore_map;
+>  
+>  #define memblock_dbg(fmt, ...) \
+>  	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 6259055..33b3b4d 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -101,6 +101,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  {
+>  	phys_addr_t this_start, this_end, cand;
+>  	u64 i;
+> +	int curr = movablecore_map.nr_map - 1;
+>  
+>  	/* pump up @end */
+>  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+> @@ -114,13 +115,25 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  		this_start = clamp(this_start, start, end);
+>  		this_end = clamp(this_end, start, end);
+>  
+> -		if (this_end < size)
+> +restart:
+> +		if (this_end <= this_start || this_end < size)
+>  			continue;
+>  
+> +		for (; curr >= 0; curr--) {
+> +			if (movablecore_map.map[curr].start < this_end)
 
-Refresh of diff-nfsd-call-state-init-twice
----
- fs/nfsd/nfs4state.c |   30 ++++++++++++------------------
- fs/nfsd/nfsd.h      |    4 ++++
- fs/nfsd/nfssvc.c    |   15 +++++++++++++--
- 3 files changed, 29 insertions(+), 20 deletions(-)
+movablecore_map[curr].start should be movablecore_map[curr].start << PAGE_SHIFT.
+May be you can change movablecore_map[].start/end to movablecore_map[].start_pfn/end_pfn
+to avoid confusion.
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 72df721..93c7882 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4857,12 +4857,22 @@ nfs4_state_destroy_net(struct net *net)
- 	put_net(net);
- }
- 
--static int
-+int
- nfs4_state_start_net(struct net *net)
- {
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 	int ret;
- 
-+	/*
-+	 * FIXME: For now, we hang most of the pernet global stuff off of
-+	 * init_net until nfsd is fully containerized. Eventually, we'll
-+	 * need to pass a net pointer into this function, take a reference
-+	 * to that instead and then do most of the rest of this on a per-net
-+	 * basis.
-+	 */
-+	if (net != &init_net)
-+		return -EINVAL;
-+
- 	ret = nfs4_state_create_net(net);
- 	if (ret)
- 		return ret;
-@@ -4897,21 +4907,8 @@ nfs4_state_start(void)
- 
- 	set_max_delegations();
- 
--	/*
--	 * FIXME: For now, we hang most of the pernet global stuff off of
--	 * init_net until nfsd is fully containerized. Eventually, we'll
--	 * need to pass a net pointer into this function, take a reference
--	 * to that instead and then do most of the rest of this on a per-net
--	 * basis.
--	 */
--	ret = nfs4_state_start_net(&init_net);
--	if (ret)
--		goto out_free_callback;
--
- 	return 0;
- 
--out_free_callback:
--	nfsd4_destroy_callback_queue();
- out_free_laundry:
- 	destroy_workqueue(laundry_wq);
- out_recovery:
-@@ -4919,7 +4916,7 @@ out_recovery:
- }
- 
- /* should be called with the state lock held */
--static void
-+void
- nfs4_state_shutdown_net(struct net *net)
- {
- 	struct nfs4_delegation *dp = NULL;
-@@ -4950,9 +4947,6 @@ nfs4_state_shutdown_net(struct net *net)
- void
- nfs4_state_shutdown(void)
- {
--	struct net *net = &init_net;
--
--	nfs4_state_shutdown_net(net);
- 	destroy_workqueue(laundry_wq);
- 	nfsd4_destroy_callback_queue();
- }
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index 80d5ce4..d7b210b 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -121,7 +121,9 @@ void nfs4_state_init(void);
- int nfsd4_init_slabs(void);
- void nfsd4_free_slabs(void);
- int nfs4_state_start(void);
-+int nfs4_state_start_net(struct net *net);
- void nfs4_state_shutdown(void);
-+void nfs4_state_shutdown_net(struct net *net);
- void nfs4_reset_lease(time_t leasetime);
- int nfs4_reset_recoverydir(char *recdir);
- char * nfs4_recoverydir(void);
-@@ -130,7 +132,9 @@ static inline void nfs4_state_init(void) { }
- static inline int nfsd4_init_slabs(void) { return 0; }
- static inline void nfsd4_free_slabs(void) { }
- static inline int nfs4_state_start(void) { return 0; }
-+static inline int nfs4_state_start_net(struct net *net) { return 0; }
- static inline void nfs4_state_shutdown(void) { }
-+static inline void nfs4_state_shutdown_net(struct net *net) { }
- static inline void nfs4_reset_lease(time_t leasetime) { }
- static inline int nfs4_reset_recoverydir(char *recdir) { return 0; }
- static inline char * nfs4_recoverydir(void) {return NULL; }
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 2013aa0..6dffa74 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -207,6 +207,7 @@ static bool nfsd_up = false;
- static int nfsd_startup(int nrservs)
- {
- 	int ret;
-+	struct net *net = &init_net;
- 
- 	if (nfsd_up)
- 		return 0;
-@@ -221,14 +222,21 @@ static int nfsd_startup(int nrservs)
- 	ret = nfsd_init_socks();
- 	if (ret)
- 		goto out_racache;
--	ret = lockd_up(&init_net);
-+	ret = lockd_up(net);
- 	if (ret)
- 		goto out_racache;
- 	ret = nfs4_state_start();
- 	if (ret)
- 		goto out_lockd;
-+
-+	ret = nfs4_state_start_net(net);
-+	if (ret)
-+		goto out_net_state;
-+
- 	nfsd_up = true;
- 	return 0;
-+out_net_state:
-+	nfs4_state_shutdown();
- out_lockd:
- 	lockd_down(&init_net);
- out_racache:
-@@ -238,6 +246,8 @@ out_racache:
- 
- static void nfsd_shutdown(void)
- {
-+	struct net *net = &init_net;
-+
- 	/*
- 	 * write_ports can create the server without actually starting
- 	 * any threads--if we get shut down before any threads are
-@@ -246,8 +256,9 @@ static void nfsd_shutdown(void)
- 	 */
- 	if (!nfsd_up)
- 		return;
-+	nfs4_state_shutdown_net(net);
- 	nfs4_state_shutdown();
--	lockd_down(&init_net);
-+	lockd_down(net);
- 	nfsd_racache_shutdown();
- 	nfsd_up = false;
- }
+> +				break;
+> +		}
+> +
+>  		cand = round_down(this_end - size, align);
+> +		if (curr >= 0 && cand < movablecore_map.map[curr].end) {
+> +			this_end = movablecore_map.map[curr].start;
+
+Ditto.
+
+> +			goto restart;
+> +		}
+> +
+>  		if (cand >= this_start)
+>  			return cand;
+>  	}
+> +
+>  	return 0;
+>  }
+>  
+> 
 
