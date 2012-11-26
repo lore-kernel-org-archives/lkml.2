@@ -1,152 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab2KZOHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 09:07:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab2KZOHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 09:07:04 -0500
-Date: Mon, 26 Nov 2012 15:06:45 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, riel@redhat.com
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-Message-ID: <20121126140644.GA10731@turtle.usersys.redhat.com>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120804.2595.20280.sendpatchset@codeblue>
- <20121126134301.GB9830@turtle.usersys.redhat.com>
+	id S1753903Ab2KZOJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 09:09:42 -0500
+Received: from softlayer.compulab.co.il ([50.23.254.55]:58605 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752832Ab2KZOJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 09:09:41 -0500
+Message-ID: <50B3781E.3040205@compulab.co.il>
+Date: Mon, 26 Nov 2012 16:09:34 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.7) Gecko/20121022 Thunderbird/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126134301.GB9830@turtle.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alessio Igor Bogani <alessio.bogani@elettra.trieste.it>
+CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: Conditionally compile counter_32k
+References: <1353922083-1094-1-git-send-email-alessio.bogani@elettra.trieste.it> <50B35A4D.8080501@compulab.co.il> <50B36B81.4010709@elettra.trieste.it>
+In-Reply-To: <50B36B81.4010709@elettra.trieste.it>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 02:43:02PM +0100, Andrew Jones wrote:
-> On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
-> > From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> > 
-> > yield_to returns -ESRCH, When source and target of yield_to
-> > run queue length is one. When we see three successive failures of
-> > yield_to we assume we are in potential undercommit case and abort
-> > from PLE handler.
-> > The assumption is backed by low probability of wrong decision
-> > for even worst case scenarios such as average runqueue length
-> > between 1 and 2.
-> > 
-> > note that we do not update last boosted vcpu in failure cases.
-> > Thank Avi for raising question on aborting after first fail from yield_to.
-> > 
-> > Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> > ---
-> >  virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
-> >  1 file changed, 16 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > index be70035..053f494 100644
-> > --- a/virt/kvm/kvm_main.c
-> > +++ b/virt/kvm/kvm_main.c
-> > @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
-> >  {
-> >  	struct pid *pid;
-> >  	struct task_struct *task = NULL;
-> > +	bool ret = false;
-> >  
-> >  	rcu_read_lock();
-> >  	pid = rcu_dereference(target->pid);
-> > @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
-> >  		task = get_pid_task(target->pid, PIDTYPE_PID);
-> >  	rcu_read_unlock();
-> >  	if (!task)
-> > -		return false;
-> > +		return ret;
-> >  	if (task->flags & PF_VCPU) {
-> >  		put_task_struct(task);
-> > -		return false;
-> > -	}
-> > -	if (yield_to(task, 1)) {
-> > -		put_task_struct(task);
-> > -		return true;
-> > +		return ret;
-> >  	}
-> > +	ret = yield_to(task, 1);
-> >  	put_task_struct(task);
-> > -	return false;
-> > +
-> > +	return ret;
-> >  }
-> >  EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
-> >  
-> > @@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
-> >  	return eligible;
-> >  }
-> >  #endif
-> > +
-> >  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-> >  {
-> >  	struct kvm *kvm = me->kvm;
-> >  	struct kvm_vcpu *vcpu;
-> >  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
-> >  	int yielded = 0;
-> > +	int try = 3;
-> >  	int pass;
-> >  	int i;
-> >  
-> > @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-> >  	 * VCPU is holding the lock that we need and will release it.
-> >  	 * We approximate round-robin by starting at the last boosted VCPU.
-> >  	 */
-> > -	for (pass = 0; pass < 2 && !yielded; pass++) {
-> > +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
-> >  		kvm_for_each_vcpu(i, vcpu, kvm) {
-> >  			if (!pass && i <= last_boosted_vcpu) {
-> >  				i = last_boosted_vcpu;
-> > @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-> >  				continue;
-> >  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
-> >  				continue;
-> > -			if (kvm_vcpu_yield_to(vcpu)) {
-> > +
-> > +			yielded = kvm_vcpu_yield_to(vcpu);
-> > +			if (yielded > 0) {
-> >  				kvm->last_boosted_vcpu = i;
-> > -				yielded = 1;
-> >  				break;
-> > +			} else if (yielded < 0) {
-> > +				try--;
-> > +				if (!try)
-> > +					break;
-> >  			}
-> >  		}
-> >  	}
-> > 
+On 11/26/12 15:15, Alessio Igor Bogani wrote:
+> Hi Igor,
 > 
-> The check done in patch 1/2 is done before the double_rq_lock, so it's
-> cheap. Now, this patch is to avoid doing too many get_pid_task calls. I
-> wonder if it would make more sense to change the vcpu state from tracking
-> the pid to tracking the task. If that was done, then I don't believe this
-> patch is necessary.
+> On 26/11/2012 13:02, Igor Grinberg wrote:
+>> On 11/26/12 11:28, Alessio Igor Bogani wrote:
+> [...]
+>>>   # Common support
+>>> -obj-y := sram.o dma.o fb.o counter_32k.o
+>>> +obj-y := sram.o dma.o fb.o
+>>>   obj-m :=
+>>>   obj-n :=
+>>>   obj-  :=
+>>>
+>>> +obj-$(CONFIG_OMAP_32K_TIMER) += counter_32k.o
+>>
+>> We are moving away from this config option in favor of runtime detection,
 > 
-> Rik,
-> for 34bb10b79de7 was there a reason pid was used instead of task?
+> Well, I'll be happy when it'll happen.
+> 
+>> Why do you need this?
+> 
+> Because until now the build system doesn't honour the config file. Indeed it builds that source code file also when I set CONFIG_OMAP_32K_TIMER to n.
+> 
+> The runtime detection isn't a good excuse for doesn't make the build system working like users expect.
 
-Nevermind, I guess there's no way to validate the task pointer without
-checking the pid, since, as your git commit says, there are no guarantee
-that the same task always keeps the same vcpu. We'd only know it's valid
-if it's running, and if it's running, it's of no interest.
+So, the problem is the users expectations...
+If you look, at Tony's omap-for-v3.8/timer branch,
+patch: ARM: OMAP2+: timer: remove CONFIG_OMAP_32K_TIMER
+it should change the expectations (at least I tried to do this in Kconfig file).
 
-> 
-> Drew
+So, to the question of honoring the config option - yes,
+but it is a work in progress on removing that one.
+
+If you have a real issue that you are trying to fix - it is totally different thing,
+but if it is just config option honoring... then I don't think we should merge this patch.
+
+-- 
+Regards,
+Igor.
