@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab2KZSE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:04:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47404 "EHLO
+	id S932768Ab2KZSEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:04:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47396 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932510Ab2KZREw (ORCPT
+	with ESMTP id S932412Ab2KZREp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:04:52 -0500
+	Mon, 26 Nov 2012 12:04:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 082/270] libceph: set CLOSED state bit in con_init
-Date: Mon, 26 Nov 2012 14:56:12 -0200
-Message-Id: <1353949160-26803-83-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 080/270] libceph: start tracking connection socket state
+Date: Mon, 26 Nov 2012 14:56:10 -0200
+Message-Id: <1353949160-26803-81-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,84 +28,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit a5988c490ef66cb04ea2f610681949b25c773b3c upstream.
+commit ce2c8903e76e690846a00a0284e4bd9ee954d680 upstream.
 
-Once a connection is fully initialized, it is really in a CLOSED
-state, so make that explicit by setting the bit in its state field.
+Start explicitly keeping track of the state of a ceph connection's
+socket, separate from the state of the connection itself.  Create
+placeholder functions to encapsulate the state transitions.
 
-It is possible for a connection in NEGOTIATING state to get a
-failure, leading to ceph_fault() and ultimately ceph_con_close().
-Clear that bits if it is set in that case, to reflect that the
-connection truly is closed and is no longer participating in a
-connect sequence.
+    --------
+    | NEW* |  transient initial state
+    --------
+        | con_sock_state_init()
+        v
+    ----------
+    | CLOSED |  initialized, but no socket (and no
+    ----------  TCP connection)
+     ^      \
+     |       \ con_sock_state_connecting()
+     |        ----------------------
+     |                              \
+     + con_sock_state_closed()       \
+     |\                               \
+     | \                               \
+     |  -----------                     \
+     |  | CLOSING |  socket event;       \
+     |  -----------  await close          \
+     |       ^                            |
+     |       |                            |
+     |       + con_sock_state_closing()   |
+     |      / \                           |
+     |     /   ---------------            |
+     |    /                   \           v
+     |   /                    --------------
+     |  /    -----------------| CONNECTING |  socket created, TCP
+     |  |   /                 --------------  connect initiated
+     |  |   | con_sock_state_connected()
+     |  |   v
+    -------------
+    | CONNECTED |  TCP connection established
+    -------------
 
-Issue a warning if ceph_con_open() is called on a connection that
-is not in CLOSED state.
+Make the socket state an atomic variable, reinforcing that it's a
+distinct transtion with no possible "intermediate/both" states.
+This is almost certainly overkill at this point, though the
+transitions into CONNECTED and CLOSING state do get called via
+socket callback (the rest of the transitions occur with the
+connection mutex held).  We can back out the atomicity later.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Sage Weil<sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ include/linux/ceph/messenger.h |    8 +++--
+ net/ceph/messenger.c           |   64 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+index 34e9506..5f30c81 100644
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -137,14 +137,18 @@ struct ceph_connection {
+ 	const struct ceph_connection_operations *ops;
+ 
+ 	struct ceph_messenger *msgr;
++
++	atomic_t sock_state;
+ 	struct socket *sock;
++	struct ceph_entity_addr peer_addr; /* peer address */
++	struct ceph_entity_addr peer_addr_for_me;
++
+ 	unsigned long flags;
+ 	unsigned long state;
+ 	const char *error_msg;  /* error message, if any */
+ 
+-	struct ceph_entity_addr peer_addr; /* peer address */
+ 	struct ceph_entity_name peer_name; /* peer name */
+-	struct ceph_entity_addr peer_addr_for_me;
++
+ 	unsigned peer_features;
+ 	u32 connect_seq;      /* identify the most recent connection
+ 				 attempt for this connection, client */
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 3239d3d..603d8b5 100644
+index 7ec608c..3239d3d 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -454,11 +454,14 @@ void ceph_con_close(struct ceph_connection *con)
- {
- 	dout("con_close %p peer %s\n", con,
- 	     ceph_pr_addr(&con->peer_addr.in_addr));
--	set_bit(CLOSED, &con->state);  /* in case there's queued work */
-+	clear_bit(NEGOTIATING, &con->state);
- 	clear_bit(STANDBY, &con->state);  /* avoid connect_seq bump */
-+	set_bit(CLOSED, &con->state);
+@@ -29,6 +29,14 @@
+  * the sender.
+  */
+ 
++/* State values for ceph_connection->sock_state; NEW is assumed to be 0 */
 +
- 	clear_bit(LOSSYTX, &con->flags);  /* so we retry next connect */
- 	clear_bit(KEEPALIVE_PENDING, &con->flags);
- 	clear_bit(WRITE_PENDING, &con->flags);
++#define CON_SOCK_STATE_NEW		0	/* -> CLOSED */
++#define CON_SOCK_STATE_CLOSED		1	/* -> CONNECTING */
++#define CON_SOCK_STATE_CONNECTING	2	/* -> CONNECTED or -> CLOSING */
++#define CON_SOCK_STATE_CONNECTED	3	/* -> CLOSING or -> CLOSED */
++#define CON_SOCK_STATE_CLOSING		4	/* -> CLOSED */
 +
- 	mutex_lock(&con->mutex);
- 	reset_connection(con);
- 	con->peer_global_seq = 0;
-@@ -475,7 +478,8 @@ void ceph_con_open(struct ceph_connection *con, struct ceph_entity_addr *addr)
- {
- 	dout("con_open %p %s\n", con, ceph_pr_addr(&addr->in_addr));
- 	set_bit(OPENING, &con->state);
--	clear_bit(CLOSED, &con->state);
-+	WARN_ON(!test_and_clear_bit(CLOSED, &con->state));
+ /* static tag bytes (protocol control messages) */
+ static char tag_msg = CEPH_MSGR_TAG_MSG;
+ static char tag_ack = CEPH_MSGR_TAG_ACK;
+@@ -147,6 +155,55 @@ void ceph_msgr_flush(void)
+ }
+ EXPORT_SYMBOL(ceph_msgr_flush);
+ 
++/* Connection socket state transition functions */
 +
- 	memcpy(&con->peer_addr, addr, sizeof(*addr));
- 	con->delay = 0;      /* reset backoff memory */
- 	queue_con(con);
-@@ -530,6 +534,8 @@ void ceph_con_init(struct ceph_messenger *msgr, struct ceph_connection *con)
++static void con_sock_state_init(struct ceph_connection *con)
++{
++	int old_state;
++
++	old_state = atomic_xchg(&con->sock_state, CON_SOCK_STATE_CLOSED);
++	if (WARN_ON(old_state != CON_SOCK_STATE_NEW))
++		printk("%s: unexpected old state %d\n", __func__, old_state);
++}
++
++static void con_sock_state_connecting(struct ceph_connection *con)
++{
++	int old_state;
++
++	old_state = atomic_xchg(&con->sock_state, CON_SOCK_STATE_CONNECTING);
++	if (WARN_ON(old_state != CON_SOCK_STATE_CLOSED))
++		printk("%s: unexpected old state %d\n", __func__, old_state);
++}
++
++static void con_sock_state_connected(struct ceph_connection *con)
++{
++	int old_state;
++
++	old_state = atomic_xchg(&con->sock_state, CON_SOCK_STATE_CONNECTED);
++	if (WARN_ON(old_state != CON_SOCK_STATE_CONNECTING))
++		printk("%s: unexpected old state %d\n", __func__, old_state);
++}
++
++static void con_sock_state_closing(struct ceph_connection *con)
++{
++	int old_state;
++
++	old_state = atomic_xchg(&con->sock_state, CON_SOCK_STATE_CLOSING);
++	if (WARN_ON(old_state != CON_SOCK_STATE_CONNECTING &&
++			old_state != CON_SOCK_STATE_CONNECTED &&
++			old_state != CON_SOCK_STATE_CLOSING))
++		printk("%s: unexpected old state %d\n", __func__, old_state);
++}
++
++static void con_sock_state_closed(struct ceph_connection *con)
++{
++	int old_state;
++
++	old_state = atomic_xchg(&con->sock_state, CON_SOCK_STATE_CLOSED);
++	if (WARN_ON(old_state != CON_SOCK_STATE_CONNECTED &&
++			old_state != CON_SOCK_STATE_CLOSING))
++		printk("%s: unexpected old state %d\n", __func__, old_state);
++}
+ 
+ /*
+  * socket callback functions
+@@ -203,6 +260,7 @@ static void ceph_sock_state_change(struct sock *sk)
+ 		dout("%s TCP_CLOSE\n", __func__);
+ 	case TCP_CLOSE_WAIT:
+ 		dout("%s TCP_CLOSE_WAIT\n", __func__);
++		con_sock_state_closing(con);
+ 		if (test_and_set_bit(SOCK_CLOSED, &con->flags) == 0) {
+ 			if (test_bit(CONNECTING, &con->state))
+ 				con->error_msg = "connection failed";
+@@ -213,6 +271,7 @@ static void ceph_sock_state_change(struct sock *sk)
+ 		break;
+ 	case TCP_ESTABLISHED:
+ 		dout("%s TCP_ESTABLISHED\n", __func__);
++		con_sock_state_connected(con);
+ 		queue_con(con);
+ 		break;
+ 	default:	/* Everything else is uninteresting */
+@@ -277,6 +336,7 @@ static int ceph_tcp_connect(struct ceph_connection *con)
+ 		return ret;
+ 	}
+ 	con->sock = sock;
++	con_sock_state_connecting(con);
+ 
+ 	return 0;
+ }
+@@ -343,6 +403,7 @@ static int con_close_socket(struct ceph_connection *con)
+ 	sock_release(con->sock);
+ 	con->sock = NULL;
+ 	clear_bit(SOCK_CLOSED, &con->state);
++	con_sock_state_closed(con);
+ 	return rc;
+ }
+ 
+@@ -462,6 +523,9 @@ void ceph_con_init(struct ceph_messenger *msgr, struct ceph_connection *con)
+ 	memset(con, 0, sizeof(*con));
+ 	atomic_set(&con->nref, 1);
+ 	con->msgr = msgr;
++
++	con_sock_state_init(con);
++
+ 	mutex_init(&con->mutex);
  	INIT_LIST_HEAD(&con->out_queue);
  	INIT_LIST_HEAD(&con->out_sent);
- 	INIT_DELAYED_WORK(&con->work, con_work);
-+
-+	set_bit(CLOSED, &con->state);
- }
- EXPORT_SYMBOL(ceph_con_init);
- 
-@@ -1937,14 +1943,15 @@ more:
- 
- 	/* open the socket first? */
- 	if (con->sock == NULL) {
-+		clear_bit(NEGOTIATING, &con->state);
-+		set_bit(CONNECTING, &con->state);
-+
- 		con_out_kvec_reset(con);
- 		prepare_write_banner(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			goto out;
- 		prepare_read_banner(con);
--		set_bit(CONNECTING, &con->state);
--		clear_bit(NEGOTIATING, &con->state);
- 
- 		BUG_ON(con->in_msg);
- 		con->in_tag = CEPH_MSGR_TAG_READY;
 -- 
 1.7.9.5
 
