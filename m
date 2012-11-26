@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2KZWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:37:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36943 "EHLO mail.kernel.org"
+	id S1757396Ab2KZWiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:38:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60388 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756271Ab2KZWh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:37:56 -0500
-Date: Mon, 26 Nov 2012 14:37:54 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Zhang <georgezhang@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 00/12] VMCI for Linux upstreaming
-Message-ID: <20121126223754.GA28681@kroah.com>
-References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757337Ab2KZWiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 17:38:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,323,1352102400"; 
+   d="scan'208";a="224656058"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v2 0/3]  pm: Intel powerclamp driver
+Date: Mon, 26 Nov 2012 06:37:10 -0800
+Message-Id: <1353940633-20084-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
-> 
-> * * *
-> This series of VMCI linux upstreaming patches include latest udpate from
-> VMware.
-> 
-> Summary of changes:
-> 
-> 	- Sparse clean.
-> 	- Checkpatch clean with one exception, a "complex macro" in
-> 	  which we can't add parentheses.
-> 	- Remove all runtime assertions.
-> 	- Fix device name, so that existing user clients work.
-> 	- Fix VMCI handle lookup.
+Minor syntax change since v1.
 
-Given that you failed to answer the questions I asked the last time you
-posted this series, and you did not make any of the changes I asked for,
-I can't accept this (nor should you expect me to.)
+We have done some experiment with idle injection on Intel platforms.
+The idea is to use the increasingly power efficient package level
+C-states for power capping and passive thermal control.
 
-And people wonder why reviewers get so grumpy...
+Documentation is included in the patch to explain the theory of
+operation, performance implication, calibration, scalability, and user
+interface. Please refer to the following file for more details.
 
-My trees are now closed for the 3.8 merge window, so feel free to try
-again after 3.8-rc1 is out, and you have answered, and addressed, the
-questions and comments I made.
+Documentation/thermal/intel_powerclamp.txt
 
-greg k-h
+Arjan van de Ven created the original idea and driver, I have been
+refining driver in hope that they can be to be useful beyond a proof
+of concept.
+
+Jacob Pan (3):
+  tick: export nohz tick idle symbols for module use
+  x86/nmi: export local_touch_nmi() symbol for modules
+  PM: Introduce Intel PowerClamp Driver
+
+ Documentation/thermal/intel_powerclamp.txt |  307 +++++++++++
+ arch/x86/kernel/nmi.c                      |    1 +
+ drivers/thermal/Kconfig                    |   10 +
+ drivers/thermal/Makefile                   |    1 +
+ drivers/thermal/intel_powerclamp.c         |  766 ++++++++++++++++++++++++++++
+ kernel/time/tick-sched.c                   |    2 +
+ 6 files changed, 1087 insertions(+)
+ create mode 100644 Documentation/thermal/intel_powerclamp.txt
+ create mode 100644 drivers/thermal/intel_powerclamp.c
+
+-- 
+1.7.9.5
+
