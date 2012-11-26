@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934324Ab2KZRUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:20:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48308 "EHLO
+	id S934191Ab2KZRPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:15:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48261 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934221Ab2KZRQN (ORCPT
+	with ESMTP id S934111Ab2KZRPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:16:13 -0500
+	Mon, 26 Nov 2012 12:15:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 261/270] qmi_wwan/cdc_ether: move Novatel 551 and E362 to qmi_wwan
-Date: Mon, 26 Nov 2012 14:59:11 -0200
-Message-Id: <1353949160-26803-262-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 254/270] xhci: Fix potential NULL ptr deref in command cancellation.
+Date: Mon, 26 Nov 2012 14:59:04 -0200
+Message-Id: <1353949160-26803-255-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,110 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit f8295ec22cb0f1ee6849b862addbfa3ea9320755 upstream.
+commit 43a09f7fb01fa1e091416a2aa49b6c666458c1ee upstream.
 
-These devices provide QMI and ethernet functionality via a standard CDC
-ethernet descriptor.  But when driven by cdc_ether, the QMI
-functionality is unavailable because only cdc_ether can claim the USB
-interface.  Thus blacklist the devices in cdc_ether and add their IDs to
-qmi_wwan, which enables both QMI and ethernet simultaneously.
+The command cancellation code doesn't check whether find_trb_seg()
+couldn't find the segment that contains the TRB to be canceled.  This
+could cause a NULL pointer deference later in the function when next_trb
+is called.  It's unlikely to happen unless something is wrong with the
+command ring pointers, so add some debugging in case it happens.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch should be backported to stable kernels as old as 3.0, that
+contain the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI:
+handle command after aborting the command ring".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/usb/cdc_ether.c |   41 ++++++++++++++++++++++++++---------------
- drivers/net/usb/qmi_wwan.c  |   14 ++++++++++++++
- 2 files changed, 40 insertions(+), 15 deletions(-)
+ drivers/usb/host/xhci-ring.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index a03de71..d012982 100644
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -592,6 +592,32 @@ static const struct usb_device_id	products [] = {
- 	.driver_info		= 0,
- },
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 47b6bb6..755858e 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1228,6 +1228,17 @@ static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
+ 	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
+ 			xhci->cmd_ring->dequeue, &cycle_state);
  
-+/* Novatel USB551L and MC551 - handled by qmi_wwan */
-+{
-+	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
-+		 | USB_DEVICE_ID_MATCH_PRODUCT
-+		 | USB_DEVICE_ID_MATCH_INT_INFO,
-+	.idVendor               = NOVATEL_VENDOR_ID,
-+	.idProduct		= 0xB001,
-+	.bInterfaceClass	= USB_CLASS_COMM,
-+	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
-+	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
-+	.driver_info = 0,
-+},
++	if (!cur_seg) {
++		xhci_warn(xhci, "Command ring mismatch, dequeue = %p %llx (dma)\n",
++				xhci->cmd_ring->dequeue,
++				(unsigned long long)
++				xhci_trb_virt_to_dma(xhci->cmd_ring->deq_seg,
++					xhci->cmd_ring->dequeue));
++		xhci_debug_ring(xhci, xhci->cmd_ring);
++		xhci_dbg_ring_ptrs(xhci, xhci->cmd_ring);
++		return;
++	}
 +
-+/* Novatel E362 - handled by qmi_wwan */
-+{
-+	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
-+		 | USB_DEVICE_ID_MATCH_PRODUCT
-+		 | USB_DEVICE_ID_MATCH_INT_INFO,
-+	.idVendor               = NOVATEL_VENDOR_ID,
-+	.idProduct		= 0x9010,
-+	.bInterfaceClass	= USB_CLASS_COMM,
-+	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
-+	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
-+	.driver_info = 0,
-+},
-+
- /*
-  * WHITELIST!!!
-  *
-@@ -604,21 +630,6 @@ static const struct usb_device_id	products [] = {
-  * because of bugs/quirks in a given product (like Zaurus, above).
-  */
- {
--	/* Novatel USB551L */
--	/* This match must come *before* the generic CDC-ETHER match so that
--	 * we get FLAG_WWAN set on the device, since it's descriptors are
--	 * generic CDC-ETHER.
--	 */
--	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
--		 | USB_DEVICE_ID_MATCH_PRODUCT
--		 | USB_DEVICE_ID_MATCH_INT_INFO,
--	.idVendor               = NOVATEL_VENDOR_ID,
--	.idProduct		= 0xB001,
--	.bInterfaceClass	= USB_CLASS_COMM,
--	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
--	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
--	.driver_info = (unsigned long)&wwan_info,
--}, {
- 	/* ZTE (Vodafone) K3805-Z */
- 	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
- 		 | USB_DEVICE_ID_MATCH_PRODUCT
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index d124bdd..466af29 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -579,6 +579,20 @@ static const struct usb_device_id products[] = {
- 		.bInterfaceProtocol = 0xff,
- 		.driver_info        = (unsigned long)&qmi_wwan_sierra,
- 	},
-+	{	/* Novatel USB551L and MC551 */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x1410, 0xb001,
-+		                              USB_CLASS_COMM,
-+		                              USB_CDC_SUBCLASS_ETHERNET,
-+		                              USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
-+	{	/* Novatel E362 */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x1410, 0x9010,
-+		                              USB_CLASS_COMM,
-+		                              USB_CDC_SUBCLASS_ETHERNET,
-+		                              USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
- 
- 	/* Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+ 	/* find the command trb matched by cd from command ring */
+ 	for (cmd_trb = xhci->cmd_ring->dequeue;
+ 			cmd_trb != xhci->cmd_ring->enqueue;
 -- 
 1.7.9.5
 
