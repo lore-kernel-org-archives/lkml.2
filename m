@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2KZIvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 03:51:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48399 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2KZIvE (ORCPT
+	id S1754488Ab2KZI5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 03:57:10 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39915 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab2KZI5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 03:51:04 -0500
-Date: Mon, 26 Nov 2012 09:51:01 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Pavel Pisa <ppisa@pikron.com>
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 18/24] MAINTAINERS: remove drivers/mmc/host/imxmmc.*
-Message-ID: <20121126085101.GZ10369@pengutronix.de>
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
- <1353716808-16375-19-git-send-email-cesarb@cesarb.net>
- <201211240918.42930.ppisa@pikron.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211240918.42930.ppisa@pikron.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:50:32 up 156 days, 2 min, 33 users,  load average: 6.26, 2.08,
- 1.76
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 26 Nov 2012 03:57:07 -0500
+Date: Mon, 26 Nov 2012 19:56:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bo Shen <voice.shen@atmel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: linux-next: manual merge of the pinctrl tree with the sound-asoc
+ tree
+Message-Id: <20121126195658.064037771da7d25572848e2b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+--Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Nov 24, 2012 at 09:18:42AM +0100, Pavel Pisa wrote:
-> On Saturday 24 November 2012 01:26:42 Cesar Eduardo Barros wrote:
-> > This driver was removed by commit 6187fee (mmc: remove imxmmc driver).
-> >
-> > Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> > Cc: Pavel Pisa <ppisa@pikron.com>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> > ---
-> >  MAINTAINERS | 6 ------
-> >  1 file changed, 6 deletions(-)
-> >
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index fc646ef..cac8e49 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -4905,12 +4905,6 @@ F:	Documentation/video4linux/meye.txt
-> >  F:	drivers/media/pci/meye/
-> >  F:	include/uapi/linux/meye.h
-> >
-> > -MOTOROLA IMX MMC/SD HOST CONTROLLER INTERFACE DRIVER
-> > -M:	Pavel Pisa <ppisa@pikron.com>
-> > -L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> > -S:	Maintained
-> > -F:	drivers/mmc/host/imxmmc.*
-> > -
-> >  MOXA SMARTIO/INDUSTIO/INTELLIO SERIAL CARD
-> >  M:	Jiri Slaby <jirislaby@gmail.com>
-> >  S:	Maintained
-> 
-> Acked-by: Pavel Pisa <pisa@cmp.felk.cvut.cz>
-> 
-> I have still the hardware but have lack resources to keep with current
-> kernel development for that old HW. We plan to switch to newer i.MX
-> hardware - hopefully with more bug free MMC/SD support, because MX1
-> has taken me yer a year of fighting with its bugs (on Linux and RTEMS
-> as well).
+Hi Linus,
 
-They are bug free enough to work ;)
+Today's linux-next merge of the pinctrl tree got a conflict in
+arch/arm/boot/dts/at91sam9260.dtsi between commit 099343c64e16 ("ARM:
+at91: atmel-ssc: add device tree support") from the sound-asoc tree and
+commit 9873137a7a22 ("ARM: at91/dts: add nodes for atmel hsmci
+controllers for atmel SOCs") from the pinctrl tree.
 
-Sascha
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+diff --cc arch/arm/boot/dts/at91sam9260.dtsi
+index aaa42d8,b1d3fab..0000000
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@@ -213,13 -436,15 +437,22 @@@
+  				status =3D "disabled";
+  			};
+ =20
++ 			mmc0: mmc@fffa8000 {
++ 				compatible =3D "atmel,hsmci";
++ 				reg =3D <0xfffa8000 0x600>;
++ 				interrupts =3D <9 4 0>;
++ 				#address-cells =3D <1>;
++ 				#size-cells =3D <0>;
++ 				status =3D "disabled";
++ 			};
++=20
+ +			ssc0: ssc@fffbc000 {
+ +				compatible =3D "atmel,at91rm9200-ssc";
+ +				reg =3D <0xfffbc000 0x4000>;
+ +				interrupts =3D <14 4 5>;
+ +				status =3D "disable";
+ +			};
+ +
+  			adc0: adc@fffe0000 {
+  				compatible =3D "atmel,at91sam9260-adc";
+  				reg =3D <0xfffe0000 0x100>;
+
+--Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQsy7aAAoJEECxmPOUX5FEXokP/2AN/DOt/n33U0epKAmDCT12
+MvWzMwYI5EIrjp/x/SBS2zqmqBpEjDY+TawIDOVz1viwk4atnp/s5ySNdoFRxTFi
+ve/rbBRDqbdC+RVsQmDNUoY+SWPlPw8Wk5OzAv9eeXCTRLy6OWiNTBtJkoXuKF72
+59GM8UFvkNwOtjxkfKCzZ09a1786ct5eLd0Mv9vZZTTUrU/z+tF/kXTvAG4QheEn
+VC67FA47DG49x0Wo1ARcEagTWpCweyWeo/whgAEbI83xMjwCBQJTC1wEZQzVQ3pN
+P7dC3p0PDjQo5xj4mJdPJ/vKMYNuC+K8RiAngBnU5zctj/0YzLIPS7J/2FF+E1Q4
+GeN3GMhDisfLFs3ALl9N6F1/BZ3bSDO7jNqdk08o2RQKJw5b1seY/dhrkyTCY9fl
+ADrcnf1SZfQ/FvA4fUFVg3+/yV0s1gs3EmZ7hupOSnii9axPdo7thfhdzCz5Jyqd
+X7uQ2HCf2OnRCPhckDdfCM1MPvYju7+rCPF1E9yLz5iUYLs4YhBabxL8+Fp1rvzv
+b9pdvcbtb1WncJb430Y671WGELa8a56UBqLOi2O/CChIRta/GKzVZ0jhrUVylsOy
+iNcukk7b6Il44uSjVCd+pT65eaiSPswUziqvutgbQZkEMXb7cv2zrepe7rKmSJJw
+06NnJJcGAVxjPHVo+hVm
+=vNlO
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL--
