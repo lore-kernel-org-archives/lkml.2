@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab2KZQmO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:42:14 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40950 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2KZQmK (ORCPT
+	id S1755700Ab2KZQnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:43:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46877 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab2KZQnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 11:42:10 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com> <20121120215429.B621F3E1821@localhost> <13540495.epaCf4JVn9@percival> <20121122133941.24B883E129E@localhost> <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
-Date: Mon, 26 Nov 2012 15:34:53 +0000
-Message-Id: <20121126153453.2AA023E1AAA@localhost>
+	Mon, 26 Nov 2012 11:43:04 -0500
+Date: Mon, 26 Nov 2012 10:42:55 -0600 (CST)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Chris Ball <cjb@laptop.org>
+cc: Manoj Iyer <manoj.iyer@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+ frequency
+In-Reply-To: <87obiqa39h.fsf@octavius.laptop.org>
+Message-ID: <alpine.DEB.2.02.1211261041500.3502@lazy>
+References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <m2sjqa2q93.fsf@bob.laptop.org> <alpine.DEB.2.02.1107131031360.3174@lazy> <201107131835.25217.arnd@arndb.de> <alpine.DEB.2.02.1107131144250.3174@lazy> <m21uxu2k96.fsf@bob.laptop.org>
+ <alpine.DEB.2.02.1107131157440.3174@lazy> <m2wrfm1537.fsf@bob.laptop.org> <alpine.DEB.2.02.1107181535250.1677@lazy> <m2zkkbb9vn.fsf@bob.laptop.org> <alpine.DEB.2.02.1107181546100.1677@lazy> <87obiqa39h.fsf@octavius.laptop.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 22:40:21 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> On Thu, Nov 22, 2012 at 01:39:41PM +0000, Grant Likely wrote:
-> [...]
-> > I do think that each sequence should be contained within a single
-> > property, but I'm open to other suggestions.
-> 
-> IIRC a very early prototype did implement something like that. However
-> because of the resource issues this had to be string based, so that the
-> sequences looked somewhat like (Alex, correct me if I'm wrong):
-> 
-> 	power-on = <"REGULATOR", "power", 1, "GPIO", "enable", 1>;
-> 
-> Instead we could possibly have something like:
-> 
-> 	power-on = <0 &reg 1,
-> 		    1 &gpio 42 0 1>;
 
-Yes, that would work, although I still think it would be a good idea to
-split the used resources off into the gpios/pwms/regs/etc properties.
+Chris,
 
-> Where the first cell in each entry defines the type (0 = regulator, 1 =
-> GPIO) and the rest would be a regular OF specifier for the given type of
-> resource along with some defined parameter such as enable/disable,
-> voltage, delay in ms, ... I don't know if that sounds any better. It
-> looks sort of cryptic but it is more "in the spirit of" DT, right Grant?
+Do you know what systems produce these errors? I can look and see if we 
+have those for testing your patch.
 
-It is still kind of a ham-handed approach, but it does fit better with
-existing conventions than the hierarchy of nodes does.
+Cheers
+Manoj
 
-g.
+On Wed, 21 Nov 2012, Chris Ball wrote:
+
+> Hi Manoj, Matsumuro-san,
+>
+> On Mon, Jul 18 2011, Manoj Iyer wrote:
+>> Right, without the patch I get..
+>>
+>> [   52.526665] mmc0: new SDHC card at address e624
+>> [   52.571228] mmcblk0: mmc0:e624 SD16G 14.8 GiB
+>> [   52.591071] mmcblk0: retrying using single block read
+>> [   52.593105] mmcblk0: error -84 transferring data, sector 0, nr 8,
+>> card status 0x900
+>> [   52.593109] end_request: I/O error, dev mmcblk0, sector 0
+>> [   52.594594] mmcblk0: error -84 transferring data, sector 1, nr 7,
+>> card status 0x900
+>> [   52.594604] end_request: I/O error, dev mmcblk0, sector 1
+>> [   52.602893] quiet_error: 24 callbacks suppressed
+>> [   52.602902] Buffer I/O error on device mmcblk0, logical block 0
+>> [   52.605349] ldm_validate_partition_table(): Disk read failed.
+>> [   52.605384] Dev mmcblk0: unable to read RDB block 0
+>> [   52.607729]  mmcblk0: unable to read partition table
+>> u@u:~$
+>>
+>> So, I cannot generate any comparison data with this SD card.
+>
+> I don't know if you remember this bug, but I have reports from two users
+> who see "error -84"s on :e823 controllers even with this patch active on
+> modern ThinkPads.
+>
+> Maybe 50MHz isn't low enough sometimes?  Is it possible to lower the base
+> clock further?
+>
+> I noticed that the frequency is encoded ine one of the PCI writes:
+> +        * 0x32  - 50Mhz new clock frequency
+>
+> So if I get access to one of these systems, I might try lowering that
+> value (by half, say) and see what happens.  But at the moment I haven't
+> found someone who's willing to try kernel patches yet, and I don't have
+> one of these systems myself.
+>
+> Thanks!
+>
+> - Chris.
+> -- 
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
+>
+>
+
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
