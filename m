@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934267Ab2KZRSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:18:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48326 "EHLO
+	id S934234Ab2KZRQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:16:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48281 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934179Ab2KZRQY (ORCPT
+	with ESMTP id S934204Ab2KZRQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:16:24 -0500
+	Mon, 26 Nov 2012 12:16:06 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 264/270] e1000e: add device IDs for i218
-Date: Mon, 26 Nov 2012 14:59:14 -0200
-Message-Id: <1353949160-26803-265-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 257/270] genalloc: stop crashing the system when destroying a pool
+Date: Mon, 26 Nov 2012 14:59:07 -0200
+Message-Id: <1353949160-26803-258-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,48 +30,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 16e310ae6ed352c4963b1f2413fcd88fa693eeda upstream.
+commit eedce141cd2dad8d0cefc5468ef41898949a7031 upstream.
 
-i218 is the next-generation LOM that will be available on systems with the
-Lynx Point LP Platform Controller Hub (PCH) chipset from Intel.  This patch
-provides the initial support of those devices.
+The genalloc code uses the bitmap API from include/linux/bitmap.h and
+lib/bitmap.c, which is based on long values.  Both bitmap_set from
+lib/bitmap.c and bitmap_set_ll, which is the lockless version from
+genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
+the bitmap.
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+That one uses (1 << bits) - 1, 0b111, if you are setting the first three
+bits.  This means that the API counts from the least significant bits
+(LSB from now on) to the MSB.  The LSB in the first long is bit 0, then.
+The same works for the lookup functions.
+
+The genalloc code uses longs for the bitmap, as it should.  In
+include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
+bits[0] as its last member.  When allocating the struct, genalloc should
+reserve enough space for the bitmap.  This should be a proper number of
+longs that can fit the amount of bits in the bitmap.
+
+However, genalloc allocates an integer number of bytes that fit the
+amount of bits, but may not be an integer amount of longs.  9 bytes, for
+example, could be allocated for 70 bits.
+
+This is a problem in itself if the Least Significat Bit in a long is in
+the byte with the largest address, which happens in Big Endian machines.
+This means genalloc is not allocating the byte in which it will try to
+set or check for a bit.
+
+This may end up in memory corruption, where genalloc will try to set the
+bits it has not allocated.  In fact, genalloc may not set these bits
+because it may find them already set, because they were not zeroed since
+they were not allocated.  And that's what causes a BUG when
+gen_pool_destroy is called and check for any set bits.
+
+What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
+on gen_pool_add_virt.  With SLAB and SLUB, this means the whole slab
+will be cleared, not only the requested bytes.  Since struct
+gen_pool_chunk has a size that is a multiple of 8, and slab sizes are
+multiples of 8, we get lucky and allocate and clear the right amount of
+bytes.
+
+Hower, this is not the case with SLOB or with older code that did memset
+after allocating instead of using __GFP_ZERO.
+
+So, a simple module as this (running 3.6.0), will cause a crash when
+rmmod'ed.
+
+  [root@phantom-lp2 foo]# cat foo.c
+  #include <linux/kernel.h>
+  #include <linux/module.h>
+  #include <linux/init.h>
+  #include <linux/genalloc.h>
+
+  MODULE_LICENSE("GPL");
+  MODULE_VERSION("0.1");
+
+  static struct gen_pool *foo_pool;
+
+  static __init int foo_init(void)
+  {
+          int ret;
+          foo_pool = gen_pool_create(10, -1);
+          if (!foo_pool)
+                  return -ENOMEM;
+          ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
+          if (ret) {
+                  gen_pool_destroy(foo_pool);
+                  return ret;
+          }
+          return 0;
+  }
+
+  static __exit void foo_exit(void)
+  {
+          gen_pool_destroy(foo_pool);
+  }
+
+  module_init(foo_init);
+  module_exit(foo_exit);
+  [root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
+  CONFIG_SLOB=y
+  [root@phantom-lp2 foo]# insmod ./foo.ko
+  [root@phantom-lp2 foo]# rmmod foo
+  ------------[ cut here ]------------
+  kernel BUG at lib/genalloc.c:243!
+  cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
+      pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
+      lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
+      sp: c0000000bb0e7be0
+     msr: 8000000000029032
+    current = 0xc0000000bb0e0000
+    paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
+      pid   = 13044, comm = rmmod
+  kernel BUG at lib/genalloc.c:243!
+  [c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
+  [c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
+  [c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
+  --- Exception: c00 (System Call) at 000000800753d1a0
+  SP (fffd0b0e640) is in userspace
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/ethernet/intel/e1000e/hw.h     |    2 ++
- drivers/net/ethernet/intel/e1000e/netdev.c |    2 ++
- 2 files changed, 4 insertions(+)
+ lib/genalloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/hw.h b/drivers/net/ethernet/intel/e1000e/hw.h
-index ed5b409..d37bfd9 100644
---- a/drivers/net/ethernet/intel/e1000e/hw.h
-+++ b/drivers/net/ethernet/intel/e1000e/hw.h
-@@ -412,6 +412,8 @@ enum e1e_registers {
- #define E1000_DEV_ID_PCH2_LV_V			0x1503
- #define E1000_DEV_ID_PCH_LPT_I217_LM		0x153A
- #define E1000_DEV_ID_PCH_LPT_I217_V		0x153B
-+#define E1000_DEV_ID_PCH_LPTLP_I218_LM		0x155A
-+#define E1000_DEV_ID_PCH_LPTLP_I218_V		0x1559
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 6bc04aa..7cb7a5d 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -176,7 +176,7 @@ int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phy
+ 	struct gen_pool_chunk *chunk;
+ 	int nbits = size >> pool->min_alloc_order;
+ 	int nbytes = sizeof(struct gen_pool_chunk) +
+-				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
++				BITS_TO_LONGS(nbits) * sizeof(long);
  
- #define E1000_REVISION_4 4
- 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 9bbfa1d..7e750ae 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -6519,6 +6519,8 @@ static DEFINE_PCI_DEVICE_TABLE(e1000_pci_tbl) = {
- 
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_PCH_LPT_I217_LM), board_pch_lpt },
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_PCH_LPT_I217_V), board_pch_lpt },
-+	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_PCH_LPTLP_I218_LM), board_pch_lpt },
-+	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_PCH_LPTLP_I218_V), board_pch_lpt },
- 
- 	{ 0, 0, 0, 0, 0, 0, 0 }	/* terminate list */
- };
+ 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+ 	if (unlikely(chunk == NULL))
 -- 
 1.7.9.5
 
