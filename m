@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab2KZGJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 01:09:31 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43580 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2KZGJa (ORCPT
+	id S1754222Ab2KZGO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 01:14:57 -0500
+Received: from 173-254-64-10.unifiedlayer.com ([173.254.64.10]:53700 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753874Ab2KZGO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 01:09:30 -0500
-Date: Mon, 26 Nov 2012 17:09:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: linux-next: build failure after merge of the pm tree
-Message-Id: <20121126170919.f7009838d3126e547205a705@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i"
+	Mon, 26 Nov 2012 01:14:56 -0500
+Message-ID: <50B308D8.2060501@tao.ma>
+Date: Mon, 26 Nov 2012 14:14:48 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, torvalds@linux-foundation.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126002814.GM32450@dastard> <20121126025520.GC22858@thunk.org>
+In-Reply-To: <20121126025520.GC22858@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Dave,
+On 11/26/2012 10:55 AM, Theodore Ts'o wrote:
+> On Mon, Nov 26, 2012 at 11:28:14AM +1100, Dave Chinner wrote:
+>> fs: revert commit bbdd6808 to fallocate UAPI
+>>
+>> From: Dave Chinner <dchinner@redhat.com>
+>>
+>> Commit bbdd6808 ("fs: reserve fallocate flag codepoint") changes the
+>> fallocate(2) syscall interface. The flag that is reserved by this
+>> commit is for functionality that has previously been NAKed on the
+>> -fsdevel mailing list, and so exists out-of-tree.
+> 
+> Hi Linus,
+> 
+> It doesn't change the interface or break anything; it just reserves a
+> bit so that out-of-tree patches don't collide with future allocations.
+> There are significant usages of this bit within Google and Tao Bao.
+> It is true that there has been significant pushback about adding this
+> functionality on linux-fsdevel; I find it personally frustrating that
+> in effect, if enough people scream, they can veto an optional feature
+> that might only be implemented by a single file system.
+Sorry, but we(Tao Bao) should say it explicitly that it is currently
+used in our product system. So we are with Ted that there should be no
+side effect for reserving just a bit to avoid future conflict?
 
-Hi Rafael,
-
-After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
-
-drivers/devfreq/governor_simpleondemand.c: In function 'devfreq_simple_onde=
-mand_func':
-drivers/devfreq/governor_simpleondemand.c:36:11: error: dereferencing point=
-er to incomplete type
-drivers/devfreq/governor_simpleondemand.c:37:27: error: dereferencing point=
-er to incomplete type
-drivers/devfreq/governor_simpleondemand.c:38:11: error: dereferencing point=
-er to incomplete type
-drivers/devfreq/governor_simpleondemand.c:39:32: error: dereferencing point=
-er to incomplete type
-
-Caused by commit eff607fdb1f7 ("PM / devfreq: governors: add GPL module
-license and allow module build").  The definition of struct
-devfreq_simple_ondemand_data depends on
-CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND, but this is a modular build, so
-CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND_MODULE is defined instead.
-
-I have used the pm tree fomr next-20121115 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQswePAAoJEECxmPOUX5FEY84QAJBUq61pSOX/RkX+S4QK0+C3
-UuribzSBIvnevLDHs4CxfHa0AmBiXJJRjBazod5aLqHwBAyR0YtZ0288mFI2eGJH
-oAQCLPxYt0sp4slaLx30mKG2dN8VQPLle8TWlm7Fm0ylAcNhqDZkeFMVCXVVVKjO
-dO1M3KqoJHV2T60IWfjyPyF5MXg0ZKiSB1DzhGR0MrCpOxEc/M2LZzteaVsB6O92
-uzXK+llXXMj847B4G1lhywPBalCeK+pCxwZ63BIxar+mJR4c+ly3k0cF+cIQzi+5
-333FOEH4OUsczVFzAjzfiHWopZypvZMW2Xl22CBccpJXzb5QYmr5rL4uJ0gceAti
-oBjJkwHoXN3SKjy0tJCCcmaOzd9p+AcD3+bQzM9hZaUSGVNRGYPcmUaojA3mOx09
-nl1GXNFjLQUWnkXhN12cV6aUF0wkWDtqHGti69EQUtt336sl3uKyy/qd06hET0Hm
-cQs4XP0wKonXCq4SnPruW9VUjakwGSnlwF9ZMh0Lr8sJw/LK6bHgns2g8wwWGwZO
-MsbBnvQvlLD0V8QIR0Kd/iig8oTyCTC6pxa6sN3z6prKmbsh3seWaUI1MI4DioyD
-6/8zrWUm8dWS/ze7w3h+/dqmyQ+PT47eJUbpmXTibX/Zn7PQ2CellW8H2EofsCu/
-3tU/0UczAmNmcyE4bjIp
-=b/Na
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i--
+Thanks
+Tao
