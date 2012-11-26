@@ -1,58 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab2KZO06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 09:26:58 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:33359 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab2KZO05 (ORCPT
+	id S1755036Ab2KZO1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 09:27:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40868 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab2KZO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 09:26:57 -0500
-Subject: Re: vdso && cr (Was: arch_check_bp_in_kernelspace: fix the range
-To: gorcunov@openvz.org (Cyrill Gorcunov)
-Date: Tue, 27 Nov 2012 01:26:55 +1100 (EST)
-Cc: avagin@gmail.com (Andrey Wagin), oleg@redhat.com (Oleg Nesterov),
-        xemul@parallels.com (Pavel Emelyanov),
-        rostedt@goodmis.org (Steven Rostedt),
-        fweisbec@gmail.com (Frederic Weisbecker),
-        mingo@redhat.com (Ingo Molnar),
-        a.p.zijlstra@chello.nl (Peter Zijlstra),
-        linux-kernel@vger.kernel.org (LKML)
-Reply-To: u3557@dialix.com.au
-In-Reply-To: <20121126141843.GE10312@moon>
-X-Mailer: ELM [version 2.5 PL8]
+	Mon, 26 Nov 2012 09:27:49 -0500
+Message-ID: <50B37C52.2060301@gmail.com>
+Date: Mon, 26 Nov 2012 22:27:30 +0800
+From: Jianguo Wu <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 11/12] memory-hotplug: remove sysfs file of node
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20121126142655.9AD28592064@miso.sublimeip.com>
-From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
-
-Programmers don't (and the manual-page says they shouldn't even try)
-call "sigreturn" directly.
-
-If an interrupt happens, by bad luck, to occur while the process
-is running vdso code, then eventually, once signal-processing is
-complete, "sigreturn" (issued by  glibc) will take the process back
-to where it was before the interrupt happend, inside the vdso page.
-
-Best Regards,
-Amnon.
-
-> On Mon, Nov 26, 2012 at 11:55:01PM +1100, Amnon Shiloh wrote:
-> > 
-> > You could of course keep that old code and modify only the very
-> > first instruction of each routine into a jump instruction, but then
-> > the code to which the process returns may not be compatible with
-> > the new kernel and/or hardware configuration.
+On 2012/11/1 17:44, Wen Congyang wrote:
+> This patch introduces a new function try_offline_node() to
+> remove sysfs file of node when all memory sections of this
+> node are removed. If some memory sections of this node are
+> not removed, this function does nothing.
 > 
-> For sure there will be some limitations but I fear we can't do
-> that much with it. I don't expect the regular program to use
-> sigreturn for jumping into vdso code, but I could be wrong.
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |  8 +++++-
+>  include/linux/memory_hotplug.h |  2 +-
+>  mm/memory_hotplug.c            | 58 ++++++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 64 insertions(+), 4 deletions(-)
 > 
-> 	Cyrill
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 24c807f..0780f99 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -310,7 +310,9 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>  {
+>  	int result;
+>  	struct acpi_memory_info *info, *n;
+> +	int node;
+>  
+> +	node = acpi_get_node(mem_device->device->handle);
+>  
+>  	/*
+>  	 * Ask the VM to offline this memory range.
+> @@ -318,7 +320,11 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>  	 */
+>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>  		if (info->enabled) {
+> -			result = remove_memory(info->start_addr, info->length);
+> +			if (node < 0)
+> +				node = memory_add_physaddr_to_nid(
+> +					info->start_addr);
+> +			result = remove_memory(node, info->start_addr,
+> +				info->length);
+>  			if (result)
+>  				return result;
+>  		}
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index d4c4402..7b4cfe6 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -231,7 +231,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
+>  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+>  extern int offline_memory_block(struct memory_block *mem);
+>  extern bool is_memblock_offlined(struct memory_block *mem);
+> -extern int remove_memory(u64 start, u64 size);
+> +extern int remove_memory(int node, u64 start, u64 size);
+>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>  								int nr_pages);
+>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 7bcced0..d965da3 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/suspend.h>
+>  #include <linux/mm_inline.h>
+>  #include <linux/firmware-map.h>
+> +#include <linux/stop_machine.h>
+>  
+>  #include <asm/tlbflush.h>
+>  
+> @@ -1299,7 +1300,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+>  	return ret;
+>  }
+>  
+> -int __ref remove_memory(u64 start, u64 size)
+> +static int check_cpu_on_node(void *data)
+> +{
+> +	struct pglist_data *pgdat = data;
+> +	int cpu;
+> +
+> +	for_each_present_cpu(cpu) {
+> +		if (cpu_to_node(cpu) == pgdat->node_id)
+> +			/*
+> +			 * the cpu on this node isn't removed, and we can't
+> +			 * offline this node.
+> +			 */
+> +			return -EBUSY;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* offline the node if all memory sections of this node are removed */
+> +static void try_offline_node(int nid)
+> +{
+> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+> +	unsigned long pfn;
+> +
+> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+> +		unsigned long section_nr = pfn_to_section_nr(pfn);
+> +
+> +		if (!present_section_nr(section_nr))
+> +			continue;
+> +
+> +		if (pfn_to_nid(pfn) != nid)
+> +			continue;
+> +
+> +		/*
+> +		 * some memory sections of this node are not removed, and we
+> +		 * can't offline node now.
+> +		 */
+> +		return;
+> +	}
+> +
+> +	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
+> +		return;
+
+how about:
+	if (nr_cpus_node(nid))
+		return;
+> +
+> +	/*
+> +	 * all memory/cpu of this node are removed, we can offline this
+> +	 * node now.
+> +	 */
+> +	node_set_offline(nid);
+> +	unregister_one_node(nid);
+> +}
+> +
+> +int __ref remove_memory(int nid, u64 start, u64 size)
+>  {
+>  	unsigned long start_pfn, end_pfn;
+>  	int ret = 0;
+> @@ -1346,6 +1398,8 @@ repeat:
+>  
+>  	arch_remove_memory(start, size);
+>  
+> +	try_offline_node(nid);
+> +
+>  	unlock_memory_hotplug();
+>  
+>  	return 0;
+> @@ -1355,7 +1409,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+>  {
+>  	return -EINVAL;
+>  }
+> -int remove_memory(u64 start, u64 size)
+> +int remove_memory(int nid, u64 start, u64 size)
+>  {
+>  	return -EINVAL;
+>  }
 > 
 
