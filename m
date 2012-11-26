@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2KZD6n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 22:58:43 -0500
-Received: from science.horizon.com ([71.41.210.146]:56848 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753878Ab2KZD6m (ORCPT
+	id S1753970Ab2KZEK6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 23:10:58 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49125 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab2KZEK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 22:58:42 -0500
-Date: 25 Nov 2012 22:58:41 -0500
-Message-ID: <20121126035841.5973.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mgorman@suse.de
-Subject: Re: 3.7-rc6 soft lockup in kswapd0
-Cc: dave@linux.vnet.ibm.com, jack@suse.cz, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <20121123085137.GA646@suse.de>
+	Sun, 25 Nov 2012 23:10:56 -0500
+Date: Mon, 26 Nov 2012 15:10:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: build failure after merge of the modules tree
+Message-Id: <20121126151046.1b5b09762b8361b1f202c6e2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay; was AF(that)K for the weekend.
+--Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Ok, is there any chance you can capture more of sysrq+m, particularly the
-> bits that say how much free memory there is and many pages of each order
-> that is free? If you can't, it's ok. I ask because my kernel bug dowsing
-> rod is twitching in the direction of the recent free page accounting bug
-> Dave Hansen identified and fixed -- https://lkml.org/lkml/2012/11/21/504
+Hi Rusty,
 
-Okay; as mentioned, I installed that patch and it didn't make any obvious
-difference to the symptoms.
+After merging the modules tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-The hang IP is still either in __zone_watermark_ok or kswapd (address varies).
+drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: invalid suffix "n_dis=
+abletype__8" on integer constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: expected identifier o=
+r '(' before numeric constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: invalid suffix "n_dis=
+able__9" on integer constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: expected identifier o=
+r '(' before numeric constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: invalid suffix "ghz_d=
+isabletype__32" on integer constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: expected identifier o=
+r '(' before numeric constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: invalid suffix "ghz_d=
+isable__33" on integer constant
+drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: expected identifier o=
+r '(' before numeric constant
+drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: invalid suffix "n_d=
+isabletype__11" on integer constant
+drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: expected identifier=
+ or '(' before numeric constant
+drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: invalid suffix "n_d=
+isable__12" on integer constant
+drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: expected identifier=
+ or '(' before numeric constant
 
-> The free page counter and these free lists should be close together. If
-> there is a big gap then it's almost certainly the bug Dave identified.
+Presumably caused by commit 58876af0436e ("moduleparam: use __UNIQUE_ID
+()").  This commit removed the "__mod_" prefix that used to be added to
+the front of the "name" passed to module_param_named().  Admittedly, the
+documentation says that "name" must be "a valid C identifier which is the
+parameter name", but the (ab)usage here used to work (the name starts
+with a number).
 
-The full sysrq-M output (at least the 49 lines I could read without
-working scrollback) is here.  I went over it twice (at least, all the
-varying numbers; I may have a typo in some of the fixed text), so I'm
-pretty sure it's right.
+I have used the modules tree from 20121115 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 181
-HighMem per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 172
-active_anon:14759 inactive_anon:6504 isolated_anon:0
- active_file:126610 inactive_file:283340 isolated_file:0
- unevictable:0 dirty:289 writeback:0 unstable:0
- free:39060 slab_reclaimable:44235 slab_unreclaimable:1079
- mapped:4468 shmem:580 pagetables:301 bounce:0
- free_cma:0
-DMA free:9044kB min:784kB low:980kB high:1176kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:6868kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15804kB mlocked:0kB dirty:4kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 865 2016 2016
-Normal free:107016kB min:44012kB low:55012kB high:66016kB active_anon:9096kB inactive_anon:9344kB active_file:296716kB inactive_file:257136kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB mlocked:0kB dirty:1152kB writeback:0kB mapped:4kB shmem:0kB slab_reclaimable:176940kB slab_unreclaimable:4316kB kernel_stack:1104kB pagetables:1204kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 9207 9207
-HighMem free:40180kB min:512kB low:15148kB high:29784kB active_anon:49940kB inactive_anon:16672kB active_file:209724kB inactive_file:869356kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:1178552kB mlocked:0kB dirty:4kB writeback:0kB mapped:17868kB shmem:2320kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_Reserve[]: 0 0 0 0
-DMA: 1*4kB 2*8kB 2*16kB 1*32kB 2*64kB 1*128kB 2*256kB 2*512kB 1*1024kB 1*2048kB 1*4096kB = 9044kB
-Normal: 572*4kB 129*8kB 33*16kB 42*32kB 33*64kB 15*128kB 8*256kB 3*512kB 6*1024kB 3*2048kB 20*4096kB = 107016kB
-HighMem: 407*4kB 199*8kB 124*16kB 107*32kB 53*64kB 10*128kB 5*256kB 4*512kB 3*1024kB 2*2048kB 4*4096kB = 40180kB
-410530 total pagecahce pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 4883724kB
-Total swap = 4883724kB
-524268 pages RAM
-296958 pages HighMem
-5331 pages reserved
-390516 pages shared	FLUCTUATES: 390508, 468, 412, 492, 484, 428, 524, 452, 468, ...
-366021 pages non-shared
+--Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/
+Content-Type: application/pgp-signature
 
-As mentioned, the "shared" number fluctuates, and the "Normal" free pages
-count also fluctuates a little bit, but less.  (The 32kB free count is
-sometimes 43 or 41 rather than 42, bringing the total to 107048 or 106984.)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I do see that the free space figures appear to agree.  I couldn't find a
-number that appeared to change in sync with the "pages shared" figure.
+iQIcBAEBCAAGBQJQsuvGAAoJEECxmPOUX5FESGcP/0z+Ym2MFd8xVDW/fuGpLCQS
+/toaNAeHyz82sVK6TRcDoZ5WmqCXvDBlkNZRSaETjx6eV2yMk4fFjXiMeS6bF50i
+KkjUt2IScKreW5tnc/Hn3ukFUngoOQgniF4XgvUl/KpXFoQsCkQO64NNiSQX0cVa
+QnTZWD1g5AUMUZqMiTLzTXMcS0aRH5okKFTcKAzS/YJCu236xXCikeXAXqloD0sU
+pfv55Wx/bDr9V97e1zCfYDZdT6H8wHeFOCWV4aUF/fW+z1FvweqZZL6VVTlPFI0O
+PbAgrpU+jB0IBoL+CtB+sIP5sIsXIB4DvXivFltXMy42jGpVtQuxzJ0bSTNLxTpn
+dzanYlppVnFxQZWu+ZFAOAp/UUEb75BcvG13jRjCuOhSi+UeUILGejgVK2ZYJJgD
+LqJ60dwVjo5++gl1jJvJgCxItBJRRZXxda4kAOoGtbGLNr5YxrHkb72ZVPwBS1r7
+FOz0p2q8jgDqxX81aefk3hPaGgm7pjzHLwbu3iC5xDSHknflIPEZ+wYCXJn+CdC3
+TDz3TYNE2U2ko9bIkoTXKSriaX0zZgtlG7gAj8yLU85lSgf5C6lLWy0LC3X+0FbQ
+XOqwB+VVeCh00qLX7jq/F/1UXIEeq+/YlYPR2PMgo3+eNkH12RA6o8qwwhlgnEBM
+ESxuK1WPkThqSBRQgQCC
+=pH8Z
+-----END PGP SIGNATURE-----
 
-I could remove Dave Hansen's patch and test again, if that would
-help.
-
-Any other ideas?
-
-Thank you very much for the assistance!
+--Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/--
