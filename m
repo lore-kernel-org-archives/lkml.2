@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2KZVHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:07:23 -0500
-Received: from mail20.dotsterhost.com ([66.11.232.73]:33320 "EHLO
-	mail20.dotsterhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab2KZVHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:07:19 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Nov 2012 16:07:19 EST
-Date: Mon, 26 Nov 2012 14:00:38 -0700
-From: "Mark A. Greer" <mgreer@animalcreek.com>
-To: Mike Turquette <mturquette@ti.com>
-Cc: Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't mark shared helper functions as inline
-Message-ID: <20121126210038.GA3987@animalcreek.com>
-References: <1353957609-1295-1-git-send-email-Russ.Dill@ti.com>
- <20121126195742.21126.16500@nucleus>
+	id S932143Ab2KZVHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:07:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:48028 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754907Ab2KZVHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 16:07:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,323,1352102400"; 
+   d="scan'208";a="252798446"
+Date: Mon, 26 Nov 2012 22:07:23 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
+Message-ID: <20121126210723.GX12685@sortiz-mobl>
+References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
+ <50A12FF1.4000800@infradead.org>
+ <CACRpkdZj5iuyXAfynF-5r65dnakxxm2A1O602P4Lc6it8=fU9g@mail.gmail.com>
+ <50B3C13D.1050704@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121126195742.21126.16500@nucleus>
-Organization: Animal Creek Technologies, Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50B3C13D.1050704@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 11:57:42AM -0800, Mike Turquette wrote:
-> Quoting Russ Dill (2012-11-26 11:20:09)
-> > The helper functions that access the opaque struct clk should
-> > not be marked inline since they are contained in clk.c, but expected
-> > to be used by other compilation units. This causes compile errors
-> > under gcc-4.7
-> > 
-> > In file included from arch/arm/mach-omap2/clockdomain.c:25:0:
-> > arch/arm/mach-omap2/clockdomain.c: In function ‘clkdm_clk_disable’:
-> > include/linux/clk-provider.h:338:12: error: inlining failed in call to always_inline ‘__clk_get_enable_count’: function body not available
-> > arch/arm/mach-omap2/clockdomain.c:1001:28: error: called from here
-> > make[1]: *** [arch/arm/mach-omap2/clockdomain.o] Error 1
-> > make: *** [arch/arm/mach-omap2] Error 2
-> > 
+Hi Randy,
+
+On Mon, Nov 26, 2012 at 11:21:33AM -0800, Randy Dunlap wrote:
+> On 11/13/2012 05:35 AM, Linus Walleij wrote:
 > 
+> > On Mon, Nov 12, 2012 at 6:20 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > 
+> >> From: Randy Dunlap <rdunlap@infradead.org>
+> >>
+> >> Fix build errors when CONFIG_OF is not enabled by including
+> >> <linux/of.h> (needs to be added in any case).
+> >> An alternative fix could be to make the driver depend on OF.
+> >>
+> >> drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
+> >> drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
+> >> drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
+> >>
+> >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> >> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+> >> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > 
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> 
+> 
+> 
+> ping?
+> 
+> This patch is still needed in linux-next.
+Applied and pushed, thanks a lot.
 
-Hi Mike.
+Cheers,
+Samuel.
 
-> Regardless, I'm still considering this patch.  I've heard many times
-> that we should trust the compiler to optimize for us and some folks look
-> down on inlining in general.  If anyone has an opinion on removing
-> inlines from the common clk core then please do speak up.
-
-You should take a look at "Chapter 15: The inline disease" in
-Documentation/CodingStyle.
-
-Mark
---
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
