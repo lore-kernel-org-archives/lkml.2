@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab2KZRh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:37:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47902 "EHLO
+	id S933653Ab2KZRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:11:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47877 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933651Ab2KZRLf (ORCPT
+	with ESMTP id S933651Ab2KZRLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:11:35 -0500
+	Mon, 26 Nov 2012 12:11:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 187/270] net/wireless: ipw2200: Fix panic occurring in ipw_handle_promiscuous_tx()
-Date: Mon, 26 Nov 2012 14:57:57 -0200
-Message-Id: <1353949160-26803-188-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 181/270] Bluetooth: SMP: Fix setting unknown auth_req bits
+Date: Mon, 26 Nov 2012 14:57:51 -0200
+Message-Id: <1353949160-26803-182-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,46 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit bf11315eeda510ea4fc1a2bf972d8155d31d89b4 upstream.
+commit 065a13e2cc665f6547dc7e8a9d6b6565badf940a upstream.
 
-The driver does not count space of radiotap fields when allocating skb for
-radiotap packet. This leads to kernel panic with the following call trace:
+When sending a pairing request or response we should not just blindly
+copy the value that the remote device sent. Instead we should at least
+make sure to mask out any unknown bits. This is particularly critical
+from the upcoming LE Secure Connections feature perspective as
+incorrectly indicating support for it (by copying the remote value)
+would cause a failure to pair with devices that support it.
 
-...
-[67607.676067] [<c152f90f>] error_code+0x67/0x6c
-[67607.676067] [<c142f831>] ? skb_put+0x91/0xa0
-[67607.676067] [<f8cf5e5b>] ? ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf5e5b>] ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf899b>] ipw_net_hard_start_xmit+0x8b/0x90 [ipw2200]
-[67607.676067] [<f8741c5a>] libipw_xmit+0x55a/0x980 [libipw]
-[67607.676067] [<c143d3e8>] dev_hard_start_xmit+0x218/0x4d0
-...
-
-This bug was found by VittGam.
-https://bugzilla.kernel.org/show_bug.cgi?id=43255
-
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/ipw2x00/ipw2200.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/smp.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
-index 0036737..1f2edf2 100644
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -10470,7 +10470,7 @@ static void ipw_handle_promiscuous_tx(struct ipw_priv *priv,
- 		} else
- 			len = src->len;
+diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
+index 926043c..22fe004 100644
+--- a/net/bluetooth/smp.c
++++ b/net/bluetooth/smp.c
+@@ -31,6 +31,8 @@
  
--		dst = alloc_skb(len + sizeof(*rt_hdr), GFP_ATOMIC);
-+		dst = alloc_skb(len + sizeof(*rt_hdr) + sizeof(u16)*2, GFP_ATOMIC);
- 		if (!dst)
- 			continue;
+ #define SMP_TIMEOUT	msecs_to_jiffies(30000)
  
++#define AUTH_REQ_MASK   0x07
++
+ static inline void swap128(u8 src[16], u8 dst[16])
+ {
+ 	int i;
+@@ -229,7 +231,7 @@ static void build_pairing_cmd(struct l2cap_conn *conn,
+ 		req->max_key_size = SMP_MAX_ENC_KEY_SIZE;
+ 		req->init_key_dist = 0;
+ 		req->resp_key_dist = dist_keys;
+-		req->auth_req = authreq;
++		req->auth_req = (authreq & AUTH_REQ_MASK);
+ 		return;
+ 	}
+ 
+@@ -238,7 +240,7 @@ static void build_pairing_cmd(struct l2cap_conn *conn,
+ 	rsp->max_key_size = SMP_MAX_ENC_KEY_SIZE;
+ 	rsp->init_key_dist = 0;
+ 	rsp->resp_key_dist = req->resp_key_dist & dist_keys;
+-	rsp->auth_req = authreq;
++	rsp->auth_req = (authreq & AUTH_REQ_MASK);
+ }
+ 
+ static u8 check_enc_key_size(struct l2cap_conn *conn, __u8 max_key_size)
 -- 
 1.7.9.5
 
