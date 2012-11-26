@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab2KZXYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:24:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38645 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757238Ab2KZXX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:23:59 -0500
-Date: Mon, 26 Nov 2012 15:23:57 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: pv-drivers@vmware.com, George Zhang <georgezhang@vmware.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
-Message-ID: <20121126232357.GA21664@kroah.com>
-References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121126223754.GA28681@kroah.com>
- <1975718.7UL0qBEfzR@dtor-d630.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1975718.7UL0qBEfzR@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757474Ab2KZX0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:26:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29495 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757238Ab2KZX0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 18:26:43 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-02-50b3fab14714
+Message-id: <50B3FAAB.9090406@samsung.com>
+Date: Tue, 27 Nov 2012 08:26:35 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Only set GPIO if it has been requested
+References: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t8zPd2NvzYHGDybp2xxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyjq4+ylbwh73i48V3zA2Mt9m6GDk5JARMJFa13maEsMUkLtxb
+	DxTn4hASWMYoMe3BPnaYogO3ZjJDJKYzSpz+/4IVwulikpg2B6KKV0BL4sbNs2A2i4CqxJOz
+	d8BWsAHF97+4AWRzcIgKREj86ueAKBeU+DH5HgtIWARowe/7lSAjmQUWM0r82fMA7CJhAR+J
+	fW/ngo0UEgiRmDjvMQuIzSkQKvH182cwm1lAR2J/6zQ2CFteYvOat8wQJwhIfJt8CGy+hICs
+	xKYDYPdLCDSzS/z+18gE8ZikxMEVN1gmMIrNQnLSLCRjZyEZu4CReRWjaGpBckFxUnquoV5x
+	Ym5xaV66XnJ+7iZGSExI7WBc2WBxiFGAg1GJh1dh3eYAIdbEsuLK3EOMEhzMSiK8v7YDhXhT
+	EiurUovy44tKc1KLDzH6AF07kVlKNDkfGK95JfGGxgbGhoaWhmamlqYGOISVxHmbPVIChATS
+	E0tSs1NTC1KLYMYxcXBKNTAKzlsyq/7jex2dSMtvQou2KRbIKjuFWAUt3nCQ75fYzMn1Pezs
+	9nmbN96U/bXqwPUDMTlW1+W8fSuvmchH3fJhepO92qdDT/W43Nf9K79z33M6vOmC0u7yK98O
+	MR/RjCmxjanMj5/zclvntKdMzBbrHAIb/N/rSE6Nib1xS/L8h5ANnbf/64UosRRnJBpqMRcV
+	JwIACi/d7LYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jQd2NvzYHGLRclrG4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGUdXH2Ur+MNe8fHiO+YG
+	xttsXYycHBICJhIHbs1khrDFJC7cWw8U5+IQEpjOKHH6/wtWCKeLSWLanH3sIFW8AloSN26e
+	BbNZBFQlnpy9AzaJDSi+/8UNIJuDQ1QgQuJXPwdEuaDEj8n3WEDCIkDLft+vBBnJLLCYUeLP
+	ngeMIDXCAj4S+97OBRspJBAiMXHeYxYQm1MgVOLr589gNrOAjsT+1mlsELa8xOY1b5knMArM
+	QrJiFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjrhnUjsYVzZYHGIU4GBU
+	4uFVWLc5QIg1say4MvcQowQHs5II76/tQCHelMTKqtSi/Pii0pzU4kOMPsAAmMgsJZqcD0wG
+	eSXxhsYmZkaWRmbGJubGxjiElcR5mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUw6nA+OZIpd6Zd
+	982Nb2XFvlxsF/31mCs6b4smKEsU3CuzfNG64jbTkYZPet+iZO9WsNmczr3qlKfcteL28R+/
+	v5a31HUcesx/gLVN7HRqVCYfY1VGt65pxGnX8jeaDMVCG05NzVnYEH6odI140dwDm298/jWj
+	MbF2+YqFN5cdOOAsJhr4/6a+EktxRqKhFnNRcSIADHGV5OUCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 03:01:04PM -0800, Dmitry Torokhov wrote:
-> On Monday, November 26, 2012 02:37:54 PM Greg KH wrote:
-> > On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
-> > > * * *
-> > > This series of VMCI linux upstreaming patches include latest udpate from
-> > > VMware.
-> > > 
-> > > Summary of changes:
-> > > 	- Sparse clean.
-> > > 	- Checkpatch clean with one exception, a "complex macro" in
-> > > 	
-> > > 	  which we can't add parentheses.
-> > > 	
-> > > 	- Remove all runtime assertions.
-> > > 	- Fix device name, so that existing user clients work.
-> > > 	- Fix VMCI handle lookup.
-> > 
-> > Given that you failed to answer the questions I asked the last time you
-> > posted this series, and you did not make any of the changes I asked for,
-> > I can't accept this (nor should you expect me to.)
-> > 
-> > And people wonder why reviewers get so grumpy...
-> > 
-> > My trees are now closed for the 3.8 merge window, so feel free to try
-> > again after 3.8-rc1 is out, and you have answered, and addressed, the
-> > questions and comments I made.
+On 11/26/2012 08:28 PM, Mark Brown wrote:
+> The micd_pol GPIO is only requested if we've specified one greater than 0
+> so apply the same test before we set it.
 > 
-> Greg, there were 3 specific complaints from you:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 > 
-> 1. "Given that this is a static function, there's no need for these
-> "asserts", right?  Please send a follow-on patch removing all BUG_ON()
-> calls from these files, it's not acceptable to crash a user's box from
-> a driver that is handling parameters you are feeding it."
-> 
-> 2. "You obviously didn't run checkpatch on this file"
-> 
-> 3. "This line causes sparse to complain.  The odds that userspace knows
-> what gcc is using for "bool" is pretty low."
-> 
-> Given the fact that the series addresses all 3 I fail to understand why
-> you would be grumpy.
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index cdab9e5..585882e 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -85,8 +85,9 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+>  {
+>  	struct arizona *arizona = info->arizona;
+>  
+> -	gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
+> -				info->micd_modes[mode].gpio);
+> +	if (arizona->pdata.micd_pol_gpio > 0)
+> +		gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
+> +					info->micd_modes[mode].gpio);
 
-You are ignoring my response to patch 12/12 for some reason (which
-repeated a bunch of the questions I had with that patch the last time it
-was posted.)  That is what I am referring to here.  None of those
-questions were addressed.
-
-Also, how was I to know that those 3 comments above were addressed?
-When someone posts questions and comments, please respond to those
-comments.  Don't just not respond at all and post the whole series 2
-weeks later with things changed and a vague comment of "summary of
-changes" in the 00 message.  Otherwise I will assume that you never even
-saw my post.
-
-In other words, if someone takes the time to review and post comments,
-the least you can do is acknowledge those comments, right?
-
-thanks,
-
-greg k-h
+Why not use gpio_is_valid() function to test arizona->pdata.micd_pol_gpio ?
