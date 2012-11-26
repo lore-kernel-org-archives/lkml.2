@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab2KZQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:42:16 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53368 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab2KZQmJ (ORCPT
+	id S1755614Ab2KZQmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:42:14 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40950 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab2KZQmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 11:42:09 -0500
+	Mon, 26 Nov 2012 11:42:10 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Have of_device_add call platform_device_add rather than device_add
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-In-Reply-To: <20121122173020.GA8473@obsidianresearch.com>
-References: <20121121072448.GG19837@obsidianresearch.com> <20121121155104.726B83E0AE2@localhost> <20121121174453.GD6406@obsidianresearch.com> <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com> <20121121181430.GE6406@obsidianresearch.com> <20121122153621.452CA3E129E@localhost> <20121122173020.GA8473@obsidianresearch.com>
-Date: Mon, 26 Nov 2012 14:30:02 +0000
-Message-Id: <20121126143002.121FF3E1A11@localhost>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
+References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <1353149747-31871-2-git-send-email-acourbot@nvidia.com> <20121120215429.B621F3E1821@localhost> <13540495.epaCf4JVn9@percival> <20121122133941.24B883E129E@localhost> <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
+Date: Mon, 26 Nov 2012 15:34:53 +0000
+Message-Id: <20121126153453.2AA023E1AAA@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 10:30:20 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> On Thu, Nov 22, 2012 at 03:36:21PM +0000, Grant Likely wrote:
+On Thu, 22 Nov 2012 22:40:21 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> On Thu, Nov 22, 2012 at 01:39:41PM +0000, Grant Likely wrote:
+> [...]
+> > I do think that each sequence should be contained within a single
+> > property, but I'm open to other suggestions.
 > 
-> > Hmm... I've not tried it with assigned-address. I tried with two sibling
-> > platform devices using just the 'reg' property. That the kernel will
-> > complain about. For powerpc-only, the patch I posted allows the device
-> > to get registered anyway even though the range incorrectly overlaps.
+> IIRC a very early prototype did implement something like that. However
+> because of the resource issues this had to be string based, so that the
+> sequences looked somewhat like (Alex, correct me if I'm wrong):
 > 
-> My second example was done with the reg property..
+> 	power-on = <"REGULATOR", "power", 1, "GPIO", "enable", 1>;
 > 
->                 gpio0: gpio@10100 {
->                         compatible = "marvell,orion-gpio";
->                         #gpio-cells = <2>;
->                         gpio-controller;
->                         reg = <0x10100 0x40>;
->                 }
->                 chip_cfg@0 {
->                         compatible = "orc,chip_config";
->                         // Doubles up on gpio0
->                         reg = <0x10100 0x4>;
->                 };
+> Instead we could possibly have something like:
 > 
-> 
-> f1010100-f101013f : /internal@f1000000/gpio@10100
->   f1010100-f1010103 : /internal@f1000000/chip_cfg@0
-> 
-> What did you try? Maybe order matters?
+> 	power-on = <0 &reg 1,
+> 		    1 &gpio 42 0 1>;
 
-It might. I tried on qemu with versatile. I've written a new test block
-with different overlaps. Here's the block and the results:
+Yes, that would work, although I still think it would be a good idea to
+split the used resources off into the gpios/pwms/regs/etc properties.
 
-     dummy@10201000 {
-             compatible = "acme,test";
-             reg = <0x10201000 0x1000>;
-     };
+> Where the first cell in each entry defines the type (0 = regulator, 1 =
+> GPIO) and the rest would be a regular OF specifier for the given type of
+> resource along with some defined parameter such as enable/disable,
+> voltage, delay in ms, ... I don't know if that sounds any better. It
+> looks sort of cryptic but it is more "in the spirit of" DT, right Grant?
 
-     overlap@10200800 {
-             compatible = "acme,test";
-             reg = <0x10200800 0x1000>;
-     };
-
-     overlap@10201800 {
-             compatible = "acme,test";
-             reg = <0x10201800 0x1000>;
-     };
-
-     overlap@10201400 {
-             compatible = "acme,test";
-             reg = <0x10201400 0x800>;
-     };
-
-     overlap@10200c00 {
-             compatible = "acme,test";
-             reg = <0x10200c00 0x1800>;
-     };
-
->From the kernel log:
-10200800.overlap: failed to claim resource 0
-10201800.overlap: failed to claim resource 0
-
-# ls /sys/bus/platform/devices/
-10002000.i2c      10010000.net      10201000.dummy    alarmtimer
-10003000.intc     10140000.intc     10201400.overlap  amba.0
-10008000.lcd      10200c00.overlap  34000000.flash    fpga.1
-
-So, overlaps that are completely inside or completely outside the
-already registered range don't appear to be detected. That may be a bug
-(unless it is designed to work that way)
+It is still kind of a ham-handed approach, but it does fit better with
+existing conventions than the hierarchy of nodes does.
 
 g.
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
