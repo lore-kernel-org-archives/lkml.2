@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab2KZVW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:22:57 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65480 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757103Ab2KZVW4 (ORCPT
+	id S1757221Ab2KZV0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:26:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62292 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab2KZV0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:22:56 -0500
-From: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Daniel Santos <daniel.santos@pobox.com>, Michal Marek <mmarek@suse.cz>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>,
-        Yacine Belkadi <yacine.belkadi.1@gmail.com>
-Subject: [PATCHv2 2/2] scripts/kernel-doc: check that non-void fcts describe their return value
-Date: Mon, 26 Nov 2012 22:22:27 +0100
-Message-Id: <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com>
-References: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com>
+	Mon, 26 Nov 2012 16:26:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <50B3C211.6000600@wwwdotorg.org>
+References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
+	<1353349867-28494-11-git-send-email-swarren@wwwdotorg.org>
+	<CACRpkdb-cmwTH_7EJO02m2+CCZrJ2ycgtGpf8stoiFKSm8jqww@mail.gmail.com>
+	<50B3C211.6000600@wwwdotorg.org>
+Date: Mon, 26 Nov 2012 22:26:10 +0100
+Message-ID: <CACRpkdaFfKKVjS0e5dkHE-faaedOdRaQR8ObEmzq5X6ADuo0Ng@mail.gmail.com>
+Subject: Re: [PATCH V3 10/11] ARM: remove struct sys_timer suspend and resume fields
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Jonas ABERG <jonas.aberg@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a function has a return value, but its kernel-doc comment doesn't contain a
-"Return" section, then emit the following warning:
+On Mon, Nov 26, 2012 at 8:25 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/21/2012 01:28 AM, Linus Walleij wrote:
 
-   Warning(file.h:129): No description found for return value of 'fct'
+>> Oh and there was this comment/TODO:
+>> I was thinking that if your patch set is introducing a
+>> plethora of new users of these hooks we should maybe
+>> stick a patch at the beginning of the series renaming the
+>> hooks to *_noirq, but if it's a major obstacle it can surely wait.
+>
+> I think I'd prefer to keep that rename separate and do it later; while
+> this series does introduce a few new users of the type, there are many
+> more pre-existing users. Renaming all the users would end up making this
+> series potentially conflict with addition of new users in tip.git or
+> elsewhere, whereas any possible current conflicts from this series
+> should be resolvable in arm-soc pretty easily I hope, so I'd rather
+> create a separate series that does the rename, and probably apply it to
+> tip.git, probably for 3.10?
 
-Note: This check emits a lot of warnings at the moment, because many functions
-don't have a 'Return' doc section. So until the number of warnings goes
-sufficiently down, the check is only performed in verbose mode.
+Sure no big deal.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
----
- scripts/kernel-doc |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
-
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index 46e7aff..28b7615 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -137,6 +137,8 @@ use strict;
- # should document the "Context:" of the function, e.g. whether the functions
- # can be called form interrupts. Unlike other sections you can end it with an
- # empty line.
-+# A non-void function should have a "Return:" section describing the return
-+# value(s).
- # Example-sections should contain the string EXAMPLE so that they are marked
- # appropriately in DocBook.
- #
-@@ -315,6 +317,7 @@ my $section_default = "Description";	# default section
- my $section_intro = "Introduction";
- my $section = $section_default;
- my $section_context = "Context";
-+my $section_return = "Return";
- 
- my $undescribed = "-- undescribed --";
- 
-@@ -2039,6 +2042,28 @@ sub check_sections($$$$$$) {
- }
- 
- ##
-+# Checks the section describing the return value of a function.
-+sub check_return_section {
-+        my $file = shift;
-+        my $declaration_name = shift;
-+        my $return_type = shift;
-+
-+        # Ignore an empty return type (It's a macro)
-+        # Ignore functions with a "void" return type. (But don't ignore "void *")
-+        if (($return_type eq "") || ($return_type =~ /void\s*\w*\s*$/)) {
-+                return;
-+        }
-+
-+        if (!defined($sections{$section_return}) ||
-+            $sections{$section_return} eq "") {
-+                print STDERR "Warning(${file}:$.): " .
-+                        "No description found for return value of " .
-+                        "'$declaration_name'\n";
-+                ++$warnings;
-+        }
-+}
-+
-+##
- # takes a function prototype and the name of the current file being
- # processed and spits out all the details stored in the global
- # arrays/hashes.
-@@ -2109,6 +2134,15 @@ sub dump_function($$) {
- 	my $prms = join " ", @parameterlist;
- 	check_sections($file, $declaration_name, "function", $sectcheck, $prms, "");
- 
-+        # This check emits a lot of warnings at the moment, because many
-+        # functions don't have a 'Return' doc section. So until the number
-+        # of warnings goes sufficiently down, the check is only performed in
-+        # verbose mode.
-+        # TODO: always perform the check.
-+        if ($verbose) {
-+                check_return_section($file, $declaration_name, $return_type);
-+        }
-+
-     output_declaration($declaration_name,
- 		       'function',
- 		       {'function' => $declaration_name,
--- 
-1.7.9.5
-
+Yours,
+Linus Walleij
