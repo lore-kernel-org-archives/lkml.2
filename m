@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab2KZRFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:05:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47460 "EHLO
+	id S932780Ab2KZRFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:05:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684Ab2KZRFo (ORCPT
+	with ESMTP id S932684Ab2KZRFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:05:44 -0500
+	Mon, 26 Nov 2012 12:05:49 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 095/270] libceph: transition socket state prior to actual connect
-Date: Mon, 26 Nov 2012 14:56:25 -0200
-Message-Id: <1353949160-26803-96-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 096/270] libceph: fix NULL dereference in reset_connection()
+Date: Mon, 26 Nov 2012 14:56:26 -0200
+Message-Id: <1353949160-26803-97-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,46 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 89a86be0ce20022f6ede8bccec078dbb3d63caaa upstream.
+commit 26ce171915f348abd1f41da1ed139d93750d987f upstream.
 
-Once we call ->connect(), we are racing against the actual
-connection, and a subsequent transition from CONNECTING ->
-CONNECTED.  Set the state to CONNECTING before that, under the
-protection of the mutex, to avoid the race.
+We dereference "con->in_msg" on the line after it was set to NULL.
 
-This was introduced in 928443cd9644e7cfd46f687dbeffda2d1a357ff9,
-with the original socket state code.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ceph/messenger.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index ff12d32..c52d587 100644
+index c52d587..0a6fdf8 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -321,6 +321,7 @@ static int ceph_tcp_connect(struct ceph_connection *con)
- 
- 	dout("connect %s\n", ceph_pr_addr(&con->peer_addr.in_addr));
- 
-+	con_sock_state_connecting(con);
- 	ret = sock->ops->connect(sock, (struct sockaddr *)paddr, sizeof(*paddr),
- 				 O_NONBLOCK);
- 	if (ret == -EINPROGRESS) {
-@@ -336,8 +337,6 @@ static int ceph_tcp_connect(struct ceph_connection *con)
- 		return ret;
+@@ -440,7 +440,7 @@ static void reset_connection(struct ceph_connection *con)
+ 		con->in_msg->con = NULL;
+ 		ceph_msg_put(con->in_msg);
+ 		con->in_msg = NULL;
+-		ceph_con_put(con->in_msg->con);
++		ceph_con_put(con);
  	}
- 	con->sock = sock;
--	con_sock_state_connecting(con);
--
- 	return 0;
- }
  
+ 	con->connect_seq = 0;
 -- 
 1.7.9.5
 
