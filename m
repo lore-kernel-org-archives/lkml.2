@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2KZKaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:30:46 -0500
-Received: from smtp-out-226.synserver.de ([212.40.185.226]:1417 "EHLO
-	smtp-out-226.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab2KZKap (ORCPT
+	id S1754746Ab2KZKbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:31:23 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:41401 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754299Ab2KZKbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:30:45 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 15713
-Message-ID: <50B344D6.8030608@metafoo.de>
-Date: Mon, 26 Nov 2012 11:30:46 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	Mon, 26 Nov 2012 05:31:22 -0500
+Message-ID: <50B344FC.4070405@st.com>
+Date: Mon, 26 Nov 2012 11:31:24 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com>
-In-Reply-To: <50AF4584.7020604@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Byungho An <bh74.an@samsung.com>
+Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] net: stmmac: change GMAC control register for SGMII
+References: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
+In-Reply-To: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 10:44 AM, Peter Ujfalusi wrote:
-> Hi Grant,
-> 
-> On 11/23/2012 10:13 AM, Peter Ujfalusi wrote:
->> Hi Grant,
->>
->> On 11/23/2012 08:55 AM, Grant Likely wrote:
->>> Ugh. and this is why I wanted the PWM and GPIO subsystems to use the
->>> same namespace and binding. <grumble, mutter> But that's not your fault.
->>>
->>> It's pretty horrible to have a separate translator node to convert a PWM
->>> into a GPIO (with output only of course). The gpio properties should
->>> appear directly in the PWM node itself and the translation code should
->>> be in either the pwm or the gpio core. I don't think it should look like
->>> a separate device.
->>
->> Let me see if I understand your suggestion correctly. In the DT you suggest
->> something like this:
->>
->> twl_pwmled: pwmled {
->> 	compatible = "ti,twl4030-pwmled";
->> 	#pwm-cells = <2>;
->> 	#gpio-cells = <2>;
->> 	gpio-controller;
->> };
-> 
-> After I thought about this.. Is this what we really want?
-> After all what we have here is a PWM generator used to emulate a GPIO signal.
-> The PWM itself can be used for driving a LED (standard LED or backlight and we
-> have DT bindings for these already), vibra motor, or other things.
-> If we combine the PWM with GPIO we should go and 'bloat' the DT node to also
-> include all sort of other uses of PWM at once?
-> 
-> IMHO it is better to keep them as separate things.
-> pwm node to describe the PWM generator,
-> separate nodes to describe it's uses like led, backlight, motor and gpio.
-> 
+On 11/23/2012 10:04 AM, Byungho An wrote:
+>
+> This patch changes GMAC control register (TC(Transmit
+> Configuration) and PS(Port Selection) bit for SGMII.
+> In case of SGMII, TC bit is '1' and PS bit is 0.
 
-The difference here is that the LED, backlight, etc are all different
-physical devices begin driven by the pwm pin, so it makes sense to have a
-device tree node for them, while using the pwm as gpio is just a different
-function of the same physical pin.  So in a sense the pwm controller also
-becomes a gpio controller. I like the idea of the pwm core automatically
-instantiating a pwm-gpo device if it sees a gpio-controller property in the
-pwm device devicetree node.
+IMO this new support that should be released for net-next and further 
+effort is actually needed.
 
-- Lars
+The availability of the PCS registers is given by looking at the HW 
+feature register. In fact, these are optional registers.
+I don't want to break the compatibility with old chips.
+
+I do not see why we have to use Kconfig macro to select ANE etc
+(as you do in your patches).
+The driver could directly manage the phy device by itself if possible 
+and the stmmac_init_phy should be reworked.
+
+There are several things that need to be implemented. For example:
+
+The ISR (e.g. priv->hw->mac->host_irq_status) should be able to manage 
+these new interrupts.
+The code has to be able to maintain the user interface.
+For example if you want to enable ANE or manage Advertisement caps.
+
+> Signed-off-by: Byungho An <bh74.an@samsung.com>
+> ---
+
+[snip]
+
+> +	if (priv->phydev->interface == PHY_INTERFACE_MODE_SGMII) {
+> +		value = readl(priv->ioaddr);
+> +		/* GMAC_CONTROL_TC : transmit config in RGMII/SGMII */
+> +		value |= 0x1000000;
+> +		/* GMAC_CONTROL_PS : Port Selection for GMII */
+> +		value &= ~(0x8000);
+> +		writel(value, priv->ioaddr);
+> +	}
+> +
+
+
+This parts of code have to be moved in
+drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+
+Pls, do not use value |= 0x1000000 but provide the appropriate defines.
+
+>   	/* Request the IRQ lines */
+>   	ret = request_irq(dev->irq, stmmac_interrupt,
+>   			 IRQF_SHARED, dev->name, dev);
+>
