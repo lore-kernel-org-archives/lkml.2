@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab2KZRKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:10:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47806 "EHLO
+	id S933560Ab2KZRKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:10:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47818 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535Ab2KZRK1 (ORCPT
+	with ESMTP id S933535Ab2KZRKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:10:27 -0500
+	Mon, 26 Nov 2012 12:10:35 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Nicolas Boullis <nboullis@debian.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 169/270] SUNRPC: Prevent kernel stack corruption on long values of flush
-Date: Mon, 26 Nov 2012 14:57:39 -0200
-Message-Id: <1353949160-26803-170-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 171/270] usb: acm: fix the computation of the number of data bits
+Date: Mon, 26 Nov 2012 14:57:41 -0200
+Message-Id: <1353949160-26803-172-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,56 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Nicolas Boullis <nboullis@debian.org>
 
-commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
+commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
 
-The buffer size in read_flush() is too small for the longest possible values
-for it. This can lead to a kernel stack corruption:
+The current code assumes that CSIZE is 0000060, which appears to be
+wrong on some arches (such as powerpc).
 
-[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
-[   43.047329]
-[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
-[   43.050038] Call Trace:
-[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
-[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
-[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
-[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
-[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
-[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
-[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
-[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
-[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
-[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
-[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
-[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
-[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
-
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Nicolas Boullis <nboullis@debian.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/sunrpc/cache.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 47ad266..97bbcdc 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1406,11 +1406,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
- 			  size_t count, loff_t *ppos,
- 			  struct cache_detail *cd)
- {
--	char tbuf[20];
-+	char tbuf[22];
- 	unsigned long p = *ppos;
- 	size_t len;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index f4593ee..780e0d0 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -818,10 +818,6 @@ static const __u32 acm_tty_speed[] = {
+ 	2500000, 3000000, 3500000, 4000000
+ };
  
--	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
-+	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
- 	len = strlen(tbuf);
- 	if (p >= len)
- 		return 0;
+-static const __u8 acm_tty_size[] = {
+-	5, 6, 7, 8
+-};
+-
+ static void acm_tty_set_termios(struct tty_struct *tty,
+ 						struct ktermios *termios_old)
+ {
+@@ -835,7 +831,21 @@ static void acm_tty_set_termios(struct tty_struct *tty,
+ 	newline.bParityType = termios->c_cflag & PARENB ?
+ 				(termios->c_cflag & PARODD ? 1 : 2) +
+ 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
+-	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		newline.bDataBits = 5;
++		break;
++	case CS6:
++		newline.bDataBits = 6;
++		break;
++	case CS7:
++		newline.bDataBits = 7;
++		break;
++	case CS8:
++	default:
++		newline.bDataBits = 8;
++		break;
++	}
+ 	/* FIXME: Needs to clear unsupported bits in the termios */
+ 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+ 
 -- 
 1.7.9.5
 
