@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2KZUTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 15:19:04 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46701 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab2KZUS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 15:18:59 -0500
+	id S1756158Ab2KZUT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 15:19:28 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35100 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756067Ab2KZUTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 15:19:25 -0500
+Date: Mon, 26 Nov 2012 15:19:18 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121126201918.GD2301@cmpxchg.org>
+References: <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <20121126174622.GE2799@cmpxchg.org>
+ <20121126180444.GA12602@dhcp22.suse.cz>
+ <20121126182421.GB2301@cmpxchg.org>
+ <20121126190329.GB12602@dhcp22.suse.cz>
+ <20121126192941.GC2301@cmpxchg.org>
+ <20121126200848.GC12602@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20121126105839.GC963@stefanha-thinkpad.redhat.com>
-References: <CAK3+h2xLLnP03+cP=-aSf=xmiEuZ-RFhxP1DoeO9Hs8ksoX6zw@mail.gmail.com>
-	<20121123072941.GH22787@stefanha-thinkpad.hitronhub.home>
-	<CAK3+h2xBwtzbO15fJUZprv7AyEnqr3CHoa+z_7zY0qSwp5g5aQ@mail.gmail.com>
-	<20121126105839.GC963@stefanha-thinkpad.redhat.com>
-Date: Mon, 26 Nov 2012 12:18:58 -0800
-Message-ID: <CAK3+h2w5d4QRQpocsR23pQTH3xuPdZYOk=fOe47gf1DVE+53Sg@mail.gmail.com>
-Subject: Re: KVM Disk i/o or VM activities causes soft lockup?
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126200848.GC12602@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 2:58 AM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> On Fri, Nov 23, 2012 at 10:34:16AM -0800, Vincent Li wrote:
->> On Thu, Nov 22, 2012 at 11:29 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
->> > On Wed, Nov 21, 2012 at 03:36:50PM -0800, Vincent Li wrote:
->> >> We have users running on redhat based distro (Kernel
->> >> 2.6.32-131.21.1.el6.x86_64 ) with kvm, when customer made cron job
->> >> script to copy large files between kvm guest or some other user space
->> >> program leads to disk i/o or VM activities, users get following soft
->> >> lockup message from console:
->> >>
->> >> Nov 17 13:44:46 slot1/luipaard100a err kernel: BUG: soft lockup -
->> >> CPU#4 stuck for 61s! [qemu-kvm:6795]
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Modules linked in:
->> >> ebt_vlan nls_utf8 isofs ebtable_filter ebtables 8021q garp bridge stp
->> >> llc ipt_REJECT iptable_filter xt_NOTRACK nf_conntrack iptable_raw
->> >> ip_tables loop ext2 binfmt_misc hed womdict(U) vnic(U) parport_pc lp
->> >> parport predis(U) lasthop(U) ipv6 toggler vhost_net tun kvm_intel kvm
->> >> jiffies(U) sysstats hrsleep i2c_dev datastor(U) linux_user_bde(P)(U)
->> >> linux_kernel_bde(P)(U) tg3 libphy serio_raw i2c_i801 i2c_core ehci_hcd
->> >> raid1 raid0 virtio_pci virtio_blk virtio virtio_ring mvsas libsas
->> >> scsi_transport_sas mptspi mptscsih mptbase scsi_transport_spi 3w_9xxx
->> >> sata_svw(U) ahci serverworks sata_sil ata_piix libata sd_mod
->> >> crc_t10dif amd74xx piix ide_gd_mod ide_core dm_snapshot dm_mirror
->> >> dm_region_hash dm_log dm_mod ext3 jbd mbcache
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Pid: 6795, comm:
->> >> qemu-kvm Tainted: P           ----------------
->> >> 2.6.32-131.21.1.el6.f5.x86_64 #1
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Call Trace:
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <IRQ>
->> >> [<ffffffff81084f95>] ? get_timestamp+0x9/0xf
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff810855d6>] ? watchdog_timer_fn+0x130/0x178
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff81059f11>] ? __run_hrtimer+0xa3/0xff
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8105a188>] ? hrtimer_interrupt+0xe6/0x190
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8105a14b>] ? hrtimer_interrupt+0xa9/0x190
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8101e5a9>] ? hpet_interrupt_handler+0x26/0x2d
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8105a26f>] ? hrtimer_peek_ahead_timers+0x9/0xd
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff81044fcc>] ? __do_softirq+0xc5/0x17a
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff81003adc>] ? call_softirq+0x1c/0x28
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8100506b>] ? do_softirq+0x31/0x66
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff81003673>] ? call_function_interrupt+0x13/0x20
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <EOI>
->> >> [<ffffffffa0219986>] ? vmx_get_msr+0x0/0x123 [kvm_intel]
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffffa01d11c0>] ? kvm_arch_vcpu_ioctl_run+0x80e/0xaf1 [kvm]
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffffa01d11b4>] ? kvm_arch_vcpu_ioctl_run+0x802/0xaf1 [kvm]
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8114e59b>] ? inode_has_perm+0x65/0x72
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffffa01c77f5>] ? kvm_vcpu_ioctl+0xf2/0x5ba [kvm]
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff8114e642>] ? file_has_perm+0x9a/0xac
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff810f9ec2>] ? vfs_ioctl+0x21/0x6b
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff810fa406>] ? do_vfs_ioctl+0x487/0x4da
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff810fa4aa>] ? sys_ioctl+0x51/0x70
->> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
->> >> [<ffffffff810029d1>] ? system_call_fastpath+0x3c/0x41
->> >
->> > This soft lockup is report on the host?
->> >
->> > Stefan
->>
->> Yes, it is on host. we just recommend users not doing large file
->> copying, just wondering if there is potential kernel bug. it seems the
->> softlockup backtrace pointing to hrtimer and softirq. my naive
->> knowledge is that the watchdog thread is on top of hrtimer which is on
->> top of softirq.
->
-> Since the soft lockup detector is firing on the host, this seems like a
-> hardware/driver problem.  Have you ever had soft lockups running non-KVM
-> workloads on this host?
->
-> Stefan
+On Mon, Nov 26, 2012 at 09:08:48PM +0100, Michal Hocko wrote:
+> On Mon 26-11-12 14:29:41, Johannes Weiner wrote:
+> > On Mon, Nov 26, 2012 at 08:03:29PM +0100, Michal Hocko wrote:
+> > > On Mon 26-11-12 13:24:21, Johannes Weiner wrote:
+> > > > On Mon, Nov 26, 2012 at 07:04:44PM +0100, Michal Hocko wrote:
+> > > > > On Mon 26-11-12 12:46:22, Johannes Weiner wrote:
+> > > [...]
+> > > > > > I think global oom already handles this in a much better way: invoke
+> > > > > > the OOM killer, sleep for a second, then return to userspace to
+> > > > > > relinquish all kernel resources and locks.  The only reason why we
+> > > > > > can't simply change from an endless retry loop is because we don't
+> > > > > > want to return VM_FAULT_OOM and invoke the global OOM killer.
+> > > > > 
+> > > > > Exactly.
+> > > > > 
+> > > > > > But maybe we can return a new VM_FAULT_OOM_HANDLED for memcg OOM and
+> > > > > > just restart the pagefault.  Return -ENOMEM to the buffered IO syscall
+> > > > > > respectively.  This way, the memcg OOM killer is invoked as it should
+> > > > > > but nobody gets stuck anywhere livelocking with the exiting task.
+> > > > > 
+> > > > > Hmm, we would still have a problem with oom disabled (aka user space OOM
+> > > > > killer), right? All processes but those in mem_cgroup_handle_oom are
+> > > > > risky to be killed.
+> > > > 
+> > > > Could we still let everybody get stuck in there when the OOM killer is
+> > > > disabled and let userspace take care of it?
+> > > 
+> > > I am not sure what exactly you mean by "userspace take care of it" but
+> > > if those processes are stuck and holding the lock then it is usually
+> > > hard to find that out. Well if somebody is familiar with internal then
+> > > it is doable but this makes the interface really unusable for regular
+> > > usage.
+> > 
+> > If oom_kill_disable is set, then all processes get stuck all the way
+> > down in the charge stack.  Whatever resource they pin, you may
+> > deadlock on if you try to touch it while handling the problem from
+> > userspace.
+> 
+> OK, I guess I am getting what you are trying to say. So what you are
+> suggesting is to just let mem_cgroup_out_of_memory send the signal and
+> move on without retry (or with few charge retries without further OOM
+> killing) and fail the charge with your new FAULT_OOM_HANDLED (resp.
+> something like FAULT_RETRY) error code resp. ENOMEM depending on the
+> caller.  OOM disabled case would be "you are on your own" because this
+> has been dangerous anyway. Correct?
 
-this soft lockup only triggers when running KVM, also users used
-another script in cron job to restart 4 kvm instance every 5 mintues (
-insane to me) that also causing tons of softlock up message during the
-kvm instance startup . we have already told customer stop doing that
-and the softlockup message disappear.
+Yes.
 
-Vincent
+> I do agree that the current endless retry loop is far from being ideal
+> and can see some updates but I am quite nervous about any potential
+> regressions in this area (e.g. too aggressive OOM etc...). I have to
+> think about it some more.
+
+Agreed on all points.  Maybe we can keep a couple of the oom retry
+iterations or something like that, which is still much more than what
+global does and I don't think the global OOM killer is overly eager.
+
+Testing will show more.
+
+> Anyway if you have some more specific ideas I would be happy to review
+> patches.
+
+Okay, I just wanted to check back with you before going down this
+path.  What are we going to do short term, though?  Do you want to
+push the disable-oom-for-pagecache for now or should we put the
+VM_FAULT_OOM_HANDLED fix in the next version and do stable backports?
+
+This issue has been around for a while so frankly I don't think it's
+urgent enough to rush things.
+
