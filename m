@@ -1,63 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab2KZN4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:56:43 -0500
-Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:32857 "EHLO
-	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab2KZN4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:56:41 -0500
-Message-ID: <50B3754A.50804@calxeda.com>
-Date: Mon, 26 Nov 2012 07:57:30 -0600
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1753795Ab2KZOHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 09:07:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752832Ab2KZOHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 09:07:04 -0500
+Date: Mon, 26 Nov 2012 15:06:45 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, riel@redhat.com
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
+ potential undercommit case
+Message-ID: <20121126140644.GA10731@turtle.usersys.redhat.com>
+References: <20121126120740.2595.33651.sendpatchset@codeblue>
+ <20121126120804.2595.20280.sendpatchset@codeblue>
+ <20121126134301.GB9830@turtle.usersys.redhat.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [PATCH 3/6 v4] cpufreq: tolerate inexact values when collecting
- stats
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <21672683C5A3814BB4DB938EBE482DE426EA988080@IAD2MBX09.mex02.mlsrvr.com> <20121117145048.GI16441@x1.osrc.amd.com> <3756540.1nyvqzWibd@vostro.rjw.lan>
-In-Reply-To: <3756540.1nyvqzWibd@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126134301.GB9830@turtle.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2012 04:05 AM, Rafael J. Wysocki wrote:
-> On Saturday, November 17, 2012 03:50:48 PM Borislav Petkov wrote:
->> On Tue, Nov 13, 2012 at 02:13:38PM -0500, Mark Langsdorf wrote:
->>> Although cpufreq_driver has a flag field, no part of cpufreq_driver
->>> is directly passed to the cpufreq_stat code. Only cpufreq_policy
->>> is. It's cleaner to do passes of the while loop than to copy the
->>> cpufreq_driver.flag field into cpufreq_policy and then store it again
->>> in cpufreq_stats.
->>
->> That maybe so but this newly added loop which is only Calxeda-relevant
->> is called in cpufreq_stat_notifier_trans, which is the frequency change
->> notifier call, AFAICT.
-
-Drivers only go through the loop if they can't find an exact frequency.
-So every driver that isn't Calxeda shouldn't see the issue.
-
->> So you probably need to find a slick way of detecting calxeda hw
->> somewhere along the init path of cpufreq_stats_init and set a
->> hw-specific flag instead of adding that cost to each driver.
+On Mon, Nov 26, 2012 at 02:43:02PM +0100, Andrew Jones wrote:
+> On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
+> > From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> > 
+> > yield_to returns -ESRCH, When source and target of yield_to
+> > run queue length is one. When we see three successive failures of
+> > yield_to we assume we are in potential undercommit case and abort
+> > from PLE handler.
+> > The assumption is backed by low probability of wrong decision
+> > for even worst case scenarios such as average runqueue length
+> > between 1 and 2.
+> > 
+> > note that we do not update last boosted vcpu in failure cases.
+> > Thank Avi for raising question on aborting after first fail from yield_to.
+> > 
+> > Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> > ---
+> >  virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
+> >  1 file changed, 16 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index be70035..053f494 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+> >  {
+> >  	struct pid *pid;
+> >  	struct task_struct *task = NULL;
+> > +	bool ret = false;
+> >  
+> >  	rcu_read_lock();
+> >  	pid = rcu_dereference(target->pid);
+> > @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+> >  		task = get_pid_task(target->pid, PIDTYPE_PID);
+> >  	rcu_read_unlock();
+> >  	if (!task)
+> > -		return false;
+> > +		return ret;
+> >  	if (task->flags & PF_VCPU) {
+> >  		put_task_struct(task);
+> > -		return false;
+> > -	}
+> > -	if (yield_to(task, 1)) {
+> > -		put_task_struct(task);
+> > -		return true;
+> > +		return ret;
+> >  	}
+> > +	ret = yield_to(task, 1);
+> >  	put_task_struct(task);
+> > -	return false;
+> > +
+> > +	return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+> >  
+> > @@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
+> >  	return eligible;
+> >  }
+> >  #endif
+> > +
+> >  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+> >  {
+> >  	struct kvm *kvm = me->kvm;
+> >  	struct kvm_vcpu *vcpu;
+> >  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+> >  	int yielded = 0;
+> > +	int try = 3;
+> >  	int pass;
+> >  	int i;
+> >  
+> > @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+> >  	 * VCPU is holding the lock that we need and will release it.
+> >  	 * We approximate round-robin by starting at the last boosted VCPU.
+> >  	 */
+> > -	for (pass = 0; pass < 2 && !yielded; pass++) {
+> > +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
+> >  		kvm_for_each_vcpu(i, vcpu, kvm) {
+> >  			if (!pass && i <= last_boosted_vcpu) {
+> >  				i = last_boosted_vcpu;
+> > @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+> >  				continue;
+> >  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+> >  				continue;
+> > -			if (kvm_vcpu_yield_to(vcpu)) {
+> > +
+> > +			yielded = kvm_vcpu_yield_to(vcpu);
+> > +			if (yielded > 0) {
+> >  				kvm->last_boosted_vcpu = i;
+> > -				yielded = 1;
+> >  				break;
+> > +			} else if (yielded < 0) {
+> > +				try--;
+> > +				if (!try)
+> > +					break;
+> >  			}
+> >  		}
+> >  	}
+> > 
 > 
-> Mark, I suppose you'd like me to take this series for v3.8, but the above
-> comment from Boris has to be addressed for that.
+> The check done in patch 1/2 is done before the double_rq_lock, so it's
+> cheap. Now, this patch is to avoid doing too many get_pid_task calls. I
+> wonder if it would make more sense to change the vcpu state from tracking
+> the pid to tracking the task. If that was done, then I don't believe this
+> patch is necessary.
+> 
+> Rik,
+> for 34bb10b79de7 was there a reason pid was used instead of task?
 
-I think I'd rather drop this particular patch and not have cpufreq_stat
-support for Highbank. Redesigning it to meet Boris' requirements is
-going to take more time than I currently have available.
+Nevermind, I guess there's no way to validate the task pointer without
+checking the pid, since, as your git commit says, there are no guarantee
+that the same task always keeps the same vcpu. We'd only know it's valid
+if it's running, and if it's running, it's of no interest.
 
-Would it be acceptable to drop this patch and fix the issues with
-patches 4 and 6 to get the series in?
-
---Mark Langsdorf
-Calxeda, Inc.
-
+> 
+> Drew
