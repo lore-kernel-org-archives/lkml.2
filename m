@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2KZJwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:52:18 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:9745 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753316Ab2KZJwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:52:17 -0500
-X-IronPort-AV: E=Sophos;i="4.83,320,1352044800"; 
-   d="scan'208";a="6276983"
-Message-ID: <50B3323E.7020907@cn.fujitsu.com>
-Date: Mon, 26 Nov 2012 17:11:26 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1754709Ab2KZJw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:52:59 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41295 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab2KZJw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 04:52:58 -0500
+Message-ID: <50B33BEF.4050304@linux.vnet.ibm.com>
+Date: Mon, 26 Nov 2012 17:52:47 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: Wen Congyang <wencongyang@gmail.com>, linux-acpi@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        toshi.kani@hp.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <1353693037-21704-4-git-send-email-vasilis.liaskovitis@profitbricks.com> <50B0F3DF.4000802@gmail.com> <20121126083634.GA4574@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20121126083634.GA4574@dhcp-192-168-178-175.profitbricks.localdomain>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 17:04:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 17:04:38,
-	Serialize complete at 2012/11/26 17:04:38
-Content-Transfer-Encoding: 7bit
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>
+Subject: [RFC] could we remove some work to reduce the overhead of cgroup?
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112609-7014-0000-0000-00000241A390
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/26/2012 04:36 PM, Vasilis Liaskovitis Wrote:
-> On Sun, Nov 25, 2012 at 12:20:47AM +0800, Wen Congyang wrote:
->> At 2012/11/24 1:50, Vasilis Liaskovitis Wrote:
->>> Consider the following sequence of operations for a hotplugged memory device:
->>>
->>> 1. echo "PNP0C80:XX">  /sys/bus/acpi/drivers/acpi_memhotplug/unbind
->>> 2. echo "PNP0C80:XX">  /sys/bus/acpi/drivers/acpi_memhotplug/bind
->>> 3. echo 1>/sys/bus/pci/devices/PNP0C80:XX/eject
->>>
->>> The driver is successfully re-bound to the device in step 2. However step 3 will
->>> not attempt to remove the memory. This is because the acpi_memory_info enabled
->>> bit for the newly bound driver has not been set to 1. This bit needs to be set
->>> in the case where the memory is already used by the kernel (add_memory returns
->>> -EEXIST)
->>
->> Hmm, I think the reason is that we don't offline/remove memory when
->> unbinding it
->> from the driver. I have sent a patch to fix this problem, and this patch
->> is in
->> pm tree now. With this patch, we will offline/remove memory when
->> unbinding it from
->> the drriver.
-> 
-> ok. Which patch is this? Does it require driver-core changes?
+Hi, Folks
 
-https://lkml.org/lkml/2012/11/15/21
+I'm trying to find the place where we could reduce the overhead
+of cgroup, especially when there is only root_task_group
+(thanks for Peter's suggestion).
 
-Patch 1-6 is in pm tree now.
+I found that no place is using the load info of root_task_group
+and root cfs_rq currently, could we do some thing like below
+to reduce the overhead?
 
-> 
->>
->> Consider the following sequence of operations for a hotplugged memory
->> device:
->>
->> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> If we don't offline/remove the memory, we have no chance to do it in
->> step 2. After
->> step2, the memory is used by the kernel, but we have powered off it. It
->> is very
->> dangerous.
-> 
-> How does power-off happen after unbind? acpi_eject_store checks for existing
-> driver before taking any action:
-> 
-> #ifndef FORCE_EJECT
-> 	if (acpi_device->driver == NULL) {
-> 		ret = -ENODEV;
-> 		goto err;
-> 	}
-> #endif
-> 
-> FORCE_EJECT is not defined afaict, so the function returns without scheduling
-> acpi_bus_hot_remove_device. Is there another code path that calls power-off?
 
-Consider the following case:
 
-We hotremove the memory device by SCI and unbind it from the driver at the same time:
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2cebc81..67cf709 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1515,6 +1515,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+        u64 now = cfs_rq_clock_task(cfs_rq) >> 20;
+        u64 decays;
+ 
++       /*
++        * do not work on root cfs_rq and task group, since no one need their
++        * load info.
++        */
++       if (cfs_rq->tg && cfs_rq->tg == &root_task_group)
++               return;
++
+        decays = now - cfs_rq->last_decay;
+        if (!decays && !force_update)
+                return;
 
-CPUa                                                  CPUb
-acpi_memory_device_notify()
-                                       unbind it from the driver
-    acpi_bus_hot_remove_device()
 
-Thanks
-Wen Congyang
 
-> 
-> thanks,
-> 
-> - Vasilis
-> 
+There are other places we could save works if we stop calculate
+the load info of root_task_group and root cfs_rq, like the update
+work of blocked_load_avg, runnable_load_avg and tg_load_contrib.
+
+Those info are used to calculate the load of cfs_rq, so we could
+use that load when we calculate the parent cfs_rq's load sum, but
+since root task group has no parent, those info should be useless.
+
+Please let me know if you think this is wrong or you have better
+idea on where we can reduce the overhead of cgroup.
+
+
+Regards,
+Michael Wang
 
