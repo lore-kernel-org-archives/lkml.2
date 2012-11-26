@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab2KZJ3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:29:13 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:47863 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2KZJ3M (ORCPT
+	id S1754698Ab2KZJak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:30:40 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:56907 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2KZJaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:29:12 -0500
-Date: Mon, 26 Nov 2012 10:28:58 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Philippe Reynes <tremyfr@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        s.hauer@pengutronix.de, eric.jarrige@armadeus.org,
-        julien.boibessot@armadeus.com
-Subject: Re: [PATCH 3/4] imx27-dt: configure i2c1 gpio on armadeus apf27
-Message-ID: <20121126102858.4ba818b0@skate>
-In-Reply-To: <1353874625-14754-4-git-send-email-tremyfr@yahoo.fr>
-References: <1353874625-14754-1-git-send-email-tremyfr@yahoo.fr>
-	<1353874625-14754-4-git-send-email-tremyfr@yahoo.fr>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 04:30:39 -0500
+Date: Mon, 26 Nov 2012 11:30:34 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Axel Lin <axel.lin@ingics.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] pinctrl: mvebu: make pdma clock on dove mandatory
+Message-ID: <20121126093033.GH12673@sapphire.tkos.co.il>
+References: <1353921525-25163-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1353921634-25210-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353921634-25210-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Philippe Reynes,
+Hi Sebastian,
 
-On Sun, 25 Nov 2012 21:17:04 +0100, Philippe Reynes wrote:
+On Mon, Nov 26, 2012 at 10:20:34AM +0100, Sebastian Hesselbarth wrote:
 
->  static const struct of_dev_auxdata imx27_auxdata_lookup[] __initconst = {
-> @@ -48,6 +49,10 @@ int apf27_lan8700_wakeup(struct phy_device *phydev)
->  static void __init apf27_init(void)
->  {
->  	phy_register_fixup_for_id("imx27-fec.0-1:1f", apf27_lan8700_wakeup);
-> +
-> +	/* configure i2c1 gpio */
-> +	mxc_gpio_mode((GPIO_PORTD | GPIO_OUT | GPIO_PF | 17));
-> +	mxc_gpio_mode((GPIO_PORTD | GPIO_OUT | GPIO_PF | 18));
+[...]
+
+> diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c 
+> b/drivers/pinctrl/mvebu/pinctrl-dove.c
+> index 40c9c3e..90f257d 100644
+> --- a/drivers/pinctrl/mvebu/pinctrl-dove.c
+> +++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+> @@ -595,8 +595,11 @@ static int __devinit dove_pinctrl_probe(struct platform_device *pdev)
+>  	 * grab clk to make sure it is ticking.
+>  	 */
+>  	clk = devm_clk_get(&pdev->dev, NULL);
+> -	if (!IS_ERR(clk))
+> -		clk_prepare_enable(clk);
+> +	if (IS_ERR(clk)) {
+> +		dev_err(&pdev->dev, "Unable to get pdma clock");
+> +		return -ENODEV;
+
+Why not propagate the error up using PTR_RET(clk)?
+
+baruch
+
+> +	}
+> +	clk_prepare_enable(clk);
+>  
+>  	return mvebu_pinctrl_probe(pdev);
 >  }
 
-I haven't followed i.MX 27 support lately, but this surely should be
-done using a pinctrl driver. I see that there is a general pinctrl
-driver for i.MX, but a drivers/pinctrl/pinctrl-imx27.c might be
-missing. It would probably be a better idea to implement the missing
-pinctrl driver, if not already available?
-
-Best regards,
-
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
