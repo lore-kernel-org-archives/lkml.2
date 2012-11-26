@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2KZRA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:00:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47029 "EHLO
+	id S1755861Ab2KZRAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:00:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47041 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab2KZRAY (ORCPT
+	with ESMTP id S1755840Ab2KZRAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:00:24 -0500
+	Mon, 26 Nov 2012 12:00:34 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 011/270] netfilter: nf_nat_sip: fix incorrect handling of EBUSY for RTCP expectation
-Date: Mon, 26 Nov 2012 14:55:01 -0200
-Message-Id: <1353949160-26803-12-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 013/270] netfilter: nf_ct_expect: fix possible access to uninitialized timer
+Date: Mon, 26 Nov 2012 14:55:03 -0200
+Message-Id: <1353949160-26803-14-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,51 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 3f509c689a07a4aa989b426893d8491a7ffcc410 upstream.
+commit 2614f86490122bf51eb7c12ec73927f1900f4e7d upstream.
 
-We're hitting bug while trying to reinsert an already existing
-expectation:
+In __nf_ct_expect_check, the function refresh_timer returns 1
+if a matching expectation is found and its timer is successfully
+refreshed. This results in nf_ct_expect_related returning 0.
+Note that at this point:
 
-kernel BUG at kernel/timer.c:895!
-invalid opcode: 0000 [#1] SMP
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa0069563>] nf_ct_expect_related_report+0x4a0/0x57a [nf_conntrack]
- [<ffffffff812d423a>] ? in4_pton+0x72/0x131
- [<ffffffffa00ca69e>] ip_nat_sdp_media+0xeb/0x185 [nf_nat_sip]
- [<ffffffffa00b5b9b>] set_expected_rtp_rtcp+0x32d/0x39b [nf_conntrack_sip]
- [<ffffffffa00b5f15>] process_sdp+0x30c/0x3ec [nf_conntrack_sip]
- [<ffffffff8103f1eb>] ? irq_exit+0x9a/0x9c
- [<ffffffffa00ca738>] ? ip_nat_sdp_media+0x185/0x185 [nf_nat_sip]
+- the passed expectation is not inserted in the expectation table
+  and its timer was not initialized, since we have refreshed one
+  matching/existing expectation.
 
-We have to remove the RTP expectation if the RTCP expectation hits EBUSY
-since we keep trying with other ports until we succeed.
+- nf_ct_expect_alloc uses kmem_cache_alloc, so the expectation
+  timer is in some undefined state just after the allocation,
+  until it is appropriately initialized.
+
+This can be a problem for the SIP helper during the expectation
+addition:
+
+ ...
+ if (nf_ct_expect_related(rtp_exp) == 0) {
+         if (nf_ct_expect_related(rtcp_exp) != 0)
+                 nf_ct_unexpect_related(rtp_exp);
+ ...
+
+Note that nf_ct_expect_related(rtp_exp) may return 0 for the timer refresh
+case that is detailed above. Then, if nf_ct_unexpect_related(rtcp_exp)
+returns != 0, nf_ct_unexpect_related(rtp_exp) is called, which does:
+
+ spin_lock_bh(&nf_conntrack_lock);
+ if (del_timer(&exp->timeout)) {
+         nf_ct_unlink_expect(exp);
+         nf_ct_expect_put(exp);
+ }
+ spin_unlock_bh(&nf_conntrack_lock);
+
+Note that del_timer always returns false if the timer has been
+initialized.  However, the timer was not initialized since setup_timer
+was not called, therefore, the expectation timer remains in some
+undefined state. If I'm not missing anything, this may lead to the
+removal an unexistent expectation.
+
+To fix this, the optimization that allows refreshing an expectation
+is removed. Now nf_conntrack_expect_related looks more consistent
+to me since it always add the expectation in case that it returns
+success.
+
+Thanks to Patrick McHardy for participating in the discussion of
+this patch.
+
+I think this may be the source of the problem described by:
+http://marc.info/?l=netfilter-devel&m=134073514719421&w=2
 
 Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
+Acked-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv4/netfilter/nf_nat_sip.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/netfilter/nf_conntrack_expect.c |   29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
-index ea4a238..bb71caa 100644
---- a/net/ipv4/netfilter/nf_nat_sip.c
-+++ b/net/ipv4/netfilter/nf_nat_sip.c
-@@ -501,7 +501,10 @@ static unsigned int ip_nat_sdp_media(struct sk_buff *skb, unsigned int dataoff,
- 		ret = nf_ct_expect_related(rtcp_exp);
- 		if (ret == 0)
- 			break;
--		else if (ret != -EBUSY) {
-+		else if (ret == -EBUSY) {
-+			nf_ct_unexpect_related(rtp_exp);
-+			continue;
-+		} else if (ret < 0) {
- 			nf_ct_unexpect_related(rtp_exp);
- 			port = 0;
- 			break;
+diff --git a/net/netfilter/nf_conntrack_expect.c b/net/netfilter/nf_conntrack_expect.c
+index 45cf602..527651a 100644
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -361,23 +361,6 @@ static void evict_oldest_expect(struct nf_conn *master,
+ 	}
+ }
+ 
+-static inline int refresh_timer(struct nf_conntrack_expect *i)
+-{
+-	struct nf_conn_help *master_help = nfct_help(i->master);
+-	const struct nf_conntrack_expect_policy *p;
+-
+-	if (!del_timer(&i->timeout))
+-		return 0;
+-
+-	p = &rcu_dereference_protected(
+-		master_help->helper,
+-		lockdep_is_held(&nf_conntrack_lock)
+-		)->expect_policy[i->class];
+-	i->timeout.expires = jiffies + p->timeout * HZ;
+-	add_timer(&i->timeout);
+-	return 1;
+-}
+-
+ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
+ {
+ 	const struct nf_conntrack_expect_policy *p;
+@@ -386,7 +369,7 @@ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
+ 	struct nf_conn_help *master_help = nfct_help(master);
+ 	struct nf_conntrack_helper *helper;
+ 	struct net *net = nf_ct_exp_net(expect);
+-	struct hlist_node *n;
++	struct hlist_node *n, *next;
+ 	unsigned int h;
+ 	int ret = 1;
+ 
+@@ -395,12 +378,12 @@ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
+ 		goto out;
+ 	}
+ 	h = nf_ct_expect_dst_hash(&expect->tuple);
+-	hlist_for_each_entry(i, n, &net->ct.expect_hash[h], hnode) {
++	hlist_for_each_entry_safe(i, n, next, &net->ct.expect_hash[h], hnode) {
+ 		if (expect_matches(i, expect)) {
+-			/* Refresh timer: if it's dying, ignore.. */
+-			if (refresh_timer(i)) {
+-				ret = 0;
+-				goto out;
++			if (del_timer(&i->timeout)) {
++				nf_ct_unlink_expect(i);
++				nf_ct_expect_put(i);
++				break;
+ 			}
+ 		} else if (expect_clash(i, expect)) {
+ 			ret = -EBUSY;
 -- 
 1.7.9.5
 
