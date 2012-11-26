@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab2KZRkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:40:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47851 "EHLO
+	id S1756822Ab2KZRk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:40:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47828 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606Ab2KZRK7 (ORCPT
+	with ESMTP id S933566Ab2KZRKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:10:59 -0500
+	Mon, 26 Nov 2012 12:10:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 177/270] ext4: race-condition protection for ext4_convert_unwritten_extents_endio
-Date: Mon, 26 Nov 2012 14:57:47 -0200
-Message-Id: <1353949160-26803-178-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 173/270] USB: option: blacklist net interface on ZTE devices
+Date: Mon, 26 Nov 2012 14:57:43 -0200
+Message-Id: <1353949160-26803-174-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,155 +30,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit dee1f973ca341c266229faa5a1a5bb268bed3531 upstream.
+commit 1452df6f1b7e396d89c2a1fdbdc0e0e839f97671 upstream.
 
-We assumed that at the time we call ext4_convert_unwritten_extents_endio()
-extent in question is fully inside [map.m_lblk, map->m_len] because
-it was already split during submission.  But this may not be true due to
-a race between writeback vs fallocate.
+Based on information from the ZTE Windows drivers.
 
-If extent in question is larger than requested we will split it again.
-Special precautions should being done if zeroout required because
-[map.m_lblk, map->m_len] already contains valid data.
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ext4/extents.c |   57 ++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 46 insertions(+), 11 deletions(-)
+ drivers/usb/serial/option.c |   68 ++++++++++++++++++++++++++++++-------------
+ 1 file changed, 48 insertions(+), 20 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 9752106..844e11e 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -52,6 +52,9 @@
- #define EXT4_EXT_MARK_UNINIT1	0x2  /* mark first half uninitialized */
- #define EXT4_EXT_MARK_UNINIT2	0x4  /* mark second half uninitialized */
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index d581ed3..26d073f 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -503,11 +503,19 @@ static const struct option_blacklist_info net_intf5_blacklist = {
+ 	.reserved = BIT(5),
+ };
  
-+#define EXT4_EXT_DATA_VALID1	0x8  /* first half contains valid data */
-+#define EXT4_EXT_DATA_VALID2	0x10 /* second half contains valid data */
++static const struct option_blacklist_info net_intf6_blacklist = {
++	.reserved = BIT(6),
++};
 +
- static __le32 ext4_extent_block_csum(struct inode *inode,
- 				     struct ext4_extent_header *eh)
- {
-@@ -2896,6 +2899,9 @@ static int ext4_split_extent_at(handle_t *handle,
- 	unsigned int ee_len, depth;
- 	int err = 0;
+ static const struct option_blacklist_info zte_mf626_blacklist = {
+ 	.sendsetup = BIT(0) | BIT(1),
+ 	.reserved = BIT(4),
+ };
  
-+	BUG_ON((split_flag & (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2)) ==
-+	       (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2));
++static const struct option_blacklist_info zte_1255_blacklist = {
++	.reserved = BIT(3) | BIT(4),
++};
 +
- 	ext_debug("ext4_split_extents_at: inode %lu, logical"
- 		"block %llu\n", inode->i_ino, (unsigned long long)split);
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -853,13 +861,19 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0117, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0118, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0121, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0118, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0121, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0122, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0123, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0124, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0125, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0123, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0124, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0125, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0128, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0142, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0143, 0xff, 0xff, 0xff) },
+@@ -872,7 +886,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
+ 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0162, 0xff, 0xff, 0xff) },
+@@ -886,7 +901,8 @@ static const struct usb_device_id option_ids[] = {
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff, 0xff) },
+@@ -1002,18 +1018,24 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1169, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1170, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1244, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1245, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1245, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1246, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1247, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1247, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1248, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1249, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1250, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1251, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1252, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1252, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1253, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1254, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1255, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1256, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1254, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1255, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&zte_1255_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1256, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1257, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1258, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1259, 0xff, 0xff, 0xff) },
+@@ -1071,15 +1093,21 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0070, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0073, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0094, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0133, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0133, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0147, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0152, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0168, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0168, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0170, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0176, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0176, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
  
-@@ -2954,7 +2960,14 @@ static int ext4_split_extent_at(handle_t *handle,
- 
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
- 	if (err == -ENOSPC && (EXT4_EXT_MAY_ZEROOUT & split_flag)) {
--		err = ext4_ext_zeroout(inode, &orig_ex);
-+		if (split_flag & (EXT4_EXT_DATA_VALID1|EXT4_EXT_DATA_VALID2)) {
-+			if (split_flag & EXT4_EXT_DATA_VALID1)
-+				err = ext4_ext_zeroout(inode, ex2);
-+			else
-+				err = ext4_ext_zeroout(inode, ex);
-+		} else
-+			err = ext4_ext_zeroout(inode, &orig_ex);
-+
- 		if (err)
- 			goto fix_extent_len;
- 		/* update the extent length and mark as initialized */
-@@ -3007,12 +3020,13 @@ static int ext4_split_extent(handle_t *handle,
- 	uninitialized = ext4_ext_is_uninitialized(ex);
- 
- 	if (map->m_lblk + map->m_len < ee_block + ee_len) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT;
- 		flags1 = flags | EXT4_GET_BLOCKS_PRE_IO;
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1 |
- 				       EXT4_EXT_MARK_UNINIT2;
-+		if (split_flag & EXT4_EXT_DATA_VALID2)
-+			split_flag1 |= EXT4_EXT_DATA_VALID1;
- 		err = ext4_split_extent_at(handle, inode, path,
- 				map->m_lblk + map->m_len, split_flag1, flags1);
- 		if (err)
-@@ -3025,8 +3039,8 @@ static int ext4_split_extent(handle_t *handle,
- 		return PTR_ERR(path);
- 
- 	if (map->m_lblk >= ee_block) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & (EXT4_EXT_MAY_ZEROOUT |
-+					    EXT4_EXT_DATA_VALID2);
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1;
- 		if (split_flag & EXT4_EXT_MARK_UNINIT2)
-@@ -3304,26 +3318,47 @@ static int ext4_split_unwritten_extents(handle_t *handle,
- 
- 	split_flag |= ee_block + ee_len <= eof_block ? EXT4_EXT_MAY_ZEROOUT : 0;
- 	split_flag |= EXT4_EXT_MARK_UNINIT2;
--
-+	if (flags & EXT4_GET_BLOCKS_CONVERT)
-+		split_flag |= EXT4_EXT_DATA_VALID2;
- 	flags |= EXT4_GET_BLOCKS_PRE_IO;
- 	return ext4_split_extent(handle, inode, path, map, split_flag, flags);
- }
- 
- static int ext4_convert_unwritten_extents_endio(handle_t *handle,
--					      struct inode *inode,
--					      struct ext4_ext_path *path)
-+						struct inode *inode,
-+						struct ext4_map_blocks *map,
-+						struct ext4_ext_path *path)
- {
- 	struct ext4_extent *ex;
-+	ext4_lblk_t ee_block;
-+	unsigned int ee_len;
- 	int depth;
- 	int err = 0;
- 
- 	depth = ext_depth(inode);
- 	ex = path[depth].p_ext;
-+	ee_block = le32_to_cpu(ex->ee_block);
-+	ee_len = ext4_ext_get_actual_len(ex);
- 
- 	ext_debug("ext4_convert_unwritten_extents_endio: inode %lu, logical"
- 		"block %llu, max_blocks %u\n", inode->i_ino,
--		(unsigned long long)le32_to_cpu(ex->ee_block),
--		ext4_ext_get_actual_len(ex));
-+		  (unsigned long long)ee_block, ee_len);
-+
-+	/* If extent is larger than requested then split is required */
-+	if (ee_block != map->m_lblk || ee_len > map->m_len) {
-+		err = ext4_split_unwritten_extents(handle, inode, map, path,
-+						   EXT4_GET_BLOCKS_CONVERT);
-+		if (err < 0)
-+			goto out;
-+		ext4_ext_drop_refs(path);
-+		path = ext4_ext_find_extent(inode, map->m_lblk, path);
-+		if (IS_ERR(path)) {
-+			err = PTR_ERR(path);
-+			goto out;
-+		}
-+		depth = ext_depth(inode);
-+		ex = path[depth].p_ext;
-+	}
- 
- 	err = ext4_ext_get_access(handle, inode, path + depth);
- 	if (err)
-@@ -3631,7 +3666,7 @@ ext4_ext_handle_uninitialized_extents(handle_t *handle, struct inode *inode,
- 	}
- 	/* IO end_io complete, convert the filled extent to written */
- 	if ((flags & EXT4_GET_BLOCKS_CONVERT)) {
--		ret = ext4_convert_unwritten_extents_endio(handle, inode,
-+		ret = ext4_convert_unwritten_extents_endio(handle, inode, map,
- 							path);
- 		if (ret >= 0) {
- 			ext4_update_inode_fsync_trans(handle, inode, 1);
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
 -- 
 1.7.9.5
 
