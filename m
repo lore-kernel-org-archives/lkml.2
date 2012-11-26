@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934279Ab2KZRQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:16:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48333 "EHLO
+	id S934300Ab2KZRQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:16:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48349 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934197Ab2KZRQ2 (ORCPT
+	with ESMTP id S934277Ab2KZRQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:16:28 -0500
+	Mon, 26 Nov 2012 12:16:34 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kelsey Prantis <kelsey.prantis@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 265/270] target: Re-add explict zeroing of INQUIRY bounce buffer memory
-Date: Mon, 26 Nov 2012 14:59:15 -0200
-Message-Id: <1353949160-26803-266-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 267/270] libceph: drop declaration of ceph_con_get()
+Date: Mon, 26 Nov 2012 14:59:17 -0200
+Message-Id: <1353949160-26803-268-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,51 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Alex Elder <elder@inktank.com>
 
-commit dea5f0998aa82bdeca260b87c653db11e91329b2 upstream.
+commit 261030215d970c62f799e6e508e3c68fc7ec2aa9 upstream.
 
-This patch fixes a regression in spc_emulate_inquiry() code where the
-local scope bounce buffer was no longer getting it's memory zeroed,
-causing various problems with SCSI initiators that depend upon areas
-of INQUIRY EVPD=0x83 payload having been zeroed.
+For some reason the declaration of ceph_con_get() and
+ceph_con_put() did not get deleted in this commit:
+    d59315ca libceph: drop ceph_con_get/put helpers and nref member
 
-This bug was introduced with the following v3.7-rc1 patch + CC'ed
-stable commit:
+Clean that up.
 
-commit ffe7b0e9326d9c68f5688bef691dd49f1e0d3651
-Author: Paolo Bonzini <pbonzini@redhat.com>
-Date:   Fri Sep 7 17:30:38 2012 +0200
-
-    target: support zero allocation length in INQUIRY
-
-Go ahead and re-add the missing memset of bounce buffer memory to be
-copied into the outgoing se_cmd descriptor kmapped SGL payload.
-
-Reported-by: Kelsey Prantis <kelsey.prantis@intel.com>
-Cc: Kelsey Prantis <kelsey.prantis@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ herton: code to be patched is in target_core_cdb.c on 3.5 ]
+Signed-off-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_cdb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/ceph/messenger.h |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
-index 3dc3393..dd09f0f 100644
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -610,6 +610,8 @@ int target_emulate_inquiry(struct se_cmd *cmd)
- 	unsigned char buf[SE_INQUIRY_BUF];
- 	int p, ret;
+diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+index 9844241..189ae06 100644
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -215,8 +215,6 @@ extern void ceph_msg_revoke(struct ceph_msg *msg);
+ extern void ceph_msg_revoke_incoming(struct ceph_msg *msg);
  
-+	memset(buf, 0, SE_INQUIRY_BUF);
-+
- 	if (dev == tpg->tpg_virt_lun0.lun_se_dev)
- 		buf[0] = 0x3f; /* Not connected */
- 	else
+ extern void ceph_con_keepalive(struct ceph_connection *con);
+-extern struct ceph_connection *ceph_con_get(struct ceph_connection *con);
+-extern void ceph_con_put(struct ceph_connection *con);
+ 
+ extern struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags,
+ 				     bool can_fail);
 -- 
 1.7.9.5
 
