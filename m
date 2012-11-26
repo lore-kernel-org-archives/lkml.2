@@ -1,122 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2KZKBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:01:09 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:41512 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab2KZKBH (ORCPT
+	id S1754868Ab2KZKBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:01:49 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59052 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab2KZKBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:01:07 -0500
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Nov 2012 05:01:07 EST
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QOb9J0FJuBIKwwprdJ0g==
-X-RZG-CLASS-ID: mo05
-Message-ID: <50B33C6C.4070503@gmail.com>
-Date: Mon, 26 Nov 2012 10:54:52 +0100
-From: Stefan Roese <stefan.roese@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firmware: Add Lattice ECP3 FPGA configuration via SPI
-References: <1353657505-23003-1-git-send-email-sr@denx.de> <CACVXFVPy-x-kp3a5UnqYuhAeB+h05PZA7xFn9FK_Vd4MsbYV8A@mail.gmail.com>
-In-Reply-To: <CACVXFVPy-x-kp3a5UnqYuhAeB+h05PZA7xFn9FK_Vd4MsbYV8A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 05:01:47 -0500
+Date: Mon, 26 Nov 2012 21:01:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: linux-next: manual merge of the arm-soc tree with the thermal tree
+Message-Id: <20121126210144.d753c9f29a94d0816e8d3709@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_21_01_44_+1100_CNgdeZJ9PjVJwra9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 02:35 AM, Ming Lei wrote:
-> On Fri, Nov 23, 2012 at 3:58 PM, Stefan Roese <sr@denx.de> wrote:
->> This patch adds support for bitstream configuration (programming /
->> loading) of the Lattice ECP3 FPGA's via the SPI bus.
->>
->> Here an example on my custom MPC5200 based board:
->>
->> $ echo 1 > /sys/class/firmware/lattice-ecp3.0/loading
->> $ cat fpga_a4m2k.bit > /sys/class/firmware/lattice-ecp3.0/data
->> $ echo 0 > /sys/class/firmware/lattice-ecp3.0/loading
->>
->> leads to these messages:
->>
->> lattice-ecp3 spi32766.0: FPGA Lattice ECP3-35 detected
->> lattice-ecp3 spi32766.0: Configuring the FPGA...
->> lattice-ecp3 spi32766.0: FPGA succesfully configured!
->>
->> Signed-off-by: Stefan Roese <sr@denx.de>
->> Cc: Ming Lei <ming.lei@canonical.com>
->> ---
->>  arch/powerpc/Kconfig                   |   2 +
->>  drivers/firmware/Kconfig               |  11 ++
->>  drivers/firmware/Makefile              |   1 +
->>  drivers/firmware/lattice-ecp3-config.c | 254 +++++++++++++++++++++++++++++++++
-> 
-> The driver is just a firmware loader, so looks 'drivers/firmware/' is not
-> a good place for it. And it is better to make the driver as part  the
-> of the FPGA driver, such as other drivers which need downloading firmware,
-> or you can put it under 'drivers/spi' if there is no such fpga driver.
+--Signature=_Mon__26_Nov_2012_21_01_44_+1100_CNgdeZJ9PjVJwra9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This FPGA loading via the firmware infrastructure is completely
-independent from the FPGA device driver. Its common for all Lattice ECP3
-FPGA's. So I would like to place this loading driver into a generic
-directory. If firmware is wrong then I'll move this driver for the next
-version to drivers/spi.
+Hi all,
 
-> BTW, you'd better to CC maintainers of this directory.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/boot/dts/dbx5x0.dtsi between commit dc1956b5f84d ("Thermal: Add
+ST-Ericsson DB8500 thermal properties and platform data") from the
+thermal tree and commit 0563f638f052 ("ARM: ux500: Add node for the MMC
+GPIO regulator") from the arm-soc tree.
 
-Will do.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-<snip>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> +static struct platform_device pseudo_dev = {
->> +       .name = DRIVER_NAME,
->> +       .id   = 0,
->> +       .num_resources = 0,
->> +       .dev  = {
->> +               .release = dev_release,
->> +       }
->> +};
-> 
-> Why do you introduce one such device? If you just make it
-> as the parent of firmware device, it is not correct and unnecessary,
-> see below.
+diff --cc arch/arm/boot/dts/dbx5x0.dtsi
+index 487b705,7ce45fc..0000000
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@@ -695,10 -630,18 +664,23 @@@
+  			status =3D "disabled";
+  		};
+ =20
+ +		cpufreq-cooling {
+ +			compatible =3D "stericsson,db8500-cpufreq-cooling";
+ +			status =3D "disabled";
+ +		 };
+ +
++ 		vmmci: regulator-gpio {
++ 			compatible =3D "regulator-gpio";
++=20
++ 			regulator-min-microvolt =3D <1800000>;
++ 			regulator-max-microvolt =3D <2600000>;
++ 			regulator-name =3D "mmci-reg";
++ 			regulator-type =3D "voltage";
++=20
++ 			gpios =3D <&tc3589x_gpio 18 0x4>;
++ 			gpio-enable =3D <&tc3589x_gpio 17 0x4>;
++ 			states =3D <1800000 0x1
++ 				  2900000 0x0>;
++ 		};
+  	};
+  };
 
-Good point. Will fix in next version.
+--Signature=_Mon__26_Nov_2012_21_01_44_+1100_CNgdeZJ9PjVJwra9
+Content-Type: application/pgp-signature
 
->> +
->> +static struct device *ecp3_device = &pseudo_dev.dev;
->> +
->> +static void firmware_load(const struct firmware *fw, void *context)
->> +{
->> +       struct spi_device *spi = (struct spi_device *)context;
->> +       static u8 *buffer;
-> 
-> Defining the buffer as static is dangerous and will make the buffer shared by
-> more than one such FPGA device, so buffer data may become broken and
-> cause downloading a mistaken firmware.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Fixed.
+iQIcBAEBCAAGBQJQsz4IAAoJEECxmPOUX5FEAs0QAJbN1GxSOEp5YbasvV9Wzy0k
+fk4+X+BVr6nXeLWdQKk6Fo2MBdZl5o+fEUsJ0/L/Dd4fV3ey8YsazebvFmqSVm+u
+5BDAIHkTPM+4Q1DVHLtfIGbudyx4nDmMkBnspW1sYOHtt1rfm512vrq0ACvtefG3
+bKYXqxQMHRkt+Y9900o5q+0IzMqMSUz1l/M3v17GetY0qpoUMAzwkRrR1wKGcauk
+PSRYdijBY0yMCbgdDHZMdcGi0RsOMRQFMg/JEu7QbqrdeFp+8jRghtooektCS4Mf
+XoSiaDbkfpZbaj5ac55O3n9MUhcvrzuII3WngXWeMjlgYbUxGJYKX9OQ1BL6w32E
+rDyG1hCg4p8O8geR+bA5nGTLe+kSZ3Y9q7YTysRTbx3GsDMTloDHo+h2Wafg6+IR
+tiPJnXMl6ZUEmL/pNruNbAgVgWsXBq2664hm3kXVJLoj103eGDMNniOkGjMs2m0V
+QbNxxonIJU0U/LyQ0ToNFV2KgBeTlQUcYn1/PNZ59CIj51JlDkvtZXAiFdXdh0H1
+bmo/VkqcJjhaaf0BHeZ5M+JWlOU0w4KPqofy8Y9sOlMSd4ALlAidlFcE+vmzmSE4
+g9ikCNy2ksUQ2GM6/njRgm0DQOEHF8bpZNW+EBMWOpwz5up1m5ybg/6c7CrcNu3S
+RpTf+26fP0gIKsg5D07Z
+=fPap
+-----END PGP SIGNATURE-----
 
-<snip>
-
->> +static int __devinit lattice_ecp3_probe(struct spi_device *spi)
->> +{
->> +       int err;
->> +
->> +       if (platform_device_register(&pseudo_dev))
->> +               return -ENODEV;
->> +
->> +       err = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
->> +                                     FIRMWARE_NAME, ecp3_device,
-> 
-> The &spi->dev should be passed to request_firmware_nowait() instead of
-> the pseudo-device, which is wrong. It is a device lifetime thing. When you
-> download firmware via spi device, you should make sure the spi device
-> is live during firmware downloading, so the spi device should be passed to
-> request_firmware_nowait() to make it as the parent of the firmware device.
-
-Fixed.
-
-Thanks for the review,
-Stefan
-
+--Signature=_Mon__26_Nov_2012_21_01_44_+1100_CNgdeZJ9PjVJwra9--
