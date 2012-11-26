@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab2KZRrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:47:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47691 "EHLO
+	id S1756978Ab2KZRsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:48:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47676 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933318Ab2KZRJG (ORCPT
+	with ESMTP id S933280Ab2KZRIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:09:06 -0500
+	Mon, 26 Nov 2012 12:08:55 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Zafman <david.zafman@inktank.com>,
+Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 148/270] ceph: fix dentry reference leak in encode_fh()
-Date: Mon, 26 Nov 2012 14:57:18 -0200
-Message-Id: <1353949160-26803-149-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 145/270] libceph: only kunmap kmapped pages
+Date: Mon, 26 Nov 2012 14:57:15 -0200
+Message-Id: <1353949160-26803-146-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,33 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Zafman <david.zafman@inktank.com>
+From: Alex Elder <elder@inktank.com>
 
-commit 52eb5a900a9863a8b77a895f770e5d825c8e02c6 upstream.
+commit 5ce765a540f34d1e2005e1210f49f67fdf11e997 upstream.
 
-Call to d_find_alias() needs a corresponding dput()
+In write_partial_msg_pages(), pages need to be kmapped in order to
+perform a CRC-32c calculation on them.  As an artifact of the way
+this code used to be structured, the kunmap() call was separated
+from the kmap() call and both were done conditionally.  But the
+conditions under which the kmap() and kunmap() calls were made
+differed, so there was a chance a kunmap() call would be done on a
+page that had not been mapped.
 
-This fixes http://tracker.newdream.net/issues/3271
+The symptom of this was tripping a BUG() in kunmap_high() when
+pkmap_count[nr] became 0.
 
-Signed-off-by: David Zafman <david.zafman@inktank.com>
+Reported-by: Bryan K. Wright <bryan@virginia.edu>
+Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ceph/export.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ceph/messenger.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/fs/ceph/export.c b/fs/ceph/export.c
-index 02ce909..9349bb3 100644
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -90,6 +90,8 @@ static int ceph_encode_fh(struct inode *inode, u32 *rawfh, int *max_len,
- 		*max_len = handle_length;
- 		type = 255;
- 	}
-+	if (dentry)
-+		dput(dentry);
- 	return type;
- }
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index b141c86..8ba0eee 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -1069,16 +1069,13 @@ static int write_partial_msg_pages(struct ceph_connection *con)
+ 			BUG_ON(kaddr == NULL);
+ 			base = kaddr + con->out_msg_pos.page_pos + bio_offset;
+ 			crc = crc32c(crc, base, len);
++			kunmap(page);
+ 			msg->footer.data_crc = cpu_to_le32(crc);
+ 			con->out_msg_pos.did_page_crc = true;
+ 		}
+ 		ret = ceph_tcp_sendpage(con->sock, page,
+ 				      con->out_msg_pos.page_pos + bio_offset,
+ 				      len, 1);
+-
+-		if (do_datacrc)
+-			kunmap(page);
+-
+ 		if (ret <= 0)
+ 			goto out;
  
 -- 
 1.7.9.5
