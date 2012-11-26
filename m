@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487Ab2KZRKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:10:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47770 "EHLO
+	id S933536Ab2KZRK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:10:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47790 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933365Ab2KZRKE (ORCPT
+	with ESMTP id S933488Ab2KZRKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:10:04 -0500
+	Mon, 26 Nov 2012 12:10:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felipe Balbi <balbi@ti.com>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 163/270] usb: dwc3: gadget: fix 'endpoint always busy' bug
-Date: Mon, 26 Nov 2012 14:57:33 -0200
-Message-Id: <1353949160-26803-164-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 167/270] NLM: nlm_lookup_file() may return NLMv4-specific error codes
+Date: Mon, 26 Nov 2012 14:57:37 -0200
+Message-Id: <1353949160-26803-168-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,41 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 041d81f493d90c940ec41f0ec98bc7c4f2fba431 upstream.
+commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
 
-If a USB transfer has already been started, meaning
-we have already issued StartTransfer command to that
-particular endpoint, DWC3_EP_BUSY flag has also
-already been set.
+If the filehandle is stale, or open access is denied for some reason,
+nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
+or nlm4_failed. These get passed right through nlm_lookup_file(),
+and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
+the result through the cast_status() machinery.
 
-When we try to cancel this transfer which is already
-in controller's cache, we will not receive XferComplete
-event and we must clear DWC3_EP_BUSY in order to allow
-subsequent requests to be properly started.
+Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
 
-The best place to clear that flag is right after issuing
-DWC3_DEPCMD_ENDTRANSFER.
-
-Reported-by: Moiz Sonasath <m-sonasath@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Larry McVoy <lm@bitmover.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/lockd/clntxdr.c |    2 +-
+ fs/lockd/svcproc.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 0b24d9d..c7721db 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1832,6 +1832,7 @@ static void dwc3_stop_active_transfer(struct dwc3 *dwc, u32 epnum)
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number, cmd, &params);
- 		WARN_ON_ONCE(ret);
- 		dep->res_trans_idx = 0;
-+		dep->flags &= ~DWC3_EP_BUSY;
- 	}
+diff --git a/fs/lockd/clntxdr.c b/fs/lockd/clntxdr.c
+index d269ada..982d267 100644
+--- a/fs/lockd/clntxdr.c
++++ b/fs/lockd/clntxdr.c
+@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_stream *xdr,
+ {
+ 	__be32 *p;
+ 
+-	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
++	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
+ 	p = xdr_reserve_space(xdr, 4);
+ 	*p = stat;
  }
+diff --git a/fs/lockd/svcproc.c b/fs/lockd/svcproc.c
+index d27aab1..d413af3 100644
+--- a/fs/lockd/svcproc.c
++++ b/fs/lockd/svcproc.c
+@@ -67,7 +67,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rqstp, struct nlm_args *argp,
+ 
+ 	/* Obtain file pointer. Not used by FREE_ALL call. */
+ 	if (filp != NULL) {
+-		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
++		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
++		if (error != 0)
+ 			goto no_locks;
+ 		*filp = file;
  
 -- 
 1.7.9.5
