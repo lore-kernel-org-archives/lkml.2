@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2KZSHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:07:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47364 "EHLO
+	id S932446Ab2KZSIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:08:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47360 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349Ab2KZREO (ORCPT
+	with ESMTP id S932337Ab2KZREL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:04:14 -0500
+	Mon, 26 Nov 2012 12:04:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 072/270] xen/bootup: allow read_tscp call for Xen PV guests.
-Date: Mon, 26 Nov 2012 14:56:02 -0200
-Message-Id: <1353949160-26803-73-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 070/270] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
+Date: Mon, 26 Nov 2012 14:56:00 -0200
+Message-Id: <1353949160-26803-71-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,33 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
+commit f0a996eeeda214f4293e234df33b29bec003b536 upstream.
 
-The hypervisor will trap it. However without this patch,
-we would crash as the .read_tscp is set to NULL. This patch
-fixes it and sets it to the native_read_tscp call.
+This fault was detected using the kgdb test suite on boot and it
+crashes recursively due to the fact that CONFIG_KPROBES on mips adds
+an extra die notifier in the page fault handler.  The crash signature
+looks like this:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+kgdbts:RUN bad memory access test
+KGDB: re-enter exception: ALL breakpoints killed
+Call Trace:
+[<807b7548>] dump_stack+0x20/0x54
+[<807b7548>] dump_stack+0x20/0x54
+
+The fix for now is to have kgdb return immediately if the fault type
+is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
+to happen.
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/xen/enlighten.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/kernel/kgdb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 405307f..93dcfdc 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1131,6 +1131,8 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
- 	.read_tsc = native_read_tsc,
- 	.read_pmc = native_read_pmc,
+diff --git a/arch/mips/kernel/kgdb.c b/arch/mips/kernel/kgdb.c
+index f4546e9..23817a6 100644
+--- a/arch/mips/kernel/kgdb.c
++++ b/arch/mips/kernel/kgdb.c
+@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
+ 	struct pt_regs *regs = args->regs;
+ 	int trap = (regs->cp0_cause & 0x7c) >> 2;
  
-+	.read_tscp = native_read_tscp,
++#ifdef CONFIG_KPROBES
++	/*
++	 * Return immediately if the kprobes fault notifier has set
++	 * DIE_PAGE_FAULT.
++	 */
++	if (cmd == DIE_PAGE_FAULT)
++		return NOTIFY_DONE;
++#endif /* CONFIG_KPROBES */
 +
- 	.iret = xen_iret,
- 	.irq_enable_sysexit = xen_sysexit,
- #ifdef CONFIG_X86_64
+ 	/* Userspace events, ignore. */
+ 	if (user_mode(regs))
+ 		return NOTIFY_DONE;
 -- 
 1.7.9.5
 
