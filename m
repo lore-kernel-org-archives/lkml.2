@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2KZXRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:17:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab2KZXRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:17:06 -0500
-Date: Mon, 26 Nov 2012 20:37:12 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: x86: let reexecute_instruction work for tdp
-Message-ID: <20121126223712.GA10634@amt.cnet>
-References: <50AAC77C.8040505@linux.vnet.ibm.com>
- <50AAC7CE.2050506@linux.vnet.ibm.com>
+	id S1757447Ab2KZXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:17:16 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44147 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab2KZXRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 18:17:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AAC7CE.2050506@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOtvUMckqfMhSwE6DsEzaEUEcDGw0uyYD9x0_XSo-1GM3HDy1g@mail.gmail.com>
+References: <1351958983-31355-1-git-send-email-fweisbec@gmail.com>
+	<1351958983-31355-2-git-send-email-fweisbec@gmail.com>
+	<CAOtvUMckqfMhSwE6DsEzaEUEcDGw0uyYD9x0_XSo-1GM3HDy1g@mail.gmail.com>
+Date: Tue, 27 Nov 2012 00:17:11 +0100
+Message-ID: <CAFTL4hx_ntOgGttLdOZihQF6OUE21sCNXcXUip1t+hPTeBq0qQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] context_tracking: New context tracking susbsystem
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 07:59:10AM +0800, Xiao Guangrong wrote:
-> Currently, reexecute_instruction refused to retry all instructions. If
-> nested npt is used, the emulation may be caused by shadow page, it can
-> be fixed by dropping the shadow page
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/x86.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 7be8452..5fe72cc 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4469,17 +4469,19 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->  	return r;
->  }
-> 
-> -static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
-> +static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->  {
-> -	gpa_t gpa;
-> +	gpa_t gpa = cr2;
->  	pfn_t pfn;
-> 
-> -	if (tdp_enabled)
-> +	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
->  		return false;
+2012/11/6 Gilad Ben-Yossef <gilad@benyossef.com>:
+> On Sat, Nov 3, 2012 at 6:09 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index 366ec06..3855e06 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -300,15 +300,15 @@ config SECCOMP_FILTER
+>>
+>>           See Documentation/prctl/seccomp_filter.txt for details.
+>>
+>> -config HAVE_RCU_USER_QS
+>> +config HAVE_CONTEXT_TRACKING
+>>         bool
+>>         help
+>> -         Provide kernel entry/exit hooks necessary for userspace
+>> +         Provide kernel/user boundaries probes necessary for userspace
+>>           RCU extended quiescent state. Syscalls need to be wrapped inside
+>
+> A minor nit pick: if whole point of the patch is to turn an RCU
+> specific mechanism to a generic one
+> that RCU happens to use, then the text needs to reflect that. How about:
+>
+> "Provide kernel/user boundaries probes necessary for subsystems that
+> need it, such as userspace
+> RCU extended quiescent state. "
 
-How is indirect_shadow_pages protected? Why is ACCESS_ONCE() being used
-to read it?
+Good point! I'm fixing this.
 
-> -	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
-> -	if (gpa == UNMAPPED_GVA)
-> -		return true; /* let cpu generate fault */
-> +	if (!vcpu->arch.mmu.direct_map) {
-> +		gpa = kvm_mmu_gva_to_gpa_read(vcpu, cr2, NULL);
-> +		if (gpa == UNMAPPED_GVA)
-> +			return true; /* let cpu generate fault */
-> +	}
-> 
->  	/*
->  	 * if emulation was due to access to shadowed page table
-> -- 
-> 1.7.7.6
+Thanks.
