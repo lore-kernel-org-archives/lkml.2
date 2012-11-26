@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab2KZKbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:31:23 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:41401 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754299Ab2KZKbW (ORCPT
+	id S1754872Ab2KZKcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:32:07 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:43378 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab2KZKcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:31:22 -0500
-Message-ID: <50B344FC.4070405@st.com>
-Date: Mon, 26 Nov 2012 11:31:24 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] net: stmmac: change GMAC control register for SGMII
-References: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
-In-Reply-To: <004b01cdc959$80af8030$820e8090$%an@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 05:32:04 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-ef-50b3451df59a
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        myungjoo.ham@gmail.com
+Subject: [PULL REQUEST for Rafael] PM / devfreq: rebased on pm-devfreq
+Date: Mon, 26 Nov 2012 19:31:43 +0900
+Message-id: <1353925903-19557-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
+In-reply-to: <1562412.gSBZdyfWN8@vostro.rjw.lan>
+References: <1562412.gSBZdyfWN8@vostro.rjw.lan>
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t8zLV1Z180BBo19lhaXd81hs/jce4TR
+	gcnj8ya5AMYoLpuU1JzMstQifbsErowZF7rZC55LVMw99Ii5gfGdcBcjJ4eEgInEkkOXmSFs
+	MYkL99azdTFycQgJLGOU2Pl6BRtM0cWzbcwQiemMEpunHGSBcFqYJA7c3cYOUsUmoCuxdcNd
+	FhBbRIBfYtu8o6wgNrNAiMTamefBaoQF3CT+7VgBto5FQFXiwq9usBpeAQ+JmbNfQZ2hIPHr
+	yCqwOKeAgURL3zSwmUIC+hKrny1ngegVkPg2+RCQzQFULyux6QDYcRIC19kkps9exQ4xR1Li
+	4IobLBMYhRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECAlH6R2MqxosDjEKcDAq8fBK
+	HtsUIMSaWFZcmXuIUYKDWUmEdyITUIg3JbGyKrUoP76oNCe1+BCjD9AlE5mlRJPzgbGSVxJv
+	aGxgbGhoaWhmamlqgENYSZy32SMlQEggPbEkNTs1tSC1CGYcEwenVAPjxnmbeXdGO7n6zTip
+	c2NlacAzHU+BiKv1ibs/+2+vP/n/qfm3yrablhvXnouwPcX4lW9b7sQ5Kiusfa8pxik3Kwk/
+	mFFefTJesedzuNPamhXT3zAun5Sxf72AzdlcwyWKyzflzZDMDDzbPGv9M/bCibUz5jV8qn8e
+	U8P7YSfLCz6ns8IVO5zqlFiKMxINtZiLihMBYk6oBnQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQV1Z180BBh+uGVlc3jWHzeJz7xFG
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzZlzoZi94LlEx
+	99Aj5gbGd8JdjJwcEgImEhfPtjFD2GISF+6tZ+ti5OIQEpjOKLF5ykEWCKeFSeLA3W3sIFVs
+	AroSWzfcZQGxRQT4JbbNO8oKYjMLhEisnXkerEZYwE3i344VYFNZBFQlLvzqBqvhFfCQmDn7
+	FdQ2BYlfR1aBxTkFDCRa+qaBzRQS0JdY/Ww5ywRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS
+	9ZLzczcxgoP9mfQOxlUNFocYBTgYlXh4JY9tChBiTSwrrsw9xCjBwawkwjuRCSjEm5JYWZVa
+	lB9fVJqTWnyI0QfoqonMUqLJ+cBIzCuJNzQ2MTOyNDIzNjE3NsYhrCTO2+yREiAkkJ5Ykpqd
+	mlqQWgQzjomDU6qBMZHnO7uQY1xFXnET38HUkrQZ1cvfzv4ckTSFyT1YZPeCrlPRjj5tD7e5
+	L+N4bPr0A8/d9JTYT2reDNWTDu4Xnahvt61c9qfu1Aei8hGGR1Q/nYvOyhZU39DFLnaU1WHt
+	w+aVrr5e0+v2Z/7efy3D+APDVJ3W6D1tLyZ9YpxYEZn+aY/+IlFxJZbijERDLeai4kQAcBvO
+	vKMCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 10:04 AM, Byungho An wrote:
->
-> This patch changes GMAC control register (TC(Transmit
-> Configuration) and PS(Port Selection) bit for SGMII.
-> In case of SGMII, TC bit is '1' and PS bit is 0.
 
-IMO this new support that should be released for net-next and further 
-effort is actually needed.
+Rafael,
 
-The availability of the PCS registers is given by looking at the HW 
-feature register. In fact, these are optional registers.
-I don't want to break the compatibility with old chips.
-
-I do not see why we have to use Kconfig macro to select ANE etc
-(as you do in your patches).
-The driver could directly manage the phy device by itself if possible 
-and the stmmac_init_phy should be reworked.
-
-There are several things that need to be implemented. For example:
-
-The ISR (e.g. priv->hw->mac->host_irq_status) should be able to manage 
-these new interrupts.
-The code has to be able to maintain the user interface.
-For example if you want to enable ANE or manage Advertisement caps.
-
-> Signed-off-by: Byungho An <bh74.an@samsung.com>
-> ---
-
-[snip]
-
-> +	if (priv->phydev->interface == PHY_INTERFACE_MODE_SGMII) {
-> +		value = readl(priv->ioaddr);
-> +		/* GMAC_CONTROL_TC : transmit config in RGMII/SGMII */
-> +		value |= 0x1000000;
-> +		/* GMAC_CONTROL_PS : Port Selection for GMII */
-> +		value &= ~(0x8000);
-> +		writel(value, priv->ioaddr);
-> +	}
-> +
+Here goes the pull request rebased on your pm-devfreq branch.
+Sorry for all the confusion and mess invoked.
 
 
-This parts of code have to be moved in
-drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+Cheers,
+MyungJoo
 
-Pls, do not use value |= 0x1000000 but provide the appropriate defines.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
->   	/* Request the IRQ lines */
->   	ret = request_irq(dev->irq, stmmac_interrupt,
->   			 IRQF_SHARED, dev->name, dev);
->
+The following changes since commit 1a1357ea176670867f347419c3345e2becc07338:
+
+  PM / devfreq: make devfreq_class static (2012-11-15 00:35:06 +0100)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git tags/pull_req_20121126
+
+Jonghwa Lee (1):
+      PM / devfreq: Add sysfs node for representing frequency transition information.
+
+MyungJoo Ham (2):
+      PM / devfreq: remove compiler error when a governor is module
+      PM / devfreq: missing rcu_read_lock() added for find_device_opp()
+
+Nishanth Menon (9):
+      PM / devfreq: documentation cleanups for devfreq header
+      PM / devfreq: Add sysfs node to expose available frequencies
+      PM / devfreq: export update_devfreq
+      PM / devfreq: provide hooks for governors to be registered
+      PM / devfreq: register governors with devfreq framework
+      PM / devfreq: map devfreq drivers to governor using name
+      PM / devfreq: governors: add GPL module license and allow module build
+      PM / devfreq: allow sysfs governor node to switch governor
+      PM / devfreq: Add sysfs node to expose available governors
+
+Sachin Kamat (3):
+      PM / devfreq: Use devm_* functions in exynos4_bus.c
+      PM / devfreq: Fix incorrect argument in error message
+      PM / devfreq: Fix return value in devfreq_remove_governor()
+
+Sangho Yi (1):
+      PM / devfreq: exynos4_bus.c: Fixed an alignment of the func call args.
+
+ Documentation/ABI/testing/sysfs-class-devfreq |   29 ++-
+ drivers/devfreq/Kconfig                       |    8 +-
+ drivers/devfreq/devfreq.c                     |  413 ++++++++++++++++++++++++-
+ drivers/devfreq/exynos4_bus.c                 |   45 +--
+ drivers/devfreq/governor.h                    |    4 +
+ drivers/devfreq/governor_performance.c        |   22 ++-
+ drivers/devfreq/governor_powersave.c          |   22 ++-
+ drivers/devfreq/governor_simpleondemand.c     |   22 ++-
+ drivers/devfreq/governor_userspace.c          |   22 ++-
+ include/linux/devfreq.h                       |   95 +++---
+ 10 files changed, 581 insertions(+), 101 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQs0NoAAoJEBOhurvWBoCK2hIQAJuTMnRiWb2BkU30ENAug1FC
+oNvoFBTVA2J9vTp1Q1qtoPj+ualfg++auzt4e5U2rbAthQYpB1LYDvc/ycEpGkG0
+C+V3aleb9SK0TnqWp/s2i/KLWK1fTxbMGi2nDdCwwglbn59OlY6fVTyUA+jGzk3r
+AwpxSCnLhi7jhtbgSWhiQh2F5gehNXGtU6CsK0OebP2VlVK5ZFw6X3eqacfact/h
+kabXBsS+jJlrA90+jFFqQ4nSyU69Kgou/+de3rzrMOFYEv+uoGNmzRofh1BRaWM+
+ueyKdfF/oUJWmL8fvhMY556xrTBuGpI5btSmfYxSz+VFiDzV8HduIi8ThaVKMmGu
+MR77kgFSy0NkasCQ2l6q7LYIRoFJX/MQWnQpxvpZKOi5aqEgWsdCY75juRN3wOGm
+kCGecK2Rq/tTj3EzIS2brUPQJPcM1YS4QHKFYq3Oucnpbk6Ym1ojIYxTB7no7fKW
+7OhVOf3IHA3C0VMg8DiN9SoOW8ILU3EvknP6BguRRVf+iFjtUWqCoaNj14BOSjUx
+Ol/606xgVa6xEsDG1NeoYiEov/lmYDpHG/tnh2g5gF/YrKjbQsvT7uqSBbeFJO2u
+ybI2hz37OulNvur4ORFWTCOyNqknX9t+OIFFyQjdGmaPwjnJ+IZ5kWqBwPaHxd3x
+Y/8iwxoohO4ROW1pBln0
+=5A1F
+-----END PGP SIGNATURE-----
