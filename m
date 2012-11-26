@@ -1,50 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab2KZSNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:13:52 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:37859 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab2KZSNs convert rfc822-to-8bit (ORCPT
+	id S1756659Ab2KZSOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:14:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47205 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab2KZRC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:13:48 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-127.messagelabs.com!1353953626!7457827!4
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.8; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 26 Nov 2012 12:13:38 -0600
-Subject: build failure next-20121126
-Thread-Topic: build failure next-20121126
-Thread-Index: Ac3MAar+xV4SXxcBQked1U0b2/UkGg==
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206B2645A2F@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 26 Nov 2012 12:02:27 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Peng Tao <tao.peng@emc.com>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 043/270] pnfsblock: fix non-aligned DIO write
+Date: Mon, 26 Nov 2012 14:55:33 -0200
+Message-Id: <1353949160-26803-44-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-Another build failure with next-20121126:
+------------------
 
-  CC      security/integrity/evm/evm_secfs.o
-In function 'copy_from_user',
-    inlined from 'evm_write_key' at security/integrity/evm/evm_secfs.c:71:
-/home/bigguiness/src/git/linux-next/arch/x86/include/asm/uaccess_32.h:211: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
-make[3]: *** [security/integrity/evm/evm_secfs.o] Error 1
-make[2]: *** [security/integrity/evm] Error 2
-make[1]: *** [security/integrity] Error 2
-make: *** [security] Error 2
+From: Peng Tao <bergwolf@gmail.com>
 
-Regards,
-Hartley
+commit 96c9eae638765c2bf2ca4f5a6325484f9bb69aa7 upstream.
+
+For DIO writes, if it is not blocksize aligned, we need to do
+internal serialization. It may slow down writers anyway. So we
+just bail them out and resend to MDS.
+
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ fs/nfs/blocklayout/blocklayout.c |   34 +++++++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+index e5dfef5..1093968 100644
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -685,7 +685,7 @@ bl_write_pagelist(struct nfs_write_data *wdata, int sync)
+ 	struct bio *bio = NULL;
+ 	struct pnfs_block_extent *be = NULL, *cow_read = NULL;
+ 	sector_t isect, last_isect = 0, extent_length = 0;
+-	struct parallel_io *par;
++	struct parallel_io *par = NULL;
+ 	loff_t offset = wdata->args.offset;
+ 	size_t count = wdata->args.count;
+ 	unsigned int pg_offset, pg_len, saved_len;
+@@ -697,6 +697,13 @@ bl_write_pagelist(struct nfs_write_data *wdata, int sync)
+ 	    NFS_SERVER(header->inode)->pnfs_blksize >> PAGE_CACHE_SHIFT;
+ 
+ 	dprintk("%s enter, %Zu@%lld\n", __func__, count, offset);
++
++	if (header->dreq != NULL &&
++	    (!IS_ALIGNED(offset, NFS_SERVER(header->inode)->pnfs_blksize) ||
++	     !IS_ALIGNED(count, NFS_SERVER(header->inode)->pnfs_blksize))) {
++		dprintk("pnfsblock nonblock aligned DIO writes. Resend MDS\n");
++		goto out_mds;
++	}
+ 	/* At this point, wdata->pages is a (sequential) list of nfs_pages.
+ 	 * We want to write each, and if there is an error set pnfs_error
+ 	 * to have it redone using nfs.
+@@ -1197,6 +1204,27 @@ bl_pg_test_read(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev,
+ 	return pnfs_generic_pg_test(pgio, prev, req);
+ }
+ 
++void
++bl_pg_init_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *req)
++{
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, PAGE_CACHE_SIZE))
++		nfs_pageio_reset_write_mds(pgio);
++	else
++		pnfs_generic_pg_init_write(pgio, req);
++}
++
++static bool
++bl_pg_test_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev,
++		 struct nfs_page *req)
++{
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, PAGE_CACHE_SIZE))
++		return false;
++
++	return pnfs_generic_pg_test(pgio, prev, req);
++}
++
+ static const struct nfs_pageio_ops bl_pg_read_ops = {
+ 	.pg_init = bl_pg_init_read,
+ 	.pg_test = bl_pg_test_read,
+@@ -1204,8 +1232,8 @@ static const struct nfs_pageio_ops bl_pg_read_ops = {
+ };
+ 
+ static const struct nfs_pageio_ops bl_pg_write_ops = {
+-	.pg_init = pnfs_generic_pg_init_write,
+-	.pg_test = pnfs_generic_pg_test,
++	.pg_init = bl_pg_init_write,
++	.pg_test = bl_pg_test_write,
+ 	.pg_doio = pnfs_generic_pg_writepages,
+ };
+ 
+-- 
+1.7.9.5
 
