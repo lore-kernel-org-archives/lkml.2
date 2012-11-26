@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab2KZSKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:10:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47299 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2KZRDa (ORCPT
+	id S932251Ab2KZSLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:11:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49175 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab2KZSKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:03:30 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Christian Hildner <christian.hildner@siemens.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 060/270] timers: Fix endless looping between cascade() and internal_add_timer()
-Date: Mon, 26 Nov 2012 14:55:50 -0200
-Message-Id: <1353949160-26803-61-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	Mon, 26 Nov 2012 13:10:31 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] cpufreq: ondemand: update sampling rate only on right CPUs
+Date: Mon, 26 Nov 2012 19:10:12 +0100
+Message-Id: <1353953412-20667-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+Fix cpufreq_gov_ondemand to skip CPU where another governor is used.
 
-------------------
+The bug present itself as NULL pointer access on the mutex_lock() call,
+an can be reproduced on an SMP machine by setting the default governor
+to anything other than ondemand, setting a single CPU's governor to
+ondemand, then changing the sample rate by writing on:
 
-From: "Hildner, Christian" <christian.hildner@siemens.com>
+> /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
 
-commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
+Backtrace:
 
-Adding two (or more) timers with large values for "expires" (they have
-to reside within tv5 in the same list) leads to endless looping
-between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
-is one and jiffies are crossing the value 1 << 18. The bug was
-introduced between 2.6.11 and 2.6.12 (and survived for quite some
-time).
+Nov 26 17:36:54 balto kernel: [  839.585241] BUG: unable to handle kernel NULL pointer dereference at           (null)
+Nov 26 17:36:54 balto kernel: [  839.585311] IP: [<ffffffff8174e082>] __mutex_lock_slowpath+0xb2/0x170
+[snip]
+Nov 26 17:36:54 balto kernel: [  839.587005] Call Trace:
+Nov 26 17:36:54 balto kernel: [  839.587030]  [<ffffffff8174da82>] mutex_lock+0x22/0x40
+Nov 26 17:36:54 balto kernel: [  839.587067]  [<ffffffff81610b8f>] store_sampling_rate+0xbf/0x150
+Nov 26 17:36:54 balto kernel: [  839.587110]  [<ffffffff81031e9c>] ?  __do_page_fault+0x1cc/0x4c0
+Nov 26 17:36:54 balto kernel: [  839.587153]  [<ffffffff813309bf>] kobj_attr_store+0xf/0x20
+Nov 26 17:36:54 balto kernel: [  839.587192]  [<ffffffff811bb62d>] sysfs_write_file+0xcd/0x140
+Nov 26 17:36:54 balto kernel: [  839.587234]  [<ffffffff8114c12c>] vfs_write+0xac/0x180
+Nov 26 17:36:54 balto kernel: [  839.587271]  [<ffffffff8114c472>] sys_write+0x52/0xa0
+Nov 26 17:36:54 balto kernel: [  839.587306]  [<ffffffff810321ce>] ?  do_page_fault+0xe/0x10
+Nov 26 17:36:54 balto kernel: [  839.587345]  [<ffffffff81751202>] system_call_fastpath+0x16/0x1b
 
-This patch ensures that when cascade() is called timers within tv5 are
-not added endlessly to their own list again, instead they are added to
-the next lower tv level tv4 (as expected).
-
-Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- kernel/timer.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 6ec7e7e..ad4ced1 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
- #define TVR_SIZE (1 << TVR_BITS)
- #define TVN_MASK (TVN_SIZE - 1)
- #define TVR_MASK (TVR_SIZE - 1)
-+#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
+Hi Rafael,
+
+this is based on a clean linux-pm linux-next branch (i.e. not with my other
+patch-set applied), so expect a context conflict if both are applied.
+
+Thanks,
+Fabio
+
+ drivers/cpufreq/cpufreq_ondemand.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index cca3e9f..7731f7c 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -40,6 +40,10 @@
+ static struct dbs_data od_dbs_data;
+ static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
  
- struct tvec {
- 	struct list_head vec[TVN_SIZE];
-@@ -356,11 +357,12 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
- 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
- 	} else {
- 		int i;
--		/* If the timeout is larger than 0xffffffff on 64-bit
--		 * architectures then we use the maximum timeout:
-+		/* If the timeout is larger than MAX_TVAL (on 64-bit
-+		 * architectures or with CONFIG_BASE_SMALL=1) then we
-+		 * use the maximum timeout.
- 		 */
--		if (idx > 0xffffffffUL) {
--			idx = 0xffffffffUL;
-+		if (idx > MAX_TVAL) {
-+			idx = MAX_TVAL;
- 			expires = idx + base->timer_jiffies;
- 		}
- 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
++#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
++static struct cpufreq_governor cpufreq_gov_ondemand;
++#endif
++
+ static struct od_dbs_tuners od_tuners = {
+ 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+ 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
+@@ -279,6 +283,10 @@ static void update_sampling_rate(unsigned int new_rate)
+ 		policy = cpufreq_cpu_get(cpu);
+ 		if (!policy)
+ 			continue;
++		if (policy->governor != &cpufreq_gov_ondemand) {
++			cpufreq_cpu_put(policy);
++			continue;
++		}
+ 		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
+ 		cpufreq_cpu_put(policy);
+ 
 -- 
-1.7.9.5
+1.7.12.1
 
