@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933408Ab2KZRoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:44:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47744 "EHLO
+	id S933429Ab2KZRJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:09:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47722 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933419Ab2KZRJu (ORCPT
+	with ESMTP id S933242Ab2KZRJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:09:50 -0500
+	Mon, 26 Nov 2012 12:09:35 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Oliver McFadden <oliver.mcfadden@linux.intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Willy Tarreau <w@1wt.eu>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 159/270] drm/i915: Set guardband clipping workaround bit in the right register.
-Date: Mon, 26 Nov 2012 14:57:29 -0200
-Message-Id: <1353949160-26803-160-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 154/270] drm/i915: remove useless BUG_ON which caused a regression in 3.5.
+Date: Mon, 26 Nov 2012 14:57:24 -0200
+Message-Id: <1353949160-26803-155-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,66 +27,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kenneth Graunke <kenneth@whitecape.org>
+From: Willy Tarreau <w@1wt.eu>
 
-commit 26b6e44afb58432a5e998da0343757404f9de9ee upstream.
+commit c77d7162a7ae451c2e895d7ef7fbeb0906107472 upstream.
 
-A previous patch, namely:
+starting an old X server causes a kernel BUG since commit 1b50247a8d:
 
-commit bf97b276ca04cee9ab65ffd378fa8e6aedd71ff6
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Apr 11 20:42:41 2012 +0200
+------------[ cut here ]------------
+kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3661!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss uvcvideo
++videobuf2_core videodev videobuf2_vmalloc videobuf2_memops uhci_hcd ath9k mac80211 snd_hda_codec_realtek ath9k_common microcode
++ath9k_hw psmouse serio_raw sg ath cfg80211 atl1c lpc_ich mfd_core ehci_hcd snd_hda_intel snd_hda_codec snd_hwdep snd_pcm rtc_cmos
++snd_timer snd evdev eeepc_laptop snd_page_alloc sparse_keymap
 
-    drm/i915: implement w/a for incorrect guarband clipping
+Pid: 2866, comm: X Not tainted 3.5.6-rc1-eeepc #1 ASUSTeK Computer INC. 1005HA/1005HA
+EIP: 0060:[<c12dc291>] EFLAGS: 00013297 CPU: 0
+EIP is at i915_gem_entervt_ioctl+0xf1/0x110
+EAX: f5941df4 EBX: f5940000 ECX: 00000000 EDX: 00020000
+ESI: f5835400 EDI: 00000000 EBP: f51d7e38 ESP: f51d7e20
+ DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+CR0: 8005003b CR2: b760e0a0 CR3: 351b6000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process X (pid: 2866, ti=f51d6000 task=f61af8d0 task.ti=f51d6000)
+Stack:
+ 00000001 00000000 f5835414 f51d7e84 f5835400 f54f85c0 f51d7f10 c12b530b
+ 00000001 c151b139 c14751b6 c152e030 00000b32 00006459 00000059 0000e200
+ 00000001 00000000 00006459 c159ddd0 c12dc1a0 ffffffea 00000000 00000000
+Call Trace:
+ [<c12b530b>] drm_ioctl+0x2eb/0x440
+ [<c12dc1a0>] ? i915_gem_init+0xe0/0xe0
+ [<c1052b2b>] ? enqueue_hrtimer+0x1b/0x50
+ [<c1053321>] ? __hrtimer_start_range_ns+0x161/0x330
+ [<c10530b3>] ? lock_hrtimer_base+0x23/0x50
+ [<c1053163>] ? hrtimer_try_to_cancel+0x33/0x70
+ [<c12b5020>] ? drm_version+0x90/0x90
+ [<c10ca171>] vfs_ioctl+0x31/0x50
+ [<c10ca2e4>] do_vfs_ioctl+0x64/0x510
+ [<c10535de>] ? hrtimer_nanosleep+0x8e/0x100
+ [<c1052c20>] ? update_rmtp+0x80/0x80
+ [<c10ca7c9>] sys_ioctl+0x39/0x60
+ [<c1433949>] syscall_call+0x7/0xb
+Code: 83 c4 0c 5b 5e 5f 5d c3 c7 44 24 04 2c 05 53 c1 c7 04 24 6f ef 47 c1 e8 6e e0 fd ff c7 83 38 1e 00 00 00 00 00 00 e9 3f ff ff
++ff <0f> 0b eb fe 0f 0b eb fe 8d b4 26 00 00 00 00 0f 0b eb fe 8d b6
+EIP: [<c12dc291>] i915_gem_entervt_ioctl+0xf1/0x110 SS:ESP 0068:f51d7e20
+---[ end trace dd332ec083cbd513 ]---
 
-accidentally set bit 5 in 3D_CHICKEN, which has nothing to do with
-clipping.  This patch changes it to be set in 3D_CHICKEN3, where it
-belongs.
+The crash happens here in i915_gem_entervt_ioctl() :
 
-The game "Dante" demonstrates random clipping issues when guardband
-clipping is enabled and bit 5 of 3D_CHICKEN3 isn't set.  So the
-workaround is actually necessary.
+    3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
+    3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+ -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+    3662          mutex_unlock(&dev->struct_mutex);
 
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Oliver McFadden <oliver.mcfadden@linux.intel.com>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
-Reviewed-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Quoting Chris :
+  "That BUG_ON there is silly and can simply be removed. The check is to
+   verify that no batches were submitted to the kernel whilst the UMS/GEM
+   client was suspended - to which the BUG_ONs are a crude approximation.
+   Furthermore, the checks are too late, since it means we attempted to
+   program the hardware whilst it was in an invalid state, the BUG_ONs are
+   the least of your concerns at that point."
+
+Note that this regression has been introduced in
+
+commit 1b50247a8ddde4af5aaa0e6bc125615372ce6c16
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Apr 24 15:47:30 2012 +0100
+
+    drm/i915: Remove the list of pinned inactive objects
+
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+[danvet: Added note about the regressing commit and cc: stable.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[herton: adjusted context]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h |    2 +-
- drivers/gpu/drm/i915/intel_pm.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 4cad908..84c04c8 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -508,7 +508,7 @@
-  */
- # define _3D_CHICKEN2_WM_READ_PIPELINED			(1 << 14)
- #define _3D_CHICKEN3	0x02090
--#define  _3D_CHICKEN_SF_DISABLE_FASTCLIP_CULL		(1 << 5)
-+#define  _3D_CHICKEN3_SF_DISABLE_FASTCLIP_CULL		(1 << 5)
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 35926ad..fc6683a 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3658,7 +3658,6 @@ i915_gem_entervt_ioctl(struct drm_device *dev, void *data,
  
- #define MI_MODE		0x0209c
- # define VS_TIMER_DISPATCH				(1 << 6)
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index b55aa0e..f8e332d 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3334,8 +3334,8 @@ static void gen6_init_clock_gating(struct drm_device *dev)
- 		   GEN6_RCCUNIT_CLOCK_GATE_DISABLE);
+ 	BUG_ON(!list_empty(&dev_priv->mm.active_list));
+ 	BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+-	BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+ 	mutex_unlock(&dev->struct_mutex);
  
- 	/* Bspec says we need to always set all mask bits. */
--	I915_WRITE(_3D_CHICKEN, (0xFFFF << 16) |
--		   _3D_CHICKEN_SF_DISABLE_FASTCLIP_CULL);
-+	I915_WRITE(_3D_CHICKEN3, (0xFFFF << 16) |
-+		   _3D_CHICKEN3_SF_DISABLE_FASTCLIP_CULL);
- 
- 	/*
- 	 * According to the spec the following bits should be
+ 	ret = drm_irq_install(dev);
 -- 
 1.7.9.5
 
