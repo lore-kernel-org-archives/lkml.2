@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2KZTZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:25:12 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53371 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab2KZTZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:25:10 -0500
-Message-ID: <50B3C211.6000600@wwwdotorg.org>
-Date: Mon, 26 Nov 2012 12:25:05 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1755574Ab2KZT3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:29:53 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35093 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755496Ab2KZT3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 14:29:51 -0500
+Date: Mon, 26 Nov 2012 14:29:41 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121126192941.GC2301@cmpxchg.org>
+References: <20121123100438.GF24698@dhcp22.suse.cz>
+ <20121125011047.7477BB5E@pobox.sk>
+ <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <20121126174622.GE2799@cmpxchg.org>
+ <20121126180444.GA12602@dhcp22.suse.cz>
+ <20121126182421.GB2301@cmpxchg.org>
+ <20121126190329.GB12602@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Jonas ABERG <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH V3 10/11] ARM: remove struct sys_timer suspend and resume
- fields
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org> <1353349867-28494-11-git-send-email-swarren@wwwdotorg.org> <CACRpkdb-cmwTH_7EJO02m2+CCZrJ2ycgtGpf8stoiFKSm8jqww@mail.gmail.com>
-In-Reply-To: <CACRpkdb-cmwTH_7EJO02m2+CCZrJ2ycgtGpf8stoiFKSm8jqww@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126190329.GB12602@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 01:28 AM, Linus Walleij wrote:
-> Oh and there was this comment/TODO:
+On Mon, Nov 26, 2012 at 08:03:29PM +0100, Michal Hocko wrote:
+> On Mon 26-11-12 13:24:21, Johannes Weiner wrote:
+> > On Mon, Nov 26, 2012 at 07:04:44PM +0100, Michal Hocko wrote:
+> > > On Mon 26-11-12 12:46:22, Johannes Weiner wrote:
+> [...]
+> > > > I think global oom already handles this in a much better way: invoke
+> > > > the OOM killer, sleep for a second, then return to userspace to
+> > > > relinquish all kernel resources and locks.  The only reason why we
+> > > > can't simply change from an endless retry loop is because we don't
+> > > > want to return VM_FAULT_OOM and invoke the global OOM killer.
+> > > 
+> > > Exactly.
+> > > 
+> > > > But maybe we can return a new VM_FAULT_OOM_HANDLED for memcg OOM and
+> > > > just restart the pagefault.  Return -ENOMEM to the buffered IO syscall
+> > > > respectively.  This way, the memcg OOM killer is invoked as it should
+> > > > but nobody gets stuck anywhere livelocking with the exiting task.
+> > > 
+> > > Hmm, we would still have a problem with oom disabled (aka user space OOM
+> > > killer), right? All processes but those in mem_cgroup_handle_oom are
+> > > risky to be killed.
+> > 
+> > Could we still let everybody get stuck in there when the OOM killer is
+> > disabled and let userspace take care of it?
 > 
-> On Mon, Nov 19, 2012 at 7:31 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
->> @@ -17,15 +17,6 @@
->>   *   Initialise the kernels jiffy timer source, claim interrupt
->>   *   using setup_irq.  This is called early on during initialisation
->>   *   while interrupts are still disabled on the local CPU.
->> - * - suspend
->> - *   Suspend the kernel jiffy timer source, if necessary.  This
->> - *   is called with interrupts disabled, after all normal devices
->> - *   have been suspended.  If no action is required, set this to
->> - *   NULL.
->> - * - resume
->> - *   Resume the kernel jiffy timer source, if necessary.  This
->> - *   is called with interrupts disabled before any normal devices
->> - *   are resumed.  If no action is required, set this to NULL.
->>   * - offset
->>   *   Return the timer offset in microseconds since the last timer
->>   *   interrupt.  Note: this must take account of any unprocessed
->> @@ -33,8 +24,6 @@
->>   */
->>  struct sys_timer {
->>         void                    (*init)(void);
->> -       void                    (*suspend)(void);
->> -       void                    (*resume)(void);
->>  };
-> 
-> So from the above it is quite clear that the sys_timer is breaking
-> the suspend_noirq/resume_noirq naming convention from
-> runtime PM as IRQs are disabled on these paths.
-> 
-> The same goes for struct clock_event_device ...
-> 
-> So while this looks just as bad after as before the patch,
-> we should take a mental notice to rename the .suspend
-> and .resume hooks in the clock_event_device to
-> .suspend_noirq and .resume_noirq at some point.
-> 
-> I was thinking that if your patch set is introducing a
-> plethora of new users of these hooks we should maybe
-> stick a patch at the beginning of the series renaming the
-> hooks to *_noirq, but if it's a major obstacle it can surely wait.
+> I am not sure what exactly you mean by "userspace take care of it" but
+> if those processes are stuck and holding the lock then it is usually
+> hard to find that out. Well if somebody is familiar with internal then
+> it is doable but this makes the interface really unusable for regular
+> usage.
 
-I think I'd prefer to keep that rename separate and do it later; while
-this series does introduce a few new users of the type, there are many
-more pre-existing users. Renaming all the users would end up making this
-series potentially conflict with addition of new users in tip.git or
-elsewhere, whereas any possible current conflicts from this series
-should be resolvable in arm-soc pretty easily I hope, so I'd rather
-create a separate series that does the rename, and probably apply it to
-tip.git, probably for 3.10?
+If oom_kill_disable is set, then all processes get stuck all the way
+down in the charge stack.  Whatever resource they pin, you may
+deadlock on if you try to touch it while handling the problem from
+userspace.  I don't see how this is a new problem...?  Or do you mean
+something else?
+
+> > > Other POV might be, why we should trigger an OOM killer from those paths
+> > > in the first place. Write or read (or even readahead) are all calls that
+> > > should rather fail than cause an OOM killer in my opinion.
+> > 
+> > Readahead is arguable, but we kill globally for read() and write() and
+> > I think we should do the same for memcg.
+> 
+> Fair point but the global case is little bit easier than memcg in this
+> case because nobody can hook on OOM killer and provide a userspace
+> implementation for it which is one of the cooler feature of memcg...
+> I am all open to any suggestions but we should somehow fix this (and
+> backport it to stable trees as this is there for quite some time. The
+> current report shows that the problem is not that hard to trigger).
+
+As per above, the userspace OOM handling is risky as hell anyway.
+What happens when an anonymous fault waits in memcg userspace OOM
+while holding the mmap_sem, and a writer lines up behind it?  Your
+userspace OOM handler had better not look at any of the /proc files of
+the stuck task that require the mmap_sem.
+
+At the same token, it probably shouldn't touch the same files a memcg
+task is stuck trying to read/write.
