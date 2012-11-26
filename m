@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2KZV0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:26:14 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62292 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab2KZV0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:26:12 -0500
+	id S1757166Ab2KZV2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:28:30 -0500
+Received: from gmmr3.centrum.cz ([46.255.225.251]:58672 "EHLO gmmr3.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755263Ab2KZV23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 16:28:29 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
+Date: Mon, 26 Nov 2012 22:28:26 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20121122214249.GA20319@dhcp22.suse.cz>, <20121122233434.3D5E35E6@pobox.sk>, <20121123074023.GA24698@dhcp22.suse.cz>, <20121123102137.10D6D653@pobox.sk>, <20121123100438.GF24698@dhcp22.suse.cz>, <20121125011047.7477BB5E@pobox.sk>, <20121125120524.GB10623@dhcp22.suse.cz>, <20121125135542.GE10623@dhcp22.suse.cz>, <20121126013855.AF118F5E@pobox.sk>, <20121126131837.GC17860@dhcp22.suse.cz> <20121126132149.GD17860@dhcp22.suse.cz>
+In-Reply-To: <20121126132149.GD17860@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-In-Reply-To: <50B3C211.6000600@wwwdotorg.org>
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-	<1353349867-28494-11-git-send-email-swarren@wwwdotorg.org>
-	<CACRpkdb-cmwTH_7EJO02m2+CCZrJ2ycgtGpf8stoiFKSm8jqww@mail.gmail.com>
-	<50B3C211.6000600@wwwdotorg.org>
-Date: Mon, 26 Nov 2012 22:26:10 +0100
-Message-ID: <CACRpkdaFfKKVjS0e5dkHE-faaedOdRaQR8ObEmzq5X6ADuo0Ng@mail.gmail.com>
-Subject: Re: [PATCH V3 10/11] ARM: remove struct sys_timer suspend and resume fields
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Jonas ABERG <jonas.aberg@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <20121126222826.3843D563@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 8:25 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/21/2012 01:28 AM, Linus Walleij wrote:
+>Here we go with the patch for 3.2.34. Could you test with this one,
+>please?
 
->> Oh and there was this comment/TODO:
->> I was thinking that if your patch set is introducing a
->> plethora of new users of these hooks we should maybe
->> stick a patch at the beginning of the series renaming the
->> hooks to *_noirq, but if it's a major obstacle it can surely wait.
->
-> I think I'd prefer to keep that rename separate and do it later; while
-> this series does introduce a few new users of the type, there are many
-> more pre-existing users. Renaming all the users would end up making this
-> series potentially conflict with addition of new users in tip.git or
-> elsewhere, whereas any possible current conflicts from this series
-> should be resolvable in arm-soc pretty easily I hope, so I'd rather
-> create a separate series that does the rename, and probably apply it to
-> tip.git, probably for 3.10?
+Michal, regarding to your conversation with Johannes Weiner, should i try this patch or not?
 
-Sure no big deal.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+azur
