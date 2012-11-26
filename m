@@ -1,97 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2KZEK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 23:10:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49125 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab2KZEK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 23:10:56 -0500
-Date: Mon, 26 Nov 2012 15:10:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: build failure after merge of the modules tree
-Message-Id: <20121126151046.1b5b09762b8361b1f202c6e2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/"
+	id S1753988Ab2KZELe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 23:11:34 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35041 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206Ab2KZELc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 23:11:32 -0500
+Date: Sun, 25 Nov 2012 23:10:41 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
+        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm,vmscan: only loop back if compaction would fail in
+ all zones
+Message-ID: <20121126041041.GD2799@cmpxchg.org>
+References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
+ <20121125175728.3db4ac6a@fem.tu-ilmenau.de>
+ <20121125132950.11b15e38@annuminas.surriel.com>
+ <20121125224433.GB2799@cmpxchg.org>
+ <20121125191645.0ebc6d59@annuminas.surriel.com>
+ <20121126031518.GC2799@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126031518.GC2799@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Nov 25, 2012 at 10:15:18PM -0500, Johannes Weiner wrote:
+> On Sun, Nov 25, 2012 at 07:16:45PM -0500, Rik van Riel wrote:
+> > On Sun, 25 Nov 2012 17:44:33 -0500
+> > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > > On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
+> > 
+> > > > Could you try this patch?
+> > > 
+> > > It's not quite enough because it's not reaching the conditions you
+> > > changed, see analysis in https://lkml.org/lkml/2012/11/20/567
+> > 
+> > Johannes,
+> > 
+> > does the patch below fix your problem?
+> 
+> I can not reproduce the problem anymore with my smoke test.
+> 
+> > I suspect it would, because kswapd should only ever run into this
+> > particular problem when we have a tiny memory zone in a pgdat,
+> > and in that case we will also have a larger zone nearby, where
+> > compaction would just succeed.
+> 
+> What if there is a higher order GFP_DMA allocation when the other
+> zones in the system meet the high watermark for this order?
+> 
+> There is something else that worries me: if the preliminary zone scan
+> finds the high watermark of all zones alright, end_zone is at its
+> initialization value, 0.  The final compaction loop at `if (order)'
+> goes through all zones up to and including end_zone, which was never
+> really set to anything meaningful(?) and the only zone considered is
+> the DMA zone again.  Very unlikely, granted, but if you'd ever hit
+> that race and kswapd gets stuck, this will be fun to debug...
 
-Hi Rusty,
+I actually liked your first idea better: force reclaim until the
+compaction watermark is met.  The only problem was that still not
+every check in there agreed when the zone was considered balanced and
+so no actual reclaim happened.
 
-After merging the modules tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+So how about making everybody agree?  If the high watermark is met but
+not the compaction one, keep doing reclaim AND don't consider the zone
+balanced, AND don't make it contribute to balanced_pages etc.?  This
+makes sure reclaim really does not bail and that the node is never
+considered alright when it's actually not according to compaction.
+This patch fixes the problem too (at least for the smoke test so far)
+and IMO makes the code a bit more understandable.
 
-drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: invalid suffix "n_dis=
-abletype__8" on integer constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: expected identifier o=
-r '(' before numeric constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: invalid suffix "n_dis=
-able__9" on integer constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: expected identifier o=
-r '(' before numeric constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: invalid suffix "ghz_d=
-isabletype__32" on integer constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: expected identifier o=
-r '(' before numeric constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: invalid suffix "ghz_d=
-isable__33" on integer constant
-drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: expected identifier o=
-r '(' before numeric constant
-drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: invalid suffix "n_d=
-isabletype__11" on integer constant
-drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: expected identifier=
- or '(' before numeric constant
-drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: invalid suffix "n_d=
-isable__12" on integer constant
-drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: expected identifier=
- or '(' before numeric constant
+We may be able to drop some of the relooping conditions.  We may also
+be able to reduce the pressure from the DMA zone by passing the right
+classzone_idx in there.  Needs more thought.
 
-Presumably caused by commit 58876af0436e ("moduleparam: use __UNIQUE_ID
-()").  This commit removed the "__mod_" prefix that used to be added to
-the front of the "name" passed to module_param_named().  Admittedly, the
-documentation says that "name" must be "a valid C identifier which is the
-parameter name", but the (ab)usage here used to work (the name starts
-with a number).
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
 
-I have used the modules tree from 20121115 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Kswapd does not in all places have the same criteria for when it
+considers a zone balanced.  This leads to zones being not reclaimed
+because they are considered just fine and the compaction checks to
+loop over the zonelist again because they are considered unbalanced,
+causing kswapd to run forever.
 
---Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/
-Content-Type: application/pgp-signature
+Add a function, zone_balanced(), that checks the watermark and if
+compaction has enough free memory to do its job.  Then use it
+uniformly for when kswapd needs to check if a zone is balanced.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-iQIcBAEBCAAGBQJQsuvGAAoJEECxmPOUX5FESGcP/0z+Ym2MFd8xVDW/fuGpLCQS
-/toaNAeHyz82sVK6TRcDoZ5WmqCXvDBlkNZRSaETjx6eV2yMk4fFjXiMeS6bF50i
-KkjUt2IScKreW5tnc/Hn3ukFUngoOQgniF4XgvUl/KpXFoQsCkQO64NNiSQX0cVa
-QnTZWD1g5AUMUZqMiTLzTXMcS0aRH5okKFTcKAzS/YJCu236xXCikeXAXqloD0sU
-pfv55Wx/bDr9V97e1zCfYDZdT6H8wHeFOCWV4aUF/fW+z1FvweqZZL6VVTlPFI0O
-PbAgrpU+jB0IBoL+CtB+sIP5sIsXIB4DvXivFltXMy42jGpVtQuxzJ0bSTNLxTpn
-dzanYlppVnFxQZWu+ZFAOAp/UUEb75BcvG13jRjCuOhSi+UeUILGejgVK2ZYJJgD
-LqJ60dwVjo5++gl1jJvJgCxItBJRRZXxda4kAOoGtbGLNr5YxrHkb72ZVPwBS1r7
-FOz0p2q8jgDqxX81aefk3hPaGgm7pjzHLwbu3iC5xDSHknflIPEZ+wYCXJn+CdC3
-TDz3TYNE2U2ko9bIkoTXKSriaX0zZgtlG7gAj8yLU85lSgf5C6lLWy0LC3X+0FbQ
-XOqwB+VVeCh00qLX7jq/F/1UXIEeq+/YlYPR2PMgo3+eNkH12RA6o8qwwhlgnEBM
-ESxuK1WPkThqSBRQgQCC
-=pH8Z
------END PGP SIGNATURE-----
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 48550c6..3b0aef4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
+ 	} while (memcg);
+ }
+ 
++static bool zone_balanced(struct zone *zone, int order,
++			  unsigned long balance_gap, int classzone_idx)
++{
++	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
++				    balance_gap, classzone_idx, 0))
++		return false;
++
++	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
++		return false;
++
++	return true;
++}
++
+ /*
+  * pgdat_balanced is used when checking if a node is balanced for high-order
+  * allocations. Only zones that meet watermarks and are in a zone allowed
+@@ -2475,8 +2488,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ 			continue;
+ 		}
+ 
+-		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
+-							i, 0))
++		if (!zone_balanced(zone, order, 0, i))
+ 			all_zones_ok = false;
+ 		else
+ 			balanced += zone->present_pages;
+@@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				break;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), 0, 0)) {
++			if (!zone_balanced(zone, order, 0, 0)) {
+ 				end_zone = i;
+ 				break;
+ 			} else {
+@@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				testorder = 0;
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+-				    !zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0)) {
++			    !zone_balanced(zone, testorder,
++					   balance_gap, end_zone)) {
+ 				shrink_zone(zone, &sc);
+ 
+ 				reclaim_state->reclaimed_slab = 0;
+@@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				continue;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone), end_zone, 0)) {
++			if (!zone_balanced(zone, testorder, 0, end_zone)) {
+ 				all_zones_ok = 0;
+ 				/*
+ 				 * We are still under min water mark.  This
+-- 
+1.7.11.7
 
---Signature=_Mon__26_Nov_2012_15_10_46_+1100_fKwgeo4LVmX30_8/--
+
