@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2KZJsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:48:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:37189 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab2KZJsI (ORCPT
+	id S1754487Ab2KZJtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:49:40 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:37228 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab2KZJtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:48:08 -0500
-X-AuditID: cbfee60b-b7f356d0000018d6-9e-50b33ad62621
-Date: Mon, 26 Nov 2012 09:48:06 +0000 (GMT)
+	Mon, 26 Nov 2012 04:49:39 -0500
+X-AuditID: cbfee610-b7fd06d000005bdb-18-50b33b31ab0e
+Date: Mon, 26 Nov 2012 09:49:37 +0000 (GMT)
 From: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 2/5] backlight: Add Sanyo LV5207LP backlight driver
+Subject: Re: [PATCH 1/5] backlight: Add GPIO-based backlight driver
 To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
         "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
         Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
@@ -21,8 +22,8 @@ Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         Jingoo Han <jg1.han@samsung.com>
 Reply-to: jg1.han@samsung.com
 MIME-version: 1.0
-X-MTR: 20121126094612182@jg1.han
-Msgkey: 20121126094612182@jg1.han
+X-MTR: 20121126094831916@jg1.han
+Msgkey: 20121126094831916@jg1.han
 X-EPLocale: en_US.euc-kr
 X-Priority: 3
 X-EPWebmail-Msg-Type: personal
@@ -32,49 +33,49 @@ X-EPHeader: ML
 X-EPTrCode: 
 X-EPTrName: 
 X-MLAttribute: 
-X-RootMTR: 20121126094612182@jg1.han
+X-RootMTR: 20121126094831916@jg1.han
 X-ParentMTR: 
 X-ArchiveUser: EV
 X-CPGSPASS: Y
 Content-type: text/plain; charset=euc-kr
 MIME-version: 1.0
-Message-id: <12056392.33321353923285279.JavaMail.weblogic@epv6ml07>
+Message-id: <32552643.33371353923376540.JavaMail.weblogic@epv6ml07>
 DLP-Filter: Pass
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJsWRmVeSWpSXmKPExsVy+t8zfd1rVpsDDP4fVLS4vGsOmwOjx+dN
-	cgGMUQ2MNolFyRmZZakKqXnJ+SmZeem2SqEhbroWSgoZ+cUltkrRRgbGekamJnpGJuZ6lgax
-	VkamSgp5ibmptkoVulC9SgpFyQVAtbmVxUADclL1oOJ6xal5KQ5Z+aUgl+gVJ+YWl+al6yXn
-	5yoplCXmlAKNUNJPmMqYcbEhqKAtvKJxwQK2BsYnIV2MnBxCAkoSk07uZQSxJQRMJDbtvMQC
-	YYtJXLi3nq2LkQuoZhmjxKwda4EcDrCir09ZIOLzGSV+7VoH1swioCqx7tZUdhCbTUBdYsLv
-	ZrBBwgLuEvMOrWEFsUUEnCRuNy9jAmlmFpjGLPHu7m02iCtkJe5Nns0MYvMKCEqcnPkE6goF
-	ibPPTjBBxBUllk+dwQYRl5C4c38/K4TNKzGj/SlUvZzEtK9rmCFsaYnzszYwwnyz+PtjqDi/
-	xLHbO5ggnuGVeHI/GGbM7s1foMYLSEw9cxCqVVVix4PD7BA2n8SahW+hVglKnL7WzQzT27Dx
-	N1gNM9CZU7ofQtlaEl9+7GND9RYHkO0ssWaZ7wRG5VlIMrOQdM9C0o2sZgEjyypG0dSC5ILi
-	pPRUQ+S43sQISYLcOxhnNVgcYhTgYFTi4ZU8tilAiDWxrLgy9xCjBAezkgjvRCagEG9KYmVV
-	alF+fFFpTmrxIcaJjMAYnMgsJZqcD0zReSXxhsbGJmYmpibmlqbmpsQImxuZGgDTr4EhicJK
-	4rwKFdMDhATSE0tSs1NTC1KLYI5i4uCUamB0ClV690Ps06JTYjxB/yrMFHSPzf+2ceZfhm81
-	tUke79MKuLnE12bGrO2ymmNdUCdp8XqG2NNdCj+ONNyLcG1nPHwuJ7KlW27PSl2FxQ+jVVX8
-	Jr2Ns+DeOWHdESmenN2RxcL74oO5wtnqF309f5PHwGGvP6PgtIjs2M1Ra05Ms0zpmCbrHaDE
-	UpyRaKjFXFScCADnQ5gW9QMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJKsWRmVeSWpSXmKPExsVy+t/tmbrXrDYHGJzqk7G4vGsOmwOjx+dN
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJsWRmVeSWpSXmKPExsVy+t8zA11D680BBgee6Vhc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXM+PxyGWvBq4CKJR//MzUw3vHrYuTkEBJQkph0ci8jiC0hYCLRuXEN
+	C4QtJnHh3nq2LkYuoJpljBL37q1hgyk6NnsjG0TzfEaJYzvBBrEIqEp8WHkXLM4moC4x4Xcz
+	2CBhAWeJqXe/sYPYIgJOEreblzGB2MwCp5klGr+pQ8yRlbg3eTYziM0rIChxcuYToF4OoF0K
+	ErO2VoKYvAKKEmfmOUJcICFx5/5+VgibV2JG+1Ook+Ukpn1dwwxhS0ucn7WBEeaVxd8fQ8X5
+	JY7d3sEEMZ1X4sn9YJgxuzd/gXpQQGLqmYNQraoS5w8uhxrPJ7Fm4VsoW1Di9LVuZpjeho2/
+	2SGeUpSY0v0QytaS+PJjHxuqp0BsZ4kXe+czTWBUnoUkNQtJ+ywk7chqFjCyrGIUTS1ILihO
+	Sk81Q47qTYyQFCiwg3FJg8UhRgEORiUeXsljmwKEWBPLiitzDzFKcDArifBOZAIK8aYkVlal
+	FuXHF5XmpBYfYpzICIy/icxSosn5wASdVxJvaGxsYmZiamJuaWpuSoywuZGpATD5GhiSKKwk
+	zsteMT1ASCA9sSQ1OzW1ILUI5igmDk6pBsa+H949716LyF5Je3nh+ILiuxmGXxpv9C/MX8r/
+	0Cx3aZRMuLX/Gm6vxRsn7DC53FDXyfyt+qfN4XkbXzd4ilzhWpotkiUU0cGaHL/TUfrts788
+	ge+DzrBX8biocofXzxFjVhI0eya108RTUu/zqxTxwq+26jkzMzVVWxVP/u84t4JpwQWerUos
+	xRmJhlrMRcWJAJE4Lj70AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBKsWRmVeSWpSXmKPExsVy+t/tmbqG1psDDBat0bC4vGsOmwOjx+dN
 	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
 	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnrGlrFWhgYGRqZAVQkZ
-	GRcbggrawisaFyxga2B8EtLFyMkhJKAkMenkXsYuRg4OCQETia9PWUDCEgJiEhfurWfrYuQC
-	KpnPKPFr1zpGkASLgKrEultT2UFsNgF1iQm/m8EahAXcJeYdWsMKYosIOEncbl7GBNLMLDCN
-	WeLd3dtsEMtkJe5Nns0MYvMKCEqcnPkEapuCxNlnJ5gg4ooSy6fOYIOIS0jcub+fFcLmlZjR
-	DnOdnMS0r2uYIWxpifOzNjDCXL34+2OoOL/Esds7mCAe45V4cj8YZszuzV+gxgtITD1zEKpV
-	VWLHg8PsEDafxJqFb6FWCUqcvtbNDNPbsPE3WA0z0JlTuh9C2VoSX37sY0P1FgeQ7SyxZpnv
-	BEa5WUgys5B0z0LSjaxmASPLKkbR1ILkguKk9FRDveLE3OLSvHS95PzcTYzg9PSMewfjrAaL
-	Q4wCHIxKPLySxzYFCLEmlhVX5h5ilOBgVhLhncgEFOJNSaysSi3Kjy8qzUktPsToA4zAicxS
-	osn5wNSZVxJvaGxsYmZiam5gYWBpjkNYSZxXoWJ6gJBAemJJanZqakFqEcw4Jg5OqQbG0M88
-	0ls8PGr51x967St7+aPaN2bdrlkt+24mHsg6Y/Mmf2/YzgWzNxwNbhYyP/plT1GChnBW+9OT
-	201Vq34aL2mcW1N8XbfnbI/MtDfZ6yWzd2R+UvA8aREX0PhPZvPifr1rgsutXhTyyBvell/9
-	4YmK8kUG1xl74xbMVuZfuEB3h4biX1kfJZbijERDLeai4kQASCIKDnwDAAA=
+	GZ9fLmMteBVQseTjf6YGxjt+XYycHEICShKTTu5lBLElBEwkjs3eyAZhi0lcuLeeDaJmPqPE
+	sZ1g9SwCqhIfVt4Fi7MJqEtM+N3MAmILCzhLTL37jR3EFhFwkrjdvIwJxGYWOM0s0fhNHWKO
+	rMS9ybOZQWxeAUGJkzOfAPVyAO1SkJi1tRLE5BVQlDgzzxHiAgmJO/f3s0LYvBIz2p+yQNhy
+	EtO+rmGGsKUlzs/awAhz8eLvj6Hi/BLHbu9ggpjOK/HkfjDMmN2bv0A9KCAx9cxBqFZVifMH
+	l0ON55NYs/AtlC0ocfpaNzNMb8PG3+wQTylKTOl+CGVrSXz5sY8N1VMgtrPEi73zmSYwys1C
+	kpqFpH0WknZkNQsYWVYxiqYWJBcUJ6WnmukVJ+YWl+al6yXn525iBCenZwI7GJc0WBxiFOBg
+	VOLhlTy2KUCINbGsuDL3EKMEB7OSCO9EJqAQb0piZVVqUX58UWlOavEhRh9g9E1klhJNzgcm
+	zrySeENjYxMzE1NzAwsDS3McwkrivOwV0wOEBNITS1KzU1MLUotgxjFxcEo1MEotTLTMm/fP
+	rayk8tmmnT8buSNd+5sj34ZGX/+8e6lwzK8p+3/0tX3tfH7gwISqGYEdoT4RS3+8eON+sjbY
+	wTtN3fvBm9+bRNmYfyq+P3l883Pz5dYaPzw3/mFaL7/ZPC/04+obXROvFNUvnMPJwmYx94eP
+	BF/+s7reS5Pfecm1xPnLldw4LavEUpyRaKjFXFScCABNvb+rewMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAQ9mFep023221
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAQ9njo6023228
 
 On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
 > 
@@ -82,58 +83,56 @@ On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
 
 CC'ed Andrew Morton
 
+It looks good. Also, I tested this patch with SMDK4210 board.
 Acked-by: Jingoo Han <jg1.han@samsung.com>
 
 Best regards,
 Jingoo Han
 
 > ---
->  drivers/video/backlight/Kconfig        |    6 +
->  drivers/video/backlight/Makefile       |    1 +
->  drivers/video/backlight/lv5207lp.c     |  171 ++++++++++++++++++++++++++++++++
->  include/linux/platform_data/lv5207lp.h |   20 ++++
->  4 files changed, 198 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/video/backlight/lv5207lp.c
->  create mode 100644 include/linux/platform_data/lv5207lp.h
+>  drivers/video/backlight/Kconfig          |    7 ++
+>  drivers/video/backlight/Makefile         |    1 +
+>  drivers/video/backlight/gpio_backlight.c |  158 ++++++++++++++++++++++++++++++
+>  include/video/gpio_backlight.h           |   21 ++++
+>  4 files changed, 187 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/video/backlight/gpio_backlight.c
+>  create mode 100644 include/video/gpio_backlight.h
 > 
 > diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-> index 259442d..92ce5aa 100644
+> index 765a945..259442d 100644
 > --- a/drivers/video/backlight/Kconfig
 > +++ b/drivers/video/backlight/Kconfig
-> @@ -397,6 +397,12 @@ config BACKLIGHT_GPIO
->  	  If you have a LCD backlight adjustable by GPIO, say Y to enable
->  	  this driver.
+> @@ -390,6 +390,13 @@ config BACKLIGHT_TPS65217
+>  	  If you have a Texas Instruments TPS65217 say Y to enable the
+>  	  backlight driver.
 > 
-> +config BACKLIGHT_LV5207LP
-> +	tristate "Sanyo LV5207LP Backlight"
-> +	depends on I2C
+> +config BACKLIGHT_GPIO
+> +	tristate "Generic GPIO based Backlight Driver"
+> +	depends on GENERIC_GPIO
 > +	help
-> +	  If you have a Sanyo LV5207LP say Y to enable the backlight driver.
+> +	  If you have a LCD backlight adjustable by GPIO, say Y to enable
+> +	  this driver.
 > +
 >  endif # BACKLIGHT_CLASS_DEVICE
 > 
 >  endif # BACKLIGHT_LCD_SUPPORT
 > diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-> index ec91c4a..125b8ad 100644
+> index e7ce729..ec91c4a 100644
 > --- a/drivers/video/backlight/Makefile
 > +++ b/drivers/video/backlight/Makefile
-> @@ -46,3 +46,4 @@ obj-$(CONFIG_BACKLIGHT_AAT2870) += aat2870_bl.o
+> @@ -45,3 +45,4 @@ obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+>  obj-$(CONFIG_BACKLIGHT_AAT2870) += aat2870_bl.o
 >  obj-$(CONFIG_BACKLIGHT_OT200) += ot200_bl.o
 >  obj-$(CONFIG_BACKLIGHT_TPS65217) += tps65217_bl.o
->  obj-$(CONFIG_BACKLIGHT_GPIO)	+= gpio_backlight.o
-> +obj-$(CONFIG_BACKLIGHT_LV5207LP)	+= lv5207lp.o
-> diff --git a/drivers/video/backlight/lv5207lp.c b/drivers/video/backlight/lv5207lp.c
+> +obj-$(CONFIG_BACKLIGHT_GPIO)	+= gpio_backlight.o
+> diff --git a/drivers/video/backlight/gpio_backlight.c b/drivers/video/backlight/gpio_backlight.c
 > new file mode 100644
-> index 0000000..b06f35c
+> index 0000000..5a8cd34
 > --- /dev/null
-> +++ b/drivers/video/backlight/lv5207lp.c
-> @@ -0,0 +1,171 @@
+> +++ b/drivers/video/backlight/gpio_backlight.c
+> @@ -0,0 +1,158 @@
 > +/*
-> + * Sanyo LV5207LP LED Driver
-> + *
-> + * Copyright (C) 2012 Ideas on board SPRL
-> + *
-> + * Contact: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> + * gpio_backlight.c - Simple GPIO-controlled backlight
 > + *
 > + * This program is free software; you can redistribute it and/or modify
 > + * it under the terms of the GNU General Public License version 2 as
@@ -143,188 +142,180 @@ Jingoo Han
 > +#include <linux/backlight.h>
 > +#include <linux/err.h>
 > +#include <linux/fb.h>
-> +#include <linux/i2c.h>
+> +#include <linux/gpio.h>
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
 > +#include <linux/module.h>
+> +#include <linux/platform_device.h>
 > +#include <linux/slab.h>
-> +#include <linux/platform_data/lv5207lp.h>
+> +#include <video/gpio_backlight.h>
 > +
-> +#define LV5207LP_CTRL1			0x00
-> +#define LV5207LP_CPSW			(1 << 7)
-> +#define LV5207LP_SCTEN			(1 << 6)
-> +#define LV5207LP_C10			(1 << 5)
-> +#define LV5207LP_CKSW			(1 << 4)
-> +#define LV5207LP_RSW			(1 << 3)
-> +#define LV5207LP_GSW			(1 << 2)
-> +#define LV5207LP_BSW			(1 << 1)
-> +#define LV5207LP_CTRL2			0x01
-> +#define LV5207LP_MSW			(1 << 7)
-> +#define LV5207LP_MLED4			(1 << 6)
-> +#define LV5207LP_RED			0x02
-> +#define LV5207LP_GREEN			0x03
-> +#define LV5207LP_BLUE			0x04
+> +struct gpio_backlight {
+> +	struct device *dev;
+> +	struct device *fbdev;
 > +
-> +#define LV5207LP_MAX_BRIGHTNESS		32
-> +
-> +struct lv5207lp {
-> +	struct i2c_client *client;
-> +	struct backlight_device *backlight;
-> +	struct lv5207lp_platform_data *pdata;
+> +	int gpio;
+> +	int active;
 > +};
 > +
-> +static int lv5207lp_write(struct lv5207lp *lv, u8 reg, u8 data)
+> +static int gpio_backlight_update_status(struct backlight_device *bl)
 > +{
-> +	return i2c_smbus_write_byte_data(lv->client, reg, data);
-> +}
+> +	struct gpio_backlight *gbl = bl_get_data(bl);
+> +	int brightness = bl->props.brightness;
 > +
-> +static int lv5207lp_backlight_update_status(struct backlight_device *backlight)
-> +{
-> +	struct lv5207lp *lv = bl_get_data(backlight);
-> +	int brightness = backlight->props.brightness;
-> +
-> +	if (backlight->props.power != FB_BLANK_UNBLANK ||
-> +	    backlight->props.fb_blank != FB_BLANK_UNBLANK ||
-> +	    backlight->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+> +	if (bl->props.power != FB_BLANK_UNBLANK ||
+> +	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
+> +	    bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
 > +		brightness = 0;
 > +
-> +	if (brightness) {
-> +		lv5207lp_write(lv, LV5207LP_CTRL1,
-> +			       LV5207LP_CPSW | LV5207LP_C10 | LV5207LP_CKSW);
-> +		lv5207lp_write(lv, LV5207LP_CTRL2,
-> +			       LV5207LP_MSW | LV5207LP_MLED4 |
-> +			       (brightness - 1));
-> +	} else {
-> +		lv5207lp_write(lv, LV5207LP_CTRL1, 0);
-> +		lv5207lp_write(lv, LV5207LP_CTRL2, 0);
-> +	}
+> +	gpio_set_value(gbl->gpio, brightness ? gbl->active : !gbl->active);
 > +
 > +	return 0;
 > +}
 > +
-> +static int lv5207lp_backlight_get_brightness(struct backlight_device *backlight)
+> +static int gpio_backlight_get_brightness(struct backlight_device *bl)
 > +{
-> +	return backlight->props.brightness;
+> +	return bl->props.brightness;
 > +}
 > +
-> +static int lv5207lp_backlight_check_fb(struct backlight_device *backlight,
-> +				       struct fb_info *info)
+> +static int gpio_backlight_check_fb(struct backlight_device *bl,
+> +				   struct fb_info *info)
 > +{
-> +	struct lv5207lp *lv = bl_get_data(backlight);
+> +	struct gpio_backlight *gbl = bl_get_data(bl);
 > +
-> +	return lv->pdata->fbdev == info->dev;
+> +	return gbl->fbdev == info->dev;
 > +}
 > +
-> +static const struct backlight_ops lv5207lp_backlight_ops = {
-> +	.options	= BL_CORE_SUSPENDRESUME,
-> +	.update_status	= lv5207lp_backlight_update_status,
-> +	.get_brightness	= lv5207lp_backlight_get_brightness,
-> +	.check_fb	= lv5207lp_backlight_check_fb,
+> +static const struct backlight_ops gpio_backlight_ops = {
+> +	.update_status	= gpio_backlight_update_status,
+> +	.get_brightness	= gpio_backlight_get_brightness,
+> +	.check_fb	= gpio_backlight_check_fb,
 > +};
 > +
-> +static int lv5207lp_probe(struct i2c_client *client,
-> +			  const struct i2c_device_id *id)
+> +#ifdef CONFIG_PM
+> +static int gpio_backlight_suspend(struct device *dev)
 > +{
-> +	struct lv5207lp_platform_data *pdata = client->dev.platform_data;
-> +	struct backlight_device *backlight;
+> +	struct backlight_device *bl = dev_get_drvdata(dev);
+> +	struct gpio_backlight *gbl = bl_get_data(bl);
+> +
+> +	gpio_set_value(gbl->gpio, !gbl->active);
+> +
+> +	return 0;
+> +}
+> +
+> +static int gpio_backlight_resume(struct device *dev)
+> +{
+> +	struct backlight_device *bl = dev_get_drvdata(dev);
+> +
+> +	backlight_update_status(bl);
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(gpio_backlight_pm_ops, gpio_backlight_suspend,
+> +			 gpio_backlight_resume);
+> +
+> +#endif
+> +
+> +static int __devinit gpio_backlight_probe(struct platform_device *pdev)
+> +{
+> +	struct gpio_backlight_platform_data *pdata = pdev->dev.platform_data;
 > +	struct backlight_properties props;
-> +	struct lv5207lp *lv;
+> +	struct backlight_device *bl;
+> +	struct gpio_backlight *gbl;
+> +	int ret;
 > +
-> +	if (pdata == NULL) {
-> +		dev_err(&client->dev, "No platform data supplied\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!i2c_check_functionality(client->adapter,
-> +				     I2C_FUNC_SMBUS_BYTE_DATA)) {
-> +		dev_warn(&client->dev,
-> +			 "I2C adapter doesn't support I2C_FUNC_SMBUS_BYTE\n");
-> +		return -EIO;
-> +	}
-> +
-> +	lv = devm_kzalloc(&client->dev, sizeof(*lv), GFP_KERNEL);
-> +	if (!lv)
+> +	gbl = devm_kzalloc(&pdev->dev, sizeof(*gbl), GFP_KERNEL);
+> +	if (gbl == NULL)
 > +		return -ENOMEM;
 > +
-> +	lv->client = client;
-> +	lv->pdata = pdata;
+> +	gbl->dev = &pdev->dev;
+> +
+> +	if (!pdata) {
+> +		dev_err(&pdev->dev, "failed to find platform data\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	gbl->fbdev = pdata->fbdev;
+> +	gbl->gpio = pdata->gpio;
+> +	gbl->active = pdata->active_low ? 0 : 1;
+> +
+> +	ret = devm_gpio_request_one(gbl->dev, gbl->gpio, GPIOF_DIR_OUT,
+> +				    pdata->name);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "unable to request GPIO\n");
+> +		return ret;
+> +	}
 > +
 > +	memset(&props, 0, sizeof(props));
 > +	props.type = BACKLIGHT_RAW;
-> +	props.max_brightness = min_t(unsigned int, pdata->max_value,
-> +				     LV5207LP_MAX_BRIGHTNESS);
-> +	props.brightness = clamp_t(unsigned int, pdata->def_value, 0,
-> +				   props.max_brightness);
-> +
-> +	backlight = backlight_device_register(dev_name(&client->dev),
-> +					      &lv->client->dev, lv,
-> +					      &lv5207lp_backlight_ops, &props);
-> +	if (IS_ERR(backlight)) {
-> +		dev_err(&client->dev, "failed to register backlight\n");
-> +		return PTR_ERR(backlight);
+> +	props.max_brightness = 1;
+> +	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, gbl,
+> +				       &gpio_backlight_ops, &props);
+> +	if (IS_ERR(bl)) {
+> +		dev_err(&pdev->dev, "failed to register backlight\n");
+> +		return PTR_ERR(bl);
 > +	}
 > +
-> +	backlight_update_status(backlight);
-> +	i2c_set_clientdata(client, backlight);
+> +	bl->props.brightness = pdata->def_value;
+> +	backlight_update_status(bl);
 > +
+> +	platform_set_drvdata(pdev, bl);
 > +	return 0;
 > +}
 > +
-> +static int lv5207lp_remove(struct i2c_client *client)
+> +static int __devexit gpio_backlight_remove(struct platform_device *pdev)
 > +{
-> +	struct backlight_device *backlight = i2c_get_clientdata(client);
+> +	struct backlight_device *bl = platform_get_drvdata(pdev);
 > +
-> +	backlight->props.brightness = 0;
-> +	backlight_update_status(backlight);
-> +	backlight_device_unregister(backlight);
-> +
+> +	backlight_device_unregister(bl);
 > +	return 0;
 > +}
 > +
-> +static const struct i2c_device_id lv5207lp_ids[] = {
-> +	{ "lv5207lp", 0 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, lv5207lp_ids);
-> +
-> +static struct i2c_driver lv5207lp_driver = {
-> +	.driver = {
-> +		.name = "lv5207lp",
+> +static struct platform_driver gpio_backlight_driver = {
+> +	.driver		= {
+> +		.name		= "gpio-backlight",
+> +		.owner		= THIS_MODULE,
+> +#ifdef CONFIG_PM
+> +		.pm		= &gpio_backlight_pm_ops,
+> +#endif
 > +	},
-> +	.probe = lv5207lp_probe,
-> +	.remove = lv5207lp_remove,
-> +	.id_table = lv5207lp_ids,
+> +	.probe		= gpio_backlight_probe,
+> +	.remove		= __devexit_p(gpio_backlight_remove),
 > +};
 > +
-> +module_i2c_driver(lv5207lp_driver);
+> +module_platform_driver(gpio_backlight_driver);
 > +
-> +MODULE_DESCRIPTION("Sanyo LV5207LP Backlight Driver");
 > +MODULE_AUTHOR("Laurent Pinchart <laurent.pinchart@ideasonboard.com>");
+> +MODULE_DESCRIPTION("GPIO-based Backlight Driver");
 > +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/platform_data/lv5207lp.h b/include/linux/platform_data/lv5207lp.h
+> +MODULE_ALIAS("platform:gpio-backlight");
+> diff --git a/include/video/gpio_backlight.h b/include/video/gpio_backlight.h
 > new file mode 100644
-> index 0000000..ac95cb1
+> index 0000000..5ae0d9c
 > --- /dev/null
-> +++ b/include/linux/platform_data/lv5207lp.h
-> @@ -0,0 +1,20 @@
+> +++ b/include/video/gpio_backlight.h
+> @@ -0,0 +1,21 @@
 > +/*
-> + * lv5207lp.h - Sanyo LV5207LP LEDs Driver
+> + * gpio_backlight.h - Simple GPIO-controlled backlight
 > + *
 > + * This program is free software; you can redistribute it and/or modify
 > + * it under the terms of the GNU General Public License version 2 as
 > + * published by the Free Software Foundation.
 > + */
-> +#ifndef __LV5207LP_H__
-> +#define __LV5207LP_H__
+> +#ifndef __GPIO_BACKLIGHT_H__
+> +#define __GPIO_BACKLIGHT_H__
 > +
 > +struct device;
 > +
-> +struct lv5207lp_platform_data {
+> +struct gpio_backlight_platform_data {
 > +	struct device *fbdev;
-> +	unsigned int max_value;
-> +	unsigned int def_value;
+> +	int gpio;
+> +	int def_value;
+> +	bool active_low;
+> +	const char *name;
 > +};
 > +
 > +#endif
-> +
 > --
 > 1.7.8.6
 > 
