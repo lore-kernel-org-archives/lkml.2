@@ -1,131 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2KZWPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:15:09 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41855 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2KZWPH (ORCPT
+	id S932256Ab2KZWbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:31:31 -0500
+Received: from us-mx3.synaptics.com ([12.239.217.85]:33461 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab2KZWb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:15:07 -0500
+	Mon, 26 Nov 2012 17:31:29 -0500
+Message-ID: <50B3EDBF.3030209@synaptics.com>
+Date: Mon, 26 Nov 2012 14:31:27 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-Date: Tue, 27 Nov 2012 08:15:06 +1000
-Message-ID: <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Dave Airlie <airlied@gmail.com>
-To: Terje Bergstrom <tbergstrom@nvidia.com>
-Cc: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: Re: [RFC PATCH 05/06] input/rmi4: F01 - device control
+References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com> <1353124734-16803-6-git-send-email-cheiny@synaptics.com> <20121126094018.GC13792@core.coreip.homeip.net>
+In-Reply-To: <20121126094018.GC13792@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
->  {
-> -       return 0;
-> +       struct tegra_drm_fpriv *fpriv;
-> +       int err = 0;
-> +
-> +       fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
-> +       if (!fpriv)
-> +               return -ENOMEM;
-> +
-> +       INIT_LIST_HEAD(&fpriv->contexts);
-> +       filp->driver_priv = fpriv;
-> +
+On 11/26/2012 01:40 AM, Dmitry Torokhov wrote:
+> Hi Christopher,
+>
+> On Fri, Nov 16, 2012 at 07:58:53PM -0800, Christopher Heiny wrote:
+>> RMI Function 01 implements basic device control and power management
+>> behaviors for the RMI4 sensor.
+>>
+>> rmi_f01.h exports definitions that we expect to be used by other functionality
+>> in the future (such as firmware reflash).
+>
+> Please see my comments below.
 
-who frees this?
-> +struct tegra_drm_syncpt_incr_args {
-> +       __u32 id;
-> +};
+Hi Dmitry,
 
-add 32-bits of padding here
+Thanks for the feedback and the patch.  I've got just one question, 
+included below, with a bunch of snipping).
 
-> +
-> +struct tegra_drm_syncpt_wait_args {
-> +       __u32 id;
-> +       __u32 thresh;
-> +       __s32 timeout;
-> +       __u32 value;
-> +};
-> +
-> +#define DRM_TEGRA_NO_TIMEOUT   (-1)
-> +
-> +struct tegra_drm_open_channel_args {
-> +       __u32 class;
-> +       void *context;
+				Chris
 
-no pointers use u64, align them to 64-bits, so 32-bits of padding,
+>
+>>
+>>
+>> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+>>
+>> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> Cc: Linus Walleij <linus.walleij@stericsson.com>
+>> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+>> Cc: Joeri de Gram <j.de.gram@gmail.com>
+>>
+>>
+>> ---
+>>
+>>   drivers/input/rmi4/rmi_f01.c | 1348 ++++++++++++++++++++++++++++++++++++++++++
+>>   drivers/input/rmi4/rmi_f01.h |  160 +++++
+>>   2 files changed, 1508 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
+>> new file mode 100644
+>> index 0000000..038266c
+>> --- /dev/null
+>> +++ b/drivers/input/rmi4/rmi_f01.c
+>> @@ -0,0 +1,1348 @@
+>> +/*
+>> + * Copyright (c) 2011-2012 Synaptics Incorporated
+>> + * Copyright (c) 2011 Unixphere
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
 
-> +};
-> +
-> +struct tegra_drm_get_channel_param_args {
-> +       void *context;
-> +       __u32 value;
+[snip]
 
-Same padding + uint64_t for void *
+>> +/**
+>> + * @reset - set this bit to force a firmware reset of the sensor.
+>> + */
+>> +struct f01_device_commands {
+>> +	bool reset:1;
+>> +	u8 reserved:7;
+>
+> When specifying bitwise fields please use u8, u16, etc only.
 
-> +};
-> +
-> +struct tegra_drm_syncpt_incr {
-> +       __u32 syncpt_id;
-> +       __u32 syncpt_incrs;
-> +};
-> +
-> +struct tegra_drm_cmdbuf {
-> +       __u32 mem;
-> +       __u32 offset;
-> +       __u32 words;
-> +};
+Um, OK.  Previously patch feedback suggested to use bool instead of u8 
+for single bit fields (see here: 
+http://www.spinics.net/lists/linux-input/msg22198.html).  So I'm a 
+little confused.  It's no big deal to change it back, but I'd like 
+confirmation that it is really what we should do.
 
-add padding
-> +
-> +struct tegra_drm_reloc {
-> +       __u32 cmdbuf_mem;
-> +       __u32 cmdbuf_offset;
-> +       __u32 target;
-> +       __u32 target_offset;
-> +       __u32 shift;
-> +};
-
-add padding
-
-> +
-> +struct tegra_drm_waitchk {
-> +       __u32 mem;
-> +       __u32 offset;
-> +       __u32 syncpt_id;
-> +       __u32 thresh;
-> +};
-> +
-> +struct tegra_drm_submit_args {
-> +       void *context;
-> +       __u32 num_syncpt_incrs;
-> +       __u32 num_cmdbufs;
-> +       __u32 num_relocs;
-> +       __u32 submit_version;
-> +       __u32 num_waitchks;
-> +       __u32 waitchk_mask;
-> +       __u32 timeout;
-> +       struct tegra_drm_syncpt_incrs *syncpt_incrs;
-> +       struct tegra_drm_cmdbuf *cmdbufs;
-> +       struct tegra_drm_reloc *relocs;
-> +       struct tegra_drm_waitchk *waitchks;
-> +
-> +       __u32 pad[5];           /* future expansion */
-> +       __u32 fence;            /* Return value */
-> +};
-
-lose all the pointers for 64-bit aligned uint64_t.
-
-Probably should align all of these on __u64 and __u32 usage if possible.
-
-i'll look at the rest of the patches, but I need to know what commands
-can be submitted via this interface and what are the security
-implications of it.
-
-Dave.
+[snip]
