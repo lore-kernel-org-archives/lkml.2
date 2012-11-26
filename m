@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab2KZPUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:20:19 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:33675 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab2KZPUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:20:18 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pm@vger.kernel.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [PATCH 3/6 v4] cpufreq: tolerate inexact values when collecting stats
-Date: Mon, 26 Nov 2012 16:25:01 +0100
-Message-ID: <2830056.M1sSqgI0LP@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50B3754A.50804@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <3756540.1nyvqzWibd@vostro.rjw.lan> <50B3754A.50804@calxeda.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755379Ab2KZPZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:25:35 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39614 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab2KZPZe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:25:34 -0500
+Message-ID: <1353943531.10271.4.camel@hornet>
+Subject: Re: [PATCH 1/2] leds: Add generic support for memory mapped LEDs
+From: Pawel Moll <pawel.moll@arm.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Mon, 26 Nov 2012 15:25:31 +0000
+In-Reply-To: <1353325492.3303.0.camel@hornet>
+References: <1351792722-15250-1-git-send-email-pawel.moll@arm.com>
+	 <1352388952.20549.12.camel@hornet> <1353325492.3303.0.camel@hornet>
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 26 Nov 2012 15:25:31.0252 (UTC) FILETIME=[45819B40:01CDCBEA]
+X-MC-Unique: 112112615253213001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 26, 2012 07:57:30 AM Mark Langsdorf wrote:
-> On 11/24/2012 04:05 AM, Rafael J. Wysocki wrote:
-> > On Saturday, November 17, 2012 03:50:48 PM Borislav Petkov wrote:
-> >> On Tue, Nov 13, 2012 at 02:13:38PM -0500, Mark Langsdorf wrote:
-> >>> Although cpufreq_driver has a flag field, no part of cpufreq_driver
-> >>> is directly passed to the cpufreq_stat code. Only cpufreq_policy
-> >>> is. It's cleaner to do passes of the while loop than to copy the
-> >>> cpufreq_driver.flag field into cpufreq_policy and then store it again
-> >>> in cpufreq_stats.
-> >>
-> >> That maybe so but this newly added loop which is only Calxeda-relevant
-> >> is called in cpufreq_stat_notifier_trans, which is the frequency change
-> >> notifier call, AFAICT.
-> 
-> Drivers only go through the loop if they can't find an exact frequency.
-> So every driver that isn't Calxeda shouldn't see the issue.
-> 
-> >> So you probably need to find a slick way of detecting calxeda hw
-> >> somewhere along the init path of cpufreq_stats_init and set a
-> >> hw-specific flag instead of adding that cost to each driver.
+On Mon, 2012-11-19 at 11:44 +0000, Pawel Moll wrote:
+> On Thu, 2012-11-08 at 15:35 +0000, Pawel Moll wrote:
+> > Hi Bryan, Richard,
 > > 
-> > Mark, I suppose you'd like me to take this series for v3.8, but the above
-> > comment from Boris has to be addressed for that.
+> > On Thu, 2012-11-01 at 17:58 +0000, Pawel Moll wrote:
+> > > LEDs are often controlled by writing to memory mapped
+> > > register. This patch adds:
+> > > 
+> > > 1. Generic functions for platform code and drivers to create
+> > >    class device for LEDs controlled by arbitrary bit masks.
+> > >    The control register value is read, modified by logic AND
+> > >    and OR operations with respective mask and written back.
+> > > 
+> > > 2. A platform driver for simple use case when one or more LED
+> > >    are controlled by consecutive bits in a register pointed
+> > >    at by the platform device's memory resource. It can be
+> > >    particularly useful for MFD cells being part of an other
+> > >    device.
+> > > 
+> > > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > 
+> > It's just a friendly and polite nag - any thoughts or feelings about
+> > this?
 > 
-> I think I'd rather drop this particular patch and not have cpufreq_stat
-> support for Highbank. Redesigning it to meet Boris' requirements is
-> going to take more time than I currently have available.
-> 
-> Would it be acceptable to drop this patch and fix the issues with
-> patches 4 and 6 to get the series in?
+> Ping again?
 
-Yes, it would, but please resubmit ASAP.
+And another polite nag for this week...
 
-Thanks,
-Rafael
+Paweł
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
