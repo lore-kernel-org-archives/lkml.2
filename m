@@ -1,119 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab2KZJFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:05:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55621 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab2KZJFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:05:09 -0500
-Date: Mon, 26 Nov 2012 09:05:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>, linux-input@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: Re: [PATCH 1/2] input: gpio-keys: Disable hardware on suspend
-Message-ID: <20121126090503.GB12782@gmail.com>
-References: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
- <20121125083229.GB21091@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121125083229.GB21091@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754631Ab2KZJG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:06:29 -0500
+Received: from plane.gmane.org ([80.91.229.3]:41223 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753713Ab2KZJG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 04:06:27 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Woody Wu <narkewoody@gmail.com>
+Subject: Re: The ethernet driver doesn't get probed
+Date: Mon, 26 Nov 2012 09:06:12 +0000 (UTC)
+Message-ID: <slrnkb6c6f.40o.narkewoody@zuhnb712.local.com>
+References: <slrnkb64p3.2k6.narkewoody@zuhnb712.local.com>
+ <CAAfyv35QOvgvH8xoMkE-S5Zf-9HF5Jb9X1EbMoi2FCcx1UMXNA@mail.gmail.com>
+ <CAEk7JKbG3FgcGWxN_BgqpuWB0JD6QkchwFR15H=eSva-CSJjTA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 59.37.26.98
+User-Agent: slrn/0.9.9p1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Nov 22, 2012 at 01:23:36PM +0000, Lee Jones wrote:
-> > From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> > 
-> > Disable hardware if active when suspending if the hw can not
-> > wake the system from suspend.
-> 
-> How about below instead (needs the other patch I have just sent out)?
+On 2012-11-26, Li, Zhen-Hua <lizhenhua.dev@gmail.com> wrote:
+> First you  should run "lspci -n" to check your device ID and vendor
+> ID, and make sure they are in the map list in
+> /lib/modules/<your-version>/modules.alias .
+>
 
-Sorry Dmitry, I'm a little confused. What does this mean?
+For some reasons, I cannot build the driver as loadable modules since I
+have to get network before mount the root filesystem.  And, this
+ethernet controller is not PCI interface, so probabaly the lspci won't
+help.  Is there any other way to get the device ID and vendor ID?
+Thanks.
 
-> Input: gpio-keys - disable hardware on suspend
-> 
-> From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> 
-> Disable hardware if active when suspending if the hw can not
-> wake the system from suspend.
-> 
-> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-> Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/keyboard/gpio_keys.c |   27 ++++++++++++++++++++++-----
->  1 file changed, 22 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-> index c7764ca..79435de 100644
-> --- a/drivers/input/keyboard/gpio_keys.c
-> +++ b/drivers/input/keyboard/gpio_keys.c
-> @@ -803,6 +803,7 @@ static int gpio_keys_remove(struct platform_device *pdev)
->  static int gpio_keys_suspend(struct device *dev)
->  {
->  	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
-> +	struct input_dev *input = ddata->input;
->  	int i;
->  
->  	if (device_may_wakeup(dev)) {
-> @@ -811,6 +812,11 @@ static int gpio_keys_suspend(struct device *dev)
->  			if (bdata->button->wakeup)
->  				enable_irq_wake(bdata->irq);
->  		}
-> +	} else {
-> +		mutex_lock(&input->mutex);
-> +		if (input->users)
-> +			gpio_keys_close(input);
-> +		mutex_unlock(&input->mutex);
->  	}
->  
->  	return 0;
-> @@ -819,16 +825,27 @@ static int gpio_keys_suspend(struct device *dev)
->  static int gpio_keys_resume(struct device *dev)
->  {
->  	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
-> +	struct input_dev *input = ddata->input;
-> +	int error = 0;
->  	int i;
->  
-> -	for (i = 0; i < ddata->pdata->nbuttons; i++) {
-> -		struct gpio_button_data *bdata = &ddata->data[i];
-> -		if (bdata->button->wakeup && device_may_wakeup(dev))
-> -			disable_irq_wake(bdata->irq);
-> +	if (device_may_wakeup(dev)) {
-> +		for (i = 0; i < ddata->pdata->nbuttons; i++) {
-> +			struct gpio_button_data *bdata = &ddata->data[i];
-> +			if (bdata->button->wakeup)
-> +				disable_irq_wake(bdata->irq);
-> +		}
-> +	} else {
-> +		mutex_lock(&input->mutex);
-> +		if (input->users)
-> +			error = gpio_keys_open(input);
-> +		mutex_unlock(&input->mutex);
->  	}
->  
-> -	gpio_keys_report_state(ddata);
-> +	if (error)
-> +		return error;
->  
-> +	gpio_keys_report_state(ddata);
->  	return 0;
->  }
->  #endif
+>
+> On Mon, Nov 26, 2012 at 3:47 PM, Belisko Marek
+> <marek.belisko@gmail.com> wrote:
+>> On Mon, Nov 26, 2012 at 7:59 AM, Woody Wu <narkewoody@gmail.com>
+>> wrote:
+>>> Hi, List
+>>>
+>>> I enabled an ax88796 Ethernet driver in the kernel configuration
+>>> menu.  Kernel version is 3.4.19. The arch is ARM and the system type
+>>> is Samsung S3C2410.
+>>>
+>>> In my debugging, I found the probe function of the driver did not
+>>> get invoked.
+>> Did you define platform data and platform device in board file?  See:
+>> arch/arm/mach-pxa/colibri-pxa300.c (line ~87)
+>>>
+>>> This driver is declared as platform_driver
+>>>
+>>> static struct platform_driver axdrv = { .driver = { .name
+>>> = "ax88796", .owner          = THIS_MODULE, }, .probe          =
+>>> ax_probe, .remove         = ax_remove, .suspend        = ax_suspend,
+>>> .resume         = ax_resume, };
+>>>
+>>> module_platform_driver(axdrv);
+>>>
+>>> So, its driver init function actually goes through
+>>> platform_driver_register() and then driver_register(), which
+>>> eventually call driver_attach() trying to attach the driver to the
+>>> "platform" bus.  But, on the platform bus, there is no any device
+>>> that can match the ax88796 driver, hence the driver failed in
+>>> attaching.
+>>>
+>>> I discovered the full list of devices found on the platform bus:
+>>>
+>>>     s3c2410-ohci, s3c2410-lcd, s3c2410-wdt, s3c2410-i2c,
+>>>     s3c24xx-iis, s3c2410-nand, s3c24xx_led, s3c2410-uart,
+>>>
+>>> You see, in the list, there is no a device looks like ax88796. All
+>>> these already existed devices on the platform bus are build-in
+>>> peripherals on the SoC of s3c2410, they are compiled into the code
+>>> by enabling some kernel configuration options.
+>>>
+>>> My question is, in terms of Linux driver technology, how to enable a
+>>> non-PCI and not on-chip device driver? I think the ax_probe function
+>>> must be called somehow, is this thinking right? If yes, I think
+>>> before the driver get initialized, the corresponding device has to
+>>> appear on the bus, but now it seems not.
+>>>
+>>> Thanks in advance.
+>>>
+>>> -- woody I can't go back to yesterday - because I was a different
+>>> person then.
+>>>
+>>> -- To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>> Cheers,
+>>
+>> mbe
+>>
+>> -- as simple and primitive as possible
+>> ------------------------------------------------- Marek Belisko -
+>> OPEN-NANDRA Freelance Developer
+>>
+>> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic Tel: +421 915 052
+>> 184 skype: marekwhite twitter: #opennandra web:
+>> http://open-nandra.com -- To unsubscribe from this list: send the
+>> line "unsubscribe linux-kernel" in the body of a message to
+>> majordomo@vger.kernel.org More majordomo info at
+>> http://vger.kernel.org/majordomo-info.html Please read the FAQ at
+>> http://www.tux.org/lkml/
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+-- woody I can't go back to yesterday - because I was a different person
+then.
+
