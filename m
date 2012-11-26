@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab2KZRnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:43:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47776 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417Ab2KZRKJ (ORCPT
+	id S1756847Ab2KZRnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:43:24 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56853 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab2KZRnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:10:09 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Stefano Babic <sbabic@denx.de>, Felipe Balbi <balbi@ti.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 164/270] usb: musb: am35xx: drop spurious unplugging a device
-Date: Mon, 26 Nov 2012 14:57:34 -0200
-Message-Id: <1353949160-26803-165-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	Mon, 26 Nov 2012 12:43:19 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "x86\@kernel.org" <x86@kernel.org>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>
+References: <50ADE0C2.1000106@cn.fujitsu.com> <50ADE11A.401@cn.fujitsu.com>
+	<87ip8sxuyh.fsf@xmission.com> <20121126172054.GF12969@redhat.com>
+Date: Mon, 26 Nov 2012 11:43:10 -0600
+In-Reply-To: <20121126172054.GF12969@redhat.com> (Gleb Natapov's message of
+	"Mon, 26 Nov 2012 19:20:54 +0200")
+Message-ID: <87fw3wuuoh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+6sYb8jVOP/s+rKXMZ+JMphrUGGGDxReA=
+X-SA-Exim-Connect-IP: 75.135.205.0
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Gleb Natapov <gleb@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v8 1/2] x86/kexec: add a new atomic notifier list for kdump
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+Gleb Natapov <gleb@redhat.com> writes:
 
-------------------
+> On Mon, Nov 26, 2012 at 09:08:54AM -0600, Eric W. Biederman wrote:
+>> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
+>> 
+>> > This patch adds an atomic notifier list named crash_notifier_list.
+>> > Currently, when loading kvm-intel module, a notifier will be registered
+>> > in the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
+>> > needed.
+>> 
+>> crash_notifier_list ick gag please no.  Effectively this makes the kexec
+>> on panic code path undebuggable.
+>> 
+>> Instead we need to use direct function calls to whatever you are doing.
+>> 
+> The code walks linked list in kvm-intel module and calls vmclear on
+> whatever it finds there. Since the function have to resides in kvm-intel
+> module it cannot be called directly. Is callback pointer that is set
+> by kvm-intel more acceptable?
 
-From: Stefano Babic <sbabic@denx.de>
+Yes a specific callback function is more acceptable.  Looking a little
+deeper vmclear_local_loaded_vmcss is not particularly acceptable. It is
+doing a lot of work that is unnecessary to save the virtual registers
+on the kexec on panic path.
 
-commit 6ff1f3d3bd7c69c62ca5773b1b684bce42eff06a upstream.
+In fact I wonder if it might not just be easier to call vmcs_clear to a
+fixed per cpu buffer.
 
-On AM3517, tx and rx interrupt are detected together with
-the disconnect event. This generates a kernel panic in musb_interrupt,
-because rx / tx are handled after disconnect.
-This issue was seen on a Technexion's TAM3517 SOM. Unplugging a device,
-tx / rx interrupts together with disconnect are detected. This brings
-to kernel panic like this:
+Performing list walking in interrupt context without locking in
+vmclear_local_loaded vmcss looks a bit scary.  Not that locking would
+make it any better, as locking would simply add one more way to deadlock
+the system.  Only an rcu list walk is at all safe.  A list walk that
+modifies the list as vmclear_local_loaded_vmcss does is definitely not safe.
 
-[   68.526153] Unable to handle kernel NULL pointer dereference at virtual address 00000011
-[   68.534698] pgd = c0004000
-[   68.537536] [00000011] *pgd=00000000
-[   68.541351] Internal error: Oops: 17 [#1] ARM
-[   68.545928] Modules linked in:
-[   68.549163] CPU: 0    Not tainted  (3.6.0-rc5-00020-g9e05905 #178)
-[   68.555694] PC is at rxstate+0x8/0xdc
-[   68.559539] LR is at musb_interrupt+0x98/0x858
-[   68.564239] pc : [<c035cd88>]    lr : [<c035af1c>]    psr: 40000193
-[   68.564239] sp : ce83fb40  ip : d0906410  fp : 00000000
-[   68.576293] r10: 00000000  r9 : cf3b0e40  r8 : 00000002
-[   68.581817] r7 : 00000019  r6 : 00000001  r5 : 00000001  r4 : 000000d4
-[   68.588684] r3 : 00000000  r2 : 00000000  r1 : ffffffcc  r0 : cf23c108
-[   68.595550] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment ke
-
-Note: this behavior is not seen with a USB hub, while it is
-easy to reproduce connecting a USB-pen directly to the USB-A of
-the board.
-
-Drop tx / rx interrupts if disconnect is detected.
-
-Signed-off-by: Stefano Babic <sbabic@denx.de>
-CC: Felipe Balbi <balbi@ti.com>
-Tested-by: Dmitry Lifshitz <lifshitz@compulab.co.il>
-Tested-by: Igor Grinberg <grinberg@compulab.co.il>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/usb/musb/am35x.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/drivers/usb/musb/am35x.c b/drivers/usb/musb/am35x.c
-index 9f3eda9..340cff9 100644
---- a/drivers/usb/musb/am35x.c
-+++ b/drivers/usb/musb/am35x.c
-@@ -311,6 +311,12 @@ static irqreturn_t am35x_musb_interrupt(int irq, void *hci)
- 		ret = IRQ_HANDLED;
- 	}
- 
-+	/* Drop spurious RX and TX if device is disconnected */
-+	if (musb->int_usb & MUSB_INTR_DISCONNECT) {
-+		musb->int_tx = 0;
-+		musb->int_rx = 0;
-+	}
-+
- 	if (musb->int_tx || musb->int_rx || musb->int_usb)
- 		ret |= musb_interrupt(musb);
- 
--- 
-1.7.9.5
-
+Eric
