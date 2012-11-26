@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab2KZKv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:51:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:52169 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab2KZKtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:49:51 -0500
-X-IronPort-AV: E=Sophos;i="4.83,320,1352044800"; 
-   d="scan'208";a="6277340"
-From: Wen Congyang <wency@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH 3/5] cpu-hotplug, memory-hotplug: try offline the node when hotremoving a cpu
-Date: Mon, 26 Nov 2012 18:20:25 +0800
-Message-Id: <1353925227-1877-4-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
-References: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 18:13:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 18:13:39,
-	Serialize complete at 2012/11/26 18:13:39
+	id S1755099Ab2KZKxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:53:54 -0500
+Received: from mga09.intel.com ([134.134.136.24]:31170 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754739Ab2KZKxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 05:53:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,319,1352102400"; 
+   d="scan'208";a="247144497"
+Date: Mon, 26 Nov 2012 11:53:35 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT] mfd: rc5t583: Fix array subscript is above array
+ bounds
+Message-ID: <20121126105335.GP12685@sortiz-mobl>
+References: <1353378896.6455.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353378896.6455.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The node will be offlined when all memory/cpu on the node is hotremoved.
-So we should try offline the node when hotremoving a cpu on the node.
+Hi Axel,
 
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/acpi/processor_driver.c | 2 ++
- 1 file changed, 2 insertions(+)
+On Tue, Nov 20, 2012 at 10:34:56AM +0800, Axel Lin wrote:
+> I got below build warning while compiling this driver.
+> It's obviously RC5T583_MAX_INTERRUPT_MASK_REGS is 9 but irq_en_add array only
+> has 8 elements.
+> 
+>   CC      drivers/mfd/rc5t583-irq.o
+> drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_sync_unlock':
+> drivers/mfd/rc5t583-irq.c:227: warning: array subscript is above array bounds
+> drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_init':
+> drivers/mfd/rc5t583-irq.c:349: warning: array subscript is above array bounds
+> 
+> Since the number of interrupt enable registers is 8, this patch adds define for
+> RC5T583_MAX_INTERRUPT_EN_REGS to fix this bug.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Laxman,
+>   I don't have this hardware, I'd appreciate if you can review and test this patch.
+> Thank you,
+> Axel
+>  drivers/mfd/rc5t583-irq.c   |    2 +-
+>  include/linux/mfd/rc5t583.h |    3 ++-
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index a4352b8..7fc728c7 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -44,6 +44,7 @@
- #include <linux/moduleparam.h>
- #include <linux/cpuidle.h>
- #include <linux/slab.h>
-+#include <linux/memory_hotplug.h>
- 
- #include <asm/io.h>
- #include <asm/cpu.h>
-@@ -634,6 +635,7 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
- 
- 	per_cpu(processors, pr->id) = NULL;
- 	per_cpu(processor_device_array, pr->id) = NULL;
-+	try_offline_node(cpu_to_node(pr->id));
- 
- free:
- 	free_cpumask_var(pr->throttling.shared_cpu_map);
+Cheers,
+Samuel.
+
 -- 
-1.8.0
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
