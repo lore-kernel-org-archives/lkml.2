@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2KZTIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:08:45 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:17040 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab2KZTIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:08:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6908"; a="9670572"
-Date: Mon, 26 Nov 2012 11:08:40 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org, rubini@gnudd.com,
-        wim@iguana.be, cjb@laptop.org, nico@fluxnic.net, ben-linux@fluff.org,
-        viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: Re: [PATCH 6/8] mmc: use the new <linux/sizes.h>
-Message-ID: <20121126190840.GC12719@codeaurora.org>
-References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com>
- <1353683310-23654-7-git-send-email-ciminaghi@gnudd.com>
+	id S1754665Ab2KZTJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:09:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36358 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396Ab2KZTJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 14:09:30 -0500
+Date: Mon, 26 Nov 2012 19:09:26 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: George Spelvin <linux@horizon.com>
+Cc: hannes@cmpxchg.org, dave@linux.vnet.ibm.com, jack@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Message-ID: <20121126190926.GM8218@suse.de>
+References: <20121126183242.GA9894@cmpxchg.org>
+ <20121126185317.10879.qmail@science.horizon.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1353683310-23654-7-git-send-email-ciminaghi@gnudd.com>
+In-Reply-To: <20121126185317.10879.qmail@science.horizon.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 04:08:28PM +0100, Davide Ciminaghi wrote:
-> From: Alessandro Rubini <rubini@gnudd.com>
+On Mon, Nov 26, 2012 at 01:53:17PM -0500, George Spelvin wrote:
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > Any chance you could test with this fix instead, in addition to Dave's
+> > accounting fix?  It's got bool and everything!
 > 
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> ---
->  drivers/mmc/host/msm_sdcc.c |    2 +-
+> Okay.  Mel, speak up if you object.  I also rebased on top of 3.7-rc7,
+> which already includes Dave's fix.  Again, speak up if that's a bad idea.
+> 
 
-Acked-by: David Brown <davidb@codeaurora.org>
+No objections all round.
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Mel Gorman
+SUSE Labs
