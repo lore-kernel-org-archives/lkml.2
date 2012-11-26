@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670Ab2KZRMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:12:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47945 "EHLO
+	id S1756832Ab2KZRey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:34:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47958 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab2KZRMG (ORCPT
+	with ESMTP id S933674Ab2KZRMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:12:06 -0500
+	Mon, 26 Nov 2012 12:12:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 195/270] xen/x86: don't corrupt %eip when returning from a signal handler
-Date: Mon, 26 Nov 2012 14:58:05 -0200
-Message-Id: <1353949160-26803-196-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 198/270] Revert "cgroup: Remove task_lock() from cgroup_post_fork()"
+Date: Mon, 26 Nov 2012 14:58:08 -0200
+Message-Id: <1353949160-26803-199-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,101 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit a349e23d1cf746f8bdc603dcc61fae9ee4a695f6 upstream.
+commit d87838321124061f6c935069d97f37010fa417e6 upstream.
 
-In 32 bit guests, if a userspace process has %eax == -ERESTARTSYS
-(-512) or -ERESTARTNOINTR (-513) when it is interrupted by an event
-/and/ the process has a pending signal then %eip (and %eax) are
-corrupted when returning to the main process after handling the
-signal.  The application may then crash with SIGSEGV or a SIGILL or it
-may have subtly incorrect behaviour (depending on what instruction it
-returned to).
+This reverts commit 7e3aa30ac8c904a706518b725c451bb486daaae9.
 
-The occurs because handle_signal() is incorrectly thinking that there
-is a system call that needs to restarted so it adjusts %eip and %eax
-to re-execute the system call instruction (even though user space had
-not done a system call).
+The commit incorrectly assumed that fork path always performed
+threadgroup_change_begin/end() and depended on that for
+synchronization against task exit and cgroup migration paths instead
+of explicitly grabbing task_lock().
 
-If %eax == -514 (-ERESTARTNOHAND (-514) or -ERESTART_RESTARTBLOCK
-(-516) then handle_signal() only corrupted %eax (by setting it to
--EINTR).  This may cause the application to crash or have incorrect
-behaviour.
+threadgroup_change is not locked when forking a new process (as
+opposed to a new thread in the same process) and even if it were it
+wouldn't be effective as different processes use different threadgroup
+locks.
 
-handle_signal() assumes that regs->orig_ax >= 0 means a system call so
-any kernel entry point that is not for a system call must push a
-negative value for orig_ax.  For example, for physical interrupts on
-bare metal the inverse of the vector is pushed and page_fault() sets
-regs->orig_ax to -1, overwriting the hardware provided error code.
+Revert the incorrect optimization.
 
-xen_hypervisor_callback() was incorrectly pushing 0 for orig_ax
-instead of -1.
-
-Classic Xen kernels pushed %eax which works as %eax cannot be both
-non-negative and -RESTARTSYS (etc.), but using -1 is consistent with
-other non-system call entry points and avoids some of the tests in
-handle_signal().
-
-There were similar bugs in xen_failsafe_callback() of both 32 and
-64-bit guests. If the fault was corrected and the normal return path
-was used then 0 was incorrectly pushed as the value for orig_ax.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <20121008020000.GB2575@localhost>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/kernel/entry_32.S |    8 +++++---
- arch/x86/kernel/entry_64.S |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ kernel/cgroup.c |   15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 623f288..8f8e8ee 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1016,7 +1016,7 @@ ENTRY(xen_sysenter_target)
- 
- ENTRY(xen_hypervisor_callback)
- 	CFI_STARTPROC
--	pushl_cfi $0
-+	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	TRACE_IRQS_OFF
- 
-@@ -1058,14 +1058,16 @@ ENTRY(xen_failsafe_callback)
- 2:	mov 8(%esp),%es
- 3:	mov 12(%esp),%fs
- 4:	mov 16(%esp),%gs
-+	/* EAX == 0 => Category 1 (Bad segment)
-+	   EAX != 0 => Category 2 (Bad IRET) */
- 	testl %eax,%eax
- 	popl_cfi %eax
- 	lea 16(%esp),%esp
- 	CFI_ADJUST_CFA_OFFSET -16
- 	jz 5f
- 	addl $16,%esp
--	jmp iret_exc		# EAX != 0 => Category 2 (Bad IRET)
--5:	pushl_cfi $0		# EAX == 0 => Category 1 (Bad segment)
-+	jmp iret_exc
-+5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp ret_from_exception
- 	CFI_ENDPROC
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 7d65133..e1ed683 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1381,7 +1381,7 @@ ENTRY(xen_failsafe_callback)
- 	CFI_RESTORE r11
- 	addq $0x30,%rsp
- 	CFI_ADJUST_CFA_OFFSET -0x30
--	pushq_cfi $0
-+	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp error_exit
- 	CFI_ENDPROC
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 75d4318..a91aa0b 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4805,19 +4805,10 @@ void cgroup_post_fork(struct task_struct *child)
+ 	 */
+ 	if (use_task_css_set_links) {
+ 		write_lock(&css_set_lock);
+-		if (list_empty(&child->cg_list)) {
+-			/*
+-			 * It's safe to use child->cgroups without task_lock()
+-			 * here because we are protected through
+-			 * threadgroup_change_begin() against concurrent
+-			 * css_set change in cgroup_task_migrate(). Also
+-			 * the task can't exit at that point until
+-			 * wake_up_new_task() is called, so we are protected
+-			 * against cgroup_exit() setting child->cgroup to
+-			 * init_css_set.
+-			 */
++		task_lock(child);
++		if (list_empty(&child->cg_list))
+ 			list_add(&child->cg_list, &child->cgroups->tasks);
+-		}
++		task_unlock(child);
+ 		write_unlock(&css_set_lock);
+ 	}
+ }
 -- 
 1.7.9.5
 
