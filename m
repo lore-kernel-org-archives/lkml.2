@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab2KZVnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:43:05 -0500
-Received: from smtprelay.restena.lu ([158.64.1.62]:50638 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab2KZVnD (ORCPT
+	id S1757285Ab2KZV7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:59:40 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34685 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2KZV7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:43:03 -0500
-Date: Mon, 26 Nov 2012 22:42:45 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-Cc: <support@Supermicro.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
- bug question
-Message-ID: <20121126224245.248f0901@neptune.home>
-In-Reply-To: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 16:59:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+Date: Mon, 26 Nov 2012 15:59:37 -0600
+Message-ID: <CAF6AEGu629qj-pgd5gaJEpo2QqqUZYXyDJk14c5rgdAwh-wMPg@mail.gmail.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+From: Rob Clark <robdclark@gmail.com>
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+Cc: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Arto Merilainen <amerilainen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Justin,
+On Mon, Nov 26, 2012 at 7:19 AM, Terje Bergstrom <tbergstrom@nvidia.com> wrote:
+>
+> +struct tegra_drm_submit_args {
+> +       void *context;
 
-On Sat, 24 November 2012 "Justin Piszcz" wrote:
-> Is the following normal on an X9SRL-F board (bios 1.0a)?
-> 
-> In the manual it states:
-> 
-> Data Direct I/O
-> Select Enabled to enable Intel I/OAT (I/O Acceleration Technology), which
-> significantly reduces CPU overhead by leveraging CPU architectural
-> improvements and freeing the system resource for other tasks. The options
-> are Disabled and Enabled.
-> 
-> Default is Enabled.
-> 
-> When enabled in the kernel, I see the following:
-> 
-> [    0.696357] ioatdma: Intel(R) QuickData Technology Driver 4.00
-> [    0.696487] ioatdma 0000:00:04.0: channel error register unreachable
-> [    0.696546] ioatdma 0000:00:04.0: channel enumeration error
-> [    0.696604] ioatdma 0000:00:04.0: Intel(R) I/OAT DMA Engine init failed
-> [    0.696721] ioatdma 0000:00:04.1: channel error register unreachable
-> [    0.696779] ioatdma 0000:00:04.1: channel enumeration error
-> [    0.697522] ioatdma 0000:00:04.1: Intel(R) I/OAT DMA Engine init failed
-> [    0.697617] ioatdma 0000:00:04.2: channel error register unreachable
-> [    0.697681] ioatdma 0000:00:04.2: channel enumeration error
-> [    0.697739] ioatdma 0000:00:04.2: Intel(R) I/OAT DMA Engine init failed
-> [    0.697831] ioatdma 0000:00:04.3: channel error register unreachable
-> [    0.697890] ioatdma 0000:00:04.3: channel enumeration error
-> [    0.697948] ioatdma 0000:00:04.3: Intel(R) I/OAT DMA Engine init failed
-> [    0.698037] ioatdma 0000:00:04.4: channel error register unreachable
-> [    0.698095] ioatdma 0000:00:04.4: channel enumeration error
-> [    0.698153] ioatdma 0000:00:04.4: Intel(R) I/OAT DMA Engine init failed
-> [    0.698245] ioatdma 0000:00:04.5: channel error register unreachable
-> [    0.698303] ioatdma 0000:00:04.5: channel enumeration error
-> [    0.698360] ioatdma 0000:00:04.5: Intel(R) I/OAT DMA Engine init failed
-> [    0.698449] ioatdma 0000:00:04.6: channel error register unreachable
-> [    0.698508] ioatdma 0000:00:04.6: channel enumeration error
-> [    0.698565] ioatdma 0000:00:04.6: Intel(R) I/OAT DMA Engine init failed
-> [    0.698676] ioatdma 0000:00:04.7: channel error register unreachable
-> [    0.698735] ioatdma 0000:00:04.7: channel enumeration error
-> [    0.698792] ioatdma 0000:00:04.7: Intel(R) I/OAT DMA Engine init failed
-> 
-> --
-> 
-> Also, I tried using ASPM (enabled in BIOS), but since ACPI Linux query is
-> ignored, it fails to work:
-> [    0.562229] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-> 
-> I assume this is something Supermicro has to fix?
+Just a quick comment..
 
-You are probably missing some kernel config option(s) :) - I did fight similar
-issues on a Fujitsu SandyBridge Xeon based server.
+You shouldn't really use ptr here, but instead use a 64bit type so
+that you don't run into issues later for armv8/64bit.  Same comment
+applies in a few other places too.
 
-Check if enabling CONFIG_X86_X2APIC helps as well as other APIC/IOMMU options.
+I'll try and spend a bit more time going through this in more detail
+in the coming days
 
-Bruno
+BR,
+-R
+
+> +       __u32 num_syncpt_incrs;
+> +       __u32 num_cmdbufs;
+> +       __u32 num_relocs;
+> +       __u32 submit_version;
+> +       __u32 num_waitchks;
+> +       __u32 waitchk_mask;
+> +       __u32 timeout;
+> +       struct tegra_drm_syncpt_incrs *syncpt_incrs;
+> +       struct tegra_drm_cmdbuf *cmdbufs;
+> +       struct tegra_drm_reloc *relocs;
+> +       struct tegra_drm_waitchk *waitchks;
+> +
+> +       __u32 pad[5];           /* future expansion */
+> +       __u32 fence;            /* Return value */
+> +};
+> +
