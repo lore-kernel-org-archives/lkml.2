@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab2KZRMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:12:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47990 "EHLO
+	id S933812Ab2KZRMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:12:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48001 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933761Ab2KZRMi (ORCPT
+	with ESMTP id S932237Ab2KZRMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:12:38 -0500
+	Mon, 26 Nov 2012 12:12:46 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 204/270] Staging: android: binder: Fix memory leak on thread/process exit
-Date: Mon, 26 Nov 2012 14:58:14 -0200
-Message-Id: <1353949160-26803-205-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 206/270] ext4: Avoid underflow in ext4_trim_fs()
+Date: Mon, 26 Nov 2012 14:58:16 -0200
+Message-Id: <1353949160-26803-207-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,81 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 675d66b0ed5fd170d6a44cf8dbb3fa56a5347bdb upstream.
+commit 5de35e8d5c02d271c20e18337e01bc20e6ef472e upstream.
 
-If a thread or process exited while a reply, one-way transaction or
-death notification was pending, the struct holding the pending work
-was leaked.
+Currently if len argument in ext4_trim_fs() is smaller than one block,
+the 'end' variable underflow. Avoid that by returning EINVAL if len is
+smaller than file system block.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Also remove useless unlikely().
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/staging/android/binder.c |   28 +++++++++++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
+ fs/ext4/mballoc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index c283212..80acd0e 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2507,14 +2507,38 @@ static void binder_release_work(struct list_head *list)
- 			struct binder_transaction *t;
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 70f97a5..af848bb 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4983,8 +4983,9 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+ 	end = start + (range->len >> sb->s_blocksize_bits) - 1;
+ 	minlen = range->minlen >> sb->s_blocksize_bits;
  
- 			t = container_of(w, struct binder_transaction, work);
--			if (t->buffer->target_node && !(t->flags & TF_ONE_WAY))
-+			if (t->buffer->target_node &&
-+			    !(t->flags & TF_ONE_WAY)) {
- 				binder_send_failed_reply(t, BR_DEAD_REPLY);
-+			} else {
-+				binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+					"binder: undelivered transaction %d\n",
-+					t->debug_id);
-+				t->buffer->transaction = NULL;
-+				kfree(t);
-+				binder_stats_deleted(BINDER_STAT_TRANSACTION);
-+			}
- 		} break;
- 		case BINDER_WORK_TRANSACTION_COMPLETE: {
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered TRANSACTION_COMPLETE\n");
- 			kfree(w);
- 			binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
- 		} break;
-+		case BINDER_WORK_DEAD_BINDER_AND_CLEAR:
-+		case BINDER_WORK_CLEAR_DEATH_NOTIFICATION: {
-+			struct binder_ref_death *death;
-+
-+			death = container_of(w, struct binder_ref_death, work);
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered death notification, %p\n",
-+				death->cookie);
-+			kfree(death);
-+			binder_stats_deleted(BINDER_STAT_DEATH);
-+		} break;
- 		default:
-+			pr_err("binder: unexpected work type, %d, not freed\n",
-+			       w->type);
- 			break;
- 		}
- 	}
-@@ -2984,6 +3008,7 @@ static void binder_deferred_release(struct binder_proc *proc)
- 		nodes++;
- 		rb_erase(&node->rb_node, &proc->nodes);
- 		list_del_init(&node->work.entry);
-+		binder_release_work(&node->async_todo);
- 		if (hlist_empty(&node->refs)) {
- 			kfree(node);
- 			binder_stats_deleted(BINDER_STAT_NODE);
-@@ -3022,6 +3047,7 @@ static void binder_deferred_release(struct binder_proc *proc)
- 		binder_delete_ref(ref);
- 	}
- 	binder_release_work(&proc->todo);
-+	binder_release_work(&proc->delivered_death);
- 	buffers = 0;
- 
- 	while ((n = rb_first(&proc->allocated_buffers))) {
+-	if (unlikely(minlen > EXT4_CLUSTERS_PER_GROUP(sb)) ||
+-	    unlikely(start >= max_blks))
++	if (minlen > EXT4_CLUSTERS_PER_GROUP(sb) ||
++	    start >= max_blks ||
++	    range->len < sb->s_blocksize)
+ 		return -EINVAL;
+ 	if (end >= max_blks)
+ 		end = max_blks - 1;
 -- 
 1.7.9.5
 
