@@ -1,113 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2KZKtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:49:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:52169 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760Ab2KZKtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:49:52 -0500
-X-IronPort-AV: E=Sophos;i="4.83,320,1352044800"; 
-   d="scan'208";a="6277342"
-From: Wen Congyang <wency@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH 2/5] memory-hotplug: export the function try_offline_node()
-Date: Mon, 26 Nov 2012 18:20:24 +0800
-Message-Id: <1353925227-1877-3-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
-References: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 18:13:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 18:13:39,
-	Serialize complete at 2012/11/26 18:13:39
+	id S1755045Ab2KZKuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:50:04 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41734 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755015Ab2KZKuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 05:50:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,319,1352102400"; 
+   d="scan'208";a="224378130"
+Date: Mon, 26 Nov 2012 11:49:57 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-next] mfd: viperboard: do version query in dma memory
+Message-ID: <20121126104957.GO12685@sortiz-mobl>
+References: <201211261124.53774.poeschel@lemonage.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211261124.53774.poeschel@lemonage.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The node will be offlined when all memory/cpu on the node
-have been hotremoved. So we need the function try_offline_node()
-in cpu-hotplug path.
+Hi Lars,
 
-If the memory-hotplug is disabled, and cpu-hotplug is enabled
-1. no memory no the node
-   we don't online the node, and cpu's node is the nearest node.
-2. the node contains some memory
-   the node has been onlined, and cpu's node is still needed
-   to migrate the sleep task on the cpu to the same node.
-So we do nothing in try_offline_node() in this case.
+On Mon, Nov 26, 2012 at 11:24:53AM +0100, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> The query for the viperboard version was done with memory buffer
+> on the stack but usb transfers need dma capable memory buffer.
+> This is fixed now.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> ---
+>  drivers/mfd/viperboard.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+Applied, thanks.
 
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- include/linux/memory_hotplug.h | 2 ++
- mm/memory_hotplug.c            | 3 ++-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+Cheers,
+Samuel.
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index ad2dd17..48ece75 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -187,6 +187,7 @@ extern void get_page_bootmem(unsigned long ingo, struct page *page,
- 
- void lock_memory_hotplug(void);
- void unlock_memory_hotplug(void);
-+extern void try_offline_node(int nid);
- 
- #else /* ! CONFIG_MEMORY_HOTPLUG */
- /*
-@@ -221,6 +222,7 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 
- static inline void lock_memory_hotplug(void) {}
- static inline void unlock_memory_hotplug(void) {}
-+static inline void try_offline_node(int nid) {}
- 
- #endif /* ! CONFIG_MEMORY_HOTPLUG */
- 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 52db031..b7c30bb 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1670,7 +1670,7 @@ static int check_cpu_on_node(void *data)
- }
- 
- /* offline the node if all memory sections of this node are removed */
--static void try_offline_node(int nid)
-+void try_offline_node(int nid)
- {
- 	pg_data_t *pgdat = NODE_DATA(nid);
- 	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
-@@ -1720,6 +1720,7 @@ static void try_offline_node(int nid)
- 	arch_refresh_nodedata(nid, NULL);
- 	arch_free_nodedata(pgdat);
- }
-+EXPORT_SYMBOL(try_offline_node);
- 
- int __ref remove_memory(int nid, u64 start, u64 size)
- {
 -- 
-1.8.0
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
