@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab2KZL4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 06:56:24 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57790 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754136Ab2KZL4W (ORCPT
+	id S1754670Ab2KZL6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:58:09 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:43651 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2KZL6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 06:56:22 -0500
-Date: Mon, 26 Nov 2012 11:56:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: alsa-devel@alsa-project.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, lrg@ti.com,
-        perex@perex.cz, nsekhar@ti.com, sudhakar.raj@ti.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [PATCH 2/2] ASoC: Davinci: machine: Add device tree binding
-Message-ID: <20121126115619.GF9411@opensource.wolfsonmicro.com>
-References: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
- <1353557099-21599-3-git-send-email-gururaja.hebbar@ti.com>
+	Mon, 26 Nov 2012 06:58:07 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        jg1.han@samsung.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH 1/5] backlight: Add GPIO-based backlight driver
+Date: Mon, 26 Nov 2012 12:59:10 +0100
+Message-ID: <1701286.svlH7lvIeJ@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <50B347F4.2080705@metafoo.de>
+References: <32552643.33371353923376540.JavaMail.weblogic@epv6ml07> <50B347F4.2080705@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0hHDr/TIsw4o3iPK"
-Content-Disposition: inline
-In-Reply-To: <1353557099-21599-3-git-send-email-gururaja.hebbar@ti.com>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Lars-Peter,
 
---0hHDr/TIsw4o3iPK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Monday 26 November 2012 11:44:04 Lars-Peter Clausen wrote:
+> On 11/26/2012 10:49 AM, Jingoo Han wrote:
+> > On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
+> 
+> [...]
+> 
+> >> +static int gpio_backlight_check_fb(struct backlight_device *bl,
+> >> +				   struct fb_info *info)
+> >> +{
+> >> +	struct gpio_backlight *gbl = bl_get_data(bl);
+> >> +
+> >> +	return gbl->fbdev == info->dev;
+> 
+> I think it makes sense to return true if fbdev is NULL, to provide a simple
+> fallback for systems with only one framebuffer device.
 
-On Thu, Nov 22, 2012 at 09:34:59AM +0530, Hebbar, Gururaja wrote:
+Agreed, I'll change that.
 
-> +- dai-data		: A list of DAI data used by SOC code to register
-> +			  DAI, Codecs platform.
-> +			  The string index "should" be as shown below.
-> +dai-data =
-> +"<DAI Name>", 		"<DAI Stream Name>",
-> +"<CODEC DAI Name>",	"<true if evm_aic3x_init is required, else false>",
-> +"<evm ops required (evm_ops or evm_spdif_ops)>";
+> >> +}
+> >> +
+> 
+> [...]
+> 
+> >> +#ifdef CONFIG_PM
+> >> +static int gpio_backlight_suspend(struct device *dev)
+> >> +{
+> >> +	struct backlight_device *bl = dev_get_drvdata(dev);
+> >> +	struct gpio_backlight *gbl = bl_get_data(bl);
+> >> +
+> >> +	gpio_set_value(gbl->gpio, !gbl->active);
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int gpio_backlight_resume(struct device *dev)
+> >> +{
+> >> +	struct backlight_device *bl = dev_get_drvdata(dev);
+> >> +
+> >> +	backlight_update_status(bl);
+> >> +	return 0;
+> >> +}
+> 
+> If you use BL_CORE_SUSPENDRESUME you can get rid of the custom
+> suspend/resume handlers.
 
-This continues to have the same issue as with previous versions, this is
-all Linux internals (especially the evm_aic3x_init thing) not a
-description of the hardware, there's not enough information to allow
-someone to work out what the bindings for their system should be.
+Good point, I'll do that.
 
-Do not post *ANY* further versions that have this evm_aic3x_init stuff
-in them, it's very annoying that you keep on ignoring this feedback.
+> >> +
+> >> +static SIMPLE_DEV_PM_OPS(gpio_backlight_pm_ops, gpio_backlight_suspend,
+> >> +			 gpio_backlight_resume);
+> >> +
+> >> +#endif
+> >> +
 
---0hHDr/TIsw4o3iPK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Laurent Pinchart
 
-iQIcBAEBAgAGBQJQs1jbAAoJELSic+t+oim9DmwP/AsAL9pNXNxmU/aCTCVHv1Kz
-YFXb5dBpofd2qcbloEoLvYeZS0QWs8fdJYrplmKd57jZM5/ltBhm443fs6ltQ+vE
-AFlIpDktosTZTvjk8LcDh3IVB1zstGglXJFnb4a2ceFPq+Qee5w0em0cigotNWfY
-BadAv5gLDbhCKbg2XMrQU6Npv1bE79eAOu+4LTyrPieUtK/97Yncjd+nFZCrigr4
-R7Oa5usgW94HQaWVzKajboOHQLSiYlkksmuSV6s5E89QVvmLV5eG08O9Vxlmc7ix
-bwHl404B2t2OeUS6L40M12PrdqQ03nZJNkzOLgdrl/mAitCEPse0rOjGn46udUKy
-VWUHczmETZc2Dp8ybgBr647iIPl1gQKy/um6c4V4h/og7MZwBK+i7yKj7NqFGdrN
-hHIvQpEVpbSwbS6w+iGO5nwNu7qSRQGt80zHqeVTmg5ztbmHcELJ+7OGBtrp6VhF
-nwPVkkJw4Q3w4G/Ui8uIN5sJJ6GefWop7R3NsZsljGKZkNWHj5gNW60YQsP90KBE
-bjdXdUIN1Ofb0D4B6/x35yp8ETZ5myOVO8kMOPTMLteY46z2ZO0QUms2hR5RYQI0
-nUZ5AQAuzGOFLjME/0e+rqNCLOT87Uemag9T8DkDgixwv8RABGkegqlqLdcRkpN3
-8o0zXlSXwpt/L8SF4hx5
-=OcxI
------END PGP SIGNATURE-----
-
---0hHDr/TIsw4o3iPK--
