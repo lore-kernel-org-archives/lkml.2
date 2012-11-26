@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab2KZRCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:02:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47183 "EHLO
+	id S1756424Ab2KZRCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:02:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47188 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab2KZRCL (ORCPT
+	with ESMTP id S1755977Ab2KZRCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:02:11 -0500
+	Mon, 26 Nov 2012 12:02:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 039/270] nfsd4: don't pin clientids to pseudoflavors
-Date: Mon, 26 Nov 2012 14:55:29 -0200
-Message-Id: <1353949160-26803-40-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 040/270] lockd: use rpc client's cl_nodename for id encoding
+Date: Mon, 26 Nov 2012 14:55:30 -0200
+Message-Id: <1353949160-26803-41-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,69 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 68eb35081e297b37db49d854cda144c6a3397699 upstream.
+commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
 
-I added cr_flavor to the data compared in same_creds without any
-justification, in d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move
-rq_flavor into svc_cred".
+Taking hostname from uts namespace if not safe, because this cuold be
+performind during umount operation on child reaper death. And in this case
+current->nsproxy is NULL already.
 
-Recent client changes then started making
-
-	mount -osec=krb5 server:/export /mnt/
-	echo "hello" >/mnt/TMP
-	umount /mnt/
-	mount -osec=krb5i server:/export /mnt/
-	echo "hello" >/mnt/TMP
-
-to fail due to a clid_inuse on the second open.
-
-Mounting sequentially like this with different flavors probably isn't
-that common outside artificial tests.  Also, the real bug here may be
-that the server isn't just destroying the former clientid in this case
-(because it isn't good enough at recognizing when the old state is
-gone).  But it prompted some discussion and a look back at the spec, and
-I think the check was probably wrong.  Fix and document.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/nfsd/nfs4state.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ fs/lockd/mon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index be324aa..02ac082 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1215,10 +1215,26 @@ static bool groups_equal(struct group_info *g1, struct group_info *g2)
- 	return true;
- }
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index 7ef14b3..606a8dd 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -40,6 +40,7 @@ struct nsm_args {
+ 	u32			proc;
  
-+/*
-+ * RFC 3530 language requires clid_inuse be returned when the
-+ * "principal" associated with a requests differs from that previously
-+ * used.  We use uid, gid's, and gss principal string as our best
-+ * approximation.  We also don't want to allow non-gss use of a client
-+ * established using gss: in theory cr_principal should catch that
-+ * change, but in practice cr_principal can be null even in the gss case
-+ * since gssd doesn't always pass down a principal string.
-+ */
-+static bool is_gss_cred(struct svc_cred *cr)
-+{
-+	/* Is cr_flavor one of the gss "pseudoflavors"?: */
-+	return (cr->cr_flavor > RPC_AUTH_MAXFLAVOR);
-+}
-+
-+
- static bool
- same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
+ 	char			*mon_name;
++	char			*nodename;
+ };
+ 
+ struct nsm_res {
+@@ -94,6 +95,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 		.vers		= 3,
+ 		.proc		= NLMPROC_NSM_NOTIFY,
+ 		.mon_name	= nsm->sm_mon_name,
++		.nodename	= utsname()->nodename,
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &args,
+@@ -430,7 +432,7 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
  {
--	if ((cr1->cr_flavor != cr2->cr_flavor)
-+	if ((is_gss_cred(cr1) != is_gss_cred(cr2))
- 		|| (cr1->cr_uid != cr2->cr_uid)
- 		|| (cr1->cr_gid != cr2->cr_gid)
- 		|| !groups_equal(cr1->cr_group_info, cr2->cr_group_info))
+ 	__be32 *p;
+ 
+-	encode_nsm_string(xdr, utsname()->nodename);
++	encode_nsm_string(xdr, argp->nodename);
+ 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+ 	*p++ = cpu_to_be32(argp->prog);
+ 	*p++ = cpu_to_be32(argp->vers);
 -- 
 1.7.9.5
 
