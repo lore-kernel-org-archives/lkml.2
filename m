@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab2KZNOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:14:24 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:42064 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754303Ab2KZNOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:14:20 -0500
-Subject: [PATCH 2/2] nfsd: recovery - make in_grace per net
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 26 Nov 2012 16:16:30 +0300
-Message-ID: <20121126131630.8822.81210.stgit@localhost.localdomain>
-In-Reply-To: <20121126131404.8822.65870.stgit@localhost.localdomain>
-References: <20121126131404.8822.65870.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1754313Ab2KZNPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:15:50 -0500
+Received: from pmx.elettra.trieste.it ([140.105.206.203]:44803 "EHLO
+	pmx.elettra.trieste.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab2KZNPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 08:15:49 -0500
+Message-ID: <50B36B81.4010709@elettra.trieste.it>
+Date: Mon, 26 Nov 2012 14:15:45 +0100
+From: Alessio Igor Bogani <alessio.bogani@elettra.trieste.it>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Igor Grinberg <grinberg@compulab.co.il>
+CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: Conditionally compile counter_32k
+References: <1353922083-1094-1-git-send-email-alessio.bogani@elettra.trieste.it> <50B35A4D.8080501@compulab.co.il>
+In-Reply-To: <50B35A4D.8080501@compulab.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.11.26.130033
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, FROM_NAME_PHRASE 0, NO_URI_FOUND 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_FROM 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __SANE_MSGID 0, __SXL_SIG_ERROR_SERVFAIL , __TO_MALFORMED_2 0, __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flag in_grace is a part of client tracking state, which is network namesapce
-aware. So let'a replace global static variable with per-net one.
+Hi Igor,
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/netns.h       |    1 +
- fs/nfsd/nfs4recover.c |    9 ++++-----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+On 26/11/2012 13:02, Igor Grinberg wrote:
+> On 11/26/12 11:28, Alessio Igor Bogani wrote:
+[...]
+>>   # Common support
+>> -obj-y := sram.o dma.o fb.o counter_32k.o
+>> +obj-y := sram.o dma.o fb.o
+>>   obj-m :=
+>>   obj-n :=
+>>   obj-  :=
+>>
+>> +obj-$(CONFIG_OMAP_32K_TIMER) += counter_32k.o
+>
+> We are moving away from this config option in favor of runtime detection,
 
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index 1305632..9047706 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -86,6 +86,7 @@ struct nfsd_net {
- 	spinlock_t client_lock;
- 
- 	struct file *rec_file;
-+	bool in_grace;
- };
- 
- extern int nfsd_net_id;
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index 3e76d28..359793f 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -64,7 +64,6 @@ struct nfsd4_client_tracking_ops {
- /* Globals */
- static char user_recovery_dirname[PATH_MAX] = "/var/lib/nfs/v4recovery";
- static struct nfsd4_client_tracking_ops *client_tracking_ops;
--static bool in_grace;
- 
- static int
- nfs4_save_creds(const struct cred **original_creds)
-@@ -221,7 +220,7 @@ out_put:
- out_unlock:
- 	mutex_unlock(&dir->d_inode->i_mutex);
- 	if (status == 0) {
--		if (in_grace) {
-+		if (nn->in_grace) {
- 			crp = nfs4_client_to_reclaim(dname, nn);
- 			if (crp)
- 				crp->cr_clp = clp;
-@@ -358,7 +357,7 @@ nfsd4_remove_clid_dir(struct nfs4_client *clp)
- 	nfs4_reset_creds(original_cred);
- 	if (status == 0) {
- 		vfs_fsync(nn->rec_file, 0);
--		if (in_grace) {
-+		if (nn->in_grace) {
- 			/* remove reclaim record */
- 			crp = nfsd4_find_reclaim_client(dname, nn);
- 			if (crp)
-@@ -394,7 +393,7 @@ nfsd4_recdir_purge_old(struct nfsd_net *nn, time_t boot_time)
- {
- 	int status;
- 
--	in_grace = false;
-+	nn->in_grace = false;
- 	if (!nn->rec_file)
- 		return;
- 	status = mnt_want_write_file(nn->rec_file);
-@@ -473,7 +472,7 @@ nfsd4_init_recdir(struct net *net)
- 
- 	nfs4_reset_creds(original_cred);
- 	if (!status)
--		in_grace = true;
-+		nn->in_grace = true;
- 	return status;
- }
- 
+Well, I'll be happy when it'll happen.
 
+> Why do you need this?
+
+Because until now the build system doesn't honour the config file. 
+Indeed it builds that source code file also when I set 
+CONFIG_OMAP_32K_TIMER to n.
+
+The runtime detection isn't a good excuse for doesn't make the build 
+system working like users expect.
+
+Ciao,
+Alessio
