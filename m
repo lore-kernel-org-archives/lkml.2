@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2KZSIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:08:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47360 "EHLO
+	id S932366Ab2KZSJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:09:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47335 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932337Ab2KZREL (ORCPT
+	with ESMTP id S932156Ab2KZRD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:04:11 -0500
+	Mon, 26 Nov 2012 12:03:56 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
+Cc: Ian Kent <ikent@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 070/270] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
-Date: Mon, 26 Nov 2012 14:56:00 -0200
-Message-Id: <1353949160-26803-71-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 067/270] autofs4 - fix reset pending flag on mount fail
+Date: Mon, 26 Nov 2012 14:55:57 -0200
+Message-Id: <1353949160-26803-68-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,53 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Ian Kent <raven@themaw.net>
 
-commit f0a996eeeda214f4293e234df33b29bec003b536 upstream.
+commit 49999ab27eab6289a8e4f450e148bdab521361b2 upstream.
 
-This fault was detected using the kgdb test suite on boot and it
-crashes recursively due to the fact that CONFIG_KPROBES on mips adds
-an extra die notifier in the page fault handler.  The crash signature
-looks like this:
+In autofs4_d_automount(), if a mount fail occurs the AUTOFS_INF_PENDING
+mount pending flag is not cleared.
 
-kgdbts:RUN bad memory access test
-KGDB: re-enter exception: ALL breakpoints killed
-Call Trace:
-[<807b7548>] dump_stack+0x20/0x54
-[<807b7548>] dump_stack+0x20/0x54
+One effect of this is when using the "browse" option, directory entry
+attributes show up with all "?"s due to the incorrect callback and
+subsequent failure return (when in fact no callback should be made).
 
-The fix for now is to have kgdb return immediately if the fault type
-is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
-to happen.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Ian Kent <ikent@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/mips/kernel/kgdb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/autofs4/root.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/kernel/kgdb.c b/arch/mips/kernel/kgdb.c
-index f4546e9..23817a6 100644
---- a/arch/mips/kernel/kgdb.c
-+++ b/arch/mips/kernel/kgdb.c
-@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
- 	struct pt_regs *regs = args->regs;
- 	int trap = (regs->cp0_cause & 0x7c) >> 2;
- 
-+#ifdef CONFIG_KPROBES
-+	/*
-+	 * Return immediately if the kprobes fault notifier has set
-+	 * DIE_PAGE_FAULT.
-+	 */
-+	if (cmd == DIE_PAGE_FAULT)
-+		return NOTIFY_DONE;
-+#endif /* CONFIG_KPROBES */
-+
- 	/* Userspace events, ignore. */
- 	if (user_mode(regs))
- 		return NOTIFY_DONE;
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 75e5f1c..8c4292f 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -392,10 +392,12 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
+ 		ino->flags |= AUTOFS_INF_PENDING;
+ 		spin_unlock(&sbi->fs_lock);
+ 		status = autofs4_mount_wait(dentry);
+-		if (status)
+-			return ERR_PTR(status);
+ 		spin_lock(&sbi->fs_lock);
+ 		ino->flags &= ~AUTOFS_INF_PENDING;
++		if (status) {
++			spin_unlock(&sbi->fs_lock);
++			return ERR_PTR(status);
++		}
+ 	}
+ done:
+ 	if (!(ino->flags & AUTOFS_INF_EXPIRING)) {
 -- 
 1.7.9.5
 
