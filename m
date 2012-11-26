@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab2KZRCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:02:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47211 "EHLO
+	id S1756476Ab2KZRC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:02:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47197 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab2KZRCb (ORCPT
+	with ESMTP id S1755977Ab2KZRCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:02:31 -0500
+	Mon, 26 Nov 2012 12:02:23 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 044/270] target/file: Re-enable optional fd_buffered_io=1 operation
-Date: Mon, 26 Nov 2012 14:55:34 -0200
-Message-Id: <1353949160-26803-45-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 038/270] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
+Date: Mon, 26 Nov 2012 14:55:28 -0200
+Message-Id: <1353949160-26803-39-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,137 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit b32f4c7ed85c5cee2a21a55c9f59ebc9d57a2463 upstream.
+commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
 
-This patch re-adds the ability to optionally run in buffered FILEIO mode
-(eg: w/o O_DSYNC) for device backends in order to once again use the
-Linux buffered cache as a write-back storage mechanism.
+The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
+silently masks off at least one flag that might be set by the driver
+(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
+others.
 
-This logic was originally dropped with mainline v3.5-rc commit:
+Really, as long as driver writers exercise a small amount of care with
+NAND_* options, this mask is not necessary at all; it was only here to
+prevent certain options from accidentally being set by the driver. But the
+original thought turns out to be a bad idea occasionally. Thus, kill it.
 
-commit a4dff3043c231d57f982af635c9d2192ee40e5ae
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Wed May 30 16:25:41 2012 -0700
+Note, this patch fixes some major gpmi-nand breakage.
 
-    target/file: Use O_DSYNC by default for FILEIO backends
-
-This difference with this patch is that fd_create_virtdevice() now
-forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
-operation has been enabled.
-
-(v2: Switch to FDBD_HAS_BUFFERED_IO_WCE + add more detailed
-     comment as requested by hch)
-
-Reported-by: Ferry <iscsitmp@bananateam.nl>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Tested-by: Huang Shijie <shijie8@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_file.c |   41 ++++++++++++++++++++++++++++++++++---
- drivers/target/target_core_file.h |    1 +
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ drivers/mtd/nand/nand_base.c |    8 +++-----
+ include/linux/mtd/nand.h     |    3 ---
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 9f99d04..c0d6e6d 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -138,6 +138,19 @@ static struct se_device *fd_create_virtdevice(
- 	 * of pure timestamp updates.
- 	 */
- 	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
-+	/*
-+	 * Optionally allow fd_buffered_io=1 to be enabled for people
-+	 * who want use the fs buffer cache as an WriteCache mechanism.
-+	 *
-+	 * This means that in event of a hard failure, there is a risk
-+	 * of silent data-loss if the SCSI client has *not* performed a
-+	 * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
-+	 * to write-out the entire device cache.
-+	 */
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Disabling O_DSYNC, using buffered FILEIO\n");
-+		flags &= ~O_DSYNC;
-+	}
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index a11253a..c429abd 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2914,8 +2914,7 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	if (le16_to_cpu(p->features) & 1)
+ 		*busw = NAND_BUSWIDTH_16;
  
- 	file = filp_open(dev_p, flags, 0600);
- 	if (IS_ERR(file)) {
-@@ -205,6 +218,12 @@ static struct se_device *fd_create_virtdevice(
- 	if (!dev)
- 		goto fail;
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= NAND_NO_READRDY & NAND_CHIPOPTIONS_MSK;
++	chip->options |= NAND_NO_READRDY;
  
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Forcing setting of emulate_write_cache=1"
-+			" with FDBD_HAS_BUFFERED_IO_WCE\n");
-+		dev->se_sub_dev->se_dev_attrib.emulate_write_cache = 1;
-+	}
-+
- 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
- 	fd_dev->fd_queue_depth = dev->queue_depth;
- 
-@@ -422,6 +441,7 @@ enum {
- static match_table_t tokens = {
- 	{Opt_fd_dev_name, "fd_dev_name=%s"},
- 	{Opt_fd_dev_size, "fd_dev_size=%s"},
-+	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
- 	{Opt_err, NULL}
- };
- 
-@@ -433,7 +453,7 @@ static ssize_t fd_set_configfs_dev_params(
- 	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
- 	char *orig, *ptr, *arg_p, *opts;
- 	substring_t args[MAX_OPT_ARGS];
--	int ret = 0, token;
-+	int ret = 0, arg, token;
- 
- 	opts = kstrdup(page, GFP_KERNEL);
- 	if (!opts)
-@@ -477,6 +497,19 @@ static ssize_t fd_set_configfs_dev_params(
- 					" bytes\n", fd_dev->fd_dev_size);
- 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
- 			break;
-+		case Opt_fd_buffered_io:
-+			match_int(args, &arg);
-+			if (arg != 1) {
-+				pr_err("bogus fd_buffered_io=%d value\n", arg);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+
-+			pr_debug("FILEIO: Using buffered I/O"
-+				" operations for struct fd_dev\n");
-+
-+			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
-+			break;
- 		default:
- 			break;
+ 	pr_info("ONFI flash detected\n");
+ 	return 1;
+@@ -3080,9 +3079,8 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+ 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
  		}
-@@ -508,8 +541,10 @@ static ssize_t fd_show_configfs_dev_params(
- 	ssize_t bl = 0;
+ 	}
+-	/* Get chip options, preserve non chip based options */
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
++	/* Get chip options */
++	chip->options |= type->options;
  
- 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
--	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
--		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
-+	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
-+		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
-+		(fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) ?
-+		"Buffered-WCE" : "O_DSYNC");
- 	return bl;
- }
+ 	/*
+ 	 * Check if chip is not a Samsung device. Do not clear the
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 57977c6..e5cf2c8 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -212,9 +212,6 @@ typedef enum {
+ #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
+ 					&& (chip->page_shift > 9))
  
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index 70ce7fd..876ae53 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -14,6 +14,7 @@
- 
- #define FBDF_HAS_PATH		0x01
- #define FBDF_HAS_SIZE		0x02
-+#define FDBD_HAS_BUFFERED_IO_WCE 0x04
- 
- struct fd_dev {
- 	u32		fbd_flags;
+-/* Mask to zero out the chip options, which come from the id table */
+-#define NAND_CHIPOPTIONS_MSK	0x0000ffff
+-
+ /* Non chip related options */
+ /* This option skips the bbt scan during initialization. */
+ #define NAND_SKIP_BBTSCAN	0x00010000
 -- 
 1.7.9.5
 
