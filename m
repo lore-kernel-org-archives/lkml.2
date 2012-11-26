@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab2KZRCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:02:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47178 "EHLO
+	id S1756404Ab2KZRCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:02:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47183 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab2KZRCH (ORCPT
+	with ESMTP id S1755582Ab2KZRCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:02:07 -0500
+	Mon, 26 Nov 2012 12:02:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alex Lyashkov <umka@cloudlinux.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 037/270] module: taint kernel when lve module is loaded
-Date: Mon, 26 Nov 2012 14:55:27 -0200
-Message-Id: <1353949160-26803-38-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 039/270] nfsd4: don't pin clientids to pseudoflavors
+Date: Mon, 26 Nov 2012 14:55:29 -0200
+Message-Id: <1353949160-26803-40-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,38 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
+commit 68eb35081e297b37db49d854cda144c6a3397699 upstream.
 
-Cloudlinux have a product called lve that includes a kernel module. This
-was previously GPLed but is now under a proprietary license, but the
-module continues to declare MODULE_LICENSE("GPL") and makes use of some
-EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
+I added cr_flavor to the data compared in same_creds without any
+justification, in d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move
+rq_flavor into svc_cred".
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Recent client changes then started making
+
+	mount -osec=krb5 server:/export /mnt/
+	echo "hello" >/mnt/TMP
+	umount /mnt/
+	mount -osec=krb5i server:/export /mnt/
+	echo "hello" >/mnt/TMP
+
+to fail due to a clid_inuse on the second open.
+
+Mounting sequentially like this with different flavors probably isn't
+that common outside artificial tests.  Also, the real bug here may be
+that the server isn't just destroying the former clientid in this case
+(because it isn't good enough at recognizing when the old state is
+gone).  But it prompted some discussion and a look back at the spec, and
+I think the check was probably wrong.  Fix and document.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/module.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfsd/nfs4state.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 4edbd9c..9ad9ee9 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2730,6 +2730,10 @@ static int check_module_license_and_versions(struct module *mod)
- 	if (strcmp(mod->name, "driverloader") == 0)
- 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index be324aa..02ac082 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1215,10 +1215,26 @@ static bool groups_equal(struct group_info *g1, struct group_info *g2)
+ 	return true;
+ }
  
-+	/* lve claims to be GPL but upstream won't provide source */
-+	if (strcmp(mod->name, "lve") == 0)
-+		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
++/*
++ * RFC 3530 language requires clid_inuse be returned when the
++ * "principal" associated with a requests differs from that previously
++ * used.  We use uid, gid's, and gss principal string as our best
++ * approximation.  We also don't want to allow non-gss use of a client
++ * established using gss: in theory cr_principal should catch that
++ * change, but in practice cr_principal can be null even in the gss case
++ * since gssd doesn't always pass down a principal string.
++ */
++static bool is_gss_cred(struct svc_cred *cr)
++{
++	/* Is cr_flavor one of the gss "pseudoflavors"?: */
++	return (cr->cr_flavor > RPC_AUTH_MAXFLAVOR);
++}
 +
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
++
+ static bool
+ same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
+ {
+-	if ((cr1->cr_flavor != cr2->cr_flavor)
++	if ((is_gss_cred(cr1) != is_gss_cred(cr2))
+ 		|| (cr1->cr_uid != cr2->cr_uid)
+ 		|| (cr1->cr_gid != cr2->cr_gid)
+ 		|| !groups_equal(cr1->cr_group_info, cr2->cr_group_info))
 -- 
 1.7.9.5
 
