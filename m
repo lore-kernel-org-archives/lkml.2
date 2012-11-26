@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2KZR5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:57:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47526 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab2KZRGp (ORCPT
+	id S1757174Ab2KZR6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:58:07 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56842 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932966Ab2KZRGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:06:45 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Elder <elder@inktank.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 111/270] libceph: define and use an explicit CONNECTED state
-Date: Mon, 26 Nov 2012 14:56:41 -0200
-Message-Id: <1353949160-26803-112-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	Mon, 26 Nov 2012 12:06:43 -0500
+Message-ID: <50B3A1A0.2000607@linutronix.de>
+Date: Mon, 26 Nov 2012 18:06:40 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <xa1ty5hogv6j.fsf@mina86.com>
+In-Reply-To: <xa1ty5hogv6j.fsf@mina86.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+On 11/26/2012 05:56 PM, Michal Nazarewicz wrote:
+>> On 11/26/2012 09:35 AM, Andrzej Pietrasiewicz wrote:
+>>> In some parts of the kernel (e.g. planned configfs integration into usb
+>>> gadget) there is a need to programmatically create config groups
+>>> (directories) but it would be preferable to disallow creating them by
+>>> the user. This is more or less what default_groups used to be for.
+>>> But e.g. in the mass storage gadget, after storing the number of
+>>> luns (logical units) into some configfs attribute, the corresponding lun#
+>>> directories should be created, their number is not known up front so
+>>> default_groups are no good for this.
+>>>
+>>> Example:
+>>>
+>>> $ echo 3>   /cfg/..../mass_storage/luns
+>>>
+>>> causes
+>>>
+>>> /cfg/....../mass_storage/lun0
+>>> /cfg/....../mass_storage/lun1
+>>> /cfg/....../mass_storage/lun2
+>
+> On Mon, Nov 26 2012, Sebastian Andrzej Siewior wrote:
+>> I though we did not want the luns file but instead use
+>>
+>> mkdir /cfg/....../mass_storage/lun0
+>> mkdir /cfg/....../mass_storage/lun1
+>>
+>> directly.
+>
+> I think that's suboptimal, and we can do better.  There are too many
+> corner cases (ie. what if user does “mkdir lun7” without the previous
+> luns?), it adds complexity to the kernel (ie. parsing of the name), and
+> the thing is overly complicated for user (“echo 5>  nluns” is much nicer
+> than having to create 5 directories).
 
-------------------
+Wouldn't say that. It may adds complexity on another level. The target
+subsystem has the same problem with adding luns and there seems nothing
+wrong with having lun3 and 4 and leaving 0 and 1 unsued.
+With the tcm gadget I get:
 
-From: Alex Elder <elder@inktank.com>
+|scsi 0:0:0:2: Direct-Access     LIO-ORG  RAMDISK-MCP      4.0  PQ: 0 
+ANSI: 5
+|scsi 0:0:0:3: Direct-Access     LIO-ORG  FILEIO           4.0  PQ: 0 
+ANSI: 5
 
-commit e27947c767f5bed15048f4e4dad3e2eb69133697 upstream.
+You notice :2 and :3 instead :0 and :1. While should be there something
+wrong with this?
 
-There is no state explicitly defined when a ceph connection is fully
-operational.  So define one.
-
-It's set when the connection sequence completes successfully, and is
-cleared when the connection gets closed.
-
-Be a little more careful when examining the old state when a socket
-disconnect event is reported.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- include/linux/ceph/messenger.h |    1 +
- net/ceph/messenger.c           |    9 +++++++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-index f624b75..6a00acc 100644
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -120,6 +120,7 @@ struct ceph_msg_pos {
-  */
- #define CONNECTING	1
- #define NEGOTIATING	2
-+#define CONNECTED	5
- #define STANDBY		8  /* no outgoing messages, socket closed.  we keep
- 			    * the ceph_connection around to maintain shared
- 			    * state with the peer. */
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 9e586ea..dc95437 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -463,6 +463,7 @@ void ceph_con_close(struct ceph_connection *con)
- 	     ceph_pr_addr(&con->peer_addr.in_addr));
- 	clear_bit(NEGOTIATING, &con->state);
- 	clear_bit(CONNECTING, &con->state);
-+	clear_bit(CONNECTED, &con->state);
- 	clear_bit(STANDBY, &con->state);  /* avoid connect_seq bump */
- 	set_bit(CLOSED, &con->state);
- 
-@@ -1564,6 +1565,7 @@ static int process_connect(struct ceph_connection *con)
- 		}
- 		clear_bit(NEGOTIATING, &con->state);
- 		clear_bit(CONNECTING, &con->state);
-+		set_bit(CONNECTED, &con->state);
- 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
- 		con->connect_seq++;
- 		con->peer_features = server_feat;
-@@ -2114,6 +2116,7 @@ more:
- 			prepare_read_ack(con);
- 			break;
- 		case CEPH_MSGR_TAG_CLOSE:
-+			clear_bit(CONNECTED, &con->state);
- 			set_bit(CLOSED, &con->state);   /* fixme */
- 			goto out;
- 		default:
-@@ -2190,11 +2193,13 @@ static void con_work(struct work_struct *work)
- 	mutex_lock(&con->mutex);
- restart:
- 	if (test_and_clear_bit(SOCK_CLOSED, &con->flags)) {
--		if (test_and_clear_bit(CONNECTING, &con->state)) {
-+		if (test_and_clear_bit(CONNECTED, &con->state))
-+			con->error_msg = "socket closed";
-+		else if (test_and_clear_bit(CONNECTING, &con->state)) {
- 			clear_bit(NEGOTIATING, &con->state);
- 			con->error_msg = "connection failed";
- 		} else {
--			con->error_msg = "socket closed";
-+			con->error_msg = "unrecognized con state";
- 		}
- 		goto fault;
- 	}
--- 
-1.7.9.5
-
+Sebastian
