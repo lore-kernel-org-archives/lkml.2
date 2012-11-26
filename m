@@ -1,96 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2KZBwE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 20:52:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:6969 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753501Ab2KZBwC convert rfc822-to-8bit (ORCPT
+	id S1753934Ab2KZByb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 20:54:31 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:11777 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab2KZBy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 20:52:02 -0500
-X-IronPort-AV: E=Sophos;i="4.83,317,1352044800"; 
-   d="scan'208";a="6272129"
-Message-ID: <50B2CACD.2000103@cn.fujitsu.com>
-Date: Mon, 26 Nov 2012 09:50:05 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v8 0/2] x86: vmclear vmcss on all cpus when doing kdump
- if necessary
-References: <50ADE0C2.1000106@cn.fujitsu.com> <20121125142642.GC25516@redhat.com>
-In-Reply-To: <20121125142642.GC25516@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 09:51:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 09:51:37
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Nov 2012 20:54:29 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-17-50b2cbcad63f
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: "'Cho KyongHo'" <pullip.cho@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>, sw0312.kim@samsung.com,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        prathyush.k@samsung.com, rahul.sharma@samsung.com
+References: <002101cdc8a4$fc375990$f4a60cb0$%cho@samsung.com>
+ <112e01cdc951$976699b0$c633cd10$%kim@samsung.com>
+In-reply-to: 
+Subject: RE: [PATCH v4 00/12] iommu/exynos: Fixes and Enhancements of System
+ MMU driver with DT
+Date: Mon, 26 Nov 2012 10:54:17 +0900
+Message-id: <001b01cdcb78$f2079670$d616c350$%cho@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3IpPvetdNb3LV1RpCMPgotQ+4VCAAqXvJAAImPLkAAAPnVIA==
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zQ91TpzcFGOy9LW1xedccNosZ5/cx
+	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJUx5+Zd1oJbmhUrls9mbWD8JdfFyMkhIWAi0Xq1iRXC
+	FpO4cG89WxcjF4eQwDJGiXOPdrHDFDW0HWOFSCxilNhz7heU849RYvmHH2BVbAJaEqvnHmcE
+	SYgI3GeUeHt8OxOIwyxwgVHieOtENpAqIYFCiddnZrGA2JwCPBLr/nQyg9jCAokSz37uBzuE
+	RUBV4uqRBrCpvAK2EvcfTmWFsAUlfky+B9bLDLRt/c7jTBC2vMTmNW+B5nAA3aou8eivLkhY
+	RMBJ4u6bbYwQJSIS+168Y4QYLyDxbfIhFohyWYlNB5hBzpQQ2MQuMXv/RBaIlyUlDq64wTKB
+	UWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIiTSpHYwrGywO
+	MQpwMCrx8Bae2BQgxJpYVlyZe4hRgoNZSYR3IhNQiDclsbIqtSg/vqg0J7X4EKMP0OUTmaVE
+	k/OBSSCvJN7Q2NjEzMTUxNzS1NwUh7CSOG+zR0qAkEB6YklqdmpqQWoRzDgmDk6pBsbUwFw5
+	l4R5TdMuLsrZ/ZAhZP+aT6WKcVfTD4SW3JcPiWGZolVVGO3YfPxsoDjT1K0HGbZGJkXwW3QZ
+	BvQprj0dGFLYL6m/e1vahNo1upm6BT77MqxYQ1M0zX24Jlqc3PaD90XSkxX6OqvaFmh5HA/Y
+	uPdICMPhDKkddg+LNN5d2WxX3hXBq8RSnJFoqMVcVJwIADzbj8nhAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAd1TpzcFGNx+I2RxedccNosZ5/cx
+	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMefmXdaCW5oV
+	K5bPZm1g/CXXxcjJISFgItHQdowVwhaTuHBvPVsXIxeHkMAiRok9536xQjj/GCWWf/jBDlLF
+	JqAlsXrucUaQhIjAfUaJt8e3M4E4zAIXGCWOt05kA6kSEiiUeH1mFguIzSnAI7HuTycziC0s
+	kCjx7Od+sH0sAqoSV480gE3lFbCVuP9wKiuELSjxY/I9sF5moG3rdx5ngrDlJTaveQs0hwPo
+	VnWJR391QcIiAk4Sd99sY4QoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyU
+	nmuoV5yYW1yal66XnJ+7iREcx8+kdjCubLA4xCjAwajEw1t4YlOAEGtiWXFl7iFGCQ5mJRHe
+	iUxAId6UxMqq1KL8+KLSnNTiQ4w+QI9OZJYSTc4Hppi8knhDYxMzI0sjMwsjE3NzHMJK4rzN
+	HikBQgLpiSWp2ampBalFMOOYODilGhjV6ksUp+6+/D5wA9M+fr+2Zx3TOWa/+fW0+J/V7jkv
+	KmZs6Iza5JoS2d6/r7KLec3ZSMn/EoH3WEpy2Pb5/65RNEqp3yP8NPz3nQNz18h2f/uzeubB
+	qZy3G3RZbwe5TbCYbvHpQGjsedOgM0rPOy9XzvAtvJnWoLkhNixPNP/OtkUvjp29o3ReiaU4
+	I9FQi7moOBEA9COlOxADAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年11月25日 22:26, Gleb Natapov 写道:
-> On Thu, Nov 22, 2012 at 04:22:26PM +0800, Zhang Yanfei wrote:
->> Currently, kdump just makes all the logical processors leave VMX operation by
->> executing VMXOFF instruction, so any VMCSs active on the logical processors may
->> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
->> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
->> executing the VMXOFF instruction.
->>
->> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
->> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
->> vmcore updated and non-corrupted.
->>
-> Looks fine to me, but kexec part should get acks from exec maintainers.
+> -----Original Message-----
+> From: Cho KyongHo [mailto:pullip.cho@samsung.com]
+> Sent: Monday, November 26, 2012 10:28 AM
+> 
+> > -----Original Message-----
+> > From: Kukjin Kim [mailto:kgene.kim@samsung.com]
+> > Sent: Friday, November 23, 2012 5:08 PM
+> > Subject: RE: [PATCH v4 00/12] iommu/exynos: Fixes and Enhancements of System MMU driver with DT
+> >
+> > Cho KyongHo wrote:
+> > >
+> > > The current exynos-iommu(System MMU) driver does not work autonomously
+> > > since it is lack of support for power management of peripheral blocks.
+> > > For example, MFC device driver must ensure that its System MMU is disabled
+> > > before MFC block is power-down not to invalidate IOTLB in the System MMU
+> > > when I/O memory mapping is changed. Because A System MMU is resides in the
+> > > same H/W block, access to control registers of System MMU while the H/W
+> > > block is turned off must be prohibited.
+> > >
+> > > This set of changes solves the above problem with setting each System MMUs
+> > > as the parent of the device which owns the System MMU to recieve the
+> > > information when the device is turned off or turned on.
+> > >
+> > > Another big change to the driver is the support for devicetree.
+> > > The bindings for System MMU is described in
+> > > Documentation/devicetree/bindings/arm/samsung/system-mmu.txt
+> > >
+> > > In addition, this patchset also includes several bug fixes and
+> > > enhancements
+> > > of the current driver.
+> > >
+> > > Change log:
+> > > v4:
+> > > - Remove Change-Id from v3 patches
+> > > - Change the order of the third and the first patch
+> > >   Thanks to Kukjin Kim.
+> > > - Fix memory leak when allocating and assigning exynos_iommu_owner to
+> > > client
+> > >   device if the client device has multiple System MMUs.
+> > >   Thanks to Rahul Sharma.
+> > >
+> > > v3:
+> > > - Fix prefetch buffer flag definition for System MMU 3.3 (patch 10/12)
+> > > - Fix incorrect setting for SET_RUNTIME_PM_OPS (patch 09/12)
+> > >   Thanks to Prathyush.
+> > >
+> > > v2:
+> > > - Split the patch to iommu/exynos into 9 patches
+> > > - Support for System MMU 3.3
+> > > - Some code compaction
+> > >
+> > > Patch summary:
+> > > [PATCH v4 01/12] ARM: EXYNOS: Add clk_ops for gating clocks of System MMU
+> > > [PATCH v4 02/12] ARM: EXYNOS: add System MMU definition to DT
+> > > [PATCH v4 03/12] ARM: EXYNOS: remove system mmu initialization from exynos
+> > > tree
+> > > [PATCH v4 04/12] iommu/exynos: support for device tree
+> > > [PATCH v4 05/12] iommu/exynos: pass version information from DT
+> > > [PATCH v4 06/12] iommu/exynos: allocate lv2 page table from own slab
+> > > [PATCH v4 07/12] iommu/exynos: change rwlock to spinlock
+> > > [PATCH v4 08/12] iommu/exynos: set System MMU as the parent of client
+> > > device
+> > > [PATCH v4 09/12] iommu/exynos: add support for runtime pm and
+> > > suspend/resume
+> > > [PATCH v4 10/12] iommu/exynos: add support for System MMU 3.2 and 3.3
+> > > [PATCH v4 11/12] iommu/exynos: add literal name of System MMU for
+> > > debugging
+> > > [PATCH v4 12/12] iommu/exynos: add debugfs entries for System MMU
+> > >
+> > > Diffstats:
+> > >  .../devicetree/bindings/arm/exynos/system-mmu.txt  |   86 ++
+> > >  arch/arm/boot/dts/exynos4210.dtsi                  |   96 ++
+> > >  arch/arm/boot/dts/exynos4x12.dtsi                  |  124 ++
+> > >  arch/arm/boot/dts/exynos5250.dtsi                  |  147 +-
+> > >  arch/arm/mach-exynos/Kconfig                       |    5 -
+> > >  arch/arm/mach-exynos/Makefile                      |    1 -
+> > >  arch/arm/mach-exynos/clock-exynos4.c               |   41 +-
+> > >  arch/arm/mach-exynos/clock-exynos4210.c            |    9 +-
+> > >  arch/arm/mach-exynos/clock-exynos4212.c            |   23 +-
+> > >  arch/arm/mach-exynos/clock-exynos5.c               |   86 +-
+> > >  arch/arm/mach-exynos/dev-sysmmu.c                  |  274 ----
+> > >  arch/arm/mach-exynos/include/mach/sysmmu.h         |   66 -
+> > >  arch/arm/mach-exynos/mach-exynos4-dt.c             |   34 +
+> > >  arch/arm/mach-exynos/mach-exynos5-dt.c             |   30 +
+> > >  drivers/iommu/Kconfig                              |    2 +-
+> > >  drivers/iommu/exynos-iommu.c                       | 1428
+> > +++++++++++++++-----
+> > >  16 files changed, 1720 insertions(+), 732 deletions(-)
+> >
+> > Looks good to me 1st~3rd patches. After quick review, I think, 1st and 2nd
+> > patches can go to upstream for v3.8 without any dependency. So I will.
+> >
+> > The 3rd patch has a dependency with other driver changes (4th ~ 12th), so it
+> > should be sent to upstream with others.
+> >
+> > BTW since the 3rd patch touches many Samsung stuff in arch/arm/ so I'd
+> > prefer to take it in Samsung tree. If Joerg is ok on iommu/exynos driver
+> > changes for v3.8...
+> >
+> > Joerg, please let me know about iommu/exynos stuff so that I can decide to
+> > take 3rd patch or not for v3.8.
+> >
+> 
+> Hi, Kukjin Kim.
+> 
+> I found that control bit fields of clock gating of System MMU of MFC L/R is inversed.
+> That is reported by Prathyush Kalashwaram.
+> 
+> I will post v5 patchset that solves this.
+> 
 
-Thanks. I will ask the exec maintainer.
+I did not posted v5 patchset.
+Instead, I posted just the fix for the 03/12 patch mentioned above
+as the reply to the 03/12 patch.
 
-> 
->> Changelog from v7 to v8:
->> 1. KEXEC: regression for using name crash_notifier_list
->>    and remove comments related to KVM
->>    and just call function atomic_notifier_call_chain directly.
->>
->> Changelog from v6 to v7:
->> 1. KVM-INTEL: in hardware_disable, we needn't disable the
->>    vmclear, so remove it.
->>
->> Changelog from v5 to v6:
->> 1. KEXEC: the atomic notifier list renamed:
->>    crash_notifier_list --> vmclear_notifier_list
->> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
->>    not defined and remove unnecessary #ifdef's.
->>
->> Changelog from v4 to v5:
->> 1. use an atomic notifier instead of function call, so
->>    have all the vmclear codes in vmx.c.
->>
->> Changelog from v3 to v4:
->> 1. add a new percpu variable vmclear_skipped to skip
->>    vmclear in kdump in some conditions.
->>
->> Changelog from v2 to v3:
->> 1. remove unnecessary conditions in function
->>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
->>
->> Changelog from v1 to v2:
->> 1. remove the sysctl and clear VMCSs unconditionally.
->>
->> Zhang Yanfei (2):
->>   x86/kexec: add a new atomic notifier list for kdump
->>   KVM-INTEL: add a notifier and a bitmap to support VMCLEAR in kdump
->>
->>  arch/x86/include/asm/kexec.h |    2 +
->>  arch/x86/kernel/crash.c      |    9 +++++
->>  arch/x86/kvm/vmx.c           |   70 ++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 81 insertions(+), 0 deletions(-)
-> 
-> --
-> 			Gleb.
-> 
+Thank you.
+
+Cho KyongHo.
+
+
+
 
