@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933620Ab2KZRLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:11:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47846 "EHLO
+	id S933648Ab2KZRLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:11:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47861 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933591Ab2KZRKy (ORCPT
+	with ESMTP id S933635Ab2KZRLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:10:54 -0500
+	Mon, 26 Nov 2012 12:11:07 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Michal Hocko <mhocko@suse.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        deepthi@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 176/270] use clamp_t in UNAME26 fix
-Date: Mon, 26 Nov 2012 14:57:46 -0200
-Message-Id: <1353949160-26803-177-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 179/270] nohz: Fix idle ticks in cpu summary line of /proc/stat
+Date: Mon, 26 Nov 2012 14:57:49 -0200
+Message-Id: <1353949160-26803-180-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,37 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
+commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f upstream.
 
-The min/max call needed to have explicit types on some architectures
-(e.g. mn10300). Use clamp_t instead to avoid the warning:
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+conditional" introduced a bug in regard to cpu hotplug. The effect is
+that the number of idle ticks in the cpu summary line in /proc/stat is
+still counting ticks for offline cpus.
 
-  kernel/sys.c: In function 'override_release':
-  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
+%0.0 st
+
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this we should make sure that the cpu is online when calling
+get_cpu_idle_time_us and get_cpu_iowait_time_us.
+
+[Srivatsa: Rebased to current mainline]
+
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com
+Cc: deepthi@linux.vnet.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/stat.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 1b66408..b6fe559 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1284,7 +1284,7 @@ static int override_release(char __user *release, size_t len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = clamp_t(size_t, len, 1, sizeof(buf));
- 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
- 		ret = copy_to_user(release, buf, copy + 1);
- 	}
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 64c3b31..e296572 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int cpu)
+ 
+ static u64 get_idle_time(int cpu)
+ {
+-	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle, idle_time = -1ULL;
++
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
+ 
+ 	if (idle_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.idle */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+ 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+ 	else
+ 		idle = usecs_to_cputime64(idle_time);
+@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
+ 
+ static u64 get_iowait_time(int cpu)
+ {
+-	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait, iowait_time = -1ULL;
++
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 
+ 	if (iowait_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.iowait */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+ 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+ 	else
+ 		iowait = usecs_to_cputime64(iowait_time);
 -- 
 1.7.9.5
 
