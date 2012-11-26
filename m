@@ -1,57 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2KZWJt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:09:49 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:46860 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755818Ab2KZWJr (ORCPT
+	id S1757331Ab2KZWPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:15:09 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41855 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab2KZWPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:09:47 -0500
-Message-ID: <50B3E897.3020901@ilyx.ru>
-Date: Tue, 27 Nov 2012 02:09:27 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 26 Nov 2012 17:15:07 -0500
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        ilya@ilyx.ru
-Subject: [PATCH v3] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+In-Reply-To: <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+Date: Tue, 27 Nov 2012 08:15:06 +1000
+Message-ID: <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+From: Dave Airlie <airlied@gmail.com>
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+Cc: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Arto Merilainen <amerilainen@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regression 'tty: fix "IRQ45: nobody cared"'
-Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
+>  static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
+>  {
+> -       return 0;
+> +       struct tegra_drm_fpriv *fpriv;
+> +       int err = 0;
+> +
+> +       fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
+> +       if (!fpriv)
+> +               return -ENOMEM;
+> +
+> +       INIT_LIST_HEAD(&fpriv->contexts);
+> +       filp->driver_priv = fpriv;
+> +
 
-  Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
-At the time of request we can have full buffers and throttled driver too. 
-If we don't unthrottle driver, we can get forever throttled driver, because,
-after request, we will have empty buffers and throttled driver and 
-there is no place to unthrottle driver.
-It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
-and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
+who frees this?
+> +struct tegra_drm_syncpt_incr_args {
+> +       __u32 id;
+> +};
 
+add 32-bits of padding here
 
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
+> +
+> +struct tegra_drm_syncpt_wait_args {
+> +       __u32 id;
+> +       __u32 thresh;
+> +       __s32 timeout;
+> +       __u32 value;
+> +};
+> +
+> +#define DRM_TEGRA_NO_TIMEOUT   (-1)
+> +
+> +struct tegra_drm_open_channel_args {
+> +       __u32 class;
+> +       void *context;
 
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 12b1fa0..a038be1 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -1098,10 +1098,12 @@ int tty_perform_flush(struct tty_struct *tty, unsigned long arg)
-        case TCIFLUSH:
-                if (ld && ld->ops->flush_buffer)
-                        ld->ops->flush_buffer(tty);
-+               tty_unthrottle(tty);
-                break;
-        case TCIOFLUSH:
-                if (ld && ld->ops->flush_buffer)
-                        ld->ops->flush_buffer(tty);
-+                tty_unthrottle(tty);
-                /* fall through */
-        case TCOFLUSH:
-                tty_driver_flush_buffer(tty);
+no pointers use u64, align them to 64-bits, so 32-bits of padding,
+
+> +};
+> +
+> +struct tegra_drm_get_channel_param_args {
+> +       void *context;
+> +       __u32 value;
+
+Same padding + uint64_t for void *
+
+> +};
+> +
+> +struct tegra_drm_syncpt_incr {
+> +       __u32 syncpt_id;
+> +       __u32 syncpt_incrs;
+> +};
+> +
+> +struct tegra_drm_cmdbuf {
+> +       __u32 mem;
+> +       __u32 offset;
+> +       __u32 words;
+> +};
+
+add padding
+> +
+> +struct tegra_drm_reloc {
+> +       __u32 cmdbuf_mem;
+> +       __u32 cmdbuf_offset;
+> +       __u32 target;
+> +       __u32 target_offset;
+> +       __u32 shift;
+> +};
+
+add padding
+
+> +
+> +struct tegra_drm_waitchk {
+> +       __u32 mem;
+> +       __u32 offset;
+> +       __u32 syncpt_id;
+> +       __u32 thresh;
+> +};
+> +
+> +struct tegra_drm_submit_args {
+> +       void *context;
+> +       __u32 num_syncpt_incrs;
+> +       __u32 num_cmdbufs;
+> +       __u32 num_relocs;
+> +       __u32 submit_version;
+> +       __u32 num_waitchks;
+> +       __u32 waitchk_mask;
+> +       __u32 timeout;
+> +       struct tegra_drm_syncpt_incrs *syncpt_incrs;
+> +       struct tegra_drm_cmdbuf *cmdbufs;
+> +       struct tegra_drm_reloc *relocs;
+> +       struct tegra_drm_waitchk *waitchks;
+> +
+> +       __u32 pad[5];           /* future expansion */
+> +       __u32 fence;            /* Return value */
+> +};
+
+lose all the pointers for 64-bit aligned uint64_t.
+
+Probably should align all of these on __u64 and __u32 usage if possible.
+
+i'll look at the rest of the patches, but I need to know what commands
+can be submitted via this interface and what are the security
+implications of it.
+
+Dave.
