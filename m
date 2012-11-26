@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab2KZX0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:26:44 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:29495 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab2KZX0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:26:43 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-02-50b3fab14714
-Message-id: <50B3FAAB.9090406@samsung.com>
-Date: Tue, 27 Nov 2012 08:26:35 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: arizona: Only set GPIO if it has been requested
-References: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t8zPd2NvzYHGDybp2xxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyjq4+ylbwh73i48V3zA2Mt9m6GDk5JARMJFa13maEsMUkLtxb
-	DxTn4hASWMYoMe3BPnaYogO3ZjJDJKYzSpz+/4IVwulikpg2B6KKV0BL4sbNs2A2i4CqxJOz
-	d8BWsAHF97+4AWRzcIgKREj86ueAKBeU+DH5HgtIWARowe/7lSAjmQUWM0r82fMA7CJhAR+J
-	fW/ngo0UEgiRmDjvMQuIzSkQKvH182cwm1lAR2J/6zQ2CFteYvOat8wQJwhIfJt8CGy+hICs
-	xKYDYPdLCDSzS/z+18gE8ZikxMEVN1gmMIrNQnLSLCRjZyEZu4CReRWjaGpBckFxUnquoV5x
-	Ym5xaV66XnJ+7iZGSExI7WBc2WBxiFGAg1GJh1dh3eYAIdbEsuLK3EOMEhzMSiK8v7YDhXhT
-	EiurUovy44tKc1KLDzH6AF07kVlKNDkfGK95JfGGxgbGhoaWhmamlqYGOISVxHmbPVIChATS
-	E0tSs1NTC1KLYMYxcXBKNTAKzlsyq/7jex2dSMtvQou2KRbIKjuFWAUt3nCQ75fYzMn1Pezs
-	9nmbN96U/bXqwPUDMTlW1+W8fSuvmchH3fJhepO92qdDT/W43Nf9K79z33M6vOmC0u7yK98O
-	MR/RjCmxjanMj5/zclvntKdMzBbrHAIb/N/rSE6Nib1xS/L8h5ANnbf/64UosRRnJBpqMRcV
-	JwIACi/d7LYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jQd2NvzYHGLRclrG4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGUdXH2Ur+MNe8fHiO+YG
-	xttsXYycHBICJhIHbs1khrDFJC7cWw8U5+IQEpjOKHH6/wtWCKeLSWLanH3sIFW8AloSN26e
-	BbNZBFQlnpy9AzaJDSi+/8UNIJuDQ1QgQuJXPwdEuaDEj8n3WEDCIkDLft+vBBnJLLCYUeLP
-	ngeMIDXCAj4S+97OBRspJBAiMXHeYxYQm1MgVOLr589gNrOAjsT+1mlsELa8xOY1b5knMArM
-	QrJiFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjrhnUjsYVzZYHGIU4GBU
-	4uFVWLc5QIg1say4MvcQowQHs5II76/tQCHelMTKqtSi/Pii0pzU4kOMPsAAmMgsJZqcD0wG
-	eSXxhsYmZkaWRmbGJubGxjiElcR5mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUw6nA+OZIpd6Zd
-	982Nb2XFvlxsF/31mCs6b4smKEsU3CuzfNG64jbTkYZPet+iZO9WsNmczr3qlKfcteL28R+/
-	v5a31HUcesx/gLVN7HRqVCYfY1VGt65pxGnX8jeaDMVCG05NzVnYEH6odI140dwDm298/jWj
-	MbF2+YqFN5cdOOAsJhr4/6a+EktxRqKhFnNRcSIADHGV5OUCAAA=
-X-CFilter-Loop: Reflected
+	id S1757436Ab2KZX12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:27:28 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47866 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755309Ab2KZX10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 18:27:26 -0500
+Message-ID: <1353972445.2493.19.camel@joe-AO722>
+Subject: Re: [PATCH v2 3/3] PM: Introduce Intel PowerClamp Driver
+From: Joe Perches <joe@perches.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Mon, 26 Nov 2012 15:27:25 -0800
+In-Reply-To: <1353940633-20084-4-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1353940633-20084-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <1353940633-20084-4-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 08:28 PM, Mark Brown wrote:
-> The micd_pol GPIO is only requested if we've specified one greater than 0
-> so apply the same test before we set it.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/extcon/extcon-arizona.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index cdab9e5..585882e 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -85,8 +85,9 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
->  {
->  	struct arizona *arizona = info->arizona;
->  
-> -	gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
-> -				info->micd_modes[mode].gpio);
-> +	if (arizona->pdata.micd_pol_gpio > 0)
-> +		gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
-> +					info->micd_modes[mode].gpio);
+On Mon, 2012-11-26 at 06:37 -0800, Jacob Pan wrote:
+> Intel PowerClamp driver performs synchronized idle injection across
+> all online CPUs. The goal is to maintain a given package level C-state
+> ratio.
 
-Why not use gpio_is_valid() function to test arizona->pdata.micd_pol_gpio ?
+trivial notes:
+
+> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+
+You should still add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+before any include so that all messages are prefixed with powerclamp:
+
+> +
+> +/* #define DEBUG */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+[]
+> +static void adjust_compensation(int target_ratio, unsigned int win)
+> +{
+> +	int delta;
+
+It'd be shorter code to use a temporary like
+
+	struct powerclamp_calibration_data *d = &cal_data[target_ratio];
+
+> +
+> +	/*
+> +	 * adjust compensations if confidence level has not been reached or
+> +	 * there are too many wakeups during the last idle injection period, we
+> +	 * cannot trust the data for compensation.
+> +	 */
+> +	if (cal_data[target_ratio].confidence >= CONFIDENCE_OK ||
+> +		atomic_read(&idle_wakeup_counter) >
+> +		win * num_online_cpus())
+> +		return;
+> +
+> +	delta = set_target_ratio - current_ratio;
+> +	/* filter out bad data */
+> +	if (delta >= 0 && delta <= (1+target_ratio/10)) {
+> +		if (cal_data[target_ratio].steady_comp)
+> +			cal_data[target_ratio].steady_comp =
+> +				roundup(delta+
+> +					cal_data[target_ratio].steady_comp,
+> +					2)/2;
+
+so that this fits on a single line and becomes:
+
+		if (d->steady_comp)
+			d->steady_comp = roundup(delta + d->steady_comp, 2) / 2;
+ 
+	etc.
+
+What clamps target_ratio to the correct range?
+I briefly scanned the code but didn't spot it.
+
