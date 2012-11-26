@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab2KZIfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 03:35:47 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:60949 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab2KZIfe (ORCPT
+	id S1754532Ab2KZIgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 03:36:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41310 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab2KZIgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 03:35:34 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-77-50b329d201f0
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>, "'Marek Vasut'" <marex@denx.de>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: lms283gf05: use GPIOF_INIT flags when using
- devm_gpio_request_one()
-Date: Mon, 26 Nov 2012 17:35:29 +0900
-Message-id: <004501cdcbb0$fdeddfc0$f9c99f40$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3LsP2dWBuP426kSMqTDhoNyIBmQA==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t8zY91LmpsDDD51cllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mzt5tjAUPOCo6t5k2MM5i72Lk5JAQMJH4s3cHK4QtJnHh3nq2
-	LkYuDiGBZYwSp26dYoUpmn5qJyNEYjqjxOp1q5kgnNlMEt+/TWcEqWITUJP48uUw2FgRgQiJ
-	5hmzmEFsZoFcia7jf8FsYYFEidMnZoBNZRFQlXjR+BVoEAcHr4CtxM4lmSBhXgFBiR+T77FA
-	tGpJrN95nAnClpfYvOYtM0i5hIC6xKO/uhCb9CQa181nhygRkdj34h0jxHQBiW+TD7FAlMtK
-	bDrADPFKO7vEh35nCFtS4uCKGywTGMVmIVk8C8niWUgWz0KyYQEjyypG0dSC5ILipPRcQ73i
-	xNzi0rx0veT83E2MkCiR2sG4ssHiEKMAB6MSD2/hiU0BQqyJZcWVuYcYJTiYlUR4JzIBhXhT
-	EiurUovy44tKc1KLDzH6AB0+kVlKNDkfGMF5JfGGxsYmZiamJuaWpuamOISVxHmbPVIChATS
-	E0tSs1NTC1KLYMYxcXBKNTDOi3bSbPK/dsh1S41ZQYDrtSqm35pnXRlZ16/fZbZE59nTqymT
-	+XsjTCa5mgfOL5Be4tjjUXd9U8F3m+N+nrt8X3+41PKicrLm8pzXp/zM9f/1hrLy7Uh45N01
-	pfLd4nKnh8XzjzSvbd14942YvfeJmWZLzqyepj0hzszvp1r1QZW5oYuiL0YrsRRnJBpqMRcV
-	JwIAU63Qe78CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd1LmpsDDCZvZbW4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGZ292xgLHnBUdG4zbWCc
-	xd7FyMkhIWAiMf3UTkYIW0ziwr31bF2MXBxCAtMZJVavW80E4cxmkvj+bTpYFZuAmsSXL4fB
-	ukUEIiSaZ8xiBrGZBXIluo7/BbOFBRIlTp+YwQpiswioSrxo/Ao0iIODV8BWYueSTJAwr4Cg
-	xI/J91ggWrUk1u88zgRhy0tsXvOWGaRcQkBd4tFfXYhNehKN6+azQ5SISOx78Y5xAqPALCST
-	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7CZ1I7GFc2WBxiFOBg
-	VOLhLTyxKUCINbGsuDL3EKMEB7OSCO9EJqAQb0piZVVqUX58UWlOavEhRh+gPycyS4km5wMT
-	RF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjBpLuG+zxywU
-	Uenw2+o6zYm1eBvT1Y0Lrr/pUuio3Gg9y+ahZu0cHmmpu4etZpqlpy4TeRj6duPc155tf34+
-	V4qLeKwaqT5zc85PmXUrtVO0XnNveO/1SEKmeXEpq4Gm8dMIq4mTTGZtWfLhYs6NxRzzvfN0
-	pq1/9vOK7MuJlwUVPBwivYu+ViuxFGckGmoxFxUnAgAaX3Kb7wIAAA==
-X-CFilter-Loop: Reflected
+	Mon, 26 Nov 2012 03:36:39 -0500
+Date: Mon, 26 Nov 2012 09:36:34 +0100
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Wen Congyang <wencongyang@gmail.com>
+Cc: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+Message-ID: <20121126083634.GA4574@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <1353693037-21704-4-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <50B0F3DF.4000802@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B0F3DF.4000802@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIOF_DIR_OUT and GPIOF_DIR_IN are defined as below:
- GPIOF_DIR_OUT   (0 << 0)
- GPIOF_DIR_IN    (1 << 0)
-So, when !pdata->reset_inverted is 1, the gpio pin can be set as
-input, instead of output.
+On Sun, Nov 25, 2012 at 12:20:47AM +0800, Wen Congyang wrote:
+> At 2012/11/24 1:50, Vasilis Liaskovitis Wrote:
+> > Consider the following sequence of operations for a hotplugged memory device:
+> > 
+> > 1. echo "PNP0C80:XX">  /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > 2. echo "PNP0C80:XX">  /sys/bus/acpi/drivers/acpi_memhotplug/bind
+> > 3. echo 1>/sys/bus/pci/devices/PNP0C80:XX/eject
+> > 
+> > The driver is successfully re-bound to the device in step 2. However step 3 will
+> > not attempt to remove the memory. This is because the acpi_memory_info enabled
+> > bit for the newly bound driver has not been set to 1. This bit needs to be set
+> > in the case where the memory is already used by the kernel (add_memory returns
+> > -EEXIST)
+> 
+> Hmm, I think the reason is that we don't offline/remove memory when
+> unbinding it
+> from the driver. I have sent a patch to fix this problem, and this patch
+> is in
+> pm tree now. With this patch, we will offline/remove memory when
+> unbinding it from
+> the drriver.
 
-To provent this problem, GPIOF_INIT flag should be used when
-using devm_gpio_request_one().
+ok. Which patch is this? Does it require driver-core changes?
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Marek Vasut <marex@denx.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/video/backlight/lms283gf05.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> Consider the following sequence of operations for a hotplugged memory
+> device:
+> 
+> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> 
+> If we don't offline/remove the memory, we have no chance to do it in
+> step 2. After
+> step2, the memory is used by the kernel, but we have powered off it. It
+> is very
+> dangerous.
 
-diff --git a/drivers/video/backlight/lms283gf05.c b/drivers/video/backlight/lms283gf05.c
-index d317730..3dc4995 100644
---- a/drivers/video/backlight/lms283gf05.c
-+++ b/drivers/video/backlight/lms283gf05.c
-@@ -159,7 +159,8 @@ static int __devinit lms283gf05_probe(struct spi_device *spi)
- 
- 	if (pdata != NULL) {
- 		ret = devm_gpio_request_one(&spi->dev, pdata->reset_gpio,
--				GPIOF_DIR_OUT | !pdata->reset_inverted,
-+				GPIOF_DIR_OUT | (!pdata->reset_inverted ?
-+				GPIOF_INIT_HIGH : GPIOF_INIT_LOW),
- 				"LMS285GF05 RESET");
- 		if (ret)
- 			return ret;
--- 
-1.7.2.5
+How does power-off happen after unbind? acpi_eject_store checks for existing
+driver before taking any action:
 
+#ifndef FORCE_EJECT
+	if (acpi_device->driver == NULL) {
+		ret = -ENODEV;
+		goto err;
+	}
+#endif
 
+FORCE_EJECT is not defined afaict, so the function returns without scheduling
+acpi_bus_hot_remove_device. Is there another code path that calls power-off?
+
+thanks,
+
+- Vasilis
