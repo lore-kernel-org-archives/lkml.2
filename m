@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2KZKd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:33:59 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:43468 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab2KZKd6 (ORCPT
+	id S1754728Ab2KZKfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:35:47 -0500
+Received: from 173-254-64-10.unifiedlayer.com ([173.254.64.10]:55854 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754102Ab2KZKfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:33:58 -0500
-X-AuditID: cbfee60b-b7f356d0000018d6-9d-50b345943de8
-Date: Mon, 26 Nov 2012 10:33:56 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PULL REQUEST for Rafael] PM / devfreq: pull request-3 bugfixes
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20121126103210527@myungjoo.ham
-Msgkey: 20121126103210527@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20121126103210527@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <30131019.36191353926035140.JavaMail.weblogic@epv6ml08>
-DLP-Filter: Pass
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t8zTd0prpsDDM59Fre4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZs3tmsRd84K64uraLvYHxCHcXIyeHkIC6xKIlJ9m6GDk4JARM
-	JBa80QcJSwiISVy4t54NomQWo8TeGaEwJZMfOHcxcgGF5zNKPPh3kBmkhkVAVWLLsRtMIDVs
-	AnoSMz8ng5jCAgES2/epg1SICMRJzP15iQ2klVlgLaPE0tNdUOOVJNbse8UCYvMKCEqcnPmE
-	BeIEVYlLk9qg4moSGyefYYKIS0jMmn6BFcLmlZjR/hSqXk5i2tc1zBC2tMT5WRsYYV5Z/P0x
-	VJxf4tjtHUwQr/BKPLkfDDNm9+YvbBC2gMTUMwehWrUklv57DLWWT2LNwrcsMGN2nVrODNN7
-	f8tcsBpmAUWJKd0P2SFsLYkvP/axoXuLV8BZomP/G7YJjMqzkKRmIWmfhaQdWc0CRpZVjKKp
-	BckFxUnpqYZ6xYm5xaV56XrJ+bmbGCEJgXsH46wGi0OMAhyMSjy8ksc2BQixJpYVV+YeYpTg
-	YFYS4Z3IBBTiTUmsrEotyo8vKs1JLT7E6AOMv4nMUqLJ+cBklVcSb2hsYGxoaGloZmppaoBD
-	WEmcV6FieoCQQHpiSWp2ampBahHMOCYOTqkGRsY5TjGdPxkO1W5NqBGWOpZRor3hTsnFJZyv
-	L+ef3yLJ/sE6hjXyEXfGNOHLwszTV/ZsNdAxso0qMju9P7Cr+6vO3fUFS2/klB+xrN/8frfj
-	QXsBh8cx7Px3Uh0PL0hjMD0pWXZqte6MB2xdnD9ztvBeW2DPqBJ4R4nvW9W3prT+6x4T62xq
-	lViKMxINtZiLihMBk7b49DUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJKsWRmVeSWpSXmKPExsVy+t/tmbpTXDcHGKx4I2RxedccNgdGj8+b
-	5AIYozJsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaKNDIz1jExN9IyMDfRMDGKtDA0MjEyBqhIy
-	Mmb3zGIv+MBdcXVtF3sD4xHuLkZODiEBdYlFS06ydTFycEgImEhMfuAMEpYQEJO4cG89UJgL
-	qGQ+o8SDfweZQRIsAqoSW47dYAKpZxPQk5j5ORnEFBYIkNi+Tx2kQkQgTmLuz0tgrcwCaxkl
-	lp7uYoNYpSSxZt8rFhCbV0BQ4uTMJywQu1QlLk1qg4qrSWycfIYJIi4hMWv6BVYIm1diRvtT
-	qHo5iWlf1zBD2NIS52dtYIS5efH3x1Bxfoljt3cwQbzFK/HkfjDMmN2bv7BB2AISU88chGrV
-	klj67zHUWj6JNQvfssCM2XVqOTNM7/0tc8FqmAUUJaZ0P2SHsLUkvvzYx4buLV4BZ4mO/W/Y
-	JjDKzUKSmoWkfRaSdmQ1CxhZVjGKphYkFxQnpaca6hUn5haX5qXrJefnbmIEp6dn3DsYZzVY
-	HGIU4GBU4uGVPLYpQIg1say4MvcQowQHs5II70QmoBBvSmJlVWpRfnxRaU5q8SFGH2D8TWSW
-	Ek3OB6bOvJJ4Q2MDY0NDS3MDU0MjCxzCSuK8ChXTA4QE0hNLUrNTUwtSi2DGMXFwSjUw6pWb
-	3eTeMFH6IZ/OjYp/Py92Z6y58Gd+9c4O6YdTPae6unmZ7bn02iz57JGZb89f+Hmq4f5X7zyR
-	+RMz+E32cjSyFDc4T43PFt4iZ1GS8Wmtv0nX4drLrXaM8dv3SSY8+vd8S9qOGzVJbqvrNmkx
-	izy6FlxsauM+dcXr8kVsMe9N3vnnTAq+qcRSnJFoqMVcVJwIAIKyi1F8AwAA
-X-CFilter-Loop: Reflected
+	Mon, 26 Nov 2012 05:35:45 -0500
+Message-ID: <1353926134.2025.37.camel@slavad-ubuntu>
+Subject: [PATCH v3 0/5] hfsplus: reworked support of extended attributes
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+To: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Mon, 26 Nov 2012 14:35:34 +0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 178.177.49.123 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAQAY0CC023485
 
-> On Monday, November 26, 2012 03:41:22 PM MyungJoo Ham wrote:
-> > Dear Rafael,
-> > 
-> > sorry for the inconviences; I forgot that I've updated the tag name
-> > according to the date modified.
-> > 
-> > Please use "pull_req_20121122" tag instead of "pull_req_20121121" though
-> > I've pushed pull_req_20121121 tag again, which points to the same
-> > commit with pull_req_20121122 tag.
-> > 
-> > 
-> > "remove compiler error" patch in this set should resolve the "build failure"
-> > message sent by Stephen as well.
-> 
-> It looks like you rebased it on top of linux-next, didn't you?
-> 
-> Please don't do that, linux-next is evolving and the commit hashes in there
-> are changing over time.
-> 
-> I've merged your previous pull request into my pm-devfreq branch and pushed
-> it out.  Please rebase your new material on top of my pm-devfreq branch and
-> resubmit.
-> 
-> Thanks,
-> Rafael
+Hi,
 
-I've just rebased the tree and sent the pull-request message.
+This third version (v3) of patch set adds real support of extended attributes in HFS+ file system.
 
-Sorry for all the mess invoked.
+v2->v3
+* Likewise JFS model every pure Mac OS X xattr (for example, com.apple.FinderInfo) is prefixed with "osx." during list_xattr stage. [Christoph Hellwig suggestion]
+* It was added handlers for user.*, trusted.* and security.* namespaces.
+* The code was reworked for using xattr general dispatching code. [Christoph Hellwig suggestion]
+* Functionality of getting, setting and deleting of extended attributes is moved from ioctl.c into xattr.h and xattr.c.
+
+v2->v1
+* It was fixed the issue with message "No such file or directory" generation before outputting the expected result for "ls -l".
+* It was fixed the issue with wrong 'hfs: xattr searching failed' kernel message generation in the case of real extended attribute absence for requested name.
+* It was fixed the issue with checking of necessity to show com.apple.FinderInfo in the list of available extended attributes.
+
+Current mainline implementation of hfsplus file system driver treats as extended attributes only two fields (fdType and fdCreator) of user_info field in file description record (struct hfsplus_cat_file). It is possible to get or set only these two fields as extended attributes. But HFS+ treats as com.apple.FinderInfo extended attribute an union of user_info and finder_info fields as for file (struct hfsplus_cat_file) as for folder (struct hfsplus_cat_folder). Moreover, current mainline implementation of hfsplus file system driver doesn't support special metadata file - attributes tree.
+
+Mac OS X 10.4 and later support extended attributes by making use of the HFS+ filesystem Attributes file B*-tree feature which allows for named forks. Mac OS X supports only inline extended attributes, limiting their size to 3802 bytes. Any regular file may have a list of extended attributes. HFS+ supports an arbitrary number of named forks. Each attribute is denoted by a name and the associated data. The name is a null-terminated Unicode string. It is possible to list, to get, to set, and to remove extended attributes from files or directories.
+
+It exists some peculiarity during getting of extended attributes list by means of getfattr utility. The getfattr utility expects prefix "user." before any extended attribute's name. So, it ignores any names that don't contained such prefix. Such behavior of getfattr utility results in unexpected empty output of extended attributes list even in the case when file (or folder) contains extended attributes. It needs to use empty string as regular expression pattern for names matching (getfattr --match="").  
+
+For support of extended attributes in HFS+:
+1. It was added necessary on-disk layout declarations related to Attributes tree into hfsplus_raw.h file.
+2. It was added attributes.c file with implementation of functionality of manipulation by records in Attributes tree.
+3. It was reworked hfsplus_listxattr, hfsplus_getxattr, hfsplus_setxattr functions in ioctl.c. Moreover, it was added hfsplus_removexattr method.
+
+With the best regards,
+Vyacheslav Dubeyko.
+---
+ fs/hfsplus/Makefile         |    4 +-
+ fs/hfsplus/attributes.c     |  399 ++++++++++++++++++++++++
+ fs/hfsplus/bfind.c          |   93 +++++-
+ fs/hfsplus/bnode.c          |    6 +-
+ fs/hfsplus/brec.c           |   23 +-
+ fs/hfsplus/btree.c          |    8 +
+ fs/hfsplus/catalog.c        |   36 ++-
+ fs/hfsplus/dir.c            |   55 +++-
+ fs/hfsplus/extents.c        |    4 +-
+ fs/hfsplus/hfsplus_fs.h     |   52 +++-
+ fs/hfsplus/hfsplus_raw.h    |   68 ++++-
+ fs/hfsplus/inode.c          |   18 +-
+ fs/hfsplus/ioctl.c          |  108 -------
+ fs/hfsplus/super.c          |   56 +++-
+ fs/hfsplus/unicode.c        |    7 +-
+ fs/hfsplus/xattr.c          |  708 +++++++++++++++++++++++++++++++++++++++++++
+ fs/hfsplus/xattr.h          |   60 ++++
+ fs/hfsplus/xattr_security.c |  104 +++++++
+ fs/hfsplus/xattr_trusted.c  |   63 ++++
+ fs/hfsplus/xattr_user.c     |   63 ++++
+ include/uapi/linux/xattr.h  |    3 +
+ 21 files changed, 1753 insertions(+), 185 deletions(-)
+-- 
+1.7.9.5
 
 
-
-I'll remember to base on the topic branch next time.
-Thank you.
-
-
-
-Cheers,
-MyungJoo.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
