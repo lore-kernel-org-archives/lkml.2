@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967Ab2KZROF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:14:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48108 "EHLO
+	id S933981Ab2KZROK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:14:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933941Ab2KZROA (ORCPT
+	with ESMTP id S933941Ab2KZROG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:14:00 -0500
+	Mon, 26 Nov 2012 12:14:06 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hiro Sugawara <hsugawara@nvidia.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
+Cc: Josh Wu <josh.wu@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 226/270] iommu/tegra: smmu: Fix deadly typo
-Date: Mon, 26 Nov 2012 14:58:36 -0200
-Message-Id: <1353949160-26803-227-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 227/270] ARM: at91/tc: fix typo in the DT document
+Date: Mon, 26 Nov 2012 14:58:37 -0200
+Message-Id: <1353949160-26803-228-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,33 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hiro Sugawara <hsugawara@nvidia.com>
+From: Josh Wu <josh.wu@atmel.com>
 
-commit d0078e72314df2e5ede03f2102cddde06767c374 upstream.
+commit 11930c530f3edf81160e4962e363d579f5cdce7e upstream.
 
-Fix a deadly typo in macro definition.
-
-Signed-off-by: Hiro Sugawara <hsugawara@nvidia.com>
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/iommu/tegra-smmu.c |    2 +-
+ .../devicetree/bindings/arm/atmel-at91.txt         |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index 3f3d09d..1fcc936 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -148,7 +148,7 @@
+diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+index ecc81e3..d187e9f 100644
+--- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
++++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+@@ -8,7 +8,7 @@ PIT Timer required properties:
+   shared across all System Controller members.
  
- #define SMMU_ADDR_TO_PFN(addr)	((addr) >> 12)
- #define SMMU_ADDR_TO_PDN(addr)	((addr) >> 22)
--#define SMMU_PDN_TO_ADDR(addr)	((pdn) << 22)
-+#define SMMU_PDN_TO_ADDR(pdn)	((pdn) << 22)
- 
- #define _READABLE	(1 << SMMU_PTB_DATA_ASID_READABLE_SHIFT)
- #define _WRITABLE	(1 << SMMU_PTB_DATA_ASID_WRITABLE_SHIFT)
+ TC/TCLIB Timer required properties:
+-- compatible: Should be "atmel,<chip>-pit".
++- compatible: Should be "atmel,<chip>-tcb".
+   <chip> can be "at91rm9200" or "at91sam9x5"
+ - reg: Should contain registers location and length
+ - interrupts: Should contain all interrupts for the TC block
 -- 
 1.7.9.5
 
