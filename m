@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2KZKvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:51:16 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60805 "EHLO song.cn.fujitsu.com"
+	id S1755094Ab2KZKvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:51:40 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41240 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754900Ab2KZKtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:49:53 -0500
+	id S1754643Ab2KZKtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 05:49:51 -0500
 X-IronPort-AV: E=Sophos;i="4.83,320,1352044800"; 
-   d="scan'208";a="6277343"
+   d="scan'208";a="6277341"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
         linux-acpi@vger.kernel.org, x86@kernel.org
@@ -22,9 +22,9 @@ Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Tang Chen <tangchen@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Len Brown <len.brown@intel.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH 5/5] Do not use cpu_to_node() to find an offlined cpu's node.
-Date: Mon, 26 Nov 2012 18:20:27 +0800
-Message-Id: <1353925227-1877-6-git-send-email-wency@cn.fujitsu.com>
+Subject: [PATCH 4/5] cpu-hotplug,memory-hotplug: clear cpu_to_node() when offlining the node
+Date: Mon, 26 Nov 2012 18:20:26 +0800
+Message-Id: <1353925227-1877-5-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
 References: <1353925227-1877-1-git-send-email-wency@cn.fujitsu.com>
@@ -37,35 +37,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
-
-If a cpu is offline, its nid will be set to -1, and cpu_to_node(cpu) will
-return -1. As a result, cpumask_of_node(nid) will return NULL. In this case,
-find_next_bit() in for_each_cpu will get a NULL pointer and cause panic.
-
-Here is a call trace:
-[  609.824017] Call Trace:
-[  609.824017]  <IRQ>
-[  609.824017]  [<ffffffff810b0721>] select_fallback_rq+0x71/0x190
-[  609.824017]  [<ffffffff810b086e>] ? try_to_wake_up+0x2e/0x2f0
-[  609.824017]  [<ffffffff810b0b0b>] try_to_wake_up+0x2cb/0x2f0
-[  609.824017]  [<ffffffff8109da08>] ? __run_hrtimer+0x78/0x320
-[  609.824017]  [<ffffffff810b0b85>] wake_up_process+0x15/0x20
-[  609.824017]  [<ffffffff8109ce62>] hrtimer_wakeup+0x22/0x30
-[  609.824017]  [<ffffffff8109da13>] __run_hrtimer+0x83/0x320
-[  609.824017]  [<ffffffff8109ce40>] ? update_rmtp+0x80/0x80
-[  609.824017]  [<ffffffff8109df56>] hrtimer_interrupt+0x106/0x280
-[  609.824017]  [<ffffffff810a72c8>] ? sd_free_ctl_entry+0x68/0x70
-[  609.824017]  [<ffffffff8167cf39>] smp_apic_timer_interrupt+0x69/0x99
-[  609.824017]  [<ffffffff8167be2f>] apic_timer_interrupt+0x6f/0x80
-
-There is a hrtimer process sleeping, whose cpu has already been offlined.
-When it is waken up, it tries to find another cpu to run, and get a -1 nid.
-As a result, cpumask_of_node(-1) returns NULL, and causes ernel panic.
-
-This patch fixes this problem by judging if the nid is -1.
-If nid is not -1, a cpu on the same node will be picked.
-Else, a online cpu on another node will be picked.
+When the node is offlined, there is no memory/cpu on the node. If a
+sleep task runs on a cpu of this node, it will be migrated to the
+cpu on the other node. So we can clear cpu-to-node mapping.
 
 Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Cc: David Rientjes <rientjes@google.com>
@@ -78,54 +52,60 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- kernel/sched/core.c | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ mm/memory_hotplug.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2d8927f..4e6404e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1106,18 +1106,28 @@ EXPORT_SYMBOL_GPL(kick_process);
-  */
- static int select_fallback_rq(int cpu, struct task_struct *p)
- {
--	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
-+	int nid = cpu_to_node(cpu);
-+	const struct cpumask *nodemask = NULL;
- 	enum { cpuset, possible, fail } state = cpuset;
- 	int dest_cpu;
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index b7c30bb..5ae86d7 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1669,6 +1669,34 @@ static int check_cpu_on_node(void *data)
+ 	return 0;
+ }
  
--	/* Look for allowed, online CPU in same node. */
--	for_each_cpu(dest_cpu, nodemask) {
--		if (!cpu_online(dest_cpu))
--			continue;
--		if (!cpu_active(dest_cpu))
--			continue;
--		if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
--			return dest_cpu;
-+	/*
-+	 * If the node that the cpu is on has been offlined, cpu_to_node()
-+	 * will return -1. There is no cpu on the node, and we should
-+	 * select the cpu on the other node.
-+	 */
-+	if (nid != -1) {
-+		nodemask = cpumask_of_node(nid);
++static void unmap_cpu_on_node(void *data)
++{
++#ifdef CONFIG_ACPI_NUMA
++	struct pglist_data *pgdat = data;
++	int cpu;
 +
-+		/* Look for allowed, online CPU in same node. */
-+		for_each_cpu(dest_cpu, nodemask) {
-+			if (!cpu_online(dest_cpu))
-+				continue;
-+			if (!cpu_active(dest_cpu))
-+				continue;
-+			if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
-+				return dest_cpu;
-+		}
++	for_each_possible_cpu(cpu)
++		if (cpu_to_node(cpu) == pgdat->node_id)
++			numa_clear_node(cpu);
++#endif
++}
++
++static int check_and_unmap_cpu_on_node(void *data)
++{
++	int ret = check_cpu_on_node(data);
++
++	if (ret)
++		return ret;
++
++	/*
++	 * the node will be offlined when we come here, so we can clear
++	 * the cpu_to_node() now.
++	 */
++
++	unmap_cpu_on_node(data);
++	return 0;
++}
++
+ /* offline the node if all memory sections of this node are removed */
+ void try_offline_node(int nid)
+ {
+@@ -1695,7 +1723,7 @@ void try_offline_node(int nid)
+ 		return;
  	}
  
- 	for (;;) {
+-	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
++	if (stop_machine(check_and_unmap_cpu_on_node, NODE_DATA(nid), NULL))
+ 		return;
+ 
+ 	/*
 -- 
 1.8.0
 
