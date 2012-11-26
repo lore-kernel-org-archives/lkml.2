@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab2KZTUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:20:15 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40019 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab2KZTUN (ORCPT
+	id S1755446Ab2KZTVy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:21:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34225 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab2KZTVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:20:13 -0500
-From: Russ Dill <Russ.Dill@ti.com>
-To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: mturquette@ti.com, Russ Dill <Russ.Dill@ti.com>
-Subject: [PATCH] Don't mark shared helper functions as inline
-Date: Mon, 26 Nov 2012 11:20:09 -0800
-Message-Id: <1353957609-1295-1-git-send-email-Russ.Dill@ti.com>
-X-Mailer: git-send-email 1.8.0
+	Mon, 26 Nov 2012 14:21:52 -0500
+Message-ID: <50B3C13D.1050704@infradead.org>
+Date: Mon, 26 Nov 2012 11:21:33 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
+References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>	<50A12FF1.4000800@infradead.org> <CACRpkdZj5iuyXAfynF-5r65dnakxxm2A1O602P4Lc6it8=fU9g@mail.gmail.com>
+In-Reply-To: <CACRpkdZj5iuyXAfynF-5r65dnakxxm2A1O602P4Lc6it8=fU9g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The helper functions that access the opaque struct clk should
-not be marked inline since they are contained in clk.c, but expected
-to be used by other compilation units. This causes compile errors
-under gcc-4.7
+On 11/13/2012 05:35 AM, Linus Walleij wrote:
 
-In file included from arch/arm/mach-omap2/clockdomain.c:25:0:
-arch/arm/mach-omap2/clockdomain.c: In function ‘clkdm_clk_disable’:
-include/linux/clk-provider.h:338:12: error: inlining failed in call to always_inline ‘__clk_get_enable_count’: function body not available
-arch/arm/mach-omap2/clockdomain.c:1001:28: error: called from here
-make[1]: *** [arch/arm/mach-omap2/clockdomain.o] Error 1
-make: *** [arch/arm/mach-omap2] Error 2
+> On Mon, Nov 12, 2012 at 6:20 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> 
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>>
+>> Fix build errors when CONFIG_OF is not enabled by including
+>> <linux/of.h> (needs to be added in any case).
+>> An alternative fix could be to make the driver depend on OF.
+>>
+>> drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
+>> drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
+>> drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
+
+
+ping?
+
+This patch is still needed in linux-next.
+
 ---
- drivers/clk/clk.c            | 14 +++++++-------
- include/linux/clk-provider.h |  4 ++--
- 2 files changed, 9 insertions(+), 9 deletions(-)
+From: Randy Dunlap <rdunlap@infradead.org>
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 56e4495e..ed01746 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -249,32 +249,32 @@ late_initcall(clk_disable_unused);
- 
- /***    helper functions   ***/
- 
--inline const char *__clk_get_name(struct clk *clk)
-+const char *__clk_get_name(struct clk *clk)
- {
- 	return !clk ? NULL : clk->name;
- }
- 
--inline struct clk_hw *__clk_get_hw(struct clk *clk)
-+struct clk_hw *__clk_get_hw(struct clk *clk)
- {
- 	return !clk ? NULL : clk->hw;
- }
- 
--inline u8 __clk_get_num_parents(struct clk *clk)
-+u8 __clk_get_num_parents(struct clk *clk)
- {
- 	return !clk ? -EINVAL : clk->num_parents;
- }
- 
--inline struct clk *__clk_get_parent(struct clk *clk)
-+struct clk *__clk_get_parent(struct clk *clk)
- {
- 	return !clk ? NULL : clk->parent;
- }
- 
--inline int __clk_get_enable_count(struct clk *clk)
-+int __clk_get_enable_count(struct clk *clk)
- {
- 	return !clk ? -EINVAL : clk->enable_count;
- }
- 
--inline int __clk_get_prepare_count(struct clk *clk)
-+int __clk_get_prepare_count(struct clk *clk)
- {
- 	return !clk ? -EINVAL : clk->prepare_count;
- }
-@@ -300,7 +300,7 @@ out:
- 	return ret;
- }
- 
--inline unsigned long __clk_get_flags(struct clk *clk)
-+unsigned long __clk_get_flags(struct clk *clk)
- {
- 	return !clk ? -EINVAL : clk->flags;
- }
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index c127315..f9f5e9e 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -335,8 +335,8 @@ const char *__clk_get_name(struct clk *clk);
- struct clk_hw *__clk_get_hw(struct clk *clk);
- u8 __clk_get_num_parents(struct clk *clk);
- struct clk *__clk_get_parent(struct clk *clk);
--inline int __clk_get_enable_count(struct clk *clk);
--inline int __clk_get_prepare_count(struct clk *clk);
-+int __clk_get_enable_count(struct clk *clk);
-+int __clk_get_prepare_count(struct clk *clk);
- unsigned long __clk_get_rate(struct clk *clk);
- unsigned long __clk_get_flags(struct clk *clk);
- int __clk_is_enabled(struct clk *clk);
--- 
-1.8.0
+Fix build errors when CONFIG_OF is not enabled by including
+<linux/of.h> (needs to be added in any case).
+An alternative fix could be to make the driver depend on OF.
 
+drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
+drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
+drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/stmpe.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20121112.orig/drivers/mfd/stmpe.c
++++ linux-next-20121112/drivers/mfd/stmpe.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/of.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
