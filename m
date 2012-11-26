@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab2KZXi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:38:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39034 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab2KZXi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:38:26 -0500
-Date: Mon, 26 Nov 2012 15:38:24 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Millenbach <jmillenbach@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCHv3] tty: Added a CONFIG_TTY option to allow removal of TTY
-Message-ID: <20121126233824.GA8868@kroah.com>
-References: <1353033035-4928-1-git-send-email-jmillenbach@gmail.com>
+	id S1757495Ab2KZXkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:40:01 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45394 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab2KZXkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 18:40:00 -0500
+Message-ID: <50B3FDCC.7080709@wwwdotorg.org>
+Date: Mon, 26 Nov 2012 16:39:56 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353033035-4928-1-git-send-email-jmillenbach@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+CC: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 5/8] ARM: tegra: Add auxiliary data for nvhost
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-6-git-send-email-tbergstrom@nvidia.com>
+In-Reply-To: <1353935954-13763-6-git-send-email-tbergstrom@nvidia.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 06:30:35PM -0800, Joe Millenbach wrote:
-> The option allows you to remove TTY and compile without errors. This
-> saves space on systems that won't support TTY interfaces anyway.
-> bloat-o-meter output is below.
+On 11/26/2012 06:19 AM, Terje Bergstrom wrote:
+> Add SoC specific auxiliary data to host1x and gr2d. nvhost uses
+> this data.
 > 
-> The bulk of this patch consists of Kconfig changes adding "depends on
-> TTY" to various serial devices and similar drivers that require the TTY
-> layer.  Ideally, these dependencies would occur on a common intermediate
-> symbol such as SERIO, but most drivers "select SERIO" rather than
-> "depends on SERIO", and "select" does not respect dependencies.
-> 
-> bloat-o-meter output filtered to not show removed entries with awk
-> '$3 != "-"' as the list was very long.
-> 
-> add/remove: 0/385 grow/shrink: 2/18 up/down: 14/-54016 (-54002)
-> function                                     old     new   delta
-> chr_dev_init                                 193     205     +12
-> selinux_setprocattr                         1167    1169      +2
-> static.__warned                              557     556      -1
-> start_kernel                                 840     835      -5
-> proc_root_init                               167     162      -5
-> unregister_console                           165     157      -8
-> sys_setsid                                   213     205      -8
-> sys_vhangup                                   37      21     -16
-> daemonize                                    689     673     -16
-> t_stop                                        72      54     -18
-> t_next                                       129     108     -21
-> static.do_acct_process                       838     806     -32
-> release_task                                1157    1125     -32
-> do_exit                                     2325    2288     -37
-> t_start                                      269     221     -48
-> static.__func__                            18289   18219     -70
-> do_task_stat                                2962    2892     -70
-> flush_unauthorized_files                     740     614    -126
-> static._rs                                  1440    1280    -160
-> static.__key                                8560    8384    -176
-> 
-> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
+> Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 
-This is a nice idea, but I feel it's a bit too late in the 3.8 merge
-window cycle for me to add this to linux-next at this point in time.
+Arto's S-o-b really should be first and yours last since you're (Terje)
+the one who touched the patches last.
 
-Can you rediff this once 3.8-rc1 is out and send it to me then?  That
-way we can get a lot more testing in linux-next in order to make sure
-it's ready for 3.9?
+> diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
 
-thanks,
+I think none of the changes the board-dt-tegra*.c should be made.
 
-greg k-h
+AUXDATA is a temporary measure to keep things working during the
+transition to device tree. We want to remove entries from the AUXDATA
+tables rather than add them. The only thing that's stopping us from
+doing so right now is the lack of DT-based clock lookups, which hence
+require devices to have a specific name.
+
+> +static struct nvhost_device_data tegra_host1x_info = {
+> +	.clocks = { {"host1x", UINT_MAX} },
+
+> +static struct nvhost_device_data tegra_gr2d_info = {
+> +	.clocks		= { {"gr2d", UINT_MAX, true}, {"epp", UINT_MAX, true} },
+
+Clock names shouldn't be passed in platform data; instead, clk_get()
+should be passed the device object and device-relative (i.e. not global)
+clock name. I expect if the driver is fixed to make this change, the
+changes to tegra*_clocks_data.c won't be needed either.
+
