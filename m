@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab2KZXBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:01:07 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:56690 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932116Ab2KZXBF (ORCPT
+	id S932562Ab2KZXFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:05:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38818 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab2KZXFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:01:05 -0500
-From: Dmitry Torokhov <dtor@vmware.com>
-To: pv-drivers@vmware.com
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
-Date: Mon, 26 Nov 2012 15:01:04 -0800
-Message-ID: <1975718.7UL0qBEfzR@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121126223754.GA28681@kroah.com>
-References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com> <20121126223754.GA28681@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 26 Nov 2012 18:05:39 -0500
+Date: Tue, 27 Nov 2012 10:05:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+Message-Id: <20121127100530.20174586b57ef55da58608d4@canb.auug.org.au>
+In-Reply-To: <1353940512.22512.38.camel@fedora>
+References: <20121127004948.6e7973525843529de827ed0e@canb.auug.org.au>
+	<1353940512.22512.38.camel@fedora>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Nov_2012_10_05_30_+1100_45rKkn55DL6eKuGt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 26, 2012 02:37:54 PM Greg KH wrote:
-> On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
-> > * * *
-> > This series of VMCI linux upstreaming patches include latest udpate from
-> > VMware.
-> > 
-> > Summary of changes:
-> > 	- Sparse clean.
-> > 	- Checkpatch clean with one exception, a "complex macro" in
-> > 	
-> > 	  which we can't add parentheses.
-> > 	
-> > 	- Remove all runtime assertions.
-> > 	- Fix device name, so that existing user clients work.
-> > 	- Fix VMCI handle lookup.
-> 
-> Given that you failed to answer the questions I asked the last time you
-> posted this series, and you did not make any of the changes I asked for,
-> I can't accept this (nor should you expect me to.)
-> 
-> And people wonder why reviewers get so grumpy...
-> 
-> My trees are now closed for the 3.8 merge window, so feel free to try
-> again after 3.8-rc1 is out, and you have answered, and addressed, the
-> questions and comments I made.
+--Signature=_Tue__27_Nov_2012_10_05_30_+1100_45rKkn55DL6eKuGt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Greg, there were 3 specific complaints from you:
+Hi Steve,
 
-1. "Given that this is a static function, there's no need for these
-"asserts", right?  Please send a follow-on patch removing all BUG_ON()
-calls from these files, it's not acceptable to crash a user's box from
-a driver that is handling parameters you are feeding it."
+On Mon, 26 Nov 2012 09:35:12 -0500 Steven Rostedt <srostedt@redhat.com> wro=
+te:
+>
+> On Tue, 2012-11-27 at 00:49 +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> >=20
+> > In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
+> > drivers/staging/sb105x/sb_pci_mp.h:22:25: fatal error: asm/segment.h: N=
+o such file or directory
+>=20
+> I haven't tested this with any other arch than x86. That said, what
+> about this instead:
+>=20
+> > Caused by commit 68a81291ff66 ("staging: Add SystemBase Multi-2/PCI
+> > driver").
+> >=20
+> > I have disabled this driver with this patch:
+> >=20
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Tue, 27 Nov 2012 00:45:07 +1100
+> > Subject: [PATCH] disable the SB105X driver
+> >=20
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  drivers/staging/sb105x/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> >=20
+> > diff --git a/drivers/staging/sb105x/Kconfig b/drivers/staging/sb105x/Kc=
+onfig
+> > index ac87c5e..c957e32 100644
+> > --- a/drivers/staging/sb105x/Kconfig
+> > +++ b/drivers/staging/sb105x/Kconfig
+> > @@ -2,6 +2,7 @@ config SB105X
+> >  	tristate "SystemBase PCI Multiport UART"
+> >  	select SERIAL_CORE
+> >  	depends on PCI
+> > +	depends on BROKEN
+>=20
+> 	depends on X86
+>=20
+> You can add my SOB if you want. I don't care either way.
 
-2. "You obviously didn't run checkpatch on this file"
+Please just send a (tested) patch to Greg.
 
-3. "This line causes sparse to complain.  The odds that userspace knows
-what gcc is using for "bool" is pretty low."
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Given the fact that the series addresses all 3 I fail to understand why
-you would be grumpy.
+--Signature=_Tue__27_Nov_2012_10_05_30_+1100_45rKkn55DL6eKuGt
+Content-Type: application/pgp-signature
 
-Anyway, since there vsock has not been reviewed yet we are OK with
-postponing this patch series till 3.9.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
-Dmitry
+iQIcBAEBCAAGBQJQs/W6AAoJEECxmPOUX5FEET8QAIKyUaS8WV4/1/Kw0LJHLFEZ
+PLKbq7AsXqOW7takY6NteGrZo5hNGlPhnHpdZEYehrj9fg6sT6NbW9OjFlfzO0ak
+NlbpLp8cZZcZOwiR+egVwL9T3m7kvfSxoTklLsHzz3ne+utF6ocyP8vySXd5EMXv
+9gJLpBeV/kL1JKII+JHvbAnlXlR8tz+lT2i1DkhZKCtDiTXtxvUa6vR+f9tebPyc
+4GtpiXexcnkTpzwx4ccfHfKL2f6MrDT/Y8ioGGK82/SzAXw73VMveu41mOf+uzia
+ti6vf++ULgFhWKaY5hjTz1O6v6McO7weI0jKh/aOI8SN4Aur+4/efEq4WKWeLtL9
+dkAkJ/Ow0p70p9bRML4B1aVBCxAsmpXxLUqsFCqIu7z1qxILn0ZE+qCxy+HRxc1y
+sGr9lw4Jw1U9KJIRkWD+H0A+Lh4fVMAj+rPopbGjnKOB9JIq0LHqOCSoBVWzMPKA
+IM7h27cOHl6kDvPn+JlorgDsWwLHBOTE6v037znnUVjgHahsu3TXQwKrwnecvipf
+KTxNJX/ktfj+TvpRLE2K7tvm22RQwyXMtiCXBoix2NMRcnxocdVrSZPxYrF2fy2e
+56A/BVIquvZcmy75tMJwdLmwEuG0D7zGur8IuTMQ7TUoroU45RIhky1bWqIg5Jsm
+mGZ5ZAkT/uPt7wgWkPud
+=6cpF
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__27_Nov_2012_10_05_30_+1100_45rKkn55DL6eKuGt--
