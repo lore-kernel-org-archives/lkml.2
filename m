@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab2KZSyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:54:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57037 "EHLO mail.kernel.org"
+	id S1754729Ab2KZSzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:55:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57121 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab2KZSyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:54:02 -0500
-Date: Mon, 26 Nov 2012 10:53:59 -0800
+	id S1751345Ab2KZSzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:55:08 -0500
+Date: Mon, 26 Nov 2012 10:55:05 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Andrew Worsley <amworsley@gmail.com>,
-        Michal Ludvig <mludvig@logix.net.nz>
-Subject: Re: [ 37/38] PCI : ability to relocate assigned pci-resources
-Message-ID: <20121126185359.GD21012@kroah.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent in
+ D3cold
+Message-ID: <20121126185505.GE21012@kroah.com>
 References: <20121122003904.262382971@linuxfoundation.org>
- <20121122003908.400731657@linuxfoundation.org>
- <20121123132919.GA3759@herton-Z68MA-D2H-B3>
- <20121124014141.GD2752@ram.oc3035372033.ibm.com>
+ <20121122003904.516735571@linuxfoundation.org>
+ <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+ <1353640177.28789.21.camel@yhuang-dev>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121124014141.GD2752@ram.oc3035372033.ibm.com>
+In-Reply-To: <1353640177.28789.21.camel@yhuang-dev>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 24, 2012 at 09:41:41AM +0800, Ram Pai wrote:
-> On Fri, Nov 23, 2012 at 11:29:20AM -0200, Herton Ronaldo Krzesinski wrote:
-> > On Wed, Nov 21, 2012 at 04:40:20PM -0800, Greg Kroah-Hartman wrote:
+On Fri, Nov 23, 2012 at 11:09:37AM +0800, Huang Ying wrote:
+> On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
+> > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
 > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
 > > > 
 > > > ------------------
 > > > 
-> > > From: Ram Pai <linuxram@us.ibm.com>
+> > > From: Huang Ying <ying.huang@intel.com>
 > > > 
-> > > commit 2bbc6942273b5b3097bd265d82227bdd84b351b2 upstream.
+> > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
 > > > 
-> > > Currently pci-bridges are allocated enough resources to satisfy their immediate
-> > > requirements.  Any additional resource-requests fail if additional free space,
-> > > contiguous to the one already allocated, is not available. This behavior is not
-> > > reasonable since sufficient contiguous resources, that can satisfy the request,
-> > > are available at a different location.
+> > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > device will trigger deadlock as follow:
 > > > 
-> > > This patch provides the ability to expand and relocate a allocated resource.
+> > > - driver_unbind
+> > >   - device_release_driver
+> > >     - device_lock(dev)				<--- previous lock here
+> > >     - __device_release_driver
+> > >       - pm_runtime_get_sync
+> > >         ...
+> > >           - rpm_resume(dev)
+> > >             - rpm_resume(dev->parent)
+> > >               ...
+> > >                 - pci_pm_runtime_resume
+> > >                   ...
+> > >                   - pci_set_power_state
+> > >                     - __pci_start_power_transition
+> > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > >                         - pci_walk_bus
+> > >                           - device_lock(dev)	<--- deadlock here
 > > > 
-> > > 	v2: Changelog: Fixed size calculation in pci_reassign_resource()
-> > > 	v3: Changelog : Split this patch. The resource.c changes are already
-> > > 			upstream. All the pci driver changes are in here.
 > > > 
-> > > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> > > Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > > Cc: Andrew Worsley <amworsley@gmail.com>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+> > > Device_lock in pci_walk_bus is introduced in commit:
+> > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > said device_lock is added to pci_walk_bus because:
+> > > 
+> > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > >   device, as the cb might call driver's callback function.
+> > > 
+> > > So I fixed the deadlock as follows:
+> > > 
+> > > - remove device_lock from pci_walk_bus
+> > > - add device_lock into callback if callback will call driver's callback
+> > > 
+> > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > device lock.
+> > [...]
 > > 
-> > This change is said to bring a regression:
-> > http://comments.gmane.org/gmane.linux.kernel.pci/11666
-> > 
-> > fixed by:
-> > commit 47ea91b4052d9e94b9dca5d7a3d947fbebd07ba9
-> > Resource: fix wrong resource window calculation
-> > 
-> > Which wasn't applied with this series for 3.0.
+> > What about eeh_report_error() in
+> > arch/powerpc/platforms/pseries/eeh_driver.c?
 > 
-> You are right.  We need to apply that fix along with this patch.
+> En...  Because pci_walk_bus() invocation is removed in 3.7, so this
+> patch is only valid for 3.7.  We need another version for 3.6.
+> 
+> > Also, is the deadlock even possible before this change in Linux 3.6?
+> > 
+> > commit 448bd857d48e69b33ef323739dc6d8ca20d4cda7
+> > Author: Huang Ying <ying.huang@intel.com>
+> > Date:   Sat Jun 23 10:23:51 2012 +0800
+> > 
+> >     PCI/PM: add PCIe runtime D3cold support
+> 
+> Before this, there will be no deadlock.  So we do not need fixes before
+> Linux 3.6.
 
-Thanks, now added to the tree.
+So the first patch mentioned here should not be included in the 3.0 and
+3.4 stable kernel releases?
+
+thanks,
 
 greg k-h
