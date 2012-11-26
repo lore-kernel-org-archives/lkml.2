@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934300Ab2KZRQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:16:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48349 "EHLO
+	id S934336Ab2KZRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:16:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48342 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934277Ab2KZRQe (ORCPT
+	with ESMTP id S934272Ab2KZRQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Nov 2012 12:16:34 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Elder <elder@inktank.com>,
+Cc: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans.rullgard@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 267/270] libceph: drop declaration of ceph_con_get()
-Date: Mon, 26 Nov 2012 14:59:17 -0200
-Message-Id: <1353949160-26803-268-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 266/270] ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and CONFIG_VFPv3 set
+Date: Mon, 26 Nov 2012 14:59:16 -0200
+Message-Id: <1353949160-26803-267-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,35 +33,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Paul Walmsley <paul@pwsan.com>
 
-commit 261030215d970c62f799e6e508e3c68fc7ec2aa9 upstream.
+commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
 
-For some reason the declaration of ceph_con_get() and
-ceph_con_put() did not get deleted in this commit:
-    d59315ca libceph: drop ceph_con_get/put helpers and nref member
+After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
+saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
+started crashing during boot with omap2plus_defconfig:
 
-Clean that up.
+[    3.875122] mmcblk0: mmc0:e624 SD04G 3.69 GiB
+[    3.915954]  mmcblk0: p1
+[    4.086639] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
+[    4.093719] Modules linked in:
+[    4.096954] CPU: 0    Not tainted  (3.6.0-02232-g759e00b #570)
+[    4.103149] PC is at vfp_reload_hw+0x1c/0x44
+[    4.107666] LR is at __und_usr_fault_32+0x0/0x8
 
-Signed-off-by: Alex Elder <elder@inktank.com>
+It turns out that the context save/restore fix unmasked a latent bug
+in commit 5aaf254409f8d58229107b59507a8235b715a960 ("ARM: 6203/1: Make
+VFPv3 usable on ARMv6").  When CONFIG_VFPv3 is set, but the kernel is
+booted on a pre-VFPv3 core, the code attempts to save and restore the
+d16-d31 VFP registers.  These are only present on non-D16 VFPv3+, so
+this results in an undefined instruction exception.  The code didn't
+crash before commit 846a136 because the save and restore code was
+only touching d0-d15, present on all VFP.
+
+Fix by implementing a request from Russell King to add a new HWCAP
+flag that affirmatively indicates the presence of the d16-d31
+registers:
+
+   http://marc.info/?l=linux-arm-kernel&m=135013547905283&w=2
+
+and some feedback from Måns to clarify the name of the HWCAP flag.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Måns Rullgård <mans.rullgard@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[ herton: no uapi directory on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- include/linux/ceph/messenger.h |    2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/include/asm/hwcap.h     |    3 ++-
+ arch/arm/include/asm/vfpmacros.h |   12 ++++++------
+ arch/arm/vfp/vfpmodule.c         |    9 ++++++---
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-index 9844241..189ae06 100644
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -215,8 +215,6 @@ extern void ceph_msg_revoke(struct ceph_msg *msg);
- extern void ceph_msg_revoke_incoming(struct ceph_msg *msg);
+diff --git a/arch/arm/include/asm/hwcap.h b/arch/arm/include/asm/hwcap.h
+index 9176261..a2fe893 100644
+--- a/arch/arm/include/asm/hwcap.h
++++ b/arch/arm/include/asm/hwcap.h
+@@ -18,11 +18,12 @@
+ #define HWCAP_THUMBEE	(1 << 11)
+ #define HWCAP_NEON	(1 << 12)
+ #define HWCAP_VFPv3	(1 << 13)
+-#define HWCAP_VFPv3D16	(1 << 14)
++#define HWCAP_VFPv3D16	(1 << 14)	/* also set for VFPv4-D16 */
+ #define HWCAP_TLS	(1 << 15)
+ #define HWCAP_VFPv4	(1 << 16)
+ #define HWCAP_IDIVA	(1 << 17)
+ #define HWCAP_IDIVT	(1 << 18)
++#define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
+ #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
  
- extern void ceph_con_keepalive(struct ceph_connection *con);
--extern struct ceph_connection *ceph_con_get(struct ceph_connection *con);
--extern void ceph_con_put(struct ceph_connection *con);
+ #if defined(__KERNEL__)
+diff --git a/arch/arm/include/asm/vfpmacros.h b/arch/arm/include/asm/vfpmacros.h
+index bf53047..c49c8f7 100644
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -27,9 +27,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	ldcnel	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+@@ -51,9 +51,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	stcnel	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index c834b32..3b44e0d 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -701,11 +701,14 @@ static int __init vfp_init(void)
+ 			elf_hwcap |= HWCAP_VFPv3;
  
- extern struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags,
- 				     bool can_fail);
+ 			/*
+-			 * Check for VFPv3 D16. CPUs in this configuration
+-			 * only have 16 x 64bit registers.
++			 * Check for VFPv3 D16 and VFPv4 D16.  CPUs in
++			 * this configuration only have 16 x 64bit
++			 * registers.
+ 			 */
+ 			if (((fmrx(MVFR0) & MVFR0_A_SIMD_MASK)) == 1)
+-				elf_hwcap |= HWCAP_VFPv3D16;
++				elf_hwcap |= HWCAP_VFPv3D16; /* also v4-D16 */
++			else
++				elf_hwcap |= HWCAP_VFPD32;
+ 		}
+ #endif
+ 		/*
 -- 
 1.7.9.5
 
