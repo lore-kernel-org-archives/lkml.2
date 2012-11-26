@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2KZPyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:54:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753650Ab2KZPyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:54:39 -0500
-Date: Mon, 26 Nov 2012 17:57:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org, David Miller <davem@davemloft.net>
-Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] vhost: fix length for cross region descriptor
-Message-ID: <20121126155727.GA21716@redhat.com>
+	id S1754017Ab2KZP6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:58:16 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57499 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2KZP6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:58:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <20121122151028.GA1834@t510.redhat.com>
+References: <cover.1352656285.git.aquini@redhat.com> <6602296b38c073a5c6faa13ddbc74ceb1eceb2dd.1352656285.git.aquini@redhat.com>
+ <50A7D0FA.2080709@gmail.com> <20121117215434.GA23879@x61.redhat.com>
+ <CA+1xoqfbxL-mL3XRDXxnuv0R6b9w6qxU7t+8U3FwS2eK5Sf0OA@mail.gmail.com>
+ <20121120141438.GA21672@x61.redhat.com> <50AC2BCC.6050507@gmail.com>
+ <20121122000114.GB1815@t510.redhat.com> <50AE3463.1040107@gmail.com> <20121122151028.GA1834@t510.redhat.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 26 Nov 2012 10:57:54 -0500
+Message-ID: <CA+1xoqe_-bN929UF79w3hB-8+jQhmfbr0v8Xt9yEWE7QBEsV2w@mail.gmail.com>
+Subject: Re: [PATCH v12 4/7] mm: introduce compaction and migration for
+ ballooned pages
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a single descriptor crosses a region, the
-second chunk length should be decremented
-by size translated so far, instead it includes
-the full descriptor length.
+On Thu, Nov 22, 2012 at 10:10 AM, Rafael Aquini <aquini@redhat.com> wrote:
+> On Thu, Nov 22, 2012 at 09:19:15AM -0500, Sasha Levin wrote:
+>> And managed to reproduce it only once through last night, here is the dump I got
+>> before the oops:
+>>
+>> [ 2760.356820] page:ffffea0000d00e00 count:1 mapcount:-2147287036 mapping:00000000000004f4 index:0xd00e00000003
+>> [ 2760.362354] page flags: 0x350000000001800(private|private_2)
+>>
+>
+> Thanks alot for following up this one Sasha.
+>
+>
+> We're stumbling across a private page -- seems something in your setup is doing
+> this particular usage, and that's probably why I'm not seeing the same here.
+>
+> Regardless being a particular case or not, we shouldn't be poking at that
+> private page, so I figured the tests I'm doing at balloon_page_movable() are
+> incomplete and dumb.
+>
+> Perhaps, a better way to proceed here would be assuring the NR_PAGEFLAGS
+> rightmost bits from page->flags are all cleared, as this is the state a page
+> coming from buddy to the balloon list will be, and this is the state the balloon
+> page flags will be kept as long as it lives as such (we don't play with any flag
+> at balloon level).
+>
+>
+> Here goes what I'll propose after you confirm it doesn't trigger your crash
+> anymore, as it simplifies the code and reduces the testing battery @
+> balloon_page_movable() -- ballooned pages have no flags set, 1 refcount and 0
+> mapcount, always.
+>
+>
+> Could you give this a try?
+>
+> Thank you!
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/vhost.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ran it for a while, no more BUGs, yay :)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index ef8f598..5a3d0f1 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1049,7 +1049,7 @@ static int translate_desc(struct vhost_dev *dev, u64 addr, u32 len,
- 		}
- 		_iov = iov + ret;
- 		size = reg->memory_size - addr + reg->guest_phys_addr;
--		_iov->iov_len = min((u64)len, size);
-+		_iov->iov_len = min((u64)len - s, size);
- 		_iov->iov_base = (void __user *)(unsigned long)
- 			(reg->userspace_addr + addr - reg->guest_phys_addr);
- 		s += size;
--- 
-MST
+
+Thanks,
+Sasha
