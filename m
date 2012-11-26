@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2KZSsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:48:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34927 "EHLO mx2.suse.de"
+	id S1754531Ab2KZSsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:48:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab2KZSsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:48:12 -0500
+	id S1753991Ab2KZSsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:48:14 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org,
         Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
         Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
         Li Zefan <lizefan@huawei.com>
-Subject: [patch v2 2/6] memcg: keep prev's css alive for the whole mem_cgroup_iter
-Date: Mon, 26 Nov 2012 19:47:47 +0100
-Message-Id: <1353955671-14385-3-git-send-email-mhocko@suse.cz>
+Subject: [patch v2 6/6] cgroup: remove css_get_next
+Date: Mon, 26 Nov 2012 19:47:51 +0100
+Message-Id: <1353955671-14385-7-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
 References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
@@ -23,63 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css reference counting keeps the cgroup alive even though it has been
-already removed. mem_cgroup_iter relies on this fact and takes a
-reference to the returned group. The reference is then released on the
-next iteration or mem_cgroup_iter_break.
-mem_cgroup_iter currently releases the reference right after it gets the
-last css_id.
-This is correct because neither prev's memcg nor cgroup are accessed
-after then. This will change in the next patch so we need to hold the
-group alive a bit longer so let's move the css_put at the end of the
-function.
+Now that we have generic and well ordered cgroup tree walkers there is
+no need to keep css_get_next in the place.
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ include/linux/cgroup.h |    7 -------
+ kernel/cgroup.c        |   49 ------------------------------------------------
+ 2 files changed, 56 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0e52ec9..1f5528d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1077,12 +1077,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 	if (prev && !reclaim)
- 		id = css_id(&prev->css);
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 329eb46..ba46041 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -676,13 +676,6 @@ void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css);
  
--	if (prev && prev != root)
--		css_put(&prev->css);
+ struct cgroup_subsys_state *css_lookup(struct cgroup_subsys *ss, int id);
+ 
+-/*
+- * Get a cgroup whose id is greater than or equal to id under tree of root.
+- * Returning a cgroup_subsys_state or NULL.
+- */
+-struct cgroup_subsys_state *css_get_next(struct cgroup_subsys *ss, int id,
+-		struct cgroup_subsys_state *root, int *foundid);
 -
- 	if (!root->use_hierarchy && root != root_mem_cgroup) {
- 		if (prev)
--			return NULL;
-+			goto out_css_put;
- 		return root;
- 	}
- 
-@@ -1100,7 +1097,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			spin_lock(&iter->iter_lock);
- 			if (prev && reclaim->generation != iter->generation) {
- 				spin_unlock(&iter->iter_lock);
--				return NULL;
-+				goto out_css_put;
- 			}
- 			id = iter->position;
- 		}
-@@ -1124,8 +1121,12 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		}
- 
- 		if (prev && !css)
--			return NULL;
-+			goto out_css_put;
- 	}
-+out_css_put:
-+	if (prev && prev != root)
-+		css_put(&prev->css);
-+
- 	return memcg;
+ /* Returns true if root is ancestor of cg */
+ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+ 		     const struct cgroup_subsys_state *root);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d51958a..4d874b2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5230,55 +5230,6 @@ struct cgroup_subsys_state *css_lookup(struct cgroup_subsys *ss, int id)
  }
+ EXPORT_SYMBOL_GPL(css_lookup);
  
+-/**
+- * css_get_next - lookup next cgroup under specified hierarchy.
+- * @ss: pointer to subsystem
+- * @id: current position of iteration.
+- * @root: pointer to css. search tree under this.
+- * @foundid: position of found object.
+- *
+- * Search next css under the specified hierarchy of rootid. Calling under
+- * rcu_read_lock() is necessary. Returns NULL if it reaches the end.
+- */
+-struct cgroup_subsys_state *
+-css_get_next(struct cgroup_subsys *ss, int id,
+-	     struct cgroup_subsys_state *root, int *foundid)
+-{
+-	struct cgroup_subsys_state *ret = NULL;
+-	struct css_id *tmp;
+-	int tmpid;
+-	int rootid = css_id(root);
+-	int depth = css_depth(root);
+-
+-	if (!rootid)
+-		return NULL;
+-
+-	BUG_ON(!ss->use_id);
+-	WARN_ON_ONCE(!rcu_read_lock_held());
+-
+-	/* fill start point for scan */
+-	tmpid = id;
+-	while (1) {
+-		/*
+-		 * scan next entry from bitmap(tree), tmpid is updated after
+-		 * idr_get_next().
+-		 */
+-		tmp = idr_get_next(&ss->idr, &tmpid);
+-		if (!tmp)
+-			break;
+-		if (tmp->depth >= depth && tmp->stack[depth] == rootid) {
+-			ret = rcu_dereference(tmp->css);
+-			if (ret) {
+-				*foundid = tmpid;
+-				break;
+-			}
+-		}
+-		/* continue to scan from next id */
+-		tmpid = tmpid + 1;
+-	}
+-	return ret;
+-}
+-
+ /*
+  * get corresponding css from file open on cgroupfs directory
+  */
 -- 
 1.7.10.4
 
