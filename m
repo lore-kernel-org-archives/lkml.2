@@ -1,119 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab2KZNIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:08:41 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:51431 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab2KZNIj (ORCPT
+	id S1754220Ab2KZNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:13:26 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53596 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab2KZNNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:08:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120823141422.444396696@google.com>
-References: <20120823141422.444396696@google.com>
-Date: Mon, 26 Nov 2012 18:38:38 +0530
-Message-ID: <CABb+yY2Cr=mvVW=m12uOaLTydE8j3iB2m0wrVt0gOrO3tz+mZA@mail.gmail.com>
-Subject: Re: [patch 00/16] sched: per-entity load-tracking
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: pjt@google.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Nov 2012 08:13:24 -0500
+Date: Tue, 27 Nov 2012 00:13:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: manual merge of the akpm tree with the userns tree
+Message-Id: <20121127001320.12439806f19c9b6ccce4e895@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Nov_2012_00_13_20_+1100_e0fO5iWDlAi.gt=C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+--Signature=_Tue__27_Nov_2012_00_13_20_+1100_e0fO5iWDlAi.gt=C
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 23, 2012 at 7:44 PM,  <pjt@google.com> wrote:
-> Hi all,
->
-> Please find attached the latest version for CFS load-tracking.
->
-> It implements load-tracking on a per-sched_entity (currently SCHED_NORMAL, but
-> could be extended to RT as well) basis. This results in a bottom-up
-> load-computation in which entities contribute to their parents' load, as
-> opposed to the current top-down where the parent averages its children.  In
-> particular this allows us to correctly migrate load with their accompanying
-> entities and provides the necessary inputs for intelligent load-balancing and
-> power-management.
->
-> We've been running this internally for some time now and modulo any gremlins
-> from rebasing it, I think things have been shaken out and we're touching
-> mergeable state.
->
-> Special thanks to Namhyung Kim and Peter Zijlstra for comments on the last
-> round series.
->
-> For more background and prior discussion please review the previous posting:
-> https://lkml.org/lkml/2012/6/27/644
->
-The patchset introduces 64-bit atomic ops, which would need
-init_atomic64_lock() already called, but that is an initcall made too
-late. Should we consider calling init_atomic64_lock() sooner in
-start_kernel()?
+Hi Andrew,
 
-As an example of breakage, I see the following dump with
-CONFIG_DEBUG_SPINLOCK on an OMAP based Pandaboard.
-   ........
-    Calibrating delay loop...
-    BUG: spinlock bad magic on CPU#0, swapper/0/0
-     lock: atomic64_lock+0x0/0x400, .magic: 00000000, .owner:
-<none>/-1, .owner_cpu: 0
-    [<c001f734>] (unwind_backtrace+0x0/0x13c) from [<c06a8f4c>]
-(dump_stack+0x20/0x24)
-    [<c06a8f4c>] (dump_stack+0x20/0x24) from [<c0359118>] (spin_dump+0x84/0x98)
-    [<c0359118>] (spin_dump+0x84/0x98) from [<c0359158>] (spin_bug+0x2c/0x30)
-    [<c0359158>] (spin_bug+0x2c/0x30) from [<c03593c8>]
-(do_raw_spin_lock+0x1c0/0x200)
-    [<c03593c8>] (do_raw_spin_lock+0x1c0/0x200) from [<c06acfbc>]
-(_raw_spin_lock_irqsave+0x64/0x70)
-    [<c06acfbc>] (_raw_spin_lock_irqsave+0x64/0x70) from [<c03675f4>]
-(atomic64_read+0x30/0x54)
-    [<c03675f4>] (atomic64_read+0x30/0x54) from [<c008f9dc>]
-(update_cfs_rq_blocked_load+0x64/0x140)
-    [<c008f9dc>] (update_cfs_rq_blocked_load+0x64/0x140) from
-[<c0093c88>] (task_tick_fair+0x2a4/0x798)
-    [<c0093c88>] (task_tick_fair+0x2a4/0x798) from [<c008b7e8>]
-(scheduler_tick+0xd4/0x10c)
-    [<c008b7e8>] (scheduler_tick+0xd4/0x10c) from [<c00644d4>]
-(update_process_times+0x6c/0x7c)
-    [<c00644d4>] (update_process_times+0x6c/0x7c) from [<c00a67a0>]
-(tick_periodic+0x58/0xd4)
-    [<c00a67a0>] (tick_periodic+0x58/0xd4) from [<c00a68dc>]
-(tick_handle_periodic+0x28/0x9c)
-    [<c00a68dc>] (tick_handle_periodic+0x28/0x9c) from [<c002e780>]
-(omap2_gp_timer_interrupt+0x34/0x44)
-    [<c002e780>] (omap2_gp_timer_interrupt+0x34/0x44) from
-[<c00d004c>] (handle_irq_event_percpu+0x78/0x29c)
-    [<c00d004c>] (handle_irq_event_percpu+0x78/0x29c) from
-[<c00d02bc>] (handle_irq_event+0x4c/0x6c)
-    [<c00d02bc>] (handle_irq_event+0x4c/0x6c) from [<c00d3490>]
-(handle_fasteoi_irq+0xcc/0x1a4)
-    [<c00d3490>] (handle_fasteoi_irq+0xcc/0x1a4) from [<c00cf90c>]
-(generic_handle_irq+0x30/0x40)
-    [<c00cf90c>] (generic_handle_irq+0x30/0x40) from [<c0016480>]
-(handle_IRQ+0x5c/0xbc)
-    [<c0016480>] (handle_IRQ+0x5c/0xbc) from [<c0008538>]
-(gic_handle_irq+0x38/0x6c)
-    [<c0008538>] (gic_handle_irq+0x38/0x6c) from [<c06add24>]
-(__irq_svc+0x44/0x7c)
-    Exception stack(0xc0a0ff00 to 0xc0a0ff48)
-    ff00: 0000001a ffff6a00 c0a100c0 ffff6a00 00000000 00000000
-c0ac0280 00000000
-    ff20: c0ac030c 410fc0f0 c0a100c0 c0a0ffb4 c0a0fe80 c0a0ff48
-c0a100c0 c06a5110
-    ff40: 60000053 ffffffff
-    [<c06add24>] (__irq_svc+0x44/0x7c) from [<c06a5110>]
-(calibrate_delay+0x37c/0x528)
-    [<c06a5110>] (calibrate_delay+0x37c/0x528) from [<c09977f0>]
-(start_kernel+0x270/0x310)
-    [<c09977f0>] (start_kernel+0x270/0x310) from [<80008078>] (0x80008078)
-    1590.23 BogoMIPS (lpj=6213632)
-    .....
+Today's linux-next merge of the akpm tree got a conflict in kernel/fork.c
+between commit b2e0d98705e6 ("userns: Implement unshare of the user
+namespace") from the userns tree and commit  ("fork: unshare: remove dead
+cod") from the akpm tree.
 
+I fixed it up (I think - see below) and can carry the fix as necessary (no =
+action
+is required).
 
-Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc kernel/fork.c
+index 7e0dc2f,58088f9..0000000
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@@ -1867,20 -1858,8 +1865,17 @@@ SYSCALL_DEFINE1(unshare, unsigned long
+  		}
+ =20
+  		task_unlock(current);
+ +
+ +		if (new_cred) {
+ +			/* Install the new user namespace */
+ +			commit_creds(new_cred);
+ +			new_cred =3D NULL;
+ +		}
+  	}
+ =20
+- 	if (new_nsproxy)
+- 		put_nsproxy(new_nsproxy);
+-=20
+ +bad_unshare_cleanup_cred:
+ +	if (new_cred)
+ +		put_cred(new_cred);
+  bad_unshare_cleanup_fd:
+  	if (new_fd)
+  		put_files_struct(new_fd);
+
+--Signature=_Tue__27_Nov_2012_00_13_20_+1100_e0fO5iWDlAi.gt=C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQs2rwAAoJEECxmPOUX5FEZtMP/0Wc7Z6UFG66bnWhUiemnooO
+lX9CrfvWtyKmNchCTG+cXyIq5lkouj1ogrNX6OPnZOhX2SgjHSDkMJ0it9Sqq7BD
+Cly2Gvc7TjeMniVRlaag36OeY1KLMljFwfGvC9UKNVbnnokTn+jBcnwwyNThebFA
+wgv8MWZsOQPN2CcnzWAV1f3p78u4P7TVSc4dgnp9yHnITkkeVWBiEfzO5D4HoIIV
+3hB46ROlEURUQvw970Q9YFITtpmVmL3PIa1iYQpZfJXLmFtLwM/bngWRgIrfECOE
++G6K/kbt+F6wNkpsjje0muC9UW01UGmzbnvCWboa8ZsMRH5hFDUo8tYj751zah6E
+Oi2tL1AQonjzFH2032uRKOT2huY4xJleNLfLndcbFvfG9voak/NkaJHPk0t5iXy3
+0mDD8Qn0frQQzNyGaXDlcFke2Pu0AH9LFuXogG/icpkh2ZkEWtHJziJi1z4bv6na
+mOXdYezfnGOiha4TBhroskKS6ksHB6YVFOP+Oep1FFkR+2Y6+NKj2cCxGXmxqCvR
+lE9royR7M+q6CdwHk708aCk9bRSwdwg5Kabsco1/866Ctla42rU4fgKFPL0hmxDa
+IxCqnHR20abFYD+cU3OxaSt3MPp1tzcouwJg7H+f1Pe/KXUX01brKiBhfuFvqltW
+DvEsYlAyrdJ3G0+YWcZ7
+=+8sj
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Nov_2012_00_13_20_+1100_e0fO5iWDlAi.gt=C--
