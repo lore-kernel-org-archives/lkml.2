@@ -1,138 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2KZSde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:33:34 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35086 "EHLO zene.cmpxchg.org"
+	id S1751439Ab2KZSfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:35:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:55947 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab2KZSdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:33:32 -0500
-Date: Mon, 26 Nov 2012 13:32:42 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: George Spelvin <linux@horizon.com>
-Cc: mgorman@suse.de, dave@linux.vnet.ibm.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
-Subject: Re: 3.7-rc6 soft lockup in kswapd0
-Message-ID: <20121126183242.GA9894@cmpxchg.org>
-References: <20121126100102.GH8218@suse.de>
- <20121126130504.29434.qmail@science.horizon.com>
+	id S1750813Ab2KZSfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:35:44 -0500
+Date: Mon, 26 Nov 2012 10:35:38 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vasiliy Tolstov <v.tolstov@selfip.ru>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sles 11 sp2 srp and multipath issues
+Message-ID: <20121126183538.GA18590@kroah.com>
+References: <CACaajQux0owmraiWmRbMLiO1oxFefP+PdiQKs1zgzrj7kcD=AA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121126130504.29434.qmail@science.horizon.com>
+In-Reply-To: <CACaajQux0owmraiWmRbMLiO1oxFefP+PdiQKs1zgzrj7kcD=AA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+On Mon, Nov 26, 2012 at 10:21:15PM +0400, Vasiliy Tolstov wrote:
+> Hello, Greg. Hello kernel team!
 
-On Mon, Nov 26, 2012 at 08:05:04AM -0500, George Spelvin wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > Ok, can you try this patch from Rik on top as well please? This is in
-> > addition to Dave Hansen's accounting fix.
-> > 
-> > ---8<---
-> > From: Rik van Riel <riel@redhat.com>
-> > Subject: mm,vmscan: only loop back if compaction would fail in all zones
-> 
-> Booted and running.  Judging from the patch, the expected result is
-> "stops hanging", as opposed to more informative diagnostics, so I'll
-> keep you posted.
-> 
-> Peraonally, I like to use "bool" for such flags where possible;
-> it helps document the intent of the variable better.
+Hey, 3rd time's a charm to get the email through :)
 
-Any chance you could test with this fix instead, in addition to Dave's
-accounting fix?  It's got bool and everything!
+> I'm system enginer at clodo.ru
+> (russian cloud hosting provider) we are use xen and sles11-sp2 for our
+> compute xen nodes.
+> Each virtual machine (domU) have disks that attached by Infiniband
+> SRP. On top of disk that attached by srp we use multipath (to do
+> failover)
+> Now we have issues like all commands that uses multipath hang while
+> one storage is rebooted.
+> After some discussion with maintainer of linux-rdma (Bart Van Assche)
+> and using it backported ib_srp with HA patches we can't solve deadlock
+> issues. Bart thinks that SLES team does not backport some core scsi
+> patches to their kernel (3.0.42) to prevent multipath deadlock
+> (currently is about 2.5 minutes) on failed target.
+> Is that possible to determine or getting help to solve this issue?
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
+As you are using SLES, please contact the SUSE for support for that
+kernel, as you are paying for it, and the community can't do anything to
+support their kernel, sorry.
 
-Kswapd does not in all places have the same criteria for when it
-considers a zone balanced.  This leads to zones being not reclaimed
-because they are considered just fine and other checks to loop over
-the zonelist again because they are considered unbalanced.
+If you use a kernel.org released kernel, then we can help you out.
 
-Add a function, zone_balanced(), that checks the watermark, and, for
-higher order allocations, if compaction has enough free memory.  Then
-use it uniformly for when kswapd needs to check if a zone is balanced.
+Best of luck,
 
-Reported-by: George Spelvin <linux@horizon.com>
-Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: stable@kernel.org [3.4+]
----
- mm/vmscan.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 48550c6..3b0aef4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
- 	} while (memcg);
- }
- 
-+static bool zone_balanced(struct zone *zone, int order,
-+			  unsigned long balance_gap, int classzone_idx)
-+{
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
-+				    balance_gap, classzone_idx, 0))
-+		return false;
-+
-+	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * pgdat_balanced is used when checking if a node is balanced for high-order
-  * allocations. Only zones that meet watermarks and are in a zone allowed
-@@ -2475,8 +2488,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 			continue;
- 		}
- 
--		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
--							i, 0))
-+		if (!zone_balanced(zone, order, 0, i))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				break;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), 0, 0)) {
-+			if (!zone_balanced(zone, order, 0, 0)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				testorder = 0;
- 
- 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
--				    !zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone) + balance_gap,
--					end_zone, 0)) {
-+			    !zone_balanced(zone, testorder,
-+					   balance_gap, end_zone)) {
- 				shrink_zone(zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				continue;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone), end_zone, 0)) {
-+			if (!zone_balanced(zone, testorder, 0, end_zone)) {
- 				all_zones_ok = 0;
- 				/*
- 				 * We are still under min water mark.  This
--- 
-1.7.11.7
-
+greg k-h
