@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2KZCzZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 21:55:25 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:34721 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753789Ab2KZCzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 21:55:23 -0500
-Date: Sun, 25 Nov 2012 21:55:20 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121126025520.GC22858@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, Dave Chinner <david@fromorbit.com>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <20121126002814.GM32450@dastard>
+	id S1753894Ab2KZDGB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 22:06:01 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:57228 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753649Ab2KZDGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 22:06:00 -0500
+Message-ID: <50B2DCED.5080509@marvell.com>
+Date: Mon, 26 Nov 2012 11:07:25 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126002814.GM32450@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "lrg@ti.com" <lrg@ti.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: max8925: fix compiler warnings
+References: <1353550266-21330-1-git-send-email-qingx@marvell.com> <20121123014135.GC4385@opensource.wolfsonmicro.com> <50AEDF00.7060709@marvell.com> <20121124175554.GF4719@opensource.wolfsonmicro.com>
+In-Reply-To: <20121124175554.GF4719@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Nov 2012 03:05:55.0275 (UTC) FILETIME=[F35CE1B0:01CDCB82]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 11:28:14AM +1100, Dave Chinner wrote:
-> fs: revert commit bbdd6808 to fallocate UAPI
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> Commit bbdd6808 ("fs: reserve fallocate flag codepoint") changes the
-> fallocate(2) syscall interface. The flag that is reserved by this
-> commit is for functionality that has previously been NAKed on the
-> -fsdevel mailing list, and so exists out-of-tree.
+On 11/25/2012 01:55 AM, Mark Brown wrote:
+> On Fri, Nov 23, 2012 at 10:27:12AM +0800, Qing Xu wrote:
+>
+>> But, in fact, it is not necessary to initialize regulator_idx.
+>>          for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+>>                  ri = &max8925_regulator_info[i];
+>>                  if (ri->vol_reg == res->start) {
+>> ****** if regulator_idx can not get a match "i" here, it will return
+>> -EINVAL in below code
+>>                          regulator_idx = i;
+>>                          break;
+>>                  }
+>>          }
+>>          if (i == ARRAY_SIZE(max8925_regulator_info)) {
+>>                  dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+>>                          (unsigned long long)res->start);
+>>                  return -EINVAL;
+>>          }
+>> How to solve such compiler warning?
+> Typically by reporting a compiler bug, though sometimes in the process
+> of doing that one finds out that there's some non-obvious way in which
+> the code can break.
 
-Hi Linus,
+It seems not like a compiler bug, its logic is:
 
-It doesn't change the interface or break anything; it just reserves a
-bit so that out-of-tree patches don't collide with future allocations.
-There are significant usages of this bit within Google and Tao Bao.
-It is true that there has been significant pushback about adding this
-functionality on linux-fsdevel; I find it personally frustrating that
-in effect, if enough people scream, they can veto an optional feature
-that might only be implemented by a single file system.
+for(...; i<xxx; ...) {
+     if (...) {
+         regulator_idx = i
+         break;
+     }
+}
 
-It's not like there is any shortage of flag bits, so what's the harm
-of reserving the bit?
+if (i == xxx)
+     return ERROR;
 
-						- Ted
+If regulator_idx can not get a matched "i" value, code will return ERROR.
+But it seems that compiler can not do so complex judge.
+And, I think the code is safe even if regulator_idx is not initialized, also
+because of the "return ERROR" judge.
+
+
+
