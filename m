@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2KZKYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:24:15 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51878 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2KZKYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:24:11 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: jg1.han@samsung.com
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH 1/5] backlight: Add GPIO-based backlight driver
-Date: Mon, 26 Nov 2012 11:25:14 +0100
-Message-ID: <3031418.vOKE5W8IWc@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <32552643.33371353923376540.JavaMail.weblogic@epv6ml07>
-References: <32552643.33371353923376540.JavaMail.weblogic@epv6ml07>
+	id S1754836Ab2KZKYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:24:20 -0500
+Received: from smtp1.goneo.de ([212.90.139.80]:45311 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754655Ab2KZKYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 05:24:16 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.697
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH for-next] mfd: viperboard: do version query in dma memory
+Date: Mon, 26 Nov 2012 11:24:53 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211261124.53774.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+From: Lars Poeschel <poeschel@lemonage.de>
 
-On Monday 26 November 2012 09:49:36 Jingoo Han wrote:
-> On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
-> > 
-> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> 
-> CC'ed Andrew Morton
-> 
-> It looks good. Also, I tested this patch with SMDK4210 board.
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
+The query for the viperboard version was done with memory buffer
+on the stack but usb transfers need dma capable memory buffer.
+This is fixed now.
 
-Thank you.
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ drivers/mfd/viperboard.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-Unless Richard wants to take 1/5 and 2/5, I plan to push them through either 
-the Renesas ARM or Renesas SH tree with the board code patches.
-
+diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+index 276122b..af2a670 100644
+--- a/drivers/mfd/viperboard.c
++++ b/drivers/mfd/viperboard.c
+@@ -56,7 +56,6 @@ static int vprbrd_probe(struct usb_interface *interface,
+ 
+ 	u16 version = 0;
+ 	int pipe, ret;
+-	unsigned char buf[1];
+ 
+ 	/* allocate memory for our device state and initialize it */
+ 	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
+@@ -76,17 +75,17 @@ static int vprbrd_probe(struct usb_interface *interface,
+ 	/* get version information, major first, minor then */
+ 	pipe = usb_rcvctrlpipe(vb->usb_dev, 0);
+ 	ret = usb_control_msg(vb->usb_dev, pipe, VPRBRD_USB_REQUEST_MAJOR,
+-		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, buf, 1,
++		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, vb->buf, 1,
+ 		VPRBRD_USB_TIMEOUT_MS);
+ 	if (ret == 1)
+-		version = buf[0];
++		version = vb->buf[0];
+ 
+ 	ret = usb_control_msg(vb->usb_dev, pipe, VPRBRD_USB_REQUEST_MINOR,
+-		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, buf, 1,
++		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, vb->buf, 1,
+ 		VPRBRD_USB_TIMEOUT_MS);
+ 	if (ret == 1) {
+ 		version <<= 8;
+-		version = version | buf[0];
++		version = version | vb->buf[0];
+ 	}
+ 
+ 	dev_info(&interface->dev,
 -- 
-Regards,
-
-Laurent Pinchart
+1.7.10.4
 
