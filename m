@@ -1,144 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2KZNnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:43:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753293Ab2KZNnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:43:17 -0500
-Date: Mon, 26 Nov 2012 14:43:02 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, riel@redhat.com
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-Message-ID: <20121126134301.GB9830@turtle.usersys.redhat.com>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120804.2595.20280.sendpatchset@codeblue>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126120804.2595.20280.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754256Ab2KZNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:44:09 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:45038 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2KZNoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 08:44:06 -0500
+Message-id: <50B37222.7010709@samsung.com>
+Date: Mon, 26 Nov 2012 14:44:02 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
+In-reply-to: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> yield_to returns -ESRCH, When source and target of yield_to
-> run queue length is one. When we see three successive failures of
-> yield_to we assume we are in potential undercommit case and abort
-> from PLE handler.
-> The assumption is backed by low probability of wrong decision
-> for even worst case scenarios such as average runqueue length
-> between 1 and 2.
-> 
-> note that we do not update last boosted vcpu in failure cases.
-> Thank Avi for raising question on aborting after first fail from yield_to.
-> 
-> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index be70035..053f494 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
->  {
->  	struct pid *pid;
->  	struct task_struct *task = NULL;
-> +	bool ret = false;
->  
->  	rcu_read_lock();
->  	pid = rcu_dereference(target->pid);
-> @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
->  		task = get_pid_task(target->pid, PIDTYPE_PID);
->  	rcu_read_unlock();
->  	if (!task)
-> -		return false;
-> +		return ret;
->  	if (task->flags & PF_VCPU) {
->  		put_task_struct(task);
-> -		return false;
-> -	}
-> -	if (yield_to(task, 1)) {
-> -		put_task_struct(task);
-> -		return true;
-> +		return ret;
->  	}
-> +	ret = yield_to(task, 1);
->  	put_task_struct(task);
-> -	return false;
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
->  
-> @@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
->  	return eligible;
->  }
->  #endif
-> +
->  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  {
->  	struct kvm *kvm = me->kvm;
->  	struct kvm_vcpu *vcpu;
->  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
->  	int yielded = 0;
-> +	int try = 3;
->  	int pass;
->  	int i;
->  
-> @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  	 * VCPU is holding the lock that we need and will release it.
->  	 * We approximate round-robin by starting at the last boosted VCPU.
->  	 */
-> -	for (pass = 0; pass < 2 && !yielded; pass++) {
-> +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
->  		kvm_for_each_vcpu(i, vcpu, kvm) {
->  			if (!pass && i <= last_boosted_vcpu) {
->  				i = last_boosted_vcpu;
-> @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  				continue;
->  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
->  				continue;
-> -			if (kvm_vcpu_yield_to(vcpu)) {
-> +
-> +			yielded = kvm_vcpu_yield_to(vcpu);
-> +			if (yielded > 0) {
->  				kvm->last_boosted_vcpu = i;
-> -				yielded = 1;
->  				break;
-> +			} else if (yielded < 0) {
-> +				try--;
-> +				if (!try)
-> +					break;
->  			}
->  		}
->  	}
-> 
+Hi Stephen,
 
-The check done in patch 1/2 is done before the double_rq_lock, so it's
-cheap. Now, this patch is to avoid doing too many get_pid_task calls. I
-wonder if it would make more sense to change the vcpu state from tracking
-the pid to tracking the task. If that was done, then I don't believe this
-patch is necessary.
+On 11/26/2012 3:31 AM, Stephen Rothwell wrote:
+> Hi Mauro,
+>
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> ERROR: "dma_common_get_sgtable" [drivers/media/v4l2-core/videobuf2-dma-contig.ko] undefined!
+>
+> Caused by commit 9ef2cbeb8192 ("[media] v4l: vb2-dma-contig: add support
+> for DMABUF exporting").  dma_common_get_sgtable() is called from the
+> inline dma_get_sgtable_attrs() and dma_get_sgtable_attrs() is "called
+> from" dma_get_sgtable().  dma_common_get_sgtable() is only defined if
+> ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY is set which depends on
+> CONFIG_HAVE_GENERIC_DMA_COHERENT being set which it isn't for this build.
+>
+> I have used the v4l-dvb tree form next-20121026 for today.
+>
+> Please try testing your tree with an x86_64 allmodconfig build.
 
-Rik,
-for 34bb10b79de7 was there a reason pid was used instead of task?
+Thanks for spotting this issue. It's my fault, code for 
+dma_common_get_sgtable()
+function was incorrectly placed under ifdefs in drivrs/base/dma-mapping.
 
-Drew
+I've posted a fix, please refer to the "dma-mapping: fix 
+dma_common_get_sgtable()
+conditional compilation" patch, which I will push to Linus asap.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
