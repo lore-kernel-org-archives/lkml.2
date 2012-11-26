@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2KZM2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:28:14 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53272 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab2KZM2N (ORCPT
+	id S1755384Ab2KZMcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:32:17 -0500
+Received: from fep23.mx.upcmail.net ([62.179.121.43]:33477 "EHLO
+	fep23.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab2KZMcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:28:13 -0500
+	Mon, 26 Nov 2012 07:32:15 -0500
+X-SourceIP: 178.83.228.246
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <50B36147.4070602@odi.ch>
+Date: Mon, 26 Nov 2012 13:32:07 +0100
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121126093528.GF8218@suse.de>
-References: <CAJd=RBCzydfXGBPLdkyvKaGZPK9H-pKa1-vk38dnZpeiZM8n3w@mail.gmail.com>
-	<20121124130419.GA8218@suse.de>
-	<CAJd=RBDm8K3UTzY+RHSLnGz+ckx0eEeK4C_NYAiXoiku_PHwog@mail.gmail.com>
-	<20121126093528.GF8218@suse.de>
-Date: Mon, 26 Nov 2012 20:28:12 +0800
-Message-ID: <CAJd=RBBJ6dP58iLowd439tkvT5EPba=N=8V7p1Gsy8JnrxSbdg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] balancenuma: add stats for huge pmd numa faults
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org
+Subject: [PATCH] HID: hid-input: battery quirk for Apple keyboard
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/12, Mel Gorman <mgorman@suse.de> wrote:
-> In my mind, the primary use of the counter is to estimate how many MB/sec
-> are being copied.
+Support battery capacity on another Apple wireless
+keyboard.
 
-The new counters are dropped as they help you little.
+NB: most likely all other APPLE_ALU_WIRELESS_*
+keyboards should be added as well.
 
-Hillf
+Cc: stable <at> kernel.org
+Signed-off-by: Ortwin Glück <odi@odi.ch>
+---
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 5301006..b2ae097 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -299,6 +299,9 @@ static enum power_supply_property 
+hidinput_battery_props[] = {
+
+  static const struct hid_device_id hid_battery_quirks[] = {
+         { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
++                              USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
++         HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
++       { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+                                USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
+           HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+         { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
