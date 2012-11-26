@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2KZCLW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 21:11:22 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50976 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab2KZCLV (ORCPT
+	id S1753870Ab2KZC3f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 21:29:35 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33164 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753686Ab2KZC3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 21:11:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121123133138.GA28058@gmail.com>
-References: <20121119162909.GL8218@suse.de>
-	<20121119191339.GA11701@gmail.com>
-	<20121119211804.GM8218@suse.de>
-	<20121119223604.GA13470@gmail.com>
-	<CA+55aFzQYH4qW_Cw3aHPT0bxsiC_Q_ggy4YtfvapiMG7bR=FsA@mail.gmail.com>
-	<20121120071704.GA14199@gmail.com>
-	<20121120152933.GA17996@gmail.com>
-	<20121120175647.GA23532@gmail.com>
-	<CAGjg+kHKaQLcrnEftB+2mjeCjGUBiisSOpNCe+_9-4LDho9LpA@mail.gmail.com>
-	<20121122012122.GA7938@gmail.com>
-	<20121123133138.GA28058@gmail.com>
-Date: Mon, 26 Nov 2012 10:11:20 +0800
-Message-ID: <CAGjg+kE8=cp=NyHrviyRWAZ=id6sZM1Gtb0N1_+SZ2TuBHE5cw@mail.gmail.com>
-Subject: Re: numa/core regressions fixed - more testers wanted
-From: Alex Shi <lkml.alex@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Alex Shi <alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 25 Nov 2012 21:29:33 -0500
+X-Sasl-enc: NaR1fkgrDx9rCVfLaqDJvQpw1JU46JBVWck0IUGd1C2l 1353896971
+Message-ID: <1353896968.2323.7.camel@perseus.themaw.net>
+Subject: Re: [PATCH 1/2] autofs4: allow autofs to work outside the initial
+ PID namespace
+From: Ian Kent <raven@themaw.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, autofs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sukadev@linux.vnet.ibm.com, serge.hallyn@canonical.com
+Date: Mon, 26 Nov 2012 10:29:28 +0800
+In-Reply-To: <1353885956.2323.4.camel@perseus.themaw.net>
+References: <87obipehbt.fsf@tucsk.pomaz.szeredi.hu>
+	 <1353642304.2309.25.camel@perseus.themaw.net>
+	 <1353672540.6699.18.camel@perseus.themaw.net>
+	 <874nkgwfw0.fsf@tucsk.pomaz.szeredi.hu>
+	 <1353723813.2348.48.camel@perseus.themaw.net>
+	 <1353724641.2348.56.camel@perseus.themaw.net> <878v9rmcgc.fsf@xmission.com>
+	 <CAJfpegvQGhzDvQt=OBf=GVQF2gDynTp6F+zO-dn5skFLtukFCQ@mail.gmail.com>
+	 <87lidqfx3u.fsf@xmission.com> <1353885956.2323.4.camel@perseus.themaw.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 9:31 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Ingo Molnar <mingo@kernel.org> wrote:
->
->> * Alex Shi <lkml.alex@gmail.com> wrote:
->>
->> > >
->> > > Those of you who would like to test all the latest patches are
->> > > welcome to pick up latest bits at tip:master:
->> > >
->> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
->> > >
->> >
->> > I am wondering if it is a problem, but it still exists on HEAD: c418de93e39891
->> > http://article.gmane.org/gmane.linux.kernel.mm/90131/match=compiled+with+name+pl+and+start+it+on+my
->> >
->> > like when just start 4 pl tasks, often 3 were running on node
->> > 0, and 1 was running on node 1. The old balance will average
->> > assign tasks to different node, different core.
->>
->> This is "normal" in the sense that the current mainline
->> scheduler is (supposed to be) doing something similar: if the
->> node is still within capacity, then there's no reason to move
->> those threads.
->>
->> OTOH, I think with NUMA balancing we indeed want to spread
->> them better, if those tasks do not share memory with each
->> other but use their own memory. If they share memory then they
->> should remain on the same node if possible.
+On Mon, 2012-11-26 at 07:25 +0800, Ian Kent wrote:
+> On Sat, 2012-11-24 at 14:35 -0800, Eric W. Biederman wrote:
+> > Miklos Szeredi <miklos@szeredi.hu> writes:
+> > 
+> > > On Sat, Nov 24, 2012 at 1:07 PM, Eric W. Biederman
+> > > <ebiederm@xmission.com> wrote:
+> > >> Ian Kent <raven@themaw.net> writes:
+> > >>
+> > >>> On Sat, 2012-11-24 at 10:23 +0800, Ian Kent wrote:
+> > >>>> On Fri, 2012-11-23 at 15:30 +0100, Miklos Szeredi wrote:
+> > >
+> > >>>> AFAICS autofs mounts mounted with MS_PRIVATE in the initial namespace do
+> > >>>> propagate to the clone when it's created so I'm assuming subsequent
+> > >>>> mounts would also. If these mounts are busy in some way they can't be
+> > >>>> umounted in the clone unless "/" is marked private before attempting the
+> > >>>> umount.
+> > 
+> > Subsequent mounts after the clone do not have a mechanism to propogate
+> > with MS_PRIVATE.  As creating a new mount namespaces is essentially
+> > an instance of mount --bind.  Those semantics are a little unintuitive
+> > I have to admit.
+> > 
+> > >>> This may sound stupid but if there something like, say, MS_NOPROPAGATE
+> > >>> then the problem I see would pretty much just go away. No more need to
+> > >>> umount existing mounts and container instances would be isolated. But, I
+> > >>> guess, I'm not considering the possibility of cloned of processes as
+> > >>> well .... if that makes sense, ;)
+> > >>
+> > >> Something is very weird is going on.  MS_PRIVATE should be the
+> > >> MS_NOPROPOGATE you are looking for.  There is also MS_UNBINDABLE.
+> > >> which is a stronger form of MS_PRIVATE and probably worth play with.
+> > >>
+> > >
+> > > MS_UNBINDABLE says:  skip this mount when copying a mount tree, such
+> > > as when the mount namespace is cloned.
+> > >
+> > > If you set MS_UNBINDABLE on autofs mounts then they will simply not
+> > > appear in a cloned namespace.  Which sounds like a good idea,  no?
+> > 
+> > Good point.  If the desire is for a mount to be managed by autofs
+> > setting MS_UNBINDABLE seems required.
+> 
+> Arrgh, I know that's something I should have looked into long ago.
+> The fact is that autofs mounts are directly related to a specific path
+> defined by automount maps that are associated with the daemon so bind
+> mounting them elsewhere makes no sense.
 
-I rewrite the little test case by assemble:
-==
-.text
+Except, AFAICS, they do appear in the clone.
 
-    .global _start
+> 
+> Is it necessary (or sensible) to use MS_PRIVATE with MS_UNBINDABLE?
 
-_start:
+and specifying MS_PRIVATE as well gives an EINVAL return.
 
-do_nop:
-        nop
-        nop
-        jmp do_nop
-==
-It reproduced the problem on latest tip/master, HEAD: 7cb989d0159a6f43104992f18
-like for 4 above tasks running, 3 of them running on node 0, one
-running on node 1.
-
-If kernel can detect the LLC of CPU is allowed for tasks aggregate, it's a nice
-feature. if not, the aggregate may cause more cache missing.
-
-
->
-> Could you please check tip:master with -v17:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
->
-> ?
->
-> It should place your workload better than v16 did.
->
-> Note, you might be able to find other combinations of tasks that
-> are not scheduled NUMA-perfectly yet, as task group placement is
-> not exhaustive yet.
->
-> You might want to check which combination looks the weirdest to
-> you and report it, so I can fix any remaining placement
-> inefficiencies in order of importance.
->
-> Thanks,
->
->         Ingo
+> 
+> > 
+> > Eric
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe autofs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-
--- 
-Thanks
-    Alex
