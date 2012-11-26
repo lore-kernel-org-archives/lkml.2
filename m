@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab2KZRHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:07:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47598 "EHLO
+	id S933175Ab2KZRH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:07:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47602 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933134Ab2KZRHq (ORCPT
+	with ESMTP id S933134Ab2KZRHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:07:46 -0500
+	Mon, 26 Nov 2012 12:07:50 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Sage Weil <sage@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 127/270] libceph: fix fault locking; close socket on lossy fault
-Date: Mon, 26 Nov 2012 14:56:57 -0200
-Message-Id: <1353949160-26803-128-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 128/270] libceph: move msgr clear_standby under con mutex protection
+Date: Mon, 26 Nov 2012 14:56:58 -0200
+Message-Id: <1353949160-26803-129-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,62 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sage Weil <sage@inktank.com>
 
-commit 3b5ede07b55b52c3be27749d183d87257d032065 upstream.
+commit 00650931e52e97fe64096bec167f5a6780dfd94a upstream.
 
-If we fault on a lossy connection, we should still close the socket
-immediately, and do so under the con mutex.
-
-We should also take the con mutex before printing out the state bits in
-the debug output.
+Avoid dropping and retaking con->mutex in the ceph_con_send() case by
+leaving locking up to the caller.
 
 Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/ceph/messenger.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 07204f1..9aaf539 100644
+index 9aaf539..1a3cb4a 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -2330,22 +2330,23 @@ fault:
-  */
- static void ceph_fault(struct ceph_connection *con)
+@@ -2441,12 +2441,10 @@ static void clear_standby(struct ceph_connection *con)
  {
-+	mutex_lock(&con->mutex);
+ 	/* come back from STANDBY? */
+ 	if (test_and_clear_bit(STANDBY, &con->state)) {
+-		mutex_lock(&con->mutex);
+ 		dout("clear_standby %p and ++connect_seq\n", con);
+ 		con->connect_seq++;
+ 		WARN_ON(test_bit(WRITE_PENDING, &con->flags));
+ 		WARN_ON(test_bit(KEEPALIVE_PENDING, &con->flags));
+-		mutex_unlock(&con->mutex);
+ 	}
+ }
+ 
+@@ -2483,11 +2481,12 @@ void ceph_con_send(struct ceph_connection *con, struct ceph_msg *msg)
+ 	     le32_to_cpu(msg->hdr.front_len),
+ 	     le32_to_cpu(msg->hdr.middle_len),
+ 	     le32_to_cpu(msg->hdr.data_len));
 +
- 	pr_err("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
- 	       ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
- 	dout("fault %p state %lu to peer %s\n",
- 	     con, con->state, ceph_pr_addr(&con->peer_addr.in_addr));
- 
--	if (test_bit(LOSSYTX, &con->flags)) {
--		dout("fault on LOSSYTX channel\n");
--		goto out;
--	}
--
--	mutex_lock(&con->mutex);
- 	if (test_bit(CLOSED, &con->state))
- 		goto out_unlock;
- 
- 	con_close_socket(con);
- 
-+	if (test_bit(LOSSYTX, &con->flags)) {
-+		dout("fault on LOSSYTX channel\n");
-+		goto out_unlock;
-+	}
-+
- 	if (con->in_msg) {
- 		BUG_ON(con->in_msg->con != con);
- 		con->in_msg->con = NULL;
-@@ -2392,7 +2393,6 @@ static void ceph_fault(struct ceph_connection *con)
- 
- out_unlock:
++	clear_standby(con);
  	mutex_unlock(&con->mutex);
--out:
- 	/*
- 	 * in case we faulted due to authentication, invalidate our
- 	 * current tickets so that we can get new ones.
+ 
+ 	/* if there wasn't anything waiting to send before, queue
+ 	 * new work */
+-	clear_standby(con);
+ 	if (test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
+ }
+@@ -2574,7 +2573,9 @@ void ceph_msg_revoke_incoming(struct ceph_msg *msg)
+ void ceph_con_keepalive(struct ceph_connection *con)
+ {
+ 	dout("con_keepalive %p\n", con);
++	mutex_lock(&con->mutex);
+ 	clear_standby(con);
++	mutex_unlock(&con->mutex);
+ 	if (test_and_set_bit(KEEPALIVE_PENDING, &con->flags) == 0 &&
+ 	    test_and_set_bit(WRITE_PENDING, &con->flags) == 0)
+ 		queue_con(con);
 -- 
 1.7.9.5
 
