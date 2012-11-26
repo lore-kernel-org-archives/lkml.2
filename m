@@ -1,99 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2KZI5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 03:57:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39915 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab2KZI5H (ORCPT
+	id S1754570Ab2KZJBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:01:12 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51787 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab2KZJBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 03:57:07 -0500
-Date: Mon, 26 Nov 2012 19:56:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: linux-next: manual merge of the pinctrl tree with the sound-asoc
- tree
-Message-Id: <20121126195658.064037771da7d25572848e2b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL"
+	Mon, 26 Nov 2012 04:01:11 -0500
+Date: Mon, 26 Nov 2012 17:00:06 +0800
+From: Woody Wu <narkewoody@gmail.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: The ethernet driver doesn't get probed
+Message-ID: <20121126090006.GA4078@zuhnb712.ap.bm.net>
+References: <slrnkb64p3.2k6.narkewoody@zuhnb712.local.com>
+ <CAAfyv35QOvgvH8xoMkE-S5Zf-9HF5Jb9X1EbMoi2FCcx1UMXNA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv35QOvgvH8xoMkE-S5Zf-9HF5Jb9X1EbMoi2FCcx1UMXNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 26, 2012 at 08:47:57AM +0100, Belisko Marek wrote:
+> On Mon, Nov 26, 2012 at 7:59 AM, Woody Wu <narkewoody@gmail.com> wrote:
+> > Hi, List
+> >
+> > I enabled an ax88796 Ethernet driver in the kernel configuration menu.
+> > Kernel version is 3.4.19. The arch is ARM and the system type is
+> > Samsung S3C2410.
+> >
+> > In my debugging, I found the probe function of the driver did not get
+> > invoked.
+> Did you define platform data and platform device in board file?
+> See: arch/arm/mach-pxa/colibri-pxa300.c (line ~87)
 
-Hi Linus,
 
-Today's linux-next merge of the pinctrl tree got a conflict in
-arch/arm/boot/dts/at91sam9260.dtsi between commit 099343c64e16 ("ARM:
-at91: atmel-ssc: add device tree support") from the sound-asoc tree and
-commit 9873137a7a22 ("ARM: at91/dts: add nodes for atmel hsmci
-controllers for atmel SOCs") from the pinctrl tree.
+No. After read the colibri-pxa300.c, now I understand I must do it!
+Great! Thanks!
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+But some details in the file I need your help.
 
-diff --cc arch/arm/boot/dts/at91sam9260.dtsi
-index aaa42d8,b1d3fab..0000000
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@@ -213,13 -436,15 +437,22 @@@
-  				status =3D "disabled";
-  			};
- =20
-+ 			mmc0: mmc@fffa8000 {
-+ 				compatible =3D "atmel,hsmci";
-+ 				reg =3D <0xfffa8000 0x600>;
-+ 				interrupts =3D <9 4 0>;
-+ 				#address-cells =3D <1>;
-+ 				#size-cells =3D <0>;
-+ 				status =3D "disabled";
-+ 			};
-+=20
- +			ssc0: ssc@fffbc000 {
- +				compatible =3D "atmel,at91rm9200-ssc";
- +				reg =3D <0xfffbc000 0x4000>;
- +				interrupts =3D <14 4 5>;
- +				status =3D "disable";
- +			};
- +
-  			adc0: adc@fffe0000 {
-  				compatible =3D "atmel,at91sam9260-adc";
-  				reg =3D <0xfffe0000 0x100>;
+In pxa300,
 
---Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL
-Content-Type: application/pgp-signature
+static struct resource colibri_asix_resource[] = {
+	[0] = {
+		.start = PXA3xx_CS2_PHYS,
+		.end   = PXA3xx_CS2_PHYS + (0x20 * 2) - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = PXA_GPIO_TO_IRQ(COLIBRI_ETH_IRQ_GPIO),
+		.end   = PXA_GPIO_TO_IRQ(COLIBRI_ETH_IRQ_GPIO),
+		.flags = IORESOURCE_IRQ | IRQF_TRIGGER_FALLING,
+	}
+};
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+On my board, I only know the below information about the ax88786
+controllers::
+    eth0: AX88796B found at 0x11000000, using IRQ 52, MAC 00:30:61:00:55:38
+    eth1: AX88796B found at 0x19000000, using IRQ 53, MAC 00:30:61:00:55:39
 
-iQIcBAEBCAAGBQJQsy7aAAoJEECxmPOUX5FEXokP/2AN/DOt/n33U0epKAmDCT12
-MvWzMwYI5EIrjp/x/SBS2zqmqBpEjDY+TawIDOVz1viwk4atnp/s5ySNdoFRxTFi
-ve/rbBRDqbdC+RVsQmDNUoY+SWPlPw8Wk5OzAv9eeXCTRLy6OWiNTBtJkoXuKF72
-59GM8UFvkNwOtjxkfKCzZ09a1786ct5eLd0Mv9vZZTTUrU/z+tF/kXTvAG4QheEn
-VC67FA47DG49x0Wo1ARcEagTWpCweyWeo/whgAEbI83xMjwCBQJTC1wEZQzVQ3pN
-P7dC3p0PDjQo5xj4mJdPJ/vKMYNuC+K8RiAngBnU5zctj/0YzLIPS7J/2FF+E1Q4
-GeN3GMhDisfLFs3ALl9N6F1/BZ3bSDO7jNqdk08o2RQKJw5b1seY/dhrkyTCY9fl
-ADrcnf1SZfQ/FvA4fUFVg3+/yV0s1gs3EmZ7hupOSnii9axPdo7thfhdzCz5Jyqd
-X7uQ2HCf2OnRCPhckDdfCM1MPvYju7+rCPF1E9yLz5iUYLs4YhBabxL8+Fp1rvzv
-b9pdvcbtb1WncJb430Y671WGELa8a56UBqLOi2O/CChIRta/GKzVZ0jhrUVylsOy
-iNcukk7b6Il44uSjVCd+pT65eaiSPswUziqvutgbQZkEMXb7cv2zrepe7rKmSJJw
-06NnJJcGAVxjPHVo+hVm
-=vNlO
------END PGP SIGNATURE-----
+Do you think how should I specify resources for it? Especially in the
+IRQ part, I don't understand whether I should use the GPIO_TO_IRQ
+macros as that in the pxa300.
 
---Signature=_Mon__26_Nov_2012_19_56_58_+1100_E76ybIBsNSgg70hL--
+Also, for the chip selection logic appearing in the pxa300, 
+
+static mfp_cfg_t colibri_pxa300_eth_pin_config[] __initdata = {
+	GPIO1_nCS2,			/* AX88796 chip select */
+	GPIO26_GPIO | MFP_PULL_HIGH	/* AX88796 IRQ */
+};
+
+I also have no ideal whether I should use it.  I don't have schematics
+for the board, I only have some kernel logs from an old version of
+running linux, for which I don't have source code.
+
+Really hope you can give me some help!  Thanks in advance.
+
+
+> >
+> > This driver is declared as platform_driver
+> >
+> > static struct platform_driver axdrv = {
+> >         .driver = {
+> >                 .name           = "ax88796",
+> >                 .owner          = THIS_MODULE,
+> >         },
+> >         .probe          = ax_probe,
+> >         .remove         = ax_remove,
+> >         .suspend        = ax_suspend,
+> >         .resume         = ax_resume,
+> > };
+> >
+> > module_platform_driver(axdrv);
+> >
+> > So, its driver init function actually goes through
+> > platform_driver_register() and then driver_register(), which eventually
+> > call driver_attach() trying to attach the driver to the "platform" bus.
+> > But, on the platform bus, there is no any device that can match the
+> > ax88796 driver, hence the driver failed in attaching.
+> >
+> > I discovered the full list of devices found on the platform bus:
+> >
+> >     s3c2410-ohci,
+> >     s3c2410-lcd,
+> >     s3c2410-wdt,
+> >     s3c2410-i2c,
+> >     s3c24xx-iis,
+> >     s3c2410-nand,
+> >     s3c24xx_led,
+> >     s3c2410-uart,
+> >
+> > You see, in the list, there is no a device looks like ax88796. All these
+> > already existed devices on the platform bus are build-in peripherals on
+> > the SoC of s3c2410, they are compiled into the code by enabling some
+> > kernel configuration options.
+> >
+> > My question is, in terms of Linux driver technology, how to enable a
+> > non-PCI and not on-chip device driver? I think the ax_probe function
+> > must be called somehow, is this thinking right? If yes, I think before
+> > the driver get initialized, the corresponding device has to appear on
+> > the bus, but now it seems not.
+> >
+> > Thanks in advance.
+> >
+> > --
+> > woody
+> > I can't go back to yesterday - because I was a different person then.
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Cheers,
+> 
+> mbe
+> 
+> -- 
+> as simple and primitive as possible
+> -------------------------------------------------
+> Marek Belisko - OPEN-NANDRA
+> Freelance Developer
+> 
+> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+> Tel: +421 915 052 184
+> skype: marekwhite
+> twitter: #opennandra
+> web: http://open-nandra.com
+
+-- 
+woody
+I can't go back to yesterday - because I was a different person then.
