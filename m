@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2KZD4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 22:56:03 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48136 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab2KZD4B (ORCPT
+	id S1753952Ab2KZD6n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 22:58:43 -0500
+Received: from science.horizon.com ([71.41.210.146]:56848 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753878Ab2KZD6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 22:56:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121126002800.GE31879@valkosipuli.retiisi.org.uk>
-References: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
- <CA+V-a8t5ZJ2Zb+dWkifjjOHOrv1LAvgaJR2x24xKJXrTJs9+jg@mail.gmail.com>
- <20121123135753.GB31879@valkosipuli.retiisi.org.uk> <201211231501.52852.hverkuil@xs4all.nl>
- <CA+V-a8sFW7-dkjS=NxM2uJhhOBwTXQ5zGk9hBsA++w6P1PzFMQ@mail.gmail.com> <20121126002800.GE31879@valkosipuli.retiisi.org.uk>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 26 Nov 2012 09:25:40 +0530
-Message-ID: <CA+V-a8vpm1Wz9Yxmy0vJZaKw7NCiq1VP4qhFgZApgRk3Lb_XEA@mail.gmail.com>
-Subject: Re: [PATCH v2 00/12] Media Controller capture driver for DM365
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 25 Nov 2012 22:58:42 -0500
+Date: 25 Nov 2012 22:58:41 -0500
+Message-ID: <20121126035841.5973.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, mgorman@suse.de
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Cc: dave@linux.vnet.ibm.com, jack@suse.cz, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20121123085137.GA646@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Sakari,
+Sorry for the delay; was AF(that)K for the weekend.
 
-On Mon, Nov 26, 2012 at 5:58 AM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
->
-> Hi Prabhakar,
-> On Sun, Nov 25, 2012 at 09:57:23PM +0530, Prabhakar Lad wrote:
->> On Fri, Nov 23, 2012 at 7:31 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
->> > On Fri November 23 2012 14:57:53 Sakari Ailus wrote:
-> ...
->> >> I think it should go under staging, the same directory as the driver.
->> >>
->> >> Hans, Mauro: could you confirm this?
->> >
->> > I agree with that, that way things stay together in one directory.
->> >
->> Ok I'll have the documentation in staging folder itself. What about
->> the header file which is added
->> to include/media/davinci/xxx.h, these header files are used by machine
->> file and drivers
->> only, I think also moving them to staging wont make sense and also
->> these files are expected
->> not to change, what are your suggestion on this ?
->
-> I'd put them to staging if they're related to the driver ifself rather than
-> e.g. resource definitions. What would go under arch/arm then?
->
-I am targeting only the driver to get into 3.8 and not the machine
-changes for DM365.
+> Ok, is there any chance you can capture more of sysrq+m, particularly the
+> bits that say how much free memory there is and many pages of each order
+> that is free? If you can't, it's ok. I ask because my kernel bug dowsing
+> rod is twitching in the direction of the recent free page accounting bug
+> Dave Hansen identified and fixed -- https://lkml.org/lkml/2012/11/21/504
 
-Regards,
---Prabhakar
-> --
-> Sakari Ailus
-> e-mail: sakari.ailus@iki.fi     XMPP: sailus@retiisi.org.uk
+Okay; as mentioned, I installed that patch and it didn't make any obvious
+difference to the symptoms.
+
+The hang IP is still either in __zone_watermark_ok or kswapd (address varies).
+
+> The free page counter and these free lists should be close together. If
+> there is a big gap then it's almost certainly the bug Dave identified.
+
+The full sysrq-M output (at least the 49 lines I could read without
+working scrollback) is here.  I went over it twice (at least, all the
+varying numbers; I may have a typo in some of the fixed text), so I'm
+pretty sure it's right.
+
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:  186, btch:  31 usd: 181
+HighMem per-cpu:
+CPU    0: hi:  186, btch:  31 usd: 172
+active_anon:14759 inactive_anon:6504 isolated_anon:0
+ active_file:126610 inactive_file:283340 isolated_file:0
+ unevictable:0 dirty:289 writeback:0 unstable:0
+ free:39060 slab_reclaimable:44235 slab_unreclaimable:1079
+ mapped:4468 shmem:580 pagetables:301 bounce:0
+ free_cma:0
+DMA free:9044kB min:784kB low:980kB high:1176kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:6868kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15804kB mlocked:0kB dirty:4kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 865 2016 2016
+Normal free:107016kB min:44012kB low:55012kB high:66016kB active_anon:9096kB inactive_anon:9344kB active_file:296716kB inactive_file:257136kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB mlocked:0kB dirty:1152kB writeback:0kB mapped:4kB shmem:0kB slab_reclaimable:176940kB slab_unreclaimable:4316kB kernel_stack:1104kB pagetables:1204kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 0 9207 9207
+HighMem free:40180kB min:512kB low:15148kB high:29784kB active_anon:49940kB inactive_anon:16672kB active_file:209724kB inactive_file:869356kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:1178552kB mlocked:0kB dirty:4kB writeback:0kB mapped:17868kB shmem:2320kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+lowmem_Reserve[]: 0 0 0 0
+DMA: 1*4kB 2*8kB 2*16kB 1*32kB 2*64kB 1*128kB 2*256kB 2*512kB 1*1024kB 1*2048kB 1*4096kB = 9044kB
+Normal: 572*4kB 129*8kB 33*16kB 42*32kB 33*64kB 15*128kB 8*256kB 3*512kB 6*1024kB 3*2048kB 20*4096kB = 107016kB
+HighMem: 407*4kB 199*8kB 124*16kB 107*32kB 53*64kB 10*128kB 5*256kB 4*512kB 3*1024kB 2*2048kB 4*4096kB = 40180kB
+410530 total pagecahce pages
+0 pages in swap cache
+Swap cache stats: add 0, delete 0, find 0/0
+Free swap  = 4883724kB
+Total swap = 4883724kB
+524268 pages RAM
+296958 pages HighMem
+5331 pages reserved
+390516 pages shared	FLUCTUATES: 390508, 468, 412, 492, 484, 428, 524, 452, 468, ...
+366021 pages non-shared
+
+As mentioned, the "shared" number fluctuates, and the "Normal" free pages
+count also fluctuates a little bit, but less.  (The 32kB free count is
+sometimes 43 or 41 rather than 42, bringing the total to 107048 or 106984.)
+
+I do see that the free space figures appear to agree.  I couldn't find a
+number that appeared to change in sync with the "pages shared" figure.
+
+I could remove Dave Hansen's patch and test again, if that would
+help.
+
+Any other ideas?
+
+Thank you very much for the assistance!
