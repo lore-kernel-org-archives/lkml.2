@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab2KZRCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:02:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47220 "EHLO
+	id S1756572Ab2KZRCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:02:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47234 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab2KZRCi (ORCPT
+	with ESMTP id S1756192Ab2KZRCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:02:38 -0500
+	Mon, 26 Nov 2012 12:02:46 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 046/270] iscsit: remove incorrect unlock in iscsit_build_sendtargets_resp
-Date: Mon, 26 Nov 2012 14:55:36 -0200
-Message-Id: <1353949160-26803-47-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 048/270] drivers/dma/dmaengine.c: lower the priority of 'failed to get' dma channel message
+Date: Mon, 26 Nov 2012 14:55:38 -0200
+Message-Id: <1353949160-26803-49-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,33 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 904753da183566c71211d23c169a80184648c121 upstream.
+commit 0eb5a35801df3c438ce3fc91310a415ea4452c00 upstream.
 
-Fix a potential multiple spin-unlock -> deadlock scenario during the
-overflow check within iscsit_build_sendtargets_resp() as found by
-sparse static checking.
+Do the same as commit a03a202e95fd ("dmaengine: failure to get a
+specific DMA channel is not critical") to get rid of the following
+messages during kernel boot:
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+  dmaengine_get: failed to get dma1chan0: (-22)
+  dmaengine_get: failed to get dma1chan1: (-22)
+  dmaengine_get: failed to get dma1chan2: (-22)
+  dmaengine_get: failed to get dma1chan3: (-22)
+  ..
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/dma/dmaengine.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index d3114d1..6d1d906 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3269,7 +3269,6 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
- 		len += 1;
- 
- 		if ((len + payload_len) > buffer_len) {
--			spin_unlock(&tiqn->tiqn_tpg_lock);
- 			end_of_buf = 1;
- 			goto eob;
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 2397f6f..6c87d67 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -578,7 +578,7 @@ void dmaengine_get(void)
+ 				list_del_rcu(&device->global_node);
+ 				break;
+ 			} else if (err)
+-				pr_err("%s: failed to get %s: (%d)\n",
++				pr_debug("%s: failed to get %s: (%d)\n",
+ 					__func__, dma_chan_name(chan), err);
  		}
+ 	}
 -- 
 1.7.9.5
 
