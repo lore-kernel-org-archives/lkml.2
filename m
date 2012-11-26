@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2KZPCo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:02:44 -0500
-Received: from mail.tsu.ge ([217.147.230.9]:49849 "EHLO mail.tsu.ge"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab2KZPCn convert rfc822-to-8bit (ORCPT
+	id S1755359Ab2KZPEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:04:52 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37023 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab2KZPEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:02:43 -0500
-X-Qmail-Scanner-Diagnostics: from 108.170.7.93 (maia.menteshashvili@tsu.ge@108.170.7.93) by mail (envelope-from <maia.menteshashvili@tsu.ge>, uid 89) with qmail-scanner-2.10st 
- (clamdscan: 0.97.3/15638. mhr: 1.0. spamassassin: 3.3.1. perlscan: 2.10st.  
- Clear:RC:0(108.170.7.93):SA:0(4.3/5.0):. 
- Processed in 5.928631 secs); 26 Nov 2012 13:12:01 -0000
-X-Qmail-Scanner-Mail-From: maia.menteshashvili@tsu.ge via mail
-X-Qmail-Scanner: 2.10st (Clear:RC:0(108.170.7.93):SA:0(4.3/5.0):. Processed in 5.928631 secs Process 3515)
-Content-Type: text/plain; charset="iso-8859-1"
+	Mon, 26 Nov 2012 10:04:50 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WARNING VIRUS DETECTED
-To: Recipients <maia.menteshashvili@tsu.ge>
-From: "WEBMAIL UPGRADE" <maia.menteshashvili@tsu.ge>
-Date: Mon, 26 Nov 2012 03:25:58 -0800
-Reply-To: roy@ipr.sci.am
-Message-ID: <135393551510393515@mail>
+In-Reply-To: <CAKohpo=m-MZDL8B7vkrF4aQP74QCgw3uEsTnsr1k2X4p9FdHcQ@mail.gmail.com>
+References: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
+	<CAKohpo=m-MZDL8B7vkrF4aQP74QCgw3uEsTnsr1k2X4p9FdHcQ@mail.gmail.com>
+Date: Mon, 26 Nov 2012 20:34:49 +0530
+Message-ID: <CAKohponQ-9gYQznnaxyhvgd0AMVHHt_s6wByOoTQpdhRmqBwPQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: sdhci-spear: Initialize sdhci clk to 50 MHz
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: cjb@laptop.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strong virus has been detected in your email account, which might make you lose your email account if not deleted. Use the below web link to Delete the virus in your email account:
+On 20 November 2012 12:11, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 8 November 2012 20:39, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+>>
+>> SPEAr sdhci driver expects the clock to be set to 50 MHz for proper functioning.
+>> This patch sets clk to 50 MHz in probe.
+>>
+>> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> Ping!!
 
-Click link below:
-https://docs.google.com/spreadsheet/viewform?formkey=dFRMRm9TOHlwS2lVNWtEZEhYTjVoMGc6MQ
+Hi Chris,
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre
+Are you taking these for v3.8?
