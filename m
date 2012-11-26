@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2KZGHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 01:07:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38734 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab2KZGH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 01:07:29 -0500
-X-IronPort-AV: E=Sophos;i="4.83,319,1352044800"; 
-   d="scan'208";a="6274260"
-Message-ID: <50B306E0.3050207@cn.fujitsu.com>
-Date: Mon, 26 Nov 2012 14:06:24 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Hanjun Guo <guohanjun@huawei.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, yinghai@kernel.org,
-        bhelgaas@google.com, lenb@kernel.org, jiang.liu@huawei.com,
-        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <50B3014E.3040107@huawei.com>
-In-Reply-To: <50B3014E.3040107@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 14:07:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 14:07:03,
-	Serialize complete at 2012/11/26 14:07:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754188Ab2KZGJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 01:09:31 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2KZGJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 01:09:30 -0500
+Date: Mon, 26 Nov 2012 17:09:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nishanth Menon <nm@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20121126170919.f7009838d3126e547205a705@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 01:42 PM, Hanjun Guo wrote:
->
-> Hi all,
-> I think Yasuaki mentioned the key point for the container device remove,
-> that is dependency.
->
-> Currently, container, processor, and memory hotpulg are managed by different ACPI
-> hotplug drivers, the driver works when handle device hotplug individually, but they
-> have no idea for each other.
->
-> This may introduce some issues, such as Yasuaki mentioned above, that is to say, we
-> should remove its child before remove the device itself, and hot add its parent before
-> the device itself.
->
-> According to the ACPI namespace, we can resolve most of dependency issues. On a typical
-> two processor sockets system, the namespace is like this:
->
-> /_SB                   ---container device, with HID ACPI0004
->      |_SCK0             ---container device, with HID ACPI0004
-> 	  |_CPU0       ---processor device, with HID ACPI0009 or LNXCPU
->            |_...
->            |_CPUx
->            |_MEM0       ---Memory device, with HID PNP0C80
->      |_SCK1
-> 	  |_CPU0
->            |_...
->            |_CPUx
->            |_MEM1
->      |_PCI0            ---Host bridge, with HID PNP0A03 or PNP0A08
->
-> If hot remove the container device, such as SCK0, we can easily know the dependency list
-> is CPU0~CPUx and MEM0, but I think the ACPI hotplug driver haven't resolve this now.
->
-> And there is another corner case for hotplug devices in the namespace above, that is:
-> 1) Remove SCK0. yes, we can remove it with no dependency to the host bridge PCI0;
->
-> 2) Remove SCK1 after SCK0. we should remove the host bridge PCI0 first,
->     or the system will crash down. yes, dynamic dependency analysis is needed here.
->     and the ACPI hotplug driver totally have no idea of this.
->
-> so, should we do something to settle this down ?
+--Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Guo,
+Hi Rafael,
 
-I am trying to do this too. :)
+After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-But so far as I know, Vasilis Liaskovitis has provided an approach.
-Please refer to the following url.
-https://lkml.org/lkml/2012/11/15/159
+drivers/devfreq/governor_simpleondemand.c: In function 'devfreq_simple_onde=
+mand_func':
+drivers/devfreq/governor_simpleondemand.c:36:11: error: dereferencing point=
+er to incomplete type
+drivers/devfreq/governor_simpleondemand.c:37:27: error: dereferencing point=
+er to incomplete type
+drivers/devfreq/governor_simpleondemand.c:38:11: error: dereferencing point=
+er to incomplete type
+drivers/devfreq/governor_simpleondemand.c:39:32: error: dereferencing point=
+er to incomplete type
 
-I think we can review his patches first. :)
+Caused by commit eff607fdb1f7 ("PM / devfreq: governors: add GPL module
+license and allow module build").  The definition of struct
+devfreq_simple_ondemand_data depends on
+CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND, but this is a modular build, so
+CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND_MODULE is defined instead.
 
-And by the way, I think the ACPI based hotplug framework provided by
-Liu Jiang may also settle this problem. But I'm not quit sure yet. :)
+I have used the pm tree fomr next-20121115 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks. :)
+--Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i
+Content-Type: application/pgp-signature
 
->
-> Thanks
-> Hanjun Guo
->
->
->> The example is as follows:
->>
->>   https://lkml.org/lkml/2012/9/26/318
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->
->
->
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQswePAAoJEECxmPOUX5FEY84QAJBUq61pSOX/RkX+S4QK0+C3
+UuribzSBIvnevLDHs4CxfHa0AmBiXJJRjBazod5aLqHwBAyR0YtZ0288mFI2eGJH
+oAQCLPxYt0sp4slaLx30mKG2dN8VQPLle8TWlm7Fm0ylAcNhqDZkeFMVCXVVVKjO
+dO1M3KqoJHV2T60IWfjyPyF5MXg0ZKiSB1DzhGR0MrCpOxEc/M2LZzteaVsB6O92
+uzXK+llXXMj847B4G1lhywPBalCeK+pCxwZ63BIxar+mJR4c+ly3k0cF+cIQzi+5
+333FOEH4OUsczVFzAjzfiHWopZypvZMW2Xl22CBccpJXzb5QYmr5rL4uJ0gceAti
+oBjJkwHoXN3SKjy0tJCCcmaOzd9p+AcD3+bQzM9hZaUSGVNRGYPcmUaojA3mOx09
+nl1GXNFjLQUWnkXhN12cV6aUF0wkWDtqHGti69EQUtt336sl3uKyy/qd06hET0Hm
+cQs4XP0wKonXCq4SnPruW9VUjakwGSnlwF9ZMh0Lr8sJw/LK6bHgns2g8wwWGwZO
+MsbBnvQvlLD0V8QIR0Kd/iig8oTyCTC6pxa6sN3z6prKmbsh3seWaUI1MI4DioyD
+6/8zrWUm8dWS/ze7w3h+/dqmyQ+PT47eJUbpmXTibX/Zn7PQ2CellW8H2EofsCu/
+3tU/0UczAmNmcyE4bjIp
+=b/Na
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__26_Nov_2012_17_09_19_+1100_1o+qFGV2aviHnW7i--
