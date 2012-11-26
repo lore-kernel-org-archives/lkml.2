@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab2KZTP1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:15:27 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55120 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab2KZTPX (ORCPT
+	id S1755316Ab2KZTQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:16:40 -0500
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:41445 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2KZTQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:15:23 -0500
-Message-ID: <50B3BFC5.8070404@wwwdotorg.org>
-Date: Mon, 26 Nov 2012 12:15:17 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 26 Nov 2012 14:16:39 -0500
+Message-ID: <66B0C9D116EC402CAFB33B13AEC1F251@Chronos>
+From: "Michael D. Burkey" <mdburkey@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <alan@lxorguk.ukuu.org.uk>,
+        "Christoph Fritz" <chf.fritz@googlemail.com>,
+        =?iso-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>
+References: <20121122004212.371862690@linuxfoundation.org> <20121122004216.531273574@linuxfoundation.org> <8DA3043795C340758B9AEB1BCA791676@Chronos> <20121126184436.GB21012@kroah.com>
+In-Reply-To: <20121126184436.GB21012@kroah.com>
+Subject: Re: [ 35/83] ARM: imx: ehci: fix host power mask bit
+Date: Mon, 26 Nov 2012 14:17:28 -0500
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V3 11/11] ARM: delete struct sys_timer
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org> <1353349867-28494-12-git-send-email-swarren@wwwdotorg.org> <CAN1soZxf=i9Z9zOpbE2zUW6q6CY9TfOsUB7bf+-K_oLcmFqeCQ@mail.gmail.com>
-In-Reply-To: <CAN1soZxf=i9Z9zOpbE2zUW6q6CY9TfOsUB7bf+-K_oLcmFqeCQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Windows Mail 6.0.6002.18005
+X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7601.17609
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 09:43 PM, Haojian Zhuang wrote:
-> On Tue, Nov 20, 2012 at 2:31 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Now that the only field in struct sys_timer is .init, delete the struct,
->> and replace the machine descriptor .timer field with the initialization
->> function itself.
->>
->> This will enable moving timer drivers into drivers/clocksource without
->> having to place a public prototype of each struct sys_timer object into
->> include/linux; the intent is to create a single of_clocksource_init()
->> function that determines which timer driver to initialize by scanning
->> the device dtree, much like the proposed irqchip_init() at:
->> http://www.spinics.net/lists/arm-kernel/msg203686.html
-...
-> I checked the patch for mach-mmp.
-> 
-> @@ -69,7 +65,7 @@ static const char *mmp_dt_board_compat[] __initdata = {
->  DT_MACHINE_START(PXA168_DT, "Marvell PXA168 (Device Tree Support)")
->         .map_io         = mmp_map_io,
->         .init_irq       = mmp_dt_irq_init,
-> -       .timer          = &mmp_dt_timer,
-> +       .init_time      = mmp_dt_init_timer,
->         .init_machine   = pxa168_dt_init,
->         .dt_compat      = mmp_dt_board_compat,
->  MACHINE_END
-> @@ -77,7 +73,7 @@ MACHINE_END
->  DT_MACHINE_START(PXA910_DT, "Marvell PXA910 (Device Tree Support)")
->         .map_io         = mmp_map_io,
->         .init_irq       = mmp_dt_irq_init,
-> -       .timer          = &mmp_dt_timer,
-> +       .init_time      = mmp_dt_timer_init,
->         .init_machine   = pxa910_dt_init,
->         .dt_compat      = mmp_dt_board_compat,
->  MACHINE_END
-> 
-> This first init_time is assigned by mmp_dt_init_timer. But the second
-> init_time is
-> assigned by mmp_dt_timer_init. I think it's a typo error. Could you
-> help to fix this?
+It is a needed fix -- but there are other fixes that probably need to go 
+along with it.
+I'm still trying to figure out exactly what all needs to change alongside 
+it.
 
-Thanks, I've fixed that up locally.
+----- Original Message ----- 
+From: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+To: "Michael D. Burkey" <mdburkey@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>; <stable@vger.kernel.org>; 
+<alan@lxorguk.ukuu.org.uk>; "Christoph Fritz" <chf.fritz@googlemail.com>; 
+"Eric Bénard" <eric@eukrea.com>; "Sascha Hauer" <s.hauer@pengutronix.de>
+Sent: Monday, November 26, 2012 1:44 PM
+Subject: Re: [ 35/83] ARM: imx: ehci: fix host power mask bit
+
+
+> On Wed, Nov 21, 2012 at 11:52:25PM -0500, Michael D. Burkey wrote:
+>> This patch is definitely needed -- it is obviously setting the wrong
+>> bit --  but I am still doing testing to see what other complications
+>> may arise from actually setting the RIGHT bit (i.e. I've seen some
+>> odd results so far and suspect some other code may have been changed
+>> historically to account for the wrong behaviour this bit was
+>> causing).
+>>
+>> We're currently on vacation for Thanksgiving over here in the USA
+>> and I won't be back in the office til next week.
+>>
+>> If you would, hold off on adding the patch to the stable kernel
+>> until I have a bit more time to check out a couple of things.
+>
+> As it's already in Linus's tree, one would have hoped that the patch
+> would have been tested already :)
+>
+> I'll leave it in the stable tree, if it's a problem, please get the fix
+> into Linus's tree, and then have that fix submitted to the stable kernel
+> trees.
+>
+> thanks,
+>
+> greg k-h 
+
