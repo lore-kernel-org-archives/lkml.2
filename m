@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933892Ab2KZRaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:30:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48046 "EHLO
+	id S933834Ab2KZRNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:13:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48013 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933861Ab2KZRNV (ORCPT
+	with ESMTP id S932237Ab2KZRMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:13:21 -0500
+	Mon, 26 Nov 2012 12:12:54 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Peter Huewe <peterhuewe@gmx.de>, Chanwoo Choi <cw00.choi@samsung.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 215/270] xhci: fix integer overflow
-Date: Mon, 26 Nov 2012 14:58:25 -0200
-Message-Id: <1353949160-26803-216-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 208/270] extcon: Unregister compat class at module unload to fix oops
+Date: Mon, 26 Nov 2012 14:58:18 -0200
+Message-Id: <1353949160-26803-209-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,38 +26,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Peter Huewe <peterhuewe@gmx.de>
 
-commit 16b45fdf9c4e82f5d3bc53aa70737650e7c8d5ed upstream.
+commit 0dc77b6dabec8fd298392018cc0de5214af2dc43 upstream.
 
-xhci_service_interval_to_ns() returns long long
-to avoid an overflow. However, the type cast happens
-too late. The fix is to force ULL from the beginning.
+If you compile extcon with CONFIG_ANDROID and then load and unload the
+module you get a simple oops as the driver does not unregister its
+compat class and thus cannot register it again.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit e3567d2c15a7a8e2f992a5f7c7683453ca406d82 "xhci: Add Intel
-U1/U2 timeout policy."
+Full trace:
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+root@(none):~# modprobe extcon_class
+root@(none):~# rmmod extcon_class
+root@(none):~# modprobe extcon_class
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xde/0x100()
+sysfs: cannot create duplicate filename '/class/switch'
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451a00:  [<602a58bc>] printk+0x0/0xa8
+9f451a18:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451a28:  [<6012c6de>] sysfs_add_one+0xde/0x100
+9f451a50:  [<601d3d90>] strcat+0x0/0x40
+9f451a68:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451a90:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ab0:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451ac0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ae8:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
+9f451b00:  [<601d3d90>] strcat+0x0/0x40
+9f451b18:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
+9f451b48:  [<6012c6de>] sysfs_add_one+0xde/0x100
+9f451b78:  [<6012c96f>] create_dir+0x8f/0x100
+9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
+9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
+9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
+9f451c18:  [<601cf396>] kobject_add_internal+0x96/0x280
+9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
+9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
+9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
+9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
+9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
+9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c367 ]---
+------------[ cut here ]------------
+WARNING: at lib/kobject.c:196 kobject_add_internal+0x26e/0x280()
+kobject_add_internal failed for switch with -EEXIST, don't try to
+register things with the same name in the same directory.
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451ad0:  [<602a58bc>] printk+0x0/0xa8
+9f451ae8:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451af8:  [<601cf56e>] kobject_add_internal+0x26e/0x280
+9f451b18:  [<601cf140>] kobject_put+0x0/0x70
+9f451b20:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451b38:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451b88:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
+9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
+9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
+9f451c18:  [<601cf56e>] kobject_add_internal+0x26e/0x280
+9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
+9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
+9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
+9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
+9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
+9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c368 ]---
+kobject_create_and_add: kobject_add error: -17
+------------[ cut here ]------------
+WARNING: at drivers/extcon/extcon_class.c:545
+create_extcon_class+0xbc/0xd0 [extcon_class]()
+cannot allocate
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451c80:  [<602a58bc>] printk+0x0/0xa8
+9f451c98:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451ca0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ca8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
+9f451cd0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451ce8:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451d20:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451d28:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451d48:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d58:  [<601cf172>] kobject_put+0x32/0x70
+9f451d78:  [<600c22c3>] kfree+0xb3/0x100
+9f451da8:  [<601fbe9a>] class_compat_register+0x7a/0x80
+9f451dc8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c369 ]---
+FATAL: Error inserting extcon_class
+(/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
+Cannot allocate memory
+
+This patch fixes this.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+[ herton: file name is extcon_class.c on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/extcon/extcon_class.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 1f9b8a4..5f831c2 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4020,7 +4020,7 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
- static unsigned long long xhci_service_interval_to_ns(
- 		struct usb_endpoint_descriptor *desc)
- {
--	return (1 << (desc->bInterval - 1)) * 125 * 1000;
-+	return (1ULL << (desc->bInterval - 1)) * 125 * 1000;
- }
+diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+index 159aeb0..01bac36 100644
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -821,6 +821,9 @@ module_init(extcon_class_init);
  
- static u16 xhci_get_timeout_no_hub_lpm(struct usb_device *udev,
+ static void __exit extcon_class_exit(void)
+ {
++#if defined(CONFIG_ANDROID)
++	class_compat_unregister(switch_class);
++#endif
+ 	class_destroy(extcon_class);
+ }
+ module_exit(extcon_class_exit);
 -- 
 1.7.9.5
 
