@@ -1,192 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2KZLR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 06:17:59 -0500
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:42910 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab2KZLR6 (ORCPT
+	id S1755182Ab2KZLSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:18:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36244 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab2KZLSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 06:17:58 -0500
-Date: Mon, 26 Nov 2012 12:17:54 +0100
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org, mgorman@suse.de,
-        Valdis.Kletnieks@vt.edu, jirislaby@gmail.com, jslaby@suse.cz,
-        zkabelac@redhat.com, mm-commits@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm,vmscan: only loop back if compaction would fail in
- all zones
-Message-ID: <20121126121754.1ae3b0f2@fem.tu-ilmenau.de>
-In-Reply-To: <20121126041041.GD2799@cmpxchg.org>
-References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
-	<20121125175728.3db4ac6a@fem.tu-ilmenau.de>
-	<20121125132950.11b15e38@annuminas.surriel.com>
-	<20121125224433.GB2799@cmpxchg.org>
-	<20121125191645.0ebc6d59@annuminas.surriel.com>
-	<20121126031518.GC2799@cmpxchg.org>
-	<20121126041041.GD2799@cmpxchg.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 06:18:50 -0500
+Date: Mon, 26 Nov 2012 11:18:45 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
+Message-ID: <20121126111845.GG12782@gmail.com>
+References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
+ <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+ <20121123094132.EFCB73E07BE@localhost>
+ <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sun, 25 Nov 2012 23:10:41 -0500
-schrieb Johannes Weiner <hannes@cmpxchg.org>:
+On Fri, 23 Nov 2012, Viresh Kumar wrote:
 
-> On Sun, Nov 25, 2012 at 10:15:18PM -0500, Johannes Weiner wrote:
-> > On Sun, Nov 25, 2012 at 07:16:45PM -0500, Rik van Riel wrote:
-> > > On Sun, 25 Nov 2012 17:44:33 -0500
-> > > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > > > On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
-> > > 
-> > > > > Could you try this patch?
-> > > > 
-> > > > It's not quite enough because it's not reaching the conditions
-> > > > you changed, see analysis in
-> > > > https://lkml.org/lkml/2012/11/20/567
-> > > 
-> > > Johannes,
-> > > 
-> > > does the patch below fix your problem?
-> > 
-> > I can not reproduce the problem anymore with my smoke test.
-> > 
-> > > I suspect it would, because kswapd should only ever run into this
-> > > particular problem when we have a tiny memory zone in a pgdat,
-> > > and in that case we will also have a larger zone nearby, where
-> > > compaction would just succeed.
-> > 
-> > What if there is a higher order GFP_DMA allocation when the other
-> > zones in the system meet the high watermark for this order?
-> > 
-> > There is something else that worries me: if the preliminary zone
-> > scan finds the high watermark of all zones alright, end_zone is at
-> > its initialization value, 0.  The final compaction loop at `if
-> > (order)' goes through all zones up to and including end_zone, which
-> > was never really set to anything meaningful(?) and the only zone
-> > considered is the DMA zone again.  Very unlikely, granted, but if
-> > you'd ever hit that race and kswapd gets stuck, this will be fun to
-> > debug...
+> On 23 November 2012 15:11, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > On Fri, 23 Nov 2012 00:26:20 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 > 
-> I actually liked your first idea better: force reclaim until the
-> compaction watermark is met.  The only problem was that still not
-> every check in there agreed when the zone was considered balanced and
-> so no actual reclaim happened.
+> >> + - irq-trigger                       : IRQ trigger to use for the interrupt to the host
+> >> + - irq-invert-polarity               : bool, IRQ line is connected with reversed polarity
+> >
+> > This looks odd. Normally the interrupt polarity should be encoded in the irq
+> > specifier flags field.
 > 
-> So how about making everybody agree?  If the high watermark is met but
-> not the compaction one, keep doing reclaim AND don't consider the zone
-> balanced, AND don't make it contribute to balanced_pages etc.?  This
-> makes sure reclaim really does not bail and that the node is never
-> considered alright when it's actually not according to compaction.
-> This patch fixes the problem too (at least for the smoke test so far)
-> and IMO makes the code a bit more understandable.
+> Hi Grant and Lee Jones,
 > 
-> We may be able to drop some of the relooping conditions.  We may also
-> be able to reduce the pressure from the DMA zone by passing the right
-> classzone_idx in there.  Needs more thought.
-> 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
-> 
-> Kswapd does not in all places have the same criteria for when it
-> considers a zone balanced.  This leads to zones being not reclaimed
-> because they are considered just fine and the compaction checks to
-> loop over the zonelist again because they are considered unbalanced,
-> causing kswapd to run forever.
-> 
-> Add a function, zone_balanced(), that checks the watermark and if
-> compaction has enough free memory to do its job.  Then use it
-> uniformly for when kswapd needs to check if a zone is balanced.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c | 27 ++++++++++++++++++---------
->  1 file changed, 18 insertions(+), 9 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 48550c6..3b0aef4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone,
-> struct scan_control *sc) } while (memcg);
->  }
->  
-> +static bool zone_balanced(struct zone *zone, int order,
-> +			  unsigned long balance_gap, int
-> classzone_idx) +{
-> +	if (!zone_watermark_ok_safe(zone, order,
-> high_wmark_pages(zone) +
-> +				    balance_gap, classzone_idx, 0))
-> +		return false;
-> +
-> +	if (COMPACTION_BUILD && order && !compaction_suitable(zone,
-> order))
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
->  /*
->   * pgdat_balanced is used when checking if a node is balanced for
-> high-order
->   * allocations. Only zones that meet watermarks and are in a zone
-> allowed @@ -2475,8 +2488,7 @@ static bool
-> prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
-> continue; }
->  
-> -		if (!zone_watermark_ok_safe(zone, order,
-> high_wmark_pages(zone),
-> -							i, 0))
-> +		if (!zone_balanced(zone, order, 0, i))
->  			all_zones_ok = false;
->  		else
->  			balanced += zone->present_pages;
-> @@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t
-> *pgdat, int order, break;
->  			}
->  
-> -			if (!zone_watermark_ok_safe(zone, order,
-> -					high_wmark_pages(zone), 0,
-> 0)) {
-> +			if (!zone_balanced(zone, order, 0, 0)) {
->  				end_zone = i;
->  				break;
->  			} else {
-> @@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t
-> *pgdat, int order, testorder = 0;
->  
->  			if ((buffer_heads_over_limit &&
-> is_highmem_idx(i)) ||
-> -				    !zone_watermark_ok_safe(zone,
-> testorder,
-> -					high_wmark_pages(zone) +
-> balance_gap,
-> -					end_zone, 0)) {
-> +			    !zone_balanced(zone, testorder,
-> +					   balance_gap, end_zone)) {
->  				shrink_zone(zone, &sc);
->  
->  				reclaim_state->reclaimed_slab = 0;
-> @@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t
-> *pgdat, int order, continue;
->  			}
->  
-> -			if (!zone_watermark_ok_safe(zone, testorder,
-> -					high_wmark_pages(zone),
-> end_zone, 0)) {
-> +			if (!zone_balanced(zone, testorder, 0,
-> end_zone)) { all_zones_ok = 0;
->  				/*
->  				 * We are still under min water
-> mark.  This
+> This looks odd because stmpe is odd, i am taking the discussion held
+> with Lee jones to this thread.
 
-I've tested both patches, this one and Riks, and they both seem to fix
-the problem. kswapd didn't came up again consuming that much CPU. Feel
-free to add my tested-by.
+STMPE isn't odd or special in any way. :)
 
-regards,
-  Johannes
+> So, how interrupt stuff works currently in DT..
+> We have a interrupt controller IC:
+> 
+> 	ic: interrupt-controller@40008000 {
+> 		compatible = "foo";
+> 		interrupt-controller;
+> 		#interrupt-cells = <2>;
+>                 ...
+> 	};
+> 
+> And we have a user of this IC:
+> 
+> 	foo-peripheral@40048000 {
+> 		compatible = "foo-peripheral";
+> 		interrupt-parent = <&ic>;
+> 		interrupts = <39 4>;
+> 	};
+> 
+> Here first field of "interrupts" gives interrupt line number and the second one
+> gives polarity, interrupt type etc..
+
+So far so good.
+
+> All is good till now. Now, every interrupt controller supports the first
+> field, but the second one depends on its capabilities. An interrupt controller
+> might not have registers to configure interrupt polarity, type, etc of
+> the interrupt
+> it will service and so the second field wouldn't be available for them.
+> 
+> For now just think stmpe is not a MFD and not a interrupt controller
+> either. It is
+> just a simple device, dev-foo.
+> 
+> It will declare values of its interrupts field based on the type of
+> interrupt controller
+> that will service its interrupt and that can be anything like VIC/GIC/GPIO
+> controller.
+> 
+> Obviously nobody else than the parent IC driver can parse interrupts field
+> of dev-foo, because only that driver understands the real meaning of
+> these fields.
+> 
+> Now, stmpe has a special property. It can decide the way its output
+> interrupt line
+> will work. i.e. its polarity and interrupt type - edle/level, etc..
+> This is not commonly
+> seen in any peripheral. Now my original bindings and the real question here is
+> about passing this information to stmpe driver.
+> 
+> I can't pass it in interrupts field of stmpe node, as that field
+> belongs to parent
+> interrupt controller of stmpe.
+> 
+> I can't pass that from child nodes of stmpe, as we are programming the interrupt
+> coming out of stmpe and not the interrupt coming out of stmpe-gpio or
+> stmpe-keypad.
+> 
+> And that's why i added these bindings. Please suggest me if i am still missing
+> something.
+
+Look into .xlate functions.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
