@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab2KZRnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:43:24 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:56853 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab2KZRnT (ORCPT
+	id S1756866Ab2KZRnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:43:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47764 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933463Ab2KZRKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:43:19 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "x86\@kernel.org" <x86@kernel.org>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>
-References: <50ADE0C2.1000106@cn.fujitsu.com> <50ADE11A.401@cn.fujitsu.com>
-	<87ip8sxuyh.fsf@xmission.com> <20121126172054.GF12969@redhat.com>
-Date: Mon, 26 Nov 2012 11:43:10 -0600
-In-Reply-To: <20121126172054.GF12969@redhat.com> (Gleb Natapov's message of
-	"Mon, 26 Nov 2012 19:20:54 +0200")
-Message-ID: <87fw3wuuoh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+6sYb8jVOP/s+rKXMZ+JMphrUGGGDxReA=
-X-SA-Exim-Connect-IP: 75.135.205.0
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Gleb Natapov <gleb@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v8 1/2] x86/kexec: add a new atomic notifier list for kdump
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 26 Nov 2012 12:10:00 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 162/270] ALSA: hda - Fix registration race of VGA switcheroo
+Date: Mon, 26 Nov 2012 14:57:32 -0200
+Message-Id: <1353949160-26803-163-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gleb Natapov <gleb@redhat.com> writes:
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Mon, Nov 26, 2012 at 09:08:54AM -0600, Eric W. Biederman wrote:
->> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
->> 
->> > This patch adds an atomic notifier list named crash_notifier_list.
->> > Currently, when loading kvm-intel module, a notifier will be registered
->> > in the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
->> > needed.
->> 
->> crash_notifier_list ick gag please no.  Effectively this makes the kexec
->> on panic code path undebuggable.
->> 
->> Instead we need to use direct function calls to whatever you are doing.
->> 
-> The code walks linked list in kvm-intel module and calls vmclear on
-> whatever it finds there. Since the function have to resides in kvm-intel
-> module it cannot be called directly. Is callback pointer that is set
-> by kvm-intel more acceptable?
+------------------
 
-Yes a specific callback function is more acceptable.  Looking a little
-deeper vmclear_local_loaded_vmcss is not particularly acceptable. It is
-doing a lot of work that is unnecessary to save the virtual registers
-on the kexec on panic path.
+From: Takashi Iwai <tiwai@suse.de>
 
-In fact I wonder if it might not just be easier to call vmcs_clear to a
-fixed per cpu buffer.
+commit 128960a9ad67e2d119738f5211956e0304517551 upstream.
 
-Performing list walking in interrupt context without locking in
-vmclear_local_loaded vmcss looks a bit scary.  Not that locking would
-make it any better, as locking would simply add one more way to deadlock
-the system.  Only an rcu list walk is at all safe.  A list walk that
-modifies the list as vmclear_local_loaded_vmcss does is definitely not safe.
+Delay the registration of VGA switcheroo client to the end of the
+probing.  Otherwise a too quick switching may result in Oops during
+probing.
 
-Eric
+Also add the check of the return value from snd_hda_lock_devices().
+
+Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ sound/pci/hda/hda_intel.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 7757536..ff2bf55 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -485,6 +485,7 @@ struct azx {
+ 
+ 	/* VGA-switcheroo setup */
+ 	unsigned int use_vga_switcheroo:1;
++	unsigned int vga_switcheroo_registered:1;
+ 	unsigned int init_failed:1; /* delayed init failed */
+ 	unsigned int disabled:1; /* disabled by VGA-switcher */
+ 
+@@ -2523,7 +2524,9 @@ static void azx_vs_set_state(struct pci_dev *pci,
+ 		if (disabled) {
+ 			azx_suspend(pci, PMSG_FREEZE);
+ 			chip->disabled = true;
+-			snd_hda_lock_devices(chip->bus);
++			if (snd_hda_lock_devices(chip->bus))
++				snd_printk(KERN_WARNING SFX
++					   "Cannot lock devices!\n");
+ 		} else {
+ 			snd_hda_unlock_devices(chip->bus);
+ 			chip->disabled = false;
+@@ -2566,14 +2569,20 @@ static const struct vga_switcheroo_client_ops azx_vs_ops = {
+ 
+ static int __devinit register_vga_switcheroo(struct azx *chip)
+ {
++	int err;
++
+ 	if (!chip->use_vga_switcheroo)
+ 		return 0;
+ 	/* FIXME: currently only handling DIS controller
+ 	 * is there any machine with two switchable HDMI audio controllers?
+ 	 */
+-	return vga_switcheroo_register_audio_client(chip->pci, &azx_vs_ops,
++	err = vga_switcheroo_register_audio_client(chip->pci, &azx_vs_ops,
+ 						    VGA_SWITCHEROO_DIS,
+ 						    chip->bus != NULL);
++	if (err < 0)
++		return err;
++	chip->vga_switcheroo_registered = 1;
++	return 0;
+ }
+ #else
+ #define init_vga_switcheroo(chip)		/* NOP */
+@@ -2593,7 +2602,8 @@ static int azx_free(struct azx *chip)
+ 	if (use_vga_switcheroo(chip)) {
+ 		if (chip->disabled && chip->bus)
+ 			snd_hda_unlock_devices(chip->bus);
+-		vga_switcheroo_unregister_client(chip->pci);
++		if (chip->vga_switcheroo_registered)
++			vga_switcheroo_unregister_client(chip->pci);
+ 	}
+ 
+ 	if (chip->initialized) {
+@@ -2935,14 +2945,6 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
+ 	}
+ 
+  ok:
+-	err = register_vga_switcheroo(chip);
+-	if (err < 0) {
+-		snd_printk(KERN_ERR SFX
+-			   "Error registering VGA-switcheroo client\n");
+-		azx_free(chip);
+-		return err;
+-	}
+-
+ 	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
+ 	if (err < 0) {
+ 		snd_printk(KERN_ERR SFX "Error creating device [card]!\n");
+@@ -3169,6 +3171,13 @@ static int __devinit azx_probe(struct pci_dev *pci,
+ 
+ 	pci_set_drvdata(pci, card);
+ 
++	err = register_vga_switcheroo(chip);
++	if (err < 0) {
++		snd_printk(KERN_ERR SFX
++			   "Error registering VGA-switcheroo client\n");
++		goto out_free;
++	}
++
+ 	dev++;
+ 	return 0;
+ 
+-- 
+1.7.9.5
+
