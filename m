@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab2KZRBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:01:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47150 "EHLO
+	id S1756241Ab2KZRBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:01:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47139 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833Ab2KZRBu (ORCPT
+	with ESMTP id S1755833Ab2KZRBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:01:50 -0500
+	Mon, 26 Nov 2012 12:01:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>, Arun Easi <arun.easi@qlogic.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 033/270] qla2xxx: Fix endianness of task management response code
-Date: Mon, 26 Nov 2012 14:55:23 -0200
-Message-Id: <1353949160-26803-34-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 031/270] block: fix request_queue->flags initialization
+Date: Mon, 26 Nov 2012 14:55:21 -0200
+Message-Id: <1353949160-26803-32-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,41 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit e4b11b89f9039ca97b2ed1b6efeb6749fbdeb252 upstream.
+commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
 
-The qla2xxx firmware actually expects the task management response
-code in a CTIO IOCB with SCSI status mode 1 to be in little-endian
-byte order, ie the response code should be the first byte in the
-sense_data[] array.  The old code erroneously byte-swapped the
-response code, which puts it in the wrong place on the wire and leads
-to initiators thinking every task management request succeeds (since
-they see 0 in the byte where they look for the response code).
+A queue newly allocated with blk_alloc_queue_node() has only
+QUEUE_FLAG_BYPASS set.  For request-based drivers,
+blk_init_allocated_queue() is called and q->queue_flags is overwritten
+with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
+initial bypass is still in effect.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Chad Dupuis <chad.dupuis@qlogic.com>
-Cc: Arun Easi <arun.easi@qlogic.com>
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
+instead of overwriting.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/scsi/qla2xxx/qla_target.c |    2 +-
+ block/blk-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index 77759c7..5a71e84 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1403,7 +1403,7 @@ static void qlt_24xx_send_task_mgmt_ctio(struct scsi_qla_host *ha,
- 	ctio->u.status1.scsi_status =
- 	    __constant_cpu_to_le16(SS_RESPONSE_INFO_LEN_VALID);
- 	ctio->u.status1.response_len = __constant_cpu_to_le16(8);
--	((uint32_t *)ctio->u.status1.sense_data)[0] = cpu_to_be32(resp_code);
-+	ctio->u.status1.sense_data[0] = resp_code;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 96335a7..e17ce4b 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -686,7 +686,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	q->request_fn		= rfn;
+ 	q->prep_rq_fn		= NULL;
+ 	q->unprep_rq_fn		= NULL;
+-	q->queue_flags		= QUEUE_FLAG_DEFAULT;
++	q->queue_flags		|= QUEUE_FLAG_DEFAULT;
  
- 	qla2x00_start_iocbs(ha, ha->req);
- }
+ 	/* Override internal queue lock with supplied lock pointer */
+ 	if (lock)
 -- 
 1.7.9.5
 
