@@ -1,35 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2KZNFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:05:06 -0500
-Received: from science.horizon.com ([71.41.210.146]:57917 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752965Ab2KZNFF (ORCPT
+	id S1754005Ab2KZNGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:06:40 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:14758 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab2KZNGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:05:05 -0500
-Date: 26 Nov 2012 08:05:04 -0500
-Message-ID: <20121126130504.29434.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mgorman@suse.de
-Subject: Re: 3.7-rc6 soft lockup in kswapd0
-Cc: dave@linux.vnet.ibm.com, hannes@cmpxchg.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
-In-Reply-To: <20121126100102.GH8218@suse.de>
+	Mon, 26 Nov 2012 08:06:39 -0500
+Message-ID: <50B368CC.1050907@huawei.com>
+Date: Mon, 26 Nov 2012 21:04:12 +0800
+From: Hanjun Guo <guohanjun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <yinghai@kernel.org>,
+        <bhelgaas@google.com>, <lenb@kernel.org>, <jiang.liu@huawei.com>,
+        <izumi.taku@jp.fujitsu.com>, <linux-acpi@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <50B3014E.3040107@huawei.com> <50B306E0.3050207@cn.fujitsu.com>
+In-Reply-To: <50B306E0.3050207@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.25]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> wrote:
-> Ok, can you try this patch from Rik on top as well please? This is in
-> addition to Dave Hansen's accounting fix.
+On 2012/11/26 14:06, Tang Chen wrote:
+> On 11/26/2012 01:42 PM, Hanjun Guo wrote:
+>>
+>> Hi all,
+>> I think Yasuaki mentioned the key point for the container device remove,
+>> that is dependency.
+>>
+>> Currently, container, processor, and memory hotpulg are managed by different ACPI
+>> hotplug drivers, the driver works when handle device hotplug individually, but they
+>> have no idea for each other.
+>>
+>> This may introduce some issues, such as Yasuaki mentioned above, that is to say, we
+>> should remove its child before remove the device itself, and hot add its parent before
+>> the device itself.
+>>
+>> According to the ACPI namespace, we can resolve most of dependency issues. On a typical
+>> two processor sockets system, the namespace is like this:
+>>
+>> /_SB                   ---container device, with HID ACPI0004
+>>      |_SCK0             ---container device, with HID ACPI0004
+>>       |_CPU0       ---processor device, with HID ACPI0009 or LNXCPU
+>>            |_...
+>>            |_CPUx
+>>            |_MEM0       ---Memory device, with HID PNP0C80
+>>      |_SCK1
+>>       |_CPU0
+>>            |_...
+>>            |_CPUx
+>>            |_MEM1
+>>      |_PCI0            ---Host bridge, with HID PNP0A03 or PNP0A08
+>>
+>> If hot remove the container device, such as SCK0, we can easily know the dependency list
+>> is CPU0~CPUx and MEM0, but I think the ACPI hotplug driver haven't resolve this now.
+>>
+>> And there is another corner case for hotplug devices in the namespace above, that is:
+>> 1) Remove SCK0. yes, we can remove it with no dependency to the host bridge PCI0;
+>>
+>> 2) Remove SCK1 after SCK0. we should remove the host bridge PCI0 first,
+>>     or the system will crash down. yes, dynamic dependency analysis is needed here.
+>>     and the ACPI hotplug driver totally have no idea of this.
+>>
+>> so, should we do something to settle this down ?
 > 
-> ---8<---
-> From: Rik van Riel <riel@redhat.com>
-> Subject: mm,vmscan: only loop back if compaction would fail in all zones
+> Hi Guo,
+> 
+> I am trying to do this too. :)
+> 
+> But so far as I know, Vasilis Liaskovitis has provided an approach.
+> Please refer to the following url.
+> https://lkml.org/lkml/2012/11/15/159
+> 
+> I think we can review his patches first. :)
 
-Booted and running.  Judging from the patch, the expected result is
-"stops hanging", as opposed to more informative diagnostics, so I'll
-keep you posted.
+Yes, I noticed Vasilis Liaskovitis's patch and the discussion from
+Greg and Toshi, Greg suggested that no driver core changes to resolve
+this problem, so we should find another way.
 
-Peraonally, I like to use "bool" for such flags where possible;
-it helps document the intent of the variable better.
+> 
+> And by the way, I think the ACPI based hotplug framework provided by
+> Liu Jiang may also settle this problem. But I'm not quit sure yet. :)
+
+The ACPI based hotplug framework provided by Jiang Liu has settle this
+problem down, you may refer to:
+https://lkml.org/lkml/2012/11/4/64
+
+Thanks
+Hanjun Guo
+
+
+
