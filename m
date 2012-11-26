@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2KZSD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:03:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47416 "EHLO
+	id S932633Ab2KZSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:04:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47404 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab2KZRFE (ORCPT
+	with ESMTP id S932510Ab2KZREw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:05:04 -0500
+	Mon, 26 Nov 2012 12:04:52 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 085/270] libceph: init monitor connection when opening
-Date: Mon, 26 Nov 2012 14:56:15 -0200
-Message-Id: <1353949160-26803-86-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 082/270] libceph: set CLOSED state bit in con_init
+Date: Mon, 26 Nov 2012 14:56:12 -0200
+Message-Id: <1353949160-26803-83-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,65 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit 20581c1faf7b15ae1f8b80c0ec757877b0b53151 upstream.
+commit a5988c490ef66cb04ea2f610681949b25c773b3c upstream.
 
-Hold off initializing a monitor client's connection until just
-before it gets opened for use.
+Once a connection is fully initialized, it is really in a CLOSED
+state, so make that explicit by setting the bit in its state field.
+
+It is possible for a connection in NEGOTIATING state to get a
+failure, leading to ceph_fault() and ultimately ceph_con_close().
+Clear that bits if it is set in that case, to reflect that the
+connection truly is closed and is no longer participating in a
+connect sequence.
+
+Issue a warning if ceph_con_open() is called on a connection that
+is not in CLOSED state.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/mon_client.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ net/ceph/messenger.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/net/ceph/mon_client.c b/net/ceph/mon_client.c
-index b59ca7a..fec3147 100644
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -119,6 +119,7 @@ static void __close_session(struct ceph_mon_client *monc)
- 	dout("__close_session closing mon%d\n", monc->cur_mon);
- 	ceph_con_revoke(&monc->con, monc->m_auth);
- 	ceph_con_close(&monc->con);
-+	monc->con.private = NULL;
- 	monc->cur_mon = -1;
- 	monc->pending_auth = 0;
- 	ceph_auth_reset(monc->auth);
-@@ -141,9 +142,13 @@ static int __open_session(struct ceph_mon_client *monc)
- 		monc->sub_renew_after = jiffies;  /* i.e., expired */
- 		monc->want_next_osdmap = !!monc->want_next_osdmap;
- 
--		dout("open_session mon%d opening\n", monc->cur_mon);
-+		ceph_con_init(&monc->client->msgr, &monc->con);
-+		monc->con.private = monc;
-+		monc->con.ops = &mon_con_ops;
- 		monc->con.peer_name.type = CEPH_ENTITY_TYPE_MON;
- 		monc->con.peer_name.num = cpu_to_le64(monc->cur_mon);
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index 3239d3d..603d8b5 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -454,11 +454,14 @@ void ceph_con_close(struct ceph_connection *con)
+ {
+ 	dout("con_close %p peer %s\n", con,
+ 	     ceph_pr_addr(&con->peer_addr.in_addr));
+-	set_bit(CLOSED, &con->state);  /* in case there's queued work */
++	clear_bit(NEGOTIATING, &con->state);
+ 	clear_bit(STANDBY, &con->state);  /* avoid connect_seq bump */
++	set_bit(CLOSED, &con->state);
 +
-+		dout("open_session mon%d opening\n", monc->cur_mon);
- 		ceph_con_open(&monc->con,
- 			      &monc->monmap->mon_inst[monc->cur_mon].addr);
+ 	clear_bit(LOSSYTX, &con->flags);  /* so we retry next connect */
+ 	clear_bit(KEEPALIVE_PENDING, &con->flags);
+ 	clear_bit(WRITE_PENDING, &con->flags);
++
+ 	mutex_lock(&con->mutex);
+ 	reset_connection(con);
+ 	con->peer_global_seq = 0;
+@@ -475,7 +478,8 @@ void ceph_con_open(struct ceph_connection *con, struct ceph_entity_addr *addr)
+ {
+ 	dout("con_open %p %s\n", con, ceph_pr_addr(&addr->in_addr));
+ 	set_bit(OPENING, &con->state);
+-	clear_bit(CLOSED, &con->state);
++	WARN_ON(!test_and_clear_bit(CLOSED, &con->state));
++
+ 	memcpy(&con->peer_addr, addr, sizeof(*addr));
+ 	con->delay = 0;      /* reset backoff memory */
+ 	queue_con(con);
+@@ -530,6 +534,8 @@ void ceph_con_init(struct ceph_messenger *msgr, struct ceph_connection *con)
+ 	INIT_LIST_HEAD(&con->out_queue);
+ 	INIT_LIST_HEAD(&con->out_sent);
+ 	INIT_DELAYED_WORK(&con->work, con_work);
++
++	set_bit(CLOSED, &con->state);
+ }
+ EXPORT_SYMBOL(ceph_con_init);
  
-@@ -760,10 +765,6 @@ int ceph_monc_init(struct ceph_mon_client *monc, struct ceph_client *cl)
- 		goto out;
+@@ -1937,14 +1943,15 @@ more:
  
- 	/* connection */
--	ceph_con_init(&monc->client->msgr, &monc->con);
--	monc->con.private = monc;
--	monc->con.ops = &mon_con_ops;
--
- 	/* authentication */
- 	monc->auth = ceph_auth_init(cl->options->name,
- 				    cl->options->key);
-@@ -836,8 +837,6 @@ void ceph_monc_stop(struct ceph_mon_client *monc)
- 	mutex_lock(&monc->mutex);
- 	__close_session(monc);
+ 	/* open the socket first? */
+ 	if (con->sock == NULL) {
++		clear_bit(NEGOTIATING, &con->state);
++		set_bit(CONNECTING, &con->state);
++
+ 		con_out_kvec_reset(con);
+ 		prepare_write_banner(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+ 			goto out;
+ 		prepare_read_banner(con);
+-		set_bit(CONNECTING, &con->state);
+-		clear_bit(NEGOTIATING, &con->state);
  
--	monc->con.private = NULL;
--
- 	mutex_unlock(&monc->mutex);
- 
- 	/*
+ 		BUG_ON(con->in_msg);
+ 		con->in_tag = CEPH_MSGR_TAG_READY;
 -- 
 1.7.9.5
 
