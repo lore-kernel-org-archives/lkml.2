@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2KZMKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:10:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56462 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab2KZMKd (ORCPT
+	id S1754694Ab2KZMMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:12:48 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47039 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab2KZMMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:10:33 -0500
-Date: Mon, 26 Nov 2012 10:10:24 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20121126101024.1c5a7f13@infradead.org>
-In-Reply-To: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
-References: <20121126133153.50c5fa21cacd2858f30509e3@canb.auug.org.au>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 26 Nov 2012 07:12:46 -0500
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>
+Cc: Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Date: Mon, 26 Nov 2012 17:37:40 +0530
+Message-Id: <20121126120740.2595.33651.sendpatchset@codeblue>
+Subject: [PATCH V3 RFC 0/2] kvm: Improving undercommit scenarios
+x-cbid: 12112612-6102-0000-0000-0000029F7A7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+ In some special scenarios like #vcpu <= #pcpu, PLE handler may
+prove very costly, because there is no need to iterate over vcpus
+and do unsuccessful yield_to burning CPU.
 
-Em Mon, 26 Nov 2012 13:31:53 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+ The first patch optimizes all the yield_to by bailing out when there
+ is no need to continue in yield_to (i.e., when there is only one task 
+ in source and target rq).
 
-> Hi Mauro,
-> 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> ERROR: "dma_common_get_sgtable" [drivers/media/v4l2-core/videobuf2-dma-contig.ko] undefined!
-> 
-> Caused by commit 9ef2cbeb8192 ("[media] v4l: vb2-dma-contig: add support
-> for DMABUF exporting").  dma_common_get_sgtable() is called from the
-> inline dma_get_sgtable_attrs() and dma_get_sgtable_attrs() is "called
-> from" dma_get_sgtable().  dma_common_get_sgtable() is only defined if
-> ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY is set which depends on
-> CONFIG_HAVE_GENERIC_DMA_COHERENT being set which it isn't for this build.
-> 
-> I have used the v4l-dvb tree form next-20121026 for today.
-> 
-> Please try testing your tree with an x86_64 allmodconfig build.
-
-My tree does compile here with allmodconfig on x86_64.
-
-A quick fix is to just disable support for DMABUF if !HAVE_GENERIC_DMA_COHERENT.
-
-Regards,
-Mauro
-
--
-
-videobuf2-dma-contig: Only support if  HAVE_GENERIC_DMA_COHERENT
-
-As reported by Stephen:
-
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> ERROR: "dma_common_get_sgtable" [drivers/media/v4l2-core/videobuf2-dma-contig.ko] undefined!
->
-> Caused by commit 9ef2cbeb8192 ("[media] v4l: vb2-dma-contig: add support
-> for DMABUF exporting").  dma_common_get_sgtable() is called from the
-> inline dma_get_sgtable_attrs() and dma_get_sgtable_attrs() is "called
-> from" dma_get_sgtable().  dma_common_get_sgtable() is only defined if
-> ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY is set which depends on
-> CONFIG_HAVE_GENERIC_DMA_COHERENT being set which it isn't for this build.
-
-The simplest fix is to just not support DMABUF with vb2-contig, on archs
-where this symbol doesn't exist. Some latter patch can rewrite it to
-support this outside -arm.
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-index 10beaee..5729450 100644
---- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-@@ -226,6 +226,8 @@ static int vb2_dc_mmap(void *buf_priv, struct vm_area_struct *vma)
- /*         DMABUF ops for exporters          */
- /*********************************************/
+ Second patch uses that in PLE handler. Further when a yield_to fails
+ we do not immediately go out of PLE handler instead we try thrice 
+ to have better statistical possibility of false return. Otherwise that
+ would affect moderate overcommit cases.
  
-+#ifdef HAVE_GENERIC_DMA_COHERENT
-+
- struct vb2_dc_attachment {
- 	struct sg_table sgt;
- 	enum dma_data_direction dir;
-@@ -416,6 +418,8 @@ static struct dma_buf *vb2_dc_get_dmabuf(void *buf_priv)
- 	return dbuf;
- }
- 
-+#endif
-+
- /*********************************************/
- /*       callbacks for USERPTR buffers       */
- /*********************************************/
-@@ -735,7 +739,9 @@ static void *vb2_dc_attach_dmabuf(void *alloc_ctx, struct dma_buf *dbuf,
- const struct vb2_mem_ops vb2_dma_contig_memops = {
- 	.alloc		= vb2_dc_alloc,
- 	.put		= vb2_dc_put,
-+#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
- 	.get_dmabuf	= vb2_dc_get_dmabuf,
-+#endif
- 	.cookie		= vb2_dc_cookie,
- 	.vaddr		= vb2_dc_vaddr,
- 	.mmap		= vb2_dc_mmap,
+ Result on 3.7.0-rc6 kernel shows around 140% improvement for ebizzy 1x and
+ around 51% for dbench 1x  with 32 core PLE machine with 32 vcpu guest.
+
+
+base = 3.7.0-rc6 
+machine: 32 core mx3850 x5 PLE mc
+
+--+-----------+-----------+-----------+------------+-----------+
+               ebizzy (rec/sec higher is beter)
+--+-----------+-----------+-----------+------------+-----------+
+    base        stdev       patched     stdev       %improve     
+--+-----------+-----------+-----------+------------+-----------+
+1x   2511.3000    21.5409    6051.8000   170.2592   140.98276   
+2x   2679.4000   332.4482    2692.3000   251.4005     0.48145
+3x   2253.5000   266.4243    2192.1667   178.9753    -2.72169
+4x   1784.3750   102.2699    2018.7500   187.5723    13.13485
+--+-----------+-----------+-----------+------------+-----------+
+
+--+-----------+-----------+-----------+------------+-----------+
+        dbench (throughput in MB/sec. higher is better)
+--+-----------+-----------+-----------+------------+-----------+
+    base        stdev       patched     stdev       %improve     
+--+-----------+-----------+-----------+------------+-----------+
+1x  6677.4080   638.5048    10098.0060   3449.7026     51.22643
+2x  2012.6760    64.7642    2019.0440     62.6702       0.31639
+3x  1302.0783    40.8336    1292.7517     27.0515      -0.71629
+4x  3043.1725  3243.7281    4664.4662   5946.5741      53.27643
+--+-----------+-----------+-----------+------------+-----------+
+
+Here is the refernce of no ple result.
+ ebizzy-1x_nople 7592.6000 rec/sec
+ dbench_1x_nople 7853.6960 MB/sec
+
+The result says we can still improve by 60% for ebizzy, but overall we are
+getting impressive performance with the patches.
+
+ Changes Since V2:
+ - Dropped global measures usage patch (Peter Zilstra)
+ - Do not bail out on first failure (Avi Kivity)
+ - Try thrice for the failure of yield_to to get statistically more correct
+   behaviour.
+
+ Changes since V1:
+ - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
+ - Use yield() instead of schedule in overcommit scenarios (Rik)
+ - Use loadavg knowledge to detect undercommit/overcommit
+
+ Peter Zijlstra (1):
+  Bail out of yield_to when source and target runqueue has one task
+
+ Raghavendra K T (1):
+  Handle yield_to failure return for potential undercommit case
+
+ Please let me know your comments and suggestions.
+
+ Link for V2:
+ https://lkml.org/lkml/2012/10/29/287
+
+ Link for V1:
+ https://lkml.org/lkml/2012/9/21/168
+
+ kernel/sched/core.c | 25 +++++++++++++++++++------
+ virt/kvm/kvm_main.c | 26 ++++++++++++++++----------
+ 2 files changed, 35 insertions(+), 16 deletions(-)
+
