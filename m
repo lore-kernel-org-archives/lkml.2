@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2KZREZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:04:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47372 "EHLO
+	id S932640Ab2KZSHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:07:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47376 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab2KZREU (ORCPT
+	with ESMTP id S932377Ab2KZREY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:04:20 -0500
+	Mon, 26 Nov 2012 12:04:24 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 074/270] libceph: eliminate connection state "DEAD"
-Date: Mon, 26 Nov 2012 14:56:04 -0200
-Message-Id: <1353949160-26803-75-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 075/270] libceph: kill bad_proto ceph connection op
+Date: Mon, 26 Nov 2012 14:56:05 -0200
+Message-Id: <1353949160-26803-76-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,48 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit e5e372da9a469dfe3ece40277090a7056c566838 upstream.
+commit 6384bb8b8e88a9c6bf2ae0d9517c2c0199177c34 upstream.
 
-The ceph connection state "DEAD" is never set and is therefore not
-needed.  Eliminate it.
+No code sets a bad_proto method in its ceph connection operations
+vector, so just get rid of it.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- include/linux/ceph/messenger.h |    1 -
- net/ceph/messenger.c           |    6 ------
- 2 files changed, 7 deletions(-)
+ include/linux/ceph/messenger.h |    3 ---
+ net/ceph/messenger.c           |    5 -----
+ 2 files changed, 8 deletions(-)
 
 diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-index 44c87e7..6a1dc80 100644
+index 6a1dc80..ce7a483 100644
 --- a/include/linux/ceph/messenger.h
 +++ b/include/linux/ceph/messenger.h
-@@ -119,7 +119,6 @@ struct ceph_msg_pos {
- #define CLOSED		10 /* we've closed the connection */
- #define SOCK_CLOSED	11 /* socket state changed to closed */
- #define OPENING         13 /* open connection w/ (possibly new) peer */
--#define DEAD            14 /* dead, about to kfree */
- #define BACKOFF         15
+@@ -31,9 +31,6 @@ struct ceph_connection_operations {
+ 	int (*verify_authorizer_reply) (struct ceph_connection *con, int len);
+ 	int (*invalidate_authorizer)(struct ceph_connection *con);
  
- /*
+-	/* protocol version mismatch */
+-	void (*bad_proto) (struct ceph_connection *con);
+-
+ 	/* there was some error on the socket (disconnect, whatever) */
+ 	void (*fault) (struct ceph_connection *con);
+ 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 10255e8..ad2eaad 100644
+index ad2eaad..18f69a8 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -2091,12 +2091,6 @@ bad_tag:
-  */
- static void queue_con(struct ceph_connection *con)
+@@ -1360,11 +1360,6 @@ static void fail_protocol(struct ceph_connection *con)
  {
--	if (test_bit(DEAD, &con->state)) {
--		dout("queue_con %p ignoring: DEAD\n",
--		     con);
--		return;
--	}
+ 	reset_connection(con);
+ 	set_bit(CLOSED, &con->state);  /* in case there's queued work */
 -
- 	if (!con->ops->get(con)) {
- 		dout("queue_con %p ref count 0\n", con);
- 		return;
+-	mutex_unlock(&con->mutex);
+-	if (con->ops->bad_proto)
+-		con->ops->bad_proto(con);
+-	mutex_lock(&con->mutex);
+ }
+ 
+ static int process_connect(struct ceph_connection *con)
 -- 
 1.7.9.5
 
