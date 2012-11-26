@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab2KZXG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:06:56 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50533 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab2KZXGz (ORCPT
+	id S1757357Ab2KZXQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:16:14 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:46887 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757153Ab2KZXQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:06:55 -0500
+	Mon, 26 Nov 2012 18:16:13 -0500
+Message-ID: <50B3F829.4060908@ilyx.ru>
+Date: Tue, 27 Nov 2012 03:15:53 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Date: Mon, 26 Nov 2012 15:06:53 -0800
-Message-ID: <CAGXD9OfAMUmrdFBap3aOYXOhXE6=i8qL7=+SsJYnrdEr3kyMKw@mail.gmail.com>
-Subject: vmalloc_sync_all(), 64bit kernel, patches 9c48f1c629ecfa114850c03f875c6691003214de,
- a79e53d85683c6dd9f99c90511028adc2043031f
-From: Prasad Koya <prasad.koya@gmail.com>
-To: dzickus@redhat.com, aarcange@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
+To: Alan Cox <alan@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ilya@ilyx.ru
+Subject: [PATCH v3] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Sorry. Correct patch format.
 
-Before going into crashkernel, nmi_shootdown_cpus() calls
-register_die_notifier(), which calls vmalloc_sync_all(). I'm seeing
-lockup in sync_global_pgds() (init_64.c). From 3.2 and up,
-register_die_notifier() is replaced with register_nmi_handler() (patch
-9c48f1c629ecfa114850c03f875c6691003214de), which doesn't call
-vmalloc_sync_all(). Is it ok to skip vmalloc_sync_all() in this path?
-I see sync_global_pgds() was touched by this patch:
-a79e53d85683c6dd9f99c90511028adc2043031f. There are no virtual
-machines involved and I see lockups at times.
+Regression 'tty: fix "IRQ45: nobody cared"'
+Regression commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
 
-thank you.
-Prasad
+  Function reset_buffer_flags() also invoked during the ioctl(...,TCFLSH,..). 
+At the time of request we can have full buffers and throttled driver too. 
+If we don't unthrottle driver, we can get forever throttled driver, because,
+after request, we will have empty buffers and throttled driver and 
+there is no place to unthrottle driver.
+It simple reproduce with "pty" pair then one side sleep on tty->write_wait,
+and other side do ioctl(...,TCFLSH,..). Then there is no place to do writers wake up.
 
-/* Halt all other CPUs, calling the specified function on each of them
-  *
-  * This function can be used to halt all other CPUs on crash
-@@ -794,7 +784,8 @@ void nmi_shootdown_cpus(nmi_shootdown_cb callback)
 
-        atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
-        /* Would it be better to replace the trap vector here? */
--       if (register_die_notifier(&crash_nmi_nb))
-+       if (register_nmi_handler(NMI_LOCAL, crash_nmi_callback,
-+                                NMI_FLAG_FIRST, "crash"))
-                return;         /* return what? */
+Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
+---
+
+diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+index 12b1fa0..a038be1 100644
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -1098,10 +1098,12 @@ int tty_perform_flush(struct tty_struct *tty, unsigned long arg)
+ 	case TCIFLUSH:
+ 		if (ld && ld->ops->flush_buffer)
+ 			ld->ops->flush_buffer(tty);
++		tty_unthrottle(tty);
+ 		break;
+ 	case TCIOFLUSH:
+ 		if (ld && ld->ops->flush_buffer)
+ 			ld->ops->flush_buffer(tty);
++		tty_unthrottle(tty);
+ 		/* fall through */
+ 	case TCOFLUSH:
+ 		tty_driver_flush_buffer(tty);
