@@ -1,33 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab2KZXRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 18:17:31 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48639 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab2KZXR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 18:17:29 -0500
-Message-ID: <50B3F886.3090701@wwwdotorg.org>
-Date: Mon, 26 Nov 2012 16:17:26 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1757401Ab2KZXT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:19:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38422 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842Ab2KZXT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 18:19:26 -0500
+Date: Mon, 26 Nov 2012 15:19:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fix for 3.7-rc7
+Message-ID: <20121126231923.GA21621@kroah.com>
 MIME-Version: 1.0
-To: Mark Zhang <markz@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ARM: dt: tegra: cardhu: Add drm components
-References: <1353396472-24167-1-git-send-email-markz@nvidia.com>
-In-Reply-To: <1353396472-24167-1-git-send-email-markz@nvidia.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 12:27 AM, Mark Zhang wrote:
-> This patch adds the rgb node which is needed by
-> tegra drm driver.
+The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
 
-This doesn't seem to include all the GPIOs/regulators/... required to
-enable the panel and backlight.
+  Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.7-rc7
+
+for you to fetch changes up to b1a925f44a3a21c538144e30b08f966cad7adb63:
+
+  tty vt: Fix a regression in command line edition (2012-11-21 16:45:32 -0800)
+
+----------------------------------------------------------------
+TTY fix for 3.7-rc7
+
+Here is a single fix for a reported regression in 3.7-rc5 for the tty
+layer.  This fix has been in the linux-next tree and solves the reported
+problem.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Jean-François Moine (1):
+      tty vt: Fix a regression in command line edition
+
+ drivers/tty/vt/vt.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
