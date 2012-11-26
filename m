@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab2KZDJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 22:09:59 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60122 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab2KZDJ5 (ORCPT
+	id S1753927Ab2KZDLs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 22:11:48 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:44854 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab2KZDLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 22:09:57 -0500
+	Sun, 25 Nov 2012 22:11:47 -0500
+X-manitu-Original-Sender-IP: 127.0.0.1
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Mon, 26 Nov 2012 04:11:40 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dimitrios Apostolou <jimis@gmx.net>, linux-kernel@vger.kernel.org
+Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
+ even though swap is unused
+Message-ID: <20121126031140.GA26738@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Dimitrios Apostolou <jimis@gmx.net>, linux-kernel@vger.kernel.org
+References: <1353851735.22969.18.camel@soupermouf>
+ <1353871800.22969.28.camel@soupermouf>
+ <20121125225954.GA14653@mobil.systemanalysen.net>
+ <20121125235651.2f73a539@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1353669130-32610-1-git-send-email-james.hogan@imgtec.com>
-References: <1353669130-32610-1-git-send-email-james.hogan@imgtec.com>
-Date: Sun, 25 Nov 2012 22:09:56 -0500
-Message-ID: <CADnq5_Pr2asbM6cR8v305SgFoAr_+6ZE3nefFC3oBuKdfe-dwg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drm: only build ati_pcigart if PCI enabled
-From: Alex Deucher <alexdeucher@gmail.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
+Content-Disposition: inline
+In-Reply-To: <20121125235651.2f73a539@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 6:12 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> Prevent ati_pcigart.c being built unless PCI is enabled. The exported
-> functions in this file are only used by drivers which depend on PCI
-> (namely r128 and radeon), and it tries to use PCI specific functions
-> (pci_unmap_page, pci_map_page, and pci_dma_mapping_error) that cause
-> compiler errors when PCI is disabled.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: David Airlie <airlied@linux.ie>
 
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+--qDbXVdCdHGoSgWSk
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  drivers/gpu/drm/Makefile |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+On 2012-11-25 Sunday at 23:56 +0000 Alan Cox wrote:
+> > Does anybody know a x86 distribution or live-CD using a 2.6.27.* kernel?
+>=20
+> Probably not a good idea, there are known exploitable holes in 2.6.27 era
+> kernels and nobody maintains anything that old.
+
+=E2=80=9Cold=E2=80=9D is relative =E2=80=A6
+
+cd git/linux-stable  && git log -1 --date=3Diso v2.6.27.62
+=2E.......................................................
+commit bc4e1a77b06519a01e7aed1125695598e27ddeb2
+Author: Willy Tarreau <w@1wt.eu>
+Date:   2012-03-17 14:03:53 +0100
+
+    Linux 2.6.27.62
+
+    Signed-off-by: Willy Tarreau <w@1wt.eu>
+
+
+=E2=80=A6 and surely less exploitable than a system suffering oom-killer ac=
+tions.
+
+Google "linux-2.6.27 download" gives some Ubuntu hits =E2=80=A6
+
+
+> I guess RHEL/Centos might work for you.
 >
-> diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
-> index 2ff5cef..3e303b1b 100644
-> --- a/drivers/gpu/drm/Makefile
-> +++ b/drivers/gpu/drm/Makefile
-> @@ -8,7 +8,7 @@ drm-y       :=  drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
->                 drm_context.o drm_dma.o \
->                 drm_drv.o drm_fops.o drm_gem.o drm_ioctl.o drm_irq.o \
->                 drm_lock.o drm_memory.o drm_proc.o drm_stub.o drm_vm.o \
-> -               drm_agpsupport.o drm_scatter.o ati_pcigart.o drm_pci.o \
-> +               drm_agpsupport.o drm_scatter.o drm_pci.o \
->                 drm_platform.o drm_sysfs.o drm_hashtab.o drm_mm.o \
->                 drm_crtc.o drm_modes.o drm_edid.o \
->                 drm_info.o drm_debugfs.o drm_encoder_slave.o \
-> @@ -16,6 +16,7 @@ drm-y       :=        drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
->
->  drm-$(CONFIG_COMPAT) += drm_ioc32.o
->  drm-$(CONFIG_DRM_GEM_CMA_HELPER) += drm_gem_cma_helper.o
-> +drm-$(CONFIG_PCI) += ati_pcigart.o
->
->  drm-usb-y   := drm_usb.o
->
-> --
-> 1.7.7.6
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> I've not had any problems with leaks in 3.6 but there have been a few
+> reports and its clear that some obscure configurations trigger something
+> bad.
+>=20
+> Gnome 3 on the other hand leaks like a sieve.
+
+For a system with 128 M total RAM, Gnome is obviously off topic.
+
+
+--=20
+Roland
+
+--qDbXVdCdHGoSgWSk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlCy3ewACgkQdN/hKfT7G/JE7QCdHXVognKD9q2kIVat5nd21vio
+bdoAn0xutxExvYZFZqOgJZSPaBgf1Kf6
+=dbVK
+-----END PGP SIGNATURE-----
+
+--qDbXVdCdHGoSgWSk--
