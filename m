@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab2KZTQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:16:40 -0500
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:41445 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2KZTQj (ORCPT
+	id S1755452Ab2KZTQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:16:55 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60323 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab2KZTQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:16:39 -0500
-Message-ID: <66B0C9D116EC402CAFB33B13AEC1F251@Chronos>
-From: "Michael D. Burkey" <mdburkey@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        "Christoph Fritz" <chf.fritz@googlemail.com>,
-        =?iso-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>
-References: <20121122004212.371862690@linuxfoundation.org> <20121122004216.531273574@linuxfoundation.org> <8DA3043795C340758B9AEB1BCA791676@Chronos> <20121126184436.GB21012@kroah.com>
-In-Reply-To: <20121126184436.GB21012@kroah.com>
-Subject: Re: [ 35/83] ARM: imx: ehci: fix host power mask bit
-Date: Mon, 26 Nov 2012 14:17:28 -0500
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Windows Mail 6.0.6002.18005
-X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7601.17609
+	Mon, 26 Nov 2012 14:16:53 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Axel Lin <axel.lin@ingics.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 1/2] ARM: Dove: Add pinctrl clock to DT
+Date: Mon, 26 Nov 2012 20:16:38 +0100
+Message-Id: <1353957399-28799-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353921525-25163-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1353921525-25163-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is a needed fix -- but there are other fixes that probably need to go 
-along with it.
-I'm still trying to figure out exactly what all needs to change alongside 
-it.
+During merge of the mvebu patches a clock gate for pinctrl was
+lost. This patch just readds the clock gate.
 
------ Original Message ----- 
-From: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-To: "Michael D. Burkey" <mdburkey@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>; <stable@vger.kernel.org>; 
-<alan@lxorguk.ukuu.org.uk>; "Christoph Fritz" <chf.fritz@googlemail.com>; 
-"Eric Bénard" <eric@eukrea.com>; "Sascha Hauer" <s.hauer@pengutronix.de>
-Sent: Monday, November 26, 2012 1:44 PM
-Subject: Re: [ 35/83] ARM: imx: ehci: fix host power mask bit
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Axel Lin <axel.lin@ingics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/boot/dts/dove.dtsi |    1 +
+ 1 file changed, 1 insertion(+)
 
-
-> On Wed, Nov 21, 2012 at 11:52:25PM -0500, Michael D. Burkey wrote:
->> This patch is definitely needed -- it is obviously setting the wrong
->> bit --  but I am still doing testing to see what other complications
->> may arise from actually setting the RIGHT bit (i.e. I've seen some
->> odd results so far and suspect some other code may have been changed
->> historically to account for the wrong behaviour this bit was
->> causing).
->>
->> We're currently on vacation for Thanksgiving over here in the USA
->> and I won't be back in the office til next week.
->>
->> If you would, hold off on adding the patch to the stable kernel
->> until I have a bit more time to check out a couple of things.
->
-> As it's already in Linus's tree, one would have hoped that the patch
-> would have been tested already :)
->
-> I'll leave it in the stable tree, if it's a problem, please get the fix
-> into Linus's tree, and then have that fix submitted to the stable kernel
-> trees.
->
-> thanks,
->
-> greg k-h 
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+index f3f7e9d..42eac1f 100644
+--- a/arch/arm/boot/dts/dove.dtsi
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -117,6 +117,7 @@
+ 		pinctrl: pinctrl@d0200 {
+ 			compatible = "marvell,dove-pinctrl";
+ 			reg = <0xd0200 0x10>;
++			clocks = <&gate_clk 22>;
+ 		};
+ 
+ 		spi0: spi@10600 {
+-- 
+1.7.10.4
 
