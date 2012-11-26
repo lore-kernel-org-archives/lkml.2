@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab2KZRqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:46:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47710 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260Ab2KZRJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:09:22 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 152/270] ASoC: wm2200: Use rev A register patches on rev B
-Date: Mon, 26 Nov 2012 14:57:22 -0200
-Message-Id: <1353949160-26803-153-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	id S1756916Ab2KZRqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:46:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35072 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755373Ab2KZRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 12:46:33 -0500
+Date: Mon, 26 Nov 2012 12:46:22 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121126174622.GE2799@cmpxchg.org>
+References: <20121122214249.GA20319@dhcp22.suse.cz>
+ <20121122233434.3D5E35E6@pobox.sk>
+ <20121123074023.GA24698@dhcp22.suse.cz>
+ <20121123102137.10D6D653@pobox.sk>
+ <20121123100438.GF24698@dhcp22.suse.cz>
+ <20121125011047.7477BB5E@pobox.sk>
+ <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126131837.GC17860@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Nov 26, 2012 at 02:18:37PM +0100, Michal Hocko wrote:
+> [CCing also Johannes - the thread started here:
+> https://lkml.org/lkml/2012/11/21/497]
+> 
+> On Mon 26-11-12 01:38:55, azurIt wrote:
+> > >This is hackish but it should help you in this case. Kamezawa, what do
+> > >you think about that? Should we generalize this and prepare something
+> > >like mem_cgroup_cache_charge_locked which would add __GFP_NORETRY
+> > >automatically and use the function whenever we are in a locked context?
+> > >To be honest I do not like this very much but nothing more sensible
+> > >(without touching non-memcg paths) comes to my mind.
+> > 
+> > 
+> > I installed kernel with this patch, will report back if problem occurs
+> > again OR in few weeks if everything will be ok. Thank you!
+> 
+> Now that I am looking at the patch closer it will not work because it
+> depends on other patch which is not merged yet and even that one would
+> help on its own because __GFP_NORETRY doesn't break the charge loop.
+> Sorry I have missed that...
+> 
+> The patch bellow should help though. (it is based on top of the current
+> -mm tree but I will send a backport to 3.2 in the reply as well)
+> ---
+> >From 7796f942d62081ad45726efd90b5292b80e7c690 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 26 Nov 2012 11:47:57 +0100
+> Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
+> 
+> memcg oom killer might deadlock if the process which falls down to
+> mem_cgroup_handle_oom holds a lock which prevents other task to
+> terminate because it is blocked on the very same lock.
+> This can happen when a write system call needs to allocate a page but
+> the allocation hits the memcg hard limit and there is nothing to reclaim
+> (e.g. there is no swap or swap limit is hit as well and all cache pages
+> have been reclaimed already) and the process selected by memcg OOM
+> killer is blocked on i_mutex on the same inode (e.g. truncate it).
+> 
+> Process A
+> [<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+> [<ffffffff81121c90>] do_last+0x250/0xa30
+> [<ffffffff81122547>] path_openat+0xd7/0x440
+> [<ffffffff811229c9>] do_filp_open+0x49/0xa0
+> [<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+> [<ffffffff8110f950>] sys_open+0x20/0x30
+> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Process B
+> [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> [<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+> [<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+> [<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+> [<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+> [<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+> [<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+> [<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+> [<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+> [<ffffffff8111156a>] do_sync_write+0xea/0x130
+> [<ffffffff81112183>] vfs_write+0xf3/0x1f0
+> [<ffffffff81112381>] sys_write+0x51/0x90
+> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> [<ffffffffffffffff>] 0xffffffffffffffff
 
-------------------
+So process B manages to lock the hierarchy, calls
+mem_cgroup_out_of_memory() and retries the charge infinitely, waiting
+for task A to die.  All while it holds the i_mutex, preventing task A
+from dying, right?
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-commit 5ae9eb4cbdfd640269dbd66aa3c92ea8e11cc838 upstream.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- sound/soc/codecs/wm2200.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/sound/soc/codecs/wm2200.c b/sound/soc/codecs/wm2200.c
-index 32682c1..58ab97a 100644
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -2091,6 +2091,7 @@ static __devinit int wm2200_i2c_probe(struct i2c_client *i2c,
- 
- 	switch (wm2200->rev) {
- 	case 0:
-+	case 1:
- 		ret = regmap_register_patch(wm2200->regmap, wm2200_reva_patch,
- 					    ARRAY_SIZE(wm2200_reva_patch));
- 		if (ret != 0) {
--- 
-1.7.9.5
-
+I think global oom already handles this in a much better way: invoke
+the OOM killer, sleep for a second, then return to userspace to
+relinquish all kernel resources and locks.  The only reason why we
+can't simply change from an endless retry loop is because we don't
+want to return VM_FAULT_OOM and invoke the global OOM killer.  But
+maybe we can return a new VM_FAULT_OOM_HANDLED for memcg OOM and just
+restart the pagefault.  Return -ENOMEM to the buffered IO syscall
+respectively.  This way, the memcg OOM killer is invoked as it should
+but nobody gets stuck anywhere livelocking with the exiting task.
