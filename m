@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab2KZSND (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:13:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47241 "EHLO
+	id S1756551Ab2KZRCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:02:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47236 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756556Ab2KZRCu (ORCPT
+	with ESMTP id S1756310Ab2KZRCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:02:50 -0500
+	Mon, 26 Nov 2012 12:02:47 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 049/270] ath9k: use ieee80211_free_txskb
-Date: Mon, 26 Nov 2012 14:55:39 -0200
-Message-Id: <1353949160-26803-50-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 047/270] iscsi-target: Bump defaults for nopin_timeout + nopin_response_timeout values
+Date: Mon, 26 Nov 2012 14:55:37 -0200
+Message-Id: <1353949160-26803-48-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,177 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 249ee72249140fe5b9adc988f97298f0aa5db2fc upstream.
+commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
 
-Using ieee80211_free_txskb for tx frames is required, since mac80211 clones
-skbs for which socket tx status is requested.
+This patch increases the default for nopin_timeout to 15 seconds (wait
+between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
+(wait for NopOUT response before failing the connection) in order to avoid
+false positives by iSCSI Initiators who are not always able (under load) to
+respond to NopIN echo PING requests within the current 5 second window.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+False positives have been observed recently using Open-iSCSI code on v3.3.x
+with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
+increasing these values to more reasonable defaults significantly reduces
+the possibility of false positive NopIN response timeout events under
+this specific workload.
+
+Historically these have been set low to initiate connection recovery as
+soon as possible if we don't hear a ping back, but for modern v3.x code
+on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
+
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/beacon.c |    2 +-
- drivers/net/wireless/ath/ath9k/main.c   |    2 +-
- drivers/net/wireless/ath/ath9k/xmit.c   |   53 +++++++++++++++++--------------
- 3 files changed, 31 insertions(+), 26 deletions(-)
+ drivers/target/iscsi/iscsi_target_core.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/beacon.c b/drivers/net/wireless/ath/ath9k/beacon.c
-index 11bc55e..3f9330a 100644
---- a/drivers/net/wireless/ath/ath9k/beacon.c
-+++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -121,7 +121,7 @@ static void ath_tx_cabq(struct ieee80211_hw *hw, struct sk_buff *skb)
- 
- 	if (ath_tx_start(hw, skb, &txctl) != 0) {
- 		ath_dbg(common, XMIT, "CABQ TX failed\n");
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 	}
- }
- 
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index dac1a27..b5fa9eb 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1161,7 +1161,7 @@ static void ath9k_tx(struct ieee80211_hw *hw, struct sk_buff *skb)
- 
- 	return;
- exit:
--	dev_kfree_skb_any(skb);
-+	ieee80211_free_txskb(hw, skb);
- }
- 
- static void ath9k_stop(struct ieee80211_hw *hw)
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index 4d57139..b78773b 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -64,8 +64,7 @@ static void ath_tx_update_baw(struct ath_softc *sc, struct ath_atx_tid *tid,
- static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 					   struct ath_txq *txq,
- 					   struct ath_atx_tid *tid,
--					   struct sk_buff *skb,
--					   bool dequeue);
-+					   struct sk_buff *skb);
- 
- enum {
- 	MCS_HT20,
-@@ -201,7 +200,15 @@ static void ath_tx_flush_tid(struct ath_softc *sc, struct ath_atx_tid *tid)
- 		fi = get_frame_info(skb);
- 		bf = fi->bf;
- 
--		if (bf && fi->retries) {
-+		if (!bf) {
-+			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
-+			if (!bf) {
-+				ieee80211_free_txskb(sc->hw, skb);
-+				continue;
-+			}
-+		}
-+
-+		if (fi->retries) {
- 			list_add_tail(&bf->list, &bf_head);
- 			ath_tx_update_baw(sc, tid, bf->bf_state.seqno);
- 			ath_tx_complete_buf(sc, bf, txq, &bf_head, &ts, 0);
-@@ -812,10 +819,13 @@ static enum ATH_AGGR_STATUS ath_tx_form_aggr(struct ath_softc *sc,
- 		fi = get_frame_info(skb);
- 		bf = fi->bf;
- 		if (!fi->bf)
--			bf = ath_tx_setup_buffer(sc, txq, tid, skb, true);
-+			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
- 
--		if (!bf)
-+		if (!bf) {
-+			__skb_unlink(skb, &tid->buf_q);
-+			ieee80211_free_txskb(sc->hw, skb);
- 			continue;
-+		}
- 
- 		bf->bf_state.bf_type = BUF_AMPDU | BUF_AGGR;
- 		seqno = bf->bf_state.seqno;
-@@ -1717,9 +1727,11 @@ static void ath_tx_send_ampdu(struct ath_softc *sc, struct ath_atx_tid *tid,
- 		return;
- 	}
- 
--	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
--	if (!bf)
-+	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
-+	if (!bf) {
-+		ieee80211_free_txskb(sc->hw, skb);
- 		return;
-+	}
- 
- 	bf->bf_state.bf_type = BUF_AMPDU;
- 	INIT_LIST_HEAD(&bf_head);
-@@ -1743,11 +1755,6 @@ static void ath_tx_send_normal(struct ath_softc *sc, struct ath_txq *txq,
- 	struct ath_buf *bf;
- 
- 	bf = fi->bf;
--	if (!bf)
--		bf = ath_tx_setup_buffer(sc, txq, tid, skb, false);
--
--	if (!bf)
--		return;
- 
- 	INIT_LIST_HEAD(&bf_head);
- 	list_add_tail(&bf->list, &bf_head);
-@@ -1820,8 +1827,7 @@ u8 ath_txchainmask_reduction(struct ath_softc *sc, u8 chainmask, u32 rate)
- static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 					   struct ath_txq *txq,
- 					   struct ath_atx_tid *tid,
--					   struct sk_buff *skb,
--					   bool dequeue)
-+					   struct sk_buff *skb)
- {
- 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
- 	struct ath_frame_info *fi = get_frame_info(skb);
-@@ -1833,7 +1839,7 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 	bf = ath_tx_get_buffer(sc);
- 	if (!bf) {
- 		ath_dbg(common, XMIT, "TX buffers are full\n");
--		goto error;
-+		return NULL;
- 	}
- 
- 	ATH_TXBUF_RESET(bf);
-@@ -1862,18 +1868,12 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 		ath_err(ath9k_hw_common(sc->sc_ah),
- 			"dma_mapping_error() on TX\n");
- 		ath_tx_return_buffer(sc, bf);
--		goto error;
-+		return NULL;
- 	}
- 
- 	fi->bf = bf;
- 
- 	return bf;
--
--error:
--	if (dequeue)
--		__skb_unlink(skb, &tid->buf_q);
--	dev_kfree_skb_any(skb);
--	return NULL;
- }
- 
- /* FIXME: tx power */
-@@ -1902,9 +1902,14 @@ static void ath_tx_start_dma(struct ath_softc *sc, struct sk_buff *skb,
- 		 */
- 		ath_tx_send_ampdu(sc, tid, skb, txctl);
- 	} else {
--		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
--		if (!bf)
-+		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
-+		if (!bf) {
-+			if (txctl->paprd)
-+				dev_kfree_skb_any(skb);
-+			else
-+				ieee80211_free_txskb(sc->hw, skb);
- 			return;
-+		}
- 
- 		bf->bf_state.bfs_paprd = txctl->paprd;
- 
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 1dd5716..8bb81d68 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -25,10 +25,10 @@
+ #define NA_DATAOUT_TIMEOUT_RETRIES	5
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
+-#define NA_NOPIN_TIMEOUT		5
++#define NA_NOPIN_TIMEOUT		15
+ #define NA_NOPIN_TIMEOUT_MAX		60
+ #define NA_NOPIN_TIMEOUT_MIN		3
+-#define NA_NOPIN_RESPONSE_TIMEOUT	5
++#define NA_NOPIN_RESPONSE_TIMEOUT	30
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
+ #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
 -- 
 1.7.9.5
 
