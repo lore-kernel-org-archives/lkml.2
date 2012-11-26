@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750Ab2KZRMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:12:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47940 "EHLO
+	id S1756814Ab2KZReV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:34:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47963 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933720Ab2KZRMB (ORCPT
+	with ESMTP id S933748Ab2KZRMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:12:01 -0500
+	Mon, 26 Nov 2012 12:12:21 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 194/270] pinctrl: remove mutex lock in groups show
-Date: Mon, 26 Nov 2012 14:58:04 -0200
-Message-Id: <1353949160-26803-195-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 199/270] ALSA: hda - Fix silent headphone output from Toshiba P200
+Date: Mon, 26 Nov 2012 14:58:09 -0200
+Message-Id: <1353949160-26803-200-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,43 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7ae9d71e8df27a3ab60a05ae3add08728debc09c upstream.
+commit cb766404e6b8c566569eb9ada02ea45d28729864 upstream.
 
-Mutex is locked duplicatly by pinconf_groups_show() and
-pin_config_group_get(). It results dead lock. So avoid to lock mutex
-in pinconf_groups_show().
+By some reason, Toshiba laptop doesn't like the EAPD turned up for the
+headphone pin.  Add a fix up code to force to turn down EAPD for NID
+0x15.
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=569991
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ herton: backported to 3.5:
+  create enum/structs from scratch, instead of bringing
+  commit 6e72aa5f. alc_apply_fixup with ALC_FIXUP_ACT_PRE_PROBE should
+  be a noop on this, but keep it as it's a skeleton for possible
+  quirks in the future being applied through stable ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/pinctrl/pinconf.c |    4 ----
- 1 file changed, 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index 43f474c..baee2cc 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -537,8 +537,6 @@ static int pinconf_groups_show(struct seq_file *s, void *what)
- 	seq_puts(s, "Pin config settings per pin group\n");
- 	seq_puts(s, "Format: group (name): configs\n");
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index e996453..649ce26 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5546,6 +5546,33 @@ static const struct hda_verb alc268_beep_init_verbs[] = {
+ 	{ }
+ };
  
--	mutex_lock(&pinctrl_mutex);
--
- 	while (selector < ngroups) {
- 		const char *gname = pctlops->get_group_name(pctldev, selector);
++enum {
++	ALC268_FIXUP_HP_EAPD,
++};
++
++static const struct alc_fixup alc268_fixups[] = {
++	[ALC268_FIXUP_HP_EAPD] = {
++		.type = ALC_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{0x15, AC_VERB_SET_EAPD_BTLENABLE, 0},
++			{}
++		}
++	},
++};
++
++static const struct alc_model_fixup alc268_fixup_models[] = {
++	{.id = ALC268_FIXUP_HP_EAPD, .name = "hp-eapd"},
++	{}
++};
++
++static const struct snd_pci_quirk alc268_fixup_tbl[] = {
++	/* below is codec SSID since multiple Toshiba laptops have the
++	 * same PCI SSID 1179:ff00
++	 */
++	SND_PCI_QUIRK(0x1179, 0xff06, "Toshiba P200", ALC268_FIXUP_HP_EAPD),
++	{}
++};
++
+ /*
+  * BIOS auto configuration
+  */
+@@ -5577,6 +5604,9 @@ static int patch_alc268(struct hda_codec *codec)
  
-@@ -549,8 +547,6 @@ static int pinconf_groups_show(struct seq_file *s, void *what)
- 		selector++;
- 	}
+ 	spec = codec->spec;
  
--	mutex_unlock(&pinctrl_mutex);
--
++	alc_pick_fixup(codec, alc268_fixup_models, alc268_fixup_tbl, alc268_fixups);
++	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
++
+ 	/* automatic parse from the BIOS config */
+ 	err = alc268_parse_auto_config(codec);
+ 	if (err < 0)
+@@ -5606,6 +5636,8 @@ static int patch_alc268(struct hda_codec *codec)
+ 	codec->patch_ops = alc_patch_ops;
+ 	spec->shutup = alc_eapd_shutup;
+ 
++	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
++
  	return 0;
- }
  
+  error:
 -- 
 1.7.9.5
 
