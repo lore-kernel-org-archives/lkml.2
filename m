@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab2KZKcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:32:07 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:43378 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab2KZKcE (ORCPT
+	id S1754828Ab2KZKcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:32:05 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53744 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab2KZKcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:32:04 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-ef-50b3451df59a
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        myungjoo.ham@gmail.com
-Subject: [PULL REQUEST for Rafael] PM / devfreq: rebased on pm-devfreq
-Date: Mon, 26 Nov 2012 19:31:43 +0900
-Message-id: <1353925903-19557-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-In-reply-to: <1562412.gSBZdyfWN8@vostro.rjw.lan>
-References: <1562412.gSBZdyfWN8@vostro.rjw.lan>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t8zLV1Z180BBo19lhaXd81hs/jce4TR
-	gcnj8ya5AMYoLpuU1JzMstQifbsErowZF7rZC55LVMw99Ii5gfGdcBcjJ4eEgInEkkOXmSFs
-	MYkL99azdTFycQgJLGOU2Pl6BRtM0cWzbcwQiemMEpunHGSBcFqYJA7c3cYOUsUmoCuxdcNd
-	FhBbRIBfYtu8o6wgNrNAiMTamefBaoQF3CT+7VgBto5FQFXiwq9usBpeAQ+JmbNfQZ2hIPHr
-	yCqwOKeAgURL3zSwmUIC+hKrny1ngegVkPg2+RCQzQFULyux6QDYcRIC19kkps9exQ4xR1Li
-	4IobLBMYhRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECAlH6R2MqxosDjEKcDAq8fBK
-	HtsUIMSaWFZcmXuIUYKDWUmEdyITUIg3JbGyKrUoP76oNCe1+BCjD9AlE5mlRJPzgbGSVxJv
-	aGxgbGhoaWhmamlqgENYSZy32SMlQEggPbEkNTs1tSC1CGYcEwenVAPjxnmbeXdGO7n6zTip
-	c2NlacAzHU+BiKv1ibs/+2+vP/n/qfm3yrablhvXnouwPcX4lW9b7sQ5Kiusfa8pxik3Kwk/
-	mFFefTJesedzuNPamhXT3zAun5Sxf72AzdlcwyWKyzflzZDMDDzbPGv9M/bCibUz5jV8qn8e
-	U8P7YSfLCz6ns8IVO5zqlFiKMxINtZiLihMBYk6oBnQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQV1Z180BBh+uGVlc3jWHzeJz7xFG
-	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
-	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzZlzoZi94LlEx
-	99Aj5gbGd8JdjJwcEgImEhfPtjFD2GISF+6tZ+ti5OIQEpjOKLF5ykEWCKeFSeLA3W3sIFVs
-	AroSWzfcZQGxRQT4JbbNO8oKYjMLhEisnXkerEZYwE3i344VYFNZBFQlLvzqBqvhFfCQmDn7
-	FdQ2BYlfR1aBxTkFDCRa+qaBzRQS0JdY/Ww5ywRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS
-	9ZLzczcxgoP9mfQOxlUNFocYBTgYlXh4JY9tChBiTSwrrsw9xCjBwawkwjuRCSjEm5JYWZVa
-	lB9fVJqTWnyI0QfoqonMUqLJ+cBIzCuJNzQ2MTOyNDIzNjE3NsYhrCTO2+yREiAkkJ5Ykpqd
-	mlqQWgQzjomDU6qBMZHnO7uQY1xFXnET38HUkrQZ1cvfzv4ckTSFyT1YZPeCrlPRjj5tD7e5
-	L+N4bPr0A8/d9JTYT2reDNWTDu4Xnahvt61c9qfu1Aei8hGGR1Q/nYvOyhZU39DFLnaU1WHt
-	w+aVrr5e0+v2Z/7efy3D+APDVJ3W6D1tLyZ9YpxYEZn+aY/+IlFxJZbijERDLeai4kQAcBvO
-	vKMCAAA=
-X-CFilter-Loop: Reflected
+	Mon, 26 Nov 2012 05:32:02 -0500
+Date: Mon, 26 Nov 2012 21:31:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20121126213152.60b52e19d7fc84ce94c356c3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__26_Nov_2012_21_31_52_+1100_gvha+WRsLlIg7w5k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__26_Nov_2012_21_31_52_+1100_gvha+WRsLlIg7w5k
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rafael,
+Hi all,
 
-Here goes the pull request rebased on your pm-devfreq branch.
-Sorry for all the confusion and mess invoked.
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/tty/serial/atmel_serial.c between commit 95e629b761ce
+("ARM/AVR32: get rid of serial_at91.h") from the arm tree and commit
+bcd2360c1ff9 ("arm: at91: move platfarm_data to
+include/linux/platform_data/atmel.h") from the arm-soc tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
 Cheers,
-MyungJoo
+Stephen Rothwell                    sfr@canb.auug.org.au
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+diff --cc drivers/tty/serial/atmel_serial.c
+index 1a8a271,5660ec2..0000000
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@@ -39,13 -39,13 +39,12 @@@
+  #include <linux/atmel_pdc.h>
+  #include <linux/atmel_serial.h>
+  #include <linux/uaccess.h>
+ +#include <linux/pinctrl/consumer.h>
++ #include <linux/platform_data/atmel.h>
+ =20
+  #include <asm/io.h>
+  #include <asm/ioctls.h>
+ =20
+- #include <mach/board.h>
+-=20
+ -#include <asm/mach/serial_at91.h>
+ -
+  #ifdef CONFIG_ARM
+  #include <mach/cpu.h>
+  #include <asm/gpio.h>
 
-The following changes since commit 1a1357ea176670867f347419c3345e2becc07338:
+--Signature=_Mon__26_Nov_2012_21_31_52_+1100_gvha+WRsLlIg7w5k
+Content-Type: application/pgp-signature
 
-  PM / devfreq: make devfreq_class static (2012-11-15 00:35:06 +0100)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git tags/pull_req_20121126
-
-Jonghwa Lee (1):
-      PM / devfreq: Add sysfs node for representing frequency transition information.
-
-MyungJoo Ham (2):
-      PM / devfreq: remove compiler error when a governor is module
-      PM / devfreq: missing rcu_read_lock() added for find_device_opp()
-
-Nishanth Menon (9):
-      PM / devfreq: documentation cleanups for devfreq header
-      PM / devfreq: Add sysfs node to expose available frequencies
-      PM / devfreq: export update_devfreq
-      PM / devfreq: provide hooks for governors to be registered
-      PM / devfreq: register governors with devfreq framework
-      PM / devfreq: map devfreq drivers to governor using name
-      PM / devfreq: governors: add GPL module license and allow module build
-      PM / devfreq: allow sysfs governor node to switch governor
-      PM / devfreq: Add sysfs node to expose available governors
-
-Sachin Kamat (3):
-      PM / devfreq: Use devm_* functions in exynos4_bus.c
-      PM / devfreq: Fix incorrect argument in error message
-      PM / devfreq: Fix return value in devfreq_remove_governor()
-
-Sangho Yi (1):
-      PM / devfreq: exynos4_bus.c: Fixed an alignment of the func call args.
-
- Documentation/ABI/testing/sysfs-class-devfreq |   29 ++-
- drivers/devfreq/Kconfig                       |    8 +-
- drivers/devfreq/devfreq.c                     |  413 ++++++++++++++++++++++++-
- drivers/devfreq/exynos4_bus.c                 |   45 +--
- drivers/devfreq/governor.h                    |    4 +
- drivers/devfreq/governor_performance.c        |   22 ++-
- drivers/devfreq/governor_powersave.c          |   22 ++-
- drivers/devfreq/governor_simpleondemand.c     |   22 ++-
- drivers/devfreq/governor_userspace.c          |   22 ++-
- include/linux/devfreq.h                       |   95 +++---
- 10 files changed, 581 insertions(+), 101 deletions(-)
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQs0NoAAoJEBOhurvWBoCK2hIQAJuTMnRiWb2BkU30ENAug1FC
-oNvoFBTVA2J9vTp1Q1qtoPj+ualfg++auzt4e5U2rbAthQYpB1LYDvc/ycEpGkG0
-C+V3aleb9SK0TnqWp/s2i/KLWK1fTxbMGi2nDdCwwglbn59OlY6fVTyUA+jGzk3r
-AwpxSCnLhi7jhtbgSWhiQh2F5gehNXGtU6CsK0OebP2VlVK5ZFw6X3eqacfact/h
-kabXBsS+jJlrA90+jFFqQ4nSyU69Kgou/+de3rzrMOFYEv+uoGNmzRofh1BRaWM+
-ueyKdfF/oUJWmL8fvhMY556xrTBuGpI5btSmfYxSz+VFiDzV8HduIi8ThaVKMmGu
-MR77kgFSy0NkasCQ2l6q7LYIRoFJX/MQWnQpxvpZKOi5aqEgWsdCY75juRN3wOGm
-kCGecK2Rq/tTj3EzIS2brUPQJPcM1YS4QHKFYq3Oucnpbk6Ym1ojIYxTB7no7fKW
-7OhVOf3IHA3C0VMg8DiN9SoOW8ILU3EvknP6BguRRVf+iFjtUWqCoaNj14BOSjUx
-Ol/606xgVa6xEsDG1NeoYiEov/lmYDpHG/tnh2g5gF/YrKjbQsvT7uqSBbeFJO2u
-ybI2hz37OulNvur4ORFWTCOyNqknX9t+OIFFyQjdGmaPwjnJ+IZ5kWqBwPaHxd3x
-Y/8iwxoohO4ROW1pBln0
-=5A1F
+iQIcBAEBCAAGBQJQs0UYAAoJEECxmPOUX5FE/0QP/RzBU4spRgnkpzns0pYOUE+T
+2jWfHZIGkzjKcSKcbQSHKeDRqhxway1CUKQpoTKOuKQOFiVBufWj9vXG+Qt0ZAdk
+QImZ6TMT2tgQHO5K8HyaL4tVLXAhOgn2q+9vg2ywqJ/JTtQZ0msTAEV+lp9ujtpU
+tnhZbo7Iek/7XdKUJb0o84ZBtWGFQSG8ry9Rg4TExjkJauqSBN3d2ZCGTpQov3fA
+vvLfXNoecZSqeiVuzID8Sw+5+4dqAfaFvG21VSFE2ICycfJeXqsBB/S94+YRsC2z
+PpYDUFi0PwGS+WS7SKJ99TbW9E0Qi53n4Qts117Drs4MKBrRFpXaKlqAvuLYa9TK
+rEBzAlQs4qXH+EknHewYutk16gpbQwTBY6nSjqT5zB5J81xcyBy32yAiNLYuDUMn
+N4F2YuZIVxO5zhhoN9TtwqtPULCxPCyPCH2VJOpb/R42GM1qSNmKeAmYQ3yELEoB
+zvH2/VoHLOznd+wGJye5lzXNudT2+7Pa9CU+aTQpWu2Lyxr6dv3JB68TlhpyRkHX
+Me+zrGYKCMiovePEJRRfZbnJ9Pxd0prutaQLIKBUplDQTK02keEssfUji9X5c4CB
+bVLUk5CR2cM+qzHEqWguHLHdnckad3EqvMrcU1pqLxez4ntCuRG47joxvM3wHT5/
+1DuqSvfHb/xlwdeB1eNc
+=Udak
 -----END PGP SIGNATURE-----
+
+--Signature=_Mon__26_Nov_2012_21_31_52_+1100_gvha+WRsLlIg7w5k--
