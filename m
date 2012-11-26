@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2KZRAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:00:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47012 "EHLO
+	id S1755789Ab2KZRAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:00:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47014 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab2KZRAI (ORCPT
+	with ESMTP id S1755618Ab2KZRAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:00:08 -0500
+	Mon, 26 Nov 2012 12:00:12 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tyler Hicks <tyhicks@canonical.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>,
+Cc: Mike Galbraith <mgalbraith@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 007/270] eCryptfs: Unlink lower inode when ecryptfs_create() fails
-Date: Mon, 26 Nov 2012 14:54:57 -0200
-Message-Id: <1353949160-26803-8-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 003/270] sched: Fix migration thread runtime bogosity
+Date: Mon, 26 Nov 2012 14:54:53 -0200
+Message-Id: <1353949160-26803-4-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,121 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Mike Galbraith <mgalbraith@suse.de>
 
-commit 8bc2d3cf612994a960c2e8eaea37f6676f67082a upstream.
+commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
 
-ecryptfs_create() creates a lower inode, allocates an eCryptfs inode,
-initializes the eCryptfs inode and cryptographic metadata attached to
-the inode, and then writes the metadata to the header of the file.
+Make stop scheduler class do the same accounting as other classes,
 
-If an error was to occur after the lower inode was created, an empty
-lower file would be left in the lower filesystem. This is a problem
-because ecryptfs_open() refuses to open any lower files which do not
-have the appropriate metadata in the file header.
+Migration threads can be caught in the act while doing exec balancing,
+leading to the below due to use of unmaintained ->se.exec_start.  The
+load that triggered this particular instance was an apparently out of
+control heavily threaded application that does system monitoring in
+what equated to an exec bomb, with one of the VERY frequently migrated
+tasks being ps.
 
-This patch properly unlinks the lower inode when an error occurs in the
-later stages of ecryptfs_create(), reducing the chance that an empty
-lower file will be left in the lower filesystem.
+%CPU   PID USER     CMD
+99.3    45 root     [migration/10]
+97.7    53 root     [migration/12]
+97.0    57 root     [migration/13]
+90.1    49 root     [migration/11]
+89.6    65 root     [migration/15]
+88.7    17 root     [migration/3]
+80.4    37 root     [migration/8]
+78.1    41 root     [migration/9]
+44.2    13 root     [migration/2]
 
-https://launchpad.net/bugs/872905
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Cc: John Johansen <john.johansen@canonical.com>
-Cc: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ecryptfs/inode.c |   55 ++++++++++++++++++++++++++++++---------------------
- 1 file changed, 32 insertions(+), 23 deletions(-)
+ kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 68166ea..a14abba 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -143,6 +143,31 @@ static int ecryptfs_interpose(struct dentry *lower_dentry,
- 	return 0;
- }
- 
-+static int ecryptfs_do_unlink(struct inode *dir, struct dentry *dentry,
-+			      struct inode *inode)
-+{
-+	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
-+	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
-+	struct dentry *lower_dir_dentry;
-+	int rc;
-+
-+	dget(lower_dentry);
-+	lower_dir_dentry = lock_parent(lower_dentry);
-+	rc = vfs_unlink(lower_dir_inode, lower_dentry);
-+	if (rc) {
-+		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
-+		goto out_unlock;
-+	}
-+	fsstack_copy_attr_times(dir, lower_dir_inode);
-+	set_nlink(inode, ecryptfs_inode_to_lower(inode)->i_nlink);
-+	inode->i_ctime = dir->i_ctime;
-+	d_drop(dentry);
-+out_unlock:
-+	unlock_dir(lower_dir_dentry);
-+	dput(lower_dentry);
-+	return rc;
-+}
-+
- /**
-  * ecryptfs_do_create
-  * @directory_inode: inode of the new file's dentry's parent in ecryptfs
-@@ -182,8 +207,10 @@ ecryptfs_do_create(struct inode *directory_inode,
- 	}
- 	inode = __ecryptfs_get_inode(lower_dentry->d_inode,
- 				     directory_inode->i_sb);
--	if (IS_ERR(inode))
-+	if (IS_ERR(inode)) {
-+		vfs_unlink(lower_dir_dentry->d_inode, lower_dentry);
- 		goto out_lock;
-+	}
- 	fsstack_copy_attr_times(directory_inode, lower_dir_dentry->d_inode);
- 	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
- out_lock:
-@@ -265,7 +292,9 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
- 	 * that this on disk file is prepared to be an ecryptfs file */
- 	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
- 	if (rc) {
--		drop_nlink(ecryptfs_inode);
-+		ecryptfs_do_unlink(directory_inode, ecryptfs_dentry,
-+				   ecryptfs_inode);
-+		make_bad_inode(ecryptfs_inode);
- 		unlock_new_inode(ecryptfs_inode);
- 		iput(ecryptfs_inode);
- 		goto out;
-@@ -477,27 +506,7 @@ out_lock:
- 
- static int ecryptfs_unlink(struct inode *dir, struct dentry *dentry)
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 7b386e8..da5eb5b 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
  {
--	int rc = 0;
--	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
--	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
--	struct dentry *lower_dir_dentry;
--
--	dget(lower_dentry);
--	lower_dir_dentry = lock_parent(lower_dentry);
--	rc = vfs_unlink(lower_dir_inode, lower_dentry);
--	if (rc) {
--		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
--		goto out_unlock;
--	}
--	fsstack_copy_attr_times(dir, lower_dir_inode);
--	set_nlink(dentry->d_inode,
--		  ecryptfs_inode_to_lower(dentry->d_inode)->i_nlink);
--	dentry->d_inode->i_ctime = dir->i_ctime;
--	d_drop(dentry);
--out_unlock:
--	unlock_dir(lower_dir_dentry);
--	dput(lower_dentry);
--	return rc;
-+	return ecryptfs_do_unlink(dir, dentry, dentry->d_inode);
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+ 
+ 	return NULL;
+ }
+@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
+ 
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
  }
  
- static int ecryptfs_symlink(struct inode *dir, struct dentry *dentry,
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+ 
+ static void set_curr_task_stop(struct rq *rq)
+ {
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
+ 
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
 -- 
 1.7.9.5
 
