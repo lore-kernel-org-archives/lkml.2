@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2KZVWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:22:01 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58598 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab2KZVV7 (ORCPT
+	id S1757214Ab2KZVW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:22:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65480 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757103Ab2KZVW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:21:59 -0500
+	Mon, 26 Nov 2012 16:22:56 -0500
 From: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Michal Marek <mmarek@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Daniel Santos <daniel.santos@pobox.com>, Michal Marek <mmarek@suse.cz>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>,
         Yacine Belkadi <yacine.belkadi.1@gmail.com>
-Subject: [PATCHv2 1/2] Kernel-doc: Convention: Use a "Return" section to describe return values
-Date: Mon, 26 Nov 2012 22:21:23 +0100
-Message-Id: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com>
+Subject: [PATCHv2 2/2] scripts/kernel-doc: check that non-void fcts describe their return value
+Date: Mon, 26 Nov 2012 22:22:27 +0100
+Message-Id: <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com>
+References: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Non-void functions should describe their return values in their kernel-doc
-comments. Currently, some don't, others do in various forms. For example:
-   * Return the result.
-   * Return: The result.
-   * Returns the result.
-   * Returns: the result.
-   * Return Value: The result.
-   * @return: the result.
-   * This function returns the result.
-   * It will return the result.
+If a function has a return value, but its kernel-doc comment doesn't contain a
+"Return" section, then emit the following warning:
 
-Defining a convention would improve consistency of kernel-doc comments. It
-would also help scripts/kernel-doc identify the text describing the return
-value of a function. Thus allowing additional checks on the comments, and
-suitable highlighting in the generated docs (man pages, html, etc).
+   Warning(file.h:129): No description found for return value of 'fct'
 
-So, as a convention, use a section named "Return" to describe the return
-value of a function.
+Note: This check emits a lot of warnings at the moment, because many functions
+don't have a 'Return' doc section. So until the number of warnings goes
+sufficiently down, the check is only performed in verbose mode.
 
 Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
 ---
- Documentation/kernel-doc-nano-HOWTO.txt |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ scripts/kernel-doc |   34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-diff --git a/Documentation/kernel-doc-nano-HOWTO.txt b/Documentation/kernel-doc-nano-HOWTO.txt
-index 3d8a977..99b57ab 100644
---- a/Documentation/kernel-doc-nano-HOWTO.txt
-+++ b/Documentation/kernel-doc-nano-HOWTO.txt
-@@ -64,6 +64,8 @@ Example kernel-doc function comment:
-  * comment lines.
-  *
-  * The longer description can have multiple paragraphs.
-+ *
-+ * Return: Describe the return value of foobar.
-  */
+diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+index 46e7aff..28b7615 100755
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -137,6 +137,8 @@ use strict;
+ # should document the "Context:" of the function, e.g. whether the functions
+ # can be called form interrupts. Unlike other sections you can end it with an
+ # empty line.
++# A non-void function should have a "Return:" section describing the return
++# value(s).
+ # Example-sections should contain the string EXAMPLE so that they are marked
+ # appropriately in DocBook.
+ #
+@@ -315,6 +317,7 @@ my $section_default = "Description";	# default section
+ my $section_intro = "Introduction";
+ my $section = $section_default;
+ my $section_context = "Context";
++my $section_return = "Return";
  
- The short description following the subject can span multiple lines
-@@ -78,6 +80,8 @@ If a function parameter is "..." (varargs), it should be listed in
- kernel-doc notation as:
-  * @...: description
+ my $undescribed = "-- undescribed --";
  
-+The return value, if any, should be described in a dedicated section
-+named "Return".
+@@ -2039,6 +2042,28 @@ sub check_sections($$$$$$) {
+ }
  
- Example kernel-doc data structure comment.
- 
-@@ -222,6 +226,9 @@ only a "*").
- "section header:" names must be unique per function (or struct,
- union, typedef, enum).
- 
-+Use the section header "Return" for sections describing the return value
-+of a function.
+ ##
++# Checks the section describing the return value of a function.
++sub check_return_section {
++        my $file = shift;
++        my $declaration_name = shift;
++        my $return_type = shift;
 +
- Avoid putting a spurious blank line after the function name, or else the
- description will be repeated!
++        # Ignore an empty return type (It's a macro)
++        # Ignore functions with a "void" return type. (But don't ignore "void *")
++        if (($return_type eq "") || ($return_type =~ /void\s*\w*\s*$/)) {
++                return;
++        }
++
++        if (!defined($sections{$section_return}) ||
++            $sections{$section_return} eq "") {
++                print STDERR "Warning(${file}:$.): " .
++                        "No description found for return value of " .
++                        "'$declaration_name'\n";
++                ++$warnings;
++        }
++}
++
++##
+ # takes a function prototype and the name of the current file being
+ # processed and spits out all the details stored in the global
+ # arrays/hashes.
+@@ -2109,6 +2134,15 @@ sub dump_function($$) {
+ 	my $prms = join " ", @parameterlist;
+ 	check_sections($file, $declaration_name, "function", $sectcheck, $prms, "");
  
-@@ -237,21 +244,21 @@ patterns, which are highlighted appropriately.
- NOTE 1:  The multi-line descriptive text you provide does *not* recognize
- line breaks, so if you try to format some text nicely, as in:
- 
--  Return codes
-+  Return:
-     0 - cool
-     1 - invalid arg
-     2 - out of memory
- 
- this will all run together and produce:
- 
--  Return codes 0 - cool 1 - invalid arg 2 - out of memory
-+  Return: 0 - cool 1 - invalid arg 2 - out of memory
- 
- NOTE 2:  If the descriptive text you provide has lines that begin with
- some phrase followed by a colon, each of those phrases will be taken as
- a new section heading, which means you should similarly try to avoid text
- like:
- 
--  Return codes:
-+  Return:
-     0: cool
-     1: invalid arg
-     2: out of memory
++        # This check emits a lot of warnings at the moment, because many
++        # functions don't have a 'Return' doc section. So until the number
++        # of warnings goes sufficiently down, the check is only performed in
++        # verbose mode.
++        # TODO: always perform the check.
++        if ($verbose) {
++                check_return_section($file, $declaration_name, $return_type);
++        }
++
+     output_declaration($declaration_name,
+ 		       'function',
+ 		       {'function' => $declaration_name,
 -- 
 1.7.9.5
 
