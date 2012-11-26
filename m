@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab2KZRGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:06:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47531 "EHLO
+	id S933043Ab2KZRHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:07:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932995Ab2KZRGt (ORCPT
+	with ESMTP id S933022Ab2KZRG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:06:49 -0500
+	Mon, 26 Nov 2012 12:06:57 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 112/270] libceph: separate banner and connect writes
-Date: Mon, 26 Nov 2012 14:56:42 -0200
-Message-Id: <1353949160-26803-113-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 114/270] libceph: small changes to messenger.c
+Date: Mon, 26 Nov 2012 14:56:44 -0200
+Message-Id: <1353949160-26803-115-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,121 +28,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit ab166d5aa3bc036fba7efaca6e4e43a7e9510acf upstream.
+commit 5821bd8ccdf5d17ab2c391c773756538603838c3 upstream.
 
-There are two phases in the process of linking together the two ends
-of a ceph connection.  The first involves exchanging a banner and
-IP addresses, and if that is successful a second phase exchanges
-some detail about each side's connection capabilities.
-
-When initiating a connection, the client side now queues to send
-its information for both phases of this process at the same time.
-This is probably a bit more efficient, but it is slightly messier
-from a layering perspective in the code.
-
-So rearrange things so that the client doesn't send the connection
-information until it has received and processed the response in the
-initial banner phase (in process_banner()).
-
-Move the code (in the (con->sock == NULL) case in try_write()) that
-prepares for writing the connection information, delaying doing that
-until the banner exchange has completed.  Move the code that begins
-the transition to this second "NEGOTIATING" phase out of
-process_banner() and into its caller, so preparing to write the
-connection information and preparing to read the response are
-adjacent to each other.
-
-Finally, preparing to write the connection information now requires
-the output kvec to be reset in all cases, so move that into the
-prepare_write_connect() and delete it from all callers.
+This patch gathers a few small changes in "net/ceph/messenger.c":
+  out_msg_pos_next()
+    - small logic change that mostly affects indentation
+  write_partial_msg_pages().
+    - use a local variable trail_off to represent the offset into
+      a message of the trail portion of the data (if present)
+    - once we are in the trail portion we will always be there, so we
+      don't always need to check against our data position
+    - avoid computing len twice after we've reached the trail
+    - get rid of the variable tmpcrc, which is not needed
+    - trail_off and trail_len never change so mark them const
+    - update some comments
+  read_partial_message_bio()
+    - bio_iovec_idx() will never return an error, so don't bother
+      checking for it
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ net/ceph/messenger.c |   63 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 32 deletions(-)
 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index dc95437..86294c1 100644
+index fe340b2..64db2c2 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -841,6 +841,7 @@ static int prepare_write_connect(struct ceph_connection *con)
- 	con->out_connect.authorizer_len = auth ?
- 		cpu_to_le32(auth->authorizer_buf_len) : 0;
+@@ -907,21 +907,23 @@ static void out_msg_pos_next(struct ceph_connection *con, struct page *page,
  
-+	con_out_kvec_reset(con);
- 	con_out_kvec_add(con, sizeof (con->out_connect),
- 					&con->out_connect);
- 	if (auth && auth->authorizer_buf_len)
-@@ -1430,8 +1431,6 @@ static int process_banner(struct ceph_connection *con)
- 		     ceph_pr_addr(&con->msgr->inst.addr.in_addr));
- 	}
- 
--	set_bit(NEGOTIATING, &con->state);
--	prepare_read_connect(con);
- 	return 0;
+ 	con->out_msg_pos.data_pos += sent;
+ 	con->out_msg_pos.page_pos += sent;
+-	if (sent == len) {
+-		con->out_msg_pos.page_pos = 0;
+-		con->out_msg_pos.page++;
+-		con->out_msg_pos.did_page_crc = false;
+-		if (in_trail)
+-			list_move_tail(&page->lru,
+-				       &msg->trail->head);
+-		else if (msg->pagelist)
+-			list_move_tail(&page->lru,
+-				       &msg->pagelist->head);
++	if (sent < len)
++		return;
++
++	BUG_ON(sent != len);
++	con->out_msg_pos.page_pos = 0;
++	con->out_msg_pos.page++;
++	con->out_msg_pos.did_page_crc = false;
++	if (in_trail)
++		list_move_tail(&page->lru,
++			       &msg->trail->head);
++	else if (msg->pagelist)
++		list_move_tail(&page->lru,
++			       &msg->pagelist->head);
+ #ifdef CONFIG_BLOCK
+-		else if (msg->bio)
+-			iter_bio_next(&msg->bio_iter, &msg->bio_seg);
++	else if (msg->bio)
++		iter_bio_next(&msg->bio_iter, &msg->bio_seg);
+ #endif
+-	}
  }
  
-@@ -1481,7 +1480,6 @@ static int process_connect(struct ceph_connection *con)
- 			return -1;
- 		}
- 		con->auth_retry = 1;
--		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1502,7 +1500,6 @@ static int process_connect(struct ceph_connection *con)
- 		       ENTITY_NAME(con->peer_name),
- 		       ceph_pr_addr(&con->peer_addr.in_addr));
- 		reset_connection(con);
--		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1528,7 +1525,6 @@ static int process_connect(struct ceph_connection *con)
- 		     le32_to_cpu(con->out_connect.connect_seq),
- 		     le32_to_cpu(con->in_reply.connect_seq));
- 		con->connect_seq = le32_to_cpu(con->in_reply.connect_seq);
--		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1545,7 +1541,6 @@ static int process_connect(struct ceph_connection *con)
- 		     le32_to_cpu(con->in_reply.global_seq));
- 		get_global_seq(con->msgr,
- 			       le32_to_cpu(con->in_reply.global_seq));
--		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1958,9 +1953,6 @@ more:
+ /*
+@@ -940,30 +942,31 @@ static int write_partial_msg_pages(struct ceph_connection *con)
+ 	int ret;
+ 	int total_max_write;
+ 	bool in_trail = false;
+-	size_t trail_len = (msg->trail ? msg->trail->length : 0);
++	const size_t trail_len = (msg->trail ? msg->trail->length : 0);
++	const size_t trail_off = data_len - trail_len;
  
- 		con_out_kvec_reset(con);
- 		prepare_write_banner(con);
--		ret = prepare_write_connect(con);
--		if (ret < 0)
--			goto out;
- 		prepare_read_banner(con);
+ 	dout("write_partial_msg_pages %p msg %p page %d/%d offset %d\n",
+ 	     con, msg, con->out_msg_pos.page, msg->nr_pages,
+ 	     con->out_msg_pos.page_pos);
  
- 		BUG_ON(con->in_msg);
-@@ -2073,6 +2065,16 @@ more:
- 			ret = process_banner(con);
- 			if (ret < 0)
- 				goto out;
-+
-+			/* Banner is good, exchange connection info */
-+			ret = prepare_write_connect(con);
-+			if (ret < 0)
-+				goto out;
-+			prepare_read_connect(con);
-+			set_bit(NEGOTIATING, &con->state);
-+
-+			/* Send connection info before awaiting response */
-+			goto out;
++	/*
++	 * Iterate through each page that contains data to be
++	 * written, and send as much as possible for each.
++	 *
++	 * If we are calculating the data crc (the default), we will
++	 * need to map the page.  If we have no pages, they have
++	 * been revoked, so use the zero page.
++	 */
+ 	while (data_len > con->out_msg_pos.data_pos) {
+ 		struct page *page = NULL;
+ 		int max_write = PAGE_SIZE;
+ 		int bio_offset = 0;
+ 
+-		total_max_write = data_len - trail_len -
+-			con->out_msg_pos.data_pos;
+-
+-		/*
+-		 * if we are calculating the data crc (the default), we need
+-		 * to map the page.  if our pages[] has been revoked, use the
+-		 * zero page.
+-		 */
+-
+-		/* have we reached the trail part of the data? */
+-		if (con->out_msg_pos.data_pos >= data_len - trail_len) {
+-			in_trail = true;
++		in_trail = in_trail || con->out_msg_pos.data_pos >= trail_off;
++		if (!in_trail)
++			total_max_write = trail_off - con->out_msg_pos.data_pos;
+ 
++		if (in_trail) {
+ 			total_max_write = data_len - con->out_msg_pos.data_pos;
+ 
+ 			page = list_first_entry(&msg->trail->head,
+@@ -990,14 +993,13 @@ static int write_partial_msg_pages(struct ceph_connection *con)
+ 
+ 		if (do_datacrc && !con->out_msg_pos.did_page_crc) {
+ 			void *base;
+-			u32 crc;
+-			u32 tmpcrc = le32_to_cpu(msg->footer.data_crc);
++			u32 crc = le32_to_cpu(msg->footer.data_crc);
+ 			char *kaddr;
+ 
+ 			kaddr = kmap(page);
+ 			BUG_ON(kaddr == NULL);
+ 			base = kaddr + con->out_msg_pos.page_pos + bio_offset;
+-			crc = crc32c(tmpcrc, base, len);
++			crc = crc32c(crc, base, len);
+ 			msg->footer.data_crc = cpu_to_le32(crc);
+ 			con->out_msg_pos.did_page_crc = true;
  		}
- 		ret = read_partial_connect(con);
- 		if (ret <= 0)
+@@ -1702,9 +1704,6 @@ static int read_partial_message_bio(struct ceph_connection *con,
+ 	void *p;
+ 	int ret, left;
+ 
+-	if (IS_ERR(bv))
+-		return PTR_ERR(bv);
+-
+ 	left = min((int)(data_len - con->in_msg_pos.data_pos),
+ 		   (int)(bv->bv_len - con->in_msg_pos.page_pos));
+ 
 -- 
 1.7.9.5
 
