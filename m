@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab2KZSok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:44:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56467 "EHLO mail.kernel.org"
+	id S1754029Ab2KZSpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:45:21 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:55808 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753146Ab2KZSoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:44:38 -0500
-Date: Mon, 26 Nov 2012 10:44:36 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Michael D. Burkey" <mdburkey@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Fritz <chf.fritz@googlemail.com>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [ 35/83] ARM: imx: ehci: fix host power mask bit
-Message-ID: <20121126184436.GB21012@kroah.com>
-References: <20121122004212.371862690@linuxfoundation.org>
- <20121122004216.531273574@linuxfoundation.org>
- <8DA3043795C340758B9AEB1BCA791676@Chronos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8DA3043795C340758B9AEB1BCA791676@Chronos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753190Ab2KZSpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:45:19 -0500
+From: Philippe Reynes <tremyfr@yahoo.fr>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Cc: a.zummo@towertech.it, julien.boibessot@free.fr, eric.jarrige@armadeus.org,
+        Philippe Reynes <tremyfr@yahoo.fr>
+Subject: [PATCH] ds1374: add support of device tree
+Date: Mon, 26 Nov 2012 19:44:58 +0100
+Message-Id: <1353955498-12322-1-git-send-email-tremyfr@yahoo.fr>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 11:52:25PM -0500, Michael D. Burkey wrote:
-> This patch is definitely needed -- it is obviously setting the wrong
-> bit --  but I am still doing testing to see what other complications
-> may arise from actually setting the RIGHT bit (i.e. I've seen some
-> odd results so far and suspect some other code may have been changed
-> historically to account for the wrong behaviour this bit was
-> causing).
-> 
-> We're currently on vacation for Thanksgiving over here in the USA
-> and I won't be back in the office til next week.
-> 
-> If you would, hold off on adding the patch to the stable kernel
-> until I have a bit more time to check out a couple of things.
+Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
+---
+ drivers/rtc/rtc-ds1374.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-As it's already in Linus's tree, one would have hoped that the patch
-would have been tested already :)
+diff --git a/drivers/rtc/rtc-ds1374.c b/drivers/rtc/rtc-ds1374.c
+index 9663160..174c532 100644
+--- a/drivers/rtc/rtc-ds1374.c
++++ b/drivers/rtc/rtc-ds1374.c
+@@ -49,6 +49,14 @@ static const struct i2c_device_id ds1374_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, ds1374_id);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id ds1374_of_match[] __devinitconst = {
++	{ .compatible = "dallas,ds1374" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, ds1374_of_match);
++#endif
++
+ struct ds1374 {
+ 	struct i2c_client *client;
+ 	struct rtc_device *rtc;
+-- 
+1.7.4.4
 
-I'll leave it in the stable tree, if it's a problem, please get the fix
-into Linus's tree, and then have that fix submitted to the stable kernel
-trees.
-
-thanks,
-
-greg k-h
