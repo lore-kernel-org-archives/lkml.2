@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2KZJLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:11:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43367 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664Ab2KZJLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:11:52 -0500
-Message-ID: <50B33252.3060709@ti.com>
-Date: Mon, 26 Nov 2012 10:11:46 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
+	id S1754793Ab2KZJML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:12:11 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:45704 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753169Ab2KZJMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 04:12:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQJAGgxs1B5LFFR/2dsb2JhbABEDoUxtF6GBRdzgh4BAQQBOhwYEAsIAxUDLhQlAyEBEhSHcwW+ZRSMI4RBA5YAkEWCMlE
+Date: Mon, 26 Nov 2012 20:12:02 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121126091202.GO32450@dastard>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <20121126002814.GM32450@dastard>
+ <20121126025520.GC22858@thunk.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 1/3] pwm: Remove pwm-twl6030 driver
-References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com> <1353405382-9226-2-git-send-email-peter.ujfalusi@ti.com> <20121123150548.GC16810@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121123150548.GC16810@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126025520.GC22858@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 04:05 PM, Thierry Reding wrote:
-> On Tue, Nov 20, 2012 at 10:56:20AM +0100, Peter Ujfalusi wrote:
->> This driver only supported the Charging indicator LED.
->> New set of drivers going to provide support for both PWMs and LEDs for twl4030
->> and twl6030 series of PMICs.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  drivers/pwm/Kconfig       |   9 ---
->>  drivers/pwm/Makefile      |   1 -
->>  drivers/pwm/pwm-twl6030.c | 184 ----------------------------------------------
->>  3 files changed, 194 deletions(-)
->>  delete mode 100644 drivers/pwm/pwm-twl6030.c
+On Sun, Nov 25, 2012 at 09:55:20PM -0500, Theodore Ts'o wrote:
+> On Mon, Nov 26, 2012 at 11:28:14AM +1100, Dave Chinner wrote:
+> > fs: revert commit bbdd6808 to fallocate UAPI
+> > 
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > Commit bbdd6808 ("fs: reserve fallocate flag codepoint") changes the
+> > fallocate(2) syscall interface. The flag that is reserved by this
+> > commit is for functionality that has previously been NAKed on the
+> > -fsdevel mailing list, and so exists out-of-tree.
 > 
-> I think I'd rather see this patch as the last in the series to make sure
-> that no functionality is dropped across the series.
+> Hi Linus,
+> 
+> It doesn't change the interface or break anything; it just reserves a
+> bit so that out-of-tree patches don't collide with future allocations.
+> There are significant usages of this bit within Google and Tao Bao.
+> It is true that there has been significant pushback about adding this
+> functionality on linux-fsdevel;
 
-Sure, I will move it as a last patch.
+It's not the fact that you want to reserve a bit that is at issue
+here - it's the way it's been pushed into the tree that is the
+front-and-center issue.
 
+> I find it personally frustrating that
+> in effect, if enough people scream, they can veto an optional feature
+> that might only be implemented by a single file system.
+
+Having a significant portion of the wider fs development community
+disagree with your patches is no reason for subverting the review
+process.  Besides, that's irrelevant to the issue being discussed,
+unless you are describing your motives in an effort to justify your
+actions.
+
+In fact, it's even more disturbing if this was your real motive.
+That is, is sounds somewhat like you've just admitted that you
+pushed this change silently through the ext4 tree to avoid review
+and discussion and that you are blaming the rest of the FS community
+for forcing you to take such actions.
+
+> It's not like there is any shortage of flag bits, so what's the harm
+> of reserving the bit?
+
+The harm has already been done - to the trust we've placed in you as
+a maintainer.  To argue that the code does no harm is to completely
+miss the crux of the issue at hand: principles, process and trust
+are far more important in our community than a single line of
+code.
+
+Ted, it comes down to trust. If we can't trust you not to push your
+own changes to syscall APIs into the mainline tree via backdoor
+channels, then how can we trust you not to push the entire
+out-of-tree patch into the kernel the same way?
+
+Cheers,
+
+Dave.
 -- 
-Péter
+Dave Chinner
+david@fromorbit.com
