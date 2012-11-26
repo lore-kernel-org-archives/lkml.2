@@ -1,284 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab2KZO6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 09:58:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49300 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab2KZO6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 09:58:08 -0500
-Date: Mon, 26 Nov 2012 14:58:00 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/41] Automatic NUMA Balancing V6
-Message-ID: <20121126145800.GK8218@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
+	id S1754886Ab2KZPA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:00:58 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61192 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab2KZPA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:00:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1353612353-1576-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+Date: Mon, 26 Nov 2012 20:30:56 +0530
+Message-ID: <CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for
+ workqueues and timers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
+Cc: Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to recent email floods, I am not resending all 41 patches back out as
-the bulk of the changes are related to being bisect and build safe and
-shuffling the THP migration patch to the end of the series. There is an
-important fix from Hillf Danton in there which is arguably the most important
-difference between V5 and V6. I'll send the full patchbomb if people prefer.
-This is all based against 3.7-rc6
+On 6 November 2012 16:08, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> This is V2 Resend of my sched_select_cpu() work. Resend because didn't got much
+> attention on V2. Including more guys now in cc :)
+>
+> In order to save power, it would be useful to schedule work onto non-IDLE cpus
+> instead of waking up an IDLE one.
+>
+> To achieve this, we need scheduler to guide kernel frameworks (like: timers &
+> workqueues) on which is the most preferred CPU that must be used for these
+> tasks.
+>
+> This patchset is about implementing this concept.
+>
+> - The first patch adds sched_select_cpu() routine which returns the preferred
+>   cpu which is non-idle.
+> - Second patch removes idle_cpu() calls from timer & hrtimer.
+> - Third patch is about adapting this change in workqueue framework.
+> - Fourth patch add migration capability in running timer
+>
+> Earlier discussions over v1 can be found here:
+> http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
+>
+> Earlier discussions over this concept were done at last LPC:
+> http://summit.linuxplumbersconf.org/lpc-2012/meeting/90/lpc2012-sched-timer-workqueue/
+>
+> Module created for testing this behavior is present here:
+> http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
 
-git tree: git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git mm-balancenuma-v6r15
-git tag:  git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git mm-balancenuma-v6
+Ping!!
 
-This series can be treated as 5 major stages.
-
-1. TLB optimisations that we're likely to want unconditionally.
-2. Basic foundation and core mechanics, initial policy that does very little
-3. Full PMD fault handling, rate limiting of migration, two-stage migration
-   filter to mitigate poor migration decisions.  This will migrate pages
-   on a PTE or PMD level using just the current referencing CPU as a
-   placement hint
-4. Scan rate adaption
-5. Native THP migration
-
-Very broadly speaking the TODOs that spring to mind are
-
-1. Revisit MPOL_NOOP and MPOL_MF_LAZY
-2. Other architecture support or at least validation that it could be made work. I'm
-   half-hoping that the PPC64 people are watching because they tend to be interested
-   in this type of thing.
-
-Some advantages of the series are;
-
-1. It handles regular PMDs which reduces overhead in case where pages within
-   a PMD are on the same node
-2. It rate limits migrations to avoid saturating the bus and backs off
-   PTE scanning (in a fairly heavy manner) if the node is rate-limited
-3. It keeps major optimisations like THP towards the end to be sure I am
-   not accidentally depending on them
-4. It has some vmstats which allow a user to make a rough guess as to how
-   much overhead the balancing is introducing
-5. It implements a basic policy that acts as a second performance baseline.
-   The three baselines become vanilla kernel, basic placement policy,
-   complex placement policy. This allows like-with-like comparisons with
-   implementations.
-
-Changelog since V5
-  o Fix build errors related to config options, make bisect-safe
-  o Account for transhuge migrations
-  o Count HPAGE_PMD_NR pages when isolating transhuge
-  o Account for local transphuge faults
-
-Changelog since V4
-  o Allow enabling/disable from command line
-  o Delay PTE scanning until tasks are running on a new node
-  o THP migration bits needed for memcg
-  o Adapt the scanning rate depending on whether pages need to migrate
-  o Drop all the scheduler policy stuff on top, it was broken
-
-Changelog since V3
-  o Use change_protection
-  o Architecture-hook twiddling
-  o Port of the THP migration patch.
-  o Additional TLB optimisations
-  o Fixes from Hillf Danton
-
-Changelog since V2
-  o Do not allocate from home node
-  o Mostly remove pmd_numa handling for regular pmds
-  o HOME policy will allocate from and migrate towards local node
-  o Load balancer is more aggressive about moving tasks towards home node
-  o Renames to sync up more with -tip version
-  o Move pte handlers to generic code
-  o Scanning rate starts at 100ms, system CPU usage expected to increase
-  o Handle migration of PMD hinting faults
-  o Rate limit migration on a per-node basis
-  o Alter how the rate of PTE scanning is adapted
-  o Rate limit setting of pte_numa if node is congested
-  o Only flush local TLB is unmapping a pte_numa page
-  o Only consider one CPU in cpu follow algorithm
-
-Changelog since V1
-  o Account for faults on the correct node after migration
-  o Do not account for THP splits as faults.
-  o Account THP faults on the node they occurred
-  o Ensure preferred_node_policy is initialised before use
-  o Mitigate double faults
-  o Add home-node logic
-  o Add some tlb-flush mitigation patches
-  o Add variation of CPU follows memory algorithm
-  o Add last_nid and use it as a two-stage filter before migrating pages
-  o Restart the PTE scanner when it reaches the end of the address space
-  o Lots of stuff I did not note properly
-
-There are currently two (three depending on how you look at it) competing
-approaches to implement support for automatically migrating pages to
-optimise NUMA locality. Performance results are available but review
-highlighted different problems in both.  They are not compatible with each
-other even though some fundamental mechanics should have been the same.
-This series addresses part of the integration and sharing problem by
-implementing a foundation that either the policy for schednuma or autonuma
-can be rebased on.
-
-The initial policy it implements is a very basic greedy policy called
-"Migrate On Reference Of pte_numa Node (MORON)".  I expect people to
-build upon this revised policy and rename it to something more sensible
-that reflects what it means. The ideal *worst-case* behaviour is that
-it is comparable to current mainline but for some workloads this is an
-improvement over mainline.
-
-In terms of building on top of the foundation the ideal would be that
-patches affect one of the following areas although obviously that will
-not always be possible
-
-1. The PTE update helper functions
-2. The PTE scanning machinary driven from task_numa_tick
-3. Task and process fault accounting and how that information is used
-   to determine if a page is misplaced
-4. Fault handling, migrating the page if misplaced, what information is
-   provided to the placement policy
-5. Scheduler and load balancing
-
-Patches 1-5 are some TLB optimisations that mostly make sense on their own.
-	They are likely to make it into the tree either way
-
-Patches 6-7 are an mprotect optimisation
-
-Patches 8-10 move some vmstat counters so that migrated pages get accounted
-	for. In the past the primary user of migration was compaction but
-	if pages are to migrate for NUMA optimisation then the counters
-	need to be generally useful.
-
-Patch 11 defines an arch-specific PTE bit called _PAGE_NUMA that is used
-	to trigger faults later in the series. A placement policy is expected
-	to use these faults to determine if a page should migrate.  On x86,
-	the bit is the same as _PAGE_PROTNONE but other architectures
-	may differ. Note that it is also possible to avoid using this bit
-	and go with plain PROT_NONE but the resulting helpers are then
-	heavier.
-
-Patch 12-14 defines pte_numa, pmd_numa, pte_mknuma, pte_mknonuma and
-	friends, updated GUP and huge page splitting.
-
-Patch 15 creates the fault handler for p[te|md]_numa PTEs and just clears
-	them again.
-
-Patch 16 adds a MPOL_LOCAL policy so applications can explicitly request the
-	historical behaviour.
-
-Patch 17 is premature but adds a MPOL_NOOP policy that can be used in
-	conjunction with the LAZY flags introduced later in the series.
-
-Patch 18 adds migrate_misplaced_page which is responsible for migrating
-	a page to a new location.
-
-Patch 19 migrates the page on fault if mpol_misplaced() says to do so.
-
-Patch 20 updates the page fault handlers. Transparent huge pages are split.
-	Pages pointed to by PTEs are migrated. Pages pointed to by PMDs
-	are not properly handed until later in the series.
-
-Patch 21 adds a MPOL_MF_LAZY mempolicy that an interested application can use.
-	On the next reference the memory should be migrated to the node that
-	references the memory.
-
-Patch 22 reimplements change_prot_numa in terms of change_protection. It could
-	be collapsed with patch 21 but this might be easier to review.
-
-Patch 23 notes that the MPOL_MF_LAZY and MPOL_NOOP flags have not been properly
-	reviewed and there are no manual pages. They are removed for now and
-	need to be revisited.
-
-Patch 24 sets pte_numa within the context of the scheduler.
-
-Patches 25-27 note that the marking of pte_numa has a number of disadvantages and
-	instead incrementally updates a limited range of the address space
-	each tick.
-
-Patch 28 adds some vmstats that can be used to approximate the cost of the
-	scheduling policy in a more fine-grained fashion than looking at
-	the system CPU usage.
-
-Patch 29 implements the MORON policy.
-
-Patch 30 properly handles the migration of pages faulted when handling a pmd
-	numa hinting fault. This could be improved as it's a bit tangled
-	to follow. PMDs are only marked if the PTEs underneath are expected
-	to point to pages on the same node.
-
-Patches 31-33 rate-limit the number of pages being migrated and marked as pte_numa
-
-Patch 34 slowly decreases the pte_numa update scanning rate
-
-Patch 35-36 introduces last_nid and uses it to build a two-stage filter
-	that delays when a page gets migrated to avoid a situation where
-	a task running temporarily off its home node forces a migration.
-
-Patch 37 adapts the scanning rate if pages do not have to be migrated
-
-Patch 38 allows the enabling/disabling from command line
-
-Patch 39 allows balancenuma to be disabled even if !SCHED_DEBUG
-
-Patch 40 delays PTE scanning until a task is scheduled on a new node
-
-Patch 41 implements native THP migration for NUMA hinting faults.
-
- Documentation/kernel-parameters.txt  |    3 +
- arch/sh/mm/Kconfig                   |    1 +
- arch/x86/Kconfig                     |    2 +
- arch/x86/include/asm/pgtable.h       |   17 +-
- arch/x86/include/asm/pgtable_types.h |   20 +++
- arch/x86/mm/pgtable.c                |    8 +-
- include/asm-generic/pgtable.h        |  110 ++++++++++++
- include/linux/huge_mm.h              |   14 +-
- include/linux/hugetlb.h              |    8 +-
- include/linux/mempolicy.h            |    8 +
- include/linux/migrate.h              |   45 ++++-
- include/linux/mm.h                   |   39 +++++
- include/linux/mm_types.h             |   31 ++++
- include/linux/mmzone.h               |   13 ++
- include/linux/sched.h                |   27 +++
- include/linux/vm_event_item.h        |   12 +-
- include/linux/vmstat.h               |    8 +
- include/trace/events/migrate.h       |   51 ++++++
- include/uapi/linux/mempolicy.h       |   15 +-
- init/Kconfig                         |   41 +++++
- kernel/fork.c                        |    3 +
- kernel/sched/core.c                  |   71 ++++++--
- kernel/sched/fair.c                  |  227 ++++++++++++++++++++++++
- kernel/sched/features.h              |   11 ++
- kernel/sched/sched.h                 |   12 ++
- kernel/sysctl.c                      |   45 ++++-
- mm/compaction.c                      |   15 +-
- mm/huge_memory.c                     |   94 +++++++++-
- mm/hugetlb.c                         |   10 +-
- mm/internal.h                        |    7 +-
- mm/memcontrol.c                      |    7 +-
- mm/memory-failure.c                  |    3 +-
- mm/memory.c                          |  188 +++++++++++++++++++-
- mm/memory_hotplug.c                  |    3 +-
- mm/mempolicy.c                       |  283 +++++++++++++++++++++++++++---
- mm/migrate.c                         |  319 +++++++++++++++++++++++++++++++++-
- mm/mprotect.c                        |  124 ++++++++++---
- mm/page_alloc.c                      |   10 +-
- mm/pgtable-generic.c                 |    9 +-
- mm/vmstat.c                          |   16 +-
- 40 files changed, 1821 insertions(+), 109 deletions(-)
- create mode 100644 include/trace/events/migrate.h
-
--- 
-Mel Gorman
-SUSE Labs
+--
+viresh
