@@ -1,142 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab2KZPwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:52:44 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46327 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab2KZPwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:52:42 -0500
-Date: Mon, 26 Nov 2012 09:51:48 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Mathias LEBLANC <Mathias.LEBLANC@st.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>
-Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Message-ID: <20121126155148.GA10104@ennui.austin.ibm.com>
-References: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
- <20121114220647.GA533@ennui.austin.ibm.com>
- <35286B1AE75A7C47BFF0870081A31B4B3A990A7BE0@SAFEX1MAIL4.st.com>
+	id S1753523Ab2KZPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:54:09 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:27682 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751589Ab2KZPyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:54:07 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18IPUbttQ9p+fo4fwmVTu7W
+Date: Mon, 26 Nov 2012 07:53:58 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lokesh Vutla <lokeshvutla@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+ omap_dss2 tree
+Message-ID: <20121126155358.GH5279@atomide.com>
+References: <20121126215600.236b2e44ffea1abbea26898b@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <35286B1AE75A7C47BFF0870081A31B4B3A990A7BE0@SAFEX1MAIL4.st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112615-5806-0000-0000-00001C2B92BB
+In-Reply-To: <20121126215600.236b2e44ffea1abbea26898b@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 09:26:40AM +0100, Mathias LEBLANC wrote:
-> Hello,
+* Stephen Rothwell <sfr@canb.auug.org.au> [121126 02:58]:
+> Hi all,
 > 
-> Does anyone can say me when the driver will be integrated on linux kernel and where can we get it  from the linux source code?
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/plat-omap/common.c between commit b022e17b1c7e ("OMAP: common.c:
+> remove init call to vram") from the omap_dss2 tree and commit
+> f583f0f2c720 ("ARM: OMAP2+: Move omap_reserve() locally to mach-omap2")
+> from the arm-soc tree.
+> 
+> I fixed it up (by deleting the file and adding the following patch) and
+> can carry the fix as necessary (no action is required).
 
- Hi Mathias, I'll work with you this week to get this pushed to the
-security-next tree.  From there the code is pushed to Linus' tree.
+Thanks this is the correct fix.
 
-Kent
+Tony
+ 
+> From 523f2987a07f97c946c63e0be4558b8332b46e8f Mon Sep 17 00:00:00 2001
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 26 Nov 2012 21:51:20 +1100
+> Subject: [PATCH] OMAP: common.c: remove init call to vram fixup
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/arm/mach-omap2/common.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/common.c b/arch/arm/mach-omap2/common.c
+> index 5c2fd48..2dabb9e 100644
+> --- a/arch/arm/mach-omap2/common.c
+> +++ b/arch/arm/mach-omap2/common.c
+> @@ -16,8 +16,6 @@
+>  #include <linux/init.h>
+>  #include <linux/platform_data/dsp-omap.h>
+>  
+> -#include <plat/vram.h>
+> -
+>  #include "common.h"
+>  #include "omap-secure.h"
+>  
+> @@ -32,7 +30,6 @@ int __weak omap_secure_ram_reserve_memblock(void)
+>  
+>  void __init omap_reserve(void)
+>  {
+> -	omap_vram_reserve_sdram_memblock();
+>  	omap_dsp_reserve_sdram_memblock();
+>  	omap_secure_ram_reserve_memblock();
+>  	omap_barrier_reserve_memblock();
+> -- 
+> 1.7.10.280.gaa39
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Thanks,
-> 
-> Mathias Leblanc
-> 
-> -----Original Message-----
-> From: Kent Yoder [mailto:key@linux.vnet.ibm.com] 
-> Sent: 14 November, 2012 23:07
-> To: Mathias LEBLANC
-> Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; Debora Velarde; linux-kernel@vger.kernel.org; Jean-Luc BLANC
-> Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-> 
-> Hi Mathias,
-> 
-> On Wed, Nov 14, 2012 at 03:31:42PM +0100, Mathias Leblanc wrote:
-> >  * STMicroelectronics version 1.2.0, Copyright (C) 2010
-> >  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
-> >  * This is free software, and you are welcome to redistribute it
-> >  * under certain conditions.
-> > 
-> > This is the driver for TPM chip from ST Microelectronics.
-> > 
-> > If you have a TPM security chip from STMicroelectronics working with 
-> > an I2C, in menuconfig or .config choose the tpm driver on device --> 
-> > tpm and activate the protocol of your choice before compiling the 
-> > kernel.
-> > The driver will be accessible from within Linux.
-> > 
-> > Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
-> 
->   Getting some build errors here:
-> 
-> drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘__check_interrupts’:
-> drivers/char/tpm/tpm_stm_st33_i2c.c:615:1: warning: return from incompatible pointer type [enabled by default]
-> drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘__check_power_mgt’:
-> drivers/char/tpm/tpm_stm_st33_i2c.c:619:1: warning: return from incompatible pointer type [enabled by default]
-> drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘tpm_st33_i2c_probe’:
-> drivers/char/tpm/tpm_stm_st33_i2c.c:725:3: warning: suggest parentheses around arithmetic in operand of ‘|’ [-Wparentheses]
-> drivers/char/tpm/tpm_stm_st33_i2c.c: In function
-> ‘tpm_st33_i2c_pm_suspend’:
-> drivers/char/tpm/tpm_stm_st33_i2c.c:826:3: error: too many arguments to function ‘tpm_pm_suspend’
-> In file included from drivers/char/tpm/tpm_stm_st33_i2c.h:55:0,
->                  from drivers/char/tpm/tpm_stm_st33_i2c.c:35:
-> 		 drivers/char/tpm/tpm.h:326:12: note: declared here
-> 		 drivers/char/tpm/tpm_stm_st33_i2c.c: In function
-> 		 ‘tpm_st33_i2c_pm_resume’:
-> 		 drivers/char/tpm/tpm_stm_st33_i2c.c:855:3: error:
-> 		 implicit declaration of function
-> 		 ‘tpm_continue_selftest’
-> 		 [-Werror=implicit-function-declaration]
-> 
-> [cut]
-> > +/*
-> > + * _wait_for_interrupt_serirq_timeout
-> > + * @param: tpm, the chip description
-> > + * @param: timeout, the timeout of the interrupt
-> > + * @return: the status of the interruption.
-> > + */
-> > +static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
-> > +						unsigned long timeout)
-> > +{
-> > +	int status;
-> > +	struct i2c_client *client;
-> > +	struct st33zp24_platform_data *pin_infos;
-> > +
-> > +	client = (struct i2c_client *) chip->vendor.iobase;
-> > +	pin_infos = client->dev.platform_data;
-> > +
-> > +	status = wait_for_completion_interruptible_timeout(
-> > +					&pin_infos->irq_detection,
-> > +						timeout);
-> 
->   status should be a long here.
-> 
-> [cut]
-> > +
-> > +	if (client == NULL) {
-> > +		pr_info("client is NULL. exiting.\n");
-> > +		err = -ENODEV;
-> > +		goto end;
-> > +	}
-> > +
-> > +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-> > +		pr_info("client not i2c capable\n");
-> > +		err = -ENODEV;
-> > +		goto end;
-> > +	}
-> > +
-> > +	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
-> > +	if (!chip) {
-> > +		pr_info("fail chip\n");
-> 
->   Please use dev_info() in place of pr_info().
-> 
-> Thanks,
-> Kent
-> 
 
