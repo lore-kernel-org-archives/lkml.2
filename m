@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab2KZSKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:10:47 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57425 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2KZSKp (ORCPT
+	id S932315Ab2KZSKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:10:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47299 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2KZRDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:10:45 -0500
-Message-ID: <50B3B092.90605@linutronix.de>
-Date: Mon, 26 Nov 2012 19:10:26 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
-MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-CC: oleg@redhat.com, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
-        anton@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] powerpc: Move the single step enable code to a generic
- path
-References: <20121126110007.6545.43875.stgit@suzukikp.in.ibm.com> <20121126110448.6545.90588.stgit@suzukikp.in.ibm.com>
-In-Reply-To: <20121126110448.6545.90588.stgit@suzukikp.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 26 Nov 2012 12:03:30 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Christian Hildner <christian.hildner@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 060/270] timers: Fix endless looping between cascade() and internal_add_timer()
+Date: Mon, 26 Nov 2012 14:55:50 -0200
+Message-Id: <1353949160-26803-61-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 12:05 PM, Suzuki K. Poulose wrote:
-> diff --git a/arch/powerpc/include/asm/probes.h b/arch/powerpc/include/asm/probes.h
-> index 5f1e15b..836e9b9 100644
-> --- a/arch/powerpc/include/asm/probes.h
-> +++ b/arch/powerpc/include/asm/probes.h
-> @@ -38,5 +38,34 @@ typedef u32 ppc_opcode_t;
->   #define is_trap(instr)		(IS_TW(instr) || IS_TWI(instr))
->   #endif /* CONFIG_PPC64 */
->
-> +#ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> +#define MSR_SINGLESTEP	(MSR_DE)
-> +#else
-> +#define MSR_SINGLESTEP	(MSR_SE)
-> +#endif
-> +
-> +/* Enable single stepping for the current task */
-> +static inline void enable_single_step(struct pt_regs *regs)
-> +{
-> +
-> +	/*
-> +	 * We turn off async exceptions to ensure that the single step will
-> +	 * be for the instruction we have the kprobe on, if we dont its
-it is
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-> +	 * possible we'd get the single step reported for an exception handler
-> +	 * like Decrementer or External Interrupt
-> +	 */
+------------------
 
-Hmmm. The TRM for E400 says
+From: "Hildner, Christian" <christian.hildner@siemens.com>
 
-|5.11.1 e500 Exception Priorities
-|The following is a prioritized listing of e500 exceptions:
-|   4. Critical input
-|   5. Debug interrupt
-|   6. External input
-|   22. Decrementer
+commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
 
-The list has been cut down a little. That means the debug interrupt
-comes before external interrupt and before the decrement fires.
+Adding two (or more) timers with large values for "expires" (they have
+to reside within tv5 in the same list) leads to endless looping
+between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
+is one and jiffies are crossing the value 1 << 18. The bug was
+introduced between 2.6.11 and 2.6.12 (and survived for quite some
+time).
 
-And if single step is what wakes you up then DBSR[ICMP] is set. Am I
-missing something or is this FSL only not not book-e
+This patch ensures that when cascade() is called timers within tv5 are
+not added endlessly to their own list again, instead they are added to
+the next lower tv level tv4 (as expected).
 
->   #endif /* __KERNEL__ */
->   #endif	/* _ASM_POWERPC_PROBES_H */
+Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ kernel/timer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Sebastian
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 6ec7e7e..ad4ced1 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
+ #define TVR_SIZE (1 << TVR_BITS)
+ #define TVN_MASK (TVN_SIZE - 1)
+ #define TVR_MASK (TVR_SIZE - 1)
++#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
+ 
+ struct tvec {
+ 	struct list_head vec[TVN_SIZE];
+@@ -356,11 +357,12 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
+ 	} else {
+ 		int i;
+-		/* If the timeout is larger than 0xffffffff on 64-bit
+-		 * architectures then we use the maximum timeout:
++		/* If the timeout is larger than MAX_TVAL (on 64-bit
++		 * architectures or with CONFIG_BASE_SMALL=1) then we
++		 * use the maximum timeout.
+ 		 */
+-		if (idx > 0xffffffffUL) {
+-			idx = 0xffffffffUL;
++		if (idx > MAX_TVAL) {
++			idx = MAX_TVAL;
+ 			expires = idx + base->timer_jiffies;
+ 		}
+ 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
+-- 
+1.7.9.5
+
