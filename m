@@ -1,222 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2KZWAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:00:33 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:43221
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755837Ab2KZWAc (ORCPT
+	id S1757306Ab2KZWGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:06:45 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63288 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab2KZWGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:00:32 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1155h)
-X-WSS-ID: 0ME47SQ-02-431-02
-X-M-MSG: 
-From: Steven Kinney <steven.kinney@amd.com>
-To: Joerg Roedel <bhelgaas@google.com>
-CC: Hiroshi DOYU <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Jiri Kosina <jkosina@suse.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        Steven Kinney <steven.kinney@amd.com>
-Subject: [PATCH 1/1] iommuv2/amd: Enable Performance Counters On Family 15h Models 10h-1Fh
-Date: Mon, 26 Nov 2012 16:00:25 -0600
-Message-ID: <1353967225-18742-1-git-send-email-steven.kinney@amd.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 26 Nov 2012 17:06:43 -0500
+Date: Mon, 26 Nov 2012 23:06:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121126220640.GE12602@dhcp22.suse.cz>
+References: <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <20121126174622.GE2799@cmpxchg.org>
+ <20121126180444.GA12602@dhcp22.suse.cz>
+ <20121126182421.GB2301@cmpxchg.org>
+ <20121126190329.GB12602@dhcp22.suse.cz>
+ <20121126192941.GC2301@cmpxchg.org>
+ <20121126200848.GC12602@dhcp22.suse.cz>
+ <20121126201918.GD2301@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126201918.GD2301@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven L. Kinney" <steven.kinney@amd.com>
+On Mon 26-11-12 15:19:18, Johannes Weiner wrote:
+> On Mon, Nov 26, 2012 at 09:08:48PM +0100, Michal Hocko wrote:
+[...]
+> > OK, I guess I am getting what you are trying to say. So what you are
+> > suggesting is to just let mem_cgroup_out_of_memory send the signal and
+> > move on without retry (or with few charge retries without further OOM
+> > killing) and fail the charge with your new FAULT_OOM_HANDLED (resp.
+> > something like FAULT_RETRY) error code resp. ENOMEM depending on the
+> > caller.  OOM disabled case would be "you are on your own" because this
+> > has been dangerous anyway. Correct?
+> 
+> Yes.
+> 
+> > I do agree that the current endless retry loop is far from being ideal
+> > and can see some updates but I am quite nervous about any potential
+> > regressions in this area (e.g. too aggressive OOM etc...). I have to
+> > think about it some more.
+> 
+> Agreed on all points.  Maybe we can keep a couple of the oom retry
+> iterations or something like that, which is still much more than what
+> global does and I don't think the global OOM killer is overly eager.
 
-Add Kernel configuration selection for AMD IOMMUv2 performance counters.
+Yes we can offer less blood and more confort
 
-Add a check that will determine the configuration of the AMD IOMMUv2
-performance counter(s) and extend the IOMMUv2 MMIO Region to account for the
-additional PC register bank.
+> 
+> Testing will show more.
+> 
+> > Anyway if you have some more specific ideas I would be happy to review
+> > patches.
+> 
+> Okay, I just wanted to check back with you before going down this
+> path.  What are we going to do short term, though?  Do you want to
+> push the disable-oom-for-pagecache for now or should we put the
+> VM_FAULT_OOM_HANDLED fix in the next version and do stable backports?
+> 
+> This issue has been around for a while so frankly I don't think it's
+> urgent enough to rush things.
 
-Add maximum IOMMUv2 bank/counter members to the amd_iommu structure that will
-hold the relevant data concerning the available PC bank and counter resources.
+Yes, but now we have a real usecase where this hurts AFAIU. Unless
+we come up with a fix/reasonable workaround I would rather go with
+something simpler for starter and more sofisticated later.
 
-Add code to iommu_init_pci that will check for IOMMUv2 PC HW support and
-populate the max banks and counters into the amd_iommu structure.
+I have to double check other places where we do charging but the last
+time I've checked we don't hold page locks on already visible pages (we
+do precharge in __do_fault f.e.), mem_map for reading in the page fault
+path is also safe (with oom enabled) and I guess that tmpfs is ok as
+well. Then we have a page cache and that one should be covered by my
+patch. So we should be covered.
 
-Add exported functionality that will allow external drivers to obtain IOMMUv2
-PC bank/counter resource information and manage the IOMMUv2 PC measurment
-configuration.  Bank and counter assignment is managed outside of this driver;
-for example, within a perf IOMMUv2 PMU realization.
+But I like your idea long term.
 
-Signed-off-by: Steven L. Kinney <steven.kinney@amd.com>
----
- drivers/iommu/Kconfig           |   10 +++++
- drivers/iommu/amd_iommu_init.c  |   86 +++++++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_types.h |   13 +++++-
- 3 files changed, 108 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index e39f9db..d732e31 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -73,6 +73,16 @@ config AMD_IOMMU_V2
- 	  hardware. Select this option if you want to use devices that support
- 	  the PCI PRI and PASID interface.
- 
-+# AMD IOMMUv2 Performance Counter support
-+config AMD_IOMMU_V2_PC
-+	bool "AMD IOMMUv2 Performance Counters (EXPERIMENTAL)"
-+	depends on AMD_IOMMU_V2
-+	---help---
-+	  This option enables support for AMD IOMMUv2 Performance Counters.
-+	  Select this option if you want to enable IOMMUv2 Performance
-+	  Counters support.
-+	  If unsure, say N.
-+
- # Intel IOMMU support
- config DMAR_TABLE
- 	bool
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 81837b0..d3243af 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1145,6 +1145,20 @@ static int iommu_init_pci(struct amd_iommu *iommu)
- 	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
- 		amd_iommu_np_cache = true;
- 
-+#ifdef CONFIG_AMD_IOMMU_V2_PC
-+	if (iommu_feature(iommu, FEATURE_PC)) {
-+		u32 val;
-+		dev_printk(KERN_DEBUG, &iommu->dev->dev,
-+			   "AMD-Vi: IOMMUv2 perf counters supported\n");
-+		val = readl(iommu->mmio_base + MMIO_CNTR_CONF_OFFSET);
-+		iommu->max_banks = (u8) ((val >> 12) & 0x3f);
-+		iommu->max_counters = (u8) ((val >> 7) & 0xf);
-+		dev_printk(KERN_DEBUG, &iommu->dev->dev,
-+			   "AMD-Vi: %d counter banks, %d counters each\n",
-+			   iommu->max_banks, iommu->max_counters);
-+	}
-+#endif
-+
- 	if (is_rd890_iommu(iommu->dev)) {
- 		int i, j;
- 
-@@ -2076,3 +2090,75 @@ bool amd_iommu_v2_supported(void)
- 	return amd_iommu_v2_present;
- }
- EXPORT_SYMBOL(amd_iommu_v2_supported);
-+
-+#ifdef CONFIG_AMD_IOMMU_V2_PC
-+/****************************************************************************
-+ *
-+ * IOMMUv2 EFR Performance Counter support functionality. This code allows
-+ * access to the IOMMUv2 PC functionality.
-+ *
-+ ****************************************************************************/
-+
-+u8 amd_iommu_v2_get_max_pc_banks(u16 devid)
-+{
-+	struct amd_iommu *iommu;
-+
-+	/* locate the iommu governing the devid */
-+	iommu = amd_iommu_rlookup_table[devid];
-+
-+	if (iommu)
-+		return iommu->max_banks;
-+
-+	return -ENODEV;
-+}
-+EXPORT_SYMBOL(amd_iommu_v2_get_max_pc_banks);
-+
-+u8 amd_iommu_v2_get_max_pc_counters(u16 devid)
-+{
-+	struct amd_iommu *iommu;
-+
-+	/* locate the iommu governing the devid */
-+	iommu = amd_iommu_rlookup_table[devid];
-+
-+	if (iommu)
-+		return iommu->max_counters;
-+
-+	return -ENODEV;
-+}
-+EXPORT_SYMBOL(amd_iommu_v2_get_max_pc_counters);
-+
-+int amd_iommu_v2_get_set_pc_reg_val(u16 devid, u8 bank, u8 cntr, u8 fxn,
-+				    long long *value, is_write)
-+{
-+	struct amd_iommu *iommu;
-+	u32 offset;
-+	u32 max_offset_lim;
-+
-+	/* locate the iommu associated with the device ID */
-+	iommu = amd_iommu_rlookup_table[devid];
-+	if (iommu == NULL)
-+		return -ENODEV;
-+
-+	/* check for valid iommu pc register indexing */
-+	if (fxn < 0 || fxn > 0x28 || (fxn & 7))
-+		return -ENODEV;
-+
-+	offset = (u32)(((0x40|bank) << 12) | (cntr << 8) | fxn);
-+
-+	/* limit the offset to the hw defined mmio region aperture */
-+	max_offset_lim = (u32)(((0x40|iommu->max_banks) << 12) |
-+				(iommu->max_counters << 8) | 0x28);
-+	if ((offset < IOMMU_V2_PC_REG_OFFSET) ||
-+	    (offset > max_offset_lim))
-+		return -EINVAL;
-+
-+	if (is_write)
-+		*value = readl(iommu->mmio_base + offset);
-+	else
-+		writel((u32)*value, iommu->mmio_base + offset);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(amd_iommu_v2_get_set_pc_reg_val);
-+#endif
-+
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index c9aa3d0..6dc1f68 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -38,7 +38,12 @@
- #define RLOOKUP_TABLE_ENTRY_SIZE	(sizeof(void *))
- 
- /* Length of the MMIO region for the AMD IOMMU */
-+#ifdef CONFIG_AMD_IOMMU_V2_PC
-+#define MMIO_REGION_LENGTH       0x80000
-+#define IOMMU_V2_PC_REG_OFFSET	 0x40000
-+#else
- #define MMIO_REGION_LENGTH       0x4000
-+#endif
- 
- /* Capability offsets used by the driver */
- #define MMIO_CAP_HDR_OFFSET	0x00
-@@ -77,7 +82,7 @@
- #define MMIO_STATUS_OFFSET	0x2020
- #define MMIO_PPR_HEAD_OFFSET	0x2030
- #define MMIO_PPR_TAIL_OFFSET	0x2038
--
-+#define MMIO_CNTR_CONF_OFFSET	0x4000
- 
- /* Extended Feature Bits */
- #define FEATURE_PREFETCH	(1ULL<<0)
-@@ -584,6 +589,12 @@ struct amd_iommu {
- 
- 	/* The l2 indirect registers */
- 	u32 stored_l2[0x83];
-+
-+#ifdef CONFIG_AMD_IOMMU_V2_PC
-+	/* The maximum PC banks and counters/bank (PCSup=1) */
-+	u8 max_banks;
-+	u8 max_counters;
-+#endif
- };
- 
- struct devid_map {
+Thanks!
 -- 
-1.7.9.5
-
-
+Michal Hocko
+SUSE Labs
