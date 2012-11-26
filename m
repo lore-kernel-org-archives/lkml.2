@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2KZSVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:21:00 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:34372 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755823Ab2KZSU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:20:58 -0500
-Date: Mon, 26 Nov 2012 11:20:54 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: When constructing the bus id consider
- assigned-addresses as well
-Message-ID: <20121126182054.GA30177@obsidianresearch.com>
-References: <20121121210240.GC15285@obsidianresearch.com>
- <20121126140316.99FE23E194B@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126140316.99FE23E194B@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S1755961Ab2KZSVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:21:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47021 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab2KZRAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 12:00:16 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tyler Hicks <tyhicks@canonical.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 009/270] eCryptfs: Call lower ->flush() from ecryptfs_flush()
+Date: Mon, 26 Nov 2012 14:54:59 -0200
+Message-Id: <1353949160-26803-10-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 02:03:16PM +0000, Grant Likely wrote:
-> On Wed, 21 Nov 2012 14:02:40 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> > 'assigned-addresses' is used for certain PCI device type nodes in
-> > lieu of 'reg',  since this is enforced by of/address.c, have
-> > of_device_make_bus_id look there as well.
-> > 
-> > Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> 
-> If it is a PCI device, then of_device_make_bus_id() shouldn't come into
-> play. PCI devices already have their own naming scheme. Only
-> platform_bus device creation uses of_device_make_bus_id(). What am I
-> missing?
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-In my embedded case I have a complex PCI-E connected SOC device.
+------------------
 
-This is modeled in OF by having a PCI-E bus, a PCI-E device node, and
-then all of the SOC devices (I2C, GPIO, drivers, etc) placed under the
-PCI-E device node.
+From: Tyler Hicks <tyhicks@canonical.com>
 
-The PCI driver that matches the device just turns it on and calls
-of_platform_populate(..) with its own node as an argument.
+commit 64e6651dcc10e9d2cc6230208a8e6c2cfd19ae18 upstream.
 
-So of_device_make_bus_id isn't called on a PCI-E device node, it is
-called on the platform_device children of that node, and due to the
-way the other code works, and what the OF rules seem to be, those
-childen all use assigned-addresses. Without this patch the code just
-assigns monotonic ids to those nodes.
+Since eCryptfs only calls fput() on the lower file in
+ecryptfs_release(), eCryptfs should call the lower filesystem's
+->flush() from ecryptfs_flush().
 
-Jason
+If the lower filesystem implements ->flush(), then eCryptfs should try
+to flush out any dirty pages prior to calling the lower ->flush(). If
+the lower filesystem does not implement ->flush(), then eCryptfs has no
+need to do anything in ecryptfs_flush() since dirty pages are now
+written out to the lower filesystem in ecryptfs_release().
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ fs/ecryptfs/file.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 44ce5c6..d45ba45 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -275,8 +275,14 @@ out:
+ 
+ static int ecryptfs_flush(struct file *file, fl_owner_t td)
+ {
+-	return file->f_mode & FMODE_WRITE
+-	       ? filemap_write_and_wait(file->f_mapping) : 0;
++	struct file *lower_file = ecryptfs_file_to_lower(file);
++
++	if (lower_file->f_op && lower_file->f_op->flush) {
++		filemap_write_and_wait(file->f_mapping);
++		return lower_file->f_op->flush(lower_file, td);
++	}
++
++	return 0;
+ }
+ 
+ static int ecryptfs_release(struct inode *inode, struct file *file)
+-- 
+1.7.9.5
+
