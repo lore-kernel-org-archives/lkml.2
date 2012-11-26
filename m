@@ -1,47 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab2KZFya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 00:54:30 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:36319 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2KZFy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 00:54:28 -0500
-From: Matt Phillips <mathewrphillips@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Matt Phillips <mathewrphillips@gmail.com>
-Subject: [PATCH] staging: comedi: ni_tio.h fixed coding style issue with pointer variables
-Date: Sun, 25 Nov 2012 23:53:21 -0600
-Message-Id: <1353909201-29667-1-git-send-email-mathewrphillips@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754192Ab2KZGHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 01:07:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:38734 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752282Ab2KZGH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 01:07:29 -0500
+X-IronPort-AV: E=Sophos;i="4.83,319,1352044800"; 
+   d="scan'208";a="6274260"
+Message-ID: <50B306E0.3050207@cn.fujitsu.com>
+Date: Mon, 26 Nov 2012 14:06:24 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Hanjun Guo <guohanjun@huawei.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, yinghai@kernel.org,
+        bhelgaas@google.com, lenb@kernel.org, jiang.liu@huawei.com,
+        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <50B3014E.3040107@huawei.com>
+In-Reply-To: <50B3014E.3040107@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/26 14:07:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/26 14:07:03,
+	Serialize complete at 2012/11/26 14:07:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issues with pointers
+On 11/26/2012 01:42 PM, Hanjun Guo wrote:
+>
+> Hi all,
+> I think Yasuaki mentioned the key point for the container device remove,
+> that is dependency.
+>
+> Currently, container, processor, and memory hotpulg are managed by different ACPI
+> hotplug drivers, the driver works when handle device hotplug individually, but they
+> have no idea for each other.
+>
+> This may introduce some issues, such as Yasuaki mentioned above, that is to say, we
+> should remove its child before remove the device itself, and hot add its parent before
+> the device itself.
+>
+> According to the ACPI namespace, we can resolve most of dependency issues. On a typical
+> two processor sockets system, the namespace is like this:
+>
+> /_SB                   ---container device, with HID ACPI0004
+>      |_SCK0             ---container device, with HID ACPI0004
+> 	  |_CPU0       ---processor device, with HID ACPI0009 or LNXCPU
+>            |_...
+>            |_CPUx
+>            |_MEM0       ---Memory device, with HID PNP0C80
+>      |_SCK1
+> 	  |_CPU0
+>            |_...
+>            |_CPUx
+>            |_MEM1
+>      |_PCI0            ---Host bridge, with HID PNP0A03 or PNP0A08
+>
+> If hot remove the container device, such as SCK0, we can easily know the dependency list
+> is CPU0~CPUx and MEM0, but I think the ACPI hotplug driver haven't resolve this now.
+>
+> And there is another corner case for hotplug devices in the namespace above, that is:
+> 1) Remove SCK0. yes, we can remove it with no dependency to the host bridge PCI0;
+>
+> 2) Remove SCK1 after SCK0. we should remove the host bridge PCI0 first,
+>     or the system will crash down. yes, dynamic dependency analysis is needed here.
+>     and the ACPI hotplug driver totally have no idea of this.
+>
+> so, should we do something to settle this down ?
 
-Signed-off-by: Matt Phillips <mathewrphillips@gmail.com>
----
- drivers/staging/comedi/drivers/ni_tio.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hi Guo,
 
-diff --git a/drivers/staging/comedi/drivers/ni_tio.h b/drivers/staging/comedi/drivers/ni_tio.h
-index b058820..8572996 100644
---- a/drivers/staging/comedi/drivers/ni_tio.h
-+++ b/drivers/staging/comedi/drivers/ni_tio.h
-@@ -120,9 +120,9 @@ struct ni_gpct {
- 
- struct ni_gpct_device {
- 	struct comedi_device *dev;
--	void (*write_register) (struct ni_gpct * counter, unsigned bits,
-+	void (*write_register) (struct ni_gpct *counter, unsigned bits,
- 				enum ni_gpct_register reg);
--	unsigned (*read_register) (struct ni_gpct * counter,
-+	unsigned (*read_register) (struct ni_gpct *counter,
- 				   enum ni_gpct_register reg);
- 	enum ni_gpct_variant variant;
- 	struct ni_gpct *counters;
--- 
-1.7.10.4
+I am trying to do this too. :)
+
+But so far as I know, Vasilis Liaskovitis has provided an approach.
+Please refer to the following url.
+https://lkml.org/lkml/2012/11/15/159
+
+I think we can review his patches first. :)
+
+And by the way, I think the ACPI based hotplug framework provided by
+Liu Jiang may also settle this problem. But I'm not quit sure yet. :)
+
+Thanks. :)
+
+>
+> Thanks
+> Hanjun Guo
+>
+>
+>> The example is as follows:
+>>
+>>   https://lkml.org/lkml/2012/9/26/318
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>
+>
+>
+>
 
