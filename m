@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2KZSqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:46:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56611 "EHLO mail.kernel.org"
+	id S1754340Ab2KZSsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:48:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34926 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab2KZSqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:46:12 -0500
-Date: Mon, 26 Nov 2012 10:46:10 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Jacob Keller <jacob.e.keller@intel.com>,
-        Richard Cochran <richard.cochran@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 05/38] ptp: update adjfreq callback description
-Message-ID: <20121126184610.GC21012@kroah.com>
-References: <20121122003904.262382971@linuxfoundation.org>
- <20121122003904.841717525@linuxfoundation.org>
- <20121124002600.GA12014@herton-Z68MA-D2H-B3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121124002600.GA12014@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753527Ab2KZSsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 13:48:12 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: rework mem_cgroup iterator
+Date: Mon, 26 Nov 2012 19:47:45 +0100
+Message-Id: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 10:26:01PM -0200, Herton Ronaldo Krzesinski wrote:
-> On Wed, Nov 21, 2012 at 04:39:48PM -0800, Greg Kroah-Hartman wrote:
-> > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Jacob Keller <jacob.e.keller@intel.com>
-> > 
-> > commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
-> > 
-> > This patch updates the adjfreq callback description to include a note that the
-> > delta in ppb is always relative to the base frequency, and not to the current
-> > frequency of the hardware clock.
-> > 
-> > Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-> > CC: Richard Cochran <richard.cochran@gmail.com>
-> > CC: John Stultz <john.stultz@linaro.org>
-> > Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > ---
-> >  include/linux/ptp_clock_kernel.h |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > --- a/include/linux/ptp_clock_kernel.h
-> > +++ b/include/linux/ptp_clock_kernel.h
-> > @@ -50,7 +50,8 @@ struct ptp_clock_request {
-> >   * clock operations
-> >   *
-> >   * @adjfreq:  Adjusts the frequency of the hardware clock.
-> > - *            parameter delta: Desired period change in parts per billion.
-> > + *            parameter delta: Desired frequency offset from nominal frequency
-> > + *            in parts per billion
-> >   *
-> >   * @adjtime:  Shifts the time of the hardware clock.
-> >   *            parameter delta: Desired change in nanoseconds.
-> 
-> This was marked for only 3.5 or later on the original changelog:
-> "CC: stable@vger.kernel.org [v3.5+]"
+Hi all,
+this is a second version of the patchset previously posted here:
+https://lkml.org/lkml/2012/11/13/335
 
-Ugh, my fault, now dropped from the 3.0 and 3.4-stable trees, thanks for
-finding my error.
+The patch set tries to make mem_cgroup_iter saner in the way how it
+walks hierarchies. css->id based traversal is far from being ideal as it
+is not deterministic because it depends on the creation ordering.
 
-thanks,
+Diffstat looks promising but it is fair the say that the biggest cleanup is
+just css_get_next removal. The memcg code has grown a bit but I think it is
+worth the resulting outcome (the sanity ;)).
 
-greg k-h
+The first patch fixes a potential misbehaving which I haven't seen but the
+fix is needed for the later patches anyway. We could take it alone as well
+but I do not have any bug report to base the fix on. The second one is also
+preparatory and it is new to the series.
+
+The third patch replaces css_get_next by cgroup iterators which are
+scheduled for 3.8 in Tejun's tree and I depend on the following two patches:
+fe1e904c cgroup: implement generic child / descendant walk macros
+7e187c6c cgroup: use rculist ops for cgroup->children
+
+The third and fourth patches are an attempt for simplification of the
+mem_cgroup_iter. css juggling is removed and the iteration logic is
+moved to a helper so that the reference counting and iteration are
+separated.
+
+The last patch just removes css_get_next as there is no user for it any
+longer.
+
+I am also thinking that leaf-to-root iteration makes more sense but this
+patch is not included in the series yet because I have to think some
+more about the justification.
+
+I have dropped "[RFC 4/5] memcg: clean up mem_cgroup_iter"
+(https://lkml.org/lkml/2012/11/13/333) because testing quickly shown
+that my thinking was flawed and VM_BUG_ON(!prev && !memcg) triggered
+very quickly. This also suggest that this version has seen some testing,
+unlike the previous one ;)
+The test was simple but I guess it exercised this code path quite heavily.
+        A (limit = 280M, use_hierarchy=true)
+      / | \
+     B  C  D (all have 100M limit)
+
+and independent kernel build (with the full distribution config) in
+all children groups. This triggers both children only and hierarchical
+reclaims.
+
+The shortlog says:
+Michal Hocko (6):
+      memcg: synchronize per-zone iterator access by a spinlock
+      memcg: keep prev's css alive for the whole mem_cgroup_iter
+      memcg: rework mem_cgroup_iter to use cgroup iterators
+      memcg: simplify mem_cgroup_iter
+      memcg: further simplify mem_cgroup_iter
+      cgroup: remove css_get_next
+
+And diffstat:
+ include/linux/cgroup.h |    7 ---
+ kernel/cgroup.c        |   49 ---------------------
+ mm/memcontrol.c        |  110 +++++++++++++++++++++++++++++++++++++-----------
+ 3 files changed, 86 insertions(+), 80 deletions(-)
+
