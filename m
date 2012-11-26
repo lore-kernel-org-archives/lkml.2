@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2KZMxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:53:01 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60834 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2KZMxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:53:00 -0500
-Date: Mon, 26 Nov 2012 23:52:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Will Deacon <will.deacon@arm.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20121126235257.41581077d0243bacc9ac1dc6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Nov_2012_23_52_57_+1100_=4cSgzO/JNDJzY8O"
+	id S1754079Ab2KZMye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:54:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3025 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729Ab2KZMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 07:54:32 -0500
+X-IronPort-AV: E=Sophos;i="4.83,321,1352044800"; 
+   d="scan'208";a="6277823"
+Message-ID: <50B3662D.50102@cn.fujitsu.com>
+Date: Mon, 26 Nov 2012 20:53:01 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: wujianguo <wujianguo106@gmail.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B35F0E.1090905@gmail.com>
+In-Reply-To: <50B35F0E.1090905@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/26 20:53:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/26 20:53:41,
+	Serialize complete at 2012/11/26 20:53:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Nov_2012_23_52_57_+1100_=4cSgzO/JNDJzY8O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/26/2012 08:22 PM, wujianguo wrote:
+> On 2012-11-23 18:44, Tang Chen wrote:
+>> This patch make sure bootmem will not allocate memory from areas that
+>> may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+>> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
+>> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+>> ---
+>>   include/linux/memblock.h |    1 +
+>>   mm/memblock.c            |   15 ++++++++++++++-
+>>   2 files changed, 15 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+>> index d452ee1..6e25597 100644
+>> --- a/include/linux/memblock.h
+>> +++ b/include/linux/memblock.h
+>> @@ -42,6 +42,7 @@ struct memblock {
+>>
+>>   extern struct memblock memblock;
+>>   extern int memblock_debug;
+>> +extern struct movablecore_map movablecore_map;
+>>
+>>   #define memblock_dbg(fmt, ...) \
+>>   	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+>> diff --git a/mm/memblock.c b/mm/memblock.c
+>> index 6259055..33b3b4d 100644
+>> --- a/mm/memblock.c
+>> +++ b/mm/memblock.c
+>> @@ -101,6 +101,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>   {
+>>   	phys_addr_t this_start, this_end, cand;
+>>   	u64 i;
+>> +	int curr = movablecore_map.nr_map - 1;
+>>
+>>   	/* pump up @end */
+>>   	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+>> @@ -114,13 +115,25 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>   		this_start = clamp(this_start, start, end);
+>>   		this_end = clamp(this_end, start, end);
+>>
+>> -		if (this_end<  size)
+>> +restart:
+>> +		if (this_end<= this_start || this_end<  size)
+>>   			continue;
+>>
+>> +		for (; curr>= 0; curr--) {
+>> +			if (movablecore_map.map[curr].start<  this_end)
+>
+> movablecore_map[curr].start should be movablecore_map[curr].start<<  PAGE_SHIFT.
+> May be you can change movablecore_map[].start/end to movablecore_map[].start_pfn/end_pfn
+> to avoid confusion.
 
-Hi Andrew,
+Hi Wu,
 
-Today's linux-next merge of the akpm tree got a conflict in mm/highmem.c
-between commit 498c22802123 ("mm: highmem: don't treat PKMAP_ADDR
-(LAST_PKMAP) as a highmem address") from Linus' tree and commit "mm,
-highmem: use PKMAP_NR() to calculate an index of pkmap" from the akpm
-tree.
+Yes, it was my mistake that I forgot to shift the pfn.
+And this was tested out by my partner too. And I have fixed it in my v3
+patch.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks for the comments. :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>
+>> +				break;
+>> +		}
+>> +
+>>   		cand = round_down(this_end - size, align);
+>> +		if (curr>= 0&&  cand<  movablecore_map.map[curr].end) {
+>> +			this_end = movablecore_map.map[curr].start;
+>
+> Ditto.
+>
+>> +			goto restart;
+>> +		}
+>> +
+>>   		if (cand>= this_start)
+>>   			return cand;
+>>   	}
+>> +
+>>   	return 0;
+>>   }
+>>
+>>
+>
+>
 
-diff --cc mm/highmem.c
-index 09fc744,017cccc..0000000
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@@ -98,8 -98,8 +98,8 @@@ struct page *kmap_to_page(void *vaddr
-  {
-  	unsigned long addr =3D (unsigned long)vaddr;
- =20
- -	if (addr >=3D PKMAP_ADDR(0) && addr <=3D PKMAP_ADDR(LAST_PKMAP)) {
- +	if (addr >=3D PKMAP_ADDR(0) && addr < PKMAP_ADDR(LAST_PKMAP)) {
-- 		int i =3D (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
-+ 		int i =3D PKMAP_NR(addr);
-  		return pte_page(pkmap_page_table[i]);
-  	}
- =20
-
---Signature=_Mon__26_Nov_2012_23_52_57_+1100_=4cSgzO/JNDJzY8O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQs2YpAAoJEECxmPOUX5FE6SUP/27J5mw5kE6qStgfV17zZj1A
-UhZY3sVO6UEgwbQdgMnnbru8UJ10akhWaUa1zq/wvGiFUDiRm56gXQjEnuHpuhg0
-fcehQ9BAqxW6tBOmb8vzPQLw4S+HYEHmYQgtyGK9cmZ+4Lego/gnmWKh22k/K6Ms
-N2cIif/2hWKkUFtvw+j4gq0zB0ERmJaFkzY1yUAGIX84emerrFQfAcEs+uwAiUog
-z0VxBG4xj2pZTFmV++GiBmVPsuHm4EJyyBob9Lq8strGITUX+IYJGJJQDWuq06IU
-mZa3fPqhfT6rm11EGri1xpzJ782guuOsfTsKOVQrYDAINS15DFi3LGLFLSYEKcZo
-CK6xXM3KbR3XmGKYIeVvVo6K6HxnNPkYZ3qgkosJGwJWlvmd8h00zX0n89Ivdc7O
-MXh0LxTHzjaB7i8G/23aP4mJA3dFsJ6Xxw21CLbyv+T9fqlR5grFW0e1VdBB0yzq
-rEcJU3+LIdnZ3AIjm4sOiz5lQteCk4MtaTvTaNOBEjSgiN/HT5U4zx6F9BNSmiOv
-mbghL2hK4/PFaoukBTNjcut3I+flcBkQmLFksSFY0SGYZXV/Dqk8+PVCZZbLGxzD
-OI/0dJYSTPiMB90eLMS6VFl/yRpZtdniyOqNgTXTniPIuEA5Zxm56mksOIj9KjZX
-GmpYvYgorSJ3mk4iLSHy
-=gkGl
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Nov_2012_23_52_57_+1100_=4cSgzO/JNDJzY8O--
