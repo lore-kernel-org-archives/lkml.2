@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753Ab2KZRf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:35:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12240 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933715Ab2KZRfy (ORCPT
+	id S933756Ab2KZRge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:36:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47930 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933700Ab2KZRLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:35:54 -0500
-X-Authority-Analysis: v=2.0 cv=cuMZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0Dr-bvbIo-YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=r0ZjosXJyycA:10 a=ayC55rCoAAAA:8 a=U9OQpdHBAAAA:8 a=lLRAAqSoBMBjXmnZsYsA:9 a=PUjeQqilurYA:10 a=cUBdl-qfu3MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353951352.6276.43.camel@gandalf.local.home>
-Subject: Re: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for
- workqueues and timers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, pjt@google.com,
-        paul.mckenney@linaro.org, tglx@linutronix.de, tj@kernel.org,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Date: Mon, 26 Nov 2012 12:35:52 -0500
-In-Reply-To: <20121126170358.GE2474@linux.vnet.ibm.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	 <CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
-	 <1353948027.6276.38.camel@gandalf.local.home>
-	 <20121126170358.GE2474@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 12:11:53 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Pritesh Raithatha <praithatha@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 192/270] pinctrl: tegra: correct bank for pingroup and drv pingroup
+Date: Mon, 26 Nov 2012 14:58:02 -0200
+Message-Id: <1353949160-26803-193-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-26 at 09:03 -0800, Paul E. McKenney wrote:
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-> If I understand correctly (though also suffering turkey OD), the idea is
-> to offload work to more energy-efficient CPUs.
+From: Pritesh Raithatha <praithatha@nvidia.com>
 
-This is determined by a CPU that isn't running the idle task? Is it
-because a CPU that just woke up may be running at a lower freq, and thus
-not as efficient? But pushing off to another CPU may cause cache misses
-as well. Wouldn't that also be a factor in efficiencies, if a CPU is
-stalled waiting for memory to be loaded?
+commit a03690e44468dcd3088f6600ab036d17bd2130ff upstream.
 
-I should also ask the obvious. Has these patches shown real world
-efficiencies or is this just a theory? Do these patches actually improve
-battery life when applied?
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/pinctrl/pinctrl-tegra30.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-Just asking.
-
--- Steve
-
+diff --git a/drivers/pinctrl/pinctrl-tegra30.c b/drivers/pinctrl/pinctrl-tegra30.c
+index 0386fdf..7894f14 100644
+--- a/drivers/pinctrl/pinctrl-tegra30.c
++++ b/drivers/pinctrl/pinctrl-tegra30.c
+@@ -3345,10 +3345,10 @@ static const struct tegra_function tegra30_functions[] = {
+ 	FUNCTION(vi_alt3),
+ };
+ 
+-#define MUXCTL_REG_A	0x3000
+-#define PINGROUP_REG_A	0x868
++#define DRV_PINGROUP_REG_A	0x868	/* bank 0 */
++#define PINGROUP_REG_A		0x3000	/* bank 1 */
+ 
+-#define PINGROUP_REG_Y(r) ((r) - MUXCTL_REG_A)
++#define PINGROUP_REG_Y(r) ((r) - PINGROUP_REG_A)
+ #define PINGROUP_REG_N(r) -1
+ 
+ #define PINGROUP(pg_name, f0, f1, f2, f3, f_safe, r, od, ior)	\
+@@ -3364,25 +3364,25 @@ static const struct tegra_function tegra30_functions[] = {
+ 		},						\
+ 		.func_safe = TEGRA_MUX_ ## f_safe,		\
+ 		.mux_reg = PINGROUP_REG_Y(r),			\
+-		.mux_bank = 0,					\
++		.mux_bank = 1,					\
+ 		.mux_bit = 0,					\
+ 		.pupd_reg = PINGROUP_REG_Y(r),			\
+-		.pupd_bank = 0,					\
++		.pupd_bank = 1,					\
+ 		.pupd_bit = 2,					\
+ 		.tri_reg = PINGROUP_REG_Y(r),			\
+-		.tri_bank = 0,					\
++		.tri_bank = 1,					\
+ 		.tri_bit = 4,					\
+ 		.einput_reg = PINGROUP_REG_Y(r),		\
+-		.einput_bank = 0,				\
++		.einput_bank = 1,				\
+ 		.einput_bit = 5,				\
+ 		.odrain_reg = PINGROUP_REG_##od(r),		\
+-		.odrain_bank = 0,				\
++		.odrain_bank = 1,				\
+ 		.odrain_bit = 6,				\
+ 		.lock_reg = PINGROUP_REG_Y(r),			\
+-		.lock_bank = 0,					\
++		.lock_bank = 1,					\
+ 		.lock_bit = 7,					\
+ 		.ioreset_reg = PINGROUP_REG_##ior(r),		\
+-		.ioreset_bank = 0,				\
++		.ioreset_bank = 1,				\
+ 		.ioreset_bit = 8,				\
+ 		.drv_reg = -1,					\
+ 	}
+@@ -3401,8 +3401,8 @@ static const struct tegra_function tegra30_functions[] = {
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
+-		.drv_reg = ((r) - PINGROUP_REG_A),		\
+-		.drv_bank = 1,					\
++		.drv_reg = ((r) - DRV_PINGROUP_REG_A),		\
++		.drv_bank = 0,					\
+ 		.hsm_bit = hsm_b,				\
+ 		.schmitt_bit = schmitt_b,			\
+ 		.lpmd_bit = lpmd_b,				\
+-- 
+1.7.9.5
 
