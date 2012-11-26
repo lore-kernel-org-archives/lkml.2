@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab2KZRDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:03:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47258 "EHLO
+	id S932104Ab2KZRDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:03:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47285 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756573Ab2KZRDA (ORCPT
+	with ESMTP id S1756573Ab2KZRDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:03:00 -0500
+	Mon, 26 Nov 2012 12:03:20 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>,
+Cc: Lukas Czerner <lczerner@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 052/270] ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
-Date: Mon, 26 Nov 2012 14:55:42 -0200
-Message-Id: <1353949160-26803-53-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 057/270] scsi_debug: Fix off-by-one bug when unmapping region
+Date: Mon, 26 Nov 2012 14:55:47 -0200
+Message-Id: <1353949160-26803-58-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,60 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feng Tang <feng.tang@intel.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 67bfa9b60bd689601554526d144b21d529f78a09 upstream.
+commit bc977749e967daa56de1922cf4cb38525631c51c upstream.
 
-By enlarging the GPE storm threshold back to 20, that laptop's
-EC works fine with interrupt mode instead of polling mode.
+Currently it is possible to unmap one more block than user requested to
+due to the off-by-one error in unmap_region(). This is probably due to
+the fact that the end variable despite its name actually points to the
+last block to unmap + 1. However in the condition it is handled as the
+last block of the region to unmap.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=45151
+The bug was not previously spotted probably due to the fact that the
+region was not zeroed, which has changed with commit
+be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
+to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
+enabled using fstrim.
 
-Reported-and-Tested-by: Francesco <trentini@dei.unipd.it>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Since the 'end' semantic is the same in several functions there this
+commit just fixes the condition to use the 'end' variable correctly in
+that context.
+
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/acpi/ec.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 615264c..a51df96 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -930,6 +930,17 @@ static int ec_flag_msi(const struct dmi_system_id *id)
- 	return 0;
- }
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 182d5a5..f4cc413 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, unsigned int len)
+ 		block = lba + alignment;
+ 		rem = do_div(block, granularity);
  
-+/*
-+ * Clevo M720 notebook actually works ok with IRQ mode, if we lifted
-+ * the GPE storm threshold back to 20
-+ */
-+static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
-+{
-+	pr_debug("Setting the EC GPE storm threshold to 20\n");
-+	ec_storm_threshold  = 20;
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -961,10 +972,13 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc.") }, NULL},
-+	{
-+	ec_enlarge_storm_threshold, "CLEVO hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
- 	{},
- };
- 
--
- int __init acpi_ec_ecdt_probe(void)
- {
- 	acpi_status status;
+-		if (rem == 0 && lba + granularity <= end && block < map_size) {
++		if (rem == 0 && lba + granularity < end && block < map_size) {
+ 			clear_bit(block, map_storep);
+ 			if (scsi_debug_lbprz)
+ 				memset(fake_storep +
 -- 
 1.7.9.5
 
