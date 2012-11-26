@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2KZQKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:10:42 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:50425 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2KZQKk convert rfc822-to-8bit (ORCPT
+	id S1754745Ab2KZQLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:11:11 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43846 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754544Ab2KZQLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 11:10:40 -0500
-Message-ID: <1353946235.10271.11.camel@hornet>
-Subject: Re: [PATCH 1/2] leds: Add generic support for memory mapped LEDs
-From: Pawel Moll <pawel.moll@arm.com>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Date: Mon, 26 Nov 2012 16:10:35 +0000
-In-Reply-To: <CA+E=qVcjKz-3CAKrDVG+ymij5HAB5H=a9+4G0KOR0tTKLGJu4w@mail.gmail.com>
-References: <1351792722-15250-1-git-send-email-pawel.moll@arm.com>
-	 <CA+E=qVcjKz-3CAKrDVG+ymij5HAB5H=a9+4G0KOR0tTKLGJu4w@mail.gmail.com>
-X-Mailer: Evolution 3.6.0-0ubuntu3
-Mime-Version: 1.0
-X-OriginalArrivalTime: 26 Nov 2012 16:10:36.0063 (UTC) FILETIME=[91B302F0:01CDCBF0]
-X-MC-Unique: 112112616103906201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Nov 2012 11:11:09 -0500
+Date: Mon, 26 Nov 2012 11:11:08 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: naveen yadav <yad.naveen@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
+        <marcel@holtmann.org>, <padovan@profusion.mobi>,
+        <linux-bluetooth@vger.kernel.org>,
+        vivek bhagat <vivek.bhagat89@gmail.com>
+Subject: Re: USB 2.0: No giveback comes for one submitted URB
+In-Reply-To: <CAJ8eaTxC1EiTwn-KSjW32WKi-4LsVt0YPrTn+xjtYEA9h0Dgdg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1211261109360.2168-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-26 at 15:37 +0000, Vasily Khoruzhick wrote:
-> On Thu, Nov 1, 2012 at 8:58 PM, Pawel Moll <pawel.moll@arm.com> wrote:
-> > LEDs are often controlled by writing to memory mapped
-> > register. This patch adds:
-> >
-> > 1. Generic functions for platform code and drivers to create
-> >    class device for LEDs controlled by arbitrary bit masks.
-> >    The control register value is read, modified by logic AND
-> >    and OR operations with respective mask and written back.
-> >
-> > 2. A platform driver for simple use case when one or more LED
-> >    are controlled by consecutive bits in a register pointed
-> >    at by the platform device's memory resource. It can be
-> >    particularly useful for MFD cells being part of an other
-> >    device.
->
-> This MMIO controls some latch (or whatever) which is actually GPIO.
-> So implementing generic GPIO MMIO driver and using leds-gpio on top of
-> it appears to be a better solution for me.
+On Mon, 26 Nov 2012, naveen yadav wrote:
 
-I won't argue that it is doable - I don't even have to implement the
-MMIO GPIO driver, because my MFD already has a set of pseudo-GPIO lines
-and extending those won't be a problem at all an I'll do exactly that if
-there is no other choice. But at the same time I hope you would agree
-that my_code->gpio_controller->gpio_led_description->register_device
-chain is longer than my_code->mmio_led one if you want to add a single
-"status" led for your little board ;-). I don't event mention that at
-least couple of the existing drivers follow the same "MMIO pattern"
-blindly.
+> Dear Alan,
+> 
+> Thanks for your reply ,
+> 
+> We check on 3.2.34 and 3.6.7 on X86 host machine. and result is same
+> without connecting Bluetooth device.
+> I am attaching log
 
-Nevertheless I'd really like to hear from the maintainers...
+Yes, very good.  But you still have to do what I mentioned in my
+earlier email:
 
-Thanks!
+> On Thu, Nov 22, 2012 at 9:08 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Paweł
+> > Now you need to find out what other code has changed urb->use_count and
+> > fix it.
 
+Alan Stern
 
