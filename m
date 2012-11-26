@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2KZJHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:07:43 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54999 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab2KZJHl (ORCPT
+	id S1754719Ab2KZJIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:08:35 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:47407 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab2KZJIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:07:41 -0500
-Date: Mon, 26 Nov 2012 09:07:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 3/5] Input: bu21013_ts - Add support for Device Tree
- booting
-Message-ID: <20121126090736.GC12782@gmail.com>
-References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
- <1352900837-20759-4-git-send-email-lee.jones@linaro.org>
- <20121123155258.GE28552@gmail.com>
- <20121124075009.GB24711@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121124075009.GB24711@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Nov 2012 04:08:32 -0500
+Date: Mon, 26 Nov 2012 10:08:14 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Philippe Reynes <tremyfr@yahoo.fr>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        s.hauer@pengutronix.de, eric.jarrige@armadeus.org,
+        julien.boibessot@armadeus.com
+Subject: Re: [PATCH 2/4] ds1374: add support of device tree
+Message-ID: <20121126100814.1459e3d7@skate>
+In-Reply-To: <1353874625-14754-3-git-send-email-tremyfr@yahoo.fr>
+References: <1353874625-14754-1-git-send-email-tremyfr@yahoo.fr>
+	<1353874625-14754-3-git-send-email-tremyfr@yahoo.fr>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Dmitry Torokhov wrote:
+Dear Philippe Reynes,
 
-> On Fri, Nov 23, 2012 at 03:52:58PM +0000, Lee Jones wrote:
-> > On Wed, 14 Nov 2012, Lee Jones wrote:
-> > 
-> > > Now we can register the BU21013_ts touch screen when booting with
-> > > Device Tree enabled. Here we parse all the necessary components
-> > > previously expected to be passed from platform data.
-> > > 
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Cc: linux-input@vger.kernel.org
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  drivers/input/touchscreen/bu21013_ts.c |   39 ++++++++++++++++++++++++++++----
-> > >  1 file changed, 35 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
-> > > index 5d8fc75..afef874 100644
-> > > --- a/drivers/input/touchscreen/bu21013_ts.c
-> > > +++ b/drivers/input/touchscreen/bu21013_ts.c
-> > > @@ -15,6 +15,8 @@
-> > >  #include <linux/regulator/consumer.h>
-> > >  #include <linux/module.h>
-> > >  #include <linux/gpio.h>
-> > > +#include <linux/of.h>
-> > > +#include <linux/of_gpio.h>
-> > >  
-> > >  /* Reference tracking for multiple displays. */
-> > >  static int bu21013_devices = 0;
-> > > @@ -487,13 +489,33 @@ static void bu21013_free_irq(struct bu21013_ts_data *bu21013_data)
-> > >   * This function used to initializes the i2c-client touchscreen
-> > >   * driver and returns integer.
-> > >   */
-> > > +static void __devinit bu21013_of_probe(struct device_node *np,
-> > > +				struct bu21013_platform_device *pdata)
-> > > +{
-> > > +	pdata->y_flip = pdata->x_flip = false;
-> > > +
-> > > +	if (of_get_property(np, "rohm,flip-x", NULL))
-> > > +		pdata->x_flip = true;
+On Sun, 25 Nov 2012 21:17:03 +0100, Philippe Reynes wrote:
+> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
+> ---
+>  drivers/rtc/rtc-ds1374.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
 > 
-> 	pdata->x_flip = of_property_read_bool(np, "rohm,flip-x");
-> 
-> ?
+> diff --git a/drivers/rtc/rtc-ds1374.c b/drivers/rtc/rtc-ds1374.c
+> index 9663160..174c532 100644
+> --- a/drivers/rtc/rtc-ds1374.c
+> +++ b/drivers/rtc/rtc-ds1374.c
+> @@ -49,6 +49,14 @@ static const struct i2c_device_id ds1374_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, ds1374_id);
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id ds1374_of_match[] __devinitconst = {
+> +	{ .compatible = "dallas,ds1374" },
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(of, ds1374_of_match);
+> +#endif
+> +
 
-Yes, we can do this now it exists.
+Don't we need a Device Tree binding documentation in
+Documentation/devicetree/bindings/rtc/ ?
 
-> Can I also get patch documenting the DT properties?
-
-Sure. As a follow-up? I'll resubmit this first, right away.
-
+Thomas
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
