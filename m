@@ -1,97 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464Ab2KZRpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:45:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47728 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933415Ab2KZRJh (ORCPT
+	id S1756859Ab2KZRqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:46:03 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62212 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab2KZRp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:09:37 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 156/270] usb: Don't enable LPM if the exit latency is zero.
-Date: Mon, 26 Nov 2012 14:57:26 -0200
-Message-Id: <1353949160-26803-157-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	Mon, 26 Nov 2012 12:45:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <2424177.54a8UTzN38@x2>
+References: <20121119215653.GA12715@www.outflux.net>
+	<2424177.54a8UTzN38@x2>
+Date: Mon, 26 Nov 2012 09:45:56 -0800
+X-Google-Sender-Auth: B6RAE16LJUZQSAIwbAxTiL0Gbfs
+Message-ID: <CAGXu5j+Fj_MfdaoRx9-VE6hgZ7h5u8OokqGhJUqK-FyOpKfPAA@mail.gmail.com>
+Subject: Re: [PATCH] audit: create explicit AUDIT_SECCOMP event type
+From: Kees Cook <keescook@chromium.org>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@google.com>,
+        linux-audit@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Nov 26, 2012 at 6:14 AM, Steve Grubb <sgrubb@redhat.com> wrote:
+> On Monday, November 19, 2012 01:56:53 PM Kees Cook wrote:
+>> The seccomp path was using AUDIT_ANOM_ABEND from when seccomp mode 1
+>> could only kill a process. While we still want to make sure an audit
+>> record is forced on a kill, this should use a separate record type since
+>> seccomp mode 2 introduces other behaviors. In the case of "handled"
+>> behaviors (process wasn't killed), only emit a record if the process is
+>> under inspection.
+>
+> Under the old record type, we know that the process is being terminated.
+> Therefore the meaning of the action is known as its implicit in the record
+> type. With this new type, we need to record what behavior is being enforced on
+> the process. I don't see where that is being recorded.
 
-------------------
+The action is encoded in the "code=". If one is doing seccomp
+auditing, this code will be meaningful already.
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Could we add that?
 
-commit ae8963adb4ad8c5f2a89ca1d99fb7bb721e7599f upstream.
+I'd rather not expand the code into the separate meanings if we don't
+have to. It's part of the BPF already, so it's useful to leave it
+as-is, IMO.
 
-Some USB 3.0 devices signal that they don't implement Link PM by having
-all zeroes in the U1/U2 exit latencies in their SuperSpeed BOS
-descriptor.  Don found that a Western Digital device he has experiences
-transfer errors when LPM is enabled.  The lsusb shows the U1/U2 exit
-latencies are set to zero:
+-Kees
 
-Binary Object Store Descriptor:
-  bLength                 5
-  bDescriptorType        15
-  wTotalLength           22
-  bNumDeviceCaps          2
-  SuperSpeed USB Device Capability:
-    bLength                10
-    bDescriptorType        16
-    bDevCapabilityType      3
-    bmAttributes         0x00
-      Latency Tolerance Messages (LTM) Supported
-    wSpeedsSupported   0x000e
-      Device can operate at Full Speed (12Mbps)
-      Device can operate at High Speed (480Mbps)
-      Device can operate at SuperSpeed (5Gbps)
-    bFunctionalitySupport   1
-      Lowest fully-functional device speed is Full Speed (12Mbps)
-    bU1DevExitLat           0 micro seconds
-    bU2DevExitLat           0 micro seconds
+>
+> Thanks,
+> -Steve
+>
+>
+>> Cc: Julien Tinnes <jln@google.com>
+>> Cc: Will Drewry <wad@google.com>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  include/linux/audit.h      |    3 ++-
+>>  include/uapi/linux/audit.h |    1 +
+>>  kernel/auditsc.c           |   14 +++++++++++---
+>>  3 files changed, 14 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/audit.h b/include/linux/audit.h
+>> index bce729a..9d5104d 100644
+>> --- a/include/linux/audit.h
+>> +++ b/include/linux/audit.h
+>> @@ -157,7 +157,8 @@ void audit_core_dumps(long signr);
+>>
+>>  static inline void audit_seccomp(unsigned long syscall, long signr, int
+>> code) {
+>> -     if (unlikely(!audit_dummy_context()))
+>> +     /* Force a record to be reported if a signal was delivered. */
+>> +     if (signr || unlikely(!audit_dummy_context()))
+>>               __audit_seccomp(syscall, signr, code);
+>>  }
+>>
+>> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+>> index 76352ac..09a2d94 100644
+>> --- a/include/uapi/linux/audit.h
+>> +++ b/include/uapi/linux/audit.h
+>> @@ -106,6 +106,7 @@
+>>  #define AUDIT_MMAP           1323    /* Record showing descriptor and flags in
+> mmap */
+>>  #define AUDIT_NETFILTER_PKT  1324    /* Packets traversing netfilter chains
+> */
+>>  #define AUDIT_NETFILTER_CFG  1325    /* Netfilter chain modifications */
+>> +#define AUDIT_SECCOMP                1326    /* Secure Computing event */
+>>
+>>  #define AUDIT_AVC            1400    /* SE Linux avc denial or grant */
+>>  #define AUDIT_SELINUX_ERR    1401    /* Internal SE Linux Errors */
+>> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+>> index 2f186ed..157e989 100644
+>> --- a/kernel/auditsc.c
+>> +++ b/kernel/auditsc.c
+>> @@ -2735,7 +2735,7 @@ void __audit_mmap_fd(int fd, int flags)
+>>       context->type = AUDIT_MMAP;
+>>  }
+>>
+>> -static void audit_log_abend(struct audit_buffer *ab, char *reason, long
+>> signr) +static void audit_log_task(struct audit_buffer *ab)
+>>  {
+>>       kuid_t auid, uid;
+>>       kgid_t gid;
+>> @@ -2753,6 +2753,11 @@ static void audit_log_abend(struct audit_buffer *ab,
+>> char *reason, long signr) audit_log_task_context(ab);
+>>       audit_log_format(ab, " pid=%d comm=", current->pid);
+>>       audit_log_untrustedstring(ab, current->comm);
+>> +}
+>> +
+>> +static void audit_log_abend(struct audit_buffer *ab, char *reason, long
+>> signr) +{
+>> +     audit_log_task(ab);
+>>       audit_log_format(ab, " reason=");
+>>       audit_log_string(ab, reason);
+>>       audit_log_format(ab, " sig=%ld", signr);
+>> @@ -2783,8 +2788,11 @@ void __audit_seccomp(unsigned long syscall, long
+>> signr, int code) {
+>>       struct audit_buffer *ab;
+>>
+>> -     ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+>> -     audit_log_abend(ab, "seccomp", signr);
+>> +     ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
+>> +     if (unlikely(!ab))
+>> +             return;
+>> +     audit_log_task(ab);
+>> +     audit_log_format(ab, " sig=%ld", signr);
+>>       audit_log_format(ab, " syscall=%ld", syscall);
+>>       audit_log_format(ab, " compat=%d", is_compat_task());
+>>       audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
 
-The fix is to not enable LPM for a particular link state if we find its
-corresponding exit latency is zero.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
-enable/disable USB3 link states."
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/usb/core/hub.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 70223d5..209815a 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3294,6 +3294,16 @@ static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
- 		enum usb3_link_state state)
- {
- 	int timeout;
-+	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
-+	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
-+
-+	/* If the device says it doesn't have *any* exit latency to come out of
-+	 * U1 or U2, it's probably lying.  Assume it doesn't implement that link
-+	 * state.
-+	 */
-+	if ((state == USB3_LPM_U1 && u1_mel == 0) ||
-+			(state == USB3_LPM_U2 && u2_mel == 0))
-+		return;
- 
- 	/* We allow the host controller to set the U1/U2 timeout internally
- 	 * first, so that it can change its schedule to account for the
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
