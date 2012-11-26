@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2KZIaM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 03:30:12 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41792 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350Ab2KZIaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 03:30:10 -0500
-Message-ID: <50B3288B.5020500@ti.com>
-Date: Mon, 26 Nov 2012 09:30:03 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 3/3] pwm: New driver to support PWM driven LEDs on
- TWL4030/6030 series of PMICs
-References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com> <1353405382-9226-4-git-send-email-peter.ujfalusi@ti.com> <20121123150412.GB16810@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121123150412.GB16810@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1754498Ab2KZIfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 03:35:22 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:45052 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab2KZIfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 03:35:20 -0500
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [RFC][PATCH] fs: configfs: programmatically create config groups
+Date: Mon, 26 Nov 2012 09:35:09 +0100
+Message-id: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 04:04 PM, Thierry Reding wrote:
-> On Tue, Nov 20, 2012 at 10:56:22AM +0100, Peter Ujfalusi wrote:
->> The driver supports the following LED outputs as generic PWM driver:
->> TWL4030 LEDA and LEDB (PWMA and PWMB)
->> TWL6030 Charging indicator LED (PWM LED)
->>
->> On TWL6030 when the PWM requested LED is configured to be controlled by SW.
->> In this case the user can enable/disable and set the duty period freely.
->> When the PWM has been freed, the LED driver is put back to HW control.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  drivers/pwm/Kconfig       |  10 ++
->>  drivers/pwm/Makefile      |   1 +
->>  drivers/pwm/pwm-twl-led.c | 303 ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 314 insertions(+)
->>  create mode 100644 drivers/pwm/pwm-twl-led.c
-> 
-> Doesn't this belong in the drivers/leds subsystem? Besides that, the
-> same comments as for the previous patch apply. One additional note
-> below.
+In some parts of the kernel (e.g. planned configfs integration into usb
+gadget) there is a need to programmatically create config groups
+(directories) but it would be preferable to disallow creating them by
+the user. This is more or less what default_groups used to be for.
+But e.g. in the mass storage gadget, after storing the number of
+luns (logical units) into some configfs attribute, the corresponding lun#
+directories should be created, their number is not known up front so
+default_groups are no good for this.
 
-The PINs itself are called as LED but they are PWMs at the end. If we
-represent them as PWMs they can be used for different purposes which is going
-to be needed for example in BeagleBoard, where the LEDA (PWMA) is used as a
-GPO to enable/disable the USB host power.
-Also the removed 'twl6030-pwm' driver was only controlled the LED part of twl6030.
-With this series I enable the use of the PWMs and the PWMs behind of the LED
-functions to give us flexibility on how we are using them.
+Example:
 
-> 
->> +static struct platform_driver twl_pwmled_driver = {
->> +	.driver = {
->> +		.name = "twl-pwmled",
->> +		.of_match_table = of_match_ptr(twl_pwmled_of_match),
->> +	},
->> +	.probe = twl_pwmled_probe,
->> +	.remove = __devexit_p(twl_pwmled_remove),
-> 
-> You didn't annotate twl_pwmled_remove() with __devexit, so __devexit_p
-> isn't needed here either.
+$ echo 3 > /cfg/..../mass_storage/luns
 
-Oh yes, I have also received patches from a series which removes the
-_devexit_p() from the kernel.
-But should the __devexit need to be added to the remove function?
+causes
 
--- 
-Péter
+/cfg/....../mass_storage/lun0
+/cfg/....../mass_storage/lun1
+/cfg/....../mass_storage/lun2
+
+to be created. Yet
+
+$ mkdir /cfg/..../mass_storage/<any name>
+
+should not be allowed.
+
+With create_group exported it is very easily achieved: make_group and make_item
+are set to NULL in mass_storage's config_group, yet the kernel can
+create_groups at will.
+
+I kindly ask for comments. In particular, I would like to discuss
+if this is the right approach. A counterpart to remove config groups
+is also required. It is not implemented in this patch, though. What are
+your opinions?
+
+Andrzej Pietrasiewicz (1):
+  fs: configfs: allow other kernel parts to programmatically create
+    config groups
+
+ fs/configfs/dir.c        |    5 +++--
+ include/linux/configfs.h |    2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
