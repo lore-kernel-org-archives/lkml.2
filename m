@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2KZVcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 16:32:36 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:29172 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2KZVcf (ORCPT
+	id S932234Ab2KZVeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 16:34:01 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55422 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133Ab2KZVd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 16:32:35 -0500
-Message-ID: <1353965049.26955.159.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
- .sys_notify
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Date: Mon, 26 Nov 2012 14:24:09 -0700
-In-Reply-To: <1353964194.26955.153.camel@misato.fc.hp.com>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
-	 <9351429.9B119055GG@vostro.rjw.lan>
-	 <1353956799.26955.130.camel@misato.fc.hp.com>
-	 <1893337.Wdi2FRlPFR@vostro.rjw.lan>
-	 <1353964194.26955.153.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 16:33:59 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/4 v2] irqdomain: augment add_simple() to allocate descs
+To: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>
+In-Reply-To: <1349076922-25874-1-git-send-email-linus.walleij@stericsson.com>
+References: <1349076922-25874-1-git-send-email-linus.walleij@stericsson.com>
+Date: Mon, 26 Nov 2012 20:26:01 +0000
+Message-Id: <20121126202601.625213E0A04@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-26 at 14:09 -0700, Toshi Kani wrote:
-> On Mon, 2012-11-26 at 21:44 +0100, Rafael J. Wysocki wrote:
-> > On Monday, November 26, 2012 12:06:39 PM Toshi Kani wrote:
-> > > On Sat, 2012-11-24 at 23:37 +0100, Rafael J. Wysocki wrote:
-> > > > On Saturday, November 24, 2012 11:01:56 PM Rafael J. Wysocki wrote:
-> > > > > On Thursday, November 08, 2012 01:23:44 PM Toshi Kani wrote:
-> > > > > > Added a new .sys_notify interface, which allows ACPI drivers to
-> > > > > > register their system-level (ex. hotplug) notify handlers through
-> > > > > > their acpi_driver table.  This removes redundant ACPI namespace
-> > > > > > walks from ACPI drivers for faster booting.
-> > > > > > 
-> > > > > > The global notify handler acpi_bus_notify() is called for all
-> > > > > > system-level ACPI notifications, which then calls an appropriate
-> > > > > > driver's handler if any.  ACPI drivers no longer need to register
-> > > > > > or unregister driver's handler to each ACPI device object.  It also
-> > > > > > supports dynamic ACPI namespace with LoadTable & Unload opcode
-> > > > > > without any modification in ACPI drivers.
-> > > > > > 
-> > > > > > Added a common system notify handler acpi_bus_sys_notify(), which
-> > > > > > allows ACPI drivers to set it to .sys_notify when this function is
-> > > > > > fully implemented.
-> > > > > 
-> > > > > I don't really understand this.
-> > > > > 
-> > > > > > It removes functional conflict between driver's
-> > > > > > notify handler and the global notify handler acpi_bus_notify().
-> > > > > > 
-> > > > > > Note that the changes maintain backward compatibility for ACPI
-> > > > > > drivers.  Any drivers registered their hotplug handler through the
-> > > > > > existing interfaces, such as acpi_install_notify_handler() and
-> > > > > > register_acpi_bus_notifier(), will continue to work as before.
-> > > > > 
-> > > > > I really wouldn't like to add new callbacks to struct acpi_device_ops, because
-> > > > > I'd like that whole thing to go away entirely eventually, along with struct
-> > > > > acpi_driver.
-> > > > > 
-> > > > > Moreover, in this particular case, it really is not useful to have to define
-> > > > > a struct acpi_driver so that one can register for receiving system
-> > > > > notifications from ACPI.  It would be really nice if non-ACPI drivers, such
-> > > > > as PCI or platform, could do that too.
-> > > > 
-> > > > Which they do by using acpi_install_notify_handler() directly.
-> > > 
-> > > By using acpi_install_notify_handler(), each driver needs to walk
-> > > through the entire ACPI namespace to find its associated ACPI devices
-> > > and call it to register one by one.  I think this is more work for
-> > > non-ACPI drivers than defining acpi_driver.
-> > 
-> > I'm not really sure what you mean.  The drivers in question already know
-> > what the relevant ACPI device nodes are (because they need them anyway
-> > for other purposes), so they don't need to look for them specifically and
-> > acpi_install_notify_handler() doesn't do any namespace walking.  So what
-> > you said above simply doesn't make sense from this viewpoint.
+On Mon, 1 Oct 2012 09:35:22 +0200, Linus Walleij <linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Yes, if drivers already know the relevant ACPI devices, then walking the
-> ACPI namespace is not necessary.  I was referring the case like
-> processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
+> Currently we rely on all IRQ chip instances to dynamically
+> allocate their IRQ descriptors unless they use the linear
+> IRQ domain. So for irqdomain_add_legacy() and
+> irqdomain_add_simple() the caller need to make sure that
+> descriptors are allocated.
+> 
+> Let's slightly augment the yet unused irqdomain_add_simple()
+> to also allocate descriptors as a means to simplify usage
+> and avoid code duplication throughout the kernel.
+> 
+> We warn if descriptors cannot be allocated, e.g. if a
+> platform has the bad habit of hogging descriptors at boot
+> time.
+> 
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> ChangeLog v1->v2:
+> - Switch descriptor allocation on IS_ENABLED(CONFIG_SPARSE_IRQ)
+>   so it won't attempt to allocate descriptors in the non-sparse
+>   case.
+> - Use of_node_to_nid() to make sure we work on platforms with their
+>   own node concept.
+> - Specify irq_alloc_descs(first_irq, first_irq ...) to emulate
+>   irq_alloc_desc_at().
+> ---
+>  kernel/irq/irqdomain.c | 33 ++++++++++++++++++++++++++++-----
+>  1 file changed, 28 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 49a7772..4e69e24 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -148,7 +148,8 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
+>   * @host_data: Controller private data pointer
+>   *
+>   * Allocates a legacy irq_domain if irq_base is positive or a linear
+> - * domain otherwise.
+> + * domain otherwise. For the legacy domain, IRQ descriptors will also
+> + * be allocated.
+>   *
+>   * This is intended to implement the expected behaviour for most
+>   * interrupt controllers which is that a linear mapping should
+> @@ -162,11 +163,33 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+>  					 const struct irq_domain_ops *ops,
+>  					 void *host_data)
+>  {
+> -	if (first_irq > 0)
+> -		return irq_domain_add_legacy(of_node, size, first_irq, 0,
+> +	if (first_irq > 0) {
+> +		int irq_base;
+> +
+> +		if (IS_ENABLED(CONFIG_SPARSE_IRQ)) {
+> +			/*
+> +			 * Set the descriptor allocator to search for a
+> +			 * 1-to-1 mapping, such as irq_alloc_desc_at().
+> +			 * Use of_node_to_nid() which is defined to
+> +			 * numa_node_id() on platforms that have no custom
+> +			 * implementation.
+> +			 */
+> +			irq_base = irq_alloc_descs(first_irq, first_irq, size,
+> +						   of_node_to_nid(of_node));
+> +			if (irq_base < 0) {
+> +				WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+> +				     first_irq);
+> +				irq_base = first_irq;
 
-BTW, when an ACPI device is marked as non-present, which is the case
-before hot-add, we do not create an acpi_device object and therefore do
-not bind it with a driver.  This is why these drivers walk the ACPI
-namespace and install their notify handlers regardless of device status.
+As I just commented on the previous version, WARN() is probably too
+verbose (and scary). Make it an informational.
 
-Thanks,
--Toshi 
+However, I see another problem. What is the requested range straddles
+the boundary between reserved and non-reserved IRQs? It would be good to
+give some information about which irq range was requested and maybe
+report which ones were available.... or check to see if the request is
+inside or partially inside the reserved region?
 
-
-
-
-
-
-
+g.
