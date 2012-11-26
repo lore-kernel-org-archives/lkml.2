@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2KZDTw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 22:19:52 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:58504 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab2KZDTv convert rfc822-to-8bit (ORCPT
+	id S1753952Ab2KZDXm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 22:23:42 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42957 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab2KZDXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 22:19:51 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Luck, Tony" <tony.luck@intel.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Ian King <colin.king@canonical.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: RE: linux-next: manual merge of the ia64 tree with Linus' tree
-Thread-Topic: linux-next: manual merge of the ia64 tree with Linus' tree
-Thread-Index: AQHNy21y/tfMRaRlHkqGBpYN+Cpnzpf7cq/g
-Date: Mon, 26 Nov 2012 03:19:38 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4149F993D@USINDEM103.corp.hds.com>
-References: <20121126113141.3b624dc9e729039b54c51881@canb.auug.org.au>
-In-Reply-To: <20121126113141.3b624dc9e729039b54c51881@canb.auug.org.au>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Nov 2012 22:23:41 -0500
+Message-ID: <50B2E0D9.1050000@linaro.org>
+Date: Mon, 26 Nov 2012 08:54:09 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
- definitions=2012-11-25_07:2012-11-23,2012-11-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1211250362
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, patches@linaro.org
+Subject: Re: [PATCH 00/10] ASoC: codec: devm_ related modifications
+References: <1353557322-25353-1-git-send-email-tushar.behera@linaro.org> <20121123143710.GQ4529@opensource.wolfsonmicro.com>
+In-Reply-To: <20121123143710.GQ4529@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-This fix is reasonable to me.
-
-Thanks,
-
-Seiji
-
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: Sunday, November 25, 2012 7:32 PM
-> To: Luck, Tony
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Colin Ian King; Anton Vorontsov; Seiji Aguchi
-> Subject: linux-next: manual merge of the ia64 tree with Linus' tree
+On 11/23/2012 08:07 PM, Mark Brown wrote:
+> On Thu, Nov 22, 2012 at 09:38:32AM +0530, Tushar Behera wrote:
+>> This patchset includes devm_ related modifications for sound codecs.
+>>
+>> First 2 patches fix warning for freeing of devm_ allocated data.
+>> The next patch introduces usage of devm_kzalloc() in wm8995 codec.
+>> Following 7 patches introduce usage of devm_regmap_init_xxx() in
+>> remaining codecs.
 > 
-> Hi all,
+> Applied all, thanks.  If you're doing stuff like this it's helpful to
+> sort by part.
 > 
-> Today's linux-next merge of the ia64 tree got a conflict in fs/pstore/platform.c between commit 70a6f46d7b0e ("pstore: Fix NULL
-> pointer dereference in console writes") from Linus' tree and commit
-> faa338315985 ("efi_pstore: Add a sequence counter to a variable name") from the ia64 tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc fs/pstore/platform.c
-> index 947fbe0,e518f43..0000000
-> --- a/fs/pstore/platform.c
-> +++ b/fs/pstore/platform.c
-> @@@ -173,7 -172,7 +173,7 @@@ static void pstore_console_write(struc
->   			spin_lock_irqsave(&psinfo->buf_lock, flags);
->   		}
->   		memcpy(psinfo->buf, s, c);
-> - 		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
->  -		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, 0, c, psinfo);
-> ++		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, 0, c, psinfo);
->   		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
->   		s += c;
->   		c = e - s;
+Thanks. I will keep that in mind.
+
+-- 
+Tushar Behera
