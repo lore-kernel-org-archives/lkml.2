@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab2KZIrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 03:47:05 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50016 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2KZIrE (ORCPT
+	id S1754405Ab2KZIuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 03:50:07 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:53618 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab2KZIuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 03:47:04 -0500
-Date: Mon, 26 Nov 2012 09:46:57 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 11/24] MAINTAINERS: fix .../plat-mxc/include/mach/imxfb.h
-Message-ID: <20121126084657.GY10369@pengutronix.de>
-References: <1353716808-16375-1-git-send-email-cesarb@cesarb.net>
- <1353716808-16375-12-git-send-email-cesarb@cesarb.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353716808-16375-12-git-send-email-cesarb@cesarb.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:46:40 up 155 days, 23:58, 33 users,  load average: 0.29, 1.10,
- 1.58
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 26 Nov 2012 03:50:05 -0500
+Message-ID: <20659.11566.624414.569253@ipc1.ka-ro>
+Date: Mon, 26 Nov 2012 09:49:50 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] ASoC: mxs-saif: export
+ mxs_saif_put_mclk,mxs_saif_get_mclk
+In-Reply-To: <20121123144541.GT4529@opensource.wolfsonmicro.com>
+References: <1353587470-11994-1-git-send-email-LW@KARO-electronics.de>
+	<1353587470-11994-4-git-send-email-LW@KARO-electronics.de>
+	<20121123020635.GK4385@opensource.wolfsonmicro.com>
+	<20655.9202.288388.343758@ipc1.ka-ro>
+	<20121123144541.GT4529@opensource.wolfsonmicro.com>
+X-Mailer: VM 8.1.0 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 10:26:35PM -0200, Cesar Eduardo Barros wrote:
-> This file was moved to include/linux/platform_data/video-imxfb.h by
-> commit 82906b1 (ARM: imx: move platform_data definitions).
-> 
-> Cc: Sascha Hauer <kernel@pengutronix.de>
-> Cc: linux-fbdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Hi,
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-Sascha
-
-> ---
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Mark Brown writes:
+> On Fri, Nov 23, 2012 at 08:21:22AM +0100, Lothar Waßmann wrote:
+> > > On Thu, Nov 22, 2012 at 01:31:09PM +0100, Lothar Waßmann wrote:
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index a67a67a..887d717 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3137,7 +3137,7 @@ M:	Sascha Hauer <kernel@pengutronix.de>
->  L:	linux-fbdev@vger.kernel.org
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
-> -F:	arch/arm/plat-mxc/include/mach/imxfb.h
-> +F:	include/linux/platform_data/video-imxfb.h
->  F:	drivers/video/imxfb.c
->  
->  FREESCALE SOC FS_ENET DRIVER
-> -- 
-> 1.7.11.7
+> > > Why?
 > 
+> > I thought that was obvious... To be able to compile the mxs sound
+> > driver as module.
 > 
+> Do you want to add new users of these functions, or are there existing
+> users which currently fail to link when built as modules?
+>
+The existing MXS sound driver fails to build as module
+(CONFIG_SND_SOC_MXS_SGTL5000=m) without this patch.
 
+
+Lothar Waßmann
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
