@@ -1,123 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab2KZMye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 07:54:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:3025 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab2KZMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 07:54:32 -0500
-X-IronPort-AV: E=Sophos;i="4.83,321,1352044800"; 
-   d="scan'208";a="6277823"
-Message-ID: <50B3662D.50102@cn.fujitsu.com>
-Date: Mon, 26 Nov 2012 20:53:01 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754148Ab2KZMzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 07:55:06 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:47352 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab2KZMzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 07:55:04 -0500
+Subject: Re: vdso && cr (Was: arch_check_bp_in_kernelspace: fix the range check)
+To: avagin@gmail.com (Andrey Wagin)
+Date: Mon, 26 Nov 2012 23:55:01 +1100 (EST)
+Cc: gorcunov@openvz.org (Cyrill Gorcunov), oleg@redhat.com (Oleg Nesterov),
+        xemul@parallels.com (Pavel Emelyanov),
+        rostedt@goodmis.org (Steven Rostedt),
+        fweisbec@gmail.com (Frederic Weisbecker),
+        mingo@redhat.com (Ingo Molnar),
+        a.p.zijlstra@chello.nl (Peter Zijlstra),
+        linux-kernel@vger.kernel.org (LKML)
+Reply-To: u3557@dialix.com.au
+In-Reply-To: <CANaxB-yCSrUMQbjrZPMoHp0hN+uUuRDCW6yRazFYX1YR_di9dQ@mail.gmail.com>
+X-Mailer: ELM [version 2.5 PL8]
 MIME-Version: 1.0
-To: wujianguo <wujianguo106@gmail.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B35F0E.1090905@gmail.com>
-In-Reply-To: <50B35F0E.1090905@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 20:53:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/26 20:53:41,
-	Serialize complete at 2012/11/26 20:53:41
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <20121126125502.0FDDD592064@miso.sublimeip.com>
+From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 08:22 PM, wujianguo wrote:
-> On 2012-11-23 18:44, Tang Chen wrote:
->> This patch make sure bootmem will not allocate memory from areas that
->> may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
->> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
->> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
->> ---
->>   include/linux/memblock.h |    1 +
->>   mm/memblock.c            |   15 ++++++++++++++-
->>   2 files changed, 15 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
->> index d452ee1..6e25597 100644
->> --- a/include/linux/memblock.h
->> +++ b/include/linux/memblock.h
->> @@ -42,6 +42,7 @@ struct memblock {
->>
->>   extern struct memblock memblock;
->>   extern int memblock_debug;
->> +extern struct movablecore_map movablecore_map;
->>
->>   #define memblock_dbg(fmt, ...) \
->>   	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
->> diff --git a/mm/memblock.c b/mm/memblock.c
->> index 6259055..33b3b4d 100644
->> --- a/mm/memblock.c
->> +++ b/mm/memblock.c
->> @@ -101,6 +101,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
->>   {
->>   	phys_addr_t this_start, this_end, cand;
->>   	u64 i;
->> +	int curr = movablecore_map.nr_map - 1;
->>
->>   	/* pump up @end */
->>   	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
->> @@ -114,13 +115,25 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
->>   		this_start = clamp(this_start, start, end);
->>   		this_end = clamp(this_end, start, end);
->>
->> -		if (this_end<  size)
->> +restart:
->> +		if (this_end<= this_start || this_end<  size)
->>   			continue;
->>
->> +		for (; curr>= 0; curr--) {
->> +			if (movablecore_map.map[curr].start<  this_end)
->
-> movablecore_map[curr].start should be movablecore_map[curr].start<<  PAGE_SHIFT.
-> May be you can change movablecore_map[].start/end to movablecore_map[].start_pfn/end_pfn
-> to avoid confusion.
+Hi Andrey,
 
-Hi Wu,
+So what do you do if a catched interrupt occured inside vdso code?
 
-Yes, it was my mistake that I forgot to shift the pfn.
-And this was tested out by my partner too. And I have fixed it in my v3
-patch.
+You can easily detect that the task is currently in vdso code,
+then delay its dump, but how do you detect whether a sigreturn()
+or even a series of sigreturn()s won't bring it back to the middle
+of some old vdso code?
 
-Thanks for the comments. :)
+You could of course keep that old code and modify only the very
+first instruction of each routine into a jump instruction, but then
+the code to which the process returns may not be compatible with
+the new kernel and/or hardware configuration.
 
->
->> +				break;
->> +		}
->> +
->>   		cand = round_down(this_end - size, align);
->> +		if (curr>= 0&&  cand<  movablecore_map.map[curr].end) {
->> +			this_end = movablecore_map.map[curr].start;
->
-> Ditto.
->
->> +			goto restart;
->> +		}
->> +
->>   		if (cand>= this_start)
->>   			return cand;
->>   	}
->> +
->>   	return 0;
->>   }
->>
->>
->
->
+You cannot even rely on a vdso enter/exit counter, because interrupt
+code can use "longjmp()".
+
+My idea was to introduce a kernel option saying "don't send me any
+catched signals while the program-counter is in this range (eg. the
+vdso page), but I was told that it is not feasible to implement it.
+
+Regards,
+Amnon.
+
+> 2012/11/26 Cyrill Gorcunov <gorcunov@openvz.org>:
+> > On Thu, Nov 22, 2012 at 05:12:38PM +0100, Oleg Nesterov wrote:
+> >> On 11/22, Amnon Shiloh wrote:
+> >> >
+> >> > Now however, that "vsyscall" was effectively replaced by vdso, it
+> >> > creates a new problem for me and probably for anyone else who uses
+> >> > some form of checkpoint/restore:
+> >>
+> >> Oh, sorry, I can't help here. I can only add Cyrill and Pavel, they
+> >> seem to enjoy trying to solve the c/r problems.
+> >
+> > Hi Oleg, Amnon, sorry for delay on this message. First of all, I'm
+> > not vDSO specialist but as to c/r aspect of it I've had in mind the
+> > the following scenario: we dump vDSO area either complete euther simply
+> > remember the functions addresses it provides, then on restore we replace
+> > the functions prologue with jmp instruction which would point to the
+> > vDSO entries provided us by a kernel. But again, I didn't spend much time
+> > for vDSO yet.
+> 
+> I think this approach should work. Here is a bit more details:
+> 1. A task will be not dumped in vdso code. If a task is in vdso code,
+> we will try to catch it again.
+> 2. Only addresses of vdso symbols will be dumped.
+> 3. On restore we will compare addresses of symbols. If addresses are
+> not changes, a new vdso will be mapped instead of old one. If they are
+> changed, a new vdso will be mapped in a free space and the old vdso
+> will be replaced on a proxy library, where all functions are replaced
+> on jumps to suitable functions in the new vdso.
+> 
+> Looks simple and does not required to hack a kernel.
+> 
+> >
+> >         Cyrill
+> 
 
