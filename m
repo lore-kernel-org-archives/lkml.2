@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab2KZTeD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:34:03 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46134 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab2KZTeB (ORCPT
+	id S1755735Ab2KZTnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:43:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34354 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab2KZTnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:34:01 -0500
-Message-ID: <50B3C426.4020605@wwwdotorg.org>
-Date: Mon, 26 Nov 2012 12:33:58 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 26 Nov 2012 14:43:16 -0500
+Message-ID: <50B3C64C.1010801@infradead.org>
+Date: Mon, 26 Nov 2012 11:43:08 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] memory: tegra30: Fix warning w/o PM_SLEEP
-References: <1353501740-25420-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1353501740-25420-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.5
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Dubov <oakad@yahoo.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org
+Subject: Re: linux-next: Tree for Nov 26 (mmc/host/tifm_sd.c)
+References: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>
+In-Reply-To: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 05:42 AM, Hiroshi Doyu wrote:
-> Fix build warning w/o PM_SLEEP.
+On 11/26/2012 06:17 AM, Stephen Rothwell wrote:
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Hi all,
+> 
+> Changes since 20121115:
+> 
 
-I assume Greg will take this through his tree.
 
-> Change-Id: I713f7dd697f1ad9fb1fee56b389b0d6c45bb540c
+on i386:
 
-But that shouldn't be there though...
+drivers/built-in.o: In function `tifm_sd_request':
+tifm_sd.c:(.text+0x588f95): undefined reference to `__udivdi3'
+
+
+somewhere inside tifm_sd_request():
+
+I'm guessing that the call to tifm_sd_set_data_timeout() was
+inlined by gcc and it's the divide there that is the problem.
+
+-- 
+
+~Randy
