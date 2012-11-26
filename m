@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab2KZRI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:08:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47672 "EHLO
+	id S933358Ab2KZRJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:09:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47681 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933331Ab2KZRIx (ORCPT
+	with ESMTP id S933331Ab2KZRI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:08:53 -0500
+	Mon, 26 Nov 2012 12:08:59 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jim Schutt <jaschut@sandia.gov>,
+Cc: Alex Elder <elder@inktank.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 144/270] libceph: avoid truncation due to racing banners
-Date: Mon, 26 Nov 2012 14:57:14 -0200
-Message-Id: <1353949160-26803-145-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 146/270] rbd: reset BACKOFF if unable to re-queue
+Date: Mon, 26 Nov 2012 14:57:16 -0200
+Message-Id: <1353949160-26803-147-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,108 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Schutt <jaschut@sandia.gov>
+From: Alex Elder <elder@inktank.com>
 
-commit 6d4221b53707486dfad3f5bfe568d2ce7f4c9863 upstream.
+commit 588377d6199034c36d335e7df5818b731fea072c upstream.
 
-Because the Ceph client messenger uses a non-blocking connect, it is
-possible for the sending of the client banner to race with the
-arrival of the banner sent by the peer.
+If ceph_fault() is unable to queue work after a delay, it sets the
+BACKOFF connection flag so con_work() will attempt to do so.
 
-When ceph_sock_state_change() notices the connect has completed, it
-schedules work to process the socket via con_work().  During this
-time the peer is writing its banner, and arrival of the peer banner
-races with con_work().
+In con_work(), when BACKOFF is set, if queue_delayed_work() doesn't
+result in newly-queued work, it simply ignores this condition and
+proceeds as if no backoff delay were desired.  There are two
+problems with this--one of which is a bug.
 
-If con_work() calls try_read() before the peer banner arrives, there
-is nothing for it to do, after which con_work() calls try_write() to
-send the client's banner.  In this case Ceph's protocol negotiation
-can complete succesfully.
+The first problem is simply that the intended behavior is to back
+off, and if we aren't able queue the work item to run after a delay
+we're not doing that.
 
-The server-side messenger immediately sends its banner and addresses
-after accepting a connect request, *before* actually attempting to
-read or verify the banner from the client.  As a result, it is
-possible for the banner from the server to arrive before con_work()
-calls try_read().  If that happens, try_read() will read the banner
-and prepare protocol negotiation info via prepare_write_connect().
-prepare_write_connect() calls con_out_kvec_reset(), which discards
-the as-yet-unsent client banner.  Next, con_work() calls
-try_write(), which sends the protocol negotiation info rather than
-the banner that the peer is expecting.
+The only reason queue_delayed_work() won't queue work is if the
+provided work item is already queued.  In the messenger, this
+means that con_work() is already scheduled to be run again.  So
+if we simply set the BACKOFF flag again when this occurs, we know
+the next con_work() call will again attempt to hold off activity
+on the connection until after the delay.
 
-The result is that the peer sees an invalid banner, and the client
-reports "negotiation failed".
+The second problem--the bug--is a leak of a reference count.  If
+queue_delayed_work() returns 0 in con_work(), con->ops->put() drops
+the connection reference held on entry to con_work().  However,
+processing is (was) allowed to continue, and at the end of the
+function a second con->ops->put() is called.
 
-Fix this by moving con_out_kvec_reset() out of
-prepare_write_connect() to its callers at all locations except the
-one where the banner might still need to be sent.
+This patch fixes both problems.
 
-[elder@inktak.com: added note about server-side behavior]
-
-Signed-off-by: Jim Schutt <jaschut@sandia.gov>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ceph/messenger.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ net/ceph/messenger.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index b6655b1..b141c86 100644
+index 8ba0eee..0de041f 100644
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -911,7 +911,6 @@ static int prepare_write_connect(struct ceph_connection *con)
- 	con->out_connect.authorizer_len = auth ?
- 		cpu_to_le32(auth->authorizer_buf_len) : 0;
- 
--	con_out_kvec_reset(con);
- 	con_out_kvec_add(con, sizeof (con->out_connect),
- 					&con->out_connect);
- 	if (auth && auth->authorizer_buf_len)
-@@ -1553,6 +1552,7 @@ static int process_connect(struct ceph_connection *con)
- 			return -1;
+@@ -2296,10 +2296,11 @@ restart:
+ 			mutex_unlock(&con->mutex);
+ 			return;
+ 		} else {
+-			con->ops->put(con);
+ 			dout("con_work %p FAILED to back off %lu\n", con,
+ 			     con->delay);
++			set_bit(CON_FLAG_BACKOFF, &con->flags);
  		}
- 		con->auth_retry = 1;
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1573,6 +1573,7 @@ static int process_connect(struct ceph_connection *con)
- 		       ENTITY_NAME(con->peer_name),
- 		       ceph_pr_addr(&con->peer_addr.in_addr));
- 		reset_connection(con);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1597,6 +1598,7 @@ static int process_connect(struct ceph_connection *con)
- 		     le32_to_cpu(con->out_connect.connect_seq),
- 		     le32_to_cpu(con->in_reply.connect_seq));
- 		con->connect_seq = le32_to_cpu(con->in_reply.connect_seq);
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -1613,6 +1615,7 @@ static int process_connect(struct ceph_connection *con)
- 		     le32_to_cpu(con->in_reply.global_seq));
- 		get_global_seq(con->msgr,
- 			       le32_to_cpu(con->in_reply.global_seq));
-+		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			return ret;
-@@ -2131,7 +2134,11 @@ more:
- 		BUG_ON(con->state != CON_STATE_CONNECTING);
- 		con->state = CON_STATE_NEGOTIATING;
++		goto done;
+ 	}
  
--		/* Banner is good, exchange connection info */
-+		/*
-+		 * Received banner is good, exchange connection info.
-+		 * Do not reset out_kvec, as sending our banner raced
-+		 * with receiving peer banner after connect completed.
-+		 */
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
- 			goto out;
+ 	if (con->state == CON_STATE_STANDBY) {
 -- 
 1.7.9.5
 
