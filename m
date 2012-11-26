@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab2KZLT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 06:19:29 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:34477 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab2KZLT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 06:19:27 -0500
-Date: Mon, 26 Nov 2012 22:19:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the samsung tree with the arm-soc tree
-Message-Id: <20121126221925.f6c8bdcbd35718989dd52b5c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Nov_2012_22_19_25_+1100_3G39VC=6tIsGD35a"
+	id S1755199Ab2KZLVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:21:08 -0500
+Received: from 8bytes.org ([85.214.48.195]:36956 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754552Ab2KZLVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 06:21:06 -0500
+Date: Mon, 26 Nov 2012 12:20:58 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: shuah.khan@hp.com, a-jacquiot@ti.com, fenghua.yu@intel.com,
+        catalin.marinas@arm.com, lethal@linux-sh.org, benh@kernel.crashing.org,
+        ralf@linux-mips.org, tony.luck@intel.com, davem@davemloft.net,
+        msalter@redhat.com, monstr@monstr.eu,
+        Ming Lei <ming.lei@canonical.com>,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH 0/9] dma_debug: add debug_dma_mapping_error support to
+ architectures that support DMA_DEBUG_API
+Message-ID: <20121126112058.GF25742@8bytes.org>
+References: <1353706142.5270.93.camel@lorien2>
+ <50B34B0F.3080204@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B34B0F.3080204@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Nov 26 12:21:03 2012
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50b3509f22972046314593
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Nov_2012_22_19_25_+1100_3G39VC=6tIsGD35a
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 26, 2012 at 11:57:19AM +0100, Marek Szyprowski wrote:
+> I've took all the patches to the next-dma-debug branch in my tree, I sorry
+> that You have to wait so long for it. My branch is based on Joerg's
+> dma-debug branch and I've included it for testing in linux-next branch.
+> 
+> Joerg: would You mind if I handle pushing the whole branch to v3.8
+> via my kernel tree? Those changes should be kept close together to
+> avoid build breaks for bisecting.
 
-Hi Kukjin,
+I'll apply the patches to my tree soon enough. But before that I'll wait
+a little bit longer to give the arch maintainers the chance to add the
+missing Acked-bys.
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/boot/dts/exynos5250.dtsi between commit 24025f6f5821 ("Merge
-branch 'next/dt-samsung' of
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into
-next/dt") from the arm-soc tree and commit 5d706af5ab0b ("Merge branch
-'next/dt-samsung' into for-next") from the samsung tree.
 
-I fixed it up (by using the samsung tree version) and can carry the fix
-as necessary (no action is required).
+	Joerg
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__26_Nov_2012_22_19_25_+1100_3G39VC=6tIsGD35a
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQs1A+AAoJEECxmPOUX5FEa6cP+gJq70u34K5ClpoY15HsrphH
-36XBS4YBHSCANRY7lOzaH0wIXFlyEbcL5+RVjNA73XYBVdI1rni/5b4utHkNsX8L
-tWbKTK6uJcuESkH1pps570wYMuvw4tHJdz1dmhlEnCuRynqQR64+Rdn56epQ6QTD
-ByZ0fS9p8zLF3LP9tOIbwggarI6vbZ54lW1Lxf8gZjOmMyUKqXKKBKpKnD4xN8D0
-WF0gwFHVCmKBQMW4Nh1DcqvNji5rTvj8xwl68EXQCG0hh6HASC2ekM9OWwJQ4WPl
-nWFTqcQMGjggwq9LSbsD7TV5Pqcz2OksbX/EuZ0iuUcLNO5LX7rzV1CdlqV0T7Tc
-5UeKw+/W9hxRlE8Z+CJyxz70+cxgg4gKgMQdUV76gvicfMivSixsl0pK3oBNEdNA
-zQPHHaTngrFmQCULG6ecNHvy/p6UGK1BguGu8XklpK6ZvS4rL0b1DSrhGeIeep9X
-TCt0vCUbOn/mmnur4AuTn+y8unCC2Qa8G359qtmh1v284lcuBxBS9aZP89WfW1lP
-wO2XrZ2P3PjgKh9n/Bh5Spa12aWQw3O6kMQUcDVIPFIx4qZrXgPtcFv2kO1SNH+z
-b1Naw1zHr+hWGZC4tc+ETi5VcTlEnYGwieWeMzFZrBAo5Wn87idk/BNzvennL9Nq
-C68FWVOMhj4Scw23q06K
-=GyTn
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Nov_2012_22_19_25_+1100_3G39VC=6tIsGD35a--
