@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2KZSLS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:11:18 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49175 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab2KZSKb (ORCPT
+	id S1757021Ab2KZSLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:11:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47279 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487Ab2KZRDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:10:31 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] cpufreq: ondemand: update sampling rate only on right CPUs
-Date: Mon, 26 Nov 2012 19:10:12 +0100
-Message-Id: <1353953412-20667-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
+	Mon, 26 Nov 2012 12:03:16 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 056/270] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
+Date: Mon, 26 Nov 2012 14:55:46 -0200
+Message-Id: <1353949160-26803-57-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix cpufreq_gov_ondemand to skip CPU where another governor is used.
+3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
 
-The bug present itself as NULL pointer access on the mutex_lock() call,
-an can be reproduced on an SMP machine by setting the default governor
-to anything other than ondemand, setting a single CPU's governor to
-ondemand, then changing the sample rate by writing on:
+------------------
 
-> /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Backtrace:
+commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
 
-Nov 26 17:36:54 balto kernel: [  839.585241] BUG: unable to handle kernel NULL pointer dereference at           (null)
-Nov 26 17:36:54 balto kernel: [  839.585311] IP: [<ffffffff8174e082>] __mutex_lock_slowpath+0xb2/0x170
-[snip]
-Nov 26 17:36:54 balto kernel: [  839.587005] Call Trace:
-Nov 26 17:36:54 balto kernel: [  839.587030]  [<ffffffff8174da82>] mutex_lock+0x22/0x40
-Nov 26 17:36:54 balto kernel: [  839.587067]  [<ffffffff81610b8f>] store_sampling_rate+0xbf/0x150
-Nov 26 17:36:54 balto kernel: [  839.587110]  [<ffffffff81031e9c>] ?  __do_page_fault+0x1cc/0x4c0
-Nov 26 17:36:54 balto kernel: [  839.587153]  [<ffffffff813309bf>] kobj_attr_store+0xf/0x20
-Nov 26 17:36:54 balto kernel: [  839.587192]  [<ffffffff811bb62d>] sysfs_write_file+0xcd/0x140
-Nov 26 17:36:54 balto kernel: [  839.587234]  [<ffffffff8114c12c>] vfs_write+0xac/0x180
-Nov 26 17:36:54 balto kernel: [  839.587271]  [<ffffffff8114c472>] sys_write+0x52/0xa0
-Nov 26 17:36:54 balto kernel: [  839.587306]  [<ffffffff810321ce>] ?  do_page_fault+0xe/0x10
-Nov 26 17:36:54 balto kernel: [  839.587345]  [<ffffffff81751202>] system_call_fastpath+0x16/0x1b
+Michael Olbrich reported that his test program fails when built with
+-O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
+CPUs:
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+volatile int x = 2;
+volatile int64_t y = 2;
+
+int main() {
+	volatile int a = 0;
+	volatile int64_t b = 0;
+	while (1) {
+		a = (a + x) % (1 << 30);
+		b = (b + y) % (1 << 30);
+		assert(a == b);
+	}
+}
+
+and two instances are run.  When built for just v7 CPUs, this program
+works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
+
+It appears that we do not save the high-16 double VFP registers across
+context switches when the kernel is built for v6 CPUs.  Fix that.
+
+Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
+ arch/arm/include/asm/vfpmacros.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Hi Rafael,
-
-this is based on a clean linux-pm linux-next branch (i.e. not with my other
-patch-set applied), so expect a context conflict if both are applied.
-
-Thanks,
-Fabio
-
- drivers/cpufreq/cpufreq_ondemand.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index cca3e9f..7731f7c 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -40,6 +40,10 @@
- static struct dbs_data od_dbs_data;
- static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
- 
-+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
-+static struct cpufreq_governor cpufreq_gov_ondemand;
-+#endif
-+
- static struct od_dbs_tuners od_tuners = {
- 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
- 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
-@@ -279,6 +283,10 @@ static void update_sampling_rate(unsigned int new_rate)
- 		policy = cpufreq_cpu_get(cpu);
- 		if (!policy)
- 			continue;
-+		if (policy->governor != &cpufreq_gov_ondemand) {
-+			cpufreq_cpu_put(policy);
-+			continue;
-+		}
- 		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
- 		cpufreq_cpu_put(policy);
- 
+diff --git a/arch/arm/include/asm/vfpmacros.h b/arch/arm/include/asm/vfpmacros.h
+index 3d5fc41..bf53047 100644
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -28,7 +28,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+@@ -52,7 +52,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
 -- 
-1.7.12.1
+1.7.9.5
 
