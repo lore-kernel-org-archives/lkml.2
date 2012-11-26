@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2KZRAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:00:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47025 "EHLO
+	id S1755838Ab2KZRAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:00:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47034 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab2KZRAV (ORCPT
+	with ESMTP id S1755817Ab2KZRA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:00:21 -0500
+	Mon, 26 Nov 2012 12:00:27 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tim Sally <tsally@atomicpeace.com>, Tyler Hicks <tyhicks@canonical.com>,
+Cc: Patrick McHardy <kaber@trash.net>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 010/270] eCryptfs: check for eCryptfs cipher support at mount
-Date: Mon, 26 Nov 2012 14:55:00 -0200
-Message-Id: <1353949160-26803-11-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 012/270] netfilter: nf_nat_sip: fix via header translation with multiple parameters
+Date: Mon, 26 Nov 2012 14:55:02 -0200
+Message-Id: <1353949160-26803-13-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,56 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Sally <tsally@atomicpeace.com>
+From: Patrick McHardy <kaber@trash.net>
 
-commit 5f5b331d5c21228a6519dcb793fc1629646c51a6 upstream.
+commit f22eb25cf5b1157b29ef88c793b71972efc47143 upstream.
 
-The issue occurs when eCryptfs is mounted with a cipher supported by
-the crypto subsystem but not by eCryptfs. The mount succeeds and an
-error does not occur until a write. This change checks for eCryptfs
-cipher support at mount time.
+Via-headers are parsed beginning at the first character after the Via-address.
+When the address is translated first and its length decreases, the offset to
+start parsing at is incorrect and header parameters might be missed.
 
-Resolves Launchpad issue #338914, reported by Tyler Hicks in 03/2009.
-https://bugs.launchpad.net/ecryptfs/+bug/338914
+Update the offset after translating the Via-address to fix this.
 
-Signed-off-by: Tim Sally <tsally@atomicpeace.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ecryptfs/main.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ net/ipv4/netfilter/nf_nat_sip.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index c2a9c39..240832e 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -280,6 +280,7 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
- 	char *fnek_src;
- 	char *cipher_key_bytes_src;
- 	char *fn_cipher_key_bytes_src;
-+	u8 cipher_code;
+diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
+index bb71caa..6dbcdb1 100644
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -148,7 +148,7 @@ static unsigned int ip_nat_sip(struct sk_buff *skb, unsigned int dataoff,
+ 	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
+ 				    hdr, NULL, &matchoff, &matchlen,
+ 				    &addr, &port) > 0) {
+-		unsigned int matchend, poff, plen, buflen, n;
++		unsigned int olen, matchend, poff, plen, buflen, n;
+ 		char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
  
- 	*check_ruid = 0;
+ 		/* We're only interested in headers related to this
+@@ -163,11 +163,12 @@ static unsigned int ip_nat_sip(struct sk_buff *skb, unsigned int dataoff,
+ 				goto next;
+ 		}
  
-@@ -421,6 +422,18 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
- 	    && !fn_cipher_key_bytes_set)
- 		mount_crypt_stat->global_default_fn_cipher_key_bytes =
- 			mount_crypt_stat->global_default_cipher_key_size;
-+
-+	cipher_code = ecryptfs_code_for_cipher_string(
-+		mount_crypt_stat->global_default_cipher_name,
-+		mount_crypt_stat->global_default_cipher_key_size);
-+	if (!cipher_code) {
-+		ecryptfs_printk(KERN_ERR,
-+				"eCryptfs doesn't support cipher: %s",
-+				mount_crypt_stat->global_default_cipher_name);
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
- 	mutex_lock(&key_tfm_list_mutex);
- 	if (!ecryptfs_tfm_exists(mount_crypt_stat->global_default_cipher_name,
- 				 NULL)) {
++		olen = *datalen;
+ 		if (!map_addr(skb, dataoff, dptr, datalen, matchoff, matchlen,
+ 			      &addr, port))
+ 			return NF_DROP;
+ 
+-		matchend = matchoff + matchlen;
++		matchend = matchoff + matchlen + *datalen - olen;
+ 
+ 		/* The maddr= parameter (RFC 2361) specifies where to send
+ 		 * the reply. */
 -- 
 1.7.9.5
 
