@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2KZPKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:10:11 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60375 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab2KZPKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:10:08 -0500
+	id S1755028Ab2KZPLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:11:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754104Ab2KZPLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:11:41 -0500
+Date: Mon, 26 Nov 2012 17:14:16 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@infradead.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v5
+Message-ID: <20121126151416.GB21016@redhat.com>
+References: <1353315222-27685-1-git-send-email-asias@redhat.com>
+ <20121119202641.GB12283@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <87obik9zaq.fsf@octavius.laptop.org>
-References: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
-	<87obik9zaq.fsf@octavius.laptop.org>
-Date: Mon, 26 Nov 2012 20:40:07 +0530
-Message-ID: <CAKohpomnN3eLUTU2zoHP-8G_YfzKokXx8qB92_6dqTnTW5WZAg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: sdhci-spear: Initialize sdhci clk to 50 MHz
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119202641.GB12283@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 November 2012 20:39, Chris Ball <cjb@laptop.org> wrote:
-> On Thu, Nov 08 2012, Viresh Kumar wrote:
->> +     ret = clk_set_rate(sdhci->clk, 50000000);
->> +     if (ret)
->> +             dev_dbg(&pdev->dev, "Error setting desired clk, clk=%lu\n",
->> +                             clk_get_rate(sdhci->clk));
->> +
->>       if (np) {
->>               sdhci->data = sdhci_probe_config_dt(pdev);
->>               if (IS_ERR(sdhci->data)) {
->
-> Can I change this to a dev_err()?  No-one's going to see a dev_dbg().
+On Mon, Nov 19, 2012 at 10:26:41PM +0200, Michael S. Tsirkin wrote:
+> > 
+> > Userspace bits:
+> > -----------------------------
+> > 1) LKVM
+> > The latest vhost-blk userspace bits for kvm tool can be found here:
+> > git@github.com:asias/linux-kvm.git blk.vhost-blk
+> > 
+> > 2) QEMU
+> > The latest vhost-blk userspace prototype for QEMU can be found here:
+> > git@github.com:asias/qemu.git blk.vhost-blk
+> > 
+> > Changes in v5:
+> > - Do not assume the buffer layout
+> > - Fix wakeup race
+> > 
+> > Changes in v4:
+> > - Mark req->status as userspace pointer
+> > - Use __copy_to_user() instead of copy_to_user() in vhost_blk_set_status()
+> > - Add if (need_resched()) schedule() in blk thread
+> > - Kill vhost_blk_stop_vq() and move it into vhost_blk_stop()
+> > - Use vq_err() instead of pr_warn()
+> > - Fail un Unsupported request
+> > - Add flush in vhost_blk_set_features()
+> > 
+> > Changes in v3:
+> > - Sending REQ_FLUSH bio instead of vfs_fsync, thanks Christoph!
+> > - Check file passed by user is a raw block device file
+> > 
+> > Signed-off-by: Asias He <asias@redhat.com>
+> 
+> Since there are files shared by this and vhost net
+> it's easiest for me to merge this all through the
+> vhost tree.
 
-Yes and thanks :)
+Hi Dave, are you ok with this proposal?
 
---
-viresh
+-- 
+MST
