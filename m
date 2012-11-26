@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2KZK50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:57:26 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:10998 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2KZK5Y (ORCPT
+	id S1754752Ab2KZK6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 05:58:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55455 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab2KZK6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:57:24 -0500
-Message-id: <50B34B0F.3080204@samsung.com>
-Date: Mon, 26 Nov 2012 11:57:19 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: shuah.khan@hp.com
-Cc: Joerg Roedel <joro@8bytes.org>, a-jacquiot@ti.com, fenghua.yu@intel.com,
-        catalin.marinas@arm.com, lethal@linux-sh.org, benh@kernel.crashing.org,
-        ralf@linux-mips.org, tony.luck@intel.com, davem@davemloft.net,
-        msalter@redhat.com, monstr@monstr.eu,
-        Ming Lei <ming.lei@canonical.com>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH 0/9] dma_debug: add debug_dma_mapping_error support to
- architectures that support DMA_DEBUG_API
-References: <1353706142.5270.93.camel@lorien2>
-In-reply-to: <1353706142.5270.93.camel@lorien2>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Mon, 26 Nov 2012 05:58:43 -0500
+Date: Mon, 26 Nov 2012 11:58:39 +0100
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Vincent Li <vincent.mc.li@gmail.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: KVM Disk i/o or VM activities causes soft lockup?
+Message-ID: <20121126105839.GC963@stefanha-thinkpad.redhat.com>
+References: <CAK3+h2xLLnP03+cP=-aSf=xmiEuZ-RFhxP1DoeO9Hs8ksoX6zw@mail.gmail.com>
+ <20121123072941.GH22787@stefanha-thinkpad.hitronhub.home>
+ <CAK3+h2xBwtzbO15fJUZprv7AyEnqr3CHoa+z_7zY0qSwp5g5aQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK3+h2xBwtzbO15fJUZprv7AyEnqr3CHoa+z_7zY0qSwp5g5aQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Nov 23, 2012 at 10:34:16AM -0800, Vincent Li wrote:
+> On Thu, Nov 22, 2012 at 11:29 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
+> > On Wed, Nov 21, 2012 at 03:36:50PM -0800, Vincent Li wrote:
+> >> We have users running on redhat based distro (Kernel
+> >> 2.6.32-131.21.1.el6.x86_64 ) with kvm, when customer made cron job
+> >> script to copy large files between kvm guest or some other user space
+> >> program leads to disk i/o or VM activities, users get following soft
+> >> lockup message from console:
+> >>
+> >> Nov 17 13:44:46 slot1/luipaard100a err kernel: BUG: soft lockup -
+> >> CPU#4 stuck for 61s! [qemu-kvm:6795]
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Modules linked in:
+> >> ebt_vlan nls_utf8 isofs ebtable_filter ebtables 8021q garp bridge stp
+> >> llc ipt_REJECT iptable_filter xt_NOTRACK nf_conntrack iptable_raw
+> >> ip_tables loop ext2 binfmt_misc hed womdict(U) vnic(U) parport_pc lp
+> >> parport predis(U) lasthop(U) ipv6 toggler vhost_net tun kvm_intel kvm
+> >> jiffies(U) sysstats hrsleep i2c_dev datastor(U) linux_user_bde(P)(U)
+> >> linux_kernel_bde(P)(U) tg3 libphy serio_raw i2c_i801 i2c_core ehci_hcd
+> >> raid1 raid0 virtio_pci virtio_blk virtio virtio_ring mvsas libsas
+> >> scsi_transport_sas mptspi mptscsih mptbase scsi_transport_spi 3w_9xxx
+> >> sata_svw(U) ahci serverworks sata_sil ata_piix libata sd_mod
+> >> crc_t10dif amd74xx piix ide_gd_mod ide_core dm_snapshot dm_mirror
+> >> dm_region_hash dm_log dm_mod ext3 jbd mbcache
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Pid: 6795, comm:
+> >> qemu-kvm Tainted: P           ----------------
+> >> 2.6.32-131.21.1.el6.f5.x86_64 #1
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Call Trace:
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <IRQ>
+> >> [<ffffffff81084f95>] ? get_timestamp+0x9/0xf
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff810855d6>] ? watchdog_timer_fn+0x130/0x178
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff81059f11>] ? __run_hrtimer+0xa3/0xff
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8105a188>] ? hrtimer_interrupt+0xe6/0x190
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8105a14b>] ? hrtimer_interrupt+0xa9/0x190
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8101e5a9>] ? hpet_interrupt_handler+0x26/0x2d
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8105a26f>] ? hrtimer_peek_ahead_timers+0x9/0xd
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff81044fcc>] ? __do_softirq+0xc5/0x17a
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff81003adc>] ? call_softirq+0x1c/0x28
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8100506b>] ? do_softirq+0x31/0x66
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff81003673>] ? call_function_interrupt+0x13/0x20
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <EOI>
+> >> [<ffffffffa0219986>] ? vmx_get_msr+0x0/0x123 [kvm_intel]
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffffa01d11c0>] ? kvm_arch_vcpu_ioctl_run+0x80e/0xaf1 [kvm]
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffffa01d11b4>] ? kvm_arch_vcpu_ioctl_run+0x802/0xaf1 [kvm]
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8114e59b>] ? inode_has_perm+0x65/0x72
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffffa01c77f5>] ? kvm_vcpu_ioctl+0xf2/0x5ba [kvm]
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff8114e642>] ? file_has_perm+0x9a/0xac
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff810f9ec2>] ? vfs_ioctl+0x21/0x6b
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff810fa406>] ? do_vfs_ioctl+0x487/0x4da
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff810fa4aa>] ? sys_ioctl+0x51/0x70
+> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
+> >> [<ffffffff810029d1>] ? system_call_fastpath+0x3c/0x41
+> >
+> > This soft lockup is report on the host?
+> >
+> > Stefan
+> 
+> Yes, it is on host. we just recommend users not doing large file
+> copying, just wondering if there is potential kernel bug. it seems the
+> softlockup backtrace pointing to hrtimer and softirq. my naive
+> knowledge is that the watchdog thread is on top of hrtimer which is on
+> top of softirq.
 
-On 11/23/2012 10:29 PM, Shuah Khan wrote:
-> An earlier patch added dma mapping error debug feature to dma_debug
-> infrastructure. References:
->
-> https://lkml.org/lkml/2012/10/8/296
-> https://lkml.org/lkml/2012/11/3/219
->
-> The following series of patches adds the call to debug_dma_mapping_error() to
-> architecture specific dma_mapping_error() interfaces on the following
-> architectures that support CONFIG_DMA_API_DEBUG.
+Since the soft lockup detector is firing on the host, this seems like a
+hardware/driver problem.  Have you ever had soft lockups running non-KVM
+workloads on this host?
 
-I've took all the patches to the next-dma-debug branch in my tree, I sorry
-that You have to wait so long for it. My branch is based on Joerg's
-dma-debug branch and I've included it for testing in linux-next branch.
-
-Joerg: would You mind if I handle pushing the whole branch to v3.8
-via my kernel tree? Those changes should be kept close together to
-avoid build breaks for bisecting.
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+Stefan
