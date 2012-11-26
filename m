@@ -1,94 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab2KZUI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 15:08:56 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35610 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab2KZUIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 15:08:54 -0500
-Date: Mon, 26 Nov 2012 21:08:48 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121126200848.GC12602@dhcp22.suse.cz>
-References: <20121125011047.7477BB5E@pobox.sk>
- <20121125120524.GB10623@dhcp22.suse.cz>
- <20121125135542.GE10623@dhcp22.suse.cz>
- <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <20121126174622.GE2799@cmpxchg.org>
- <20121126180444.GA12602@dhcp22.suse.cz>
- <20121126182421.GB2301@cmpxchg.org>
- <20121126190329.GB12602@dhcp22.suse.cz>
- <20121126192941.GC2301@cmpxchg.org>
+	id S1755906Ab2KZUJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 15:09:23 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43840 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782Ab2KZUJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 15:09:21 -0500
+Date: Mon, 26 Nov 2012 14:08:24 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter H?we <PeterHuewe@gmx.de>, Peter.Huewe@infineon.com,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: Re: [PATCH v5] TPM: Issue TPM_STARTUP at driver load if the TPM has
+ not been started
+Message-ID: <20121126200823.GB12737@ennui.austin.ibm.com>
+References: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
+ <20121121183713.GA12822@obsidianresearch.com>
+ <201211212117.55040.PeterHuewe@gmx.de>
+ <20121121205433.GA15285@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121126192941.GC2301@cmpxchg.org>
+In-Reply-To: <20121121205433.GA15285@obsidianresearch.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112620-7182-0000-0000-0000035A4925
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-11-12 14:29:41, Johannes Weiner wrote:
-> On Mon, Nov 26, 2012 at 08:03:29PM +0100, Michal Hocko wrote:
-> > On Mon 26-11-12 13:24:21, Johannes Weiner wrote:
-> > > On Mon, Nov 26, 2012 at 07:04:44PM +0100, Michal Hocko wrote:
-> > > > On Mon 26-11-12 12:46:22, Johannes Weiner wrote:
-> > [...]
-> > > > > I think global oom already handles this in a much better way: invoke
-> > > > > the OOM killer, sleep for a second, then return to userspace to
-> > > > > relinquish all kernel resources and locks.  The only reason why we
-> > > > > can't simply change from an endless retry loop is because we don't
-> > > > > want to return VM_FAULT_OOM and invoke the global OOM killer.
-> > > > 
-> > > > Exactly.
-> > > > 
-> > > > > But maybe we can return a new VM_FAULT_OOM_HANDLED for memcg OOM and
-> > > > > just restart the pagefault.  Return -ENOMEM to the buffered IO syscall
-> > > > > respectively.  This way, the memcg OOM killer is invoked as it should
-> > > > > but nobody gets stuck anywhere livelocking with the exiting task.
-> > > > 
-> > > > Hmm, we would still have a problem with oom disabled (aka user space OOM
-> > > > killer), right? All processes but those in mem_cgroup_handle_oom are
-> > > > risky to be killed.
-> > > 
-> > > Could we still let everybody get stuck in there when the OOM killer is
-> > > disabled and let userspace take care of it?
-> > 
-> > I am not sure what exactly you mean by "userspace take care of it" but
-> > if those processes are stuck and holding the lock then it is usually
-> > hard to find that out. Well if somebody is familiar with internal then
-> > it is doable but this makes the interface really unusable for regular
-> > usage.
+On Wed, Nov 21, 2012 at 01:54:33PM -0700, Jason Gunthorpe wrote:
+> The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
+> TPM_STARTUP has not been issued. Detect this and automatically
+> issue TPM_STARTUP.
 > 
-> If oom_kill_disable is set, then all processes get stuck all the way
-> down in the charge stack.  Whatever resource they pin, you may
-> deadlock on if you try to touch it while handling the problem from
-> userspace.
+> This is for embedded applications where the kernel is the first thing
+> to touch the TPM.
+> 
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Tested-by: Peter Huewe <peter.huewe@infineon.com>
+> Reviewed-by: Peter Huewe <peter.huewe@infineon.com>
+> ---
+>  drivers/char/tpm/tpm.c |   44 ++++++++++++++++++++++++++++++++++++++++----
+>  drivers/char/tpm/tpm.h |    6 ++++++
+>  2 files changed, 46 insertions(+), 4 deletions(-)
+> 
+> v5 changes:
+>  - Use %zd for printing ssize_t
 
-OK, I guess I am getting what you are trying to say. So what you are
-suggesting is to just let mem_cgroup_out_of_memory send the signal and
-move on without retry (or with few charge retries without further OOM
-killing) and fail the charge with your new FAULT_OOM_HANDLED (resp.
-something like FAULT_RETRY) error code resp. ENOMEM depending on the
-caller.  OOM disabled case would be "you are on your own" because this
-has been dangerous anyway. Correct?
-I do agree that the current endless retry loop is far from being ideal
-and can see some updates but I am quite nervous about any potential
-regressions in this area (e.g. too aggressive OOM etc...). I have to
-think about it some more.
-Anyway if you have some more specific ideas I would be happy to review
-patches.
+Applied!
 
-[...]
+Thanks,
+Kent
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+> 
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index 93211df..433ad6b 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -468,7 +468,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+>  		return -EFAULT;
+> 
+>  	err = be32_to_cpu(cmd->header.out.return_code);
+> -	if (err != 0)
+> +	if (err != 0 && desc)
+>  		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
+> 
+>  	return err;
+> @@ -528,6 +528,25 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
+>  }
+>  EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
+> 
+> +#define TPM_ORD_STARTUP cpu_to_be32(153)
+> +#define TPM_ST_CLEAR cpu_to_be16(1)
+> +#define TPM_ST_STATE cpu_to_be16(2)
+> +#define TPM_ST_DEACTIVATED cpu_to_be16(3)
+> +static const struct tpm_input_header tpm_startup_header = {
+> +	.tag = TPM_TAG_RQU_COMMAND,
+> +	.length = cpu_to_be32(12),
+> +	.ordinal = TPM_ORD_STARTUP
+> +};
+> +
+> +static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
+> +{
+> +	struct tpm_cmd_t start_cmd;
+> +	start_cmd.header.in = tpm_startup_header;
+> +	start_cmd.params.startup_in.startup_type = startup_type;
+> +	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
+> +			    "attempting to start the TPM");
+> +}
+> +
+>  int tpm_get_timeouts(struct tpm_chip *chip)
+>  {
+>  	struct tpm_cmd_t tpm_cmd;
+> @@ -541,11 +560,28 @@ int tpm_get_timeouts(struct tpm_chip *chip)
+>  	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+>  	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+>  	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
+> +	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
+> 
+> -	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+> -			"attempting to determine the timeouts");
+> -	if (rc)
+> +	if (rc == TPM_ERR_INVALID_POSTINIT) {
+> +		/* The TPM is not started, we are the first to talk to it.
+> +		   Execute a startup command. */
+> +		dev_info(chip->dev, "Issuing TPM_STARTUP");
+> +		if (tpm_startup(chip, TPM_ST_CLEAR))
+> +			return rc;
+> +
+> +		tpm_cmd.header.in = tpm_getcap_header;
+> +		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+> +		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+> +		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
+> +		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+> +				  NULL);
+> +	}
+> +	if (rc) {
+> +		dev_err(chip->dev,
+> +			"A TPM error (%zd) occurred attempting to determine the timeouts\n",
+> +			rc);
+>  		goto duration;
+> +	}
+> 
+>  	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
+>  	    be32_to_cpu(tpm_cmd.header.out.length)
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index 8ef7649..8971b12 100644
+> --- a/drivers/char/tpm/tpm.h
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -47,6 +47,7 @@ enum tpm_addr {
+>  #define TPM_WARN_DOING_SELFTEST 0x802
+>  #define TPM_ERR_DEACTIVATED     0x6
+>  #define TPM_ERR_DISABLED        0x7
+> +#define TPM_ERR_INVALID_POSTINIT 38
+> 
+>  #define TPM_HEADER_SIZE		10
+>  extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
+> @@ -291,6 +292,10 @@ struct tpm_getrandom_in {
+>  	__be32 num_bytes;
+>  }__attribute__((packed));
+> 
+> +struct tpm_startup_in {
+> +	__be16	startup_type;
+> +} __packed;
+> +
+>  typedef union {
+>  	struct	tpm_getcap_params_out getcap_out;
+>  	struct	tpm_readpubek_params_out readpubek_out;
+> @@ -301,6 +306,7 @@ typedef union {
+>  	struct	tpm_pcrextend_in pcrextend_in;
+>  	struct	tpm_getrandom_in getrandom_in;
+>  	struct	tpm_getrandom_out getrandom_out;
+> +	struct tpm_startup_in startup_in;
+>  } tpm_cmd_params;
+> 
+>  struct tpm_cmd_t {
+> -- 
+> 1.7.5.4
+> 
+
