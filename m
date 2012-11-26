@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab2KZQmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 11:42:18 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44218 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab2KZQmJ (ORCPT
+	id S1755635Ab2KZQmQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 11:42:16 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:53368 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab2KZQmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Nov 2012 11:42:09 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: How about a gpio_get(device *, char *) function?
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alex Courbot <acourbot@nvidia.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CACRpkdaUJKs7zx=JWRUb+0Qz2dQU=R5KUK+CoM+nLCgHL99AFA@mail.gmail.com>
-References: <38620644.IyR5R8rjKP@percival> <CACRpkdZc3cEGfSKW-b=G31yuw_E-GOXid3jkxZ0tuKYGYRE5Nw@mail.gmail.com> <5097F8CF.5090100@wwwdotorg.org> <CACRpkdaUJKs7zx=JWRUb+0Qz2dQU=R5KUK+CoM+nLCgHL99AFA@mail.gmail.com>
-Date: Mon, 26 Nov 2012 11:14:31 +0000
-Message-Id: <20121126111431.AE4C23E09C2@localhost>
+Subject: Re: [PATCH] of: Have of_device_add call platform_device_add rather than device_add
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+In-Reply-To: <20121122173020.GA8473@obsidianresearch.com>
+References: <20121121072448.GG19837@obsidianresearch.com> <20121121155104.726B83E0AE2@localhost> <20121121174453.GD6406@obsidianresearch.com> <CACxGe6u2Kfm+x5KsFzNPt7voyeD0x_4V6EO4add=tBwMKJ6VWQ@mail.gmail.com> <20121121181430.GE6406@obsidianresearch.com> <20121122153621.452CA3E129E@localhost> <20121122173020.GA8473@obsidianresearch.com>
+Date: Mon, 26 Nov 2012 14:30:02 +0000
+Message-Id: <20121126143002.121FF3E1A11@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012 22:28:01 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Nov 5, 2012 at 6:35 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > [Me]
-> >> gpio_get() should get an abstract handle just like clk_get() or
-> >> regulator_get(), not a fixed numeral.
-> >
-> > I don't really see why the return type of gpio_get() influences whether
-> > it can be implemented or not.
+On Thu, 22 Nov 2012 10:30:20 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> On Thu, Nov 22, 2012 at 03:36:21PM +0000, Grant Likely wrote:
 > 
-> It doesn't influence that, but I want to follow the opaqueness design
-> pattern from irq descriptors and struct clk.
+> > Hmm... I've not tried it with assigned-address. I tried with two sibling
+> > platform devices using just the 'reg' property. That the kernel will
+> > complain about. For powerpc-only, the patch I posted allows the device
+> > to get registered anyway even though the range incorrectly overlaps.
+> 
+> My second example was done with the reg property..
+> 
+>                 gpio0: gpio@10100 {
+>                         compatible = "marvell,orion-gpio";
+>                         #gpio-cells = <2>;
+>                         gpio-controller;
+>                         reg = <0x10100 0x40>;
+>                 }
+>                 chip_cfg@0 {
+>                         compatible = "orc,chip_config";
+>                         // Doubles up on gpio0
+>                         reg = <0x10100 0x4>;
+>                 };
+> 
+> 
+> f1010100-f101013f : /internal@f1000000/gpio@10100
+>   f1010100-f1010103 : /internal@f1000000/chip_cfg@0
+> 
+> What did you try? Maybe order matters?
 
-Right. I like the pattern too. Unforutunately that means dealing with
-somewhere on the order of 2500 callers of the old API. :-(
+It might. I tried on qemu with versatile. I've written a new test block
+with different overlaps. Here's the block and the results:
 
-However, I don't think that the GPIO numberspace issue is completely
-intertwined with opaqifying the gpio handles. The numberspace can be
-fixed with the current API if someone creates a sparse gpio
-registrations.
+     dummy@10201000 {
+             compatible = "acme,test";
+             reg = <0x10201000 0x1000>;
+     };
 
-I don't have any problem with a gpio_get function, but I do agree that
-making it return an opaque handle is how it should be written with a new
-set of accessors. The handle should probably be simply the pointer to
-the &gpio_desc[number] which is a private table in gpiolib.c. The
-definition of it isn't available outside of gpiolib.c
+     overlap@10200800 {
+             compatible = "acme,test";
+             reg = <0x10200800 0x1000>;
+     };
 
-In fact, the old functions should be redefined in terms of getting the
-gpio_desc from the irq number and calling the new functions.
+     overlap@10201800 {
+             compatible = "acme,test";
+             reg = <0x10201800 0x1000>;
+     };
 
-> 
-> > With board files, some "gpio map" table would simply contain the same
-> > int GPIO ID value the table as is used anywhere else already. With DT,
-> > the same xlate function would translate from DT GPIO-chip-relative
-> > IDs/specifiers into the global number space in the same way that we do
-> > today via other APIs.
-> 
-> Yes, this part I buy into, just want to see how we can move forward
-> from there. The coplete nightmare is to introduce something into DT
-> that nails down a global GPIO numberspace... but I think that is not
-> the case atleast.
-> 
-> > If the GPIO subsystem were reworked as you propose, this API could be
-> > reworked in exactly the same way, or if implemented after the rework, it
-> > would return whatever handle type was in use at the time.
-> 
-> Yes, I just think we should return an opaque struct from day 1, so
-> just a little, little bit more to shield us.
-> 
-> Yours,
-> Linus Walleij
+     overlap@10201400 {
+             compatible = "acme,test";
+             reg = <0x10201400 0x800>;
+     };
+
+     overlap@10200c00 {
+             compatible = "acme,test";
+             reg = <0x10200c00 0x1800>;
+     };
+
+>From the kernel log:
+10200800.overlap: failed to claim resource 0
+10201800.overlap: failed to claim resource 0
+
+# ls /sys/bus/platform/devices/
+10002000.i2c      10010000.net      10201000.dummy    alarmtimer
+10003000.intc     10140000.intc     10201400.overlap  amba.0
+10008000.lcd      10200c00.overlap  34000000.flash    fpga.1
+
+So, overlaps that are completely inside or completely outside the
+already registered range don't appear to be detected. That may be a bug
+(unless it is designed to work that way)
+
+g.
 
 -- 
 Grant Likely, B.Sc, P.Eng.
