@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab2KZWbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:31:31 -0500
-Received: from us-mx3.synaptics.com ([12.239.217.85]:33461 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab2KZWb3 (ORCPT
+	id S932289Ab2KZWcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:32:55 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52896 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194Ab2KZWcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:31:29 -0500
-Message-ID: <50B3EDBF.3030209@synaptics.com>
-Date: Mon, 26 Nov 2012 14:31:27 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Mon, 26 Nov 2012 17:32:54 -0500
+Date: Mon, 26 Nov 2012 14:32:49 -0800
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Paul Menage <paul@paulmenage.org>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Why is cpuset_cpus_allowed_fallback() necessary?
+Message-ID: <20121126223249.GB15930@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 05/06] input/rmi4: F01 - device control
-References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com> <1353124734-16803-6-git-send-email-cheiny@synaptics.com> <20121126094018.GC13792@core.coreip.homeip.net>
-In-Reply-To: <20121126094018.GC13792@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 01:40 AM, Dmitry Torokhov wrote:
-> Hi Christopher,
->
-> On Fri, Nov 16, 2012 at 07:58:53PM -0800, Christopher Heiny wrote:
->> RMI Function 01 implements basic device control and power management
->> behaviors for the RMI4 sensor.
->>
->> rmi_f01.h exports definitions that we expect to be used by other functionality
->> in the future (such as firmware reflash).
->
-> Please see my comments below.
+Hello, guys.
 
-Hi Dmitry,
+I'm wondering why cpuset_cpus_allowed_fallback() is necessary.  This
+is called from, e.g., try_to_wake_up()->select_task_rq() when none of
+the cpus in ->cpus_allowed is useable.  The cpuset callback invokes
+do_set_cpus_allowed() w/ the cpuset's cpus_allowed.  This was added by
+the following commit,
 
-Thanks for the feedback and the patch.  I've got just one question, 
-included below, with a bunch of snipping).
+  commit 9084bb8246ea935b98320554229e2f371f7f52fa
+  Author: Oleg Nesterov <oleg@redhat.com>
+  Date:   Mon Mar 15 10:10:27 2010 +0100
 
-				Chris
 
->
->>
->>
->> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
->>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Cc: Linus Walleij <linus.walleij@stericsson.com>
->> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
->> Cc: Joeri de Gram <j.de.gram@gmail.com>
->>
->>
->> ---
->>
->>   drivers/input/rmi4/rmi_f01.c | 1348 ++++++++++++++++++++++++++++++++++++++++++
->>   drivers/input/rmi4/rmi_f01.h |  160 +++++
->>   2 files changed, 1508 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
->> new file mode 100644
->> index 0000000..038266c
->> --- /dev/null
->> +++ b/drivers/input/rmi4/rmi_f01.c
->> @@ -0,0 +1,1348 @@
->> +/*
->> + * Copyright (c) 2011-2012 Synaptics Incorporated
->> + * Copyright (c) 2011 Unixphere
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
+  sched: Make select_fallback_rq() cpuset friendly
 
-[snip]
+  Introduce cpuset_cpus_allowed_fallback() helper to fix the cpuset problems
+  with select_fallback_rq(). It can be called from any context and can't use
+  any cpuset locks including task_lock(). It is called when the task doesn't
+  have online cpus in ->cpus_allowed but ttwu/etc must be able to find a
+  suitable cpu.
+  ....			  
 
->> +/**
->> + * @reset - set this bit to force a firmware reset of the sensor.
->> + */
->> +struct f01_device_commands {
->> +	bool reset:1;
->> +	u8 reserved:7;
->
-> When specifying bitwise fields please use u8, u16, etc only.
+The problem is, nothing's explaining what "the cpuset problems with
+select_fallback_rq()" are.  Oleg, do you remember?  Why do we need
+this?
 
-Um, OK.  Previously patch feedback suggested to use bool instead of u8 
-for single bit fields (see here: 
-http://www.spinics.net/lists/linux-input/msg22198.html).  So I'm a 
-little confused.  It's no big deal to change it back, but I'd like 
-confirmation that it is really what we should do.
+Thanks.
 
-[snip]
+-- 
+tejun
