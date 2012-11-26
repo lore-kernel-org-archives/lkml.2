@@ -1,172 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab2KZELe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 23:11:34 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35041 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab2KZELc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 23:11:32 -0500
-Date: Sun, 25 Nov 2012 23:10:41 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
-        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
-        mm-commits@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm,vmscan: only loop back if compaction would fail in
- all zones
-Message-ID: <20121126041041.GD2799@cmpxchg.org>
-References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
- <20121125175728.3db4ac6a@fem.tu-ilmenau.de>
- <20121125132950.11b15e38@annuminas.surriel.com>
- <20121125224433.GB2799@cmpxchg.org>
- <20121125191645.0ebc6d59@annuminas.surriel.com>
- <20121126031518.GC2799@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126031518.GC2799@cmpxchg.org>
+	id S1754007Ab2KZERm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 23:17:42 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14513 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab2KZERk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 23:17:40 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-5b-50b2ed63878e
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>
+Subject: [PATCH] MAINTAINERS: Add maintainers for exynos thermal driver
+Date: Mon, 26 Nov 2012 13:17:32 +0900
+Message-id: <1353903452-20536-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t8zXd3kt5sCDH6v47S4vGsOm8Xn3iOM
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGVc2drHXvCBtWL//eWsDYzfWLoYOTgkBEwkjkyR6mLk
+	BDLFJC7cW8/WxcjFISSwjFFiyZ3HTBAJE4lZH5qZIRKLGCW+L74K5bQwSTz/+o0RpIpNQEfi
+	/76b7CC2iICMxNQr+1lBipgF2pgllqy4ApYQFnCX2Pt8ATOIzSKgKtHY8YQVxOYV8JD41T+B
+	DWKdgsSCe2/ZIGoEJL5NPgR1qqzEpgNgiyUEDrBJNO2eyQpRLylxcMUNlgmMggsYGVYxiqYW
+	JBcUJ6XnGukVJ+YWl+al6yXn525ihISX9A7GVQ0WhxgFOBiVeHglj20KEGJNLCuuzD3EKMHB
+	rCTCO5EJKMSbklhZlVqUH19UmpNafIjRB+iSicxSosn5wNDPK4k3NDYwNjS0NDQztTQ1wCGs
+	JM7b7JESICSQnliSmp2aWpBaBDOOiYNTqoEx8P8lw6rJXBVON+dOMbaun7dDi+FBF/9cJ4ls
+	9aludQGvX2skdLt6/DrQ46UV/Jm7oKnn6J0M56MTqivszNX8l4afi65K3sPc8rd04ZGiRxcm
+	HXGXeOeXfeVr30XGmXbBvCcUfI/M1xPQXt/Lyp3FECf+KfDI85BIqYWJxbNerw+9WG5cOV+J
+	pTgj0VCLuag4EQDndjJIXAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9jAd3kt5sCDBavZrS4vGsOm8Xn3iOM
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmXNnax17wgbVi
+	//3lrA2M31i6GDk5JARMJGZ9aGaGsMUkLtxbz9bFyMUhJLCIUeL74qvMEE4Lk8Tzr98YQarY
+	BHQk/u+7yQ5iiwjISEy9sp8VpIhZoI1ZYsmKK2AJYQF3ib3PF4CNZRFQlWjseMIKYvMKeEj8
+	6p/ABrFOQWLBvbdsExi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIDt9n0jsYVzVY
+	HGIU4GBU4uGVPLYpQIg1say4MvcQowQHs5II70QmoBBvSmJlVWpRfnxRaU5q8SFGH6DtE5ml
+	RJPzgbGVVxJvaGxiZmRpZGZsYm5sjENYSZy32SMlQEggPbEkNTs1tSC1CGYcEwenVAPjxBsz
+	rF1fTzwYyJR21o7zffuNlgMKkWz7syKVEowt9ryfffJN89HQy0kbS3tSf9uf+M8ws/Onr/Ya
+	k38iFT8Kzh+SOXFeuF37xKmS9rcpy0Ts5QzKd6k+Ltv0L/Bx3i19VVP+zl5d+R9Wy5m3nUu/
+	Hf07bvWR+X9vmU4Ke3VEv8tZ9l5ZecUhJZbijERDLeai4kQAUQLSk4wCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 25, 2012 at 10:15:18PM -0500, Johannes Weiner wrote:
-> On Sun, Nov 25, 2012 at 07:16:45PM -0500, Rik van Riel wrote:
-> > On Sun, 25 Nov 2012 17:44:33 -0500
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > > On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
-> > 
-> > > > Could you try this patch?
-> > > 
-> > > It's not quite enough because it's not reaching the conditions you
-> > > changed, see analysis in https://lkml.org/lkml/2012/11/20/567
-> > 
-> > Johannes,
-> > 
-> > does the patch below fix your problem?
-> 
-> I can not reproduce the problem anymore with my smoke test.
-> 
-> > I suspect it would, because kswapd should only ever run into this
-> > particular problem when we have a tiny memory zone in a pgdat,
-> > and in that case we will also have a larger zone nearby, where
-> > compaction would just succeed.
-> 
-> What if there is a higher order GFP_DMA allocation when the other
-> zones in the system meet the high watermark for this order?
-> 
-> There is something else that worries me: if the preliminary zone scan
-> finds the high watermark of all zones alright, end_zone is at its
-> initialization value, 0.  The final compaction loop at `if (order)'
-> goes through all zones up to and including end_zone, which was never
-> really set to anything meaningful(?) and the only zone considered is
-> the DMA zone again.  Very unlikely, granted, but if you'd ever hit
-> that race and kswapd gets stuck, this will be fun to debug...
+Add Amit and I as maintainers for exynos thermal driver.
 
-I actually liked your first idea better: force reclaim until the
-compaction watermark is met.  The only problem was that still not
-every check in there agreed when the zone was considered balanced and
-so no actual reclaim happened.
-
-So how about making everybody agree?  If the high watermark is met but
-not the compaction one, keep doing reclaim AND don't consider the zone
-balanced, AND don't make it contribute to balanced_pages etc.?  This
-makes sure reclaim really does not bail and that the node is never
-considered alright when it's actually not according to compaction.
-This patch fixes the problem too (at least for the smoke test so far)
-and IMO makes the code a bit more understandable.
-
-We may be able to drop some of the relooping conditions.  We may also
-be able to reduce the pressure from the DMA zone by passing the right
-classzone_idx in there.  Needs more thought.
-
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 ---
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
+ MAINTAINERS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Kswapd does not in all places have the same criteria for when it
-considers a zone balanced.  This leads to zones being not reclaimed
-because they are considered just fine and the compaction checks to
-loop over the zonelist again because they are considered unbalanced,
-causing kswapd to run forever.
-
-Add a function, zone_balanced(), that checks the watermark and if
-compaction has enough free memory to do its job.  Then use it
-uniformly for when kswapd needs to check if a zone is balanced.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/vmscan.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 48550c6..3b0aef4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
- 	} while (memcg);
- }
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 59203e7..cceedca 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2960,6 +2960,13 @@ S:	Maintained
+ F:	drivers/video/exynos/exynos_mipi*
+ F:	include/video/exynos_mipi*
  
-+static bool zone_balanced(struct zone *zone, int order,
-+			  unsigned long balance_gap, int classzone_idx)
-+{
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
-+				    balance_gap, classzone_idx, 0))
-+		return false;
++EXYNOS THREMAL DRIVER
++M:	Amit Daniel Kachhap <amit.kachhap@linaro.org>
++M:	Jonghwa Lee <jonghwa3.lee@samsung.com>
++L:	linux-pm@vger.kernel.org
++S:	Maintained
++F:	drivers/thermal/exynos_thermal.c
 +
-+	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * pgdat_balanced is used when checking if a node is balanced for high-order
-  * allocations. Only zones that meet watermarks and are in a zone allowed
-@@ -2475,8 +2488,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 			continue;
- 		}
- 
--		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
--							i, 0))
-+		if (!zone_balanced(zone, order, 0, i))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				break;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), 0, 0)) {
-+			if (!zone_balanced(zone, order, 0, 0)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				testorder = 0;
- 
- 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
--				    !zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone) + balance_gap,
--					end_zone, 0)) {
-+			    !zone_balanced(zone, testorder,
-+					   balance_gap, end_zone)) {
- 				shrink_zone(zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				continue;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone), end_zone, 0)) {
-+			if (!zone_balanced(zone, testorder, 0, end_zone)) {
- 				all_zones_ok = 0;
- 				/*
- 				 * We are still under min water mark.  This
+ F71805F HARDWARE MONITORING DRIVER
+ M:	Jean Delvare <khali@linux-fr.org>
+ L:	lm-sensors@lm-sensors.org
 -- 
-1.7.11.7
-
+1.7.4.1
 
