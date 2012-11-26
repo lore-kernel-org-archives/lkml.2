@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab2KZTDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:03:35 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60058 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab2KZTDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:03:33 -0500
-Date: Mon, 26 Nov 2012 20:03:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121126190329.GB12602@dhcp22.suse.cz>
-References: <20121123102137.10D6D653@pobox.sk>
- <20121123100438.GF24698@dhcp22.suse.cz>
- <20121125011047.7477BB5E@pobox.sk>
- <20121125120524.GB10623@dhcp22.suse.cz>
- <20121125135542.GE10623@dhcp22.suse.cz>
- <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <20121126174622.GE2799@cmpxchg.org>
- <20121126180444.GA12602@dhcp22.suse.cz>
- <20121126182421.GB2301@cmpxchg.org>
+	id S1752962Ab2KZTE4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:04:56 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38462 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab2KZTEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 14:04:54 -0500
+Date: Mon, 26 Nov 2012 11:03:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, pjt@google.com,
+        paul.mckenney@linaro.org, tglx@linutronix.de, tj@kernel.org,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+Subject: Re: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for
+ workqueues and timers
+Message-ID: <20121126190354.GJ2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+ <CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
+ <1353948027.6276.38.camel@gandalf.local.home>
+ <20121126170358.GE2474@linux.vnet.ibm.com>
+ <1353951352.6276.43.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121126182421.GB2301@cmpxchg.org>
+In-Reply-To: <1353951352.6276.43.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112619-7182-0000-0000-00000359FCF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-11-12 13:24:21, Johannes Weiner wrote:
-> On Mon, Nov 26, 2012 at 07:04:44PM +0100, Michal Hocko wrote:
-> > On Mon 26-11-12 12:46:22, Johannes Weiner wrote:
-[...]
-> > > I think global oom already handles this in a much better way: invoke
-> > > the OOM killer, sleep for a second, then return to userspace to
-> > > relinquish all kernel resources and locks.  The only reason why we
-> > > can't simply change from an endless retry loop is because we don't
-> > > want to return VM_FAULT_OOM and invoke the global OOM killer.
-> > 
-> > Exactly.
-> > 
-> > > But maybe we can return a new VM_FAULT_OOM_HANDLED for memcg OOM and
-> > > just restart the pagefault.  Return -ENOMEM to the buffered IO syscall
-> > > respectively.  This way, the memcg OOM killer is invoked as it should
-> > > but nobody gets stuck anywhere livelocking with the exiting task.
-> > 
-> > Hmm, we would still have a problem with oom disabled (aka user space OOM
-> > killer), right? All processes but those in mem_cgroup_handle_oom are
-> > risky to be killed.
+On Mon, Nov 26, 2012 at 12:35:52PM -0500, Steven Rostedt wrote:
+> On Mon, 2012-11-26 at 09:03 -0800, Paul E. McKenney wrote:
 > 
-> Could we still let everybody get stuck in there when the OOM killer is
-> disabled and let userspace take care of it?
-
-I am not sure what exactly you mean by "userspace take care of it" but
-if those processes are stuck and holding the lock then it is usually
-hard to find that out. Well if somebody is familiar with internal then
-it is doable but this makes the interface really unusable for regular
-usage.
-
-> > Other POV might be, why we should trigger an OOM killer from those paths
-> > in the first place. Write or read (or even readahead) are all calls that
-> > should rather fail than cause an OOM killer in my opinion.
 > 
-> Readahead is arguable, but we kill globally for read() and write() and
-> I think we should do the same for memcg.
+> > If I understand correctly (though also suffering turkey OD), the idea is
+> > to offload work to more energy-efficient CPUs.
+> 
+> This is determined by a CPU that isn't running the idle task? Is it
+> because a CPU that just woke up may be running at a lower freq, and thus
+> not as efficient? But pushing off to another CPU may cause cache misses
+> as well. Wouldn't that also be a factor in efficiencies, if a CPU is
+> stalled waiting for memory to be loaded?
 
-Fair point but the global case is little bit easier than memcg in this
-case because nobody can hook on OOM killer and provide a userspace
-implementation for it which is one of the cooler feature of memcg...
-I am all open to any suggestions but we should somehow fix this (and
-backport it to stable trees as this is there for quite some time. The
-current report shows that the problem is not that hard to trigger).
+Two different microarchitectures -- same instruction set (at user level,
+anyway), but different power/performance characteristics.  One set is
+optimized for performance, the other for energy efficiency.  For example,
+ARM's big.LITTLE architecture.
 
-> The OOM killer is there to resolve a problem that comes from
-> overcommitting the machine but the overuse does not have to be from
-> the application that pushes the machine over the edge, that's why we
-> don't just kill the allocating task but actually go look for the best
-> candidate.  If you have one memory hog that overuses the resources,
-> attempted memory consumption in a different program should invoke the
-> OOM killer.  
+> I should also ask the obvious. Has these patches shown real world
+> efficiencies or is this just a theory? Do these patches actually improve
+> battery life when applied?
 
-> It does not matter if this is a page fault (would still happen with
-> your patch) or a bufferd read/write (would no longer happen).
+I must defer to Viresh on this one.
 
-true and it is sad that mmap then behaves slightly different than
-read/write which should I've mentioned in the changelog. As I said I am
-open to other suggestions.
+							Thanx, Paul
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+> Just asking.
+> 
+> -- Steve
+> 
+> 
+
