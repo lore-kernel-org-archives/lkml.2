@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab2KZRBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:01:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47093 "EHLO
+	id S1756147Ab2KZRBV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:01:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47106 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab2KZRBM (ORCPT
+	with ESMTP id S1756123Ab2KZRBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:01:12 -0500
+	Mon, 26 Nov 2012 12:01:18 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 023/270] target: support zero allocation length in INQUIRY
-Date: Mon, 26 Nov 2012 14:55:13 -0200
-Message-Id: <1353949160-26803-24-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 025/270] target: fix return code in target_core_init_configfs error path
+Date: Mon, 26 Nov 2012 14:55:15 -0200
+Message-Id: <1353949160-26803-26-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,82 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-commit ffe7b0e9326d9c68f5688bef691dd49f1e0d3651 upstream.
+commit 37bb7899ca366dc212b71b150e78566d04808cc0 upstream.
 
-INQUIRY processing already uses an on-heap bounce buffer for loopback,
-but not for other fabrics.  Switch this to a cheaper on-stack bounce
-buffer, similar to the one used by MODE SENSE and REQUEST SENSE, and
-use it unconditionally.  With this in place, zero allocation length is
-handled simply by checking the return address of transport_kmap_data_sg.
+This patch fixes error cases within target_core_init_configfs() to
+properly set ret = -ENOMEM before jumping to the out_global exception
+path.
 
-Testcase: sg_raw /dev/sdb 12 00 83 00 00 00
-    should fail with ILLEGAL REQUEST / INVALID FIELD IN CDB sense
-    does not fail without the patch
-    fails correctly with the series
+This was originally discovered with the following Coccinelle semantic
+match information:
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.  A simplified version of the semantic match
+that finds this problem is as follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ herton: code to be patched is in target_core_cdb.c on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_cdb.c |   31 ++++++-------------------------
- 1 file changed, 6 insertions(+), 25 deletions(-)
+ drivers/target/target_core_configfs.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
-index bf7d38a..5b20579 100644
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -605,30 +605,11 @@ int target_emulate_inquiry(struct se_cmd *cmd)
- {
- 	struct se_device *dev = cmd->se_dev;
- 	struct se_portal_group *tpg = cmd->se_lun->lun_sep->sep_tpg;
--	unsigned char *buf, *map_buf;
-+	unsigned char *rbuf;
- 	unsigned char *cdb = cmd->t_task_cdb;
-+	unsigned char buf[SE_INQUIRY_BUF];
- 	int p, ret;
- 
--	map_buf = transport_kmap_data_sg(cmd);
--	/*
--	 * If SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC is not set, then we
--	 * know we actually allocated a full page.  Otherwise, if the
--	 * data buffer is too small, allocate a temporary buffer so we
--	 * don't have to worry about overruns in all our INQUIRY
--	 * emulation handling.
--	 */
--	if (cmd->data_length < SE_INQUIRY_BUF &&
--	    (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC)) {
--		buf = kzalloc(SE_INQUIRY_BUF, GFP_KERNEL);
--		if (!buf) {
--			transport_kunmap_data_sg(cmd);
--			cmd->scsi_sense_reason = TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
--			return -ENOMEM;
--		}
--	} else {
--		buf = map_buf;
--	}
--
- 	if (dev == tpg->tpg_virt_lun0.lun_se_dev)
- 		buf[0] = 0x3f; /* Not connected */
- 	else
-@@ -660,11 +641,11 @@ int target_emulate_inquiry(struct se_cmd *cmd)
- 	ret = -EINVAL;
- 
- out:
--	if (buf != map_buf) {
--		memcpy(map_buf, buf, cmd->data_length);
--		kfree(buf);
-+	rbuf = transport_kmap_data_sg(cmd);
-+	if (rbuf) {
-+		memcpy(rbuf, buf, min_t(u32, sizeof(buf), cmd->data_length));
-+		transport_kunmap_data_sg(cmd);
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 801efa8..06aca11 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -3132,6 +3132,7 @@ static int __init target_core_init_configfs(void)
+ 				GFP_KERNEL);
+ 	if (!target_cg->default_groups) {
+ 		pr_err("Unable to allocate target_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
  	}
--	transport_kunmap_data_sg(cmd);
  
- 	if (!ret)
- 		target_complete_cmd(cmd, GOOD);
+@@ -3147,6 +3148,7 @@ static int __init target_core_init_configfs(void)
+ 				GFP_KERNEL);
+ 	if (!hba_cg->default_groups) {
+ 		pr_err("Unable to allocate hba_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 	config_group_init_type_name(&alua_group,
+@@ -3162,6 +3164,7 @@ static int __init target_core_init_configfs(void)
+ 			GFP_KERNEL);
+ 	if (!alua_cg->default_groups) {
+ 		pr_err("Unable to allocate alua_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 
+@@ -3173,14 +3176,17 @@ static int __init target_core_init_configfs(void)
+ 	 * Add core/alua/lu_gps/default_lu_gp
+ 	 */
+ 	lu_gp = core_alua_allocate_lu_gp("default_lu_gp", 1);
+-	if (IS_ERR(lu_gp))
++	if (IS_ERR(lu_gp)) {
++		ret = -ENOMEM;
+ 		goto out_global;
++	}
+ 
+ 	lu_gp_cg = &alua_lu_gps_group;
+ 	lu_gp_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
+ 			GFP_KERNEL);
+ 	if (!lu_gp_cg->default_groups) {
+ 		pr_err("Unable to allocate lu_gp_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 
 -- 
 1.7.9.5
 
