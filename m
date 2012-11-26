@@ -1,61 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab2KZAQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 19:16:59 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58490 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab2KZAQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 19:16:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121125190909.GA1866@windriver.com>
-References: <1353680484-7302-1-git-send-email-fweisbec@gmail.com>
-	<1353680484-7302-4-git-send-email-fweisbec@gmail.com>
-	<20121125190909.GA1866@windriver.com>
-Date: Mon, 26 Nov 2012 01:16:57 +0100
-Message-ID: <CAFTL4hwgHBv=-it5QpsWzeo+yi7j2JO15iox3AH6eoMYLcB2Ew@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cputime: Consolidate cputime adjustment code
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753850Ab2KZARo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 19:17:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753737Ab2KZARm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 19:17:42 -0500
+Date: Sun, 25 Nov 2012 19:16:45 -0500
+From: Rik van Riel <riel@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
+        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: [PATCH] mm,vmscan: only loop back if compaction would fail in all
+ zones
+Message-ID: <20121125191645.0ebc6d59@annuminas.surriel.com>
+In-Reply-To: <20121125224433.GB2799@cmpxchg.org>
+References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com>
+	<20121125175728.3db4ac6a@fem.tu-ilmenau.de>
+	<20121125132950.11b15e38@annuminas.surriel.com>
+	<20121125224433.GB2799@cmpxchg.org>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/25 Paul Gortmaker <paul.gortmaker@windriver.com>:
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -433,6 +433,11 @@ struct cpu_itimer {
->>       u32 incr_error;
->>  };
->>
->> +struct cputime {
->> +     cputime_t utime;
->> +     cputime_t stime;
->> +};
->> +
->
-> Hi Frederic,
->
-> This new struct cputime is a 2/3 subset of the three variable struct
-> task_cputime we see right below.  Maybe this is a stupid question, but I
-> was wondering why you didn't re-use task_cputime, and ignore the
-> sum_exec_runtime field -- vs. introducing this very similar struct?
+On Sun, 25 Nov 2012 17:44:33 -0500
+Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
 
-Not a stupid question, I need to add a comment on that. I avoided to
-reuse struct task_cputime because sum_exec_runtime is unused and 8
-wasted bytes in the middle of task_struct is very undesirable. As in
-signal struct.
+> > Could you try this patch?
+> 
+> It's not quite enough because it's not reaching the conditions you
+> changed, see analysis in https://lkml.org/lkml/2012/11/20/567
 
->
-> Or maybe there is another way to consolidate the structs?  With the
-> two being so similar, I wonder if it will be confusing when to use which
-> one of the two.
+Johannes,
 
-I can add a comment that tells when to use which. Other than that I'm
-short on ideas to consolidate both without creating a mess with long
-dereferencing expressions like tsk->cputime.utime and so.
+does the patch below fix your problem?
+
+I suspect it would, because kswapd should only ever run into this
+particular problem when we have a tiny memory zone in a pgdat,
+and in that case we will also have a larger zone nearby, where
+compaction would just succeed.
+
+---8<---
+
+Subject: mm,vmscan: only loop back if compaction would fail in all zones
+
+Kswapd frees memory to satisfy two goals:
+1) allow allocations to succeed, and
+2) balance memory pressure between zones 
+
+Currently, kswapd has an issue where it will loop back to free
+more memory if any memory zone in the pgdat has not enough free
+memory for compaction.  This can lead to unnecessary overhead,
+and even infinite loops in kswapd.
+
+It is better to only loop back to free more memory if all of
+the zones in the pgdat have insufficient free memory for
+compaction.  That satisfies both of kswapd's goals with less
+overhead.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ mm/vmscan.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b99ecba..f0d111b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2790,6 +2790,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	 */
+ 	if (order) {
+ 		int zones_need_compaction = 1;
++		int compaction_needs_memory = 1;
+ 
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+@@ -2801,10 +2802,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			    sc.priority != DEF_PRIORITY)
+ 				continue;
+ 
+-			/* Would compaction fail due to lack of free memory? */
++			/* Is there enough memory for compaction? */
+ 			if (COMPACTION_BUILD &&
+-			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
+-				goto loop_again;
++			    compaction_suitable(zone, order) != COMPACT_SKIPPED)
++				compaction_needs_memory = 0;
+ 
+ 			/* Confirm the zone is balanced for order-0 */
+ 			if (!zone_watermark_ok(zone, 0,
+@@ -2822,6 +2823,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			zone_clear_flag(zone, ZONE_CONGESTED);
+ 		}
+ 
++		/* None of the zones had enough free memory for compaction. */
++		if (compaction_needs_memory)
++			goto loop_again;
++
+ 		if (zones_need_compaction)
+ 			compact_pgdat(pgdat, order);
+ 	}
