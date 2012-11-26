@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab2KZK6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 05:58:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55455 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2KZK6n (ORCPT
+	id S1754931Ab2KZLEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:04:52 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34531 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754361Ab2KZLEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 05:58:43 -0500
-Date: Mon, 26 Nov 2012 11:58:39 +0100
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Vincent Li <vincent.mc.li@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: KVM Disk i/o or VM activities causes soft lockup?
-Message-ID: <20121126105839.GC963@stefanha-thinkpad.redhat.com>
-References: <CAK3+h2xLLnP03+cP=-aSf=xmiEuZ-RFhxP1DoeO9Hs8ksoX6zw@mail.gmail.com>
- <20121123072941.GH22787@stefanha-thinkpad.hitronhub.home>
- <CAK3+h2xBwtzbO15fJUZprv7AyEnqr3CHoa+z_7zY0qSwp5g5aQ@mail.gmail.com>
+	Mon, 26 Nov 2012 06:04:51 -0500
+Subject: [PATCH 0/2] uprobes/powerpc: Replace ptrace single step helpers
+To: bigeasy@linutronix.de, oleg@redhat.com, ananth@in.ibm.com,
+        srikar@linux.vnet.ibm.com
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
+        anton@redhat.com, linux-kernel@vger.kernel.org
+Date: Mon, 26 Nov 2012 16:34:43 +0530
+Message-ID: <20121126110007.6545.43875.stgit@suzukikp.in.ibm.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK3+h2xBwtzbO15fJUZprv7AyEnqr3CHoa+z_7zY0qSwp5g5aQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112611-9574-0000-0000-0000057E2AC5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 10:34:16AM -0800, Vincent Li wrote:
-> On Thu, Nov 22, 2012 at 11:29 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> > On Wed, Nov 21, 2012 at 03:36:50PM -0800, Vincent Li wrote:
-> >> We have users running on redhat based distro (Kernel
-> >> 2.6.32-131.21.1.el6.x86_64 ) with kvm, when customer made cron job
-> >> script to copy large files between kvm guest or some other user space
-> >> program leads to disk i/o or VM activities, users get following soft
-> >> lockup message from console:
-> >>
-> >> Nov 17 13:44:46 slot1/luipaard100a err kernel: BUG: soft lockup -
-> >> CPU#4 stuck for 61s! [qemu-kvm:6795]
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Modules linked in:
-> >> ebt_vlan nls_utf8 isofs ebtable_filter ebtables 8021q garp bridge stp
-> >> llc ipt_REJECT iptable_filter xt_NOTRACK nf_conntrack iptable_raw
-> >> ip_tables loop ext2 binfmt_misc hed womdict(U) vnic(U) parport_pc lp
-> >> parport predis(U) lasthop(U) ipv6 toggler vhost_net tun kvm_intel kvm
-> >> jiffies(U) sysstats hrsleep i2c_dev datastor(U) linux_user_bde(P)(U)
-> >> linux_kernel_bde(P)(U) tg3 libphy serio_raw i2c_i801 i2c_core ehci_hcd
-> >> raid1 raid0 virtio_pci virtio_blk virtio virtio_ring mvsas libsas
-> >> scsi_transport_sas mptspi mptscsih mptbase scsi_transport_spi 3w_9xxx
-> >> sata_svw(U) ahci serverworks sata_sil ata_piix libata sd_mod
-> >> crc_t10dif amd74xx piix ide_gd_mod ide_core dm_snapshot dm_mirror
-> >> dm_region_hash dm_log dm_mod ext3 jbd mbcache
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Pid: 6795, comm:
-> >> qemu-kvm Tainted: P           ----------------
-> >> 2.6.32-131.21.1.el6.f5.x86_64 #1
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: Call Trace:
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <IRQ>
-> >> [<ffffffff81084f95>] ? get_timestamp+0x9/0xf
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff810855d6>] ? watchdog_timer_fn+0x130/0x178
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff81059f11>] ? __run_hrtimer+0xa3/0xff
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8105a188>] ? hrtimer_interrupt+0xe6/0x190
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8105a14b>] ? hrtimer_interrupt+0xa9/0x190
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8101e5a9>] ? hpet_interrupt_handler+0x26/0x2d
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8105a26f>] ? hrtimer_peek_ahead_timers+0x9/0xd
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff81044fcc>] ? __do_softirq+0xc5/0x17a
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff81003adc>] ? call_softirq+0x1c/0x28
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8100506b>] ? do_softirq+0x31/0x66
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff81003673>] ? call_function_interrupt+0x13/0x20
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel: <EOI>
-> >> [<ffffffffa0219986>] ? vmx_get_msr+0x0/0x123 [kvm_intel]
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffffa01d11c0>] ? kvm_arch_vcpu_ioctl_run+0x80e/0xaf1 [kvm]
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffffa01d11b4>] ? kvm_arch_vcpu_ioctl_run+0x802/0xaf1 [kvm]
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8114e59b>] ? inode_has_perm+0x65/0x72
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffffa01c77f5>] ? kvm_vcpu_ioctl+0xf2/0x5ba [kvm]
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff8114e642>] ? file_has_perm+0x9a/0xac
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff810f9ec2>] ? vfs_ioctl+0x21/0x6b
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff810fa406>] ? do_vfs_ioctl+0x487/0x4da
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff810fa4aa>] ? sys_ioctl+0x51/0x70
-> >> Nov 17 13:44:46 slot1/luipaard100a warning kernel:
-> >> [<ffffffff810029d1>] ? system_call_fastpath+0x3c/0x41
-> >
-> > This soft lockup is report on the host?
-> >
-> > Stefan
-> 
-> Yes, it is on host. we just recommend users not doing large file
-> copying, just wondering if there is potential kernel bug. it seems the
-> softlockup backtrace pointing to hrtimer and softirq. my naive
-> knowledge is that the watchdog thread is on top of hrtimer which is on
-> top of softirq.
+The following series replaces the ptrace helpers used for single step
+enable/disable for uprobes on powerpc, with uprobe specific code.
 
-Since the soft lockup detector is firing on the host, this seems like a
-hardware/driver problem.  Have you ever had soft lockups running non-KVM
-workloads on this host?
+We reuse the kprobe code to enable single stepping by making it generic
+and save/restore the MSR (and DBCR for BookE) across the single step.
 
-Stefan
+This series applies on top of the patches posted by Oleg at :
+	https://lkml.org/lkml/2012/10/28/92 
+
+
+Patches have been verified on Power6 and PPC440 (BookE).
+
+---
+
+Suzuki K. Poulose (2):
+      powerpc: Move the single step enable code to a generic path
+      uprobes/powerpc: Make use of generic routines to enable single step
+
+
+ arch/powerpc/include/asm/probes.h  |   29 +++++++++++++++++++++++++++++
+ arch/powerpc/include/asm/uprobes.h |    4 ++++
+ arch/powerpc/kernel/kprobes.c      |   21 +--------------------
+ arch/powerpc/kernel/uprobes.c      |   11 +++++++++--
+ 4 files changed, 43 insertions(+), 22 deletions(-)
+
+-- 
+Suzuki
+
