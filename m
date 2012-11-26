@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab2KZRBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:01:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47100 "EHLO
+	id S1756174Ab2KZRB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:01:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968Ab2KZRBP (ORCPT
+	with ESMTP id S1755833Ab2KZRBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:01:15 -0500
+	Mon, 26 Nov 2012 12:01:25 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 024/270] target: fix truncation of mode data, support zero allocation length
-Date: Mon, 26 Nov 2012 14:55:14 -0200
-Message-Id: <1353949160-26803-25-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 026/270] powerpc/eeh: Lock module while handling EEH event
+Date: Mon, 26 Nov 2012 14:55:16 -0200
+Message-Id: <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,86 +27,261 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 7a3f369ce31694017996524a1cdb08208a839077 upstream.
+commit feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc upstream.
 
-The offset was not bumped back to the full size after writing the
-header of the MODE SENSE response, so the last 1 or 2 bytes were
-not copied.
+The EEH core is talking with the PCI device driver to determine the
+action (purely reset, or PCI device removal). During the period, the
+driver might be unloaded and in turn causes kernel crash as follows:
 
-On top of this, support zero-length requests by checking for the
-return value of transport_kmap_data_sg.
+EEH: Detected PCI bus error on PHB#4-PE#10000
+EEH: This PCI device has failed 3 times in the last hour
+lpfc 0004:01:00.0: 0:2710 PCI channel disable preparing for reset
+Unable to handle kernel paging request for data at address 0x00000490
+Faulting instruction address: 0xd00000000e682c90
+cpu 0x1: Vector: 300 (Data Access) at [c000000fc75ffa20]
+    pc: d00000000e682c90: .lpfc_io_error_detected+0x30/0x240 [lpfc]
+    lr: d00000000e682c8c: .lpfc_io_error_detected+0x2c/0x240 [lpfc]
+    sp: c000000fc75ffca0
+   msr: 8000000000009032
+   dar: 490
+ dsisr: 40000000
+  current = 0xc000000fc79b88b0
+  paca    = 0xc00000000edb0380	 softe: 0	 irq_happened: 0x00
+    pid   = 3386, comm = eehd
+enter ? for help
+[c000000fc75ffca0] c000000fc75ffd30 (unreliable)
+[c000000fc75ffd30] c00000000004fd3c .eeh_report_error+0x7c/0xf0
+[c000000fc75ffdc0] c00000000004ee00 .eeh_pe_dev_traverse+0xa0/0x180
+[c000000fc75ffe70] c00000000004ffd8 .eeh_handle_event+0x68/0x300
+[c000000fc75fff00] c0000000000503a0 .eeh_event_handler+0x130/0x1a0
+[c000000fc75fff90] c000000000020138 .kernel_thread+0x54/0x70
+1:mon>
 
-Testcase: sg_raw -r20 /dev/sdb 5a 00 0a 00 00 00 00 00 14 00
-    last byte should be 0x1e
-    it is 0x00 without the patch
-    it is correct with the patch
+The patch increases the reference of the corresponding driver modules
+while EEH core does the negotiation with PCI device driver so that the
+corresponding driver modules can't be unloaded during the period and
+we're safe to refer the callbacks.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ herton: backported, code to be patched is on target_core_cdb.c,
-  target_emulate_modesense, the function was moved/renamed later ]
+Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ herton: backported for 3.5, adjusted driver assignments, return 0
+  instead of NULL, assume dev is not NULL ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_cdb.c |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/pseries/eeh_driver.c |   95 +++++++++++++++++++++------
+ 1 file changed, 74 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
-index 5b20579..3dc3393 100644
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -856,7 +856,7 @@ int target_emulate_modesense(struct se_cmd *cmd)
- 	unsigned char *rbuf;
- 	int type = dev->transport->get_device_type(dev);
- 	int ten = (cmd->t_task_cdb[0] == MODE_SENSE_10);
--	int offset = ten ? 8 : 4;
-+	u32 offset = ten ? 8 : 4;
- 	int length = 0;
- 	unsigned char buf[SE_MODE_PAGE_BUF];
+diff --git a/arch/powerpc/platforms/pseries/eeh_driver.c b/arch/powerpc/platforms/pseries/eeh_driver.c
+index baf92cd..041e28d 100644
+--- a/arch/powerpc/platforms/pseries/eeh_driver.c
++++ b/arch/powerpc/platforms/pseries/eeh_driver.c
+@@ -25,6 +25,7 @@
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
++#include <linux/module.h>
+ #include <linux/pci.h>
+ #include <asm/eeh.h>
+ #include <asm/eeh_event.h>
+@@ -47,6 +48,41 @@ static inline const char *eeh_pcid_name(struct pci_dev *pdev)
+ 	return "";
+ }
  
-@@ -889,6 +889,7 @@ int target_emulate_modesense(struct se_cmd *cmd)
- 		offset -= 2;
- 		buf[0] = (offset >> 8) & 0xff;
- 		buf[1] = offset & 0xff;
-+		offset += 2;
++/**
++ * eeh_pcid_get - Get the PCI device driver
++ * @pdev: PCI device
++ *
++ * The function is used to retrieve the PCI device driver for
++ * the indicated PCI device. Besides, we will increase the reference
++ * of the PCI device driver to prevent that being unloaded on
++ * the fly. Otherwise, kernel crash would be seen.
++ */
++static inline struct pci_driver *eeh_pcid_get(struct pci_dev *pdev)
++{
++	if (!pdev || !pdev->driver)
++		return NULL;
++
++	if (!try_module_get(pdev->driver->driver.owner))
++		return NULL;
++
++	return pdev->driver;
++}
++
++/**
++ * eeh_pcid_put - Dereference on the PCI device driver
++ * @pdev: PCI device
++ *
++ * The function is called to do dereference on the PCI device
++ * driver of the indicated PCI device.
++ */
++static inline void eeh_pcid_put(struct pci_dev *pdev)
++{
++	if (!pdev || !pdev->driver)
++		return;
++
++	module_put(pdev->driver->driver.owner);
++}
++
+ #if 0
+ static void print_device_node_tree(struct pci_dn *pdn, int dent)
+ {
+@@ -126,18 +162,20 @@ static void eeh_enable_irq(struct pci_dev *dev)
+ static int eeh_report_error(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
  
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -898,13 +899,10 @@ int target_emulate_modesense(struct se_cmd *cmd)
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			target_modesense_dpofua(&buf[3], type);
--
--		if ((offset + 2) > cmd->data_length)
--			offset = cmd->data_length;
--
- 	} else {
- 		offset -= 1;
- 		buf[0] = offset & 0xff;
-+		offset += 1;
+ 	dev->error_state = pci_channel_io_frozen;
  
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -914,14 +912,13 @@ int target_emulate_modesense(struct se_cmd *cmd)
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			target_modesense_dpofua(&buf[2], type);
--
--		if ((offset + 1) > cmd->data_length)
--			offset = cmd->data_length;
- 	}
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
  
- 	rbuf = transport_kmap_data_sg(cmd);
--	memcpy(rbuf, buf, offset);
--	transport_kunmap_data_sg(cmd);
-+	if (rbuf) {
-+		memcpy(rbuf, buf, min(offset, cmd->data_length));
-+		transport_kunmap_data_sg(cmd);
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->error_detected)
++	    !driver->err_handler->error_detected) {
++		eeh_pcid_put(dev);
+ 		return 0;
 +	}
  
- 	target_complete_cmd(cmd, GOOD);
+ 	rc = driver->err_handler->error_detected(dev, pci_channel_io_frozen);
+ 
+@@ -145,6 +183,7 @@ static int eeh_report_error(struct pci_dev *dev, void *userdata)
+ 	if (rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
++	eeh_pcid_put(dev);
  	return 0;
+ }
+ 
+@@ -160,12 +199,16 @@ static int eeh_report_error(struct pci_dev *dev, void *userdata)
+ static int eeh_report_mmio_enabled(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
++
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+-	if (!driver ||
+-	    !driver->err_handler ||
+-	    !driver->err_handler->mmio_enabled)
++	if (!driver->err_handler ||
++	    !driver->err_handler->mmio_enabled) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	rc = driver->err_handler->mmio_enabled(dev);
+ 
+@@ -173,6 +216,7 @@ static int eeh_report_mmio_enabled(struct pci_dev *dev, void *userdata)
+ 	if (rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -189,18 +233,20 @@ static int eeh_report_mmio_enabled(struct pci_dev *dev, void *userdata)
+ static int eeh_report_reset(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
+-
+-	if (!driver)
+-		return 0;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_normal;
+ 
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
++
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->slot_reset)
++	    !driver->err_handler->slot_reset) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	rc = driver->err_handler->slot_reset(dev);
+ 	if ((*res == PCI_ERS_RESULT_NONE) ||
+@@ -208,6 +254,7 @@ static int eeh_report_reset(struct pci_dev *dev, void *userdata)
+ 	if (*res == PCI_ERS_RESULT_DISCONNECT &&
+ 	     rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -222,21 +269,24 @@ static int eeh_report_reset(struct pci_dev *dev, void *userdata)
+  */
+ static int eeh_report_resume(struct pci_dev *dev, void *userdata)
+ {
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_normal;
+ 
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->resume)
++	    !driver->err_handler->resume) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	driver->err_handler->resume(dev);
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -250,21 +300,24 @@ static int eeh_report_resume(struct pci_dev *dev, void *userdata)
+  */
+ static int eeh_report_failure(struct pci_dev *dev, void *userdata)
+ {
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_perm_failure;
+ 
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->error_detected)
++	    !driver->err_handler->error_detected) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	driver->err_handler->error_detected(dev, pci_channel_io_perm_failure);
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
