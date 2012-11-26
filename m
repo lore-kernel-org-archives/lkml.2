@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab2KZWcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:32:55 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52896 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab2KZWcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:32:54 -0500
-Date: Mon, 26 Nov 2012 14:32:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Paul Menage <paul@paulmenage.org>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Why is cpuset_cpus_allowed_fallback() necessary?
-Message-ID: <20121126223249.GB15930@mtj.dyndns.org>
+	id S1757362Ab2KZWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 17:37:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:36943 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756271Ab2KZWh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 17:37:56 -0500
+Date: Mon, 26 Nov 2012 14:37:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: George Zhang <georgezhang@vmware.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        pv-drivers@vmware.com
+Subject: Re: [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121126223754.GA28681@kroah.com>
+References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
+> 
+> * * *
+> This series of VMCI linux upstreaming patches include latest udpate from
+> VMware.
+> 
+> Summary of changes:
+> 
+> 	- Sparse clean.
+> 	- Checkpatch clean with one exception, a "complex macro" in
+> 	  which we can't add parentheses.
+> 	- Remove all runtime assertions.
+> 	- Fix device name, so that existing user clients work.
+> 	- Fix VMCI handle lookup.
 
-I'm wondering why cpuset_cpus_allowed_fallback() is necessary.  This
-is called from, e.g., try_to_wake_up()->select_task_rq() when none of
-the cpus in ->cpus_allowed is useable.  The cpuset callback invokes
-do_set_cpus_allowed() w/ the cpuset's cpus_allowed.  This was added by
-the following commit,
+Given that you failed to answer the questions I asked the last time you
+posted this series, and you did not make any of the changes I asked for,
+I can't accept this (nor should you expect me to.)
 
-  commit 9084bb8246ea935b98320554229e2f371f7f52fa
-  Author: Oleg Nesterov <oleg@redhat.com>
-  Date:   Mon Mar 15 10:10:27 2010 +0100
+And people wonder why reviewers get so grumpy...
 
+My trees are now closed for the 3.8 merge window, so feel free to try
+again after 3.8-rc1 is out, and you have answered, and addressed, the
+questions and comments I made.
 
-  sched: Make select_fallback_rq() cpuset friendly
-
-  Introduce cpuset_cpus_allowed_fallback() helper to fix the cpuset problems
-  with select_fallback_rq(). It can be called from any context and can't use
-  any cpuset locks including task_lock(). It is called when the task doesn't
-  have online cpus in ->cpus_allowed but ttwu/etc must be able to find a
-  suitable cpu.
-  ....			  
-
-The problem is, nothing's explaining what "the cpuset problems with
-select_fallback_rq()" are.  Oleg, do you remember?  Why do we need
-this?
-
-Thanks.
-
--- 
-tejun
+greg k-h
