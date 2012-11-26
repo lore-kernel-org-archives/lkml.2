@@ -1,147 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab2KZBLj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Nov 2012 20:11:39 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:33412 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202Ab2KZBLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Nov 2012 20:11:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, "Svahn, Kai" <kai.svahn@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>, "Zheng, Lv" <lv.zheng@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/2] ACPI / PM: Allow attach/detach routines to change device power states
-Date: Mon, 26 Nov 2012 02:16:20 +0100
-Message-ID: <4855631.a4dcc0Gn36@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc6; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1353892047.28789.82.camel@yhuang-dev>
-References: <1672179.qgDUs0YdYu@vostro.rjw.lan> <4238031.sDhWdlxYNQ@vostro.rjw.lan> <1353892047.28789.82.camel@yhuang-dev>
+	id S1753856Ab2KZBV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Nov 2012 20:21:59 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:64359 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab2KZBV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Nov 2012 20:21:58 -0500
+Message-ID: <50B2C428.8010908@gmail.com>
+Date: Mon, 26 Nov 2012 09:21:44 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Rik van Riel <riel@redhat.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
+        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm,vmscan: free pages if compaction_suitable tells us
+ to
+References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com> <20121125175728.3db4ac6a@fem.tu-ilmenau.de> <20121125132950.11b15e38@annuminas.surriel.com> <20121125224433.GB2799@cmpxchg.org>
+In-Reply-To: <20121125224433.GB2799@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 26, 2012 09:07:27 AM Huang Ying wrote:
-> On Mon, 2012-11-26 at 02:00 +0100, Rafael J. Wysocki wrote:
-> > On Monday, November 26, 2012 08:43:10 AM Huang Ying wrote:
-> > > On Sun, 2012-11-25 at 15:55 +0100, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Make it possible to ask the routines used for adding/removing devices
-> > > > to/from the general ACPI PM domain, acpi_dev_pm_attach() and
-> > > > acpi_dev_pm_detach(), respectively, to change the power states of
-> > > > devices so that they are put into the full-power state automatically
-> > > > by acpi_dev_pm_attach() and into the lowest-power state available
-> > > > automatically by acpi_dev_pm_detach().
-> > > > 
-> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > ---
-> > > >  drivers/acpi/device_pm.c |   28 ++++++++++++++++++++++++----
-> > > >  include/linux/acpi.h     |   11 +++++++----
-> > > >  2 files changed, 31 insertions(+), 8 deletions(-)
-> > > > 
-> > > > Index: linux/drivers/acpi/device_pm.c
-> > > > ===================================================================
-> > > > --- linux.orig/drivers/acpi/device_pm.c
-> > > > +++ linux/drivers/acpi/device_pm.c
-> > > > @@ -599,10 +599,12 @@ static struct dev_pm_domain acpi_general
-> > > >  /**
-> > > >   * acpi_dev_pm_attach - Prepare device for ACPI power management.
-> > > >   * @dev: Device to prepare.
-> > > > + * @power_on: Whether or not to power on the device.
-> > > >   *
-> > > >   * If @dev has a valid ACPI handle that has a valid struct acpi_device object
-> > > >   * attached to it, install a wakeup notification handler for the device and
-> > > > - * add it to the general ACPI PM domain.
-> > > > + * add it to the general ACPI PM domain.  If @power_on is set, the device will
-> > > > + * be put into the ACPI D0 state before the function returns.
-> > > >   *
-> > > >   * This assumes that the @dev's bus type uses generic power management callbacks
-> > > >   * (or doesn't use any power management callbacks at all).
-> > > > @@ -610,7 +612,7 @@ static struct dev_pm_domain acpi_general
-> > > >   * Callers must ensure proper synchronization of this function with power
-> > > >   * management callbacks.
-> > > >   */
-> > > > -int acpi_dev_pm_attach(struct device *dev)
-> > > > +int acpi_dev_pm_attach(struct device *dev, bool power_on)
-> > > >  {
-> > > >  	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-> > > >  
-> > > > @@ -622,6 +624,10 @@ int acpi_dev_pm_attach(struct device *de
-> > > >  
-> > > >  	acpi_add_pm_notifier(adev, acpi_wakeup_device, dev);
-> > > >  	dev->pm_domain = &acpi_general_pm_domain;
-> > > > +	if (power_on) {
-> > > > +		acpi_dev_pm_full_power(adev);
-> > > > +		__acpi_device_run_wake(adev, false);
-> > > > +	}
-> > > >  	return 0;
-> > > >  }
-> > > >  EXPORT_SYMBOL_GPL(acpi_dev_pm_attach);
-> > > > @@ -629,20 +635,34 @@ EXPORT_SYMBOL_GPL(acpi_dev_pm_attach);
-> > > >  /**
-> > > >   * acpi_dev_pm_detach - Remove ACPI power management from the device.
-> > > >   * @dev: Device to take care of.
-> > > > + * @power_off: Whether or not to try to remove power from the device.
-> > > >   *
-> > > >   * Remove the device from the general ACPI PM domain and remove its wakeup
-> > > > - * notifier.
-> > > > + * notifier.  If @power_off is set, additionally remove power from the device if
-> > > > + * possible.
-> > > >   *
-> > > >   * Callers must ensure proper synchronization of this function with power
-> > > >   * management callbacks.
-> > > >   */
-> > > > -void acpi_dev_pm_detach(struct device *dev)
-> > > > +void acpi_dev_pm_detach(struct device *dev, bool power_off)
-> > > >  {
-> > > >  	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-> > > >  
-> > > >  	if (adev && dev->pm_domain == &acpi_general_pm_domain) {
-> > > >  		dev->pm_domain = NULL;
-> > > >  		acpi_remove_pm_notifier(adev, acpi_wakeup_device);
-> > > > +		if (power_off) {
-> > > > +			/*
-> > > > +			 * If the device's PM QoS resume latency limit or flags
-> > > > +			 * have been exposed to user space, they have to be
-> > > > +			 * hidden at this point, so that they don't affect the
-> > > > +			 * choice of the low-power state to put the device into.
-> > > > +			 */
-> > > > +			dev_pm_qos_hide_latency_limit(dev);
-> > > > +			dev_pm_qos_hide_flags(dev);
-> > > 
-> > > NO_POWER_OFF flag is ignored here.  Is it possible for some device (or
-> > > corresponding ACPI method) has broken D3cold implementation, so that the
-> > > user need a way to disable it?
-> > 
-> > We are removing the driver here and we haven't exposed the flags, have we?
-> 
-> IMHO, the flag may be exposed by the bus instead of device driver.
-> Because some bus can determine whether D3cold is supported by the
-> device.  If the sysfs file for the flag is exposed by the bus, user set
-> it and we silently ignore it, will it cause confusing for the user?
+On 11/26/2012 06:44 AM, Johannes Weiner wrote:
+> On Sun, Nov 25, 2012 at 01:29:50PM -0500, Rik van Riel wrote:
+>> On Sun, 25 Nov 2012 17:57:28 +0100
+>> Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
+>>
+>>> With kernel 3.7-rc6 I've still problems with kswapd0 on my laptop
+>>> And this is most of the time. I've only observed this behavior on the
+>>> laptop. Other systems don't show this.
+>> This suggests it may have something to do with small memory zones,
+>> where we end up with the "funny" situation that the high watermark
+>> (+ balance gap) for a particular zone is less than the low watermark
+>> + 2<<order pages, which is the number of free pages required to keep
+>> compaction_suitable happy.
+>>
+>> Could you try this patch?
+> It's not quite enough because it's not reaching the conditions you
+> changed, see analysis in https://lkml.org/lkml/2012/11/20/567
+>
+> But even fixing it up (by adding the compaction_suitable() test in
+> this preliminary scan over the zones and setting end_zone accordingly)
+> is not enough because no actual reclaim happens at priority 12 in a
 
-OK, put it in a different way: If the entity that calls acpi_dev_pm_attach()
-exposes the flags _before_ calling it, then acpi_dev_pm_detach() should not
-hide the flags.  Otherwise, it should hide them.  Currently, the only user
-of acpi_dev_pm_attach() (that will be the platform bus type) will not expose
-the flags before calling that routine, so it is OK for acpi_dev_pm_detach()
-to remove them.
+The preliminary scan is in the highmem->dma direction, it will miss high 
+zone which not meet compaction_suitable() test instead of lowest zone.
 
-Is there anything I'm missing here?
+> small zone.  So the number of free pages is not actually changing and
+> the compaction_suitable() checks keep the loop going.
+>
+> The problem is fairly easy to reproduce, by the way.  Just boot with
+> mem=800M to have a relatively small lowmem reserve in the DMA zone.
+> Fill it up with page cache, then allocate transparent huge pages.
+>
+> With your patch and my fix to the preliminary zone loop, there won't
+> be any hung task warnings anymore because kswapd actually calls
+> shrink_slab() and there is a rescheduling point in there, but it still
+> loops forever.
+>
+> It also seems a bit aggressive to try to balance a small zone like DMA
+> for a huge page when it's not a GFP_DMA allocation, but none of these
+> checks actually take the classzone into account.  Do we have any
+> agreement over what this whole thing is supposed to be doing?
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index b99ecba..f7e54df 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2412,6 +2412,9 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
+>    *     would need to be at least 256M for it to be balance a whole node.
+>    *     Similarly, on x86-64 the Normal zone would need to be at least 1G
+>    *     to balance a node on its own. These seemed like reasonable ratios.
+> + *
+> + * The kswapd source code is brought to you by Advil®.  "For today's
+> + * tough pain, one might not be enough."
+>    */
+>   static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
+>   						int classzone_idx)
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
