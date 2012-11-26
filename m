@@ -1,29 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab2KZL6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 06:58:09 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:43651 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2KZL6H (ORCPT
+	id S1754468Ab2KZLy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 06:54:58 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7017 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab2KZLy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 06:58:07 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        jg1.han@samsung.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+	Mon, 26 Nov 2012 06:54:56 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 26 Nov 2012 03:50:00 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <gnurou@gmail.com>,
         "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH 1/5] backlight: Add GPIO-based backlight driver
-Date: Mon, 26 Nov 2012 12:59:10 +0100
-Message-ID: <1701286.svlH7lvIeJ@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50B347F4.2080705@metafoo.de>
-References: <32552643.33371353923376540.JavaMail.weblogic@epv6ml07> <50B347F4.2080705@metafoo.de>
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mark Zhang <markz@nvidia.com>, Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
+Date: Mon, 26 Nov 2012 20:49:53 +0900
+Message-ID: <3319894.UD2L7QhyVv@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.3 (Linux/3.6.7-1-ARCH; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
+References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com> <20121122133941.24B883E129E@localhost> <20121122214021.GA14771@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -31,64 +40,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
-
-On Monday 26 November 2012 11:44:04 Lars-Peter Clausen wrote:
-> On 11/26/2012 10:49 AM, Jingoo Han wrote:
-> > On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
-> 
+On Friday 23 November 2012 05:40:21 Thierry Reding wrote:
+> On Thu, Nov 22, 2012 at 01:39:41PM +0000, Grant Likely wrote:
 > [...]
 > 
-> >> +static int gpio_backlight_check_fb(struct backlight_device *bl,
-> >> +				   struct fb_info *info)
-> >> +{
-> >> +	struct gpio_backlight *gbl = bl_get_data(bl);
-> >> +
-> >> +	return gbl->fbdev == info->dev;
+> > I do think that each sequence should be contained within a single
+> > property, but I'm open to other suggestions.
 > 
-> I think it makes sense to return true if fbdev is NULL, to provide a simple
-> fallback for systems with only one framebuffer device.
-
-Agreed, I'll change that.
-
-> >> +}
-> >> +
+> IIRC a very early prototype did implement something like that. However
+> because of the resource issues this had to be string based, so that the
+> sequences looked somewhat like (Alex, correct me if I'm wrong):
 > 
-> [...]
+> 	power-on = <"REGULATOR", "power", 1, "GPIO", "enable", 1>;
+
+You're right. Back when the burning sun of July was beating down a little bit 
+too hard on my head.
+
+https://lkml.org/lkml/2012/7/9/30
+
+> Instead we could possibly have something like:
 > 
-> >> +#ifdef CONFIG_PM
-> >> +static int gpio_backlight_suspend(struct device *dev)
-> >> +{
-> >> +	struct backlight_device *bl = dev_get_drvdata(dev);
-> >> +	struct gpio_backlight *gbl = bl_get_data(bl);
-> >> +
-> >> +	gpio_set_value(gbl->gpio, !gbl->active);
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int gpio_backlight_resume(struct device *dev)
-> >> +{
-> >> +	struct backlight_device *bl = dev_get_drvdata(dev);
-> >> +
-> >> +	backlight_update_status(bl);
-> >> +	return 0;
-> >> +}
+> 	power-on = <0 &reg 1,
+> 		    1 &gpio 42 0 1>;
 > 
-> If you use BL_CORE_SUSPENDRESUME you can get rid of the custom
-> suspend/resume handlers.
+> Where the first cell in each entry defines the type (0 = regulator, 1 =
+> GPIO) and the rest would be a regular OF specifier for the given type of
+> resource along with some defined parameter such as enable/disable,
+> voltage, delay in ms, ... I don't know if that sounds any better. It
+> looks sort of cryptic but it is more "in the spirit of" DT, right Grant?
+> 
+> Writing this down, it seems to me like even that proposal was already
+> discussed at some point. Again, Alex may remember better.
 
-Good point, I'll do that.
+The idea that we had was to use preprocessor support in DTC to use macros 
+instead of strings for the step type. We also thought about using phandles 
+directly in there as well, but this would require some more API support.
 
-> >> +
-> >> +static SIMPLE_DEV_PM_OPS(gpio_backlight_pm_ops, gpio_backlight_suspend,
-> >> +			 gpio_backlight_resume);
-> >> +
-> >> +#endif
-> >> +
+Anyway, at the current point we are not even sure whether we want or need 
+power seqs in the DT - so let's keep this topic on hold for a while. We can 
+still introduce the feature without DT support, and if it eventually turns out 
+during this winter that expressing power seqs in the DT makes sense, we will 
+have plenty of archives to read in front of the fire.
 
--- 
-Regards,
-
-Laurent Pinchart
+Alex.
 
