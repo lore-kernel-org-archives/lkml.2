@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2KZJIf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 04:08:35 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:47407 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2KZJIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 04:08:32 -0500
-Date: Mon, 26 Nov 2012 10:08:14 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Philippe Reynes <tremyfr@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        s.hauer@pengutronix.de, eric.jarrige@armadeus.org,
-        julien.boibessot@armadeus.com
-Subject: Re: [PATCH 2/4] ds1374: add support of device tree
-Message-ID: <20121126100814.1459e3d7@skate>
-In-Reply-To: <1353874625-14754-3-git-send-email-tremyfr@yahoo.fr>
-References: <1353874625-14754-1-git-send-email-tremyfr@yahoo.fr>
-	<1353874625-14754-3-git-send-email-tremyfr@yahoo.fr>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754753Ab2KZJLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 04:11:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43367 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754664Ab2KZJLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 04:11:52 -0500
+Message-ID: <50B33252.3060709@ti.com>
+Date: Mon, 26 Nov 2012 10:11:46 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 1/3] pwm: Remove pwm-twl6030 driver
+References: <1353405382-9226-1-git-send-email-peter.ujfalusi@ti.com> <1353405382-9226-2-git-send-email-peter.ujfalusi@ti.com> <20121123150548.GC16810@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121123150548.GC16810@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Philippe Reynes,
-
-On Sun, 25 Nov 2012 21:17:03 +0100, Philippe Reynes wrote:
-> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-> ---
->  drivers/rtc/rtc-ds1374.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
+On 11/23/2012 04:05 PM, Thierry Reding wrote:
+> On Tue, Nov 20, 2012 at 10:56:20AM +0100, Peter Ujfalusi wrote:
+>> This driver only supported the Charging indicator LED.
+>> New set of drivers going to provide support for both PWMs and LEDs for twl4030
+>> and twl6030 series of PMICs.
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  drivers/pwm/Kconfig       |   9 ---
+>>  drivers/pwm/Makefile      |   1 -
+>>  drivers/pwm/pwm-twl6030.c | 184 ----------------------------------------------
+>>  3 files changed, 194 deletions(-)
+>>  delete mode 100644 drivers/pwm/pwm-twl6030.c
 > 
-> diff --git a/drivers/rtc/rtc-ds1374.c b/drivers/rtc/rtc-ds1374.c
-> index 9663160..174c532 100644
-> --- a/drivers/rtc/rtc-ds1374.c
-> +++ b/drivers/rtc/rtc-ds1374.c
-> @@ -49,6 +49,14 @@ static const struct i2c_device_id ds1374_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, ds1374_id);
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id ds1374_of_match[] __devinitconst = {
-> +	{ .compatible = "dallas,ds1374" },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, ds1374_of_match);
-> +#endif
-> +
+> I think I'd rather see this patch as the last in the series to make sure
+> that no functionality is dropped across the series.
 
-Don't we need a Device Tree binding documentation in
-Documentation/devicetree/bindings/rtc/ ?
+Sure, I will move it as a last patch.
 
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Péter
