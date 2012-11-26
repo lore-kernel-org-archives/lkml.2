@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2KZNt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:49:59 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:54118 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2KZNt6 (ORCPT
+	id S1754598Ab2KZN4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:56:43 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:32857 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2KZN4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:49:58 -0500
-Date: Tue, 27 Nov 2012 00:49:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: linux-next: build failure after merge of the final tree (tty tree
- related)
-Message-Id: <20121127004948.6e7973525843529de827ed0e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Nov_2012_00_49_48_+1100_CClVwNa57Ge.v0TK"
+	Mon, 26 Nov 2012 08:56:41 -0500
+Message-ID: <50B3754A.50804@calxeda.com>
+Date: Mon, 26 Nov 2012 07:57:30 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: Re: [PATCH 3/6 v4] cpufreq: tolerate inexact values when collecting
+ stats
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <21672683C5A3814BB4DB938EBE482DE426EA988080@IAD2MBX09.mex02.mlsrvr.com> <20121117145048.GI16441@x1.osrc.amd.com> <3756540.1nyvqzWibd@vostro.rjw.lan>
+In-Reply-To: <3756540.1nyvqzWibd@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Nov_2012_00_49_48_+1100_CClVwNa57Ge.v0TK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/24/2012 04:05 AM, Rafael J. Wysocki wrote:
+> On Saturday, November 17, 2012 03:50:48 PM Borislav Petkov wrote:
+>> On Tue, Nov 13, 2012 at 02:13:38PM -0500, Mark Langsdorf wrote:
+>>> Although cpufreq_driver has a flag field, no part of cpufreq_driver
+>>> is directly passed to the cpufreq_stat code. Only cpufreq_policy
+>>> is. It's cleaner to do passes of the while loop than to copy the
+>>> cpufreq_driver.flag field into cpufreq_policy and then store it again
+>>> in cpufreq_stats.
+>>
+>> That maybe so but this newly added loop which is only Calxeda-relevant
+>> is called in cpufreq_stat_notifier_trans, which is the frequency change
+>> notifier call, AFAICT.
 
-Hi all,
+Drivers only go through the loop if they can't find an exact frequency.
+So every driver that isn't Calxeda shouldn't see the issue.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+>> So you probably need to find a slick way of detecting calxeda hw
+>> somewhere along the init path of cpufreq_stats_init and set a
+>> hw-specific flag instead of adding that cost to each driver.
+> 
+> Mark, I suppose you'd like me to take this series for v3.8, but the above
+> comment from Boris has to be addressed for that.
 
-In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-drivers/staging/sb105x/sb_pci_mp.h:22:25: fatal error: asm/segment.h: No su=
-ch file or directory
+I think I'd rather drop this particular patch and not have cpufreq_stat
+support for Highbank. Redesigning it to meet Boris' requirements is
+going to take more time than I currently have available.
 
-Caused by commit 68a81291ff66 ("staging: Add SystemBase Multi-2/PCI
-driver").
+Would it be acceptable to drop this patch and fix the issues with
+patches 4 and 6 to get the series in?
 
-I have disabled this driver with this patch:
+--Mark Langsdorf
+Calxeda, Inc.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 27 Nov 2012 00:45:07 +1100
-Subject: [PATCH] disable the SB105X driver
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/sb105x/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/sb105x/Kconfig b/drivers/staging/sb105x/Kconfig
-index ac87c5e..c957e32 100644
---- a/drivers/staging/sb105x/Kconfig
-+++ b/drivers/staging/sb105x/Kconfig
-@@ -2,6 +2,7 @@ config SB105X
- 	tristate "SystemBase PCI Multiport UART"
- 	select SERIAL_CORE
- 	depends on PCI
-+	depends on BROKEN
- 	help
- 	  A driver for the SystemBase Multi-2/PCI serial card
-=20
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__27_Nov_2012_00_49_48_+1100_CClVwNa57Ge.v0TK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQs3N8AAoJEECxmPOUX5FEDCoP/2nFFfoyVTxxKjC9H7fOsmoI
-MSyq/JKVoIH5+VpSrtcUNJkuA0c2kcGaB0Q4iHMkM1Z3rqQPAiyFKfeqPWiVwjEV
-J6ymZrTqpvqVp1vXKtjqUZrDSNlvoFI22sy/H3vl9t4qCKQeY+SQvRD8ZyG1bjkq
-NbekruE2xkxXHBovbxWjnw4kNgN6czuzrgzUZkMnO2BLBnD05FSq2ILJyJWSQxjf
-vlop7WAHrYxwkc37iutz1Mcsegl4bquWGwqX+L42Ri+P9+DCL9bmRNEQ37blMJ8i
-pyJWV79HCxRLbKJidHvWnMxXOZiI1rfGK+RuZMZl0s/NcyeiKNz0lMUHuOm9P3Mg
-HfK6Tm3TYNGebEB+3Ng4uEABiV/RmFQi9zAe/SfKUneMixRXawVzJxpqZVB15+qt
-2fwFsCW+wtt5XA11lLKjdD11uSh9YLl0G+KH6wg5rYmNe8oNOHphmap0OsSP+wji
-xOiKrSt1T2wzgvExEj42+4spUjsWRNVxnp5I7+15MF2g+SSA86e5jEnfMYeFjIBr
-gbf+PDlLdVzgne5zVvk/BtzKaVdxOjXzJ5ZBPdIAJZZp25UQ9a428gs7A93bZe+J
-7k1DtfvNqVh0O09JifDWSBw7KSh8YLtu/PWUS7b8h7lVJbVVk7WV9fw2xub4+Rii
-OyfcKsL9q54QJmMQEYKZ
-=S2/X
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Nov_2012_00_49_48_+1100_CClVwNa57Ge.v0TK--
