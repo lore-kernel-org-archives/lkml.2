@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2KZSvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 13:51:44 -0500
-Received: from na3sys010aog103.obsmtp.com ([74.125.245.74]:46042 "HELO
-	na3sys010aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753893Ab2KZSvm (ORCPT
+	id S1754405Ab2KZSxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 13:53:19 -0500
+Received: from science.horizon.com ([71.41.210.146]:59426 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753636Ab2KZSxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 13:51:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121154740.9777.72384.stgit@warthog.procyon.org.uk>
-References: <20121121154740.9777.72384.stgit@warthog.procyon.org.uk>
-From: Roland Dreier <roland@kernel.org>
-Date: Mon, 26 Nov 2012 10:51:20 -0800
-X-Google-Sender-Auth: PKywBRaoYq2rQsHLfnJpZYofx98
-Message-ID: <CAL1RGDVJ764c0+JNaruRgY0JH24Yjh-+ZWdT3mpdGfEqRb9taw@mail.gmail.com>
-Subject: Re: [PATCH] UAPI: (Scripted) Disintegrate include/rdma
-To: David Howells <dhowells@redhat.com>
-Cc: David Dillow <dillowda@ornl.gov>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Nov 2012 13:53:18 -0500
+Date: 26 Nov 2012 13:53:17 -0500
+Message-ID: <20121126185317.10879.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hannes@cmpxchg.org, linux@horizon.com
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Cc: dave@linux.vnet.ibm.com, jack@suse.cz, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de, riel@redhat.com
+In-Reply-To: <20121126183242.GA9894@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, applied.
+Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Any chance you could test with this fix instead, in addition to Dave's
+> accounting fix?  It's got bool and everything!
+
+Okay.  Mel, speak up if you object.  I also rebased on top of 3.7-rc7,
+which already includes Dave's fix.  Again, speak up if that's a bad idea.
+
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
