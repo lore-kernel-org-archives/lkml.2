@@ -1,129 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab2KZWy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 17:54:27 -0500
-Received: from us-mx3.synaptics.com ([12.239.217.85]:35677 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab2KZWy0 (ORCPT
+	id S932553Ab2KZXBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 18:01:07 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:56690 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932116Ab2KZXBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 17:54:26 -0500
-Message-ID: <50B3F31F.6080203@synaptics.com>
-Date: Mon, 26 Nov 2012 14:54:23 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Mon, 26 Nov 2012 18:01:05 -0500
+From: Dmitry Torokhov <dtor@vmware.com>
+To: pv-drivers@vmware.com
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Date: Mon, 26 Nov 2012 15:01:04 -0800
+Message-ID: <1975718.7UL0qBEfzR@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121126223754.GA28681@kroah.com>
+References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com> <20121126223754.GA28681@kroah.com>
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com> <1353124734-16803-3-git-send-email-cheiny@synaptics.com> <CAN+gG=HLjJzGs3aZ9JTB0vvbMkJQWv=8cZXNpBhpFNYxdvKmVw@mail.gmail.com>
-In-Reply-To: <CAN+gG=HLjJzGs3aZ9JTB0vvbMkJQWv=8cZXNpBhpFNYxdvKmVw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 10:41 AM, Benjamin Tissoires wrote:
-> Hi Christopher,
->
-> On Sat, Nov 17, 2012 at 4:58 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
->> rmi_bus.c implements the basic functionality of the RMI bus.  This file is
->> greatly simplified compared to the previous patch - we've switched from
->> "do it yourself" device/driver binding to using device_type to distinguish
->> between the two kinds of devices on the bus (sensor devices and function
->> specific devices) and using the standard bus implementation to manage devices
->> and drivers.
->>
->>
->> rmi_driver.c is a driver for the general functionality of the RMI sensor as a
->> whole, managing those behaviors (including IRQ handling) that are not specific
->> to any RMI4 function.  It has some unavoidable dependencies on F01 behavior,
->> though we have worked to minimize those as far as possible.
->>
->>
->> The header file rmi_driver.h provides definitions that are shared among
->> the modules of the RMI implementation, but not thought to be necessary
->> outside it.
->>
->>
->> Greg KH - Linus Walleij recommended that we seek your input on these core
->> files, particularly the bus implementation.
->>
->>
->> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
->>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Cc: Linus Walleij <linus.walleij@stericsson.com>
->> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
->> Cc: Joeri de Gram <j.de.gram@gmail.com>
->>
->> ---
->>
->>   drivers/input/rmi4/rmi_bus.c    |  248 ++++++
->>   drivers/input/rmi4/rmi_driver.c | 1663 +++++++++++++++++++++++++++++++++++++++
->>   drivers/input/rmi4/rmi_driver.h |  139 ++++
->>   include/uapi/linux/input.h      |    1 +
->>   4 files changed, 2051 insertions(+), 0 deletions(-)
->>
-> [snipped]
->> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
->> new file mode 100644
->> index 0000000..05a73ae
->> --- /dev/null
->> +++ b/drivers/input/rmi4/rmi_driver.c
-> [snipped]
->> +/* extract product ID */
->> +void get_prod_id(struct rmi_device *rmi_dev, struct rmi_driver_data *drvdata)
->> +{
->> +       struct device *dev = &rmi_dev->dev;
->> +       int retval;
->> +       int board = 0, rev = 0;
->> +       int i;
->> +       static const char * const pattern[] = {
->> +               "tm%4d-%d", "s%4d-%d", "s%4d-ver%1d"};
->> +       u8 product_id[RMI_PRODUCT_ID_LENGTH+1];
->> +
->> +       retval = rmi_read_block(rmi_dev,
->> +               drvdata->f01_container->fd.query_base_addr+
->> +               sizeof(struct f01_basic_queries),
->> +               product_id, RMI_PRODUCT_ID_LENGTH);
->> +       if (retval < 0) {
->> +               dev_err(dev, "Failed to read product id, code=%d!", retval);
->> +               return;
->> +       }
->> +       product_id[RMI_PRODUCT_ID_LENGTH] = '\0';
->> +
->> +       for (i = 0; i < sizeof(product_id); i++)
->> +               product_id[i] = tolower(product_id[i]);
->> +
->> +       for (i = 0; i < sizeof(pattern); i++) {
->
-> This should be ARRAY_SIZE(pattern).
-> It gave me a wonderful kernel oops :)
+On Monday, November 26, 2012 02:37:54 PM Greg KH wrote:
+> On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
+> > * * *
+> > This series of VMCI linux upstreaming patches include latest udpate from
+> > VMware.
+> > 
+> > Summary of changes:
+> > 	- Sparse clean.
+> > 	- Checkpatch clean with one exception, a "complex macro" in
+> > 	
+> > 	  which we can't add parentheses.
+> > 	
+> > 	- Remove all runtime assertions.
+> > 	- Fix device name, so that existing user clients work.
+> > 	- Fix VMCI handle lookup.
+> 
+> Given that you failed to answer the questions I asked the last time you
+> posted this series, and you did not make any of the changes I asked for,
+> I can't accept this (nor should you expect me to.)
+> 
+> And people wonder why reviewers get so grumpy...
+> 
+> My trees are now closed for the 3.8 merge window, so feel free to try
+> again after 3.8-rc1 is out, and you have answered, and addressed, the
+> questions and comments I made.
 
-Yep, that's a bug!  Oddly enough, it runs without barfing on my systems 
-(though who knows what horrible things are happening under the hood). 
-Thanks for letting us know.
+Greg, there were 3 specific complaints from you:
 
-					Chris
+1. "Given that this is a static function, there's no need for these
+"asserts", right?  Please send a follow-on patch removing all BUG_ON()
+calls from these files, it's not acceptable to crash a user's box from
+a driver that is handling parameters you are feeding it."
 
->
-> Cheers,
-> Benjamin
+2. "You obviously didn't run checkpatch on this file"
 
-[snip]
+3. "This line causes sparse to complain.  The odds that userspace knows
+what gcc is using for "bool" is pretty low."
+
+Given the fact that the series addresses all 3 I fail to understand why
+you would be grumpy.
+
+Anyway, since there vsock has not been reviewed yet we are OK with
+postponing this patch series till 3.9.
+
+Thanks,
+Dmitry
+
