@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2KZN1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 08:27:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44394 "EHLO mx2.suse.de"
+	id S1755098Ab2KZN14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 08:27:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55963 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752745Ab2KZN1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 08:27:16 -0500
-Date: Mon, 26 Nov 2012 14:27:13 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-input: battery quirk for Apple keyboard
-In-Reply-To: <50B22662.4070503@odi.ch>
-Message-ID: <alpine.LNX.2.00.1211261426240.12570@pobox.suse.cz>
-References: <50B22662.4070503@odi.ch>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753598Ab2KZN1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 08:27:54 -0500
+Date: Mon, 26 Nov 2012 14:27:00 +0100
+From: Karel Zak <kzak@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Jaegeuk Kim <jaegeuk.kim@gmail.com>, util-linux@vger.kernel.org,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Subject: Re: util-linux bug: was Re: [PATCH 00/16 v3] f2fs: introduce
+ flash-friendly file system
+Message-ID: <20121126132700.GA28200@x2.net.home>
+References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
+ <201211021439.02797.Martin@lichtvoll.de>
+ <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com>
+ <201211101933.38434.Martin@lichtvoll.de>
+ <8A3372F6-6294-404E-909B-3FDE0C2368B7@dubeyko.com>
+ <1352634168.1893.9.camel@kjgkr>
+ <20121123112309.52429ceb@notabene.brown>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121123112309.52429ceb@notabene.brown>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Nov 2012, Ortwin Glück wrote:
+On Fri, Nov 23, 2012 at 11:23:09AM +1100, NeilBrown wrote:
+> This is a bug in util-linux.
+> 
+> If 'blkid' doesn't recognise the filesystem, mount reads /etc/filesystems
+> and tries everything listed there.  If that file ends with a '*', it should
+> read /proc/filesystems and try everything else listed that (that doesn't
+> start with 'nodev').
+> 
+> However it currently ignores the '*' and just adds everything
 
-> Support battery capacity on another Apple wireless
-> keyboard.
+ Fixed. Thanks for the report!
 
-Your patch has been whitespace damaged. I have fixed it by hand and 
-applied, but please fix your process for any future patch submissions. 
-Thanks.
+> The following patch (against git://github.com/karelzak/util-linux.git) fixes
+> it for me,  though I suspect it should possible ignore 'ENODEV' too -
+> otherwise if /etc/filesystems contains an invalid filesystem name, it will
+> silently ignore all others.
 
-> NB: most likely all other APPLE_ALU_WIRELESS_* keyboards should be added 
-> as well.
+ Good idea, implemented.
 
-I think it's likely true, but I prefer to have it actually tested before 
-doing such changes blindly.
+ ... all will be fixed in stable v2.22.2 release.
 
-Thanks,
+    Karel
 
 -- 
-Jiri Kosina
-SUSE Labs
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
