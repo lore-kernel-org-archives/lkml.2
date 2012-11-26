@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2KZPbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 10:31:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37636 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2KZPbv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 10:31:51 -0500
-Date: Mon, 26 Nov 2012 15:31:45 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com
-Subject: Re: [PATCH V1 1/3] mfd: stmpe: Arrange #include <header files> in
- alphabetical order
-Message-ID: <20121126153145.GC6824@gmail.com>
-References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
- <20121126111639.GR12685@sortiz-mobl>
- <CAKohpo=EpjP4gpbBTV8BaghCjLVC4x4wvgRW34M9pn0oZ-S5dw@mail.gmail.com>
- <20121126132557.GA6824@gmail.com>
- <CAKohpo=7CEbKgEQ8KbnVpS0Opxn9xjDP26atZBefgHcxXVbMkA@mail.gmail.com>
+	id S1755463Ab2KZPdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 10:33:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755142Ab2KZPdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 10:33:09 -0500
+Message-ID: <50B38B7C.2080201@redhat.com>
+Date: Mon, 26 Nov 2012 10:32:12 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpo=7CEbKgEQ8KbnVpS0Opxn9xjDP26atZBefgHcxXVbMkA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        akpm@linux-foundation.org, mgorman@suse.de, Valdis.Kletnieks@vt.edu,
+        jirislaby@gmail.com, jslaby@suse.cz, zkabelac@redhat.com,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm,vmscan: only loop back if compaction would fail in
+ all zones
+References: <20121119202152.4B0E420004E@hpza10.eem.corp.google.com> <20121125175728.3db4ac6a@fem.tu-ilmenau.de> <20121125132950.11b15e38@annuminas.surriel.com> <20121125224433.GB2799@cmpxchg.org> <20121125191645.0ebc6d59@annuminas.surriel.com> <20121126031518.GC2799@cmpxchg.org> <20121126041041.GD2799@cmpxchg.org>
+In-Reply-To: <20121126041041.GD2799@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Nov 2012, Viresh Kumar wrote:
+On 11/25/2012 11:10 PM, Johannes Weiner wrote:
 
-> On 26 November 2012 18:55, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Why do you need to sort them? Is there _really_ a need?
-> 
-> Many people & maintainers like to have their header files ordered. The
-> reason for that is:
-> 
-> If they are not ordered, there is a possibility of adding an header file
-> multiple times in a file. This might not do something serious
-> when thinking about compilation time or Image size, but adding an header
-> file multiple times is simply wrong.
-> 
-> This can't be caught in patch reviews most of the time, as diff may not show
-> the earlier inclusion.
-> 
-> That's why i ordered them. And i don't see any harm in doing so.
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: vmscan: fix endless loop in kswapd balancing
+>
+> Kswapd does not in all places have the same criteria for when it
+> considers a zone balanced.  This leads to zones being not reclaimed
+> because they are considered just fine and the compaction checks to
+> loop over the zonelist again because they are considered unbalanced,
+> causing kswapd to run forever.
+>
+> Add a function, zone_balanced(), that checks the watermark and if
+> compaction has enough free memory to do its job.  Then use it
+> uniformly for when kswapd needs to check if a zone is balanced.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I don't see any harm in it, but it's pretty pointless.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-There aren't many maintainers who insist on such things, and the
-ones that do normally carry out these OCD actions themselves. :)
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+All rights reversed
