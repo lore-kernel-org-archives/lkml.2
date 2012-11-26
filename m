@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933920Ab2KZRNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 12:13:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48068 "EHLO
+	id S933892Ab2KZRaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 12:30:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933895Ab2KZRNf (ORCPT
+	with ESMTP id S933861Ab2KZRNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 12:13:35 -0500
+	Mon, 26 Nov 2012 12:13:21 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Beulich <jbeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 218/270] x86-64: Fix page table accounting
-Date: Mon, 26 Nov 2012 14:58:28 -0200
-Message-Id: <1353949160-26803-219-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 215/270] xhci: fix integer overflow
+Date: Mon, 26 Nov 2012 14:58:25 -0200
+Message-Id: <1353949160-26803-216-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,61 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 876ee61aadf01aa0db981b5d249cbdd53dc28b5e upstream.
+commit 16b45fdf9c4e82f5d3bc53aa70737650e7c8d5ed upstream.
 
-Commit 20167d3421a089a1bf1bd680b150dc69c9506810 ("x86-64: Fix
-accounting in kernel_physical_mapping_init()") went a little too
-far by entirely removing the counting of pre-populated page
-tables: this should be done at boot time (to cover the page
-tables set up in early boot code), but shouldn't be done during
-memory hot add.
+xhci_service_interval_to_ns() returns long long
+to avoid an overflow. However, the type cast happens
+too late. The fix is to force ULL from the beginning.
 
-Hence, re-add the removed increments of "pages", but make them
-and the one in phys_pte_init() conditional upon !after_bootmem.
+This patch should be backported to kernels as old as 3.5, that contain
+the commit e3567d2c15a7a8e2f992a5f7c7683453ca406d82 "xhci: Add Intel
+U1/U2 timeout policy."
 
-Reported-Acked-and-Tested-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/506DAFBA020000780009FA8C@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/mm/init_64.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 2b6b4a3..3baff25 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -386,7 +386,8 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 		 * these mappings are more intelligent.
- 		 */
- 		if (pte_val(*pte)) {
--			pages++;
-+			if (!after_bootmem)
-+				pages++;
- 			continue;
- 		}
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 1f9b8a4..5f831c2 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4020,7 +4020,7 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
+ static unsigned long long xhci_service_interval_to_ns(
+ 		struct usb_endpoint_descriptor *desc)
+ {
+-	return (1 << (desc->bInterval - 1)) * 125 * 1000;
++	return (1ULL << (desc->bInterval - 1)) * 125 * 1000;
+ }
  
-@@ -451,6 +452,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 			 * attributes.
- 			 */
- 			if (page_size_mask & (1 << PG_LEVEL_2M)) {
-+				if (!after_bootmem)
-+					pages++;
- 				last_map_addr = next;
- 				continue;
- 			}
-@@ -526,6 +529,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 			 * attributes.
- 			 */
- 			if (page_size_mask & (1 << PG_LEVEL_1G)) {
-+				if (!after_bootmem)
-+					pages++;
- 				last_map_addr = next;
- 				continue;
- 			}
+ static u16 xhci_get_timeout_no_hub_lpm(struct usb_device *udev,
 -- 
 1.7.9.5
 
