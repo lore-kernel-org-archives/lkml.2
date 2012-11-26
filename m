@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab2KZUeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 15:34:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44882 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2KZUeV (ORCPT
+	id S1756295Ab2KZUgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 15:36:37 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38344 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab2KZUgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 15:34:21 -0500
-Message-ID: <50B3D1CD.10802@oracle.com>
-Date: Mon, 26 Nov 2012 15:32:13 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121112 Thunderbird/16.0.1
+	Mon, 26 Nov 2012 15:36:35 -0500
+Subject: [PATCH 0/5] Alter steal time reporting in KVM
+To: linux-kernel@vger.kernel.org
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Cc: riel@redhat.com, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
+Date: Mon, 26 Nov 2012 14:36:24 -0600
+Message-ID: <20121126203603.28840.38736.stgit@lambeau>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 19/33] sched: Add adaptive NUMA affinity support
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org> <1353624594-1118-20-git-send-email-mingo@kernel.org>
-In-Reply-To: <1353624594-1118-20-git-send-email-mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+x-cbid: 12112620-5816-0000-0000-0000058E684B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+In the case of where you have a system that is running in a
+capped or overcommitted environment the user may see steal time
+being reported in accounting tools such as top or vmstat.  This can
+cause confusion for the end user.  To ease the confusion this patch set
+adds the idea of consigned (expected steal) time.  The host will separate
+the consigned time from the steal time.  The consignment limit passed to the
+host will be the amount of steal time expected within a fixed period of
+time.  Any other steal time accruing during that period will show as the
+traditional steal time.
 
-On 11/22/2012 05:49 PM, Ingo Molnar wrote:
-> +static void task_numa_placement(struct task_struct *p)
-> +{
-> +	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+---
 
-I was fuzzing with trinity on my fake numa setup, and discovered that this can
-be called for task_structs with p->mm == NULL, which would cause things like:
-
-[ 1140.001957] BUG: unable to handle kernel NULL pointer dereference at 00000000000006d0
-[ 1140.010037] IP: [<ffffffff81157627>] task_numa_placement+0x27/0x1a0
-[ 1140.015020] PGD 9b002067 PUD 9fb3c067 PMD 14a89067 PTE 5a4098bf040
-[ 1140.015020] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1140.015020] Dumping ftrace buffer:
-[ 1140.015020]    (ftrace buffer empty)
-[ 1140.015020] CPU 1
-[ 1140.015020] Pid: 3179, comm: ksmd Tainted: G        W    3.7.0-rc6-next-20121126-sasha-00015-gb04382b-dirty #200
-[ 1140.015020] RIP: 0010:[<ffffffff81157627>]  [<ffffffff81157627>] task_numa_placement+0x27/0x1a0
-[ 1140.015020] RSP: 0018:ffff8800bfae5b08  EFLAGS: 00010292
-[ 1140.015020] RAX: 0000000000000000 RBX: ffff8800bfaeb000 RCX: 0000000000000001
-[ 1140.015020] RDX: ffff880007c00000 RSI: 000000000000000e RDI: ffff8800bfaeb000
-[ 1140.015020] RBP: ffff8800bfae5b38 R08: ffff8800bf805e00 R09: ffff880000369000
-[ 1140.015020] R10: 0000000000000000 R11: 0000000000000000 R12: 000000000000000e
-[ 1140.015020] R13: 0000000000000004 R14: 0000000000000001 R15: 0000000000000064
-[ 1140.015020] FS:  0000000000000000(0000) GS:ffff880007c00000(0000) knlGS:0000000000000000
-[ 1140.015020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1140.015020] CR2: 00000000000006d0 CR3: 0000000097b18000 CR4: 00000000000406e0
-[ 1140.015020] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1140.015020] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1140.015020] Process ksmd (pid: 3179, threadinfo ffff8800bfae4000, task ffff8800bfaeb000)
-[ 1140.015020] Stack:
-[ 1140.015020]  0000000000000000 0000000000000000 000000000000000e ffff8800bfaeb000
-[ 1140.015020]  000000000000000e 0000000000000004 ffff8800bfae5b88 ffffffff8115a577
-[ 1140.015020]  ffff8800bfae5b68 ffffffff00000001 ffff88000c1d0068 ffffea0000ec1000
-[ 1140.015020] Call Trace:
-[ 1140.015020]  [<ffffffff8115a577>] task_numa_fault+0xb7/0xd0
-[ 1140.015020]  [<ffffffff81230d96>] do_numa_page.isra.42+0x1b6/0x270
-[ 1140.015020]  [<ffffffff8126fe08>] ? mem_cgroup_count_vm_event+0x178/0x1a0
-[ 1140.015020]  [<ffffffff812333f4>] handle_pte_fault+0x174/0x220
-[ 1140.015020]  [<ffffffff819e7ad9>] ? __const_udelay+0x29/0x30
-[ 1140.015020]  [<ffffffff81234780>] handle_mm_fault+0x320/0x350
-[ 1140.015020]  [<ffffffff81256845>] break_ksm+0x65/0xc0
-[ 1140.015020]  [<ffffffff81256b4d>] break_cow+0x5d/0x80
-[ 1140.015020]  [<ffffffff81258442>] cmp_and_merge_page+0x122/0x1e0
-[ 1140.015020]  [<ffffffff81258565>] ksm_do_scan+0x65/0xa0
-[ 1140.015020]  [<ffffffff8125860f>] ksm_scan_thread+0x6f/0x2d0
-[ 1140.015020]  [<ffffffff8113b990>] ? abort_exclusive_wait+0xb0/0xb0
-[ 1140.015020]  [<ffffffff812585a0>] ? ksm_do_scan+0xa0/0xa0
-[ 1140.015020]  [<ffffffff8113a723>] kthread+0xe3/0xf0
-[ 1140.015020]  [<ffffffff8113a640>] ? __kthread_bind+0x40/0x40
-[ 1140.015020]  [<ffffffff83c8813c>] ret_from_fork+0x7c/0xb0
-[ 1140.015020]  [<ffffffff8113a640>] ? __kthread_bind+0x40/0x40
-[ 1140.015020] Code: 00 00 00 00 55 48 89 e5 41 55 41 54 53 48 89 fb 48 83 ec 18 48 c7 45 d0 00 00 00 00 48 8b 87 a0 04 00 00 48
-c7 45 d8 00 00 00 00 <8b> 80 d0 06 00 00 39 87 d4 15 00 00 0f 84 57 01 00 00 89 87 d4
-[ 1140.015020] RIP  [<ffffffff81157627>] task_numa_placement+0x27/0x1a0
-[ 1140.015020]  RSP <ffff8800bfae5b08>
-[ 1140.015020] CR2: 00000000000006d0
-[ 1140.660568] ---[ end trace 9f1fd31243556513 ]---
-
-In exchange to this bug report, I have couple of questions about this NUMA code which I wasn't
-able to answer myself :)
-
- - In this case, would it mean that KSM may run on one node, but scan the memory of a different node?
- - If yes, we should migrate KSM to each node we scan, right? Or possibly start a dedicated KSM
-thread for each NUMA node?
- - Is there a class of per-numa threads in the works?
+Michael Wolf (5):
+      Alter the amount of steal time reported by the guest.
+      Expand the steal time msr to also contain the consigned time.
+      Add the code to send the consigned time from the host to the guest
+      Add a timer to allow the separation of consigned from steal time.
+      Add an ioctl to communicate the consign limit to the host.
 
 
-Thanks,
-Sasha
+ arch/x86/include/asm/kvm_host.h       |   11 +++++++
+ arch/x86/include/asm/kvm_para.h       |    3 +-
+ arch/x86/include/asm/paravirt.h       |    4 +--
+ arch/x86/include/asm/paravirt_types.h |    2 +
+ arch/x86/kernel/kvm.c                 |    8 ++---
+ arch/x86/kernel/paravirt.c            |    4 +--
+ arch/x86/kvm/x86.c                    |   50 ++++++++++++++++++++++++++++++++-
+ fs/proc/stat.c                        |    9 +++++-
+ include/linux/kernel_stat.h           |    2 +
+ include/linux/kvm_host.h              |    2 +
+ include/uapi/linux/kvm.h              |    2 +
+ kernel/sched/core.c                   |   10 ++++++-
+ kernel/sched/cputime.c                |   21 +++++++++++++-
+ kernel/sched/sched.h                  |    2 +
+ virt/kvm/kvm_main.c                   |    7 +++++
+ 15 files changed, 120 insertions(+), 17 deletions(-)
+
+-- 
+Signature
+
