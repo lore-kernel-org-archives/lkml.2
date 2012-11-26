@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2KZTHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 14:07:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34051 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab2KZTHg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 14:07:36 -0500
-Message-ID: <50B3BDED.1030306@infradead.org>
-Date: Mon, 26 Nov 2012 11:07:25 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1754303Ab2KZTIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 14:08:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57675 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753537Ab2KZTIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 14:08:21 -0500
+Date: Mon, 26 Nov 2012 11:08:18 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent in
+ D3cold
+Message-ID: <20121126190818.GA22409@kroah.com>
+References: <20121122003904.262382971@linuxfoundation.org>
+ <20121122003904.516735571@linuxfoundation.org>
+ <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+ <1353640177.28789.21.camel@yhuang-dev>
+ <20121126185505.GE21012@kroah.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russ Gorby <russ.gorby@intel.com>
-Subject: [PATCH -next] tty/serial: fix ifx6x60.c declaration warning
-References: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>
-In-Reply-To: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126185505.GE21012@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Mon, Nov 26, 2012 at 10:55:05AM -0800, Greg Kroah-Hartman wrote:
+> On Fri, Nov 23, 2012 at 11:09:37AM +0800, Huang Ying wrote:
+> > On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
+> > > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
+> > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Huang Ying <ying.huang@intel.com>
+> > > > 
+> > > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
+> > > > 
+> > > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > > device will trigger deadlock as follow:
+> > > > 
+> > > > - driver_unbind
+> > > >   - device_release_driver
+> > > >     - device_lock(dev)				<--- previous lock here
+> > > >     - __device_release_driver
+> > > >       - pm_runtime_get_sync
+> > > >         ...
+> > > >           - rpm_resume(dev)
+> > > >             - rpm_resume(dev->parent)
+> > > >               ...
+> > > >                 - pci_pm_runtime_resume
+> > > >                   ...
+> > > >                   - pci_set_power_state
+> > > >                     - __pci_start_power_transition
+> > > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > > >                         - pci_walk_bus
+> > > >                           - device_lock(dev)	<--- deadlock here
+> > > > 
+> > > > 
+> > > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+> > > > Device_lock in pci_walk_bus is introduced in commit:
+> > > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > > said device_lock is added to pci_walk_bus because:
+> > > > 
+> > > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > > >   device, as the cb might call driver's callback function.
+> > > > 
+> > > > So I fixed the deadlock as follows:
+> > > > 
+> > > > - remove device_lock from pci_walk_bus
+> > > > - add device_lock into callback if callback will call driver's callback
+> > > > 
+> > > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > > device lock.
+> > > [...]
+> > > 
+> > > What about eeh_report_error() in
+> > > arch/powerpc/platforms/pseries/eeh_driver.c?
+> > 
+> > En...  Because pci_walk_bus() invocation is removed in 3.7, so this
+> > patch is only valid for 3.7.  We need another version for 3.6.
+> > 
+> > > Also, is the deadlock even possible before this change in Linux 3.6?
+> > > 
+> > > commit 448bd857d48e69b33ef323739dc6d8ca20d4cda7
+> > > Author: Huang Ying <ying.huang@intel.com>
+> > > Date:   Sat Jun 23 10:23:51 2012 +0800
+> > > 
+> > >     PCI/PM: add PCIe runtime D3cold support
+> > 
+> > Before this, there will be no deadlock.  So we do not need fixes before
+> > Linux 3.6.
+> 
+> So the first patch mentioned here should not be included in the 3.0 and
+> 3.4 stable kernel releases?
 
-Fix gcc warning of mixed data/code:
+Ok, I've dropped the patch from 3.0 and 3.4-stable trees now.
 
-drivers/tty/serial/ifx6x60.c:516:2: warning: ISO C90 forbids mixed declarations and code
+For 3.6, what should I do?
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Russ Gorby <russ.gorby@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/ifx6x60.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+thanks,
 
---- linux-next-20121126.orig/drivers/tty/serial/ifx6x60.c
-+++ linux-next-20121126/drivers/tty/serial/ifx6x60.c
-@@ -510,10 +510,11 @@ static int ifx_spi_write(struct tty_stru
- 	unsigned char *tmp_buf = (unsigned char *)buf;
- 	unsigned long flags;
- 	bool is_fifo_empty;
-+	int tx_count;
- 
- 	spin_lock_irqsave(&ifx_dev->fifo_lock, flags);
- 	is_fifo_empty = kfifo_is_empty(&ifx_dev->tx_fifo);
--	int tx_count = kfifo_in(&ifx_dev->tx_fifo, tmp_buf, count);
-+	tx_count = kfifo_in(&ifx_dev->tx_fifo, tmp_buf, count);
- 	spin_unlock_irqrestore(&ifx_dev->fifo_lock, flags);
- 	if (is_fifo_empty)
- 		mrdy_assert(ifx_dev);
+greg k-h
