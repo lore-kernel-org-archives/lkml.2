@@ -1,212 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030Ab2K0CS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:18:27 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:2719 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755614Ab2K0CSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:18:23 -0500
-X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6280252"
-Message-ID: <50B42471.6060403@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 10:24:49 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jianguo Wu <wujianguo106@gmail.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH v3 11/12] memory-hotplug: remove sysfs file of node
-References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com> <50B37C52.2060301@gmail.com>
-In-Reply-To: <50B37C52.2060301@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:17:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:17:55,
-	Serialize complete at 2012/11/27 10:17:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933055Ab2K0CSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:18:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38397 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932633Ab2K0CSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 21:18:49 -0500
+Message-ID: <1353982714.4266.36.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 026/270] powerpc/eeh: Lock module while handling EEH
+ event
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Date: Tue, 27 Nov 2012 02:18:34 +0000
+In-Reply-To: <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-JR2eYwwLijF5nfsgxCt/"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/26/2012 10:27 PM, Jianguo Wu Wrote:
-> On 2012/11/1 17:44, Wen Congyang wrote:
->> This patch introduces a new function try_offline_node() to
->> remove sysfs file of node when all memory sections of this
->> node are removed. If some memory sections of this node are
->> not removed, this function does nothing.
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>  drivers/acpi/acpi_memhotplug.c |  8 +++++-
->>  include/linux/memory_hotplug.h |  2 +-
->>  mm/memory_hotplug.c            | 58 ++++++++++++++++++++++++++++++++++++++++--
->>  3 files changed, 64 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->> index 24c807f..0780f99 100644
->> --- a/drivers/acpi/acpi_memhotplug.c
->> +++ b/drivers/acpi/acpi_memhotplug.c
->> @@ -310,7 +310,9 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>  {
->>  	int result;
->>  	struct acpi_memory_info *info, *n;
->> +	int node;
->>  
->> +	node = acpi_get_node(mem_device->device->handle);
->>  
->>  	/*
->>  	 * Ask the VM to offline this memory range.
->> @@ -318,7 +320,11 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>  	 */
->>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>  		if (info->enabled) {
->> -			result = remove_memory(info->start_addr, info->length);
->> +			if (node < 0)
->> +				node = memory_add_physaddr_to_nid(
->> +					info->start_addr);
->> +			result = remove_memory(node, info->start_addr,
->> +				info->length);
->>  			if (result)
->>  				return result;
->>  		}
->> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
->> index d4c4402..7b4cfe6 100644
->> --- a/include/linux/memory_hotplug.h
->> +++ b/include/linux/memory_hotplug.h
->> @@ -231,7 +231,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
->>  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
->>  extern int offline_memory_block(struct memory_block *mem);
->>  extern bool is_memblock_offlined(struct memory_block *mem);
->> -extern int remove_memory(u64 start, u64 size);
->> +extern int remove_memory(int node, u64 start, u64 size);
->>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->>  								int nr_pages);
->>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 7bcced0..d965da3 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -29,6 +29,7 @@
->>  #include <linux/suspend.h>
->>  #include <linux/mm_inline.h>
->>  #include <linux/firmware-map.h>
->> +#include <linux/stop_machine.h>
->>  
->>  #include <asm/tlbflush.h>
->>  
->> @@ -1299,7 +1300,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
->>  	return ret;
->>  }
->>  
->> -int __ref remove_memory(u64 start, u64 size)
->> +static int check_cpu_on_node(void *data)
->> +{
->> +	struct pglist_data *pgdat = data;
->> +	int cpu;
->> +
->> +	for_each_present_cpu(cpu) {
->> +		if (cpu_to_node(cpu) == pgdat->node_id)
->> +			/*
->> +			 * the cpu on this node isn't removed, and we can't
->> +			 * offline this node.
->> +			 */
->> +			return -EBUSY;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +/* offline the node if all memory sections of this node are removed */
->> +static void try_offline_node(int nid)
->> +{
->> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
->> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
->> +	unsigned long pfn;
->> +
->> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
->> +		unsigned long section_nr = pfn_to_section_nr(pfn);
->> +
->> +		if (!present_section_nr(section_nr))
->> +			continue;
->> +
->> +		if (pfn_to_nid(pfn) != nid)
->> +			continue;
->> +
->> +		/*
->> +		 * some memory sections of this node are not removed, and we
->> +		 * can't offline node now.
->> +		 */
->> +		return;
->> +	}
->> +
->> +	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
->> +		return;
-> 
-> how about:
-> 	if (nr_cpus_node(nid))
 
-If all cpus on the node is offlined, but not removed, nr_cpus_node(nid) will
-return 0. In this case, we still can't offline the node.
+--=-JR2eYwwLijF5nfsgxCt/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Another purpose to use stop_machine() is to prevent cpu hotplug. We can't lock
-cpuhotplug here.
+On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
+> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Gavin Shan <shangw@linux.vnet.ibm.com>
+>=20
+> commit feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc upstream.
+>=20
+> The EEH core is talking with the PCI device driver to determine the
+> action (purely reset, or PCI device removal). During the period, the
+> driver might be unloaded and in turn causes kernel crash as follows:
+>=20
+> EEH: Detected PCI bus error on PHB#4-PE#10000
+> EEH: This PCI device has failed 3 times in the last hour
+> lpfc 0004:01:00.0: 0:2710 PCI channel disable preparing for reset
+> Unable to handle kernel paging request for data at address 0x00000490
+> Faulting instruction address: 0xd00000000e682c90
+> cpu 0x1: Vector: 300 (Data Access) at [c000000fc75ffa20]
+>     pc: d00000000e682c90: .lpfc_io_error_detected+0x30/0x240 [lpfc]
+>     lr: d00000000e682c8c: .lpfc_io_error_detected+0x2c/0x240 [lpfc]
+>     sp: c000000fc75ffca0
+>    msr: 8000000000009032
+>    dar: 490
+>  dsisr: 40000000
+>   current =3D 0xc000000fc79b88b0
+>   paca    =3D 0xc00000000edb0380	 softe: 0	 irq_happened: 0x00
+>     pid   =3D 3386, comm =3D eehd
+> enter ? for help
+> [c000000fc75ffca0] c000000fc75ffd30 (unreliable)
+> [c000000fc75ffd30] c00000000004fd3c .eeh_report_error+0x7c/0xf0
+> [c000000fc75ffdc0] c00000000004ee00 .eeh_pe_dev_traverse+0xa0/0x180
+> [c000000fc75ffe70] c00000000004ffd8 .eeh_handle_event+0x68/0x300
+> [c000000fc75fff00] c0000000000503a0 .eeh_event_handler+0x130/0x1a0
+> [c000000fc75fff90] c000000000020138 .kernel_thread+0x54/0x70
+> 1:mon>
+>=20
+> The patch increases the reference of the corresponding driver modules
+> while EEH core does the negotiation with PCI device driver so that the
+> corresponding driver modules can't be unloaded during the period and
+> we're safe to refer the callbacks.
+>=20
+> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> [ herton: backported for 3.5, adjusted driver assignments, return 0
+>   instead of NULL, assume dev is not NULL ]
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+>
+[...]
 
-Thanks
-Wen Congyang
+Greg, you probably want this in 3.4 and 3.6.
 
-> 		return;
->> +
->> +	/*
->> +	 * all memory/cpu of this node are removed, we can offline this
->> +	 * node now.
->> +	 */
->> +	node_set_offline(nid);
->> +	unregister_one_node(nid);
->> +}
->> +
->> +int __ref remove_memory(int nid, u64 start, u64 size)
->>  {
->>  	unsigned long start_pfn, end_pfn;
->>  	int ret = 0;
->> @@ -1346,6 +1398,8 @@ repeat:
->>  
->>  	arch_remove_memory(start, size);
->>  
->> +	try_offline_node(nid);
->> +
->>  	unlock_memory_hotplug();
->>  
->>  	return 0;
->> @@ -1355,7 +1409,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
->>  {
->>  	return -EINVAL;
->>  }
->> -int remove_memory(u64 start, u64 size)
->> +int remove_memory(int nid, u64 start, u64 size)
->>  {
->>  	return -EINVAL;
->>  }
->>
-> 
-> 
+Ben.
 
+--=20
+Ben Hutchings
+Never attribute to conspiracy what can adequately be explained by stupidity=
+.
+
+--=-JR2eYwwLijF5nfsgxCt/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAULQi+ue/yOyVhhEJAQqlTg//R+OMy5r+VFhGNQl4MrQrg9yI1c/xrhar
+W5zYHnxzvioLclc5kgRi67umKEyyLRtzRb8+Ge2O8GtMMzy+1wfFZA5M9Rvlq7Og
+/q6pm0zJpaxh8MX3IWgPejrEHcHMCjt//9EeDdynfwbXH6Dpl907KHMBBaHtvdeE
+L7J1jfLeox+B23ZS6tshUyw9UXTS4R6FujCpA4rZVnT5R9CE8x0DTNOIKvE+zX/P
+kcs8RicId68RBpmCT5gFQMIL910xRv3P9Z2h4pfe2TBKGCJVNzd9J6QZdQtHrpZm
+q8tXe81NfJACq5lmX69odyI6iiXE6QWpQKmaHBZackePXwuj/mLVw5xU7jJDkCan
+gSucMoQ3cwx/pmF2EXXBvqLrOU5ra0R0e8TNBQlyhCy+t2lgPJJNny4ed/ANXPgY
+lRAGaujgRB6gkN761ujqx3ojVFqj+pSCheUwWmdoNOcDrt/q7+4AfDDaF0+25lkx
+HmMv2m7pie5LTKsr47kQ7a6ovZ3u0hkqxtP4aw3wWRIQVQUzvcshSzwgEW6pW4Yu
+lVakot4/B9i3W8J3ZRCJJl1UdHMllCp6UfCF50UVpjfxJ3IVfNCbUDAw9+3jSLfL
+W/q4DFthhE3sVyqQ0FaSDgNstEzlnKh4Yuh5DgHmKGayUPy6tUHKDIZGy/PQZ3aU
+viIn9SKver8=
+=WY1J
+-----END PGP SIGNATURE-----
+
+--=-JR2eYwwLijF5nfsgxCt/--
