@@ -1,61 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab2K0Raf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:30:35 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34360 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab2K0Rad (ORCPT
+	id S932292Ab2K0Rcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:32:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13333 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932117Ab2K0Rcb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:30:33 -0500
+	Tue, 27 Nov 2012 12:32:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,328,1352102400"; 
+   d="scan'208";a="247965389"
+From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+To: Mary Mcgrath <mary.mcgrath@oracle.com>, Joe Jin <joe.jin@oracle.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+Thread-Topic: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjMYQD//4mJQIAB4wgAgADGiTCABdgxAIABQf3QgADSdICACRkUUIABF0CAgAASxICAAHGIgA==
+Date: Tue, 27 Nov 2012 17:32:28 +0000
+Message-ID: <9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com>
+References: <509B5038.8090304@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+	<50A30656.6090508@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
+	<50A43828.6000702@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
+	<50A9C5CC.1030300@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
+	<50AB8471.7080607@oracle.com>
+	<9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
+	<50B41077.3080009@oracle.com> <b46b84cf-3688-4fd7-b741-4e96f2663517@default>
+In-Reply-To: <b46b84cf-3688-4fd7-b741-4e96f2663517@default>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121127170026.GM12969@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
-	<20121127154455.GK12969@redhat.com>
-	<CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
-	<20121127163910.GL12969@redhat.com>
-	<CAFTL4hyzVLismy0ckx0Tu47EAgNn9WjAFEx=ptF5587-zp65hQ@mail.gmail.com>
-	<20121127170026.GM12969@redhat.com>
-Date: Tue, 27 Nov 2012 18:30:32 +0100
-Message-ID: <CAFTL4hyb0qYYhy1OE9HDHymFkmHDb5jNyuLNSR2aQ3dKPpuZkw@mail.gmail.com>
-Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
- async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Gleb Natapov <gleb@redhat.com>:
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 4180a87..636800d 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -113,7 +113,7 @@ void kvm_async_pf_task_wait(u32 token)
->         int cpu, idle;
->
->         cpu = get_cpu();
-> -       idle = idle_cpu(cpu);
-> +       idle = is_idle_task(current);
+Forgive me if I'm being too repetitious as I think some of this has been mentioned in the past.
 
-I suggest this part goes to a standalone patch.
+We (and by we I mean the Ethernet part and driver) can only change the advertised availability of a larger MaxPayloadSize. The size is negotiated by both sides of the link when the link is established. The driver should not change the size of the link as it would be poking at registers outside of its scope and is controlled by the upstream bridge (not us).
 
->         put_cpu();
->
->         spin_lock(&b->lock);
-> @@ -247,10 +247,7 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->                 break;
->         case KVM_PV_REASON_PAGE_NOT_PRESENT:
->                 /* page is swapped out by the host. */
-> -               rcu_irq_enter();
-> -               exit_idle();
->                 kvm_async_pf_task_wait((u32)read_cr2());
-> -               rcu_irq_exit();
+You also need to check all the PCIe links to get to the device. There can be several to get from the root complex, through bridges, to the endpoint Ethernet controller. The Ethernet part and driver has no control over any other links. You'll have to talk to the motherboard manufacturer about those links.
 
-Hmm, we still need those above around. I believe we just need to add
-rcu_user_exit() in the beginning of that case.
+Your original problem appears to be hangs and Tushar asked you to the entire path of PCIe connections from the root complex to the endpoint. Any mismatches in payload can cause hangs and I believe you have had the problem in the past. I'm sure you remember all the lspci commands to list the tree view and to dump all the details from each of the links and I would suggest you do that to check to see that the payload sizes match. What I do is "lspci -tvvv" to see what's connected, then "lspci -s xx:xx.x -vvv" to check the devices on the link.
+
+Thanks.
+
+Todd Fujinaka
+Technical Marketing Engineer
+LAN Access Division (LAD)
+Intel Corporation
+todd.fujinaka@intel.com
+(503) 712-4565
+
+
+-----Original Message-----
+From: Mary Mcgrath [mailto:mary.mcgrath@oracle.com] 
+Sent: Monday, November 26, 2012 6:07 PM
+To: Joe Jin
+Cc: netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org
+Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+
+Joe
+Thank you for working this.
+I would love to find out how they expect a customer to make the modification To  "word  0x1A, and see if the 8th bit is 0 or 1, and to change to 0."
+
+I have in turn asked the ct for the lspci command on eth3, maybe the incorrect setting is upstream.
+
+Again,  thank you.
+Regards
+Mary
+
+
+
+-----Original Message-----
+From: Joe Jin
+Sent: Monday, November 26, 2012 8:00 PM
+To: Fujinaka, Todd
+Cc: Dave, Tushar N; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; Mary Mcgrath
+Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+
+On 11/27/12 00:23, Fujinaka, Todd wrote:
+> If you look at the previous section, DevCap, you'll see that it's 
+> correctly advertising 256 bytes but the system is negotiating 128 for 
+> the link to the Ethernet controller. Things on the "other" side of the 
+> link are controlled outside of the e1000 driver.
+> 
+> Tushar's first suggestion was to check the PCIe payload settings in 
+> the entire chain. Have you done that? Mismatches will cause hangs.
+
+Hi Todd,
+
+So far I had to know how to modify the maxpayload size, since BIOS have not entry to change this, so I had to use ethtool, now I need to get the offset of MaxPayload size in eeprom, I ever tried to find from Intel online document but failed, any idea?
+
+Thanks in advance,
+Joe
+
+------------------------------------------------------------------------------
+Monitor your physical, virtual and cloud infrastructure from a single web console. Get in-depth insight into apps, servers, databases, vmware, SAP, cloud infrastructure, etc. Download 30-day Free Trial.
+Pricing starts from $795 for 25 servers or applications!
+http://p.sf.net/sfu/zoho_dev2dev_nov
+_______________________________________________
+E1000-devel mailing list
+E1000-devel@lists.sourceforge.net
+https://lists.sourceforge.net/lists/listinfo/e1000-devel
+To learn more about Intel&#174; Ethernet, visit http://communities.intel.com/community/wired
