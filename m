@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab2K0Ty3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 14:54:29 -0500
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:63288 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab2K0Ty1 (ORCPT
+	id S1755430Ab2K0T4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 14:56:36 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:65001 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab2K0T4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 14:54:27 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: Avoid early use of of_machine_is_compatible()
-Date: Tue, 27 Nov 2012 11:53:14 -0800
-Message-Id: <1354045994-8977-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 27 Nov 2012 14:56:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpomPMYU5H_tx1BF7TD6F7a5rp5O=xDf3r-TGZ-r9SBp3yA@mail.gmail.com>
+References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
+ <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+ <20121123094132.EFCB73E07BE@localhost> <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
+ <20121126184015.784993E091F@localhost> <CAKohpo=dHz-fJRdwovOWesAZJwibgrNk-+2t--JK+T_sBsu9Tw@mail.gmail.com>
+ <CAKohpomOxfLhpZqpk3aymdNa7UAGRcex7d+N5srkFDnrhtULTw@mail.gmail.com>
+ <20121127084007.GA7897@gmail.com> <CAKohpomPMYU5H_tx1BF7TD6F7a5rp5O=xDf3r-TGZ-r9SBp3yA@mail.gmail.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Tue, 27 Nov 2012 20:55:54 +0100
+X-Google-Sender-Auth: dOFkfGike18raPI-tdH-YDZDnKU
+Message-ID: <CAH+eYFCshghQauBdn1rLQ-sKG=Bxa_0XpJsry60TAD3mibNOFA@mail.gmail.com>
+Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, l.fu@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent commit "ARM: EXYNOS: add support for EXYNOS5440 SoC" broke
-support for exynos5250 because of_machine_is_compatible() was used too
-early in the boot process.  It also probably meant that the exynos5440
-failed to use the proper iotable.  Switch to use
-of_flat_dt_is_compatible() in both of these cases.
+2012/11/27 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 27 November 2012 14:10, Lee Jones <lee.jones@linaro.org> wrote:
+> I haven't seen this in any of SPEAr boards i have worked on. Maybe Rabin
+> would have, that's why he added that part of code :)
+>
+> @Rabin/Linus: Do you remember why have you added this in stmpe driver:
+>
+> +       if (stmpe->pdata->irq_invert_polarity)
+> +               icr ^= STMPE_ICR_LSB_HIGH;
+> +
+>
+> Does somebody actually need it?
 
-The failure I was seeing in exynos5250 because of this was:
-  Division by zero in kernel.
-  [<80015ed4>] (unwind_backtrace+0x0/0xec) from [<8045c7a4>] (dump_stack+0x20/0x24)
-  [<8045c7a4>] (dump_stack+0x20/0x24) from [<80012990>] (__div0+0x20/0x28)
-  [<80012990>] (__div0+0x20/0x28) from [<8021ab04>] (Ldiv0_64+0x8/0x18)
-  [<8021ab04>] (Ldiv0_64+0x8/0x18) from [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134)
-  [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134) from [<8006865c>] (__clocksource_register_scale+0x1c/0x54)
-  [<8006865c>] (__clocksource_register_scale+0x1c/0x54) from [<80612a18>] (exynos_timer_init+0x100/0x1e8)
-  [<80612a18>] (exynos_timer_init+0x100/0x1e8) from [<8060d184>] (time_init+0x28/0x38)
-  [<8060d184>] (time_init+0x28/0x38) from [<8060a754>] (start_kernel+0x1e0/0x3c8)
-  [<8060a754>] (start_kernel+0x1e0/0x3c8) from [<40008078>] (0x40008078)
+It was (as irq_rev_pol) part of Luotao Fu's proposed STMPE811 patchset
+(https://patchwork.kernel.org/patch/106173/) which I integrated into my
+version of the STMPE driver, which didn't have it in its initial version
+(https://patchwork.kernel.org/patch/103273/).
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-
----
- arch/arm/mach-exynos/common.c          |    5 ++++-
- arch/arm/mach-exynos/mach-exynos5-dt.c |    4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 73b940f..b919f5f 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -18,6 +18,7 @@
- #include <linux/sched.h>
- #include <linux/serial_core.h>
- #include <linux/of.h>
-+#include <linux/of_fdt.h>
- #include <linux/of_irq.h>
- #include <linux/export.h>
- #include <linux/irqdomain.h>
-@@ -335,8 +336,10 @@ void __init exynos_init_late(void)
- 
- void __init exynos_init_io(struct map_desc *mach_desc, int size)
- {
-+	unsigned long root = of_get_flat_dt_root();
-+
- 	/* initialize the io descriptors we need for initialization */
--	if (of_machine_is_compatible("samsung,exynos5440"))
-+	if (of_flat_dt_is_compatible(root, "samsung,exynos5440"))
- 		iotable_init(exynos5440_iodesc, ARRAY_SIZE(exynos5440_iodesc));
- 	else
- 		iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index 67fa3c2..7b76c3f 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -122,9 +122,11 @@ static const struct of_dev_auxdata exynos5440_auxdata_lookup[] __initconst = {
- 
- static void __init exynos5_dt_map_io(void)
- {
-+	unsigned long root = of_get_flat_dt_root();
-+
- 	exynos_init_io(NULL, 0);
- 
--	if (of_machine_is_compatible("samsung,exynos5250"))
-+	if (of_flat_dt_is_compatible(root, "samsung,exynos5250"))
- 		s3c24xx_init_clocks(24000000);
- }
- 
--- 
-1.7.7.3
-
+It's not something _I_ ever used.
