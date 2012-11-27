@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab2K0Ge6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:34:58 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37202 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2K0Ge4 (ORCPT
+	id S1757910Ab2K0GfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:35:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59420 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab2K0GfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:34:56 -0500
+	Tue, 27 Nov 2012 01:35:06 -0500
 From: Daniel J Blueman <daniel@numascale-asia.com>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Daniel J Blueman <daniel@numascale-asia.com>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4 v7] AMD64 EDAC: Add multi-domain support
-Date: Tue, 27 Nov 2012 14:32:09 +0800
-Message-Id: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+Subject: [PATCH 2/4 v7] AMD64 EDAC: Consistently use u16 for northbridge IDs in amd_get_nb_id
+Date: Tue, 27 Nov 2012 14:32:10 +0800
+Message-Id: <1353997932-8475-2-git-send-email-daniel@numascale-asia.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+References: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix get_node_id to match northbridge IDs from the array of detected ones,
-allowing multi-server support such as with Numascale's NumaConnect, renaming
-to 'amd_get_node_id' for consistency.
+Change amd_get_nb_id to return u16 to support >255 memory controllers,
+and related consistency fixes.
 
 v7: Refactor patches grouping changes
 
 Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 ---
- arch/x86/include/asm/amd_nb.h |   17 +++++++++++++++++
- drivers/edac/amd64_edac.c     |    6 +++---
- drivers/edac/amd64_edac.h     |    6 ------
- 3 files changed, 20 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/processor.h |    2 +-
+ arch/x86/kernel/cpu/amd.c        |    4 ++--
+ drivers/edac/amd64_edac.c        |    5 +++--
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index b3341e9..417eb24 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -81,6 +81,23 @@ static inline struct amd_northbridge *node_to_amd_nb(int node)
- 	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index ad1fc85..eb3ba58 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -934,7 +934,7 @@ extern void start_thread(struct pt_regs *regs, unsigned long new_ip,
+ extern int get_tsc_mode(unsigned long adr);
+ extern int set_tsc_mode(unsigned int val);
+ 
+-extern int amd_get_nb_id(int cpu);
++extern u16 amd_get_nb_id(int cpu);
+ 
+ struct aperfmperf {
+ 	u64 aperf, mperf;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 1b7d165..2e298e9 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -364,9 +364,9 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ #endif
  }
  
-+static inline u16 amd_get_node_id(struct pci_dev *pdev)
-+{
-+	struct pci_dev *misc;
-+	int i;
-+
-+	for (i = 0; i != amd_nb_num(); i++) {
-+		misc = node_to_amd_nb(i)->misc;
-+
-+		if (pci_domain_nr(misc->bus) == pci_domain_nr(pdev->bus) &&
-+		    PCI_SLOT(misc->devfn) == PCI_SLOT(pdev->devfn))
-+			return i;
-+	}
-+
-+	WARN(1, "Unable to find AMD Northbridge identifier for %s\n", pci_name(pdev));
-+	return 0;
-+}
-+
- #else
- 
- #define amd_nb_num(x)		0
+-int amd_get_nb_id(int cpu)
++u16 amd_get_nb_id(int cpu)
+ {
+-	int id = 0;
++	u16 id = 0;
+ #ifdef CONFIG_SMP
+ 	id = per_cpu(cpu_llc_id, cpu);
+ #endif
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index cc8e7c7..9ba70a5 100644
+index 9ba70a5..60e93fa 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -2546,7 +2546,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
- 	struct mem_ctl_info *mci = NULL;
- 	struct edac_mc_layer layers[2];
- 	int err = 0, ret;
--	u8 nid = get_node_id(F2);
-+	u16 nid = amd_get_node_id(F2);
+@@ -942,7 +942,8 @@ static u64 get_error_address(struct mce *m)
+ 		struct amd64_pvt *pvt;
+ 		u64 cc6_base, tmp_addr;
+ 		u32 tmp;
+-		u8 mce_nid, intlv_en;
++		u16 mce_nid;
++		u8 intlv_en;
  
- 	ret = -ENOMEM;
- 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
-@@ -2637,7 +2637,7 @@ err_ret:
- static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
- 					     const struct pci_device_id *mc_type)
+ 		if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
+ 			return addr;
+@@ -2253,7 +2254,7 @@ static int init_csrows(struct mem_ctl_info *mci)
+ }
+ 
+ /* get all cores on this DCT */
+-static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, unsigned nid)
++static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, u16 nid)
  {
--	u8 nid = get_node_id(pdev);
-+	u16 nid = amd_get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
- 	struct ecc_settings *s;
- 	int ret = 0;
-@@ -2687,7 +2687,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 	struct amd64_pvt *pvt;
--	u8 nid = get_node_id(pdev);
-+	u16 nid = amd_get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
- 	struct ecc_settings *s = ecc_stngs[nid];
+ 	int cpu;
  
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 8c41396..cecd0c4 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -290,12 +290,6 @@
- /* MSRs */
- #define MSR_MCGCTL_NBE			BIT(4)
- 
--/* AMD sets the first MC device at device ID 0x18. */
--static inline u8 get_node_id(struct pci_dev *pdev)
--{
--	return PCI_SLOT(pdev->devfn) - 0x18;
--}
--
- enum amd_families {
- 	K8_CPUS = 0,
- 	F10_CPUS,
 -- 
 1.7.10.4
 
