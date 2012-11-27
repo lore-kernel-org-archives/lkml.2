@@ -1,95 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2K0OQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:16:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755629Ab2K0OQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:16:18 -0500
-Date: Tue, 27 Nov 2012 14:16:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/3] balancenuma: put page if avoid migrating page
-Message-ID: <20121127141615.GA20087@suse.de>
-References: <CAJd=RBB+SGundq6jOR0n01jQhAnEf0T5br7_3SQB7-OPuGkgzg@mail.gmail.com>
- <20121127140705.GP8218@suse.de>
+	id S1755798Ab2K0ORE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:17:04 -0500
+Received: from [207.46.163.26] ([207.46.163.26]:5727 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755673Ab2K0ORB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 09:17:01 -0500
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2fh2a8h683h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h15d0l1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Tomas Hozza <thozza@redhat.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH 2/3] tools/hv: Fix /var subdirectory
+Thread-Topic: [PATCH 2/3] tools/hv: Fix /var subdirectory
+Thread-Index: AQHNzHT+XQ8vevmswkmoyWX/Hzk9g5f9tdcw
+Date: Tue, 27 Nov 2012 13:59:29 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E5AC90@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <426367E2313C2449837CD2DE46E7EAF930E5A96D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <1354002994-2094-1-git-send-email-thozza@redhat.com>
+ <1354002994-2094-2-git-send-email-thozza@redhat.com>
+In-Reply-To: <1354002994-2094-2-git-send-email-thozza@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121127140705.GP8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 02:07:05PM +0000, Mel Gorman wrote:
-> On Tue, Nov 27, 2012 at 09:23:59PM +0800, Hillf Danton wrote:
-> > If we have to avoid migrating to a node that is nearly full, put page
-> > and return zero.
-> > 
-> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+
+
+> -----Original Message-----
+> From: Tomas Hozza [mailto:thozza@redhat.com]
+> Sent: Tuesday, November 27, 2012 2:57 AM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; KY Srinivasan; ben@decadent.org.uk
+> Cc: Tomas Hozza
+> Subject: [PATCH 2/3] tools/hv: Fix /var subdirectory
 > 
-> Correct. In this series, the bug was actually introduced back in "mm:
-> migrate: Introduce migrate_misplaced_page()" so I'm working the fix to
-> be a fix on top of that patch and will ensure it gets carried through
-> properly in the THP patch that happens at the end of the series. This will
-> work out better in terms of bisection if the tree gets merged and allows
-> a partial tree to be properly tested. Can I get your signed off on this
-> patch please? This would be applied on top of "mm: migrate: Introduce
-> migrate_misplaced_page()"
+> Initial patch by Ben Hutchings <ben@decadent.org.uk>
 > 
-> Thanks.
+> We will install this in /usr, so it must use /var/lib for its state.
+> Only programs installed under /opt should use /var/opt.
+> 
+> Signed-off-by: Tomas Hozza <thozza@redhat.com>
+Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+
+> ---
+>  tools/hv/hv_kvp_daemon.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> index 90f1f07..e266251 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -98,7 +98,7 @@ static struct utsname uts_buf;
+>   * The location of the interface configuration file.
+>   */
+> 
+> -#define KVP_CONFIG_LOC	"/var/opt/"
+> +#define KVP_CONFIG_LOC	"/var/lib/hyperv"
+> 
+>  #define MAX_FILE_NAME 100
+>  #define ENTRIES_PER_BLOCK 50
+> @@ -235,9 +235,9 @@ static int kvp_file_init(void)
+>  	int i;
+>  	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
+> 
+> -	if (access("/var/opt/hyperv", F_OK)) {
+> -		if (mkdir("/var/opt/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
+> -			syslog(LOG_ERR, " Failed to create /var/opt/hyperv");
+> +	if (access(KVP_CONFIG_LOC, F_OK)) {
+> +		if (mkdir(KVP_CONFIG_LOC, S_IRUSR | S_IWUSR | S_IROTH)) {
+> +			syslog(LOG_ERR, " Failed to create %s",
+> KVP_CONFIG_LOC);
+>  			exit(EXIT_FAILURE);
+>  		}
+>  	}
+> @@ -246,7 +246,7 @@ static int kvp_file_init(void)
+>  		fname = kvp_file_info[i].fname;
+>  		records_read = 0;
+>  		num_blocks = 1;
+> -		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
+> +		sprintf(fname, "%s/.kvp_pool_%d", KVP_CONFIG_LOC, i);
+>  		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR |
+> S_IROTH);
+> 
+>  		if (fd == -1)
+> @@ -1263,7 +1263,7 @@ static int kvp_set_ip_info(char *if_name, struct
+> hv_kvp_ipaddr_value *new_val)
+>  	 */
+> 
+>  	snprintf(if_file, sizeof(if_file), "%s%s%s", KVP_CONFIG_LOC,
+> -		"hyperv/ifcfg-", if_name);
+> +		"/ifcfg-", if_name);
+> 
+>  	file = fopen(if_file, "w");
+> 
+> --
+> 1.7.11.7
+> 
 > 
 
-After slotting the fix into the right place in the series and resolving
-the conflict, the overall diff looks like;
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index b0c1585..ed0bdea 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1515,6 +1515,8 @@ bool numamigrate_update_ratelimit(pg_data_t *pgdat)
- 
- int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- {
-+	int ret = 0;
-+
- 	/* Avoid migrating to a node that is nearly full */
- 	if (migrate_balanced_pgdat(pgdat, 1)) {
- 		int page_lru;
-@@ -1524,13 +1526,8 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- 			return 0;
- 		}
- 
--		/*
--		 * Page is isolated which takes a reference count so now the
--		 * callers reference can be safely dropped without the page
--		 * disappearing underneath us during migration
--		 */
--		put_page(page);
--
-+		/* Page is isolated */
-+		ret = 1;
- 		page_lru = page_is_file_cache(page);
- 		if (!PageTransHuge(page))
- 			inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-@@ -1540,7 +1537,17 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- 					HPAGE_PMD_NR);
- 	}
- 
--	return 1;
-+	/*
-+	 * Page is either isolated or there is not enough space on the target
-+	 * node. If isolated, then it has taken a reference count and the
-+	 * callers reference can be safely dropped without the page
-+	 * disappearing underneath us during migration. Otherwise the page is
-+	 * not to be migrated but the callers reference should still be
-+	 * dropped so it does not leak.
-+	 */
-+	put_page(page);
-+
-+	return ret;
- }
- 
- /*
+
