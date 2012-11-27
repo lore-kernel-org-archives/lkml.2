@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab2K0QbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:31:16 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43738 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab2K0QbL (ORCPT
+	id S1756390Ab2K0QbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:31:22 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35346 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab2K0QbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:31:11 -0500
+	Tue, 27 Nov 2012 11:31:19 -0500
 From: Joonsoo Kim <js1304@gmail.com>
 To: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-arm-kernel@lists.infradead.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH v2 1/3] ARM: vmregion: remove vmregion code entirely
-Date: Wed, 28 Nov 2012 01:28:48 +0900
-Message-Id: <1354033730-850-2-git-send-email-js1304@gmail.com>
+Subject: [PATCH v2 3/3] ARM: mm: use static_vm for managing static mapped areas
+Date: Wed, 28 Nov 2012 01:28:50 +0900
+Message-Id: <1354033730-850-4-git-send-email-js1304@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1354033730-850-1-git-send-email-js1304@gmail.com>
 References: <1354033730-850-1-git-send-email-js1304@gmail.com>
@@ -21,272 +21,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, there is no user for vmregion.
-So remove it.
+A static mapped area is ARM-specific, so it is better not to use
+generic vmalloc data structure, that is, vmlist and vmlist_lock
+for managing static mapped area. And it causes some needless overhead and
+reducing this overhead is better idea.
+
+Now, we have newly introduced static_vm infrastructure.
+With it, we don't need to iterate all mapped areas. Instead, we just
+iterate static mapped areas. It helps to reduce an overhead of finding
+matched area. And architecture dependency on vmalloc layer is removed,
+so it will help to maintainability for vmalloc layer.
 
 Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
-index 8a9c4cb..4e333fa 100644
---- a/arch/arm/mm/Makefile
-+++ b/arch/arm/mm/Makefile
-@@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
- 				   iomap.o
+diff --git a/arch/arm/include/asm/mach/static_vm.h b/arch/arm/include/asm/mach/static_vm.h
+index 1bb6604..0d9c685 100644
+--- a/arch/arm/include/asm/mach/static_vm.h
++++ b/arch/arm/include/asm/mach/static_vm.h
+@@ -32,6 +32,12 @@ struct static_vm {
+ 	const void		*caller;
+ };
  
- obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
--				   mmap.o pgd.o mmu.o vmregion.o
-+				   mmap.o pgd.o mmu.o
++#define STATIC_VM_MEM		0x00000001
++#define STATIC_VM_EMPTY		0x00000002
++
++/* mtype should be less than 28 */
++#define STATIC_VM_MTYPE(mt)	(1UL << ((mt) + 4))
++
+ extern struct static_vm *static_vmlist;
+ extern spinlock_t static_vmlist_lock;
  
- ifneq ($(CONFIG_MMU),y)
- obj-y				+= nommu.o
-diff --git a/arch/arm/mm/vmregion.c b/arch/arm/mm/vmregion.c
-deleted file mode 100644
-index a631016..0000000
---- a/arch/arm/mm/vmregion.c
-+++ /dev/null
-@@ -1,205 +0,0 @@
--#include <linux/fs.h>
--#include <linux/spinlock.h>
--#include <linux/list.h>
--#include <linux/proc_fs.h>
--#include <linux/seq_file.h>
--#include <linux/slab.h>
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index 5dcc2fd..b7f3c27 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -36,6 +36,7 @@
+ #include <asm/system_info.h>
+ 
+ #include <asm/mach/map.h>
++#include <asm/mach/static_vm.h>
+ #include <asm/mach/pci.h>
+ #include "mm.h"
+ 
+@@ -197,7 +198,8 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+ 	const struct mem_type *type;
+ 	int err;
+ 	unsigned long addr;
+- 	struct vm_struct * area;
++	struct vm_struct *area;
++	phys_addr_t paddr = __pfn_to_phys(pfn);
+ 
+ #ifndef CONFIG_ARM_LPAE
+ 	/*
+@@ -219,24 +221,17 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+ 	/*
+ 	 * Try to reuse one of the static mapping whenever possible.
+ 	 */
+-	read_lock(&vmlist_lock);
+-	for (area = vmlist; area; area = area->next) {
+-		if (!size || (sizeof(phys_addr_t) == 4 && pfn >= 0x100000))
+-			break;
+-		if (!(area->flags & VM_ARM_STATIC_MAPPING))
+-			continue;
+-		if ((area->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+-			continue;
+-		if (__phys_to_pfn(area->phys_addr) > pfn ||
+-		    __pfn_to_phys(pfn) + size-1 > area->phys_addr + area->size-1)
+-			continue;
+-		/* we can drop the lock here as we know *area is static */
+-		read_unlock(&vmlist_lock);
+-		addr = (unsigned long)area->addr;
+-		addr += __pfn_to_phys(pfn) - area->phys_addr;
+-		return (void __iomem *) (offset + addr);
++	if (size && !((sizeof(phys_addr_t) == 4 && pfn >= 0x100000))) {
++		struct static_vm *static_vm;
++
++		static_vm = find_static_vm_paddr(__pfn_to_phys(pfn), size,
++				STATIC_VM_MEM | STATIC_VM_MTYPE(mtype));
++		if (static_vm) {
++			addr = (unsigned long)static_vm->vaddr;
++			addr += paddr - static_vm->paddr;
++			return (void __iomem *) (offset + addr);
++		}
+ 	}
+-	read_unlock(&vmlist_lock);
+ 
+ 	/*
+ 	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+@@ -248,7 +243,7 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+  	if (!area)
+  		return NULL;
+  	addr = (unsigned long)area->addr;
+-	area->phys_addr = __pfn_to_phys(pfn);
++	area->phys_addr = paddr;
+ 
+ #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+ 	if (DOMAIN_IO == 0 &&
+@@ -346,34 +341,20 @@ __arm_ioremap_exec(unsigned long phys_addr, size_t size, bool cached)
+ void __iounmap(volatile void __iomem *io_addr)
+ {
+ 	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
+-	struct vm_struct *vm;
 -
--#include "vmregion.h"
--
--/*
-- * VM region handling support.
-- *
-- * This should become something generic, handling VM region allocations for
-- * vmalloc and similar (ioremap, module space, etc).
-- *
-- * I envisage vmalloc()'s supporting vm_struct becoming:
-- *
-- *  struct vm_struct {
-- *    struct vmregion	region;
-- *    unsigned long	flags;
-- *    struct page	**pages;
-- *    unsigned int	nr_pages;
-- *    unsigned long	phys_addr;
-- *  };
-- *
-- * get_vm_area() would then call vmregion_alloc with an appropriate
-- * struct vmregion head (eg):
-- *
-- *  struct vmregion vmalloc_head = {
-- *	.vm_list	= LIST_HEAD_INIT(vmalloc_head.vm_list),
-- *	.vm_start	= VMALLOC_START,
-- *	.vm_end		= VMALLOC_END,
-- *  };
-- *
-- * However, vmalloc_head.vm_start is variable (typically, it is dependent on
-- * the amount of RAM found at boot time.)  I would imagine that get_vm_area()
-- * would have to initialise this each time prior to calling vmregion_alloc().
-- */
--
--struct arm_vmregion *
--arm_vmregion_alloc(struct arm_vmregion_head *head, size_t align,
--		   size_t size, gfp_t gfp, const void *caller)
--{
--	unsigned long start = head->vm_start, addr = head->vm_end;
--	unsigned long flags;
--	struct arm_vmregion *c, *new;
--
--	if (head->vm_end - head->vm_start < size) {
--		printk(KERN_WARNING "%s: allocation too big (requested %#x)\n",
--			__func__, size);
--		goto out;
--	}
--
--	new = kmalloc(sizeof(struct arm_vmregion), gfp);
--	if (!new)
--		goto out;
--
--	new->caller = caller;
--
--	spin_lock_irqsave(&head->vm_lock, flags);
--
--	addr = rounddown(addr - size, align);
--	list_for_each_entry_reverse(c, &head->vm_list, vm_list) {
--		if (addr >= c->vm_end)
--			goto found;
--		addr = rounddown(c->vm_start - size, align);
--		if (addr < start)
--			goto nospc;
--	}
--
-- found:
--	/*
--	 * Insert this entry after the one we found.
--	 */
--	list_add(&new->vm_list, &c->vm_list);
--	new->vm_start = addr;
--	new->vm_end = addr + size;
--	new->vm_active = 1;
--
--	spin_unlock_irqrestore(&head->vm_lock, flags);
--	return new;
--
-- nospc:
--	spin_unlock_irqrestore(&head->vm_lock, flags);
--	kfree(new);
-- out:
--	return NULL;
--}
--
--static struct arm_vmregion *__arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
--{
--	struct arm_vmregion *c;
--
--	list_for_each_entry(c, &head->vm_list, vm_list) {
--		if (c->vm_active && c->vm_start == addr)
--			goto out;
--	}
--	c = NULL;
-- out:
--	return c;
--}
--
--struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
--{
--	struct arm_vmregion *c;
--	unsigned long flags;
--
--	spin_lock_irqsave(&head->vm_lock, flags);
--	c = __arm_vmregion_find(head, addr);
--	spin_unlock_irqrestore(&head->vm_lock, flags);
--	return c;
--}
--
--struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *head, unsigned long addr)
--{
--	struct arm_vmregion *c;
--	unsigned long flags;
--
--	spin_lock_irqsave(&head->vm_lock, flags);
--	c = __arm_vmregion_find(head, addr);
--	if (c)
--		c->vm_active = 0;
--	spin_unlock_irqrestore(&head->vm_lock, flags);
--	return c;
--}
--
--void arm_vmregion_free(struct arm_vmregion_head *head, struct arm_vmregion *c)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&head->vm_lock, flags);
--	list_del(&c->vm_list);
--	spin_unlock_irqrestore(&head->vm_lock, flags);
--
--	kfree(c);
--}
--
--#ifdef CONFIG_PROC_FS
--static int arm_vmregion_show(struct seq_file *m, void *p)
--{
--	struct arm_vmregion *c = list_entry(p, struct arm_vmregion, vm_list);
--
--	seq_printf(m, "0x%08lx-0x%08lx %7lu", c->vm_start, c->vm_end,
--		c->vm_end - c->vm_start);
--	if (c->caller)
--		seq_printf(m, " %pS", (void *)c->caller);
--	seq_putc(m, '\n');
--	return 0;
--}
--
--static void *arm_vmregion_start(struct seq_file *m, loff_t *pos)
--{
--	struct arm_vmregion_head *h = m->private;
--	spin_lock_irq(&h->vm_lock);
--	return seq_list_start(&h->vm_list, *pos);
--}
--
--static void *arm_vmregion_next(struct seq_file *m, void *p, loff_t *pos)
--{
--	struct arm_vmregion_head *h = m->private;
--	return seq_list_next(p, &h->vm_list, pos);
--}
--
--static void arm_vmregion_stop(struct seq_file *m, void *p)
--{
--	struct arm_vmregion_head *h = m->private;
--	spin_unlock_irq(&h->vm_lock);
--}
--
--static const struct seq_operations arm_vmregion_ops = {
--	.start	= arm_vmregion_start,
--	.stop	= arm_vmregion_stop,
--	.next	= arm_vmregion_next,
--	.show	= arm_vmregion_show,
--};
--
--static int arm_vmregion_open(struct inode *inode, struct file *file)
--{
--	struct arm_vmregion_head *h = PDE(inode)->data;
--	int ret = seq_open(file, &arm_vmregion_ops);
--	if (!ret) {
--		struct seq_file *m = file->private_data;
--		m->private = h;
--	}
--	return ret;
--}
--
--static const struct file_operations arm_vmregion_fops = {
--	.open	= arm_vmregion_open,
--	.read	= seq_read,
--	.llseek	= seq_lseek,
--	.release = seq_release,
--};
--
--int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
--{
--	proc_create_data(path, S_IRUSR, NULL, &arm_vmregion_fops, h);
--	return 0;
--}
--#else
--int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
--{
--	return 0;
--}
+-	read_lock(&vmlist_lock);
+-	for (vm = vmlist; vm; vm = vm->next) {
+-		if (vm->addr > addr)
+-			break;
+-		if (!(vm->flags & VM_IOREMAP))
+-			continue;
+-		/* If this is a static mapping we must leave it alone */
+-		if ((vm->flags & VM_ARM_STATIC_MAPPING) &&
+-		    (vm->addr <= addr) && (vm->addr + vm->size > addr)) {
+-			read_unlock(&vmlist_lock);
+-			return;
+-		}
++	struct static_vm *static_vm;
++
++	static_vm = find_static_vm_vaddr(addr, STATIC_VM_MEM);
++	if (static_vm)
++		return;
++
+ #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+-		/*
+-		 * If this is a section based mapping we need to handle it
+-		 * specially as the VM subsystem does not know how to handle
+-		 * such a beast.
+-		 */
+-		if ((vm->addr == addr) &&
+-		    (vm->flags & VM_ARM_SECTION_MAPPING)) {
++	{
++		struct vm_struct *vm;
++		vm = find_vm_area(addr);
++		if (vm && (vm->flags & VM_ARM_SECTION_MAPPING))
+ 			unmap_area_sections((unsigned long)vm->addr, vm->size);
+-			break;
+-		}
 -#endif
-diff --git a/arch/arm/mm/vmregion.h b/arch/arm/mm/vmregion.h
-deleted file mode 100644
-index 0f5a5f2..0000000
---- a/arch/arm/mm/vmregion.h
-+++ /dev/null
-@@ -1,31 +0,0 @@
--#ifndef VMREGION_H
--#define VMREGION_H
+ 	}
+-	read_unlock(&vmlist_lock);
++#endif
+ 
+ 	vunmap(addr);
+ }
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index a8ee92d..3ae75e5 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -52,16 +52,6 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+ /* (super)section-mapped I/O regions used by ioremap()/iounmap() */
+ #define VM_ARM_SECTION_MAPPING	0x80000000
+ 
+-/* permanent static mappings from iotable_init() */
+-#define VM_ARM_STATIC_MAPPING	0x40000000
 -
--#include <linux/spinlock.h>
--#include <linux/list.h>
+-/* empty mapping */
+-#define VM_ARM_EMPTY_MAPPING	0x20000000
 -
--struct page;
+-/* mapping type (attributes) for permanent static mappings */
+-#define VM_ARM_MTYPE(mt)		((mt) << 20)
+-#define VM_ARM_MTYPE_MASK	(0x1f << 20)
 -
--struct arm_vmregion_head {
--	spinlock_t		vm_lock;
--	struct list_head	vm_list;
--	unsigned long		vm_start;
--	unsigned long		vm_end;
--};
--
--struct arm_vmregion {
--	struct list_head	vm_list;
--	unsigned long		vm_start;
--	unsigned long		vm_end;
--	int			vm_active;
--	const void		*caller;
--};
--
--struct arm_vmregion *arm_vmregion_alloc(struct arm_vmregion_head *, size_t, size_t, gfp_t, const void *);
--struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *, unsigned long);
--struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *, unsigned long);
--void arm_vmregion_free(struct arm_vmregion_head *, struct arm_vmregion *);
--
--int arm_vmregion_create_proc(const char *, struct arm_vmregion_head *);
--
--#endif
+ /* consistent regions used by dma_alloc_attrs() */
+ #define VM_ARM_DMA_CONSISTENT	0x20000000
+ 
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 941dfb9..6c154c1 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -31,6 +31,7 @@
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
++#include <asm/mach/static_vm.h>
+ #include <asm/mach/pci.h>
+ 
+ #include "mm.h"
+@@ -757,21 +758,28 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
+ {
+ 	struct map_desc *md;
+ 	struct vm_struct *vm;
++	struct static_vm *static_vm;
+ 
+ 	if (!nr)
+ 		return;
+ 
+ 	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));
++	static_vm = early_alloc_aligned(sizeof(*static_vm) * nr,
++						__alignof__(*static_vm));
+ 
+ 	for (md = io_desc; nr; md++, nr--) {
+ 		create_mapping(md);
++
+ 		vm->addr = (void *)(md->virtual & PAGE_MASK);
+ 		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
+ 		vm->phys_addr = __pfn_to_phys(md->pfn);
+-		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+-		vm->flags |= VM_ARM_MTYPE(md->type);
++		vm->flags = VM_IOREMAP;
+ 		vm->caller = iotable_init;
++
++		init_static_vm(static_vm, vm, STATIC_VM_MEM |
++						STATIC_VM_MTYPE(md->type));
+ 		vm_area_add_early(vm++);
++		insert_static_vm(static_vm++);
+ 	}
+ }
+ 
+@@ -779,13 +787,20 @@ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
+ 				  void *caller)
+ {
+ 	struct vm_struct *vm;
++	struct static_vm *static_vm;
+ 
+ 	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
++	static_vm = early_alloc_aligned(sizeof(*static_vm),
++					__alignof__(*static_vm));
++
+ 	vm->addr = (void *)addr;
+ 	vm->size = size;
+-	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
++	vm->flags = VM_IOREMAP;
+ 	vm->caller = caller;
++
++	init_static_vm(static_vm, vm, STATIC_VM_EMPTY);
+ 	vm_area_add_early(vm);
++	insert_static_vm(static_vm);
+ }
+ 
+ #ifndef CONFIG_ARM_LPAE
+@@ -810,15 +825,19 @@ static void __init pmd_empty_section_gap(unsigned long addr)
+ 
+ static void __init fill_pmd_gaps(void)
+ {
+-	struct vm_struct *vm;
++	struct static_vm *area;
+ 	unsigned long addr, next = 0;
+ 	pmd_t *pmd;
+ 
+-	/* we're still single threaded hence no lock needed here */
+-	for (vm = vmlist; vm; vm = vm->next) {
+-		if (!(vm->flags & (VM_ARM_STATIC_MAPPING | VM_ARM_EMPTY_MAPPING)))
+-			continue;
+-		addr = (unsigned long)vm->addr;
++	/*
++	 * We should not take a lock here, because pmd_empty_section_gap()
++	 * invokes vm_reserve_area_early(), and then it call insert_static_vm()
++	 * which try to take a lock.
++	 * We're still single thread, so traverse whole list without a lock
++	 * is safe for now. And inserting new entry is also safe.
++	 */
++	for (area = static_vmlist; area; area = area->next) {
++		addr = (unsigned long)area->vaddr;
+ 		if (addr < next)
+ 			continue;
+ 
+@@ -838,7 +857,7 @@ static void __init fill_pmd_gaps(void)
+ 		 * If so and the second section entry for this PMD is empty
+ 		 * then we block the corresponding virtual address.
+ 		 */
+-		addr += vm->size;
++		addr += area->size;
+ 		if ((addr & ~PMD_MASK) == SECTION_SIZE) {
+ 			pmd = pmd_off_k(addr) + 1;
+ 			if (pmd_none(*pmd))
+@@ -857,19 +876,13 @@ static void __init fill_pmd_gaps(void)
+ #if defined(CONFIG_PCI) && !defined(CONFIG_NEED_MACH_IO_H)
+ static void __init pci_reserve_io(void)
+ {
+-	struct vm_struct *vm;
+-	unsigned long addr;
++	struct static_vm *static_vm;
+ 
+-	/* we're still single threaded hence no lock needed here */
+-	for (vm = vmlist; vm; vm = vm->next) {
+-		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+-			continue;
+-		addr = (unsigned long)vm->addr;
+-		addr &= ~(SZ_2M - 1);
+-		if (addr == PCI_IO_VIRT_BASE)
+-			return;
++	static_vm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE,
++						STATIC_VM_MEM);
++	if (static_vm)
++		return;
+ 
+-	}
+ 	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
+ }
+ #else
 -- 
 1.7.9.5
 
