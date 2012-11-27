@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab2K0Ijf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:39:35 -0500
-Received: from szxga04-in.huawei.com ([119.145.14.67]:39105 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307Ab2K0Ije (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758341Ab2K0Ije (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 27 Nov 2012 03:39:34 -0500
-Date: Tue, 27 Nov 2012 09:39:13 +0100
-From: Claudio Fontana <Claudio.Fontana@huawei.com>
-Subject: [PATCH 0/1 RESEND 2] ARM: plat-versatile: move secondary CPU startup
- out of .init.
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christoffer Dall <c.dall@virtualopensystems.com>
-Message-id: <50B47C31.2040709@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026
- Thunderbird/16.0.2
+Received: from moutng.kundenserver.de ([212.227.17.10]:52580 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758253Ab2K0Ijc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 03:39:32 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the battery tree
+Date: Tue, 27 Nov 2012 08:38:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Lentin <jm@lentin.co.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>
+References: <20121127155223.849e73a08fc1b382d4622ff8@canb.auug.org.au>
+In-Reply-To: <20121127155223.849e73a08fc1b382d4622ff8@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211270838.29360.arnd@arndb.de>
+X-Provags-ID: V02:K0:FhKV/ECpL+ARPQRG36dPk+AtaW+FiZHiIl7o/pUhcuU
+ 7OiIUogDElReG8od1chxXS3/zrAVREka6T+mT5B2tOwEPsxn+8
+ 0fLkICnZD4ri6HMx1xUnAoZlcu+QFgF4horgUcQN4N7xpsRd6E
+ wmQiIcaB6ggFHRZvtNlL5gfKa0XGCp+vNwSePn4G3dqgYoS9vq
+ h6v3whu6CKrOx4sJ4Ed70irhvW2GJPWeq4KIHaUqV03Hn2+YuG
+ 1pdBvKVLZ6sW9vEUFZGzApMFeMSaz4DxzpHkinQjlGeLp1w8/m
+ rw9opp6D2LyyVI7X0qxTVdtMJwxriGiwsqxT3ejFpZ2qRfUNNk
+ KdW6Vp0fIcN8rRJs5IZE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 27 November 2012, Stephen Rothwell wrote:
 
-Hello,
-
-I am implementing virtual CPU hotplug for the the ARM Cortex A-15 VExpress motherboard.
-This is mainly a QEMU feature, which allows dynamically changing the number
-of CPUs in the guest.
-
-I stumbled upon a limitation in the kernel support for plat-versatile,
-which contains the secondary CPU startup code for the VExpress.
-
-Basically, the secondary CPU startup code is preceded by the macro __INIT,
-which causes the code to be freed in free_initmem() during kernel_init().
-
-This means that any attempt at hot-booting CPUs in the guest results in
-VCPUs jumping to a memory address that was freed, after which the VCPU
-behaves erratically, as can be expected.
-
-With this patch applied, we use __CPUINIT instead of __INIT, so that
-the right thing happens:
-under CONFIG_HOTPLUG_CPU, the secondary CPU startup code is not freed,
-the secondary VCPUs start successfully, and it's all gardens and blue skies.
-
-Tested successfully using the ARM fast models for the Cortex-A15.
-
---
-Claudio Fontana (1):
-  ARM: plat-versatile: move secondary CPU startup code out of .init.
-
- arch/arm/plat-versatile/headsmp.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
--- 
-1.7.12.1
+>   
+>  -config AB8500_BATTERY_THERM_ON_BATCTRL
+>  -	bool "Thermistor connected on BATCTRL ADC"
+>  -	depends on AB8500_BM
+>  -	help
+>  -	  Say Y to enable battery temperature measurements using
+>  -	  thermistor connected on BATCTRL ADC.
+>  -
+> + source "drivers/power/reset/Kconfig"
+> + 
+>   endif # POWER_SUPPLY
+>   
+>   source "drivers/power/avs/Kconfig"
+> 
 
 
+Looks good, thanks!
+
+	Arnd
