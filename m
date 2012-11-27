@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab2K0QX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:23:27 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54044 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab2K0QXY (ORCPT
+	id S1756003Ab2K0Q3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:29:12 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46239 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab2K0Q3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:23:24 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Joel Becker'" <jlbec@evilplan.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
-In-Reply-To: <50B4E364.8030704@linutronix.de>
-Organization: http://mina86.com/
-References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Tue, 27 Nov 2012 17:23:14 +0100
-Message-ID: <xa1tip8ruia5.fsf@mina86.com>
+	Tue, 27 Nov 2012 11:29:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+Date: Tue, 27 Nov 2012 17:29:09 +0100
+Message-ID: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
+> @@ -247,10 +247,17 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>                 break;
+>         case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>                 /* page is swapped out by the host. */
+> -               rcu_irq_enter();
+> +               if (is_idle_task(current) && rcu_is_cpu_idle())
 
-On Tue, Nov 27 2012, Sebastian Andrzej Siewior wrote:
-> I don't want to push python on anyone but the removal magic is simply
-> straight forward: unlink the disk ports, rmdir luns, tpgt,=E2=80=A6
+If the task is idle we can't schedule so I guess we don't need to call
+rcu_idle_exit()
 
-How should a generic tool know what kind of actions are needed for given
-function to be removed?  If you ask me, there should be a way to unbind
-gadget and unload all modules without any specific knowledge of the
-functions.  If there is no such mechanism, then it's a bad user
-interface.
+> +                       rcu_idle_exit();
+> +               else
+> +                       rcu_user_exit();
 
-> I understand the need for things that pop later like interfaceXX but
-> couldn't the user manually create them if he needs them?
+rcu_user_exit() must be called in any case yeah.
 
-I think the question is of information flow direction.  If user gives
-some information to the kernel, she should be the one creating any
-necessary directories.  But if the information comes from kernel to the
-user, the kernel should create the structure.
+> +
+>                 exit_idle();
+>                 kvm_async_pf_task_wait((u32)read_cr2());
+> -               rcu_irq_exit();
+> +
+> +               if (is_idle_task(current) && rcu_is_cpu_idle())
+> +                       rcu_idle_enter();
+> +
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtOjzAAoJECBgQBJQdR/0X7MP/2QOORpTXyGVqEnbuI7QUxWF
-9AvHeLeF54QPGshe8gqBW4erZBK5qMgMoOqqR9tApoPQSbddykMDhMfu/ELCY0mx
-itfzZRWH+CHBoOySmZeMI3hjL3aHteqw4VaICU8BrjZPX5PPJ15Y7exaGNFodqSH
-bJbvr5m9yXjsW2M2sof48bpOARD1y5ZELIIdMwyGn0YqL088FHiiZ99Yk1gKdaWI
-it9+hLPYfb1GZGNi+xNn1kmWb5rvsMx2Bww5TsqC2C0ARbdzupZViHfgtMLUSWvw
-vO1lcVpOkiQUuAOZ1eTbGkXXNaJVSOiTny8VL68O4ZlAelrBYolYoBUDlU4iVq+B
-zlHAepf070TFVkyYkr+K9yTRYYLkNifPfymhcrACN1aB6reiUVViCzTodl8olpJj
-e1WTLOEzo7Z5XhxN+HRTyvW4PuyMqtjbaMim6h2z3xCiwBj77ECdZgn2ZbCa/3k9
-6RRWWo/C9oR9A95pXQmwoj/3mEVGn1pk3wZ+NlHXJT9rZ7mZDXr7R6aSxjj/iUdO
-+gqLRqlyWyHeVo6hlTdR/bq+XQHT2g4rWK1DNXl4yap/mB9y/P9+mbqS4VgdlFYK
-L/ti6C7LDL7+VfVVkv/4qkAduzX8FHr7JpCbk5L/f43Rt5zyf43Ju4PsfqLscuVv
-D7p6KthT/Awan39pE7cJ
-=TCNI
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+I think that only adding rcu_user_exit() in the beginning and let the
+rest as is (rcu_irq_enter() / rcu_irq_exit()) is enough. If we are
+idle we won't schedule out. If we are not idle then we exit rcu user
+mode if necessary and we can call rcu_irq_enter() in any case. If we
+schedule we can safely cal rcu_irq_exit() even if somebody called
+rcu_idle_enter() / rcu_idle_exit() since our matching rcu_irq_enter()
+called before we scheduled. This works because we are not in RCU idle
+mode and Paul says this is legal to have irq exit without matching irq
+entry (his famous "vice-versa" on his previous email ;-)
