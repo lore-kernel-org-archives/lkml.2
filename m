@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2K0WQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 17:16:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:26846 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab2K0WQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 17:16:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,174,1355126400"; 
-   d="scan'208";a="248103640"
-From: Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH v2] ioat: remove chanerr mask setting for IOAT v3.x
-To: djbw@fb.com, vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, jon.mason@intel.com
-Date: Tue, 27 Nov 2012 15:16:08 -0700
-Message-ID: <20121127221608.11315.49374.stgit@djiang5-linux.ch.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754724Ab2K0WYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 17:24:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49679 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2K0WX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 17:23:59 -0500
+Date: Tue, 27 Nov 2012 14:23:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        shubhro <omaplinuxkernel@gmail.com>
+Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
+Message-Id: <20121127142358.9a4bc20d.akpm@linux-foundation.org>
+In-Reply-To: <1353665463.1760.3000.camel@dhruva>
+References: <1349952025.9228.3.camel@dhruva>
+	<1350986593.23353.3.camel@dhruva>
+	<1353665463.1760.3000.camel@dhruva>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing code set a value in the PCI_CHANERRMSK_INT register
-for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
-has been fixed when the hardware was released. There is no need for this
-code.
+On Fri, 23 Nov 2012 15:41:03 +0530
+Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
+> On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
+> > Does this patch looks good?
+> > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
+> > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
+> > > the DA9055 MFD core.
+> > > 
+> > > This patch is functionally tested on Samsung SMDKV6410.
+> > > 
+> >
 
- drivers/dma/ioat/dma_v3.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+(Top-posting repaired. Please don't top-post).
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index f7f1dc6..fda3b8a1 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1126,12 +1126,7 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
- 	chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 	writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
- 
--	/* -= IOAT ver.3 workarounds =- */
--	/* Write CHANERRMSK_INT with 3E07h to mask out the errors
--	 * that can cause stability issues for IOAT ver.3, and clear any
--	 * pending errors
--	 */
--	pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
-+	/* clear any pending errors */
- 	err = pci_read_config_dword(pdev, IOAT_PCI_CHANERR_INT_OFFSET, &chanerr);
- 	if (err) {
- 		dev_err(&pdev->dev, "channel error register unreachable\n");
+> Any comments on this patch.
+
+"shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
+
+: On Thu, 11 Oct 2012 16:53:34 +0530
+: shubhro <omaplinuxkernel@gmail.com> wrote:
+: 
+: > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
+: > > +#define da9055_rtc_freeze NULL
+: > > +#endif
+: > > +
+: > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
+: > > +	.suspend = da9055_rtc_suspend,
+: > > +	.resume = da9055_rtc_resume,
+: > > +
+: > > +	.freeze = da9055_rtc_freeze,
+: > > +	.thaw = da9055_rtc_resume,
+: > > +	.restore = da9055_rtc_resume,
+: > > +
+: > > +	.poweroff = da9055_rtc_suspend,
+: > > +};
+: > You may want to use simple dev pm ops
+
 
