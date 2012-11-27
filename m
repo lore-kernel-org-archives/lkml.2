@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2K0S0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:26:37 -0500
-Received: from smtp109.biz.mail.ne1.yahoo.com ([98.138.206.46]:47750 "HELO
-	smtp109.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932119Ab2K0S0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:26:35 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qMRwcVUVM1m_BfxzZiC8LbfG.01D0PTPj_ddJiE4ymUFI95
- qC1mvataYHpqURx2CCwrq_pvtm_li59nkM6TZy8uRRKUeu3MfpNX9FYhCd6t
- RuVJQTV5D3tCvykaY73E8zATbysSebER2QT.S9EloMXVbQNMJri95.2nz7NK
- 5aqEpIds4DGZky8cZxWrRY9PWPxjXae7pAb9PFR1yc6faOBgCuyH3A9DYFoK
- q9bA6xUAfPXJLlEgdzog258nHLzH8xBs41QzkT824VPnWHbdS_gu9LHsbPLy
- TgJ1Iua7ZfRDkk.LCNn0kQbvPXs.qeYmMbqHlQWFDC5x9YOSvN7xKs2fe6xI
- rZhgPYCPfGBcJfclgoQZh3GgJYan.e5EwzRJjDmpOCRcwQJhaOPvDZi.ZgFU
- gLiP0tEhnmtEKNaNjFuwEEDrYj92OI30y0qFCT5RHSgKApF.uhUXmG.Cqvpm
- gD9fvT0BeY5V52Mvx7ZVZ23UM2v.Mguk2Bh_FClxH2SQyrG9wIoe1gmlTsto
- YVcRL13I01Vx0AN1uHBpmSwfosbQ.7d9VOOLCZg8YdgQWYZX3xAyvI4Y-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50B505E1.80307@schaufler-ca.com>
-Date: Tue, 27 Nov 2012 10:26:41 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756635Ab2K0S1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:27:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755961Ab2K0S1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 13:27:43 -0500
+Date: Tue, 27 Nov 2012 13:27:38 -0500
+From: Dave Jones <davej@redhat.com>
+To: hughd@google.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: BUG_ON(inode->i_blocks);
+Message-ID: <20121127182738.GA13608@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, hughd@google.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>
 MIME-Version: 1.0
-To: Rafal Krypa <r.krypa@samsung.com>
-CC: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 0/3] Smack: add support for modification of existing rules,
- restructure rules list showing in smackfs
-References: <1354038021-28324-1-git-send-email-r.krypa@samsung.com>
-In-Reply-To: <1354038021-28324-1-git-send-email-r.krypa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 9:40 AM, Rafal Krypa wrote:
-> The following three patches are intended to introduce in-place
-> modification of Smack rules. Until now Smack supported only
-> overwriting of existing rules. To change permitted access for a given
-> subject and object, user had to read list of rules to get current
-> accesses, modify it and write modified rule back to kernel. This way
-> was inefficient, non-atomic and unnecessarily difficult.
-> New interface is intended to ease such modifications.
->
-> I have prepared three patches:
-> 1. Use RCU functions and read locking in smackfs seq list operations
->
-> Because rule lists will now get modified by list_replace_rcu(), this
-> one is intended to assure RCU reader critical sections in smackfs.
+Hugh,
 
-The whole change to RCU is predicated on the use of list_replace_rcu.
-But there is no reason to use list_replace_rcu. The existing code assigns
-an integer value into an existing list entry, and there is no reason
-not to continue doing so. The patch results in code that is working
-harder than it has to.
+We had a user report hitting the BUG_ON at the end of shmem_evict_inode.
+I see in 3.7 you changed this to a WARN instead.
 
-Don't create a new list entry and replace the old list entry.
-Do modify the access field of the existing entry.
-This patch is completely unnecessary.
+Does the trace below match the one you described chasing in commit 0f3c42f522dc1ad7e27affc0a4aa8c790bce0a66 ?
 
-> 2. Remove global master list of rules
->
-> This is for avoiding having to modify rules in two places (per subject
-> list and the global list). The master list was redundant and kept up
-> for backward compatibility with previous smackfs seq operations code.
+Full report at https://bugzilla.redhat.com/show_bug.cgi?id=879422, though
+there's not much more than the trace tbh.
 
-There is no need to modify the rule in two places. The master list
-contains pointers to the same rule structures as the per-subject list.
-This is another reason not to use list_replace_rcu. You can get rid
-of the master list for the shear joy of it, but there isn't any need
-to do so to complete the work at hand.
+	Dave
 
-> 3. Add support for modification of existing rules
->
-> The actual patch with new interface.
-> A previous version of this one has posted previously
-> (http://thread.gmane.org/gmane.linux.documentation/6759),
-> but was proven to be wrong.
 
-This can be made much simpler. It should duplicate the code for load2
-with the exception of how the access is determined. Changes to reduce
-code duplication are of course appropriate.
+:kernel BUG at mm/shmem.c:657!
+:invalid opcode: 0000 [#1] SMP 
+:Modules linked in: udf hid_logitech_dj des_generic md4 cifs dns_resolver fscache nls_utf8 lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_netbios_ns nf_conntrack_broadcast nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state nf_conntrack ip6_tables fuse snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq snd_seq_device snd_hwdep snd_pcm snd_page_alloc snd_timer iTCO_wdt snd soundcore iTCO_vendor_support serio_raw atl1 mii lpc_ich mfd_core i2c_i801 asus_atk0110 coretemp kvm_intel kvm microcode uinput ata_generic pata_acpi firewire_ohci firewire_core crc_itu_t usb_storage pata_jmicron nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
+:CPU 1 
+:Pid: 1017, comm: kwin Not tainted 3.6.6-1.fc17.x86_64 #1 System manufacturer P5E-VM HDMI/P5E-VM HDMI
+:RIP: 0010:[<ffffffff81145792>]  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
+:RSP: 0018:ffff88012b94ddb8  EFLAGS: 00010282
+:RAX: 0000000050aeab47 RBX: ffff880117a424a8 RCX: 0000000000000018
+:RDX: 000000001fea11fd RSI: 0000000005537c1c RDI: ffffffff81f1d500
+:RBP: ffff88012b94ddd8 R08: 0000000000000000 R09: 0000000000000000
+:R10: 0000000000000000 R11: 0000000000000000 R12: ffff880117a424a8
+:R13: ffff880117a424a8 R14: ffff880117a424b8 R15: ffff880139a79220
+:FS:  00007fa606014880(0000) GS:ffff88013fc80000(0000) knlGS:0000000000000000
+:CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+:CR2: 00007fa5f0021010 CR3: 000000012c2d0000 CR4: 00000000000007e0
+:DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+:DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+:Process kwin (pid: 1017, threadinfo ffff88012b94c000, task ffff880134f30000)
+:Stack:
+: ffff880117a424b8 ffff880117a425b0 ffffffff81812f80 ffffffff81812f80
+: ffff88012b94de08 ffffffff811a8da2 ffff88012b94dde8 ffff880117a424b8
+: ffff880117a42540 ffff880139a34000 ffff88012b94de38 ffffffff811a8fa3
+:Call Trace:
+: [<ffffffff811a8da2>] evict+0xa2/0x1a0
+: [<ffffffff811a8fa3>] iput+0x103/0x1f0
+: [<ffffffff811a50e8>] d_kill+0xd8/0x110
+: [<ffffffff811a5782>] dput+0xe2/0x1b0
+: [<ffffffff811900d6>] __fput+0x166/0x240
+: [<ffffffff811901be>] ____fput+0xe/0x10
+: [<ffffffff8107beab>] task_work_run+0x6b/0x90
+: [<ffffffff81013921>] do_notify_resume+0x71/0xb0
+: [<ffffffff81625be2>] int_signal+0x12/0x17
+:Code: c7 80 1c c4 81 e8 8f 5a 4d 00 48 89 df e8 77 80 1a 00 49 89 5e e0 49 89 5e e8 48 c7 c7 80 1c c4 81 e8 13 5a 4d 00 e9 1c ff ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 57 41 
+:RIP  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
+: RSP <ffff88012b94ddb8>
 
->
-> Rafal Krypa (3):
->   Smack: use RCU functions and read locking in smackfs seq list
->     operations
->   Smack: remove global master list of rules
->   Smack: add support for modification of existing rules
->
->  Documentation/security/Smack.txt |   11 ++
->  security/smack/smackfs.c         |  362 ++++++++++++++++++++++++--------------
->  2 files changed, 239 insertions(+), 134 deletions(-)
->
