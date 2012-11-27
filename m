@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab2K0WMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 17:12:17 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:5109 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab2K0WMO (ORCPT
+	id S1754625Ab2K0WMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 17:12:21 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57165 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab2K0WLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 17:12:14 -0500
-Message-ID: <1354053827.26955.196.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Wen Congyang <wencongyang@gmail.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        rjw@sisk.pl, lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Tue, 27 Nov 2012 15:03:47 -0700
-In-Reply-To: <20121127183245.GA4674@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1353693037-21704-4-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <50B0F3DF.4000802@gmail.com>
-	 <20121126083634.GA4574@dhcp-192-168-178-175.profitbricks.localdomain>
-	 <50B3323E.7020907@cn.fujitsu.com>
-	 <1353975541.26955.182.camel@misato.fc.hp.com>
-	 <20121127183245.GA4674@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 17:11:22 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2001:470:1f05:1640:d18:13d2:3217:7b0e]
+In-Reply-To: <1354045994-8977-1-git-send-email-dianders@chromium.org>
+References: <1354045994-8977-1-git-send-email-dianders@chromium.org>
+Date: Tue, 27 Nov 2012 14:11:22 -0800
+Message-ID: <CAOesGMjyXZwKjycyVcEV0ty0LCM_i61QxykYPhAvXxx2rhgP+A@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Avoid early use of of_machine_is_compatible()
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-27 at 19:32 +0100, Vasilis Liaskovitis wrote:
-> On Mon, Nov 26, 2012 at 05:19:01PM -0700, Toshi Kani wrote:
-> > > >> Consider the following sequence of operations for a hotplugged memory
-> > > >> device:
-> > > >>
-> > > >> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> > > >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > >>
-> > > >> If we don't offline/remove the memory, we have no chance to do it in
-> > > >> step 2. After
-> > > >> step2, the memory is used by the kernel, but we have powered off it. It
-> > > >> is very
-> > > >> dangerous.
-> > > > 
-> > > > How does power-off happen after unbind? acpi_eject_store checks for existing
-> > > > driver before taking any action:
-> > > > 
-> > > > #ifndef FORCE_EJECT
-> > > > 	if (acpi_device->driver == NULL) {
-> > > > 		ret = -ENODEV;
-> > > > 		goto err;
-> > > > 	}
-> > > > #endif
-> > > > 
-> > > > FORCE_EJECT is not defined afaict, so the function returns without scheduling
-> > > > acpi_bus_hot_remove_device. Is there another code path that calls power-off?
-> > > 
-> > > Consider the following case:
-> > > 
-> > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > 
-> > > CPUa                                                  CPUb
-> > > acpi_memory_device_notify()
-> > >                                        unbind it from the driver
-> > >     acpi_bus_hot_remove_device()
-> > 
-> > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > bound with a driver?  If so, can we make the unbind operation to perform
-> > unbind only?
-> 
-> acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> if it's not present (dev->driver == NULL).
-> 
-> But there can still be a race between an eject and an unbind operation happening
-> simultaneously. This seems like a general problem to me i.e. not specific to an
-> acpi memory device. How do we ensure an eject does not race with a driver unbind
-> for other acpi devices?
-> 
-> Is there a per-device lock in acpi-core or device-core that can prevent this from
-> happening? Driver core does a device_lock(dev) on all operations, but this is
-> probably not grabbed on SCI-initiated acpi ejects.
+On Tue, Nov 27, 2012 at 11:53 AM, Doug Anderson <dianders@chromium.org> wrote:
+> The recent commit "ARM: EXYNOS: add support for EXYNOS5440 SoC" broke
+> support for exynos5250 because of_machine_is_compatible() was used too
+> early in the boot process.  It also probably meant that the exynos5440
+> failed to use the proper iotable.  Switch to use
+> of_flat_dt_is_compatible() in both of these cases.
+>
+> The failure I was seeing in exynos5250 because of this was:
+>   Division by zero in kernel.
+>   [<80015ed4>] (unwind_backtrace+0x0/0xec) from [<8045c7a4>] (dump_stack+0x20/0x24)
+>   [<8045c7a4>] (dump_stack+0x20/0x24) from [<80012990>] (__div0+0x20/0x28)
+>   [<80012990>] (__div0+0x20/0x28) from [<8021ab04>] (Ldiv0_64+0x8/0x18)
+>   [<8021ab04>] (Ldiv0_64+0x8/0x18) from [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134)
+>   [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134) from [<8006865c>] (__clocksource_register_scale+0x1c/0x54)
+>   [<8006865c>] (__clocksource_register_scale+0x1c/0x54) from [<80612a18>] (exynos_timer_init+0x100/0x1e8)
+>   [<80612a18>] (exynos_timer_init+0x100/0x1e8) from [<8060d184>] (time_init+0x28/0x38)
+>   [<8060d184>] (time_init+0x28/0x38) from [<8060a754>] (start_kernel+0x1e0/0x3c8)
+>   [<8060a754>] (start_kernel+0x1e0/0x3c8) from [<40008078>] (0x40008078)
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Since driver_unbind() calls device_lock(dev->parent) before calling
-device_release_driver(), I am wondering if we can call
-device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-(i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-parent lock is otherwise released after device_release_driver() is done.
+Thanks Doug.
 
-Thanks,
--Toshi
+Kukjin, I'll apply this directly on top of the previous branch in
+arm-soc, if that's OK with you.
 
+
+-Olof
