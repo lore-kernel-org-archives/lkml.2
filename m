@@ -1,122 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab2K0CSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:18:50 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38397 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932633Ab2K0CSt (ORCPT
+	id S1757839Ab2K0CTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:19:43 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30507 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab2K0CTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:18:49 -0500
-Message-ID: <1353982714.4266.36.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 026/270] powerpc/eeh: Lock module while handling EEH
- event
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Date: Tue, 27 Nov 2012 02:18:34 +0000
-In-Reply-To: <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-JR2eYwwLijF5nfsgxCt/"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 26 Nov 2012 21:19:42 -0500
+Date: Mon, 26 Nov 2012 18:17:40 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Jan Kara <jack@suse.cz>
+Cc: NeilBrown <neilb@suse.de>, axboe@kernel.dk, lucho@ionkov.net,
+        ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
+        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
+        david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
+ page writes
+Message-ID: <20121127021740.GA11869@blackbox.djwong.org>
+References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
+ <20121121020056.10225.15220.stgit@blackbox.djwong.org>
+ <20121121021543.GI10507@quack.suse.cz>
+ <20121121211319.GA32202@blackbox.djwong.org>
+ <20121121213333.GF30250@quack.suse.cz>
+ <20121122084713.69e5b1fc@notabene.brown>
+ <20121122014755.GH8740@blackbox.djwong.org>
+ <20121122091240.GA11154@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121122091240.GA11154@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 22, 2012 at 10:12:40AM +0100, Jan Kara wrote:
+> On Wed 21-11-12 17:47:55, Darrick J. Wong wrote:
+> > On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
+> > > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
+> > > 
+> > > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
+> > > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
+> > > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
+> > > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
+> > > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
+> > > > > > > tries to mount in write mode.
+> > > > > > > 
+> > > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > > > > > > ---
+> > > > > > >  fs/ext3/super.c |    8 ++++++++
+> > > > > > >  1 file changed, 8 insertions(+)
+> > > > > > > 
+> > > > > > > 
+> > > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> > > > > > > index 5366393..5b3725d 100644
+> > > > > > > --- a/fs/ext3/super.c
+> > > > > > > +++ b/fs/ext3/super.c
+> > > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
+> > > > > > >  			"forcing read-only mode");
+> > > > > > >  		res = MS_RDONLY;
+> > > > > > >  	}
+> > > > > > > +	if (!read_only &&
+> > > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
+> > > > > > > +		ext3_msg(sb, KERN_ERR,
+> > > > > > > +			"error: ext3 cannot safely write data to a disk "
+> > > > > > > +			"requiring stable pages writes; forcing read-only "
+> > > > > > > +			"mode.  Upgrading to ext4 is recommended.");
+> > > > > > > +		res = MS_RDONLY;
+> > > > > > > +	}
+> > > > > > >  	if (read_only)
+> > > > > > >  		return res;
+> > > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
+> > > > > >   Why this? ext3 should be fixed by your change to
+> > > > > > filemap_page_mkwrite()... Or does testing show otherwise?
+> > > > > 
+> > > > > Yes, it's still broken even with this new set of changes.  Now that I think
+> > > > > about it a little more, I recall that writeback mode was actually fine, so this
+> > > > > is a little harsh.
+> > > > > 
+> > > > > Hm... looking at the ordered code a little more, it looks like
+> > > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
+> > > > > to write mapped buffers back through the journal?  Taking it out seems to fix
+> > > > > ordered mode, though I have a suspicion that it might very well break ordered
+> > > > > mode too.
+> > > >   Oh, right. kjournald writing buffers directly (without setting
+> > > > PageWriteback) will break things. So please, change warning to:
+> > 
+> > Maybe we should just fix this anyway?
+> > 
+> > I still have the patch that adds PG_stable (and changes the
+> > wait_for_page_stable() test to use this flag instead of PG_writeback) kicking
+> > around in my tree.  I wrote a patch to jbd that changes journal_do_submit_data
+> > to set PG_stable, call clear_page_dirty_for_io(), and unsets the stable bit in
+> > the end_io processing.
+> > 
+> > It seems to get rid of the checksum-after-write errors, though I'm not
+> > convinced it's correct.  But, I'll send both patches along.
+>   I'll check the patches. Fixing PageWriteback logic for ext3 is not easily
+> doable due to lock ranking constraints - PageWriteback has to be set under
+> PageLocked but that ranks above transaction start so kjournald cannot grab
+> page locks so it cannot set PageWriteback... And changing the lock ordering
+> is a major surgery.
+> 
+> What could be doable is waiting for buffer locks from ext3's ->write_begin
+> and ->page_mkwrite implementations in case stable writes are required. If
+> your approach with a separate page bit doesn't work out (and I have some
+> doubts about that as mm people are *really* thrifty with page bits).
+> 
+> > > > 	/*
+> > > > 	 * In data=ordered mode, kjournald writes buffers without setting
+> > > > 	 * PageWriteback bit thus generic code does not properly wait for
+> > > > 	 * writeback of those buffers to finish.
+> > > > 	 */
+> > > > 	if (!read_only &&
+> > > > 	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
+> > 
+> > test_opt(sb, DATA_FLAGS) != EXT3_MOUNT_WRITEBACK_DATA
+> > 
+> > since I bet data=journal mode is also borken wrt PageWriteback.
+>   It is broken wrt PageWriteback but it actually waits for buffer locks in
+> ->write_begin() so at least write path should be properly protected. But
+> mmap is not handled properly there (although that wouldn't be that hard to
+> fix). So I agree the condition should rather be what you suggest.
 
---=-JR2eYwwLijF5nfsgxCt/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hm.  In journal mode, write_begin calls do_journal_get_write_access on each
+buffer for a given page, and in turn, jbd's do_get_write_access calls
+lock_buffer.  Is that what you're referring to by "actually waits for buffer
+locks"?  I'm wondering how that helps us, since afaict PG_writeback doesn't get
+set in that path, and I think it's a little early to be setting PG_writeback
+anyway.
 
-On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Gavin Shan <shangw@linux.vnet.ibm.com>
->=20
-> commit feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc upstream.
->=20
-> The EEH core is talking with the PCI device driver to determine the
-> action (purely reset, or PCI device removal). During the period, the
-> driver might be unloaded and in turn causes kernel crash as follows:
->=20
-> EEH: Detected PCI bus error on PHB#4-PE#10000
-> EEH: This PCI device has failed 3 times in the last hour
-> lpfc 0004:01:00.0: 0:2710 PCI channel disable preparing for reset
-> Unable to handle kernel paging request for data at address 0x00000490
-> Faulting instruction address: 0xd00000000e682c90
-> cpu 0x1: Vector: 300 (Data Access) at [c000000fc75ffa20]
->     pc: d00000000e682c90: .lpfc_io_error_detected+0x30/0x240 [lpfc]
->     lr: d00000000e682c8c: .lpfc_io_error_detected+0x2c/0x240 [lpfc]
->     sp: c000000fc75ffca0
->    msr: 8000000000009032
->    dar: 490
->  dsisr: 40000000
->   current =3D 0xc000000fc79b88b0
->   paca    =3D 0xc00000000edb0380	 softe: 0	 irq_happened: 0x00
->     pid   =3D 3386, comm =3D eehd
-> enter ? for help
-> [c000000fc75ffca0] c000000fc75ffd30 (unreliable)
-> [c000000fc75ffd30] c00000000004fd3c .eeh_report_error+0x7c/0xf0
-> [c000000fc75ffdc0] c00000000004ee00 .eeh_pe_dev_traverse+0xa0/0x180
-> [c000000fc75ffe70] c00000000004ffd8 .eeh_handle_event+0x68/0x300
-> [c000000fc75fff00] c0000000000503a0 .eeh_event_handler+0x130/0x1a0
-> [c000000fc75fff90] c000000000020138 .kernel_thread+0x54/0x70
-> 1:mon>
->=20
-> The patch increases the reference of the corresponding driver modules
-> while EEH core does the negotiation with PCI device driver so that the
-> corresponding driver modules can't be unloaded during the period and
-> we're safe to refer the callbacks.
->=20
-> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> [ herton: backported for 3.5, adjusted driver assignments, return 0
->   instead of NULL, assume dev is not NULL ]
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
->
-[...]
+If the page has to be locked before the transaction starts, how much of a
+problem is it to set PG_writeback?  Even though that seems a bit early to be
+doing that?
 
-Greg, you probably want this in 3.4 and 3.6.
+Just for fun, I tried porting ext4_page_mkwrite into ext3 (removing all the
+parts that don't exist in ext3) so that do_journal_get_write_access would also
+get called here, but it didn't seem to fix journal mode.  
 
-Ben.
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-JR2eYwwLijF5nfsgxCt/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULQi+ue/yOyVhhEJAQqlTg//R+OMy5r+VFhGNQl4MrQrg9yI1c/xrhar
-W5zYHnxzvioLclc5kgRi67umKEyyLRtzRb8+Ge2O8GtMMzy+1wfFZA5M9Rvlq7Og
-/q6pm0zJpaxh8MX3IWgPejrEHcHMCjt//9EeDdynfwbXH6Dpl907KHMBBaHtvdeE
-L7J1jfLeox+B23ZS6tshUyw9UXTS4R6FujCpA4rZVnT5R9CE8x0DTNOIKvE+zX/P
-kcs8RicId68RBpmCT5gFQMIL910xRv3P9Z2h4pfe2TBKGCJVNzd9J6QZdQtHrpZm
-q8tXe81NfJACq5lmX69odyI6iiXE6QWpQKmaHBZackePXwuj/mLVw5xU7jJDkCan
-gSucMoQ3cwx/pmF2EXXBvqLrOU5ra0R0e8TNBQlyhCy+t2lgPJJNny4ed/ANXPgY
-lRAGaujgRB6gkN761ujqx3ojVFqj+pSCheUwWmdoNOcDrt/q7+4AfDDaF0+25lkx
-HmMv2m7pie5LTKsr47kQ7a6ovZ3u0hkqxtP4aw3wWRIQVQUzvcshSzwgEW6pW4Yu
-lVakot4/B9i3W8J3ZRCJJl1UdHMllCp6UfCF50UVpjfxJ3IVfNCbUDAw9+3jSLfL
-W/q4DFthhE3sVyqQ0FaSDgNstEzlnKh4Yuh5DgHmKGayUPy6tUHKDIZGy/PQZ3aU
-viIn9SKver8=
-=WY1J
------END PGP SIGNATURE-----
-
---=-JR2eYwwLijF5nfsgxCt/--
+--D
+> 
+> 								Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
