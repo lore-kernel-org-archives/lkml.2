@@ -1,112 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab2K0Ubv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:31:51 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46910 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab2K0Ubu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:31:50 -0500
-MIME-Version: 1.0
-X-Originating-IP: [71.232.234.122]
-In-Reply-To: <DAE2ECFDBE54434BA3014E0CC0F2A1E877000F52@G4W3211.americas.hpqcorp.net>
-References: <DAE2ECFDBE54434BA3014E0CC0F2A1E87700075B@G4W3211.americas.hpqcorp.net>
- <alpine.LFD.2.02.1211221120580.2701@ionos> <alpine.LFD.2.02.1211231008060.2701@ionos>
- <DAE2ECFDBE54434BA3014E0CC0F2A1E877000F52@G4W3211.americas.hpqcorp.net>
-From: Edward Donovan <edward.donovan@numble.net>
-Date: Tue, 27 Nov 2012 15:31:29 -0500
-X-Google-Sender-Auth: VGjpzW85rk1nVAzbDKrZXoJOEwA
-Message-ID: <CADdbW+EiZDanHb75bF+xxNduidgSXw3v4TPL_K-A12HPOF4u2w@mail.gmail.com>
-Subject: Re: need help on a DEADLOCK problem related to function try_one_irq()
-To: "Wang, Warner" <warner.wang@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756608Ab2K0Uct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:32:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755381Ab2K0Ucr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 15:32:47 -0500
+Message-Id: <20121127193502.482004744@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 27 Nov 2012 14:35:04 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
+        cgroups@vger.kernel.org
+Subject: [PATCH 3/5] device_cgroup: keep track of local group settings
+References: <20121127193501.255267751@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=hierarchy.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I will try to do that in the next couple days.  Thanks -
+In preparation for better hierarchy support, it's needed to retain the local
+settings in order to try to reapply them after a propagated change if they're
+still valid.
 
-Ed
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+ 
+---
+ security/device_cgroup.c |  108 ++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 80 insertions(+), 28 deletions(-)
 
+Index: github/security/device_cgroup.c
+===================================================================
+--- github.orig/security/device_cgroup.c	2012-11-26 17:27:52.710834676 -0500
++++ github/security/device_cgroup.c	2012-11-27 11:58:09.333349468 -0500
+@@ -39,13 +39,27 @@
+ 	struct rcu_head rcu;
+ };
+ 
++enum devcg_behavior {
++	DEVCG_DEFAULT_NONE,
++	DEVCG_DEFAULT_ALLOW,
++	DEVCG_DEFAULT_DENY,
++};
++
+ struct dev_cgroup {
+ 	struct cgroup_subsys_state css;
++
++	/* result of merging the parent's rules with local ones */
+ 	struct list_head exceptions;
+-	enum {
+-		DEVCG_DEFAULT_ALLOW,
+-		DEVCG_DEFAULT_DENY,
+-	} behavior;
++	enum devcg_behavior behavior;
++
++	/*
++	 * local set rules, saved so when a parent propagates new rules, the
++	 * local preferences can be preserved
++	 */
++	struct {
++		struct list_head exceptions;
++		enum devcg_behavior behavior;
++	} local;
+ };
+ 
+ static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
+@@ -104,8 +118,41 @@
+ /*
+  * called under devcgroup_mutex
+  */
+-static int dev_exception_add(struct list_head *exceptions,
+-			     struct dev_exception_item *ex)
++static void __dev_exception_rm(struct list_head *exceptions,
++			       struct dev_exception_item *ex)
++{
++	struct dev_exception_item *walk, *tmp;
++
++	lockdep_assert_held(&devcgroup_mutex);
++
++	list_for_each_entry_safe(walk, tmp, exceptions, list) {
++		if (walk->type != ex->type)
++			continue;
++		if (walk->major != ex->major)
++			continue;
++		if (walk->minor != ex->minor)
++			continue;
++
++		walk->access &= ~ex->access;
++		if (!walk->access) {
++			list_del_rcu(&walk->list);
++			kfree_rcu(walk, rcu);
++		}
++	}
++}
++
++static void dev_exception_rm(struct dev_cgroup *devcgroup,
++			    struct dev_exception_item *ex)
++{
++	__dev_exception_rm(&devcgroup->local.exceptions, ex);
++	__dev_exception_rm(&devcgroup->exceptions, ex);
++}
++
++/*
++ * called under devcgroup_mutex
++ */
++static int __dev_exception_add(struct list_head *exceptions,
++			       struct dev_exception_item *ex)
+ {
+ 	struct dev_exception_item *excopy, *walk;
+ 
+@@ -133,30 +180,26 @@
+ 	return 0;
+ }
+ 
+-/*
+- * called under devcgroup_mutex
+- */
+-static void dev_exception_rm(struct list_head *exceptions,
++static int dev_exception_add(struct dev_cgroup *devcgroup,
+ 			     struct dev_exception_item *ex)
+ {
+-	struct dev_exception_item *walk, *tmp;
++	int rc;
+ 
+ 	lockdep_assert_held(&devcgroup_mutex);
+ 
+-	list_for_each_entry_safe(walk, tmp, exceptions, list) {
+-		if (walk->type != ex->type)
+-			continue;
+-		if (walk->major != ex->major)
+-			continue;
+-		if (walk->minor != ex->minor)
+-			continue;
++	/*
++	 * we add to the local list so we can preserve local preferences if
++	 * the parent propagates down new rules
++	 */
++	rc = __dev_exception_add(&devcgroup->local.exceptions, ex);
++	if (rc)
++		return rc;
++
++	rc = __dev_exception_add(&devcgroup->exceptions, ex);
++	if (rc)
++		__dev_exception_rm(&devcgroup->local.exceptions, ex);
+ 
+-		walk->access &= ~ex->access;
+-		if (!walk->access) {
+-			list_del_rcu(&walk->list);
+-			kfree_rcu(walk, rcu);
+-		}
+-	}
++	return rc;
+ }
+ 
+ /**
+@@ -175,6 +218,11 @@
+ 		list_del_rcu(&ex->list);
+ 		kfree_rcu(ex, rcu);
+ 	}
++	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
++				 list) {
++		list_del_rcu(&ex->list);
++		kfree_rcu(ex, rcu);
++	}
+ }
+ 
+ /*
+@@ -190,6 +238,8 @@
+ 	if (!dev_cgroup)
+ 		return ERR_PTR(-ENOMEM);
+ 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
++	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
++	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
+ 	parent_cgroup = cgroup->parent;
+ 
+ 	if (parent_cgroup == NULL)
+@@ -413,6 +463,7 @@
+ 				return -EPERM;
+ 			dev_exception_clean(devcgroup);
+ 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
++			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
+ 			if (!parent)
+ 				break;
+ 
+@@ -424,6 +475,7 @@
+ 		case DEVCG_DENY:
+ 			dev_exception_clean(devcgroup);
+ 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
++			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
+ 			break;
+ 		default:
+ 			return -EINVAL;
+@@ -513,10 +565,10 @@
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+-			dev_exception_rm(&devcgroup->exceptions, &ex);
++			dev_exception_rm(devcgroup, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(&devcgroup->exceptions, &ex);
++		return dev_exception_add(devcgroup, &ex);
+ 	case DEVCG_DENY:
+ 		/*
+ 		 * If the default policy is to deny by default, try to remove
+@@ -524,10 +576,10 @@
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
+-			dev_exception_rm(&devcgroup->exceptions, &ex);
++			dev_exception_rm(devcgroup, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(&devcgroup->exceptions, &ex);
++		return dev_exception_add(devcgroup, &ex);
+ 	default:
+ 		return -EINVAL;
+ 	}
 
-On Mon, Nov 26, 2012 at 3:09 AM, Wang, Warner <warner.wang@hp.com> wrote:
-> Hi Thomas and Edward,
->
-> This patch works fine for our problems, but I'm not sure if it works for the recent submit "genirq: fix regression in irqfixup, irqpoll" "52553ddffad76ccf192d4dd9ce88d5818f57f62a", which submitted by Edward Donovan.
->
-> Edward can you help verify it on your environment?
->
->
-> Thanks,
-> -Warner
->
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: 2012年11月23日 PM 5:09
-> To: Wang, Warner
-> Cc: Wang, Song-Bo (Stoney)
-> Subject: Re: need help on a DEADLOCK problem related to function try_one_irq()
->
-> On Thu, 22 Nov 2012, Thomas Gleixner wrote:
->
->> Warner,
->>
->> On Thu, 22 Nov 2012, Wang, Warner wrote:
->>
->> please send such bug reports to the kernel mailinglist in the future.
->>
->> > We met a problem on some of our x86 server and after a few weeks
->> > trace-down effort, we believe the problem is in the file
->> > "linux/kernel/irq/spurious.c".  We created a patch but we are not
->> > 100% sure if it is correct or complete.  That is why we want to
->> > consult you.
->>
->> You spotted the problem right, but I'm not sure at the first glance,
->> whether this is correct. I need to go back into history and figure out
->> why we added that call in the first place. It looks fundamentally
->> wrong.
->>
->> Thanks for analyzing it. I'll keep you posted on my findings.
->
-> Can you try the patch below ?
->
-> Thanks,
->
->         tglx
->
-> ---
->  kernel/irq/spurious.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
->
-> Index: tip/kernel/irq/spurious.c
-> ===================================================================
-> --- tip.orig/kernel/irq/spurious.c
-> +++ tip/kernel/irq/spurious.c
-> @@ -80,13 +80,11 @@ static int try_one_irq(int irq, struct i
->
->         /*
->          * All handlers must agree on IRQF_SHARED, so we test just the
-> -        * first. Check for action->next as well.
-> +        * first.
->          */
->         action = desc->action;
->         if (!action || !(action->flags & IRQF_SHARED) ||
-> -           (action->flags & __IRQF_TIMER) ||
-> -           (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
-> -           !action->next)
-> +           (action->flags & __IRQF_TIMER))
->                 goto out;
->
->         /* Already running on another processor */ @@ -104,7 +102,7 @@ static int try_one_irq(int irq, struct i
->         do {
->                 if (handle_irq_event(desc) == IRQ_HANDLED)
->                         ret = IRQ_HANDLED;
-> -               action = desc->action;
-> +               action = action->next;
->         } while ((desc->istate & IRQS_PENDING) && action);
->         desc->istate &= ~IRQS_POLL_INPROGRESS;
->  out:
