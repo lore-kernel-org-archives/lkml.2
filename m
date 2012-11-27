@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2K0FQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:16:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5441 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab2K0FQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:16:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,325,1352102400"; 
-   d="scan'208";a="224820328"
-Subject: [PATCH] serial:ifx6x60:Delete SPI timer when shut down port
-From: chao bi <chao.bi@intel.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: richardx.r.gorby@intel.com, jun.d.chen@intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Nov 2012 13:30:53 +0800
-Message-ID: <1353994253.30354.4.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752885Ab2K0FT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:19:56 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55439 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab2K0FTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 00:19:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121126171539.GZ15971@htj.dyndns.org>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
+	<20121126171539.GZ15971@htj.dyndns.org>
+Date: Tue, 27 Nov 2012 10:49:54 +0530
+Message-ID: <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
+ instead of current one
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Vincent Guittot <vincent.guittot@linaro.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, rostedt@goodmis.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tejun,
 
-When shut down SPI port, it's possible that MRDY has been asserted and a SPI
-timer was activated waiting for SRDY assert, in the case, it needs to delete
-this timer.
+On 26 November 2012 22:45, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Nov 06, 2012 at 04:08:45PM +0530, Viresh Kumar wrote:
 
-Signed-off-by: Chen Jun <jun.d.chen@intel.com>
-Signed-off-by: channing <chao.bi@intel.com>
----
- drivers/tty/serial/ifx6x60.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> I'm pretty skeptical about this.  queue_work() w/o explicit CPU
+> assignment has always guaranteed that the work item will be executed
+> on the same CPU.  I don't think there are too many users depending on
+> that but am not sure at all that there are none.  I asked you last
+> time that you would at the very least need to audit most users but it
+> doesn't seem like there has been any effort there.
 
-diff --git a/drivers/tty/serial/ifx6x60.c b/drivers/tty/serial/ifx6x60.c
-index 5b9bc19..f5e9666 100644
---- a/drivers/tty/serial/ifx6x60.c
-+++ b/drivers/tty/serial/ifx6x60.c
-@@ -552,6 +552,7 @@ static void ifx_port_shutdown(struct tty_port *port)
- 		container_of(port, struct ifx_spi_device, tty_port);
- 
- 	mrdy_set_low(ifx_dev);
-+	del_timer(&ifx_dev->spi_timer);
- 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
- 	tasklet_kill(&ifx_dev->io_work_tasklet);
- }
--- 
-1.7.1
+My bad. I completely missed/forgot that comment from your earlier mails.
+Will do it.
 
+> That said, if the obtained benefit is big enough, sure, we can
+> definitely change the behavior, which isn't all that great to begin
+> with, and try to shake out the bugs quicky by e.g. forcing all work
+> items to execute on different CPUs, but you're presenting a few
+> percent of work items being migrated to a different CPU from an
+> already active CPU, which doesn't seem like such a big benefit to me
+> even if the migration target CPU is somewhat more efficient.  How much
+> powersaving are we talking about?
 
+Hmm.. I actually implemented the problem discussed here:
+(I know you have seen this earlier :) )
 
+http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/08/lpc2012-sched-timer-workqueue.pdf
+
+Specifically slides: 12 & 19.
+
+I haven't done much power calculations with it and have tested it more from
+functionality point of view.
+
+@Vincent: Can you add some comments here?
+
+--
+viresh
