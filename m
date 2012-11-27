@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab2K0S1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:27:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab2K0S1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:27:43 -0500
-Date: Tue, 27 Nov 2012 13:27:38 -0500
-From: Dave Jones <davej@redhat.com>
-To: hughd@google.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: BUG_ON(inode->i_blocks);
-Message-ID: <20121127182738.GA13608@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, hughd@google.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
+	id S932273Ab2K0S2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:28:48 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:35397 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2K0S2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 13:28:46 -0500
+Date: Tue, 27 Nov 2012 19:28:43 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121127182843.GA11597@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+ <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1354039349.2534.11.camel@shinybook.infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh,
+On Tue, Nov 27, 2012 at 06:02:29PM +0000, David Woodhouse wrote:
+> On Tue, 2012-11-27 at 18:39 +0100, Krzysztof Mazur wrote:
+> > Yes, I missed that one - it's even worse, I introduced that bug 
+> > in "[PATCH 1/7] atm: detach protocol before closing vcc". Before that
+> > patch that scenario shouldn't happen because vcc was closed before
+> > calling pppoatm_send(vcc, NULL) - the driver should provide appropriate
+> > synchronization.
+> > 
+> > I think that we should just drop that patch. With later changes it's not
+> > necessary - the pppoatm_send() can be safely called while closing vcc.
+> 
+> I'm not running with that patch. This bug exists for br2684 even before
+> it, and I think also for pppoatm.
+> 
+> In solos-pci at least, the ops->close() function doesn't flush all
+> pending skbs for this vcc before returning. So can be a tasklet
+> somewhere which has loaded the address of the vcc->pop function from one
+> of them, and is going to call it in some unspecified amount of time.
+> 
+> Should we make the device's ->close function wait for all TX and RX skbs
+> for this vcc to complete? 
 
-We had a user report hitting the BUG_ON at the end of shmem_evict_inode.
-I see in 3.7 you changed this to a WARN instead.
-
-Does the trace below match the one you described chasing in commit 0f3c42f522dc1ad7e27affc0a4aa8c790bce0a66 ?
-
-Full report at https://bugzilla.redhat.com/show_bug.cgi?id=879422, though
-there's not much more than the trace tbh.
-
-	Dave
+Yes, the ->close() can sleep and after vcc is closed the ->pop() shouldn't be
+called.
 
 
-:kernel BUG at mm/shmem.c:657!
-:invalid opcode: 0000 [#1] SMP 
-:Modules linked in: udf hid_logitech_dj des_generic md4 cifs dns_resolver fscache nls_utf8 lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_netbios_ns nf_conntrack_broadcast nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state nf_conntrack ip6_tables fuse snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq snd_seq_device snd_hwdep snd_pcm snd_page_alloc snd_timer iTCO_wdt snd soundcore iTCO_vendor_support serio_raw atl1 mii lpc_ich mfd_core i2c_i801 asus_atk0110 coretemp kvm_intel kvm microcode uinput ata_generic pata_acpi firewire_ohci firewire_core crc_itu_t usb_storage pata_jmicron nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
-:CPU 1 
-:Pid: 1017, comm: kwin Not tainted 3.6.6-1.fc17.x86_64 #1 System manufacturer P5E-VM HDMI/P5E-VM HDMI
-:RIP: 0010:[<ffffffff81145792>]  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
-:RSP: 0018:ffff88012b94ddb8  EFLAGS: 00010282
-:RAX: 0000000050aeab47 RBX: ffff880117a424a8 RCX: 0000000000000018
-:RDX: 000000001fea11fd RSI: 0000000005537c1c RDI: ffffffff81f1d500
-:RBP: ffff88012b94ddd8 R08: 0000000000000000 R09: 0000000000000000
-:R10: 0000000000000000 R11: 0000000000000000 R12: ffff880117a424a8
-:R13: ffff880117a424a8 R14: ffff880117a424b8 R15: ffff880139a79220
-:FS:  00007fa606014880(0000) GS:ffff88013fc80000(0000) knlGS:0000000000000000
-:CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-:CR2: 00007fa5f0021010 CR3: 000000012c2d0000 CR4: 00000000000007e0
-:DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-:DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-:Process kwin (pid: 1017, threadinfo ffff88012b94c000, task ffff880134f30000)
-:Stack:
-: ffff880117a424b8 ffff880117a425b0 ffffffff81812f80 ffffffff81812f80
-: ffff88012b94de08 ffffffff811a8da2 ffff88012b94dde8 ffff880117a424b8
-: ffff880117a42540 ffff880139a34000 ffff88012b94de38 ffffffff811a8fa3
-:Call Trace:
-: [<ffffffff811a8da2>] evict+0xa2/0x1a0
-: [<ffffffff811a8fa3>] iput+0x103/0x1f0
-: [<ffffffff811a50e8>] d_kill+0xd8/0x110
-: [<ffffffff811a5782>] dput+0xe2/0x1b0
-: [<ffffffff811900d6>] __fput+0x166/0x240
-: [<ffffffff811901be>] ____fput+0xe/0x10
-: [<ffffffff8107beab>] task_work_run+0x6b/0x90
-: [<ffffffff81013921>] do_notify_resume+0x71/0xb0
-: [<ffffffff81625be2>] int_signal+0x12/0x17
-:Code: c7 80 1c c4 81 e8 8f 5a 4d 00 48 89 df e8 77 80 1a 00 49 89 5e e0 49 89 5e e8 48 c7 c7 80 1c c4 81 e8 13 5a 4d 00 e9 1c ff ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 57 41 
-:RIP  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
-: RSP <ffff88012b94ddb8>
+While reviewing your br2684 patch I also found that some ATM drivers does
+not call ->pop() when ->send() fails, they should do:
 
+	if (vcc->pop)
+		vcc->pop(vcc, skb);
+	else
+		dev_kfree_skb(skb);
+
+but some drivers just call dev_kfree_skb(skb).
+
+I think that we should add atm_pop() function that does that and fix all
+drivers.
+
+Krzysiek
