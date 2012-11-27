@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab2K0CYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:24:45 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40924 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab2K0CYo (ORCPT
+	id S1757876Ab2K0C0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:26:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50471 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab2K0C0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:24:44 -0500
-Message-ID: <1353983073.5422.2.camel@phoenix>
-Subject: [RFC/RFT][PATCH 1/4] regulator: core: Allow specific minimal
- selector for starting linear mapping
+	Mon, 26 Nov 2012 21:26:21 -0500
+Message-ID: <1353983174.5422.4.camel@phoenix>
+Subject: [RFC/RFT][PATCH 2/4] regulator: da9055: Use linear_min_sel and
+ regulator_[map|list]_voltage_linear
 From: Axel Lin <axel.lin@ingics.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: David Dajun Chen <dchen@diasemi.com>,
         Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 27 Nov 2012 10:24:33 +0800
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Tue, 27 Nov 2012 10:26:14 +0800
+In-Reply-To: <1353983073.5422.2.camel@phoenix>
+References: <1353983073.5422.2.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -26,68 +26,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers (at least 3 drivers) have such variant of linear mapping that
-the first few selectors are invalid and the reset are linear mapping.
-Let's support this case in core.
-
-This patch adds linear_min_sel in struct regulator_desc,
-so we can allow specific minimal selector for starting linear mapping.
-Then extends regulator_[map|list]_voltage_linear() to support this feature.
-
-Note that for selectors less than min_linear_index, we need count them to
-n_voltages so regulator_list_voltage() won't fail while checking the boundary
-for selector before calling list_voltage callback.
-
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/regulator/core.c         |    6 ++++++
- include/linux/regulator/driver.h |    2 ++
- 2 files changed, 8 insertions(+)
+ drivers/regulator/da9055-regulator.c |   55 +++++-----------------------------
+ 1 file changed, 8 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 3db1e01..273a3b1 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1897,6 +1897,10 @@ int regulator_list_voltage_linear(struct regulator_dev *rdev,
- {
- 	if (selector >= rdev->desc->n_voltages)
- 		return -EINVAL;
-+	if (selector < rdev->desc->linear_min_sel)
-+		return 0;
-+
-+	selector -= rdev->desc->linear_min_sel;
- 
- 	return rdev->desc->min_uV + (rdev->desc->uV_step * selector);
+diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
+index db59ce7..a4b9cb8 100644
+--- a/drivers/regulator/da9055-regulator.c
++++ b/drivers/regulator/da9055-regulator.c
+@@ -57,7 +57,6 @@ struct da9055_volt_reg {
+ 	int reg_a;
+ 	int reg_b;
+ 	int sl_shift;
+-	int v_offset;
+ 	int v_mask;
+ 	int v_shift;
+ };
+@@ -201,41 +200,6 @@ static int da9055_buck_set_current_limit(struct regulator_dev *rdev, int min_uA,
+ 	return -EINVAL;
  }
-@@ -2125,6 +2129,8 @@ int regulator_map_voltage_linear(struct regulator_dev *rdev,
+ 
+-static int da9055_list_voltage(struct regulator_dev *rdev, unsigned selector)
+-{
+-	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9055_regulator_info *info = regulator->info;
+-
+-	if (selector >= rdev->desc->n_voltages)
+-		return -EINVAL;
+-
+-	if (selector < info->volt.v_offset)
+-		return 0;
+-
+-	selector -= info->volt.v_offset;
+-	return rdev->desc->min_uV + (rdev->desc->uV_step * selector);
+-}
+-
+-static int da9055_map_voltage(struct regulator_dev *rdev, int min_uV,
+-			      int max_uV)
+-{
+-	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9055_regulator_info *info = regulator->info;
+-	int sel, voltage;
+-
+-	if (min_uV < rdev->desc->min_uV)
+-		min_uV = rdev->desc->min_uV;
+-
+-	sel = DIV_ROUND_UP(min_uV - rdev->desc->min_uV, rdev->desc->uV_step);
+-	sel += info->volt.v_offset;
+-
+-	voltage = da9055_list_voltage(rdev, sel);
+-	if (voltage < min_uV || voltage > max_uV)
+-		return -EINVAL;
+-
+-	return sel;
+-}
+-
+ static int da9055_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
+@@ -264,10 +228,7 @@ static int da9055_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 		return ret;
+ 
+ 	sel = (ret & volt.v_mask);
+-	if (sel <= volt.v_offset)
+-		return 0;
+-	else
+-		return sel;
++	return sel;
+ }
+ 
+ static int da9055_regulator_set_voltage_sel(struct regulator_dev *rdev,
+@@ -328,7 +289,7 @@ static int da9055_regulator_set_suspend_voltage(struct regulator_dev *rdev,
+ 			return ret;
+ 	}
+ 
+-	ret = da9055_map_voltage(rdev, uV, uV);
++	ret = regulator_map_voltage_linear(rdev, uV, uV);
  	if (ret < 0)
  		return ret;
  
-+	ret += rdev->desc->linear_min_sel;
-+
- 	/* Map back into a voltage to verify we're still in bounds */
- 	voltage = rdev->desc->ops->list_voltage(rdev, ret);
- 	if (voltage < min_uV || voltage > max_uV)
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index f2b72b2..d10bb0f 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -187,6 +187,7 @@ enum regulator_type {
-  *
-  * @min_uV: Voltage given by the lowest selector (if linear mapping)
-  * @uV_step: Voltage increase with each selector (if linear mapping)
-+ * @linear_min_sel: Minimal selector for starting linear mapping
-  * @ramp_delay: Time to settle down after voltage change (unit: uV/us)
-  * @volt_table: Voltage mapping table (if table based mapping)
-  *
-@@ -210,6 +211,7 @@ struct regulator_desc {
+@@ -371,8 +332,8 @@ static struct regulator_ops da9055_buck_ops = {
  
- 	unsigned int min_uV;
- 	unsigned int uV_step;
-+	unsigned int linear_min_sel;
- 	unsigned int ramp_delay;
+ 	.get_voltage_sel = da9055_regulator_get_voltage_sel,
+ 	.set_voltage_sel = da9055_regulator_set_voltage_sel,
+-	.list_voltage = da9055_list_voltage,
+-	.map_voltage = da9055_map_voltage,
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -389,8 +350,8 @@ static struct regulator_ops da9055_ldo_ops = {
  
- 	const unsigned int *volt_table;
+ 	.get_voltage_sel = da9055_regulator_get_voltage_sel,
+ 	.set_voltage_sel = da9055_regulator_set_voltage_sel,
+-	.list_voltage = da9055_list_voltage,
+-	.map_voltage = da9055_map_voltage,
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -414,6 +375,7 @@ static struct regulator_ops da9055_ldo_ops = {
+ 		.enable_mask = 1, \
+ 		.min_uV = (min) * 1000,\
+ 		.uV_step = (step) * 1000,\
++		.linear_min_sel = (voffset),\
+ 		.owner = THIS_MODULE,\
+ 	},\
+ 	.conf = {\
+@@ -425,7 +387,6 @@ static struct regulator_ops da9055_ldo_ops = {
+ 		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
+ 		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
+ 		.sl_shift = 7,\
+-		.v_offset = (voffset),\
+ 		.v_mask = (1 << (vbits)) - 1,\
+ 		.v_shift = (vbits),\
+ 	},\
+@@ -443,6 +404,7 @@ static struct regulator_ops da9055_ldo_ops = {
+ 		.enable_mask = 1,\
+ 		.min_uV = (min) * 1000,\
+ 		.uV_step = (step) * 1000,\
++		.linear_min_sel = (voffset),\
+ 		.owner = THIS_MODULE,\
+ 	},\
+ 	.conf = {\
+@@ -454,7 +416,6 @@ static struct regulator_ops da9055_ldo_ops = {
+ 		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
+ 		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
+ 		.sl_shift = 7,\
+-		.v_offset = (voffset),\
+ 		.v_mask = (1 << (vbits)) - 1,\
+ 		.v_shift = (vbits),\
+ 	},\
 -- 
 1.7.9.5
 
