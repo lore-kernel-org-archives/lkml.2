@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab2K0XR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:17:59 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26366 "EHLO
+	id S1756482Ab2K0XSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:18:31 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755930Ab2K0XPW (ORCPT
+	by vger.kernel.org with ESMTP id S1755919Ab2K0XPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:22 -0500
+	Tue, 27 Nov 2012 18:15:21 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewOmRYME
+X-IronPort-Anti-Spam-Result: AkEGABZJtVB5LIZ7/2dsb2JhbABFi32yHIIFF3OCHgEBBScvIxAIGBgZOQMbGYgMv3WNSIMzA6ZFgwQ
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 12/19] xfs: convert buftarg LRU to generic code
-Date: Wed, 28 Nov 2012 10:14:39 +1100
-Message-Id: <1354058086-27937-13-git-send-email-david@fromorbit.com>
+Subject: [PATCH 08/19] dcache: convert to use new lru list infrastructure
+Date: Wed, 28 Nov 2012 10:14:35 +1100
+Message-Id: <1354058086-27937-9-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,276 +25,319 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Convert the buftarg LRU to use the new generic LRU list and take
-advantage of the functionality it supplies to make the buffer cache
-shrinker node aware.
-
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/xfs/xfs_buf.c |  162 +++++++++++++++++++++++++-----------------------------
- fs/xfs/xfs_buf.h |    5 +-
- 2 files changed, 76 insertions(+), 91 deletions(-)
+ fs/dcache.c        |  171 +++++++++++++++++++++-------------------------------
+ fs/super.c         |   10 +--
+ include/linux/fs.h |   15 +++--
+ 3 files changed, 82 insertions(+), 114 deletions(-)
 
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index a80195b..1011c59 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -85,20 +85,14 @@ xfs_buf_vmap_len(
-  * The LRU takes a new reference to the buffer so that it will only be freed
-  * once the shrinker takes the buffer off the LRU.
+diff --git a/fs/dcache.c b/fs/dcache.c
+index ca647b8..d72e388 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -37,6 +37,7 @@
+ #include <linux/rculist_bl.h>
+ #include <linux/prefetch.h>
+ #include <linux/ratelimit.h>
++#include <linux/list_lru.h>
+ #include "internal.h"
+ #include "mount.h"
+ 
+@@ -318,20 +319,8 @@ static void dentry_unlink_inode(struct dentry * dentry)
   */
--STATIC void
-+static void
- xfs_buf_lru_add(
- 	struct xfs_buf	*bp)
+ static void dentry_lru_add(struct dentry *dentry)
  {
--	struct xfs_buftarg *btp = bp->b_target;
+-	if (list_empty(&dentry->d_lru)) {
+-		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+-		list_add(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
+-		dentry->d_sb->s_nr_dentry_unused++;
++	if (list_lru_add(&dentry->d_sb->s_dentry_lru, &dentry->d_lru))
+ 		this_cpu_inc(nr_dentry_unused);
+-		spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
+-	}
+-}
 -
--	spin_lock(&btp->bt_lru_lock);
--	if (list_empty(&bp->b_lru)) {
--		atomic_inc(&bp->b_hold);
--		list_add_tail(&bp->b_lru, &btp->bt_lru);
--		btp->bt_lru_nr++;
-+	if (list_lru_add(&bp->b_target->bt_lru, &bp->b_lru)) {
- 		bp->b_lru_flags &= ~_XBF_LRU_DISPOSE;
-+		atomic_inc(&bp->b_hold);
- 	}
--	spin_unlock(&btp->bt_lru_lock);
+-static void __dentry_lru_del(struct dentry *dentry)
+-{
+-	list_del_init(&dentry->d_lru);
+-	dentry->d_sb->s_nr_dentry_unused--;
+-	this_cpu_dec(nr_dentry_unused);
  }
  
  /*
-@@ -107,24 +101,13 @@ xfs_buf_lru_add(
-  * The unlocked check is safe here because it only occurs when there are not
-  * b_lru_ref counts left on the inode under the pag->pag_buf_lock. it is there
-  * to optimise the shrinker removing the buffer from the LRU and calling
-- * xfs_buf_free(). i.e. it removes an unnecessary round trip on the
-- * bt_lru_lock.
-+ * xfs_buf_free().
-  */
--STATIC void
-+static void
- xfs_buf_lru_del(
- 	struct xfs_buf	*bp)
+@@ -341,11 +330,8 @@ static void dentry_lru_del(struct dentry *dentry)
  {
--	struct xfs_buftarg *btp = bp->b_target;
--
--	if (list_empty(&bp->b_lru))
--		return;
--
--	spin_lock(&btp->bt_lru_lock);
--	if (!list_empty(&bp->b_lru)) {
--		list_del_init(&bp->b_lru);
--		btp->bt_lru_nr--;
+ 	BUG_ON(dentry->d_flags & DCACHE_SHRINK_LIST);
+ 
+-	if (!list_empty(&dentry->d_lru)) {
+-		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+-		__dentry_lru_del(dentry);
+-		spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
 -	}
--	spin_unlock(&btp->bt_lru_lock);
-+	list_lru_del(&bp->b_target->bt_lru, &bp->b_lru);
++	if (list_lru_del(&dentry->d_sb->s_dentry_lru, &dentry->d_lru))
++		this_cpu_dec(nr_dentry_unused);
  }
  
  /*
-@@ -151,18 +134,10 @@ xfs_buf_stale(
- 	bp->b_flags &= ~_XBF_DELWRI_Q;
- 
- 	atomic_set(&(bp)->b_lru_ref, 0);
--	if (!list_empty(&bp->b_lru)) {
--		struct xfs_buftarg *btp = bp->b_target;
--
--		spin_lock(&btp->bt_lru_lock);
--		if (!list_empty(&bp->b_lru) &&
--		    !(bp->b_lru_flags & _XBF_LRU_DISPOSE)) {
--			list_del_init(&bp->b_lru);
--			btp->bt_lru_nr--;
--			atomic_dec(&bp->b_hold);
--		}
--		spin_unlock(&btp->bt_lru_lock);
--	}
-+	if (!(bp->b_lru_flags & _XBF_LRU_DISPOSE) &&
-+	    (list_lru_del(&bp->b_target->bt_lru, &bp->b_lru)))
-+		atomic_dec(&bp->b_hold);
-+
- 	ASSERT(atomic_read(&bp->b_hold) >= 1);
- }
- 
-@@ -1476,81 +1451,92 @@ xfs_buf_iomove(
-  * returned. These buffers will have an elevated hold count, so wait on those
-  * while freeing all the buffers only held by the LRU.
+@@ -361,35 +347,19 @@ static void dentry_lru_del(struct dentry *dentry)
   */
--void
--xfs_wait_buftarg(
--	struct xfs_buftarg	*btp)
-+static int
-+xfs_buftarg_wait_rele(
-+	struct list_head	*item,
-+	spinlock_t		*lru_lock,
-+	void			*arg)
+ static void dentry_lru_prune(struct dentry *dentry)
  {
--	struct xfs_buf		*bp;
-+	struct xfs_buf		*bp = container_of(item, struct xfs_buf, b_lru);
+-	if (!list_empty(&dentry->d_lru)) {
++	int prune = dentry->d_flags & DCACHE_OP_PRUNE;
  
--restart:
--	spin_lock(&btp->bt_lru_lock);
--	while (!list_empty(&btp->bt_lru)) {
--		bp = list_first_entry(&btp->bt_lru, struct xfs_buf, b_lru);
--		if (atomic_read(&bp->b_hold) > 1) {
--			spin_unlock(&btp->bt_lru_lock);
--			delay(100);
--			goto restart;
+-		if (dentry->d_flags & DCACHE_OP_PRUNE)
+-			dentry->d_op->d_prune(dentry);
+-
+-		if ((dentry->d_flags & DCACHE_SHRINK_LIST))
+-			list_del_init(&dentry->d_lru);
+-		else {
+-			spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+-			__dentry_lru_del(dentry);
+-			spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
 -		}
-+	if (atomic_read(&bp->b_hold) > 1) {
-+		/* need to wait */
-+		spin_unlock(lru_lock);
-+		delay(100);
-+	} else {
- 		/*
- 		 * clear the LRU reference count so the buffer doesn't get
- 		 * ignored in xfs_buf_rele().
- 		 */
- 		atomic_set(&bp->b_lru_ref, 0);
--		spin_unlock(&btp->bt_lru_lock);
-+		spin_unlock(lru_lock);
- 		xfs_buf_rele(bp);
--		spin_lock(&btp->bt_lru_lock);
- 	}
--	spin_unlock(&btp->bt_lru_lock);
-+	return 3;
+-		dentry->d_flags &= ~DCACHE_SHRINK_LIST;
+-	}
+-}
+-
+-static void dentry_lru_move_list(struct dentry *dentry, struct list_head *list)
+-{
+-	BUG_ON(dentry->d_flags & DCACHE_SHRINK_LIST);
+-
+-	spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+-	if (list_empty(&dentry->d_lru)) {
+-		list_add_tail(&dentry->d_lru, list);
+-	} else {
+-		list_move_tail(&dentry->d_lru, list);
+-		dentry->d_sb->s_nr_dentry_unused--;
++	if (!list_empty(&dentry->d_lru) &&
++	    (dentry->d_flags & DCACHE_SHRINK_LIST))
++		list_del_init(&dentry->d_lru);
++	else if (list_lru_del(&dentry->d_sb->s_dentry_lru, &dentry->d_lru))
+ 		this_cpu_dec(nr_dentry_unused);
+-	}
+-	spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
++	else
++		prune = 0;
++
++	dentry->d_flags &= ~DCACHE_SHRINK_LIST;
++	if (prune)
++		dentry->d_op->d_prune(dentry);
  }
  
--int
--xfs_buftarg_shrink(
-+void
-+xfs_wait_buftarg(
-+	struct xfs_buftarg	*btp)
+ /**
+@@ -880,6 +850,51 @@ static void shrink_dentry_list(struct list_head *list)
+ 	rcu_read_unlock();
+ }
+ 
++static int dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock,
++				void *arg)
 +{
-+	while (list_lru_count(&btp->bt_lru))
-+		list_lru_walk(&btp->bt_lru, xfs_buftarg_wait_rele,
-+			      NULL, LONG_MAX);
-+}
++	struct list_head *freeable = arg;
++	struct dentry	*dentry = container_of(item, struct dentry, d_lru);
 +
-+static int
-+xfs_buftarg_isolate(
-+	struct list_head	*item,
-+	spinlock_t		*lru_lock,
-+	void			*arg)
-+{
-+	struct xfs_buf		*bp = container_of(item, struct xfs_buf, b_lru);
-+	struct list_head	*dispose = arg;
 +
 +	/*
-+	 * Decrement the b_lru_ref count unless the value is already
-+	 * zero. If the value is already zero, we need to reclaim the
-+	 * buffer, otherwise it gets another trip through the LRU.
++	 * we are inverting the lru lock/dentry->d_lock here,
++	 * so use a trylock. If we fail to get the lock, just skip
++	 * it
 +	 */
-+	if (!atomic_add_unless(&bp->b_lru_ref, -1, 0))
-+		return 1;
++	if (!spin_trylock(&dentry->d_lock))
++		return 2;
 +
-+	bp->b_lru_flags |= _XBF_LRU_DISPOSE;
-+	list_move(item, dispose);
++	/*
++	 * Referenced dentries are still in use. If they have active
++	 * counts, just remove them from the LRU. Otherwise give them
++	 * another pass through the LRU.
++	 */
++	if (dentry->d_count) {
++		list_del_init(&dentry->d_lru);
++		spin_unlock(&dentry->d_lock);
++		return 0;
++	}
++
++	if (dentry->d_flags & DCACHE_REFERENCED) {
++		dentry->d_flags &= ~DCACHE_REFERENCED;
++		spin_unlock(&dentry->d_lock);
++
++		/*
++		 * XXX: this list move should be be done under d_lock. Need to
++		 * determine if it is safe just to do it under the lru lock.
++		 */
++		return 1;
++	}
++
++	dentry->d_flags |= DCACHE_SHRINK_LIST;
++	list_move_tail(&dentry->d_lru, freeable);
++	this_cpu_dec(nr_dentry_unused);
++	spin_unlock(&dentry->d_lock);
++
 +	return 0;
 +}
 +
-+static long
-+xfs_buftarg_shrink_scan(
- 	struct shrinker		*shrink,
- 	struct shrink_control	*sc)
+ /**
+  * prune_dcache_sb - shrink the dcache
+  * @sb: superblock
+@@ -894,45 +909,12 @@ static void shrink_dentry_list(struct list_head *list)
+  */
+ long prune_dcache_sb(struct super_block *sb, long nr_to_scan)
  {
- 	struct xfs_buftarg	*btp = container_of(shrink,
- 					struct xfs_buftarg, bt_shrinker);
--	struct xfs_buf		*bp;
--	int nr_to_scan = sc->nr_to_scan;
- 	LIST_HEAD(dispose);
-+	long			freed;
- 
--	if (!nr_to_scan)
--		return btp->bt_lru_nr;
+-	struct dentry *dentry;
+-	LIST_HEAD(referenced);
+-	LIST_HEAD(tmp);
+-	long freed = 0;
 -
--	spin_lock(&btp->bt_lru_lock);
--	while (!list_empty(&btp->bt_lru)) {
--		if (nr_to_scan-- <= 0)
--			break;
+-relock:
+-	spin_lock(&sb->s_dentry_lru_lock);
+-	while (!list_empty(&sb->s_dentry_lru)) {
+-		dentry = list_entry(sb->s_dentry_lru.prev,
+-				struct dentry, d_lru);
+-		BUG_ON(dentry->d_sb != sb);
 -
--		bp = list_first_entry(&btp->bt_lru, struct xfs_buf, b_lru);
--
--		/*
--		 * Decrement the b_lru_ref count unless the value is already
--		 * zero. If the value is already zero, we need to reclaim the
--		 * buffer, otherwise it gets another trip through the LRU.
--		 */
--		if (!atomic_add_unless(&bp->b_lru_ref, -1, 0)) {
--			list_move_tail(&bp->b_lru, &btp->bt_lru);
--			continue;
+-		if (!spin_trylock(&dentry->d_lock)) {
+-			spin_unlock(&sb->s_dentry_lru_lock);
+-			cpu_relax();
+-			goto relock;
 -		}
 -
--		/*
--		 * remove the buffer from the LRU now to avoid needing another
--		 * lock round trip inside xfs_buf_rele().
--		 */
--		list_move(&bp->b_lru, &dispose);
--		btp->bt_lru_nr--;
--		bp->b_lru_flags |= _XBF_LRU_DISPOSE;
+-		if (dentry->d_flags & DCACHE_REFERENCED) {
+-			dentry->d_flags &= ~DCACHE_REFERENCED;
+-			list_move(&dentry->d_lru, &referenced);
+-			spin_unlock(&dentry->d_lock);
+-		} else {
+-			list_move_tail(&dentry->d_lru, &tmp);
+-			dentry->d_flags |= DCACHE_SHRINK_LIST;
+-			this_cpu_dec(nr_dentry_unused);
+-			sb->s_nr_dentry_unused--;
+-			spin_unlock(&dentry->d_lock);
+-			freed++;
+-			if (!--nr_to_scan)
+-				break;
+-		}
+-		cond_resched_lock(&sb->s_dentry_lru_lock);
 -	}
--	spin_unlock(&btp->bt_lru_lock);
-+	freed = list_lru_walk_nodemask(&btp->bt_lru, xfs_buftarg_isolate,
-+				       &dispose, sc->nr_to_scan,
-+				       &sc->nodes_to_scan);
+-	if (!list_empty(&referenced))
+-		list_splice(&referenced, &sb->s_dentry_lru);
+-	spin_unlock(&sb->s_dentry_lru_lock);
++	LIST_HEAD(dispose);
++	long freed;
  
- 	while (!list_empty(&dispose)) {
-+		struct xfs_buf *bp;
- 		bp = list_first_entry(&dispose, struct xfs_buf, b_lru);
- 		list_del_init(&bp->b_lru);
- 		xfs_buf_rele(bp);
- 	}
-+	return freed;
-+}
-+static long
-+xfs_buftarg_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	struct xfs_buftarg	*btp = container_of(shrink,
-+					struct xfs_buftarg, bt_shrinker);
- 
--	return btp->bt_lru_nr;
-+	return list_lru_count_nodemask(&btp->bt_lru, &sc->nodes_to_scan);
+-	shrink_dentry_list(&tmp);
++	freed = list_lru_walk(&sb->s_dentry_lru, dentry_lru_isolate,
++			      &dispose, nr_to_scan);
++	shrink_dentry_list(&dispose);
+ 	return freed;
  }
  
- void
-@@ -1632,11 +1618,11 @@ xfs_alloc_buftarg(
- 	if (!btp->bt_bdi)
- 		goto error;
+@@ -967,24 +949,10 @@ shrink_dcache_list(
+  */
+ void shrink_dcache_sb(struct super_block *sb)
+ {
+-	LIST_HEAD(tmp);
+-
+-	spin_lock(&sb->s_dentry_lru_lock);
+-	while (!list_empty(&sb->s_dentry_lru)) {
+-		list_splice_init(&sb->s_dentry_lru, &tmp);
+-
+-		/*
+-		 * account for removal here so we don't need to handle it later
+-		 * even though the dentry is no longer on the lru list.
+-		 */
+-		this_cpu_sub(nr_dentry_unused, sb->s_nr_dentry_unused);
+-		sb->s_nr_dentry_unused = 0;
++	long freed;
  
--	INIT_LIST_HEAD(&btp->bt_lru);
--	spin_lock_init(&btp->bt_lru_lock);
-+	list_lru_init(&btp->bt_lru);
- 	if (xfs_setsize_buftarg_early(btp, bdev))
- 		goto error;
--	btp->bt_shrinker.shrink = xfs_buftarg_shrink;
-+	btp->bt_shrinker.count_objects = xfs_buftarg_shrink_count;
-+	btp->bt_shrinker.scan_objects = xfs_buftarg_shrink_scan;
- 	btp->bt_shrinker.seeks = DEFAULT_SEEKS;
- 	register_shrinker(&btp->bt_shrinker);
- 	return btp;
-diff --git a/fs/xfs/xfs_buf.h b/fs/xfs/xfs_buf.h
-index e541c0a..54113a1 100644
---- a/fs/xfs/xfs_buf.h
-+++ b/fs/xfs/xfs_buf.h
-@@ -25,6 +25,7 @@
- #include <linux/fs.h>
- #include <linux/buffer_head.h>
- #include <linux/uio.h>
-+#include <linux/list_lru.h>
+-		spin_unlock(&sb->s_dentry_lru_lock);
+-		shrink_dcache_list(&tmp);
+-		spin_lock(&sb->s_dentry_lru_lock);
+-	}
+-	spin_unlock(&sb->s_dentry_lru_lock);
++	freed = list_lru_dispose_all(&sb->s_dentry_lru, shrink_dcache_list);
++	this_cpu_sub(nr_dentry_unused, freed);
+ }
+ EXPORT_SYMBOL(shrink_dcache_sb);
  
- /*
-  *	Base types
-@@ -92,9 +93,7 @@ typedef struct xfs_buftarg {
+@@ -1255,7 +1223,8 @@ resume:
+ 		if (dentry->d_count) {
+ 			dentry_lru_del(dentry);
+ 		} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
+-			dentry_lru_move_list(dentry, dispose);
++			dentry_lru_del(dentry);
++			list_add_tail(&dentry->d_lru, dispose);
+ 			dentry->d_flags |= DCACHE_SHRINK_LIST;
+ 			found++;
+ 		}
+diff --git a/fs/super.c b/fs/super.c
+index a2f09c8..b1d24ef 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -78,10 +78,11 @@ static long super_cache_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 		fs_objects = sb->s_op->nr_cached_objects(sb);
  
- 	/* LRU control structures */
- 	struct shrinker		bt_shrinker;
--	struct list_head	bt_lru;
--	spinlock_t		bt_lru_lock;
--	unsigned int		bt_lru_nr;
-+	struct list_lru		bt_lru;
- } xfs_buftarg_t;
+ 	inodes = list_lru_count(&sb->s_inode_lru);
+-	total_objects = sb->s_nr_dentry_unused + inodes + fs_objects + 1;
++	dentries = list_lru_count(&sb->s_dentry_lru);
++	total_objects = dentries + inodes + fs_objects + 1;
  
- struct xfs_buf;
+ 	/* proportion the scan between the caches */
+-	dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) / total_objects;
++	dentries = (sc->nr_to_scan * dentries) / total_objects;
+ 	inodes = (sc->nr_to_scan * inodes) / total_objects;
+ 
+ 	/*
+@@ -113,7 +114,7 @@ static long super_cache_count(struct shrinker *shrink, struct shrink_control *sc
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+ 		total_objects = sb->s_op->nr_cached_objects(sb);
+ 
+-	total_objects += sb->s_nr_dentry_unused;
++	total_objects += list_lru_count(&sb->s_dentry_lru);
+ 	total_objects += list_lru_count(&sb->s_inode_lru);
+ 
+ 	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
+@@ -193,8 +194,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 		INIT_HLIST_NODE(&s->s_instances);
+ 		INIT_HLIST_BL_HEAD(&s->s_anon);
+ 		INIT_LIST_HEAD(&s->s_inodes);
+-		INIT_LIST_HEAD(&s->s_dentry_lru);
+-		spin_lock_init(&s->s_dentry_lru_lock);
++		list_lru_init(&s->s_dentry_lru);
+ 		list_lru_init(&s->s_inode_lru);
+ 		INIT_LIST_HEAD(&s->s_mounts);
+ 		init_rwsem(&s->s_umount);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 36b7db5..befa46f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1263,14 +1263,6 @@ struct super_block {
+ 	struct list_head	s_files;
+ #endif
+ 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
+-
+-	/* s_dentry_lru_lock protects s_dentry_lru and s_nr_dentry_unused */
+-	spinlock_t		s_dentry_lru_lock ____cacheline_aligned_in_smp;
+-	struct list_head	s_dentry_lru;	/* unused dentry lru */
+-	int			s_nr_dentry_unused;	/* # of dentry on lru */
+-
+-	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
+-
+ 	struct block_device	*s_bdev;
+ 	struct backing_dev_info *s_bdi;
+ 	struct mtd_info		*s_mtd;
+@@ -1321,6 +1313,13 @@ struct super_block {
+ 
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
++
++	/*
++	 * Keep the lru lists last in the structure so they always sit on their
++	 * own individual cachelines.
++	 */
++	struct list_lru		s_dentry_lru ____cacheline_aligned_in_smp;
++	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
 -- 
 1.7.10
 
