@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab2K0GyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:54:00 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19856 "EHLO
+	id S1758093Ab2K0G7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:59:43 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1229 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757842Ab2K0Gx7 (ORCPT
+	with ESMTP id S1757842Ab2K0G7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:53:59 -0500
+	Tue, 27 Nov 2012 01:59:42 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 26 Nov 2012 22:53:45 -0800
+	by hqnvupgp06.nvidia.com on Mon, 26 Nov 2012 22:59:34 -0800
 From: Sivaram Nair <sivaramn@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>,
         <linux-tegra@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Sivaram Nair <sivaramn@nvidia.com>
-Subject: [PATCH 1/1] ARM: tegra: replace long if statement group
-Date: Tue, 27 Nov 2012 08:53:33 +0200
-Message-ID: <1353999213-4889-1-git-send-email-sivaramn@nvidia.com>
+Subject: [PATCH 1/2] ARM: tegra: remove unused functions in mach/clk.h
+Date: Tue, 27 Nov 2012 08:59:12 +0200
+Message-ID: <1353999553-5196-1-git-send-email-sivaramn@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -25,50 +25,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The long list of if statements are replaced with corresponding
-switch cases.
+This is a cleaning up patch that removes couple of functions in
+mach/clk.h that are no longer used and does not have any body.
 
 Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
 ---
- arch/arm/mach-tegra/tegra30_clocks.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ arch/arm/mach-tegra/include/mach/clk.h |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/tegra30_clocks.c b/arch/arm/mach-tegra/tegra30_clocks.c
-index d714777..753addd 100644
---- a/arch/arm/mach-tegra/tegra30_clocks.c
-+++ b/arch/arm/mach-tegra/tegra30_clocks.c
-@@ -444,21 +444,23 @@ static unsigned long clk_measure_input_freq(void)
- 	clk_writel(OSC_FREQ_DET_TRIG | 1, OSC_FREQ_DET);
- 	do {} while (clk_readl(OSC_FREQ_DET_STATUS) & OSC_FREQ_DET_BUSY);
- 	clock_autodetect = clk_readl(OSC_FREQ_DET_STATUS);
--	if (clock_autodetect >= 732 - 3 && clock_autodetect <= 732 + 3) {
-+
-+	switch (clock_autodetect) {
-+	case (732 - 3)...(732 + 3):
- 		return 12000000;
--	} else if (clock_autodetect >= 794 - 3 && clock_autodetect <= 794 + 3) {
-+	case (794 - 3)...(794 + 3):
- 		return 13000000;
--	} else if (clock_autodetect >= 1172 - 3 && clock_autodetect <= 1172 + 3) {
-+	case (1172 - 3)...(1172 + 3):
- 		return 19200000;
--	} else if (clock_autodetect >= 1587 - 3 && clock_autodetect <= 1587 + 3) {
-+	case (1587 - 3)...(1587 + 3):
- 		return 26000000;
--	} else if (clock_autodetect >= 1025 - 3 && clock_autodetect <= 1025 + 3) {
-+	case (1025 - 3)...(1025 + 3):
- 		return 16800000;
--	} else if (clock_autodetect >= 2344 - 3 && clock_autodetect <= 2344 + 3) {
-+	case (2344 - 3)...(2344 + 3):
- 		return 38400000;
--	} else if (clock_autodetect >= 2928 - 3 && clock_autodetect <= 2928 + 3) {
-+	case (2928 - 3)...(2928 + 3):
- 		return 48000000;
--	} else {
-+	default:
- 		pr_err("%s: Unexpected clock autodetect value %d", __func__,
- 			clock_autodetect);
- 		BUG();
+diff --git a/arch/arm/mach-tegra/include/mach/clk.h b/arch/arm/mach-tegra/include/mach/clk.h
+index 95f3a54..64d2657 100644
+--- a/arch/arm/mach-tegra/include/mach/clk.h
++++ b/arch/arm/mach-tegra/include/mach/clk.h
+@@ -34,11 +34,6 @@ enum tegra_clk_ex_param {
+ void tegra_periph_reset_deassert(struct clk *c);
+ void tegra_periph_reset_assert(struct clk *c);
+ 
+-#ifndef CONFIG_COMMON_CLK
+-unsigned long clk_get_rate_all_locked(struct clk *c);
+-#endif
+-
+-void tegra2_sdmmc_tap_delay(struct clk *c, int delay);
+ int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting);
+ 
+ #endif
 -- 
 1.7.9.5
 
