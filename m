@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab2K0R3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:29:37 -0500
-Received: from smtp105.biz.mail.bf1.yahoo.com ([98.139.221.43]:39836 "HELO
-	smtp105.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756639Ab2K0R3c (ORCPT
+	id S1756713Ab2K0RaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:30:11 -0500
+Received: from smtp109.biz.mail.bf1.yahoo.com ([98.139.244.33]:35894 "HELO
+	smtp109.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755959Ab2K0RaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:29:32 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 12:29:32 EST
+	Tue, 27 Nov 2012 12:30:09 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 12:30:08 EST
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OSq__pgVM1lG9sFUSjnC3z7IogJUodAxd7xIWaa.V1XSg8L
- hPHOiLY_9LxKcT_xA0FLj8nyUN94mVMW6lHWchiz_DM3oGE6CKLx9.ZskwHJ
- FC16pyJxnMZPeZxW_2NTdqReeZ0IBPcAAeWBcrHEhYXx82YGO_o8jyremQuI
- oMprxx_fXqdFl4cj9Pi2ChaLh2..vLGhUSQQokUc1CtWQRPPFVUGjGGqiWM0
- drvoPRX_xv_LmHioxfX.amHbquKnbs_nB5p.Bmzr_6RcSJ88DIHTbRzxhDyI
- 5SCS48qM6HNelC8u4.XR7FptNEeV5mnB5ShHXCCjWkftJ.U_45v9Bu3U3dQ3
- 4QtaCU6bgVEf8SEj_4lIepHDImhMnNLUpqdtgFBo6R_gsg2rxAuDvWvKQR7i
- 6YBfeu49YQtJAsxi4SeoI5ZYv3efpHnLOdUT3iRtWqvIoF9AMk6zgHKLHXbi
- 0jxD95rC71bH.mXBqvzhtfuWiUAkZ4VmTnE2H_3Wl5huQzolfB33nRV2mu9s
- 96Zhec_YXyMz0LMTStjOrYAB7eqp55Z1R0d1cJPhOPwqby3Eei_Lp
+X-YMail-OSG: ASSvk4oVM1kwZTjya7Fu63ZD6EEKCHnlh5kQws5p5cwhc8v
+ 4TQ8VWsAMp9OPNXONWBZWL0_Qt4G2udTEDyyX8hxLdrDAZK3H2vev6jt489_
+ rcJvnz3E7tumUu_RNZYWQPzJNkAQhJqyM1V_mVC7FtjH4y6kLqTtZTiNI0Aa
+ m5QIJnAhGfzPfmFJM24sA._pLwOIrqQOdX3c24ZdqUEZUh9VQQWSrm.g7M0b
+ 0_0sWigab.t7lys5WqqPYjHpiodQn5TE79dDNf.ShtMGQZUkjG4LaScBOW4D
+ Jw5QuahtLoUvLI4tGfZ348i3jGKaRApW3Ku5cXWyAcAdWJWF02PESFp2RBFy
+ _effFumiZ02RN13EfxTHJrxAAbsEEGdNJH8BVH07t3gbBkd2pA1PfvxuL_ge
+ 3N2_jLDOAu4CATc1PVcbkurm9p3NWmhPh7SIygT7MWoIRkT8k4MZ9r.gOvrb
+ O_HPaQplDejL4l2DusKMSucG6w4tyIp45Ov3vegzIIW2Xirvi.2gJOUP5ZbO
+ Cw2aN4BjkDI2MwX5kh9GwLyXJCy1_hnXETagaLSatL1Ee2m0WH4tJ
 X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50B4F6F1.7020800@schaufler-ca.com>
-Date: Tue, 27 Nov 2012 09:22:57 -0800
+Message-ID: <50B4F717.4010605@schaufler-ca.com>
+Date: Tue, 27 Nov 2012 09:23:35 -0800
 From: Casey Schaufler <casey@schaufler-ca.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
 To: Rafal Krypa <r.krypa@samsung.com>
 CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: prevent revoke-subject from failing when unseen
- label is written to it
-References: <1354030091-32501-1-git-send-email-r.krypa@samsung.com>
-In-Reply-To: <1354030091-32501-1-git-send-email-r.krypa@samsung.com>
+Subject: Re: [PATCH] Smack: add missing support for transmute bit in smack_str_from_perm()
+References: <1354030147-32577-1-git-send-email-r.krypa@samsung.com>
+In-Reply-To: <1354030147-32577-1-git-send-email-r.krypa@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 7:28 AM, Rafal Krypa wrote:
-> Special file /smack/revoke-subject will silently accept labels that are not
-> present on the subject label list. Nothing has to be done for such labels,
-> as there are no rules for them to revoke.
+On 11/27/2012 7:29 AM, Rafal Krypa wrote:
+> This fixes audit logs for granting or denial of permissions to show
+> information about transmute bit.
 >
 > Targeted for git://git.gitorious.org/smack-next/kernel.git
 
@@ -51,23 +49,20 @@ changes.
 >
 > Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
 > ---
->  security/smack/smackfs.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  security/smack/smack_access.c |    2 ++
+>  1 file changed, 2 insertions(+)
 >
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 76a5dca..337e32c 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -2035,10 +2035,8 @@ static ssize_t smk_write_revoke_subj(struct file *file, const char __user *buf,
->  	}
->  
->  	skp = smk_find_entry(cp);
-> -	if (skp == NULL) {
-> -		rc = -EINVAL;
-> +	if (skp == NULL)
->  		goto free_out;
-> -	}
->  
->  	rule_list = &skp->smk_rules;
->  	rule_lock = &skp->smk_rules_lock;
+> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> index db14689..2e397a8 100644
+> --- a/security/smack/smack_access.c
+> +++ b/security/smack/smack_access.c
+> @@ -252,6 +252,8 @@ static inline void smack_str_from_perm(char *string, int access)
+>  		string[i++] = 'x';
+>  	if (access & MAY_APPEND)
+>  		string[i++] = 'a';
+> +	if (access & MAY_TRANSMUTE)
+> +		string[i++] = 't';
+>  	string[i] = '\0';
+>  }
+>  /**
 
