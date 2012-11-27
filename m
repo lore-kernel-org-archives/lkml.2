@@ -1,261 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab2K0XQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:16:30 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753596Ab2K0XP0 (ORCPT
+	id S1756530Ab2K0XQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:16:48 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60161 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452Ab2K0XQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:26 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WMUIQrA5JPk3aDBIFP
-From: Dave Chinner <david@fromorbit.com>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 13/19] xfs: Node aware direct inode reclaim
-Date: Wed, 28 Nov 2012 10:14:40 +1100
-Message-Id: <1354058086-27937-14-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+	Tue, 27 Nov 2012 18:16:43 -0500
+Date: Wed, 28 Nov 2012 10:16:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: linux-next: unusual update of the security tree
+Message-Id: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Nov_2012_10_16_35_+1100_x/CrMB83g6JqjlGD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+--Signature=_Wed__28_Nov_2012_10_16_35_+1100_x/CrMB83g6JqjlGD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-XFS currently only tracks inodes for reclaim via tag bits in the
-inode cache radix tree. While this is awesome for background reclaim
-because it allows inodes to be reclaimed in ascending disk offset
-order, it sucks for direct memory reclaim which really is trying to
-free the oldest inodes from memory.
+Hi James,
 
-As such, the direct reclaim code is a bit of a mess. It has all
-sorts of heuristics code to try to avoid dueling shrinker problems
-and to limit each radix tree to a single direct reclaim walker at a
-time. We can do better.
+The security tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git#n=
+ext)
+looks a bit strange today ... It appears to have been created by Casey
+Schaufler (cc'd) and contains some quite old commits and back merges of
+your tree.  I *guess* you have merged in Casey's tree after he merged in
+your tree from yesterday.
 
-Given that at the point in time that we mark an inode as under
-reclaim, it has been evicted from the VFS inode cache, we can reuse
-the struct inode LRU fields to hold our own reclaim ordered LRU
-list. With the generic LRU code, it doesn't impact on scalability,
-and the shrinker can walk the LRU lists directly giving us
-node-aware inode cache reclaim.
+Just for your consideration.
 
-This means that we get the best of both worlds - background reclaim
-runs very efficiently in terms of IO for cleaning dirty reclaimable
-inodes, while direct reclaim can walk the LRU lists and pick inodes
-to reclaim that suit the MM subsystem the best.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_icache.c |   77 ++++++++++++++++++++++++++++++++++++++-------------
- fs/xfs/xfs_icache.h |    4 +--
- fs/xfs/xfs_linux.h  |    1 +
- fs/xfs/xfs_mount.h  |    2 +-
- fs/xfs/xfs_super.c  |    6 ++--
- 5 files changed, 65 insertions(+), 25 deletions(-)
+--Signature=_Wed__28_Nov_2012_10_16_35_+1100_x/CrMB83g6JqjlGD
+Content-Type: application/pgp-signature
 
-diff --git a/fs/xfs/xfs_icache.c b/fs/xfs/xfs_icache.c
-index 2f91e2b..82b053f 100644
---- a/fs/xfs/xfs_icache.c
-+++ b/fs/xfs/xfs_icache.c
-@@ -244,6 +244,8 @@ xfs_iget_cache_hit(
- 
- 		spin_unlock(&ip->i_flags_lock);
- 		spin_unlock(&pag->pag_ici_lock);
-+
-+		list_lru_del(&mp->m_inode_lru, &VFS_I(ip)->i_lru);
- 	} else {
- 		/* If the VFS inode is being torn down, pause and try again. */
- 		if (!igrab(inode)) {
-@@ -990,6 +992,17 @@ reclaim:
- 	spin_unlock(&pag->pag_ici_lock);
- 
- 	/*
-+	 * iT is safe to do this unlocked check as we've guaranteed that we have
-+	 * exclusive access to this inode via the XFS_IRECLAIM flag. Hence
-+	 * concurrent LRU list walks will avoid removing this inode from the
-+	 * list. For direct reclaim, we know the inode has already been removed
-+	 * from any list it might be on, hence there's no need to traffic the
-+	 * LRU code to find that out.
-+	 */
-+	if (!list_empty(&VFS_I(ip)->i_lru))
-+		list_lru_del(&ip->i_mount->m_inode_lru, &VFS_I(ip)->i_lru);
-+
-+	/*
- 	 * Here we do an (almost) spurious inode lock in order to coordinate
- 	 * with inode cache radix tree lookups.  This is because the lookup
- 	 * can reference the inodes in the cache without taking references.
-@@ -1155,6 +1168,32 @@ xfs_reclaim_inodes(
- 	return xfs_reclaim_inodes_ag(mp, mode, &nr_to_scan);
- }
- 
-+static int
-+xfs_reclaim_inode_isolate(
-+	struct list_head	*item,
-+	spinlock_t		*lru_lock,
-+	void			*cb_arg)
-+{
-+	struct inode		*inode = container_of(item, struct inode,
-+						      i_lru);
-+	struct list_head	*dispose = cb_arg;
-+
-+	rcu_read_lock();
-+	if (xfs_reclaim_inode_grab(XFS_I(inode), SYNC_TRYLOCK)) {
-+		/* not a reclaim candiate, skip it */
-+		rcu_read_unlock();
-+		return 2;
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * We have the XFS_IRECLAIM flag set now, so nobody is going to touch
-+	 * this inode now except us.
-+	 */
-+	list_move(item, dispose);
-+	return 0;
-+}
-+
- /*
-  * Scan a certain number of inodes for reclaim.
-  *
-@@ -1167,36 +1206,34 @@ xfs_reclaim_inodes(
- long
- xfs_reclaim_inodes_nr(
- 	struct xfs_mount	*mp,
--	long			nr_to_scan)
-+	long			nr_to_scan,
-+	nodemask_t		*nodes_to_scan)
- {
--	long nr = nr_to_scan;
-+	LIST_HEAD(dispose);
-+	long freed;
- 
- 	/* kick background reclaimer and push the AIL */
- 	xfs_reclaim_work_queue(mp);
- 	xfs_ail_push_all(mp->m_ail);
- 
--	xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT, &nr);
--	return nr_to_scan - nr;
--}
-+	freed = list_lru_walk_nodemask(&mp->m_inode_lru,
-+				       xfs_reclaim_inode_isolate, &dispose,
-+				       nr_to_scan, nodes_to_scan);
- 
--/*
-- * Return the number of reclaimable inodes in the filesystem for
-- * the shrinker to determine how much to reclaim.
-- */
--long
--xfs_reclaim_inodes_count(
--	struct xfs_mount	*mp)
--{
--	struct xfs_perag	*pag;
--	xfs_agnumber_t		ag = 0;
--	long			reclaimable = 0;
-+	while (!list_empty(&dispose)) {
-+		struct xfs_perag *pag;
-+		struct inode	*inode;
- 
--	while ((pag = xfs_perag_get_tag(mp, ag, XFS_ICI_RECLAIM_TAG))) {
--		ag = pag->pag_agno + 1;
--		reclaimable += pag->pag_ici_reclaimable;
-+		inode = list_first_entry(&dispose, struct inode, i_lru);
-+		list_del_init(&inode->i_lru);
-+
-+		pag = xfs_perag_get(mp,
-+				    XFS_INO_TO_AGNO(mp, XFS_I(inode)->i_ino));
-+		xfs_reclaim_inode(XFS_I(inode), pag, SYNC_WAIT);
- 		xfs_perag_put(pag);
- 	}
--	return reclaimable;
-+
-+	return freed;
- }
- 
- STATIC int
-diff --git a/fs/xfs/xfs_icache.h b/fs/xfs/xfs_icache.h
-index c860d07..4214518 100644
---- a/fs/xfs/xfs_icache.h
-+++ b/fs/xfs/xfs_icache.h
-@@ -30,8 +30,8 @@ int xfs_iget(struct xfs_mount *mp, struct xfs_trans *tp, xfs_ino_t ino,
- void xfs_reclaim_worker(struct work_struct *work);
- 
- int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
--long xfs_reclaim_inodes_count(struct xfs_mount *mp);
--long xfs_reclaim_inodes_nr(struct xfs_mount *mp, long nr_to_scan);
-+long xfs_reclaim_inodes_nr(struct xfs_mount *mp, long nr_to_scan,
-+			   nodemask_t *nodes_to_scan);
- 
- void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
- 
-diff --git a/fs/xfs/xfs_linux.h b/fs/xfs/xfs_linux.h
-index fe7e4df..40cc5d1 100644
---- a/fs/xfs/xfs_linux.h
-+++ b/fs/xfs/xfs_linux.h
-@@ -72,6 +72,7 @@
- #include <linux/kthread.h>
- #include <linux/freezer.h>
- #include <linux/list_sort.h>
-+#include <linux/list_lru.h>
- 
- #include <asm/page.h>
- #include <asm/div64.h>
-diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
-index bab8314..859fd5d 100644
---- a/fs/xfs/xfs_mount.h
-+++ b/fs/xfs/xfs_mount.h
-@@ -200,9 +200,9 @@ typedef struct xfs_mount {
- 						     trimming */
- 	__int64_t		m_update_flags;	/* sb flags we need to update
- 						   on the next remount,rw */
--	struct shrinker		m_inode_shrink;	/* inode reclaim shrinker */
- 	int64_t			m_low_space[XFS_LOWSP_MAX];
- 						/* low free space thresholds */
-+	struct list_lru		m_inode_lru;	/* direct inode reclaim list */
- 
- 	struct workqueue_struct	*m_data_workqueue;
- 	struct workqueue_struct	*m_unwritten_workqueue;
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 33d67d5..814e07a 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -968,6 +968,7 @@ xfs_fs_destroy_inode(
- 	 * reclaim tear down all inodes.
- 	 */
- out_reclaim:
-+	list_lru_add(&ip->i_mount->m_inode_lru, &inode->i_lru);
- 	xfs_inode_set_reclaim_tag(ip);
- }
- 
-@@ -1402,6 +1403,7 @@ xfs_fs_fill_super(
- 	atomic_set(&mp->m_active_trans, 0);
- 	INIT_DELAYED_WORK(&mp->m_reclaim_work, xfs_reclaim_worker);
- 	INIT_DELAYED_WORK(&mp->m_eofblocks_work, xfs_eofblocks_worker);
-+	list_lru_init(&mp->m_inode_lru);
- 
- 	mp->m_super = sb;
- 	sb->s_fs_info = mp;
-@@ -1519,7 +1521,7 @@ xfs_fs_nr_cached_objects(
- 	struct super_block	*sb,
- 	nodemask_t		*nodes_to_count)
- {
--	return xfs_reclaim_inodes_count(XFS_M(sb));
-+	return list_lru_count_nodemask(&XFS_M(sb)->m_inode_lru, nodes_to_count);
- }
- 
- static long
-@@ -1528,7 +1530,7 @@ xfs_fs_free_cached_objects(
- 	long			nr_to_scan,
- 	nodemask_t		*nodes_to_scan)
- {
--	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
-+	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan, nodes_to_scan);
- }
- 
- static const struct super_operations xfs_super_operations = {
--- 
-1.7.10
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQtUnTAAoJEECxmPOUX5FEIzIP/Rfw6PZc3YZ8L7AIGc2MwHsB
+XZHeuEKNBtYjlJlcI79Vj7Or8sA90u7g0Sg5AfIt8pTTdK0ejakeUaoDT+bd2w2p
+AaRZQBboMUS9jPPAQ+Bk3NAisjwkCgF26nbEaf887Lg50Sbh9/33uyc9PQrxPe2a
+45OrvFixtJEobzWUx/cyoHWx+7TQDo0PBTKM432MDjtJJsQCypx2YYwEl/s3impI
+9XGAODFrCsdJzODoWYYxZFcpxD6yM68knVQMUIm7408wVHj2XuYEA1C5UC+Rfrxb
+l6+SIcv2T3UFOdRpMb2y81Pp885IP6RRoHZ+bfUB57r6KnfPcdrqIi8QZ5j0h9D5
+2Mw6a+EUfWArE+O34r4NrpCIMFV6Kf+bQhZkC+CLzJ4Q56/3kn/f4jM04jyJyxs7
+tsUQefckVg6C8fFearo71LTn7pvzyDeelf3NoddM+sqFNzL5fkcl00/n9xeAhSBK
+osUxZ/ufGUgJ9apR7HGgSqV7q77Hm8EDZurY0RhmRER81xV7ltwrSNbXJDQKg61q
+KVhZZ5tQxVInt6UewkdHkN+TGskvvaOAkUrby19QzKREYY9m09ObyMFLM2whfn5H
+Da7TSFE3eJ24ti/Wz+aToZ9WwMRgRjY15o+gdVJ5bBJNGIJbkKteQSgH75R8lScs
+2vnitH9fRgN6475kQOgB
+=sf22
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Nov_2012_10_16_35_+1100_x/CrMB83g6JqjlGD--
