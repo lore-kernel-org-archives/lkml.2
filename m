@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2K0DuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:50:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15229 "EHLO song.cn.fujitsu.com"
+	id S933115Ab2K0Due (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 22:50:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51171 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755878Ab2K0DuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:50:24 -0500
+	id S1757895Ab2K0Duc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 22:50:32 -0500
 X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6280969"
-Message-ID: <50B4304F.4070302@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 11:15:27 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+   d="scan'208";a="6281003"
+Message-ID: <50B42798.4030402@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 10:38:16 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
-        akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, jiang.liu@huawei.com, yinghai@kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, wujianguo@huawei.com, qiuxishi@huawei.com
-Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com>
-In-Reply-To: <50B38F69.6020902@zytor.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, yinghai@kernel.org,
+        bhelgaas@google.com, lenb@kernel.org, jiang.liu@huawei.com,
+        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <50B3014E.3040107@huawei.com> <50B306E0.3050207@cn.fujitsu.com> <50B4127F.3080400@huawei.com>
+In-Reply-To: <50B4127F.3080400@huawei.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 11:08:32,
+ 2012/11/27 10:38:53,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 11:08:41,
-	Serialize complete at 2012/11/27 11:08:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+ 2012/11/27 10:38:57
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/26/2012 11:48 PM, H. Peter Anvin Wrote:
-> On 11/26/2012 05:15 AM, Tang Chen wrote:
+On 11/27/2012 09:08 AM, Hanjun Guo wrote:
+> On 2012/11/26 14:06, Tang Chen wrote:
+>> On 11/26/2012 01:42 PM, Hanjun Guo wrote:
+>>>
+>>> Hi all,
+>>> I think Yasuaki mentioned the key point for the container device remove,
+>>> that is dependency.
+>>>
+>>> Currently, container, processor, and memory hotpulg are managed by different ACPI
+>>> hotplug drivers, the driver works when handle device hotplug individually, but they
+>>> have no idea for each other.
+>>>
+>>> This may introduce some issues, such as Yasuaki mentioned above, that is to say, we
+>>> should remove its child before remove the device itself, and hot add its parent before
+>>> the device itself.
+>>>
+>>> According to the ACPI namespace, we can resolve most of dependency issues. On a typical
+>>> two processor sockets system, the namespace is like this:
+>>>
+>>> /_SB                   ---container device, with HID ACPI0004
+>>>       |_SCK0             ---container device, with HID ACPI0004
+>>>        |_CPU0       ---processor device, with HID ACPI0009 or LNXCPU
+>>>             |_...
+>>>             |_CPUx
+>>>             |_MEM0       ---Memory device, with HID PNP0C80
+>>>       |_SCK1
+>>>        |_CPU0
+>>>             |_...
+>>>             |_CPUx
+>>>             |_MEM1
+>>>       |_PCI0            ---Host bridge, with HID PNP0A03 or PNP0A08
+>>>
+>>> If hot remove the container device, such as SCK0, we can easily know the dependency list
+>>> is CPU0~CPUx and MEM0, but I think the ACPI hotplug driver haven't resolve this now.
+>>>
+>>> And there is another corner case for hotplug devices in the namespace above, that is:
+>>> 1) Remove SCK0. yes, we can remove it with no dependency to the host bridge PCI0;
+>>>
+>>> 2) Remove SCK1 after SCK0. we should remove the host bridge PCI0 first,
+>>>      or the system will crash down. yes, dynamic dependency analysis is needed here.
+>>>      and the ACPI hotplug driver totally have no idea of this.
+>>>
+>>> so, should we do something to settle this down ?
 >>
->> Hi Wu,
+>> Hi Guo,
 >>
->> That is really a problem. And, before numa memory got initialized,
->> memblock subsystem would be used to allocate memory. I didn't find any
->> approach that could fully address it when I making the patches. There
->> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
->> we can only do our best to prevent it from happening.
->>
->> Your patch is very helpful. And after a shot look at the code, it seems
->> that acpi_numa_memory_affinity_init() is an architecture dependent
->> function. Could we do this somewhere which is not depending on the
->> architecture ?
->>
-> 
-> The movable memory should be classified as a non-RAM type in memblock,
-> that way we will not allocate from it early on.
+>> I am trying to do this too. :)
+>
+> Great， what's your idea of this?
+>
+Hi Guo,
 
-Hi, hpa
+I noticed they had a lot of discussion on this topic.
+https://lkml.org/lkml/2012/11/15/159
 
-The problem is that:
-node1 address rang: [18G, 34G), and the user specifies movable map is [8G, 24G).
-We don't know node1's address range before numa init. So we can't prevent
-allocating boot memory in the range [24G, 34G).
+And Vasilis's latest patches are here:
+https://lkml.org/lkml/2012/11/23/335
 
-The movable memory should be classified as a non-RAM type in memblock. What
-do you want to say? We don't save type in memblock because we only
-add E820_RAM and E820_RESERVED_KERN to memblock.
+I think we can have a review of this patchset first. :)
 
-Thanks
-Wen Congyang
-
-> 
-> 	-hpa
-> 
-> 
-
+And also, as you said, the new ACPI hotplug framework from Liu Jiang
+will settle this problem more properly.
+So I think any solution now could be temporary. :)
