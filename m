@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab2K0HRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 02:17:21 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46533 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab2K0HRU (ORCPT
+	id S1758217Ab2K0HRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 02:17:39 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53794 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758103Ab2K0HRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 02:17:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
-References: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
-Date: Tue, 27 Nov 2012 16:17:19 +0900
-X-Google-Sender-Auth: XnKR67gtngzpilQAc_bhnkb-ViU
-Message-ID: <CAH9JG2WdmxCmkvLv5SP=2vgMdgb7MtCDAXtgv64bLY4tfsmb8w@mail.gmail.com>
-Subject: Re: [PATCH] media: fix a typo CONFIG_HAVE_GENERIC_DMA_COHERENT in videobuf2-dma-contig.c
-From: Kyungmin Park <kyungmin.park@samsung.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Nov 2012 02:17:37 -0500
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 02:17:37 EST
+Message-ID: <1354000650.3284.9.camel@thor>
+Subject: Re: linux-next: Tree for Nov 26 (staging/fwserial)
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 27 Nov 2012 02:17:30 -0500
+In-Reply-To: <50B3D767.70604@infradead.org>
+References: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>
+	 <50B3D767.70604@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.4-0build1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2012-11-26 at 12:56 -0800, Randy Dunlap wrote:
+> On 11/26/2012 06:17 AM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20121115:
+> > 
+> 
+> 
+> on i386:
+> 
+> drivers/staging/fwserial/dma_fifo.c: In function 'dma_fifo_in':
+> drivers/staging/fwserial/dma_fifo.c:174:2: error: implicit declaration of function '__WARN_printf'
 
-Does it right to use CONFIG_HAVE_GENERIC_DMA_COHERENT?
-it defined at init/Kconfig
+Apologies for the breakage. Not sure what possessed me to use an
+internal macro so I could duplicate existing functionality...
 
-config HAVE_GENERIC_DMA_COHERENT
-        bool
-        default n
-and use at C file or header file as CONFIG_ prefix?
-e.g., include/asm-generic/dma-coherent.h:#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
+Thanks for catching this now.
 
-Thank you,
-Kyungmin Park
 
-On 11/27/12, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->
-> from commit 93049b9368a2e257ace66252ab2cc066f3399cad, which adds
-> a check HAVE_GENERIC_DMA_COHERENT for dma ops, the check was wrongly
-> made it should have been HAVE_GENERIC_DMA_COHERENT but it was
-> CONFIG_HAVE_GENERIC_DMA_COHERENT.
-> This patch fixes the typo, which was causing following build error:
->
-> videobuf2-dma-contig.c:743: error: 'vb2_dc_get_dmabuf' undeclared here (not
-> in a function)
-> make[3]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> ---
->  drivers/media/v4l2-core/videobuf2-dma-contig.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> index 5729450..dfea692 100644
-> --- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> +++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> @@ -739,7 +739,7 @@ static void *vb2_dc_attach_dmabuf(void *alloc_ctx,
-> struct dma_buf *dbuf,
->  const struct vb2_mem_ops vb2_dma_contig_memops = {
->  	.alloc		= vb2_dc_alloc,
->  	.put		= vb2_dc_put,
-> -#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
-> +#ifdef HAVE_GENERIC_DMA_COHERENT
->  	.get_dmabuf	= vb2_dc_get_dmabuf,
->  #endif
->  	.cookie		= vb2_dc_cookie,
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
