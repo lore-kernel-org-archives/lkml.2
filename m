@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab2K0Lry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 06:47:54 -0500
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:49401 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754818Ab2K0Lrw (ORCPT
+	id S1752427Ab2K0LxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 06:53:20 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44362 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2K0LxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 06:47:52 -0500
-Message-ID: <1354016870.1479.41.camel@tellur>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Lucas Stach <dev@lynxeye.de>
-To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Dave Airlie <airlied@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Date: Tue, 27 Nov 2012 12:47:50 +0100
-In-Reply-To: <50B4A483.8030305@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	 <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	 <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	 <50B46336.8030605@nvidia.com>
-	 <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	 <50B476E1.4070403@nvidia.com>
-	 <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-	 <50B47DA8.60609@nvidia.com> <1354011776.1479.31.camel@tellur>
-	 <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-	 <50B4A483.8030305@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 27 Nov 2012 06:53:18 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: jg1.han@samsung.com
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH 1/5] backlight: Add GPIO-based backlight driver
+Date: Tue, 27 Nov 2012 12:54:21 +0100
+Message-ID: <2946045.hrxh3VjFfi@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <33110366.44811353978636788.JavaMail.weblogic@epv6ml07>
+References: <33110366.44811353978636788.JavaMail.weblogic@epv6ml07>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 27.11.2012, 13:31 +0200 schrieb Terje Bergström:
-> On 27.11.2012 12:37, Thierry Reding wrote:
-> > But in that case it should be made mandatory at first until proper IOMMU
-> > support is enabled on Tegra30. Then it can be checked at driver probe
-> > time whether or not to enable the extra checks. That way we don't need a
-> > special Kconfig option and we still get all the security that we need,
-> > right?
-> 
-> I guess it depends on the level of security.
-> 
-> If we want to only protect kernel and user space memory, this would be
-> sufficient and no firewall is needed if IOMMU is turned on.
-> 
-> If we want to protect 2D buffers from each other, this is not sufficient.
-> 
-I guess we could change IOMMU address spaces for the graphics units
-depending on the active channel. This would still be a bit of a
-performance hit, because of the necessary TLB flushing and so on, but
-should be much better than checking the whole command stream. This way
-you at least get security on a process level, as no process is able to
-corrupt another processes graphics resources.
+Hi Jingoo,
 
-This is the same level of security as provided by the nouveau driver.
-But to do so all memory management has to be done in kernel and from the
-current submissions of the 2D infrastructure I fear that the current
-architecture does too much of that in userspace, but I'll hold back with
-any judgement until we actually get to see the userspace parts.
+On Tuesday 27 November 2012 01:10:36 Jingoo Han wrote:
+> On Saturday, November 24, 2012 1:35 AM, Laurent Pinchart wrote
+> 
+> > 
+> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > ---
+> > 
+> >  drivers/video/backlight/Kconfig          |    7 ++
+> >  drivers/video/backlight/Makefile         |    1 +
+> >  drivers/video/backlight/gpio_backlight.c |  158 +++++++++++++++++++++++++
+> >  include/video/gpio_backlight.h           |   21 ++++
+> >  4 files changed, 187 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/video/backlight/gpio_backlight.c
+> >  create mode 100644 include/video/gpio_backlight.h
+> 
+> 
+> [...]
+> 
+> 
+> > +static int __devinit gpio_backlight_probe(struct platform_device *pdev)
+> > +{
+> > +	struct gpio_backlight_platform_data *pdata = pdev->dev.platform_data;
+> > +	struct backlight_properties props;
+> > +	struct backlight_device *bl;
+> > +	struct gpio_backlight *gbl;
+> > +	int ret;
+> > +
+> > +	gbl = devm_kzalloc(&pdev->dev, sizeof(*gbl), GFP_KERNEL);
+> > +	if (gbl == NULL)
+> > +		return -ENOMEM;
+> > +
+> > +	gbl->dev = &pdev->dev;
+> > +
+> > +	if (!pdata) {
+> > +		dev_err(&pdev->dev, "failed to find platform data\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	gbl->fbdev = pdata->fbdev;
+> > +	gbl->gpio = pdata->gpio;
+> > +	gbl->active = pdata->active_low ? 0 : 1;
+> > +
+> > +	ret = devm_gpio_request_one(gbl->dev, gbl->gpio, GPIOF_DIR_OUT,
+> > +				    pdata->name);
+> 
+> 
+> Please use GPIOF_INIT flags if you want to turn off GPIO backlight.
+> If gbl->active is inverted, GPIOF_INIT_HIGH can be used as below:
+> 
+> 	ret = devm_gpio_request_one(gbl->dev, gbl->gpio,
+> 				    GPIOF_DIR_OUT | (gbl->active ?
+> 				    GPIOF_INIT_LOW : GPIOF_INIT_HIGH),
+> 				    pdata->name);
 
-Also to implement this strategy you have to take ownership of the
-graphics address space on a much lower level than the DMA API. This
-might take some work together with the IOMMU guys.
+Good point, thank you. I'll fix that.
 
+> > +	if (ret < 0) {
+> > +		dev_err(&pdev->dev, "unable to request GPIO\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	memset(&props, 0, sizeof(props));
+> > +	props.type = BACKLIGHT_RAW;
+> > +	props.max_brightness = 1;
+> > +	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, gbl,
+> > +				       &gpio_backlight_ops, &props);
+> > +	if (IS_ERR(bl)) {
+> > +		dev_err(&pdev->dev, "failed to register backlight\n");
+> > +		return PTR_ERR(bl);
+> > +	}
+> > +
+> > +	bl->props.brightness = pdata->def_value;
+> > +	backlight_update_status(bl);
+> > +
+> > +	platform_set_drvdata(pdev, bl);
+> > +	return 0;
+> > +}
+
+-- 
 Regards,
-Lucas
+
+Laurent Pinchart
 
