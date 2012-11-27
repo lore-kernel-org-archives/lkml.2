@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab2K0Cdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:33:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38515 "EHLO
+	id S1757926Ab2K0Cez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:34:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38528 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755961Ab2K0Cdh (ORCPT
+	by vger.kernel.org with ESMTP id S1757873Ab2K0Cey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:33:37 -0500
-Message-ID: <1353983604.4266.44.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+	Mon, 26 Nov 2012 21:34:54 -0500
+Message-ID: <1353983688.4266.45.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 042/270] pnfsblock: fix non-aligned DIO read
 From: Ben Hutchings <ben@decadent.org.uk>
 To: Peng Tao <tao.peng@emc.com>, Trond Myklebust <Trond.Myklebust@netapp.com>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Tue, 27 Nov 2012 02:33:24 +0000
-In-Reply-To: <1353949160-26803-42-git-send-email-herton.krzesinski@canonical.com>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Date: Tue, 27 Nov 2012 02:34:48 +0000
+In-Reply-To: <1353949160-26803-43-git-send-email-herton.krzesinski@canonical.com>
 References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-42-git-send-email-herton.krzesinski@canonical.com>
+	 <1353949160-26803-43-git-send-email-herton.krzesinski@canonical.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-SBJZwEfJiLHRPunr31uk"
+	protocol="application/pgp-signature"; boundary="=-6Q2U/iA8EoUDgC34g+Rl"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -31,7 +30,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-SBJZwEfJiLHRPunr31uk
+--=-6Q2U/iA8EoUDgC34g+Rl
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -43,12 +42,11 @@ e know.
 >=20
 > From: Peng Tao <bergwolf@gmail.com>
 >=20
-> commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 upstream.
+> commit f742dc4a32587bff50b13dde9d8894b96851951a upstream.
 >=20
-> If applications use flock to protect its write range, generic NFS
-> will not do read-modify-write cycle at page cache level. Therefore
-> LD should know how to handle non-sector aligned writes. Otherwise
-> there will be data corruption.
+> For DIO read, if it is not sector aligned, we should reject it
+> and resend via MDS. Otherwise there might be data corruption.
+> Also teach bl_read_pagelist to handle partial page reads for DIO.
 >=20
 > Signed-off-by: Peng Tao <tao.peng@emc.com>
 > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
@@ -56,7 +54,7 @@ e know.
 >
 [...]
 
-I notice that this fix is missing from 3.4, and will need backporting.
+This also hasn't been applied to 3.4, and presumably needs backporting.
 
 Ben.
 
@@ -65,26 +63,26 @@ Ben Hutchings
 Never attribute to conspiracy what can adequately be explained by stupidity=
 .
 
---=-SBJZwEfJiLHRPunr31uk
+--=-6Q2U/iA8EoUDgC34g+Rl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAULQmdOe/yOyVhhEJAQrf3w/+I0chqXoO2/Xo3mZtZkxceQjlUs1oh8ZH
-f3Xvn5WWlIzNfMo6xwAJ+2ZLteaUC2QmZXxhejlcn1aCFF6AU13zOW1gQ0F+wf4d
-i7Tb6arKVRszN4zFp6VvyhKIL94V2LhIuZLgCFR+M0TVp9llHYawI4pNuuFquKoN
-2mkv2a/c9zkMcke0DWQh5tvOEXR1kZX6EYhnuJBAurDmjPyEf/9THDenS3D2qpKy
-nv6ziGIejXBoAmoqvbJJtGafZbf4xs4az1Ufa98+ZUc5EhkndYlaeBfVSJyoCPZ4
-9x8UP5OhTSkknYR326ZQx44WPTNZCXhpY7+tD/NNEU9xAe2RjoA/vxY+06hrr/1G
-lEq2goC7+886e05LP97cjhk9jfgeIzmr4iGqbX3FDzpJvzt+/eTLXFMwSf0Z2P5T
-llI8pr9Z7Hdm5fA7ZgKAOTv9IGxsqqV3focOxDXaK6LEXgEYnWjnJsSHeuPmdfgJ
-6ciGnd5Nm9ltY35HwtHsZFOfLYr+NxuNT7BLCmfixTT8yhtRVHRQdMAo1JM9l110
-H56eL+f/QVTtJn00vVCDy/U7mLQkhCrgxsu2aCbkChccFAIs6lwy6KHqGmEfS5Jh
-BSCA6Oq99yAXD4wDmpfu1PHS+viWjqoyvkfmfV4LnJFdoJ3kFIZlHIjFFMs0ovhK
-pqHyZ4j0saA=
-=eCiL
+iQIVAwUAULQmyOe/yOyVhhEJAQoq3Q/+OPm94tK1gOHVoCFCR382eAwiwfAb0IgL
+gaVJtuRbRKq65ZCpzueF8vSbZlZ7e8yD5ESF0EP37KTOZbfgGsJqRgw/h3Lk8NZv
+X7KurnAo1NpnBxCScp9Nl5+VXfSIRJuQehtq7ZFJwV0O+BuCn6/vLumXLiVO3JXG
+gQuwpUS6dbtR+rD3AHP9rpEx7Ml9Q97zbbA0LNvmP+moihB9r7IrwfShIcYeAvPW
+78ANN9vZNZp5az7PX+q6IdnidbpewgQT7BM2IA7ZS3SRfrmrynmyyXKJ9uiK3IDC
+mnSOXvwJzF8mP5oB6UKRTQfs25yX/8z2UmmDmDKMHA3KMJE239jNi4bTO75Heurl
+3jk2tWnOo8+rVB+AuhBPFzMz4uhun9xPuuBP9T5sCUB6TRnbC+L6lbtXT+lRF/XE
+46/0sVi+PFZLlxzlW/xuBV0rlO+Vn5v1LghB7B9tCCY6iktLramuS/YPGF41WUA+
+k2j0ERmSfwRetmuLzUc8P4rfPITmdTTcEoiXsbkhoOL58hUgzX5kcsV2xexFBpSZ
+Wjq4bTe1eGQbHHxCdcMHkzL5BMuxAq4+eksKl5fhOdLTtt5oHcTp7BH3hmdvKbqI
+jXhFrYVW5mbGPU9gtW58cbLphWjqblKKWssF93od3scMnFY5JJpOkaeNSx1GFYZw
+VJil6W2Te/4=
+=C01D
 -----END PGP SIGNATURE-----
 
---=-SBJZwEfJiLHRPunr31uk--
+--=-6Q2U/iA8EoUDgC34g+Rl--
