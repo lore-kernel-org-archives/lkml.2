@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2K0Lc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 06:32:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51102 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754835Ab2K0LcX (ORCPT
+	id S1755515Ab2K0Li4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 06:38:56 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38428 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2K0Lix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 06:32:23 -0500
-Date: Tue, 27 Nov 2012 11:32:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anirudh Ghayal <aghayal@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        collinsd@codeaurora.org, khilman@ti.com, tsoni@codeaurora.org
-Subject: Re: Shared regulator usage
-Message-ID: <20121127113221.GB4468@opensource.wolfsonmicro.com>
-References: <1b9aae54f83056035d83c049a7ac1876.squirrel@www.codeaurora.org>
- <20121126134719.GI9411@opensource.wolfsonmicro.com>
- <50B4A0D1.7010707@codeaurora.org>
+	Tue, 27 Nov 2012 06:38:53 -0500
+Date: Tue, 27 Nov 2012 11:38:48 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+Subject: Re: [PATCH 3/5 v3] Input: bu21013_ts - Add support for Device Tree
+ booting
+Message-ID: <20121127113848.GD2013@gmail.com>
+References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
+ <1352900837-20759-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50B4A0D1.7010707@codeaurora.org>
-X-Cookie: You are always busy.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352900837-20759-4-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Fri Sep 28 14:35:43 2012 +0100
 
---wzJLGUyc3ArbnUjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+    Input: bu21013_ts - Add support for Device Tree booting
+    
+    Now we can register the BU21013_ts touch screen when booting with
+    Device Tree enabled. Here we parse all the necessary components
+    previously expected to be passed from platform data.
+    
+    Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+    Cc: linux-input@vger.kernel.org
+    Acked-by: Arnd Bergmann <arnd@arndb.de>
+    Acked-by: Linus Walleij <linus.walleij@linaro.org>
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-On Tue, Nov 27, 2012 at 04:45:29PM +0530, Anirudh Ghayal wrote:
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/bu21013.txt b/Documentation/devicetree/bindings/input/touchscreen/bu21013.txt
+new file mode 100644
+index 0000000..ca5a2c8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/bu21013.txt
+@@ -0,0 +1,28 @@
++* Rohm BU21013 Touch Screen
++
++Required properties:
++ - compatible              : "rohm,bu21013_tp"
++ - reg                     :  I2C device address
++
++Optional properties:
++ - touch-gpio              : GPIO pin registering a touch event
++ - <supply_name>-supply    : Phandle to a regulator supply
++ - rohm,touch-max-x        : Maximum outward permitted limit in the X axis
++ - rohm,touch-max-y        : Maximum outward permitted limit in the Y axis
++ - rohm,flip-x             : Flip touch coordinates on the X axis
++ - rohm,flip-y             : Flip touch coordinates on the Y axis
++
++Example:
++
++	i2c@80110000 {
++		bu21013_tp@0x5c {
++			compatible = "rohm,bu21013_tp";
++			reg = <0x5c>;
++			touch-gpio = <&gpio2 20 0x4>;
++			avdd-supply = <&ab8500_ldo_aux1_reg>;
++
++			rohm,touch-max-x = <384>;
++			rohm,touch-max-y = <704>;
++			rohm,flip-y;
++		};
++	};
+diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
+index 16f29d6..07335ac 100644
+--- a/drivers/input/touchscreen/bu21013_ts.c
++++ b/drivers/input/touchscreen/bu21013_ts.c
+@@ -15,6 +15,8 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/module.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ 
+ #define PEN_DOWN_INTR	0
+ #define MAX_FINGERS	2
+@@ -473,13 +475,30 @@ static void bu21013_free_irq(struct bu21013_ts_data *bu21013_data)
+  * This function used to initializes the i2c-client touchscreen
+  * driver and returns integer.
+  */
++static void __devinit bu21013_of_probe(struct device_node *np,
++				struct bu21013_platform_device *pdata)
++{
++	pdata->y_flip = pdata->x_flip = false;
++
++	pdata->x_flip = of_property_read_bool(np, "rohm,flip-x");
++	pdata->y_flip = of_property_read_bool(np, "rohm,flip-y");
++
++	of_property_read_u32(np, "rohm,touch-max-x", &pdata->touch_x_max);
++	of_property_read_u32(np, "rohm,touch-max-y", &pdata->touch_y_max);
++
++	pdata->touch_pin = of_get_named_gpio(np, "touch-gpio", 0);
++	pdata->cs_pin = of_get_named_gpio(np, "reset-gpio", 0);
++
++	pdata->ext_clk = false;
++}
++
+ static int __devinit bu21013_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *id)
+ {
+ 	struct bu21013_ts_data *bu21013_data;
+ 	struct input_dev *in_dev;
+-	const struct bu21013_platform_device *pdata =
+-					client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
++	struct bu21013_platform_device *pdata = client->dev.platform_data;
+ 	int error;
+ 
+ 	if (!i2c_check_functionality(client->adapter,
+@@ -489,8 +508,17 @@ static int __devinit bu21013_probe(struct i2c_client *client,
+ 	}
+ 
+ 	if (!pdata) {
+-		dev_err(&client->dev, "platform data not defined\n");
+-		return -EINVAL;
++		if (np) {
++			pdata = devm_kzalloc(&client->dev, sizeof(*pdata),
++					GFP_KERNEL);
++			if (!pdata)
++				return -ENOMEM;
++
++			bu21013_of_probe(np, pdata);
++		} else {
++			dev_err(&client->dev, "no device tree or platform data\n");
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	pdata->irq = gpio_to_irq(pdata->touch_pin);
 
-> At 1.4Ghz the cpu-freq driver votes for 1.3v, then the CPR kicks in
-> and recommends a voltage of 1.275v. Now a set_voltage with this new
-> level (1.275v, 1.275)  fails as it does not satisfy the limits of
-> the cpu-freq driver. It is not possible to tweak this range any
-> further as it would not achieve the goal of micro-adjusting the
-> voltage to save power.
-
-> Such scenarios are very likely to occur in the future on embedded
-> systems where there is a need to conserve power by introducing some
-> adaptive voltage scaling techniques based on various parameters such
-> as temperature/sensitivity.
-
-This just sounds like bad software design.  You've got two unrelated
-drivers setting the same thing without talking to each other even though
-the one is trying to adjust the voltage set by the other without
-actually knowing the voltage that the other one set.  Why are these
-separate drivers?
-
---wzJLGUyc3ArbnUjN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtKS5AAoJELSic+t+oim9OasP/RbXlM5sIvHN7PT5nImbIYjH
-K4nn96BLhWsex9yX4yChT3bkzgni1e3CJXSveJmf/ki8Gj3+6HrWxvoqrepcbvee
-upzL7bAH5jdnzV1FGMG2JMGCf9fwlBoZm408UBoloeNBNdlGHNW4uQTEv7kY2GJ0
-2iV91SDwqo5xtMT06RBJTSOLyl+mVZmWbIx4DgIAQohZQnHDg3ec/WqkeX1ILM3J
-w5OpceiWbmSvwiloYW984PGlq29gPz2npRcxe12m90amuRsNtx7DE7v1ZZk93wRk
-lz7BrSG13pQl1tJki3eDq7QtNkC36FjUy2eo/DYKC31mMEwTDdlP8xjtlGXGaUM8
-stJUw4pEQfZ4oqIkM0moOWwQ1TB8xA/zu11J3hOE23H36nRpLzDdEy5G6hYFlQ2T
-n3/SIUuReK93xc+tLFeCgnK4Q0Kh94qHF61vr5MNoVM5HQ8TDK+Z7LBlUqXLQioI
-1tKqSoDK8Mp/cMzFw2t/NjkDdZv6UfRjJnEOfMuoDYrZEEzzOwlziUhJwfQKogNG
-u3JI93X07ap/obUqc7metmOpPqmsqPzdkqThdx0UgBTYdYCFU6cwxN/XR6ztWJvU
-iZBrL7lVqioNZxYqtbfrKGG5cwqBzFp+HPh7dBaKlwRRuqCkDREsEOxEWIHUyIBQ
-35hw75CoVxAKoend36fF
-=fz2e
------END PGP SIGNATURE-----
-
---wzJLGUyc3ArbnUjN--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
