@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2K0L1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 06:27:39 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3481 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab2K0L1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 06:27:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 27 Nov 2012 03:27:26 -0800
-Message-ID: <50B4A483.8030305@nvidia.com>
-Date: Tue, 27 Nov 2012 13:31:15 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Lucas Stach <dev@lynxeye.de>, Dave Airlie <airlied@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com> <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com> <50B46336.8030605@nvidia.com> <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com> <50B476E1.4070403@nvidia.com> <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com> <50B47DA8.60609@nvidia.com> <1354011776.1479.31.camel@tellur> <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755340Ab2K0L2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 06:28:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754237Ab2K0L2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 06:28:33 -0500
+Date: Tue, 27 Nov 2012 09:28:22 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Pawel Osciak <pawel@osciak.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH] media: fix a typo CONFIG_HAVE_GENERIC_DMA_COHERENT in
+ videobuf2-dma-contig.c
+Message-ID: <20121127092822.1c57a843@redhat.com>
+In-Reply-To: <CA+V-a8v+PkvPSo-kO=s0ZZRCf6WHUfo3bicRC+Svr1XVu0XSVQ@mail.gmail.com>
+References: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
+	<50B46A83.8020703@samsung.com>
+	<CA+V-a8tLvO2dywNNS8ykpsiCMiuSuVNF2QPCk+CrevVtDxxxsg@mail.gmail.com>
+	<50B4711D.3060702@samsung.com>
+	<CA+V-a8v+PkvPSo-kO=s0ZZRCf6WHUfo3bicRC+Svr1XVu0XSVQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.11.2012 12:37, Thierry Reding wrote:
-> But in that case it should be made mandatory at first until proper IOMMU
-> support is enabled on Tegra30. Then it can be checked at driver probe
-> time whether or not to enable the extra checks. That way we don't need a
-> special Kconfig option and we still get all the security that we need,
-> right?
+Em Tue, 27 Nov 2012 14:55:10 +0530
+Prabhakar Lad <prabhakar.csengg@gmail.com> escreveu:
 
-I guess it depends on the level of security.
+> Hi,
+> 
+> On Tue, Nov 27, 2012 at 1:21 PM, Marek Szyprowski
+> <m.szyprowski@samsung.com> wrote:
+> > Hello,
+> >
+> >
+> > On 11/27/2012 8:39 AM, Prabhakar Lad wrote:
+> >>
+> >> Hi Marek,
+> >>
+> >> On Tue, Nov 27, 2012 at 12:53 PM, Marek Szyprowski
+> >> <m.szyprowski@samsung.com> wrote:
+> >> > Hello,
+> >> >
+> >> >
+> >> > On 11/27/2012 6:59 AM, Prabhakar Lad wrote:
+> >> >>
+> >> >> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >> >>
+> >> >> from commit 93049b9368a2e257ace66252ab2cc066f3399cad, which adds
+> >> >> a check HAVE_GENERIC_DMA_COHERENT for dma ops, the check was wrongly
+> >> >> made it should have been HAVE_GENERIC_DMA_COHERENT but it was
+> >> >> CONFIG_HAVE_GENERIC_DMA_COHERENT.
+> >> >> This patch fixes the typo, which was causing following build error:
+> >> >>
+> >> >> videobuf2-dma-contig.c:743: error: 'vb2_dc_get_dmabuf' undeclared here
+> >> >> (not in a function)
+> >> >> make[3]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
+> >> >>
+> >> >> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >> >> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> >> >
+> >> >
+> >> > The CONFIG_HAVE_GENERIC_DMA_COHERENT based patch was a quick workaround
+> >> > for the build problem in linux-next and should be reverted now. The
+> >> > correct patch has been posted for drivers/base/dma-mapping.c to LKML,
+> >> > see http://www.spinics.net/lists/linux-next/msg22890.html
+> >>
+> >> I was referring to this patch from Mauro,
+> >>
+> >> http://git.linuxtv.org/media_tree.git/commitdiff/93049b9368a2e257ace66252ab2cc066f3399cad
+> >> which introduced this build error.
+> >
+> >
+> > I know, with my patch the workaround introduced by Mauro is not needed at
+> > all.
+> >
+> Thanks for clarifying I'll drop this patch,  I hope Mauro will revert
+> his changes.
 
-If we want to only protect kernel and user space memory, this would be
-sufficient and no firewall is needed if IOMMU is turned on.
+Yeah, I'm reverting it right now and applying Marek's one, with Greg's ack.
+> 
+> Regards,
+> --Prabhakar
+> 
+> >
+> > Best regards
+> > --
+> > Marek Szyprowski
+> > Samsung Poland R&D Center
+> >
+> >
 
-If we want to protect 2D buffers from each other, this is not sufficient.
 
-Terje
+-- 
+Regards,
+Mauro
