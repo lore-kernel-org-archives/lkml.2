@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2K0NN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 08:13:58 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49343 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab2K0NNT (ORCPT
+	id S1753947Ab2K0NPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 08:15:46 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:48091 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab2K0NPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 08:13:19 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH 1/3] Input: bu21013_ts - Request a regulator that actually exists
-Date: Tue, 27 Nov 2012 13:13:08 +0000
-Message-Id: <1354021990-16978-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
-References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
+	Tue, 27 Nov 2012 08:15:45 -0500
+MIME-Version: 1.0
+Date: Tue, 27 Nov 2012 21:15:44 +0800
+Message-ID: <CAJd=RBD-5zq-7U3yPWCsb9P_AMzf_GoT47onxXiihgK9J7-wOA@mail.gmail.com>
+Subject: [PATCH 2/3] balancenuma: set last_nid on newly allocated page
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, dhillf@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the BU21013 Touch Screen driver requests a regulator by the
-name of 'V-TOUCH', which doesn't exist anywhere in the kernel. The
-correct name, as referenced in platform regulator code is 'avdd'. Here,
-when we request a regulator, we use the correct name instead.
+Pass last_nid from misplaced page to newly allocated migration target page.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/input/touchscreen/bu21013_ts.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
-index 5c487d2..2fae682 100644
---- a/drivers/input/touchscreen/bu21013_ts.c
-+++ b/drivers/input/touchscreen/bu21013_ts.c
-@@ -461,7 +461,7 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- 	bu21013_data->chip = pdata;
- 	bu21013_data->client = client;
- 
--	bu21013_data->regulator = regulator_get(&client->dev, "V-TOUCH");
-+	bu21013_data->regulator = regulator_get(&client->dev, "avdd");
- 	if (IS_ERR(bu21013_data->regulator)) {
- 		dev_err(&client->dev, "regulator_get failed\n");
- 		error = PTR_ERR(bu21013_data->regulator);
--- 
-1.7.9.5
+--- a/mm/migrate.c	Tue Nov 27 20:16:48 2012
++++ b/mm/migrate.c	Tue Nov 27 20:19:12 2012
+@@ -1457,6 +1457,9 @@ static struct page *alloc_misplaced_dst_
+ 					  __GFP_NOMEMALLOC | __GFP_NORETRY |
+ 					  __GFP_NOWARN) &
+ 					 ~GFP_IOFS, 0);
++	if (newpage)
++		page_xchg_last_nid(newpage, page_last_nid(page));
++
+ 	return newpage;
+ }
 
+@@ -1627,6 +1630,8 @@ int migrate_misplaced_transhuge_page(str
+ 		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
+ 	if (!new_page)
+ 		goto out_dropref;
++
++	page_xchg_last_nid(new_page, page_last_nid(page));
+
+ 	isolated = numamigrate_isolate_page(pgdat, page);
+ 	if (!isolated) {
+--
