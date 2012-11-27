@@ -1,27 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab2K0PQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:16:04 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52988 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab2K0PQB (ORCPT
+	id S1755824Ab2K0PQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:16:47 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63853 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab2K0PQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:16:01 -0500
+	Tue, 27 Nov 2012 10:16:46 -0500
 From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
 To: <linux-kernel@vger.kernel.org>
-Subject: 3.6.8: dmar: DRHD: handling fault status reg 602
-Date: Tue, 27 Nov 2012 10:16:00 -0500
-Message-ID: <00e001cdccb2$1c4dfb10$54e9f130$@lucidpixels.com>
+References: <00e001cdccb2$1c4dfb10$54e9f130$@lucidpixels.com>
+In-Reply-To: <00e001cdccb2$1c4dfb10$54e9f130$@lucidpixels.com>
+Subject: RE: 3.6.8: dmar: DRHD: handling fault status reg 602
+Date: Tue, 27 Nov 2012 10:16:45 -0500
+Message-ID: <00e101cdccb2$371dd780$a5598680$@lucidpixels.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac3MshfHaoPAynYAR0CKzZPfsh+VrA==
+Thread-Index: AQKOXYnr1NbiiY7K8+NQHlljSPpJYpZ8qUgA
 Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+
+-----Original Message-----
+From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
+Sent: Tuesday, November 27, 2012 10:16 AM
+To: linux-kernel@vger.kernel.org
+Subject: 3.6.8: dmar: DRHD: handling fault status reg 602
 
 Hello,
 
@@ -47,6 +56,15 @@ Control: RX/TX
 
 This is from:
 http://lkml.org/lkml/2012/11/27/263
+
+Justin.
+
+--
+
+Hi,
+
+Disregard, appears to be a nouveau bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=573173
 
 Justin.
 
