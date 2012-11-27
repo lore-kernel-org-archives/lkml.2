@@ -1,65 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2K0AmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:42:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40105 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495Ab2K0Al7 (ORCPT
+	id S933026Ab2K0AmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:42:25 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42165 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495Ab2K0AmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:41:59 -0500
-Date: Mon, 26 Nov 2012 16:41:57 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
-Message-Id: <20121126164157.c7f86ee6.akpm@linux-foundation.org>
-In-Reply-To: <20121114152239.936025193@openvz.org>
-References: <20121114151937.344922058@openvz.org>
-	<20121114152239.936025193@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 19:42:23 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: andi@firstfloor.org, tokunaga.keiich@jp.fujitsu.com,
+        kexec@lists.infradead.org, hbabu@us.ibm.com, mingo@redhat.com,
+        ddutile@redhat.com, vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com,
+        hpa@zytor.com, bhelgaas@google.com, tglx@linutronix.de,
+        yinghai@kernel.org, Takao Indoh <indou.takao@jp.fujitsu.com>,
+        khalid@gonehiking.org
+Message-Id: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+Subject: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump with iommu
+Date: Tue, 27 Nov 2012 09:42:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 19:19:44 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+These patches reset PCIe devices at boot time to address DMA problem on
+kdump with iommu. When "reset_devices" is specified, a hot reset is
+triggered on each PCIe root port and downstream port to reset its
+downstream endpoint.
 
-> This allow us to print out fsnotify details such as
-> watchee inode, device, mask and optionally a file handle.
+Background:
+A kdump problem about DMA has been discussed for a long time. That is,
+when a kernel is switched to the kdump kernel, DMA derived from first
+kernel affects second kernel. Especially this problem surfaces when
+iommu is used for PCI passthrough on KVM guest. In the case of the
+machine I use, when intel_iommu=on is specified, DMAR error is detected
+in kdump kernel and PCI SERR is also detected. Finally kdump fails
+because some devices does not work correctly.
 
-This helps the compiler quite a lot:
+The root cause is that ongoing DMA from first kernel causes DMAR fault
+because page table of DMAR is initialized while kdump kernel is booting
+up. Therefore to solve this problem DMA needs to be stopped before DMAR
+is initialized at kdump kernel boot time. By these patches, PCIe devices
+are reset by hot reset and its DMA is stopped when reset_devices is
+specified. One problem of this solution is that the monitor blacks out
+when VGA controller is reset. So this patch does not reset the port
+whose child endpoint is VGA device.
 
---- a/fs/notify/fdinfo.c~fs-notify-add-procfs-fdinfo-helper-v7-fix
-+++ a/fs/notify/fdinfo.c
-@@ -26,13 +26,13 @@ static int show_fdinfo(struct seq_file *
- 	struct fsnotify_mark *mark;
- 	int ret = 0;
- 
--	spin_lock(&group->mark_lock);
-+	mutex_lock(&group->mark_mutex);
- 	list_for_each_entry(mark, &group->marks_list, g_list) {
- 		ret = show(m, mark);
- 		if (ret)
- 			break;
- 	}
--	spin_unlock(&group->mark_lock);
-+	mutex_unlock(&group->mark_mutex);
- 	return ret;
- }
- 
+What I tried:
+- Clearing bus master bit and INTx disable bit at boot time
+    This did not solve this problem. I still got DMAR error on devices.
+- Resetting devices in fixup_final(v1 patch)
+    DMAR error disappeared, but sometimes PCI SERR was detected. This
+    is well explained here.
+    https://lkml.org/lkml/2012/9/9/245
+    This PCI SERR seems to be related to interrupt remapping.
+- Clearing bus master in setup_arch() and resetting devices in
+  fixup_final
+    Neither DMAR error nor PCI SERR occurred. But on certain machine
+    kdump kernel hung up when resetting devices. It seems to be a
+    problem specific to the platform.
+- Resetting devices in setup_arch() (v2 and later patch)
+    This solution solves all problems I found so far.
 
-But I rather worry that the code which you sent clearly wasn't the code
-which you tested.  Please retest and confirm that I now have the correct
-code?
+Changelog:
+v7:
+Update Yinghai's dummy-pci patch with macros in linux/pci.h, and fix
+some bugs
+
+v6:
+Rewrite using Yinghai's dummy-pci patch
+https://lkml.org/lkml/2012/11/13/118
+
+v5:
+Do bus reset after all devices are scanned and its config registers are
+saved. This fixes a bug that config register is accessed without delay
+after reset.
+https://lkml.org/lkml/2012/10/17/47
+
+v4:
+Reduce waiting time after resetting devices. A previous patch does reset
+like this:
+  for (each device) {
+    save config registers
+    reset
+    wait for 500 ms
+    restore config registers
+  }
+
+If there are N devices to be reset, it takes N*500 ms. On the other
+hand, the v4 patch does:
+  for (each device) {
+    save config registers
+    reset
+  }
+  wait 500 ms
+  for (each device) {
+    restore config registers
+  }
+Though it needs more memory space to save config registers, the waiting
+time is always 500ms.
+https://lkml.org/lkml/2012/10/15/49
+
+v3:
+Move alloc_bootmem and free_bootmem to early_reset_pcie_devices so that
+they are called only once.
+https://lkml.org/lkml/2012/10/10/57
+
+v2:
+Reset devices in setup_arch() because reset need to be done before
+interrupt remapping is initialized.
+https://lkml.org/lkml/2012/10/2/54
+
+v1:
+Add fixup_final quirk to reset PCIe devices
+https://lkml.org/lkml/2012/8/3/160
+
+Takao Indoh (5):
+  x86, pci: add dummy pci device for early stage
+  PCI: Define the maximum number of PCI function
+  Make reset_devices available at early stage
+  x86, pci: Reset PCIe devices at boot time
+  x86, pci: Enable PCI INTx when MSI is disabled
+
+ arch/x86/include/asm/pci-direct.h |    3 +
+ arch/x86/kernel/setup.c           |    3 +
+ arch/x86/pci/common.c             |    4 +-
+ arch/x86/pci/early.c              |  315 +++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h               |    2 +
+ init/main.c                       |    4 +-
+ 6 files changed, 328 insertions(+), 3 deletions(-)
+
 
