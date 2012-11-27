@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab2K0QvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:51:15 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:39779 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab2K0QvN (ORCPT
+	id S1756491Ab2K0Qw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:52:27 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52492 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755846Ab2K0QwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:51:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121127163910.GL12969@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
-	<20121127154455.GK12969@redhat.com>
-	<CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
-	<20121127163910.GL12969@redhat.com>
-Date: Tue, 27 Nov 2012 17:51:12 +0100
-Message-ID: <CAFTL4hyzVLismy0ckx0Tu47EAgNn9WjAFEx=ptF5587-zp65hQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
- async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Nov 2012 11:52:25 -0500
+Message-ID: <1354035129.3284.54.camel@thor>
+Subject: Re: [PATCH 9/9] TTY: call tty_port_destroy in the rest of drivers
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Date: Tue, 27 Nov 2012 11:52:09 -0500
+In-Reply-To: <1352969396-23760-10-git-send-email-jslaby@suse.cz>
+References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
+	 <1352969396-23760-10-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.4-0build1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Gleb Natapov <gleb@redhat.com>:
-> On Tue, Nov 27, 2012 at 04:56:30PM +0100, Frederic Weisbecker wrote:
->> 2012/11/27 Gleb Natapov <gleb@redhat.com>:
->> > For KVM_PV_REASON_PAGE_NOT_PRESENT it behaves like an exception.
->>
->> Ok.
->> There seem to be a bug in kvm_async_pf_task_wait(). Using
->> idle_cpu(cpu) to find out if the current task is the idle task may not
->> work if there is pending wake up. Me may schedule another task but
->> when that other task sleeps later we can't schedule back to idle until
->> the fault is completed.
->>
->> The right way is to use is_idle_task(current)
-> But if there is pending wake up then scheduling to the waked up task is
-> exactly what we want.
+On Thu, 2012-11-15 at 09:49 +0100, Jiri Slaby wrote:
+> After commit "TTY: move tty buffers to tty_port", the tty buffers are
+> not freed in some drivers. This is because tty_port_destructor is not
+> called whenever a tty_port is freed. This was an assumption I counted
+> with but was unfortunately untrue. So fix the drivers to fulfil this
+> assumption.
+> 
+> To be sure, the TTY buffers (and later some stuff) are gone along with
+> the tty_port, we have to call tty_port_destroy at tear-down places.
+> This is mostly where the structure containing a tty_port is freed.
+> This patch does exactly that -- put tty_port_destroy at those places.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 
-Ok, but what if that task goes to sleep soon after beeing scheduled
-and there is no other task on the runqueue and the page fault has not
-been handled yet? The only thing you can do is to schedule the idle
-task. But the idle task is waiting for the fault completion so you
-can't do that.
+Hi Jiri & Greg & Alan,
+
+I'd be more than willing to fixup staging/fwserial against this series
+but I'm unclear on the mechanics since this series isn't in staging-next
+and staging/fwserial isn't in tty-next.
+
+Regards,
+Peter Hurley
+
+
+
