@@ -1,179 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2K0SBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:01:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35847 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755552Ab2K0SBK (ORCPT
+	id S932329Ab2K0SCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:02:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44138 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076Ab2K0SCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:01:10 -0500
-Date: Tue, 27 Nov 2012 19:01:08 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH RESEND] tty: don't dead lock while flushing workqueue
-Message-ID: <20121127180108.GA7376@linutronix.de>
-References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
- <20121121140426.1860d093@pyramind.ukuu.org.uk>
- <20121127095357.GA3536@breakpoint.cc>
- <20121127172249.GB24592@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121127172249.GB24592@kroah.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Nov 2012 13:02:33 -0500
+Message-ID: <1354039349.2534.11.camel@shinybook.infradead.org>
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+From: David Woodhouse <dwmw2@infradead.org>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Date: Tue, 27 Nov 2012 18:02:29 +0000
+In-Reply-To: <20121127173906.GA11390@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	 <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	 <1354036592.2534.6.camel@shinybook.infradead.org>
+	 <20121127173906.GA11390@shrek.podlesie.net>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-t8JrXfa6rEk+W884QoDO"
+X-Mailer: Evolution 3.6.1 (3.6.1-1.fc18) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 89c8d91e31f2 ("tty: localise the lock") I see a dead lock
-in one of my dummy_hcd + g_nokia test cases. The first run one was usually
-okay, the second often resulted in a splat by lockdep and the third was
-usually a dead lock.
-Lockdep complained about tty->hangup_work and tty->legacy_mutex taken
-both ways:
-| ======================================================
-| [ INFO: possible circular locking dependency detected ]
-| 3.7.0-rc6+ #204 Not tainted
-| -------------------------------------------------------
-| kworker/2:1/35 is trying to acquire lock:
-|  (&tty->legacy_mutex){+.+.+.}, at: [<c14051e6>] tty_lock_nested+0x36/0x80
-|
-| but task is already holding lock:
-|  ((&tty->hangup_work)){+.+...}, at: [<c104f6e4>] process_one_work+0x124/0x5e0
-|
-| which lock already depends on the new lock.
-|
-| the existing dependency chain (in reverse order) is:
-|
-| -> #2 ((&tty->hangup_work)){+.+...}:
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c104d82d>] flush_work+0x3d/0x240
-|        [<c12e6986>] tty_ldisc_flush_works+0x16/0x30
-|        [<c12e7861>] tty_ldisc_release+0x21/0x70
-|        [<c12e0dfc>] tty_release+0x35c/0x470
-|        [<c1105e28>] __fput+0xd8/0x270
-|        [<c1105fcd>] ____fput+0xd/0x10
-|        [<c1051dd9>] task_work_run+0xb9/0xf0
-|        [<c1002a51>] do_notify_resume+0x51/0x80
-|        [<c140550a>] work_notifysig+0x35/0x3b
-|
-| -> #1 (&tty->legacy_mutex/1){+.+...}:
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
-|        [<c14051e6>] tty_lock_nested+0x36/0x80
-|        [<c1405279>] tty_lock_pair+0x29/0x70
-|        [<c12e0bb8>] tty_release+0x118/0x470
-|        [<c1105e28>] __fput+0xd8/0x270
-|        [<c1105fcd>] ____fput+0xd/0x10
-|        [<c1051dd9>] task_work_run+0xb9/0xf0
-|        [<c1002a51>] do_notify_resume+0x51/0x80
-|        [<c140550a>] work_notifysig+0x35/0x3b
-|
-| -> #0 (&tty->legacy_mutex){+.+.+.}:
-|        [<c107f3c9>] __lock_acquire+0x1189/0x16a0
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
-|        [<c14051e6>] tty_lock_nested+0x36/0x80
-|        [<c140523f>] tty_lock+0xf/0x20
-|        [<c12df8e4>] __tty_hangup+0x54/0x410
-|        [<c12dfcb2>] do_tty_hangup+0x12/0x20
-|        [<c104f763>] process_one_work+0x1a3/0x5e0
-|        [<c104fec9>] worker_thread+0x119/0x3a0
-|        [<c1055084>] kthread+0x94/0xa0
-|        [<c140ca37>] ret_from_kernel_thread+0x1b/0x28
-|
-|other info that might help us debug this:
-|
-|Chain exists of:
-|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
-|
-| Possible unsafe locking scenario:
-|
-|       CPU0                    CPU1
-|       ----                    ----
-|  lock((&tty->hangup_work));
-|                               lock(&tty->legacy_mutex/1);
-|                               lock((&tty->hangup_work));
-|  lock(&tty->legacy_mutex);
-|
-| *** DEADLOCK ***
 
-Before the path mentioned tty_ldisc_release() look like this:
+--=-t8JrXfa6rEk+W884QoDO
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-|	tty_ldisc_halt(tty);
-|	tty_ldisc_flush_works(tty);
-|	tty_lock();
+On Tue, 2012-11-27 at 18:39 +0100, Krzysztof Mazur wrote:
+> Yes, I missed that one - it's even worse, I introduced that bug=20
+> in "[PATCH 1/7] atm: detach protocol before closing vcc". Before that
+> patch that scenario shouldn't happen because vcc was closed before
+> calling pppoatm_send(vcc, NULL) - the driver should provide appropriate
+> synchronization.
+>=20
+> I think that we should just drop that patch. With later changes it's not
+> necessary - the pppoatm_send() can be safely called while closing vcc.
 
-As it can be seen, it first flushes the workqueue and then grabs the
-tty_lock. Now we grab the lock first:
+I'm not running with that patch. This bug exists for br2684 even before
+it, and I think also for pppoatm.
 
-|	tty_lock_pair(tty, o_tty);
-|	tty_ldisc_halt(tty);
-|	tty_ldisc_flush_works(tty);
+In solos-pci at least, the ops->close() function doesn't flush all
+pending skbs for this vcc before returning. So can be a tasklet
+somewhere which has loaded the address of the vcc->pop function from one
+of them, and is going to call it in some unspecified amount of time.
 
-so lockdep's complaint seems valid.
+Should we make the device's ->close function wait for all TX and RX skbs
+for this vcc to complete?=20
 
-The other user of tty_ldisc_flush_works() is tty_set_ldisc() and I tried
-to mimnic its logic:
-- grab tty lock
-- grab ldisc_mutex lock
-- release the tty lock
-- call tty_ldisc_halt()
-- release ldisc_mutex
-- call tty_ldisc_flush_works()
-The code under tty_ldisc_kill() was executed earlier with the tty lock
-taken so it is taken again.
+--=20
+dwmw2
 
-I don't see any problems in my testcase.
 
-Cc: stable@vger.kernel.org #v3.7
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-Greg, here is the resend. I added Acked-By Alan Cox because he wrote
+--=-t8JrXfa6rEk+W884QoDO
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-|This looks fine to me as by the time we call tty_ldisc_release we have
-|already set TTY_CLOSING on both sides.
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMTI3MTgwMjI5WjAjBgkqhkiG9w0BCQQx
+FgQUPx7yVfE4wERryIuYTEjq+Nn8IOkwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBMfSm48tK4O1pbK6Uvzz7i0zfV
+PHuBRXV4hPqTeZceCa7wxzEggWlLj5CF4rJHkEumwJWGBgttjpUcoEtyBShu4bq0PrWOT+Cj8o1G
+lbMW0tAYZr7Lt1Xf2STrpTmtuLZmW1a8gPnNhWKnky68fzEqj3r/gP59OVFt4G60/L3fLbVn4rN9
+Is3popYCiDOfFuT6+wYlnSZyjx5eptl37oZCF4FSQKvsjQdJ1SI5GwuCENTEU+OXLOcwpYXTK2L+
+Ew02QvrkEf3Tj+3D9+5aOgHKE4gSTApCeX3hc/NboR1b2qeLRMqfFOz1Mtx63JIbJaKF4HwRjo4K
+DgG26qT+yGCuAAAAAAAA
 
-See http://lkml.org/lkml/2012/11/21/347
 
- drivers/tty/tty_ldisc.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 0f2a2c5..fb76818 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -930,16 +930,21 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	 */
- 
- 	tty_lock_pair(tty, o_tty);
-+	mutex_lock(&tty->ldisc_mutex);
-+	tty_unlock_pair(tty, o_tty);
-+
- 	tty_ldisc_halt(tty);
--	tty_ldisc_flush_works(tty);
--	if (o_tty) {
-+	if (o_tty)
- 		tty_ldisc_halt(o_tty);
-+	mutex_unlock(&tty->ldisc_mutex);
-+
-+	tty_ldisc_flush_works(tty);
-+	if (o_tty)
- 		tty_ldisc_flush_works(o_tty);
--	}
- 
-+	tty_lock_pair(tty, o_tty);
- 	/* This will need doing differently if we need to lock */
- 	tty_ldisc_kill(tty);
--
- 	if (o_tty)
- 		tty_ldisc_kill(o_tty);
- 
--- 
-1.7.10.4
+--=-t8JrXfa6rEk+W884QoDO--
 
