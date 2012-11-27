@@ -1,63 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab2K0Rkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:40:37 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:59325 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511Ab2K0Rkf (ORCPT
+	id S932286Ab2K0Rko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:40:44 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:12885 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab2K0Rkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:40:35 -0500
+	Tue, 27 Nov 2012 12:40:37 -0500
 From: Rafal Krypa <r.krypa@samsung.com>
 To: Casey Schaufler <casey@schaufler-ca.com>
 Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH 0/3] Smack: add support for modification of existing rules,
- restructure rules list showing in smackfs
-Date: Tue, 27 Nov 2012 18:40:18 +0100
-Message-id: <1354038021-28324-1-git-send-email-r.krypa@samsung.com>
+Subject: [PATCH 1/3] Smack: use RCU functions and read locking in smackfs seq
+ list operations
+Date: Tue, 27 Nov 2012 18:40:19 +0100
+Message-id: <1354038021-28324-2-git-send-email-r.krypa@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1354038021-28324-1-git-send-email-r.krypa@samsung.com>
+References: <1354038021-28324-1-git-send-email-r.krypa@samsung.com>
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following three patches are intended to introduce in-place
-modification of Smack rules. Until now Smack supported only
-overwriting of existing rules. To change permitted access for a given
-subject and object, user had to read list of rules to get current
-accesses, modify it and write modified rule back to kernel. This way
-was inefficient, non-atomic and unnecessarily difficult.
-New interface is intended to ease such modifications.
+Targeted for git://git.gitorious.org/smack-next/kernel.git
 
-I have prepared three patches:
-1. Use RCU functions and read locking in smackfs seq list operations
+Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
+---
+ security/smack/smackfs.c |   50 +++++++++++++++++++---------------------------
+ 1 file changed, 20 insertions(+), 30 deletions(-)
 
-Because rule lists will now get modified by list_replace_rcu(), this
-one is intended to assure RCU reader critical sections in smackfs.
-
-2. Remove global master list of rules
-
-This is for avoiding having to modify rules in two places (per subject
-list and the global list). The master list was redundant and kept up
-for backward compatibility with previous smackfs seq operations code.
-
-3. Add support for modification of existing rules
-
-The actual patch with new interface.
-A previous version of this one has posted previously
-(http://thread.gmane.org/gmane.linux.documentation/6759),
-but was proven to be wrong.
-
-Rafal Krypa (3):
-  Smack: use RCU functions and read locking in smackfs seq list
-    operations
-  Smack: remove global master list of rules
-  Smack: add support for modification of existing rules
-
- Documentation/security/Smack.txt |   11 ++
- security/smack/smackfs.c         |  362 ++++++++++++++++++++++++--------------
- 2 files changed, 239 insertions(+), 134 deletions(-)
-
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index 76a5dca..0fadceb 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -470,24 +470,17 @@ out:
+ static void *smk_seq_start(struct seq_file *s, loff_t *pos,
+ 				struct list_head *head)
+ {
+-	struct list_head *list;
++	struct list_head *list = head;
++	int i = *pos;
+ 
+-	/*
+-	 * This is 0 the first time through.
+-	 */
+-	if (s->index == 0)
+-		s->private = head;
+-
+-	if (s->private == NULL)
+-		return NULL;
++	rcu_read_lock();
++	do {
++		list = list_next_rcu(list);
++		if (i-- == 0)
++			return list;
++	} while (pos != head);
+ 
+-	list = s->private;
+-	if (list_empty(list))
+-		return NULL;
+-
+-	if (s->index == 0)
+-		return list->next;
+-	return list;
++	return NULL;
+ }
+ 
+ static void *smk_seq_next(struct seq_file *s, void *v, loff_t *pos,
+@@ -495,17 +488,14 @@ static void *smk_seq_next(struct seq_file *s, void *v, loff_t *pos,
+ {
+ 	struct list_head *list = v;
+ 
+-	if (list_is_last(list, head)) {
+-		s->private = NULL;
+-		return NULL;
+-	}
+-	s->private = list->next;
+-	return list->next;
++	list = list_next_rcu(list);
++	++*pos;
++	return list == head ? NULL : list;
+ }
+ 
+ static void smk_seq_stop(struct seq_file *s, void *v)
+ {
+-	/* No-op */
++	rcu_read_unlock();
+ }
+ 
+ static void smk_rule_show(struct seq_file *s, struct smack_rule *srp, int max)
+@@ -558,7 +548,7 @@ static int load_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head *list = v;
+ 	struct smack_master_list *smlp =
+-		 list_entry(list, struct smack_master_list, list);
++		 list_entry_rcu(list, struct smack_master_list, list);
+ 
+ 	smk_rule_show(s, smlp->smk_rule, SMK_LABELLEN);
+ 
+@@ -706,7 +696,7 @@ static int cipso_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head  *list = v;
+ 	struct smack_known *skp =
+-		 list_entry(list, struct smack_known, list);
++		 list_entry_rcu(list, struct smack_known, list);
+ 	struct netlbl_lsm_secattr_catmap *cmp = skp->smk_netlabel.attr.mls.cat;
+ 	char sep = '/';
+ 	int i;
+@@ -895,7 +885,7 @@ static int cipso2_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head  *list = v;
+ 	struct smack_known *skp =
+-		 list_entry(list, struct smack_known, list);
++		 list_entry_rcu(list, struct smack_known, list);
+ 	struct netlbl_lsm_secattr_catmap *cmp = skp->smk_netlabel.attr.mls.cat;
+ 	char sep = '/';
+ 	int i;
+@@ -979,7 +969,7 @@ static int netlbladdr_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head *list = v;
+ 	struct smk_netlbladdr *skp =
+-			 list_entry(list, struct smk_netlbladdr, list);
++			 list_entry_rcu(list, struct smk_netlbladdr, list);
+ 	unsigned char *hp = (char *) &skp->smk_host.sin_addr.s_addr;
+ 	int maskn;
+ 	u32 temp_mask = be32_to_cpu(skp->smk_mask.s_addr);
+@@ -1712,7 +1702,7 @@ static int load_self_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head *list = v;
+ 	struct smack_rule *srp =
+-		 list_entry(list, struct smack_rule, list);
++		 list_entry_rcu(list, struct smack_rule, list);
+ 
+ 	smk_rule_show(s, srp, SMK_LABELLEN);
+ 
+@@ -1844,7 +1834,7 @@ static int load2_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head *list = v;
+ 	struct smack_master_list *smlp =
+-		 list_entry(list, struct smack_master_list, list);
++		 list_entry_rcu(list, struct smack_master_list, list);
+ 
+ 	smk_rule_show(s, smlp->smk_rule, SMK_LONGLABEL);
+ 
+@@ -1921,7 +1911,7 @@ static int load_self2_seq_show(struct seq_file *s, void *v)
+ {
+ 	struct list_head *list = v;
+ 	struct smack_rule *srp =
+-		 list_entry(list, struct smack_rule, list);
++		 list_entry_rcu(list, struct smack_rule, list);
+ 
+ 	smk_rule_show(s, srp, SMK_LONGLABEL);
+ 
 -- 
 1.7.10.4
 
