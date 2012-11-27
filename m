@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab2K0Wy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 17:54:58 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44783 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab2K0Wy4 (ORCPT
+	id S1755719Ab2K0XA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:00:57 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55148 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab2K0XAz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 17:54:56 -0500
+	Tue, 27 Nov 2012 18:00:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hy1PB3u+i3xEXvz0Zt4kNQx9ioAHaM2BPMfXiNm7Koxmg@mail.gmail.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
-	<20121127154455.GK12969@redhat.com>
-	<CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
-	<20121127163910.GL12969@redhat.com>
-	<CAFTL4hyzVLismy0ckx0Tu47EAgNn9WjAFEx=ptF5587-zp65hQ@mail.gmail.com>
-	<20121127170026.GM12969@redhat.com>
-	<CAFTL4hyb0qYYhy1OE9HDHymFkmHDb5jNyuLNSR2aQ3dKPpuZkw@mail.gmail.com>
-	<20121127174737.GN12969@redhat.com>
-	<CAFTL4hxh96wDMpBEid0EN8ir-9C=Z+pdy6viVVK5fyKkRbUOOw@mail.gmail.com>
-	<20121127192748.GB7695@redhat.com>
-	<CAFTL4hy1PB3u+i3xEXvz0Zt4kNQx9ioAHaM2BPMfXiNm7Koxmg@mail.gmail.com>
-Date: Tue, 27 Nov 2012 23:54:55 +0100
-Message-ID: <CAFTL4hzLF_V2AZsfyrT5epAkbc0b8YzOdT254rLxRJWakbKaOA@mail.gmail.com>
-Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
- async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
+In-Reply-To: <50B4A483.8030305@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+	<CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
+	<50B46336.8030605@nvidia.com>
+	<CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
+	<50B476E1.4070403@nvidia.com>
+	<CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+	<50B47DA8.60609@nvidia.com>
+	<1354011776.1479.31.camel@tellur>
+	<20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
+	<50B4A483.8030305@nvidia.com>
+Date: Wed, 28 Nov 2012 09:00:54 +1000
+Message-ID: <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+From: Dave Airlie <airlied@gmail.com>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Lucas Stach <dev@lynxeye.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Frederic Weisbecker <fweisbec@gmail.com>:
-> 2012/11/27 Gleb Natapov <gleb@redhat.com>:
->> What is the semantics of enter_idle()/exit_idle(), what are they used for?
+On Tue, Nov 27, 2012 at 9:31 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+> On 27.11.2012 12:37, Thierry Reding wrote:
+>> But in that case it should be made mandatory at first until proper IOMMU
+>> support is enabled on Tegra30. Then it can be checked at driver probe
+>> time whether or not to enable the extra checks. That way we don't need a
+>> special Kconfig option and we still get all the security that we need,
+>> right?
 >
-> It's used by drivers/idle/i7300_idle.c for some tracking. I don't know much
-> the details.
+> I guess it depends on the level of security.
 >
-> enter_idle() is called right before the CPU is set to lower power mode: hlt()
+> If we want to only protect kernel and user space memory, this would be
+> sufficient and no firewall is needed if IOMMU is turned on.
 >
-> exit_idle() is called anytime we exit this low power mode: irq,
-> polling on need_resched(), etc...
->
->> Not present fault happening in idle task does not mean we exit idle
->> task. If this happens exception handler will execute sti; hlt waiting
->> for missing page to be ready. Any interrupt happening during this hlt
->> will do exit_idle() by itself.
->
-> Well, the code executed by this fault should be considered as an exit
-> from idle mode. Now it's a small piece of code and we hlt() quickly so
-> I guess getting of idle_exit() there wouldn't hurt much.
-                        ^
-                 getting "rid"
+> If we want to protect 2D buffers from each other, this is not sufficient.
+
+We  generally aim for the first, to stop the gpu from reading/writing
+any memory it hasn't been granted access to,
+the second is nice to have though, but really requires a GPU with VM
+to implement properly.
+
+Dave.
