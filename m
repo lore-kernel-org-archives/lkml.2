@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2K0XPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:15:18 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26291 "EHLO
+	id S1756185Ab2K0XP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:15:29 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755051Ab2K0XPP (ORCPT
+	by vger.kernel.org with ESMTP id S1755968Ab2K0XPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:15 -0500
+	Tue, 27 Nov 2012 18:15:23 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WMV4QkA6ZFgwSBTw
+X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewObbIpZgwQ
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 16/19] fs: convert fs shrinkers to new scan/count API
-Date: Wed, 28 Nov 2012 10:14:43 +1100
-Message-Id: <1354058086-27937-17-git-send-email-david@fromorbit.com>
+Subject: [PATCH 14/19] xfs: use generic AG walk for background inode reclaim
+Date: Wed, 28 Nov 2012 10:14:41 +1100
+Message-Id: <1354058086-27937-15-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,562 +25,407 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Convert the filesystem shrinkers to use the new API, and standardise
-some of the behaviours of the shrinkers at the same time. For
-example, nr_to_scan means the number of objects to scan, not the
-number of objects to free.
-
-I refactored the CIFS idmap shrinker a little - it really needs to
-be broken up into a shrinker per tree and keep an item count with
-the tree root so that we don't need to walk the tree every time the
-shrinker needs to count the number of objects in the tree (i.e.
-all the time under memory pressure).
+The per-ag inode cache radix trees are not walked by the shrinkers
+any more, so there is no need for a special walker that contained
+heurisitcs to prevent multiple shrinker instances from colliding
+with each other. Hence we can just remote that and convert the code
+to use the generic walker.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/cifs/cifsacl.c |  112 ++++++++++++++++++++++++++++++++---------------------
- fs/gfs2/glock.c   |   23 ++++++-----
- fs/gfs2/main.c    |    3 +-
- fs/gfs2/quota.c   |   12 +++---
- fs/gfs2/quota.h   |    4 +-
- fs/mbcache.c      |   53 ++++++++++++++-----------
- fs/nfs/dir.c      |   21 ++++++++--
- fs/nfs/internal.h |    4 +-
- fs/nfs/super.c    |    3 +-
- fs/quota/dquot.c  |   37 ++++++++----------
- 10 files changed, 163 insertions(+), 109 deletions(-)
+ fs/xfs/xfs_ag.h          |    2 -
+ fs/xfs/xfs_icache.c      |  217 +++++++++++-----------------------------------
+ fs/xfs/xfs_icache.h      |    4 +-
+ fs/xfs/xfs_mount.c       |    1 -
+ fs/xfs/xfs_qm_syscalls.c |    2 +-
+ 5 files changed, 55 insertions(+), 171 deletions(-)
 
-diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-index 0fb15bb..a0e5c22 100644
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -44,66 +44,95 @@ static const struct cifs_sid sid_user = {1, 2 , {0, 0, 0, 0, 0, 5}, {} };
+diff --git a/fs/xfs/xfs_ag.h b/fs/xfs/xfs_ag.h
+index f2aeedb..40a7df9 100644
+--- a/fs/xfs/xfs_ag.h
++++ b/fs/xfs/xfs_ag.h
+@@ -218,8 +218,6 @@ typedef struct xfs_perag {
+ 	spinlock_t	pag_ici_lock;	/* incore inode cache lock */
+ 	struct radix_tree_root pag_ici_root;	/* incore inode cache root */
+ 	int		pag_ici_reclaimable;	/* reclaimable inodes */
+-	struct mutex	pag_ici_reclaim_lock;	/* serialisation point */
+-	unsigned long	pag_ici_reclaim_cursor;	/* reclaim restart point */
  
- const struct cred *root_cred;
+ 	/* buffer cache index */
+ 	spinlock_t	pag_buf_lock;	/* lock for pag_buf_tree */
+diff --git a/fs/xfs/xfs_icache.c b/fs/xfs/xfs_icache.c
+index 82b053f..5cfc2eb 100644
+--- a/fs/xfs/xfs_icache.c
++++ b/fs/xfs/xfs_icache.c
+@@ -468,7 +468,8 @@ out_error_or_again:
  
--static void
--shrink_idmap_tree(struct rb_root *root, int nr_to_scan, int *nr_rem,
--			int *nr_del)
-+static long
-+cifs_idmap_tree_scan(
-+	struct rb_root	*root,
-+	spinlock_t	*tree_lock,
-+	long		nr_to_scan)
+ STATIC int
+ xfs_inode_ag_walk_grab(
+-	struct xfs_inode	*ip)
++	struct xfs_inode	*ip,
++	int			flags)
  {
- 	struct rb_node *node;
--	struct rb_node *tmp;
--	struct cifs_sid_id *psidid;
-+	long freed = 0;
+ 	struct inode		*inode = VFS_I(ip);
  
-+	spin_lock(tree_lock);
- 	node = rb_first(root);
--	while (node) {
-+	while (nr_to_scan-- >= 0 && node) {
-+		struct cifs_sid_id *psidid;
-+		struct rb_node *tmp;
+@@ -517,6 +518,7 @@ STATIC int
+ xfs_inode_ag_walk(
+ 	struct xfs_mount	*mp,
+ 	struct xfs_perag	*pag,
++	int			(*grab)(struct xfs_inode *ip, int flags),
+ 	int			(*execute)(struct xfs_inode *ip,
+ 					   struct xfs_perag *pag, int flags,
+ 					   void *args),
+@@ -530,6 +532,9 @@ xfs_inode_ag_walk(
+ 	int			done;
+ 	int			nr_found;
+ 
++	if (!grab)
++		grab = xfs_inode_ag_walk_grab;
 +
- 		tmp = node;
- 		node = rb_next(tmp);
- 		psidid = rb_entry(tmp, struct cifs_sid_id, rbnode);
--		if (nr_to_scan == 0 || *nr_del == nr_to_scan)
--			++(*nr_rem);
--		else {
--			if (time_after(jiffies, psidid->time + SID_MAP_EXPIRE)
--						&& psidid->refcount == 0) {
--				rb_erase(tmp, root);
--				++(*nr_del);
--			} else
--				++(*nr_rem);
-+		if (time_after(jiffies, psidid->time + SID_MAP_EXPIRE)
-+					&& psidid->refcount == 0) {
-+			rb_erase(tmp, root);
-+			freed++;
- 		}
- 	}
-+	spin_unlock(tree_lock);
-+	return freed;
-+}
-+
-+static long
-+cifs_idmap_tree_count(
-+	struct rb_root	*root,
-+	spinlock_t	*tree_lock)
-+{
-+	struct rb_node *node;
-+	long count = 0;
-+
-+	spin_lock(tree_lock);
-+	node = rb_first(root);
-+	while (node) {
-+		node = rb_next(node);
-+		count++;
-+	}
-+	spin_unlock(tree_lock);
-+	return count;
+ restart:
+ 	done = 0;
+ 	skipped = 0;
+@@ -564,7 +569,7 @@ restart:
+ 		for (i = 0; i < nr_found; i++) {
+ 			struct xfs_inode *ip = batch[i];
+ 
+-			if (done || xfs_inode_ag_walk_grab(ip))
++			if (done || grab(ip, flags))
+ 				batch[i] = NULL;
+ 
+ 			/*
+@@ -593,7 +598,8 @@ restart:
+ 			if (!batch[i])
+ 				continue;
+ 			error = execute(batch[i], pag, flags, args);
+-			IRELE(batch[i]);
++			if (grab == xfs_inode_ag_walk_grab)
++				IRELE(batch[i]);
+ 			if (error == EAGAIN) {
+ 				skipped++;
+ 				continue;
+@@ -617,35 +623,10 @@ restart:
+ 	return last_error;
  }
  
- /*
-- * Run idmap cache shrinker.
-+ * idmap tree shrinker.
-+ *
-+ * XXX (dchinner): this should really be 4 separate shrinker instances (one per
-+ * tree structure) so that each are shrunk proportionally to their individual
-+ * sizes.
-  */
--static int
--cifs_idmap_shrinker(struct shrinker *shrink, struct shrink_control *sc)
-+static long
-+cifs_idmap_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
- {
--	int nr_to_scan = sc->nr_to_scan;
--	int nr_del = 0;
--	int nr_rem = 0;
--	struct rb_root *root;
-+	long freed = 0;
- 
--	root = &uidtree;
--	spin_lock(&siduidlock);
--	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
--	spin_unlock(&siduidlock);
-+	freed += cifs_idmap_tree_scan(&uidtree, &siduidlock, sc->nr_to_scan);
-+	freed += cifs_idmap_tree_scan(&gidtree, &sidgidlock, sc->nr_to_scan);
-+	freed += cifs_idmap_tree_scan(&siduidtree, &siduidlock, sc->nr_to_scan);
-+	freed += cifs_idmap_tree_scan(&sidgidtree, &sidgidlock, sc->nr_to_scan);
- 
--	root = &gidtree;
--	spin_lock(&sidgidlock);
--	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
--	spin_unlock(&sidgidlock);
-+	return freed;
-+}
- 
--	root = &siduidtree;
--	spin_lock(&uidsidlock);
--	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
--	spin_unlock(&uidsidlock);
-+static long
-+cifs_idmap_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	long count = 0;
- 
--	root = &sidgidtree;
--	spin_lock(&gidsidlock);
--	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
--	spin_unlock(&gidsidlock);
-+	count += cifs_idmap_tree_count(&uidtree, &siduidlock);
-+	count += cifs_idmap_tree_count(&gidtree, &sidgidlock);
-+	count += cifs_idmap_tree_count(&siduidtree, &siduidlock);
-+	count += cifs_idmap_tree_count(&sidgidtree, &sidgidlock);
- 
--	return nr_rem;
-+	return count;
- }
- 
-+static struct shrinker cifs_shrinker = {
-+	.count_objects = cifs_idmap_shrink_count,
-+	.scan_objects = cifs_idmap_shrink_scan,
-+	.seeks = DEFAULT_SEEKS,
-+};
-+
- static void
- sid_rb_insert(struct rb_root *root, unsigned long cid,
- 		struct cifs_sid_id **psidid, char *typestr)
-@@ -161,11 +190,6 @@ sid_rb_search(struct rb_root *root, unsigned long cid)
- 	return NULL;
- }
- 
--static struct shrinker cifs_shrinker = {
--	.shrink = cifs_idmap_shrinker,
--	.seeks = DEFAULT_SEEKS,
--};
+-/*
+- * Background scanning to trim post-EOF preallocated space. This is queued
+- * based on the 'background_prealloc_discard_period' tunable (5m by default).
+- */
+-STATIC void
+-xfs_queue_eofblocks(
+-	struct xfs_mount *mp)
+-{
+-	rcu_read_lock();
+-	if (radix_tree_tagged(&mp->m_perag_tree, XFS_ICI_EOFBLOCKS_TAG))
+-		queue_delayed_work(mp->m_eofblocks_workqueue,
+-				   &mp->m_eofblocks_work,
+-				   msecs_to_jiffies(xfs_eofb_secs * 1000));
+-	rcu_read_unlock();
+-}
 -
+-void
+-xfs_eofblocks_worker(
+-	struct work_struct *work)
+-{
+-	struct xfs_mount *mp = container_of(to_delayed_work(work),
+-				struct xfs_mount, m_eofblocks_work);
+-	xfs_icache_free_eofblocks(mp, NULL);
+-	xfs_queue_eofblocks(mp);
+-}
+-
+ int
+ xfs_inode_ag_iterator(
+ 	struct xfs_mount	*mp,
++	int			(*grab)(struct xfs_inode *ip, int flags),
+ 	int			(*execute)(struct xfs_inode *ip,
+ 					   struct xfs_perag *pag, int flags,
+ 					   void *args),
+@@ -660,7 +641,8 @@ xfs_inode_ag_iterator(
+ 	ag = 0;
+ 	while ((pag = xfs_perag_get(mp, ag))) {
+ 		ag = pag->pag_agno + 1;
+-		error = xfs_inode_ag_walk(mp, pag, execute, flags, args, -1);
++		error = xfs_inode_ag_walk(mp, pag, grab, execute,
++					  flags, args, -1);
+ 		xfs_perag_put(pag);
+ 		if (error) {
+ 			last_error = error;
+@@ -674,6 +656,7 @@ xfs_inode_ag_iterator(
+ int
+ xfs_inode_ag_iterator_tag(
+ 	struct xfs_mount	*mp,
++	int			(*grab)(struct xfs_inode *ip, int flags),
+ 	int			(*execute)(struct xfs_inode *ip,
+ 					   struct xfs_perag *pag, int flags,
+ 					   void *args),
+@@ -689,7 +672,8 @@ xfs_inode_ag_iterator_tag(
+ 	ag = 0;
+ 	while ((pag = xfs_perag_get_tag(mp, ag, tag))) {
+ 		ag = pag->pag_agno + 1;
+-		error = xfs_inode_ag_walk(mp, pag, execute, flags, args, tag);
++		error = xfs_inode_ag_walk(mp, pag, grab, execute,
++					  flags, args, tag);
+ 		xfs_perag_put(pag);
+ 		if (error) {
+ 			last_error = error;
+@@ -904,7 +888,8 @@ STATIC int
+ xfs_reclaim_inode(
+ 	struct xfs_inode	*ip,
+ 	struct xfs_perag	*pag,
+-	int			sync_mode)
++	int			sync_mode,
++	void			*args)
+ {
+ 	struct xfs_buf		*bp = NULL;
+ 	int			error;
+@@ -1032,140 +1017,14 @@ out:
+ 	return 0;
+ }
+ 
+-/*
+- * Walk the AGs and reclaim the inodes in them. Even if the filesystem is
+- * corrupted, we still want to try to reclaim all the inodes. If we don't,
+- * then a shut down during filesystem unmount reclaim walk leak all the
+- * unreclaimed inodes.
+- */
+-STATIC int
+-xfs_reclaim_inodes_ag(
+-	struct xfs_mount	*mp,
+-	int			flags,
+-	long			*nr_to_scan)
+-{
+-	struct xfs_perag	*pag;
+-	int			error = 0;
+-	int			last_error = 0;
+-	xfs_agnumber_t		ag;
+-	int			trylock = flags & SYNC_TRYLOCK;
+-	int			skipped;
+-
+-restart:
+-	ag = 0;
+-	skipped = 0;
+-	while ((pag = xfs_perag_get_tag(mp, ag, XFS_ICI_RECLAIM_TAG))) {
+-		unsigned long	first_index = 0;
+-		int		done = 0;
+-		int		nr_found = 0;
+-
+-		ag = pag->pag_agno + 1;
+-
+-		if (trylock) {
+-			if (!mutex_trylock(&pag->pag_ici_reclaim_lock)) {
+-				skipped++;
+-				xfs_perag_put(pag);
+-				continue;
+-			}
+-			first_index = pag->pag_ici_reclaim_cursor;
+-		} else
+-			mutex_lock(&pag->pag_ici_reclaim_lock);
+-
+-		do {
+-			struct xfs_inode *batch[XFS_LOOKUP_BATCH];
+-			int	i;
+-
+-			rcu_read_lock();
+-			nr_found = radix_tree_gang_lookup_tag(
+-					&pag->pag_ici_root,
+-					(void **)batch, first_index,
+-					XFS_LOOKUP_BATCH,
+-					XFS_ICI_RECLAIM_TAG);
+-			if (!nr_found) {
+-				done = 1;
+-				rcu_read_unlock();
+-				break;
+-			}
+-
+-			/*
+-			 * Grab the inodes before we drop the lock. if we found
+-			 * nothing, nr == 0 and the loop will be skipped.
+-			 */
+-			for (i = 0; i < nr_found; i++) {
+-				struct xfs_inode *ip = batch[i];
+-
+-				if (done || xfs_reclaim_inode_grab(ip, flags))
+-					batch[i] = NULL;
+-
+-				/*
+-				 * Update the index for the next lookup. Catch
+-				 * overflows into the next AG range which can
+-				 * occur if we have inodes in the last block of
+-				 * the AG and we are currently pointing to the
+-				 * last inode.
+-				 *
+-				 * Because we may see inodes that are from the
+-				 * wrong AG due to RCU freeing and
+-				 * reallocation, only update the index if it
+-				 * lies in this AG. It was a race that lead us
+-				 * to see this inode, so another lookup from
+-				 * the same index will not find it again.
+-				 */
+-				if (XFS_INO_TO_AGNO(mp, ip->i_ino) !=
+-								pag->pag_agno)
+-					continue;
+-				first_index = XFS_INO_TO_AGINO(mp, ip->i_ino + 1);
+-				if (first_index < XFS_INO_TO_AGINO(mp, ip->i_ino))
+-					done = 1;
+-			}
+-
+-			/* unlock now we've grabbed the inodes. */
+-			rcu_read_unlock();
+-
+-			for (i = 0; i < nr_found; i++) {
+-				if (!batch[i])
+-					continue;
+-				error = xfs_reclaim_inode(batch[i], pag, flags);
+-				if (error && last_error != EFSCORRUPTED)
+-					last_error = error;
+-			}
+-
+-			*nr_to_scan -= XFS_LOOKUP_BATCH;
+-
+-			cond_resched();
+-
+-		} while (nr_found && !done && *nr_to_scan > 0);
+-
+-		if (trylock && !done)
+-			pag->pag_ici_reclaim_cursor = first_index;
+-		else
+-			pag->pag_ici_reclaim_cursor = 0;
+-		mutex_unlock(&pag->pag_ici_reclaim_lock);
+-		xfs_perag_put(pag);
+-	}
+-
+-	/*
+-	 * if we skipped any AG, and we still have scan count remaining, do
+-	 * another pass this time using blocking reclaim semantics (i.e
+-	 * waiting on the reclaim locks and ignoring the reclaim cursors). This
+-	 * ensure that when we get more reclaimers than AGs we block rather
+-	 * than spin trying to execute reclaim.
+-	 */
+-	if (skipped && (flags & SYNC_WAIT) && *nr_to_scan > 0) {
+-		trylock = 0;
+-		goto restart;
+-	}
+-	return XFS_ERROR(last_error);
+-}
+-
+ int
+ xfs_reclaim_inodes(
+-	xfs_mount_t	*mp,
+-	int		mode)
++	struct xfs_mount	*mp,
++	int			flags)
+ {
+-	long		nr_to_scan = LONG_MAX;
+-
+-	return xfs_reclaim_inodes_ag(mp, mode, &nr_to_scan);
++	return xfs_inode_ag_iterator_tag(mp, xfs_reclaim_inode_grab,
++					 xfs_reclaim_inode, flags,
++					 NULL, XFS_ICI_RECLAIM_TAG);
+ }
+ 
  static int
- cifs_idmap_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- {
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index e6c2fd5..4be61a22e 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1365,9 +1365,8 @@ void gfs2_glock_complete(struct gfs2_glock *gl, int ret)
- 		gfs2_glock_put(gl);
+@@ -1229,13 +1088,39 @@ xfs_reclaim_inodes_nr(
+ 
+ 		pag = xfs_perag_get(mp,
+ 				    XFS_INO_TO_AGNO(mp, XFS_I(inode)->i_ino));
+-		xfs_reclaim_inode(XFS_I(inode), pag, SYNC_WAIT);
++		xfs_reclaim_inode(XFS_I(inode), pag, SYNC_WAIT, NULL);
+ 		xfs_perag_put(pag);
+ 	}
+ 
+ 	return freed;
  }
  
--
--static int gfs2_shrink_glock_memory(struct shrinker *shrink,
--				    struct shrink_control *sc)
-+static long gfs2_glock_shrink_scan(struct shrinker *shrink,
-+				   struct shrink_control *sc)
- {
- 	struct gfs2_glock *gl;
- 	int may_demote;
-@@ -1375,15 +1374,13 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
- 	int nr = sc->nr_to_scan;
- 	gfp_t gfp_mask = sc->gfp_mask;
- 	LIST_HEAD(skipped);
--
--	if (nr == 0)
--		goto out;
-+	long freed = 0;
- 
- 	if (!(gfp_mask & __GFP_FS))
- 		return -1;
- 
- 	spin_lock(&lru_lock);
--	while(nr && !list_empty(&lru_list)) {
-+	while(nr-- >= 0 && !list_empty(&lru_list)) {
- 		gl = list_entry(lru_list.next, struct gfs2_glock, gl_lru);
- 		list_del_init(&gl->gl_lru);
- 		clear_bit(GLF_LRU, &gl->gl_flags);
-@@ -1397,7 +1394,7 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
- 			may_demote = demote_ok(gl);
- 			if (may_demote) {
- 				handle_callback(gl, LM_ST_UNLOCKED, 0);
--				nr--;
-+				freed++;
- 			}
- 			clear_bit(GLF_LOCK, &gl->gl_flags);
- 			smp_mb__after_clear_bit();
-@@ -1414,12 +1411,18 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
- 	list_splice(&skipped, &lru_list);
- 	atomic_add(nr_skipped, &lru_count);
- 	spin_unlock(&lru_lock);
--out:
-+	return freed;
++/*
++ * Background scanning to trim post-EOF preallocated space. This is queued
++ * based on the 'background_prealloc_discard_period' tunable (5m by default).
++ */
++STATIC void
++xfs_queue_eofblocks(
++	struct xfs_mount *mp)
++{
++	rcu_read_lock();
++	if (radix_tree_tagged(&mp->m_perag_tree, XFS_ICI_EOFBLOCKS_TAG))
++		queue_delayed_work(mp->m_eofblocks_workqueue,
++				   &mp->m_eofblocks_work,
++				   msecs_to_jiffies(xfs_eofb_secs * 1000));
++	rcu_read_unlock();
 +}
 +
-+static long gfs2_glock_shrink_count(struct shrinker *shrink,
-+				    struct shrink_control *sc)
++void
++xfs_eofblocks_worker(
++	struct work_struct *work)
 +{
- 	return (atomic_read(&lru_count) / 100) * sysctl_vfs_cache_pressure;
- }
- 
- static struct shrinker glock_shrinker = {
--	.shrink = gfs2_shrink_glock_memory,
-+	.count_objects = gfs2_glock_shrink_count,
-+	.scan_objects = gfs2_glock_shrink_scan,
- 	.seeks = DEFAULT_SEEKS,
- };
- 
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index e04d0e0..a105d84 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -32,7 +32,8 @@
- struct workqueue_struct *gfs2_control_wq;
- 
- static struct shrinker qd_shrinker = {
--	.shrink = gfs2_shrink_qd_memory,
-+	.count_objects = gfs2_qd_shrink_count,
-+	.scan_objects = gfs2_qd_shrink_scan,
- 	.seeks = DEFAULT_SEEKS,
- };
- 
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index c5af8e1..f4bf289 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -78,14 +78,12 @@ static LIST_HEAD(qd_lru_list);
- static atomic_t qd_lru_count = ATOMIC_INIT(0);
- static DEFINE_SPINLOCK(qd_lru_lock);
- 
--int gfs2_shrink_qd_memory(struct shrinker *shrink, struct shrink_control *sc)
-+long gfs2_qd_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- {
- 	struct gfs2_quota_data *qd;
- 	struct gfs2_sbd *sdp;
- 	int nr_to_scan = sc->nr_to_scan;
--
--	if (nr_to_scan == 0)
--		goto out;
-+	long freed = 0;
- 
- 	if (!(sc->gfp_mask & __GFP_FS))
- 		return -1;
-@@ -113,10 +111,14 @@ int gfs2_shrink_qd_memory(struct shrinker *shrink, struct shrink_control *sc)
- 		kmem_cache_free(gfs2_quotad_cachep, qd);
- 		spin_lock(&qd_lru_lock);
- 		nr_to_scan--;
-+		freed++;
- 	}
- 	spin_unlock(&qd_lru_lock);
-+	return freed;
-+}
- 
--out:
-+long gfs2_qd_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
-+{
- 	return (atomic_read(&qd_lru_count) * sysctl_vfs_cache_pressure) / 100;
- }
- 
-diff --git a/fs/gfs2/quota.h b/fs/gfs2/quota.h
-index f25d98b..e0bd306 100644
---- a/fs/gfs2/quota.h
-+++ b/fs/gfs2/quota.h
-@@ -52,7 +52,9 @@ static inline int gfs2_quota_lock_check(struct gfs2_inode *ip)
- 	return ret;
- }
- 
--extern int gfs2_shrink_qd_memory(struct shrinker *shrink,
-+extern long gfs2_qd_shrink_count(struct shrinker *shrink,
-+				 struct shrink_control *sc);
-+extern long gfs2_qd_shrink_scan(struct shrinker *shrink,
- 				 struct shrink_control *sc);
- extern const struct quotactl_ops gfs2_quotactl_ops;
- 
-diff --git a/fs/mbcache.c b/fs/mbcache.c
-index 8c32ef3..04bf2fb 100644
---- a/fs/mbcache.c
-+++ b/fs/mbcache.c
-@@ -86,18 +86,6 @@ static LIST_HEAD(mb_cache_list);
- static LIST_HEAD(mb_cache_lru_list);
- static DEFINE_SPINLOCK(mb_cache_spinlock);
- 
--/*
-- * What the mbcache registers as to get shrunk dynamically.
-- */
--
--static int mb_cache_shrink_fn(struct shrinker *shrink,
--			      struct shrink_control *sc);
--
--static struct shrinker mb_cache_shrinker = {
--	.shrink = mb_cache_shrink_fn,
--	.seeks = DEFAULT_SEEKS,
--};
--
- static inline int
- __mb_cache_entry_is_hashed(struct mb_cache_entry *ce)
- {
-@@ -151,7 +139,7 @@ forget:
- 
- 
- /*
-- * mb_cache_shrink_fn()  memory pressure callback
-+ * mb_cache_shrink_scan()  memory pressure callback
-  *
-  * This function is called by the kernel memory management when memory
-  * gets low.
-@@ -159,17 +147,18 @@ forget:
-  * @shrink: (ignored)
-  * @sc: shrink_control passed from reclaim
-  *
-- * Returns the number of objects which are present in the cache.
-+ * Returns the number of objects freed.
-  */
--static int
--mb_cache_shrink_fn(struct shrinker *shrink, struct shrink_control *sc)
-+static long
-+mb_cache_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
- {
- 	LIST_HEAD(free_list);
--	struct mb_cache *cache;
- 	struct mb_cache_entry *entry, *tmp;
--	int count = 0;
- 	int nr_to_scan = sc->nr_to_scan;
- 	gfp_t gfp_mask = sc->gfp_mask;
-+	long freed = 0;
- 
- 	mb_debug("trying to free %d entries", nr_to_scan);
- 	spin_lock(&mb_cache_spinlock);
-@@ -179,19 +168,39 @@ mb_cache_shrink_fn(struct shrinker *shrink, struct shrink_control *sc)
- 				   struct mb_cache_entry, e_lru_list);
- 		list_move_tail(&ce->e_lru_list, &free_list);
- 		__mb_cache_entry_unhash(ce);
-+		freed++;
-+	}
-+	spin_unlock(&mb_cache_spinlock);
-+	list_for_each_entry_safe(entry, tmp, &free_list, e_lru_list) {
-+		__mb_cache_entry_forget(entry, gfp_mask);
- 	}
-+	return freed;
++	struct xfs_mount *mp = container_of(to_delayed_work(work),
++				struct xfs_mount, m_eofblocks_work);
++	xfs_icache_free_eofblocks(mp, NULL);
++	xfs_queue_eofblocks(mp);
 +}
 +
-+static long
-+mb_cache_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	struct mb_cache *cache;
-+	long count = 0;
-+
-+	spin_lock(&mb_cache_spinlock);
- 	list_for_each_entry(cache, &mb_cache_list, c_cache_list) {
- 		mb_debug("cache %s (%d)", cache->c_name,
- 			  atomic_read(&cache->c_entry_count));
- 		count += atomic_read(&cache->c_entry_count);
- 	}
- 	spin_unlock(&mb_cache_spinlock);
--	list_for_each_entry_safe(entry, tmp, &free_list, e_lru_list) {
--		__mb_cache_entry_forget(entry, gfp_mask);
--	}
--	return (count / 100) * sysctl_vfs_cache_pressure;
-+	return count;
+ STATIC int
+ xfs_inode_match_id(
+ 	struct xfs_inode	*ip,
+@@ -1310,8 +1195,8 @@ xfs_icache_free_eofblocks(
+ 	if (eofb && (eofb->eof_flags & XFS_EOF_FLAGS_SYNC))
+ 		flags = SYNC_WAIT;
+ 
+-	return xfs_inode_ag_iterator_tag(mp, xfs_inode_free_eofblocks, flags,
+-					 eofb, XFS_ICI_EOFBLOCKS_TAG);
++	return xfs_inode_ag_iterator_tag(mp, NULL, xfs_inode_free_eofblocks,
++					 flags, eofb, XFS_ICI_EOFBLOCKS_TAG);
  }
  
-+static struct shrinker mb_cache_shrinker = {
-+	.count_objects = mb_cache_shrink_count,
-+	.scan_objects = mb_cache_shrink_scan,
-+	.seeks = DEFAULT_SEEKS,
-+};
-+
+ void
+diff --git a/fs/xfs/xfs_icache.h b/fs/xfs/xfs_icache.h
+index 4214518..a3380bf 100644
+--- a/fs/xfs/xfs_icache.h
++++ b/fs/xfs/xfs_icache.h
+@@ -29,7 +29,7 @@ int xfs_iget(struct xfs_mount *mp, struct xfs_trans *tp, xfs_ino_t ino,
  
- /*
-  * mb_cache_create()  create a new cache
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index ce8cb92..15f6fbb 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1909,17 +1909,20 @@ static void nfs_access_free_list(struct list_head *head)
- 	}
- }
+ void xfs_reclaim_worker(struct work_struct *work);
  
--int nfs_access_cache_shrinker(struct shrinker *shrink,
--			      struct shrink_control *sc)
-+long
-+nfs_access_cache_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
+-int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
++int xfs_reclaim_inodes(struct xfs_mount *mp, int flags);
+ long xfs_reclaim_inodes_nr(struct xfs_mount *mp, long nr_to_scan,
+ 			   nodemask_t *nodes_to_scan);
+ 
+@@ -42,10 +42,12 @@ void xfs_eofblocks_worker(struct work_struct *);
+ 
+ int xfs_sync_inode_grab(struct xfs_inode *ip);
+ int xfs_inode_ag_iterator(struct xfs_mount *mp,
++	int (*grab)(struct xfs_inode *ip, int flags),
+ 	int (*execute)(struct xfs_inode *ip, struct xfs_perag *pag,
+ 		int flags, void *args),
+ 	int flags, void *args);
+ int xfs_inode_ag_iterator_tag(struct xfs_mount *mp,
++	int (*grab)(struct xfs_inode *ip, int flags),
+ 	int (*execute)(struct xfs_inode *ip, struct xfs_perag *pag,
+ 		int flags, void *args),
+ 	int flags, void *args, int tag);
+diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
+index da50846..6985a32 100644
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -456,7 +456,6 @@ xfs_initialize_perag(
+ 		pag->pag_agno = index;
+ 		pag->pag_mount = mp;
+ 		spin_lock_init(&pag->pag_ici_lock);
+-		mutex_init(&pag->pag_ici_reclaim_lock);
+ 		INIT_RADIX_TREE(&pag->pag_ici_root, GFP_ATOMIC);
+ 		spin_lock_init(&pag->pag_buf_lock);
+ 		pag->pag_buf_tree = RB_ROOT;
+diff --git a/fs/xfs/xfs_qm_syscalls.c b/fs/xfs/xfs_qm_syscalls.c
+index 5f53e75..85294a6 100644
+--- a/fs/xfs/xfs_qm_syscalls.c
++++ b/fs/xfs/xfs_qm_syscalls.c
+@@ -883,5 +883,5 @@ xfs_qm_dqrele_all_inodes(
+ 	uint		 flags)
  {
- 	LIST_HEAD(head);
- 	struct nfs_inode *nfsi, *next;
- 	struct nfs_access_entry *cache;
- 	int nr_to_scan = sc->nr_to_scan;
- 	gfp_t gfp_mask = sc->gfp_mask;
-+	long freed = 0;
- 
- 	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
--		return (nr_to_scan == 0) ? 0 : -1;
-+		return -1;
- 
- 	spin_lock(&nfs_access_lru_lock);
- 	list_for_each_entry_safe(nfsi, next, &nfs_access_lru_list, access_cache_inode_lru) {
-@@ -1935,6 +1938,7 @@ int nfs_access_cache_shrinker(struct shrinker *shrink,
- 				struct nfs_access_entry, lru);
- 		list_move(&cache->lru, &head);
- 		rb_erase(&cache->rb_node, &nfsi->access_cache);
-+		freed++;
- 		if (!list_empty(&nfsi->access_cache_entry_lru))
- 			list_move_tail(&nfsi->access_cache_inode_lru,
- 					&nfs_access_lru_list);
-@@ -1949,7 +1953,16 @@ remove_lru_entry:
- 	}
- 	spin_unlock(&nfs_access_lru_lock);
- 	nfs_access_free_list(&head);
--	return (atomic_long_read(&nfs_access_nr_entries) / 100) * sysctl_vfs_cache_pressure;
-+	return freed;
-+}
-+
-+long
-+nfs_access_cache_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	return (atomic_long_read(&nfs_access_nr_entries) / 100) *
-+						sysctl_vfs_cache_pressure;
+ 	ASSERT(mp->m_quotainfo);
+-	xfs_inode_ag_iterator(mp, xfs_dqrele_inode, flags, NULL);
++	xfs_inode_ag_iterator(mp, NULL, xfs_dqrele_inode, flags, NULL);
  }
- 
- static void __nfs_access_zap_cache(struct nfs_inode *nfsi, struct list_head *head)
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index 05521ca..6b9c45b 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -285,7 +285,9 @@ extern struct nfs_client *nfs_init_client(struct nfs_client *clp,
- 			   const char *ip_addr, rpc_authflavor_t authflavour);
- 
- /* dir.c */
--extern int nfs_access_cache_shrinker(struct shrinker *shrink,
-+extern long nfs_access_cache_count(struct shrinker *shrink,
-+					struct shrink_control *sc);
-+extern long nfs_access_cache_scan(struct shrinker *shrink,
- 					struct shrink_control *sc);
- struct dentry *nfs_lookup(struct inode *, struct dentry *, unsigned int);
- int nfs_create(struct inode *, struct dentry *, umode_t, bool);
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 652d3f7..e7dd232 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -354,7 +354,8 @@ static void unregister_nfs4_fs(void)
- #endif
- 
- static struct shrinker acl_shrinker = {
--	.shrink		= nfs_access_cache_shrinker,
-+	.count_objects	= nfs_access_cache_count,
-+	.scan_objects	= nfs_access_cache_scan,
- 	.seeks		= DEFAULT_SEEKS,
- };
- 
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 05ae3c9..544bd65 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -687,45 +687,42 @@ int dquot_quota_sync(struct super_block *sb, int type)
- }
- EXPORT_SYMBOL(dquot_quota_sync);
- 
--/* Free unused dquots from cache */
--static void prune_dqcache(int count)
-+static long
-+dqcache_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
- {
- 	struct list_head *head;
- 	struct dquot *dquot;
-+	long freed = 0;
- 
- 	head = free_dquots.prev;
--	while (head != &free_dquots && count) {
-+	while (head != &free_dquots && sc->nr_to_scan) {
- 		dquot = list_entry(head, struct dquot, dq_free);
- 		remove_dquot_hash(dquot);
- 		remove_free_dquot(dquot);
- 		remove_inuse(dquot);
- 		do_destroy_dquot(dquot);
--		count--;
-+		sc->nr_to_scan--;
-+		freed++;
- 		head = free_dquots.prev;
- 	}
-+	return freed;
- }
- 
--/*
-- * This is called from kswapd when we think we need some
-- * more memory
-- */
--static int shrink_dqcache_memory(struct shrinker *shrink,
--				 struct shrink_control *sc)
-+static long
-+dqcache_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
- {
--	int nr = sc->nr_to_scan;
--
--	if (nr) {
--		spin_lock(&dq_list_lock);
--		prune_dqcache(nr);
--		spin_unlock(&dq_list_lock);
--	}
--	return ((unsigned)
-+	return ((long)
- 		percpu_counter_read_positive(&dqstats.counter[DQST_FREE_DQUOTS])
--		/100) * sysctl_vfs_cache_pressure;
-+		/ 100) * sysctl_vfs_cache_pressure;
- }
- 
- static struct shrinker dqcache_shrinker = {
--	.shrink = shrink_dqcache_memory,
-+	.count_objects = dqcache_shrink_count,
-+	.scan_objects = dqcache_shrink_scan,
- 	.seeks = DEFAULT_SEEKS,
- };
- 
 -- 
 1.7.10
 
