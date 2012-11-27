@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab2K0ORy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:17:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49114 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755348Ab2K0ORx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:17:53 -0500
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Save PG_compound or PG_head value in VMCOREINFO
-Date: Tue, 27 Nov 2012 15:13:32 +0100
-Message-ID: <3774326.lMtTTFYZT3@azariah.suse.cz>
-Organization: SUSE LINUX, s.r.o.
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; i686; ; )
+	id S1753532Ab2K0OUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:20:45 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54832
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751588Ab2K0OUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 09:20:44 -0500
+Date: Tue, 27 Nov 2012 09:20:35 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Howells <dhowells@redhat.com>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tony Luck <tony.luck@intel.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] perf tools: fix build for various architectures
+Message-ID: <20121127142035.GA30995@bombadil.infradead.org>
+References: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To allow filtering of huge pages, makedumpfile must be able to identify
-them in the dump. This can be done by checking for the appropriate
-page flag, so communicate its value to makedumpfile through the VMCOREINFO 
-interface.
+On Tue, Nov 27, 2012 at 12:16:31PM +0000, Mark Rutland wrote:
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Kyle McMartin <kyle@mcmartin.ca>
 
-Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Looks obviously right.
 
----
- kernel/kexec.c |    5 +++++
- 1 file changed, 5 insertions(+)
+Acked-by: Kyle McMartin <kyle@mcmartin.ca>
 
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1511,6 +1511,11 @@ static int __init crash_save_vmcoreinfo_
- 	VMCOREINFO_NUMBER(NR_FREE_PAGES);
- 	VMCOREINFO_NUMBER(PG_lru);
- 	VMCOREINFO_NUMBER(PG_private);
-+#ifdef CONFIG_PAGEFLAGS_EXTENDED
-+	VMCOREINFO_NUMBER(PG_head);
-+#else
-+	VMCOREINFO_NUMBER(PG_compound);
-+#endif
- 	VMCOREINFO_NUMBER(PG_swapcache);
- 
- 	arch_crash_save_vmcoreinfo();
-
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Will Deacon <will.deacon@arm.com>
