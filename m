@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab2K0NmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 08:42:17 -0500
-Received: from mga12.intel.com ([143.182.124.36]:22653 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751228Ab2K0NmP (ORCPT
+	id S1754757Ab2K0NoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 08:44:08 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:48636 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab2K0NoH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 08:42:15 -0500
+	Tue, 27 Nov 2012 08:44:07 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+Date: Tue, 27 Nov 2012 14:44:03 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.0-rc6-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
+Cc: Dave Chinner <david@fromorbit.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126115345.19977e46@pyramind.ukuu.org.uk> <20121126211200.GI6434@dastard> (sfid-20121127_001638_373244_611CF8E2)
+In-Reply-To: <20121126211200.GI6434@dastard>
 MIME-Version: 1.0
-In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-Date: Tue, 27 Nov 2012 15:42:13 +0200
-Message-ID: <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201211271444.04002.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Am Montag, 26. November 2012 schrieb Dave Chinner:
+> On Mon, Nov 26, 2012 at 11:53:45AM +0000, Alan Cox wrote:
+> > > It's not like there is any shortage of flag bits, so what's the
+> > > harm of reserving the bit?
+> > 
+> > Why not just reserve a small group of bits for fs private use in that
+> > case - for any fs.
+> 
+> Flawed - one bit, one function for all filesystems, otherwise the
+> same binary could behave very differently on different filesystems.
+> 
+> Besides, we already have a mechanism for adding filesystem specific
+> interfaces. It's called an ioctl.  That's what it's there for - a
+> free-form extensible interface that can be wholly defined and
+> contained in the out-of-tree patch.
+> 
+> Most filesystems implement ioctls for their own specific
+> functionality, including for one-off preallocation semantics (e.g.
+> XFS_IOC_ZERO_RANGE). There is no reason why ext4 can't do the same
+> thing and we can drop the whole issue of having to modify a syscall
+> API with magic, undocumented flag bits with unpredictable
+> behaviour....
+> 
+> ext4 is not a special snowflake that allows developers to bend rules
+> whenever they want. If the ext4 developers want to support out of
+> tree functionality for their filesystem, then they can do it within
+> their filesystem via ioctls like everyone else does.
 
-Any thoughts about this proposal?
+I do not develop for the kernel, just test here a bit, there a bit… and I 
+didn´t read the previous discussions about this patch…
 
-- Dmitry
+… but I think I can follow this argument of yours, Dave.
 
-On Thu, Nov 22, 2012 at 11:54 PM, Dmitry Kasatkin
-<dmitry.kasatkin@intel.com> wrote:
-> Hello,
->
-> Here is two patches for policy search speedup.
->
-> First patch adds additional features flags to superblock.
-> Second - implementation for IMA.
->
-> Two months ago I was asking about it on mailing lists.
-> Suggestion was not to use s_flags, but e.g. s_feature_flags.
->
-> Any objections about such approach?
->
-> Thanks,
-> Dmitry
->
-> Dmitry Kasatkin (2):
->   vfs: new super block feature flags attribute
->   ima: skip policy search for never appraised or measured files
->
->  include/linux/fs.h                  |    4 ++++
->  security/integrity/ima/ima_api.c    |    8 ++------
->  security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
->  security/integrity/integrity.h      |    3 +++
->  4 files changed, 26 insertions(+), 9 deletions(-)
->
-> --
-> 1.7.10.4
->
+And Ted, this does not appear to be screaming to me.
+
+So why no ioctl?
+
+And what functionality is this about anyway? Sometimes I read in some 
+kernel source and I am happy that sometimes can understood some of it. 
+Reading "this is used for some magic Google or Tao Bao do with their 
+filesystem" would decrease my chance to understand whats going on there. 
+Not quite approbiate for an open source kernel, I think.
+
+Thanks,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
