@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2K0Qw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:52:27 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52492 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755846Ab2K0QwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:52:25 -0500
-Message-ID: <1354035129.3284.54.camel@thor>
-Subject: Re: [PATCH 9/9] TTY: call tty_port_destroy in the rest of drivers
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Date: Tue, 27 Nov 2012 11:52:09 -0500
-In-Reply-To: <1352969396-23760-10-git-send-email-jslaby@suse.cz>
-References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
-	 <1352969396-23760-10-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.4-0build1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	id S1756449Ab2K0Q7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:59:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755296Ab2K0Q7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 11:59:04 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2 v5] loop: Limit the number of requests in the bio list
+References: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
+	<1353572315-4508-2-git-send-email-lczerner@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 27 Nov 2012 11:58:57 -0500
+In-Reply-To: <1353572315-4508-2-git-send-email-lczerner@redhat.com> (Lukas
+	Czerner's message of "Thu, 22 Nov 2012 09:18:35 +0100")
+Message-ID: <x49haobdlta.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 09:49 +0100, Jiri Slaby wrote:
-> After commit "TTY: move tty buffers to tty_port", the tty buffers are
-> not freed in some drivers. This is because tty_port_destructor is not
-> called whenever a tty_port is freed. This was an assumption I counted
-> with but was unfortunately untrue. So fix the drivers to fulfil this
-> assumption.
-> 
-> To be sure, the TTY buffers (and later some stuff) are gone along with
-> the tty_port, we have to call tty_port_destroy at tear-down places.
-> This is mostly where the structure containing a tty_port is freed.
-> This patch does exactly that -- put tty_port_destroy at those places.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Lukas Czerner <lczerner@redhat.com> writes:
 
-Hi Jiri & Greg & Alan,
-
-I'd be more than willing to fixup staging/fwserial against this series
-but I'm unclear on the mechanics since this series isn't in staging-next
-and staging/fwserial isn't in tty-next.
-
-Regards,
-Peter Hurley
-
-
-
+> Currently there is not limitation of number of requests in the loop bio
+> list. This can lead into some nasty situations when the caller spawns
+> tons of bio requests taking huge amount of memory. This is even more
+> obvious with discard where blkdev_issue_discard() will submit all bios
+> for the range and wait for them to finish afterwards. On really big loop
+> devices and slow backing file system this can lead to OOM situation as
+> reported by Dave Chinner.
+>
+> With this patch we will wait in loop_make_request() if the number of
+> bios in the loop bio list would exceed 'nr_congestion_on'.
+> We'll wake up the process as we process the bios form the list. Some
+> threshold hysteresis is in place to avoid high frequency oscillation.
+>
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> Reported-by: Dave Chinner <dchinner@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
