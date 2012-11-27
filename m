@@ -1,171 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab2K0Iax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:30:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60644 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753313Ab2K0Iaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:30:52 -0500
-X-IronPort-AV: E=Sophos;i="4.83,326,1352044800"; 
-   d="scan'208";a="6284061"
-Message-ID: <50B479FA.6010307@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 16:29:46 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758321Ab2K0Ick (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:32:40 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60469 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab2K0Ici convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 03:32:38 -0500
 MIME-Version: 1.0
-To: Bob Liu <lliubbo@gmail.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com>
-In-Reply-To: <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 16:30:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 16:30:24,
-	Serialize complete at 2012/11/27 16:30:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+In-Reply-To: <50B476E1.4070403@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+	<CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
+	<50B46336.8030605@nvidia.com>
+	<CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
+	<50B476E1.4070403@nvidia.com>
+Date: Tue, 27 Nov 2012 08:32:38 +0000
+Message-ID: <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+From: Dave Airlie <airlied@gmail.com>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 04:00 PM, Bob Liu wrote:
-> Hi Tang,
+On Tue, Nov 27, 2012 at 8:16 AM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+> On 27.11.2012 09:33, Dave Airlie wrote:
+>>> Third would be having a firewall in 2D driver checking the stream and
+>>> ensuring all registers that accept addresses are written by values
+>>> derived from dmabufs. I haven't tried implementing this, but it'd
+>>> involve a lookup table in kernel and CPU reading through the command
+>>> stream. Offsets and sizes would also need to be validated. There would
+>>> be a performance hit.
+>>
+>> This is the standard mechanism, and what exynos does as well.
+>>
+>> The per process VM method is also used as an extension to this on some hw.
 >
-> On Fri, Nov 23, 2012 at 6:44 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
->> [What we are doing]
->> This patchset provide a boot option for user to specify ZONE_MOVABLE memory
->> map for each node in the system.
->>
->> movablecore_map=nn[KMG]@ss[KMG]
->>
->> This option make sure memory range from ss to ss+nn is movable memory.
->>
->>
->> [Why we do this]
->> If we hot remove a memroy, the memory cannot have kernel memory,
->> because Linux cannot migrate kernel memory currently. Therefore,
->> we have to guarantee that the hot removed memory has only movable
->> memoroy.
->>
->> Linux has two boot options, kernelcore= and movablecore=, for
->> creating movable memory. These boot options can specify the amount
->> of memory use as kernel or movable memory. Using them, we can
->> create ZONE_MOVABLE which has only movable memory.
->>
->> But it does not fulfill a requirement of memory hot remove, because
->> even if we specify the boot options, movable memory is distributed
->> in each node evenly. So when we want to hot remove memory which
->> memory range is 0x80000000-0c0000000, we have no way to specify
->> the memory as movable memory.
->>
+> Hi,
 >
-> Sorry, I'm still not get your idea.
-> Why you need a specify range that is movable?
-> Could you describe the requirement and situation a bit more?
-> Thank you.
+> Thanks for the pointer, I looked at exynos code. It indeed checks the
+> registers written to, but it doesn't prevent overrun by checking sizes
+> of buffers and compare against requests.
 
-Hi Liu,
+They probably need to add that, its not as important as the base
+addresses, unless it takes negative strides, generally base addresses
+means you can target current->uid quite easily!
 
-This feature is used in memory hotplug.
-
-In order to implement a whole node hotplug, we need to make sure the
-node contains no kernel memory, because memory used by kernel could
-not be migrated. (Since the kernel memory is directly mapped,
-VA = PA + __PAGE_OFFSET. So the physical address could not be changed.)
-
-User could specify all the memory on a node to be movable, so that the
-node could be hot-removed.
-
-Another approach is like the following:
-movable_node = 1,3-5,8
-This could set all the memory on the nodes to be movable. And the rest
-of memory works as usual. But movablecore_map is more flexible.
-
-Thanks. :)
-
+> Based on my experience with Tegra graphics stack, going through command
+> streams in kernel is bad for performance. For 2D operations this is
+> probably ok as the command streams are pretty simple. Anything more
+> complex is going to cause severe degradation of performance, but it's
+> also outside the scope of this patch set.
 >
->> So we proposed a new feature which specifies memory range to use as
->> movable memory.
->>
->>
->> [Ways to do this]
->> There may be 2 ways to specify movable memory.
->>   1. use firmware information
->>   2. use boot option
->>
->> 1. use firmware information
->>    According to ACPI spec 5.0, SRAT table has memory affinity structure
->>    and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
->>    Affinity Structure". If we use the information, we might be able to
->>    specify movable memory by firmware. For example, if Hot Pluggable
->>    Filed is enabled, Linux sets the memory as movable memory.
->>
->> 2. use boot option
->>    This is our proposal. New boot option can specify memory range to use
->>    as movable memory.
->>
->>
->> [How we do this]
->> We chose second way, because if we use first way, users cannot change
->> memory range to use as movable memory easily. We think if we create
->> movable memory, performance regression may occur by NUMA. In this case,
->> user can turn off the feature easily if we prepare the boot option.
->> And if we prepare the boot optino, the user can select which memory
->> to use as movable memory easily.
->>
->>
->> [How to use]
->> Specify the following boot option:
->> movablecore_map=nn[KMG]@ss[KMG]
->>
->> That means physical address range from ss to ss+nn will be allocated as
->> ZONE_MOVABLE.
->>
->> And the following points should be considered.
->>
->> 1) If the range is involved in a single node, then from ss to the end of
->>     the node will be ZONE_MOVABLE.
->> 2) If the range covers two or more nodes, then from ss to the end of
->>     the node will be ZONE_MOVABLE, and all the other nodes will only
->>     have ZONE_MOVABLE.
->> 3) If no range is in the node, then the node will have no ZONE_MOVABLE
->>     unless kernelcore or movablecore is specified.
->> 4) This option could be specified at most MAX_NUMNODES times.
->> 5) If kernelcore or movablecore is also specified, movablecore_map will have
->>     higher priority to be satisfied.
->> 6) This option has no conflict with memmap option.
->>
->>
->>
->> Tang Chen (4):
->>    page_alloc: add movable_memmap kernel parameter
->>    page_alloc: Introduce zone_movable_limit[] to keep movable limit for
->>      nodes
->>    page_alloc: Make movablecore_map has higher priority
->>    page_alloc: Bootmem limit with movablecore_map
->>
->> Yasuaki Ishimatsu (1):
->>    x86: get pg_data_t's memory from other node
->>
->>   Documentation/kernel-parameters.txt |   17 +++
->>   arch/x86/mm/numa.c                  |   11 ++-
->>   include/linux/memblock.h            |    1 +
->>   include/linux/mm.h                  |   11 ++
->>   mm/memblock.c                       |   15 +++-
->>   mm/page_alloc.c                     |  216 ++++++++++++++++++++++++++++++++++-
->>   6 files changed, 263 insertions(+), 8 deletions(-)
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->
+> If this is the way to go, I'll put the firewall behind a Kconfig flag so
+> that system integrator can decide if his system needs it.
 
+We don't generally make security like this optional :-)
+
+If you do that you should restrict the drm device to root users only,
+and never let a user with a browser anywhere near it.
+
+Like I know what you guys get away with in closed source world, but
+here we don't write root holes into our driver deliberately.
+
+Dave.
