@@ -1,102 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab2K0D1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:27:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31424 "EHLO song.cn.fujitsu.com"
+	id S933185Ab2K0D17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 22:27:59 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:8709 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933079Ab2K0D1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:27:32 -0500
+	id S933078Ab2K0D15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 22:27:57 -0500
 X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6280658"
-Message-ID: <50B434A9.3030600@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 11:34:01 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+   d="scan'208";a="6280661"
+Message-ID: <50B432CA.70804@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 11:26:02 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-To: Jianguo Wu <wujianguo@huawei.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        wujianguo <wujianguo106@gmail.com>, akpm@linux-foundation.org,
-        rob@landley.net, isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, jiang.liu@huawei.com, yinghai@kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, qiuxishi@huawei.com
-Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com> <50B41041.6030902@huawei.com> <50B43150.2000405@cn.fujitsu.com> <50B431E6.7060208@huawei.com>
-In-Reply-To: <50B431E6.7060208@huawei.com>
+To: "x86@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+References: <50B43299.9030409@cn.fujitsu.com>
+In-Reply-To: <50B43299.9030409@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 11:27:05,
+ 2012/11/27 11:27:31,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 11:27:06,
-	Serialize complete at 2012/11/27 11:27:06
+ 2012/11/27 11:27:31,
+	Serialize complete at 2012/11/27 11:27:31
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/27/2012 11:22 AM, Jianguo Wu Wrote:
-> On 2012/11/27 11:19, Wen Congyang wrote:
-> 
->> At 11/27/2012 08:58 AM, Jianguo Wu Wrote:
->>> On 2012/11/26 23:48, H. Peter Anvin wrote:
->>>
->>>> On 11/26/2012 05:15 AM, Tang Chen wrote:
->>>>>
->>>>> Hi Wu,
->>>>>
->>>>> That is really a problem. And, before numa memory got initialized,
->>>>> memblock subsystem would be used to allocate memory. I didn't find any
->>>>> approach that could fully address it when I making the patches. There
->>>>> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
->>>>> we can only do our best to prevent it from happening.
->>>>>
->>>>> Your patch is very helpful. And after a shot look at the code, it seems
->>>>> that acpi_numa_memory_affinity_init() is an architecture dependent
->>>>> function. Could we do this somewhere which is not depending on the
->>>>> architecture ?
->>>>>
->>>>
->>>> The movable memory should be classified as a non-RAM type in memblock,
->>>> that way we will not allocate from it early on.
->>>>
->>>> 	-hpa
->>>
->>>
->>> yep, we can put movable memory in reserved.regions in memblock.
->>
->> Hmm, I don't think so. If so, memory in reserved.regions contain two type
->> memory: bootmem and movable memory. We will put all pages not in reserved.regions
->> into buddy system. If we put movable memory in reserved.regions, we have
->> no chance to put them to buddy system, and can't use them after system boots.
->>
-> 
-> yes, you are right. Or we can fix movablecore_map when add memory region to memblock.
+This patch provides a way to VMCLEAR VMCSs related to guests
+on all cpus before executing the VMXOFF when doing kdump. This
+is used to ensure the VMCSs in the vmcore updated and
+non-corrupted.
 
-If so, we should know the nodes address range...
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kexec.h |    2 ++
+ arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
-Thanks
-Wen Congyang
-
->> Thanks
->> Wen Congyang
->>
->>>
->>>>
->>>>
->>>> .
->>>>
->>>
->>>
->>>
->>>
->>
->>
->> .
->>
-> 
-> 
-> 
-> 
+diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+index 317ff17..28feeba 100644
+--- a/arch/x86/include/asm/kexec.h
++++ b/arch/x86/include/asm/kexec.h
+@@ -163,6 +163,8 @@ struct kimage_arch {
+ };
+ #endif
+ 
++extern void (*crash_vmclear_loaded_vmcss)(void);
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_X86_KEXEC_H */
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 13ad899..4a2a12f 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -16,6 +16,7 @@
+ #include <linux/delay.h>
+ #include <linux/elf.h>
+ #include <linux/elfcore.h>
++#include <linux/module.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/hardirq.h>
+@@ -29,6 +30,20 @@
+ #include <asm/virtext.h>
+ 
+ int in_crash_kexec;
++ 
++/*
++ * This is used to VMCLEAR all VMCSs loaded on the
++ * processor. And when loading kvm_intel module, the
++ * callback function pointer will be assigned.
++ */
++void (*crash_vmclear_loaded_vmcss)(void) = NULL;
++EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
++
++static inline void cpu_emergency_vmclear_loaded_vmcss(void)
++{
++	if (crash_vmclear_loaded_vmcss)
++		crash_vmclear_loaded_vmcss();
++}
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
+ 
+@@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+ #endif
+ 	crash_save_cpu(regs, cpu);
+ 
++	/*
++	 * VMCLEAR VMCSs loaded on all cpus if needed.
++	 */
++	cpu_emergency_vmclear_loaded_vmcss();
++
+ 	/* Disable VMX or SVM if needed.
+ 	 *
+ 	 * We need to disable virtualization on all CPUs.
+@@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ 
+ 	kdump_nmi_shootdown_cpus();
+ 
++	/*
++	 * VMCLEAR VMCSs loaded on this cpu if needed.
++	 */
++	cpu_emergency_vmclear_loaded_vmcss();
++
+ 	/* Booting kdump kernel with VMX or SVM enabled won't work,
+ 	 * because (among other limitations) we can't disable paging
+ 	 * with the virt flags.
+-- 
+1.7.1
 
