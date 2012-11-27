@@ -1,124 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab2K0CVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:21:35 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29902 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab2K0CVd (ORCPT
+	id S933038Ab2K0CW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:22:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38430 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755878Ab2K0CWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:21:33 -0500
-Message-ID: <50B422A9.7050103@huawei.com>
-Date: Tue, 27 Nov 2012 10:17:13 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <akpm@linux-foundation.org>, <rientjes@google.com>,
-        Michal Hocko <mhocko@suse.cz>, <shangw@linux.vnet.ibm.com>,
-        <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <wency@cn.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Liujiang <jiang.liu@huawei.com>,
-        qiuxishi <qiuxishi@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: mm/vmemmap: fix wrong use of virt_to_page
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+	Mon, 26 Nov 2012 21:22:25 -0500
+Message-ID: <1353982939.4266.38.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 028/270] ext4: remove erroneous
+ ext4_superblock_csum_set() in update_backups()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Tao Ma <boyu.mt@taobao.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Date: Tue, 27 Nov 2012 02:22:19 +0000
+In-Reply-To: <1353949160-26803-29-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1353949160-26803-29-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-IQTzQqcRcUiHytPRPJ+M"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing memory hotremove,
-there is a kernel BUG at arch/x86/mm/physaddr.c:20.
 
-It is caused by free_section_usemap()->virt_to_page(),
-virt_to_page() is only used for kernel direct mapping address,
-but sparse-vmemmap uses vmemmap address, so it is going wrong here.
+--=-IQTzQqcRcUiHytPRPJ+M
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-[  517.727381] ------------[ cut here ]------------
-[  517.728851] kernel BUG at arch/x86/mm/physaddr.c:20!
-[  517.728851] invalid opcode: 0000 [#1] SMP
-[  517.740170] Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservativ
-e cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_m
-od coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspk
-r iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_c
-ore mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3
- jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif p
-rocessor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc s
-csi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
-[  517.740170] CPU 39
-[  517.740170] Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI Q
-SSC-S4R/QSSC-S4R
-[  517.740170] RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+
-0x88/0x90
-[  517.740170] RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
-[  517.740170] RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
+On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
+> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Tao Ma <boyu.mt@taobao.com>
+>=20
+> commit bef53b01faeb791e27605cba1a71ba21364cb23e upstream.
+>=20
+> The update_backups() function is used to backup all the metadata
+> blocks, so we should not take it for granted that 'data' is pointed to
+> a super block and use ext4_superblock_csum_set to calculate the
+> checksum there.  In case where the data is a group descriptor block,
+> it will corrupt the last group descriptor, and then e2fsck will
+> complain about it it.
+>=20
+> As all the metadata checksums should already be OK when we do the
+> backup, remove the wrong ext4_superblock_csum_set and it should be
+> just fine.
+>=20
+> Reported-by: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> [ herton: adjust context ]
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+>
 
-[  517.740170] RDX: 0000620012000000 RSI: 0000000000000000 RDI: ffffea0012000000
+This should also be applicable to 3.6.
 
-[  517.740170] RBP: ffff8804440d7c08 R08: 0070000000000400 R09: 0000000000488000
+Ben.
 
-[  517.740170] R10: 0000000000000091 R11: 0000000000000001 R12: ffff88047fb87800
-
-[  517.740170] R13: ffffea0000000000 R14: ffff88047ffb3440 R15: 0000000000480000
-
-[  517.740170] FS:  00007f0462b49700(0000) GS:ffff8804570c0000(0000) knlGS:00000
-00000000000
-[  517.740170] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  517.740170] CR2: 00007f006dc5fd14 CR3: 0000000440e85000 CR4: 00000000000007e0
-
-[  517.740170] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-
-[  517.896799] DR3: 0000000000000000 DR6
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- mm/sparse.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/mm/sparse.c b/mm/sparse.c
-index fac95f2..a83de2f 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -617,7 +617,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+> ---
+>  fs/ext4/resize.c |    2 --
+>  1 file changed, 2 deletions(-)
+>=20
+> diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+> index b0bdd10..dc1affc 100644
+> --- a/fs/ext4/resize.c
+> +++ b/fs/ext4/resize.c
+> @@ -979,8 +979,6 @@ static void update_backups(struct super_block *sb,
+>  		goto exit_err;
+>  	}
+> =20
+> -	ext4_superblock_csum_set(sb, (struct ext4_super_block *)data);
+> -
+>  	while ((group =3D ext4_list_backups(sb, &three, &five, &seven)) < last)=
  {
- 	return; /* XXX: Not implemented yet */
- }
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- }
- #else
-@@ -658,10 +658,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- 			   get_order(sizeof(struct page) * nr_pages));
- }
- 
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
- 	unsigned long magic;
-+	struct page *page = virt_to_page(memmap);
- 
- 	for (i = 0; i < nr_pages; i++, page++) {
- 		magic = (unsigned long) page->lru.next;
-@@ -710,13 +711,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 	 */
- 
- 	if (memmap) {
--		struct page *memmap_page;
--		memmap_page = virt_to_page(memmap);
--
- 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
- 			>> PAGE_SHIFT;
- 
--		free_map_bootmem(memmap_page, nr_pages);
-+		free_map_bootmem(memmap, nr_pages);
- 	}
- }
- 
--- 
-1.7.1
+>  		struct buffer_head *bh;
+> =20
 
+--=20
+Ben Hutchings
+Never attribute to conspiracy what can adequately be explained by stupidity=
+.
 
+--=-IQTzQqcRcUiHytPRPJ+M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAULQj2+e/yOyVhhEJAQqv/RAAxSEoUf07KEbtGURtJjPXd+TZgvwwLPbz
+OxZR/eS5RfHWtI7prJS/y40kuwlaNp0Iqaev26z73DmMEhv6Zhd8xLNCWgx4YEsY
+2A1pX281cUvOIIFUORHf3OAAPOZ6aRabSYqCdn2yH7n+LeQGgEuqaE/US5LmMq7a
+EryfXoU9MMGvs7CEfbF2OKMooTc14npS+pKkO3Q1XQYu02qAo5Z/na6kRO7bc/ji
+rjII+Xc+AxvRJ0PYwc/lIaD61ZbK0BKhPk63bh4pGtoUDThkMq9qPn1g9qPmELz9
+pE8t8BmlSdj8yd0gTzKaPOX02n3C4DAVZcsqtwSAMfN+RuXamcA6/tjxprSok6eJ
+PjImAKfr+cCvAMXAhmFoGu2HDjp3dlVqxRYWOz2tVfoG9pv2KetxvoHJGGNgSpQe
+KL1qn+TesRh1JRks8thhkkKyOXHW0oAJ698Lf9YqDbfHdf4OmxsD9rYUi0kyy/XD
+IMk4oyAE/K4VPWwE7OSsxXOBCdR5K478wnJMHK6Y4NHgEelbAgOuCpwwau/ieHiu
+ywOHYlNzSd+XEbqkgMo4lRawRO+dQ/nyFrl2+x8Uwq4fkhtBQ4ex6wI1G6yCIeDj
+GWa984NWE0vtE3qi+s0cICtB5YgF6YH6uU5b0hdYyqoN92C9o85JkIU41likwEqB
+NJLFVKbNp/8=
+=C9Vj
+-----END PGP SIGNATURE-----
+
+--=-IQTzQqcRcUiHytPRPJ+M--
