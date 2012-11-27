@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2K0RRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:17:47 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51860 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab2K0RRq (ORCPT
+	id S1756550Ab2K0RSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:18:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36879 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab2K0RSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:17:46 -0500
-Message-ID: <50B4F5B6.6000008@wwwdotorg.org>
-Date: Tue, 27 Nov 2012 10:17:42 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 27 Nov 2012 12:18:16 -0500
+Date: Tue, 27 Nov 2012 09:19:38 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shan Wei <shanwei88@gmail.com>
+Cc: benchan@chromium.org, syahn@gctsemi.com, devel@driverdev.osuosl.org,
+        pstew@chromium.org, joe@perches.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] drivers: staging: remove last usage of NIPQUAD and
+ NIP6 in gdm72xx
+Message-ID: <20121127171938.GA17680@kroah.com>
+References: <50B4277A.6080307@gmail.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 5/8] ARM: tegra: Add auxiliary data for nvhost
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-6-git-send-email-tbergstrom@nvidia.com> <50B3FDCC.7080709@wwwdotorg.org> <50B45EA8.7000502@nvidia.com>
-In-Reply-To: <50B45EA8.7000502@nvidia.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B4277A.6080307@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 11:33 PM, Terje Bergström wrote:
-> On 27.11.2012 01:39, Stephen Warren wrote:
->> Clock names shouldn't be passed in platform data; instead, clk_get()
->> should be passed the device object and device-relative (i.e. not global)
->> clock name. I expect if the driver is fixed to make this change, the
->> changes to tegra*_clocks_data.c won't be needed either.
+On Tue, Nov 27, 2012 at 10:37:46AM +0800, Shan Wei wrote:
+> From: Shan Wei <davidshan@tencent.com>
 > 
-> Isn't this code doing exactly that - getting a device relative clock,
-> nvhost_module_init() in nvhost.acm.c:
+> commit cf4ca4874fc45 removed the definition of NIPQUAD and NIPQUAD_FMT,
+> and NIP6 also is out of date.
 > 
-> (...)
-> 	/* initialize clocks to known state */
-> 	while (pdata->clocks[i].name && i < NVHOST_MODULE_MAX_CLOCKS) {
-> 		long rate = pdata->clocks[i].default_rate;
-> 		struct clk *c;
+> Because DEBUG_SDU is not defined in gdm_wimax.h, no error message when compiling
+> this code. And remove constant condition judge.
 > 
-> 		c = devm_clk_get(&dev->dev, pdata->clocks[i].name);
+> 
+> Signed-off-by: Shan Wei <davidshan@tencent.com>
+> ---
+> V3:
+>    As suggestion of greg k-h's patch email bot, recreate this patch base on greg's staging tree,
+>    v2 is on David Miller's net-next tree.
 
-The line above is getting the (device-relative) clock name from platform
-data, rather than using some fixed name as it should be.
+Are you sure you got the right branch?  This does not apply to my
+staging-next branch of the staging.git tree, what did you use?
+
+thanks,
+
+greg k-h
