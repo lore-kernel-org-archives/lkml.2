@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab2K0HPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 02:15:36 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58965 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758065Ab2K0HP3 (ORCPT
+	id S1758180Ab2K0HRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 02:17:21 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46533 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab2K0HRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 02:15:29 -0500
-Message-ID: <1354000517.20368.0.camel@phoenix>
-Subject: [PATCH] mfd: tps65090: MFD_TPS65090 needs to select REGMAP_IRQ
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org
-Date: Tue, 27 Nov 2012 15:15:17 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 27 Nov 2012 02:17:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
+References: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
+Date: Tue, 27 Nov 2012 16:17:19 +0900
+X-Google-Sender-Auth: XnKR67gtngzpilQAc_bhnkb-ViU
+Message-ID: <CAH9JG2WdmxCmkvLv5SP=2vgMdgb7MtCDAXtgv64bLY4tfsmb8w@mail.gmail.com>
+Subject: Re: [PATCH] media: fix a typo CONFIG_HAVE_GENERIC_DMA_COHERENT in videobuf2-dma-contig.c
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <pawel@osciak.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below build error:
+Hi,
 
-drivers/built-in.o: In function `tps65090_i2c_probe':
-drivers/mfd/tps65090.c:180: undefined reference to `regmap_add_irq_chip'
-drivers/mfd/tps65090.c:190: undefined reference to `regmap_irq_chip_get_base'
-drivers/mfd/tps65090.c:203: undefined reference to `regmap_del_irq_chip'
-drivers/built-in.o: In function `tps65090_i2c_remove':
-drivers/mfd/tps65090.c:213: undefined reference to `regmap_del_irq_chip'
-make: *** [vmlinux] Error 1
+Does it right to use CONFIG_HAVE_GENERIC_DMA_COHERENT?
+it defined at init/Kconfig
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+config HAVE_GENERIC_DMA_COHERENT
+        bool
+        default n
+and use at C file or header file as CONFIG_ prefix?
+e.g., include/asm-generic/dma-coherent.h:#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index a8fef75..09d43a9 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1015,6 +1015,7 @@ config MFD_TPS65090
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select REGMAP_IRQ
- 	help
- 	  If you say yes here you get support for the TPS65090 series of
- 	  Power Management chips.
--- 
-1.7.9.5
+Thank you,
+Kyungmin Park
 
-
-
+On 11/27/12, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>
+> from commit 93049b9368a2e257ace66252ab2cc066f3399cad, which adds
+> a check HAVE_GENERIC_DMA_COHERENT for dma ops, the check was wrongly
+> made it should have been HAVE_GENERIC_DMA_COHERENT but it was
+> CONFIG_HAVE_GENERIC_DMA_COHERENT.
+> This patch fixes the typo, which was causing following build error:
+>
+> videobuf2-dma-contig.c:743: error: 'vb2_dc_get_dmabuf' undeclared here (not
+> in a function)
+> make[3]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
+>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> ---
+>  drivers/media/v4l2-core/videobuf2-dma-contig.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c
+> b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+> index 5729450..dfea692 100644
+> --- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
+> +++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+> @@ -739,7 +739,7 @@ static void *vb2_dc_attach_dmabuf(void *alloc_ctx,
+> struct dma_buf *dbuf,
+>  const struct vb2_mem_ops vb2_dma_contig_memops = {
+>  	.alloc		= vb2_dc_alloc,
+>  	.put		= vb2_dc_put,
+> -#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
+> +#ifdef HAVE_GENERIC_DMA_COHERENT
+>  	.get_dmabuf	= vb2_dc_get_dmabuf,
+>  #endif
+>  	.cookie		= vb2_dc_cookie,
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
