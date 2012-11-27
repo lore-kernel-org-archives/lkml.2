@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab2K0UPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:15:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51809 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756053Ab2K0UPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:15:37 -0500
-Date: Tue, 27 Nov 2012 20:15:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+	id S1756383Ab2K0UTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:19:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756012Ab2K0UTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 15:19:49 -0500
+Date: Tue, 27 Nov 2012 21:19:44 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC/RFT][PATCH 1/4] regulator: core: Allow specific minimal
- selector for starting linear mapping
-Message-ID: <20121127201535.GB32691@opensource.wolfsonmicro.com>
-References: <1353983073.5422.2.camel@phoenix>
+Subject: Re: [PATCH 02/11] HID: hid-input: simplify hid_input allocation and
+ registration
+In-Reply-To: <20121127201407.GA884@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1211272118400.3933@pobox.suse.cz>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com> <1353684694-5723-3-git-send-email-benjamin.tissoires@gmail.com> <20121127201407.GA884@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6sX45UoQRIJXqkqR"
-Content-Disposition: inline
-In-Reply-To: <1353983073.5422.2.camel@phoenix>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 27 Nov 2012, Henrik Rydberg wrote:
 
---6sX45UoQRIJXqkqR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > In order to provide fine control for the creation of different
+> > input devices in probe function of third party drivers, this patch
+> > split the allocations, the registrations and the free of input
+> > devices.
+> > 
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> > ---
+> >  drivers/hid/hid-input.c | 28 ++++++++++++++++++----------
+> >  1 file changed, 18 insertions(+), 10 deletions(-)
+> 
+> I don't like this patch, nor its purpose. Drivers should not depend on
+> the hid core working in a particular way internally, that spells
+> disaster. There must be some other way in which the same effect can be
+> achieved?
 
-On Tue, Nov 27, 2012 at 10:24:33AM +0800, Axel Lin wrote:
-> Some drivers (at least 3 drivers) have such variant of linear mapping that
-> the first few selectors are invalid and the reset are linear mapping.
-> Let's support this case in core.
+The changelog doesn't seem to be really verbose enough to me.
 
-Cool!  Applied all except patch 4, thanks.
+What exactly is the scenario you are looking at here, Benjamin, please? 
 
---6sX45UoQRIJXqkqR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtR9KAAoJELSic+t+oim94t0QAJUxr49/tBK0xfKLEHOGza0Z
-C6qq1vP7btsnLC2227CpieJpX/sQacVq0vzZli1hfPeS3RmbqF5j6nt2sLP76OY/
-2I3OTKAiCfJgavq6JnSA+W2eLo4PSrb2Nz/hTtyMuRahk7gHLwsiWb4zSpxFZUH0
-p6cIJr36+QNdQIvbf9WgolcvSoeS7xBP0i3qjsamW8YF2Xt+Kv6y/kyUReYlqrkF
-0Cj63zlpuAd56IBSFomuD8qUTVsScYn5qxm/VaZWC2hNUtgAOIdABBEsKVt04mmI
-YPeFqJmPWn8u/Ev0RvdPn5GJKE6/NH0oaY+y5ehINmkXF9sr3FmvPjU7a1J7t7J5
-hJTMUw421GlJ5mY8hcEdoKCy6rCpQvua+PhCUXkw+yHpc+/VTz0CtGUfuYmR+GlU
-iJ0dnBnft7TWWPY0LofYMvzg+Kwxo2OttihF/rD9/ASvxcIGvlpiAgdgU4z9yBDu
-BsK8DhSqrvmHIDMZsdEZCVGgQWCZNIKTDS7YNZZ9GSEmuQpLOd2f4XPKZhtay0C1
-FbqzspIgmIskomSfE8LThO0rEsDmjF3DeQgzapX9jeNJ4vSRDBuHdkQvXszwYpSi
-NQllwuWpPf+CGadOWRPMzrDVaJnTAC3azoa1sXFXLFzmn3kzlNIN9wzY4i+eqQTo
-tJec8ORuGOUb0vOSpDCm
-=ofM2
------END PGP SIGNATURE-----
-
---6sX45UoQRIJXqkqR--
+-- 
+Jiri Kosina
+SUSE Labs
