@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab2K0Q7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:59:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296Ab2K0Q7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:59:04 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 2/2 v5] loop: Limit the number of requests in the bio list
-References: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
-	<1353572315-4508-2-git-send-email-lczerner@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 27 Nov 2012 11:58:57 -0500
-In-Reply-To: <1353572315-4508-2-git-send-email-lczerner@redhat.com> (Lukas
-	Czerner's message of "Thu, 22 Nov 2012 09:18:35 +0100")
-Message-ID: <x49haobdlta.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S932171Ab2K0RA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:00:26 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55242 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397Ab2K0RAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 12:00:24 -0500
+Date: Tue, 27 Nov 2012 08:59:58 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, sasha.levin@oracle.com,
+        avi@redhat.com
+Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+Message-ID: <20121127165958.GI2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
+ <20121127154455.GK12969@redhat.com>
+ <CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
+ <20121127161925.GG2474@linux.vnet.ibm.com>
+ <CAFTL4hyjsyj+=g7Pe46M7hL2vqnUgzORGsydZ_X=QOHM7jb78g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hyjsyj+=g7Pe46M7hL2vqnUgzORGsydZ_X=QOHM7jb78g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112717-5406-0000-0000-000002711B1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On Tue, Nov 27, 2012 at 05:48:18PM +0100, Frederic Weisbecker wrote:
+> 2012/11/27 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > On Tue, Nov 27, 2012 at 04:56:30PM +0100, Frederic Weisbecker wrote:
+> >> 2012/11/27 Gleb Natapov <gleb@redhat.com>:
+> >> > For KVM_PV_REASON_PAGE_NOT_PRESENT it behaves like an exception.
+> >>
+> >> Ok.
+> >> There seem to be a bug in kvm_async_pf_task_wait(). Using
+> >> idle_cpu(cpu) to find out if the current task is the idle task may not
+> >> work if there is pending wake up. Me may schedule another task but
+> >> when that other task sleeps later we can't schedule back to idle until
+> >> the fault is completed.
+> >>
+> >> The right way is to use is_idle_task(current)
+> >
+> > Agreed.  But if you instead need to figure out whether or not RCU believes
+> > that the CPU is idle, use rcu_is_cpu_idle().  You need to figure out
+> > whether or not RCU believes that the CPU is idle if you are trying to
+> > play fast and loose with rcu_irq_enter() and rcu_irq_exit().
+> 
+> Right. I was referring to another problem though. They don't want to
+> schedule on the following cases:
+> 
+> 1) preemption disabled, of course.
+> 3) we are in the idle task. Because if we want to sleep in order to
+> wait for the page fault completion, we need to be able to schedule the
+> idle task. But we are already the idle task.
+> 
+> Now idle_cpu(cpu) is the wrong check for that.
 
-> Currently there is not limitation of number of requests in the loop bio
-> list. This can lead into some nasty situations when the caller spawns
-> tons of bio requests taking huge amount of memory. This is even more
-> obvious with discard where blkdev_issue_discard() will submit all bios
-> for the range and wait for them to finish afterwards. On really big loop
-> devices and slow backing file system this can lead to OOM situation as
-> reported by Dave Chinner.
->
-> With this patch we will wait in loop_make_request() if the number of
-> bios in the loop bio list would exceed 'nr_congestion_on'.
-> We'll wake up the process as we process the bios form the list. Some
-> threshold hysteresis is in place to avoid high frequency oscillation.
->
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> Reported-by: Dave Chinner <dchinner@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Fair enough!  ;-)
+
+							Thanx, Paul
+
