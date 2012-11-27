@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab2K0A5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:57:13 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55689 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842Ab2K0A5M convert rfc822-to-8bit (ORCPT
+	id S1757615Ab2K0A72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:59:28 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3319 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2K0A71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:57:12 -0500
+	Mon, 26 Nov 2012 19:59:27 -0500
+Message-ID: <50B41041.6030902@huawei.com>
+Date: Tue, 27 Nov 2012 08:58:41 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121126224245.248f0901@neptune.home>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com> <20121126224245.248f0901@neptune.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 26 Nov 2012 17:56:50 -0700
-Message-ID: <CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com>
-Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
- bug question
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, support@supermicro.com,
-        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
+        <akpm@linux-foundation.org>, <rob@landley.net>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <wency@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>,
+        <jiang.liu@huawei.com>, <yinghai@kernel.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
+        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-doc@vger.kernel.org>, <qiuxishi@huawei.com>
+Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com>
+In-Reply-To: <50B38F69.6020902@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Dan]
+On 2012/11/26 23:48, H. Peter Anvin wrote:
 
-On Mon, Nov 26, 2012 at 2:42 PM, Bruno Prémont
-<bonbons@linux-vserver.org> wrote:
-> Hi Justin,
->
-> On Sat, 24 November 2012 "Justin Piszcz" wrote:
->> Is the following normal on an X9SRL-F board (bios 1.0a)?
+> On 11/26/2012 05:15 AM, Tang Chen wrote:
 >>
->> In the manual it states:
+>> Hi Wu,
 >>
->> Data Direct I/O
->> Select Enabled to enable Intel I/OAT (I/O Acceleration Technology), which
->> significantly reduces CPU overhead by leveraging CPU architectural
->> improvements and freeing the system resource for other tasks. The options
->> are Disabled and Enabled.
+>> That is really a problem. And, before numa memory got initialized,
+>> memblock subsystem would be used to allocate memory. I didn't find any
+>> approach that could fully address it when I making the patches. There
+>> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
+>> we can only do our best to prevent it from happening.
 >>
->> Default is Enabled.
+>> Your patch is very helpful. And after a shot look at the code, it seems
+>> that acpi_numa_memory_affinity_init() is an architecture dependent
+>> function. Could we do this somewhere which is not depending on the
+>> architecture ?
 >>
->> When enabled in the kernel, I see the following:
->>
->> [    0.696357] ioatdma: Intel(R) QuickData Technology Driver 4.00
->> [    0.696487] ioatdma 0000:00:04.0: channel error register unreachable
->> [    0.696546] ioatdma 0000:00:04.0: channel enumeration error
->> [    0.696604] ioatdma 0000:00:04.0: Intel(R) I/OAT DMA Engine init failed
->> [    0.696721] ioatdma 0000:00:04.1: channel error register unreachable
->> [    0.696779] ioatdma 0000:00:04.1: channel enumeration error
->> [    0.697522] ioatdma 0000:00:04.1: Intel(R) I/OAT DMA Engine init failed
->> [    0.697617] ioatdma 0000:00:04.2: channel error register unreachable
->> [    0.697681] ioatdma 0000:00:04.2: channel enumeration error
->> [    0.697739] ioatdma 0000:00:04.2: Intel(R) I/OAT DMA Engine init failed
->> [    0.697831] ioatdma 0000:00:04.3: channel error register unreachable
->> [    0.697890] ioatdma 0000:00:04.3: channel enumeration error
->> [    0.697948] ioatdma 0000:00:04.3: Intel(R) I/OAT DMA Engine init failed
->> [    0.698037] ioatdma 0000:00:04.4: channel error register unreachable
->> [    0.698095] ioatdma 0000:00:04.4: channel enumeration error
->> [    0.698153] ioatdma 0000:00:04.4: Intel(R) I/OAT DMA Engine init failed
->> [    0.698245] ioatdma 0000:00:04.5: channel error register unreachable
->> [    0.698303] ioatdma 0000:00:04.5: channel enumeration error
->> [    0.698360] ioatdma 0000:00:04.5: Intel(R) I/OAT DMA Engine init failed
->> [    0.698449] ioatdma 0000:00:04.6: channel error register unreachable
->> [    0.698508] ioatdma 0000:00:04.6: channel enumeration error
->> [    0.698565] ioatdma 0000:00:04.6: Intel(R) I/OAT DMA Engine init failed
->> [    0.698676] ioatdma 0000:00:04.7: channel error register unreachable
->> [    0.698735] ioatdma 0000:00:04.7: channel enumeration error
->> [    0.698792] ioatdma 0000:00:04.7: Intel(R) I/OAT DMA Engine init failed
->>
->> --
->>
->> Also, I tried using ASPM (enabled in BIOS), but since ACPI Linux query is
->> ignored, it fails to work:
->> [    0.562229] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
->>
->> I assume this is something Supermicro has to fix?
->
-> You are probably missing some kernel config option(s) :) - I did fight similar
-> issues on a Fujitsu SandyBridge Xeon based server.
->
-> Check if enabling CONFIG_X86_X2APIC helps as well as other APIC/IOMMU options.
+> 
+> The movable memory should be classified as a non-RAM type in memblock,
+> that way we will not allocate from it early on.
+> 
+> 	-hpa
 
-Changing config options is not a valid fix for error messages like
-this.  We should be able to make the config smarter by adding
-dependencies or something, or else make the driver smart enough to
-give a more useful diagnostic.
 
-The "channel error register unreachable" message indicates that
-pci_read_config_dword() failed.  The register in question
-(IOAT_PCI_CHANERR_INT_OFFSET) is at 0x180, so possibly we don't have
-PCI config accessors for the extended config space (0x100-0xfff).  A
-complete dmesg log should show that.
+yep, we can put movable memory in reserved.regions in memblock.
+
+> 
+> 
+> .
+> 
+
+
+
