@@ -1,143 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2K0PFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:05:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43397 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755373Ab2K0PFb (ORCPT
+	id S1755901Ab2K0PFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:05:53 -0500
+Received: from smtp201.dfw.emailsrvr.com ([67.192.241.201]:49752 "EHLO
+	smtp201.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755791Ab2K0PEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:05:31 -0500
-Message-ID: <1354028720.4266.55.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 055/270] ARM: OMAP: counter: add locking to
- read_persistent_clock
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Colin Cross <ccross@android.com>,
-        R Sricharan <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Date: Tue, 27 Nov 2012 15:05:20 +0000
-In-Reply-To: <1353949160-26803-56-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-56-git-send-email-herton.krzesinski@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-E/cb76iOswNO4ig2+1FT"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 27 Nov 2012 10:04:39 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 6/6 v5] cpufreq, highbank: add support for highbank cpufreq
+Date: Tue, 27 Nov 2012 09:04:34 -0600
+Message-Id: <1354028674-23685-7-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Highbank processors depend on the external ECME to perform voltage
+management based on a requested frequency. Communication between the
+A9 cores and the ECME happens over the pl320 IPC channel.
 
---=-E/cb76iOswNO4ig2+1FT
-Content-Type: multipart/mixed; boundary="=-+pfkQzamkESVKBe5QTCo"
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+---
+Changes from v4
+	Removed erroneous changes to arch/arm/Kconfig.
+	Removed unnecessary changes to drivers/cpufreq/Kconfig.arm
+	Alphabetized additions to arch/arm/mach-highbank/Kconfig
+	Changed ipc call and header to match new ipc location in 
+	drivers/mailbox.
+Changes from v3
+        None.
+Changes from v2
+        Changed transition latency binding in code to match documentation.
+Changes from v1
+        Added highbank specific Kconfig changes.
 
+ .../bindings/cpufreq/highbank-cpufreq.txt          |  53 +++++
+ arch/arm/boot/dts/highbank.dts                     |  10 +
+ arch/arm/mach-highbank/Kconfig                     |   2 +
+ drivers/cpufreq/Kconfig.arm                        |  13 ++
+ drivers/cpufreq/Makefile                           |   1 +
+ drivers/cpufreq/highbank-cpufreq.c                 | 229 +++++++++++++++++++++
+ 6 files changed, 308 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/cpufreq/highbank-cpufreq.txt
+ create mode 100644 drivers/cpufreq/highbank-cpufreq.c
 
---=-+pfkQzamkESVKBe5QTCo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+diff --git a/Documentation/devicetree/bindings/cpufreq/highbank-cpufreq.txt b/Documentation/devicetree/bindings/cpufreq/highbank-cpufreq.txt
+new file mode 100644
+index 0000000..1d5a836
+--- /dev/null
++++ b/Documentation/devicetree/bindings/cpufreq/highbank-cpufreq.txt
+@@ -0,0 +1,53 @@
++Highbank cpufreq driver
++
++This is cpufreq driver for Calxeda ECX-1000 (highbank) processor. It is based
++on the generic cpu0 driver and uses a similar format for bindings. Since
++the EnergyCore Management Engine maintains the voltage based on the
++frequency, the voltage component of the operating points can be set to any
++arbitrary values.
++
++Both required properties listed below must be defined under node /cpus/cpu@0.
++
++Required properties:
++- operating-points: Refer to Documentation/devicetree/bindings/power/opp.txt
++  for details
++- transition-latency: Specify the possible maximum transition latency for clock,
++  in unit of nanoseconds.
++
++Examples:
++
++cpus {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	cpu@0 {
++		compatible = "arm,cortex-a9";
++		reg = <0>;
++		next-level-cache = <&L2>;
++		operating-points = <
++			/* kHz  ignored */
++			790000  1000000
++			396000  1000000
++			198000  1000000
++		>;
++		transition-latency = <200000>;
++	};
++
++	cpu@1 {
++		compatible = "arm,cortex-a9";
++		reg = <1>;
++		next-level-cache = <&L2>;
++	};
++
++	cpu@2 {
++		compatible = "arm,cortex-a9";
++		reg = <2>;
++		next-level-cache = <&L2>;
++	};
++
++	cpu@3 {
++		compatible = "arm,cortex-a9";
++		reg = <3>;
++		next-level-cache = <&L2>;
++	};
++};
+diff --git a/arch/arm/boot/dts/highbank.dts b/arch/arm/boot/dts/highbank.dts
+index 0c6fc34..8624c94 100644
+--- a/arch/arm/boot/dts/highbank.dts
++++ b/arch/arm/boot/dts/highbank.dts
+@@ -36,6 +36,16 @@
+ 			next-level-cache = <&L2>;
+ 			clocks = <&a9pll>;
+ 			clock-names = "cpu";
++			operating-points = <
++				/* kHz    ignored */
++				 1300000  1000000
++				 1200000  1000000
++				 1100000  1000000
++				  800000  1000000
++				  400000  1000000
++				  200000  1000000
++			>;
++			transition-latency = <100000>;
+ 		};
+ 
+ 		cpu@1 {
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index 2896881..b7862da 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -1,5 +1,7 @@
+ config ARCH_HIGHBANK
+ 	bool "Calxeda ECX-1000 (Highbank)" if ARCH_MULTI_V7
++	select ARCH_HAS_CPUFREQ
++	select ARCH_HAS_OPP
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_AMBA
+ 	select ARM_GIC
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 5961e64..7a8bcdc 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -76,3 +76,16 @@ config ARM_EXYNOS5250_CPUFREQ
+ 	help
+ 	  This adds the CPUFreq driver for Samsung EXYNOS5250
+ 	  SoC.
++
++config ARM_HIGHBANK_CPUFREQ
++       tristate "Calxeda Highbank-based"
++       depends on ARCH_HIGHBANK
++       select CPU_FREQ_TABLE
++       select PM_OPP
++       default m
++       help
++         This adds the CPUFreq driver for Calxeda Highbank SoC
++         based boards.
++
++         If in doubt, say N.
++
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 1bc90e1..9e8f12a 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -50,6 +50,7 @@ obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS4X12_CPUFREQ)	+= exynos4x12-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS5250_CPUFREQ)	+= exynos5250-cpufreq.o
+ obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)     += omap-cpufreq.o
++obj-$(CONFIG_ARM_HIGHBANK_CPUFREQ)	+= highbank-cpufreq.o
+ 
+ ##################################################################################
+ # PowerPC platform drivers
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+new file mode 100644
+index 0000000..f2ac342
+--- /dev/null
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -0,0 +1,229 @@
++/*
++ * Copyright (C) 2012 Calxeda, Inc.
++ *
++ * derived from cpufreq-cpu0 by Freescale Semiconductor
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/clk.h>
++#include <linux/cpu.h>
++#include <linux/cpufreq.h>
++#include <linux/err.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/opp.h>
++#include <linux/slab.h>
++#include <linux/mailbox.h>
++
++#define HB_CPUFREQ_CHANGE_NOTE 0x80000001
++
++static unsigned int transition_latency;
++
++static struct device *cpu_dev;
++static struct clk *cpu_clk;
++static struct cpufreq_frequency_table *freq_table;
++
++static int hb_verify_speed(struct cpufreq_policy *policy)
++{
++	return cpufreq_frequency_table_verify(policy, freq_table);
++}
++
++static unsigned int hb_get_speed(unsigned int cpu)
++{
++	return clk_get_rate(cpu_clk) / 1000;
++}
++
++static int hb_voltage_change(unsigned int freq)
++{
++	int i;
++	u32 msg[7];
++
++	msg[0] = HB_CPUFREQ_CHANGE_NOTE;
++	msg[1] = freq / 1000;
++	for (i = 2; i < 7; i++)
++		msg[i] = 0;
++
++	return ipc_transmit(msg);
++}
++
++static int hb_set_target(struct cpufreq_policy *policy,
++			   unsigned int target_freq, unsigned int relation)
++{
++	struct cpufreq_freqs freqs;
++	unsigned long freq_Hz;
++	unsigned int index, cpu;
++	int ret;
++
++	ret = cpufreq_frequency_table_target(policy, freq_table, target_freq,
++					     relation, &index);
++	if (ret) {
++		pr_err("failed to match target freqency %d: %d\n",
++		       target_freq, ret);
++		return ret;
++	}
++
++	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
++	if (freq_Hz < 0)
++		freq_Hz = freq_table[index].frequency * 1000;
++	freqs.new = freq_Hz / 1000;
++	freqs.old = clk_get_rate(cpu_clk) / 1000;
++
++	if (freqs.old == freqs.new)
++		return 0;
++
++	for_each_online_cpu(cpu) {
++		freqs.cpu = cpu;
++		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
++	}
++
++	pr_debug("%u MHz --> %u MHz\n", freqs.old / 1000, freqs.new / 1000);
++
++	/* scaling up?  scale voltage before frequency */
++	if (freqs.new > freqs.old) {
++		ret = hb_voltage_change(freqs.new);
++		if (ret) {
++			freqs.new = freqs.old;
++			return -EAGAIN;
++		}
++	}
++
++	ret = clk_set_rate(cpu_clk, freqs.new * 1000);
++	if (ret) {
++		pr_err("failed to set clock rate: %d\n", ret);
++		hb_voltage_change(freqs.old);
++		return ret;
++	}
++
++	/* scaling down?  scale voltage after frequency */
++	if (freqs.new < freqs.old) {
++		ret = hb_voltage_change(freqs.new);
++		if (ret) {
++			if (clk_set_rate(cpu_clk, freqs.old * 1000))
++				pr_err("also failed to reset freq\n");
++			freqs.new = freqs.old;
++			return -EAGAIN;
++		}
++	}
++
++	for_each_online_cpu(cpu) {
++		freqs.cpu = cpu;
++		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
++	}
++
++	return 0;
++}
++
++static int hb_cpufreq_init(struct cpufreq_policy *policy)
++{
++	int ret;
++
++	if (policy->cpu != 0)
++		return -EINVAL;
++
++	ret = cpufreq_frequency_table_cpuinfo(policy, freq_table);
++	if (ret) {
++		pr_err("invalid frequency table: %d\n", ret);
++		return ret;
++	}
++
++	policy->cpuinfo.transition_latency = transition_latency;
++	policy->cur = clk_get_rate(cpu_clk) / 1000;
++
++	policy->shared_type = CPUFREQ_SHARED_TYPE_ANY;
++	cpumask_setall(policy->cpus);
++
++	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
++
++	return 0;
++}
++
++static int hb_cpufreq_exit(struct cpufreq_policy *policy)
++{
++	cpufreq_frequency_table_put_attr(policy->cpu);
++
++	return 0;
++}
++
++static struct freq_attr *hb_cpufreq_attr[] = {
++	&cpufreq_freq_attr_scaling_available_freqs,
++	NULL,
++};
++
++static struct cpufreq_driver hb_cpufreq_driver = {
++	.flags = CPUFREQ_STICKY,
++	.verify = hb_verify_speed,
++	.target = hb_set_target,
++	.get = hb_get_speed,
++	.init = hb_cpufreq_init,
++	.exit = hb_cpufreq_exit,
++	.name = "highbank-cpufreq",
++	.attr = hb_cpufreq_attr,
++};
++
++static int __devinit hb_cpufreq_driver_init(void)
++{
++	struct device_node *np;
++	int ret;
++
++	np = of_find_node_by_path("/cpus/cpu@0");
++	if (!np) {
++		pr_err("failed to find highbank cpufreq node\n");
++		return -ENOENT;
++	}
++
++	cpu_dev = get_cpu_device(0);
++	if (!cpu_dev) {
++		pr_err("failed to get highbank cpufreq device\n");
++		ret = -ENODEV;
++		goto out_put_node;
++	}
++
++	cpu_dev->of_node = np;
++
++	cpu_clk = clk_get(cpu_dev, NULL);
++	if (IS_ERR(cpu_clk)) {
++		ret = PTR_ERR(cpu_clk);
++		pr_err("failed to get cpu0 clock: %d\n", ret);
++		goto out_put_node;
++	}
++
++	ret = of_init_opp_table(cpu_dev);
++	if (ret) {
++		pr_err("failed to init OPP table: %d\n", ret);
++		goto out_put_node;
++	}
++
++	ret = opp_init_cpufreq_table(cpu_dev, &freq_table);
++	if (ret) {
++		pr_err("failed to init cpufreq table: %d\n", ret);
++		goto out_put_node;
++	}
++
++	if (of_property_read_u32(np, "transition-latency", &transition_latency))
++		transition_latency = CPUFREQ_ETERNAL;
++
++	ret = cpufreq_register_driver(&hb_cpufreq_driver);
++	if (ret) {
++		pr_err("failed register driver: %d\n", ret);
++		goto out_free_table;
++	}
++
++	of_node_put(np);
++	return 0;
++
++out_free_table:
++	opp_free_cpufreq_table(cpu_dev, &freq_table);
++out_put_node:
++	of_node_put(np);
++	return ret;
++}
++late_initcall(hb_cpufreq_driver_init);
++
++MODULE_AUTHOR("Mark Langsdorf <mark.langsdorf@calxeda.com>");
++MODULE_DESCRIPTION("Calxeda Highbank cpufreq driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.11.7
 
-On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Colin Cross <ccross@android.com>
->=20
-> commit 9d7d6e363b06934221b81a859d509844c97380df upstream.
->=20
-> read_persistent_clock uses a global variable, use a spinlock to
-> ensure non-atomic updates to the variable don't overlap and cause
-> time to move backwards.
->=20
-> Signed-off-by: Colin Cross <ccross@android.com>
-> Signed-off-by: R Sricharan <r.sricharan@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
->
-[...]
-
-This is also missing from 3.4.  I'm attaching the adjusted version for
-3.2, which looks like it will work for 3.4.
-
-Ben.
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-+pfkQzamkESVKBe5QTCo
-Content-Disposition: attachment;
-	filename="arm-omap-counter-add-locking-to-read_persistent_clock.patch"
-Content-Transfer-Encoding: base64
-Content-Type: text/x-patch;
-	name="arm-omap-counter-add-locking-to-read_persistent_clock.patch";
-	charset="UTF-8"
-
-RnJvbTogQ29saW4gQ3Jvc3MgPGNjcm9zc0BhbmRyb2lkLmNvbT4NCkRhdGU6IE1vbiwgOCBPY3Qg
-MjAxMiAxNDowMToxMiAtMDcwMA0KU3ViamVjdDogQVJNOiBPTUFQOiBjb3VudGVyOiBhZGQgbG9j
-a2luZyB0byByZWFkX3BlcnNpc3RlbnRfY2xvY2sNCg0KY29tbWl0IDlkN2Q2ZTM2M2IwNjkzNDIy
-MWI4MWE4NTlkNTA5ODQ0Yzk3MzgwZGYgdXBzdHJlYW0uDQoNCnJlYWRfcGVyc2lzdGVudF9jbG9j
-ayB1c2VzIGEgZ2xvYmFsIHZhcmlhYmxlLCB1c2UgYSBzcGlubG9jayB0bw0KZW5zdXJlIG5vbi1h
-dG9taWMgdXBkYXRlcyB0byB0aGUgdmFyaWFibGUgZG9uJ3Qgb3ZlcmxhcCBhbmQgY2F1c2UNCnRp
-bWUgdG8gbW92ZSBiYWNrd2FyZHMuDQoNClNpZ25lZC1vZmYtYnk6IENvbGluIENyb3NzIDxjY3Jv
-c3NAYW5kcm9pZC5jb20+DQpTaWduZWQtb2ZmLWJ5OiBSIFNyaWNoYXJhbiA8ci5zcmljaGFyYW5A
-dGkuY29tPg0KU2lnbmVkLW9mZi1ieTogVG9ueSBMaW5kZ3JlbiA8dG9ueUBhdG9taWRlLmNvbT4N
-Cltid2g6IEJhY2twb3J0ZWQgdG8gMy4yOiBhZGp1c3QgY29udGV4dF0NClNpZ25lZC1vZmYtYnk6
-IEJlbiBIdXRjaGluZ3MgPGJlbkBkZWNhZGVudC5vcmcudWs+DQotLS0NCiBhcmNoL2FybS9wbGF0
-LW9tYXAvY291bnRlcl8zMmsuYyB8ICAgMjEgKysrKysrKysrKysrKystLS0tLS0tDQogMSBmaWxl
-IGNoYW5nZWQsIDE0IGluc2VydGlvbnMoKyksIDcgZGVsZXRpb25zKC0pDQoNCi0tLSBhL2FyY2gv
-YXJtL3BsYXQtb21hcC9jb3VudGVyXzMyay5jDQorKysgYi9hcmNoL2FybS9wbGF0LW9tYXAvY291
-bnRlcl8zMmsuYw0KQEAgLTgyLDIyICs4MiwyOSBAQCBzdGF0aWMgdm9pZCBub3RyYWNlIG9tYXBf
-dXBkYXRlX3NjaGVkX2NsDQogICogbnNlY3MgYW5kIGFkZHMgdG8gYSBtb25vdG9uaWNhbGx5IGlu
-Y3JlYXNpbmcgdGltZXNwZWMuDQogICovDQogc3RhdGljIHN0cnVjdCB0aW1lc3BlYyBwZXJzaXN0
-ZW50X3RzOw0KLXN0YXRpYyBjeWNsZXNfdCBjeWNsZXMsIGxhc3RfY3ljbGVzOw0KK3N0YXRpYyBj
-eWNsZXNfdCBjeWNsZXM7DQogc3RhdGljIHVuc2lnbmVkIGludCBwZXJzaXN0ZW50X211bHQsIHBl
-cnNpc3RlbnRfc2hpZnQ7DQorc3RhdGljIERFRklORV9TUElOTE9DSyhyZWFkX3BlcnNpc3RlbnRf
-Y2xvY2tfbG9jayk7DQorDQogdm9pZCByZWFkX3BlcnNpc3RlbnRfY2xvY2soc3RydWN0IHRpbWVz
-cGVjICp0cykNCiB7DQogCXVuc2lnbmVkIGxvbmcgbG9uZyBuc2VjczsNCi0JY3ljbGVzX3QgZGVs
-dGE7DQotCXN0cnVjdCB0aW1lc3BlYyAqdHNwID0gJnBlcnNpc3RlbnRfdHM7DQorCWN5Y2xlc190
-IGxhc3RfY3ljbGVzOw0KKwl1bnNpZ25lZCBsb25nIGZsYWdzOw0KKw0KKwlzcGluX2xvY2tfaXJx
-c2F2ZSgmcmVhZF9wZXJzaXN0ZW50X2Nsb2NrX2xvY2ssIGZsYWdzKTsNCiANCiAJbGFzdF9jeWNs
-ZXMgPSBjeWNsZXM7DQogCWN5Y2xlcyA9IHRpbWVyXzMya19iYXNlID8gX19yYXdfcmVhZGwodGlt
-ZXJfMzJrX2Jhc2UpIDogMDsNCi0JZGVsdGEgPSBjeWNsZXMgLSBsYXN0X2N5Y2xlczsNCiANCi0J
-bnNlY3MgPSBjbG9ja3NvdXJjZV9jeWMybnMoZGVsdGEsIHBlcnNpc3RlbnRfbXVsdCwgcGVyc2lz
-dGVudF9zaGlmdCk7DQorCW5zZWNzID0gY2xvY2tzb3VyY2VfY3ljMm5zKGN5Y2xlcyAtIGxhc3Rf
-Y3ljbGVzLA0KKwkJCQkJcGVyc2lzdGVudF9tdWx0LCBwZXJzaXN0ZW50X3NoaWZ0KTsNCisNCisJ
-dGltZXNwZWNfYWRkX25zKCZwZXJzaXN0ZW50X3RzLCBuc2Vjcyk7DQorDQorCSp0cyA9IHBlcnNp
-c3RlbnRfdHM7DQogDQotCXRpbWVzcGVjX2FkZF9ucyh0c3AsIG5zZWNzKTsNCi0JKnRzID0gKnRz
-cDsNCisJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmcmVhZF9wZXJzaXN0ZW50X2Nsb2NrX2xvY2ss
-IGZsYWdzKTsNCiB9DQogDQogaW50IF9faW5pdCBvbWFwX2luaXRfY2xvY2tzb3VyY2VfMzJrKHZv
-aWQpDQo=
-
-
---=-+pfkQzamkESVKBe5QTCo--
-
---=-E/cb76iOswNO4ig2+1FT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULTWsOe/yOyVhhEJAQo79w//XKqiXt4z0ZFCcuexXj0Pm0Ybt02CMDa3
-g8ZlYDbBQ8YTBhq4qu2td7M0ly8DS4MYPG2QgrqM+Jx7MzmXhPsLHx72WGiluFs0
-eVs6WT7Vqche+SMFmg2jqozIa3R5Gidu5uHaQJ52tU59jmyCkOKbAcsujm7oM2Ie
-xEnopZFdDQmXliuWUZcOgtCAxTF5d5Ev8W/ux5IExGDUaOVdeS5SzTYC4n9OIEC9
-6idlbVtoPxKvls1xlKN2MRauJJVpsbOTh2TSJDVkCFkX82IZk6w664I1crz3gJ38
-PNi5xRhjxc42VnoUvbw+l/7CYOTxtPagPlJLUFpca3E4yoqAIlC58BoyN314YLSi
-TimDV3vmxxti1w/6ZghXvdJ2OSKVKWyPZQBS90uIEetrRmcqVP55mZ6C32wzGZd5
-sLOgznPYjcRtVhZcEbUm8bKi0HZ1PNZjtUfFH+Dr7oUc34ey9A4u/VhH8d4AhSwB
-qBP8f5tqlyZo9qF96BPhYvVcuQFVSbuquq69AD/ztnpRxHdCZLhT0GGntB0vU3UF
-fBaxFar96fiB5lr2ICWJoBqCHM2RcWsSrB0UXA2DlaaIiDzwOQDf3XIcNr853KuR
-/mGh1g8RM6yxBfIoZflFvYOas8mxj7QDBqb+Qs2XsWic1mooXkxOf4JRA3e93rMl
-u+eURSq3CVk=
-=hBf6
------END PGP SIGNATURE-----
-
---=-E/cb76iOswNO4ig2+1FT--
