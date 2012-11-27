@@ -1,335 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab2K0Hm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 02:42:59 -0500
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:52111 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758047Ab2K0Hm5 (ORCPT
+	id S1758214Ab2K0Hqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 02:46:32 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53122
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757604Ab2K0Hqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 02:42:57 -0500
-Message-ID: <50B46F55.4000107@marvell.com>
-Date: Tue, 27 Nov 2012 15:44:21 +0800
-From: Qing Xu <qingx@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 27 Nov 2012 02:46:31 -0500
+Message-ID: <50B46F79.5010606@kernel.dk>
+Date: Tue, 27 Nov 2012 08:44:57 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Chao Xie <cxie4@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/7] mfd: max8925: add irqdomain for dt
-References: <1352187429-9711-1-git-send-email-qingx@marvell.com> <CAN1soZwQ2bk_TteNvK=b0-CHBc=qs+EdbAHjtKA9gYD+p4XQUw@mail.gmail.com>
-In-Reply-To: <CAN1soZwQ2bk_TteNvK=b0-CHBc=qs+EdbAHjtKA9gYD+p4XQUw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Recent kernel "mount" slow
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com> <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com> <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com> <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com> <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com> <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com> <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com> <50B46E05.70906@kernel.dk>
+In-Reply-To: <50B46E05.70906@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Nov 2012 07:42:49.0634 (UTC) FILETIME=[CCB4A020:01CDCC72]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2012 05:05 PM, Haojian Zhuang wrote:
-> On Tue, Nov 6, 2012 at 3:37 PM, Qing Xu <qingx@marvell.com> wrote:
->> From: Qing Xu <qingx@marvell.com>
+On 2012-11-27 08:38, Jens Axboe wrote:
+> On 2012-11-27 06:57, Jeff Chua wrote:
+>> On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>>> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>>>> So it's better to slow down mount.
+>>>
+>>> I am quite proud of the linux boot time pitting against other OS. Even
+>>> with 10 partitions. Linux can boot up in just a few seconds, but now
+>>> you're saying that we need to do this semaphore check at boot up. By
+>>> doing so, it's inducing additional 4 seconds during boot up.
 >>
->> Add irqdomains for max8925's main irq, and touch irq.
->> Wrap irq register operations into irqdomain's map func.
->> it is necessary for dt support.
->> Also, add dt support for max8925 driver.
->>
->> Signed-off-by: Qing Xu <qingx@marvell.com>
->> ---
->>   drivers/mfd/max8925-core.c  |   87 ++++++++++++++++++++++++++++---------------
->>   drivers/mfd/max8925-i2c.c   |   32 +++++++++++++++-
->>   include/linux/mfd/max8925.h |   12 ++++-
->>   3 files changed, 96 insertions(+), 35 deletions(-)
->>
->> diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
->> index 1e0ab0a..dcc218a 100644
->> --- a/drivers/mfd/max8925-core.c
->> +++ b/drivers/mfd/max8925-core.c
->> @@ -14,10 +14,14 @@
->>   #include <linux/i2c.h>
->>   #include <linux/irq.h>
->>   #include <linux/interrupt.h>
->> +#include <linux/irqdomain.h>
->>   #include <linux/platform_device.h>
->>   #include <linux/regulator/machine.h>
->>   #include <linux/mfd/core.h>
->>   #include <linux/mfd/max8925.h>
->> +#include <linux/of.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/of_irq.h>
->>
->>   static struct resource bk_resources[] __devinitdata = {
->>          { 0x84, 0x84, "mode control", IORESOURCE_REG, },
->> @@ -639,17 +643,34 @@ static struct irq_chip max8925_irq_chip = {
->>          .irq_disable    = max8925_irq_disable,
->>   };
->>
->> +static int max8925_irq_domain_map(struct irq_domain *d, unsigned int virq,
->> +                                irq_hw_number_t hw)
->> +{
->> +       irq_set_chip_data(virq, d->host_data);
->> +       irq_set_chip_and_handler(virq, &max8925_irq_chip, handle_edge_irq);
->> +       irq_set_nested_thread(virq, 1);
->> +#ifdef CONFIG_ARM
->> +       set_irq_flags(virq, IRQF_VALID);
->> +#else
->> +       irq_set_noprobe(virq);
->> +#endif
->> +       return 0;
->> +}
->> +
->> +static struct irq_domain_ops max8925_irq_domain_ops = {
->> +       .map    = max8925_irq_domain_map,
->> +       .xlate  = irq_domain_xlate_onetwocell,
->> +};
->> +
->> +
->>   static int max8925_irq_init(struct max8925_chip *chip, int irq,
->>                              struct max8925_platform_data *pdata)
->>   {
->>          unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
->> -       int i, ret;
->> -       int __irq;
->> +       int ret;
->> +       int tsc_irq;
->> +       struct device_node *node = chip->dev->of_node;
->>
->> -       if (!pdata || !pdata->irq_base) {
->> -               dev_warn(chip->dev, "No interrupt support on IRQ base\n");
->> -               return -EINVAL;
->> -       }
->>          /* clear all interrupts */
->>          max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ1);
->>          max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ2);
->> @@ -667,45 +688,51 @@ static int max8925_irq_init(struct max8925_chip *chip, int irq,
->>          max8925_reg_write(chip->rtc, MAX8925_RTC_IRQ_MASK, 0xff);
->>
->>          mutex_init(&chip->irq_lock);
->> -       chip->core_irq = irq;
->> -       chip->irq_base = pdata->irq_base;
->>
->> -       /* register with genirq */
->> -       for (i = 0; i < ARRAY_SIZE(max8925_irqs); i++) {
->> -               __irq = i + chip->irq_base;
->> -               irq_set_chip_data(__irq, chip);
->> -               irq_set_chip_and_handler(__irq, &max8925_irq_chip,
->> -                                        handle_edge_irq);
->> -               irq_set_nested_thread(__irq, 1);
->> -#ifdef CONFIG_ARM
->> -               set_irq_flags(__irq, IRQF_VALID);
->> -#else
->> -               irq_set_noprobe(__irq);
->> -#endif
->> -       }
->> -       if (!irq) {
->> -               dev_warn(chip->dev, "No interrupt support on core IRQ\n");
->> -               goto tsc_irq;
->> +       /* domain1: init charger/rtc/onkey irq domain*/
->> +       chip->irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_IRQS, 0);
->> +       if (chip->irq_base < 0) {
->> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
->> +                       chip->irq_base);
->> +               return -EBUSY;
->>          }
->>
->> +       irq_domain_add_legacy(node, MAX8925_NR_IRQS, chip->irq_base, 0,
->> +                             &max8925_irq_domain_ops, chip);
->> +       chip->core_irq = irq;
->> +       if (!chip->core_irq)
->> +               return -EBUSY;
->> +
->>          ret = request_threaded_irq(irq, NULL, max8925_irq, flags,
->>                                     "max8925", chip);
->>          if (ret) {
->>                  dev_err(chip->dev, "Failed to request core IRQ: %d\n", ret);
->>                  chip->core_irq = 0;
->> +               return -EBUSY;
->>          }
->>
->> -tsc_irq:
->> +       /* domain2: init touch irq domain*/
->>          /* mask TSC interrupt */
->>          max8925_reg_write(chip->adc, MAX8925_TSC_IRQ_MASK, 0x0f);
->>
->> -       if (!pdata->tsc_irq) {
->> +       chip->tsc_irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_TSC_IRQS, 0);
->> +       if (chip->tsc_irq < 0) {
->> +               dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
->> +                       chip->tsc_irq_base);
->> +               return -EBUSY;
->> +       }
->> +
->> +       irq_domain_add_legacy(node, MAX8925_NR_TSC_IRQS, chip->tsc_irq_base, 0,
->> +                             &max8925_irq_domain_ops, chip);
->> +
->> +       tsc_irq = irq_of_parse_and_map(node, 1);
->> +
-> I'm confused on this. Let's look at your definition in DTS.
->
-> +                               pmic: max8925@3c {
-> +                                       compatible = "marvell,max8925";
-> +                                       reg = <0x3c>;
-> +                                       interrupts = <1 0>;
-> +                                       interrupt-parent = <&intcmux4>;
-> +                                       interrupt-controller;
-> +                                       #interrupt-cells = <1>;
-> +
-> pmic is defined as interrupt controller. So it could be referenced as
-> interrupt-parent
-> by other drivers.
->
-> Now you split TSC_IRQS from original MAX8925_NR_IRQS. So TSC_IRQS are calculated
-> from 0. How do you distinguish TSC_IRQS from normal MAX8925_IRQS? Only
-> one phandle
-> is defined in your DTS file.
->
-> So either you keep TSC_IRQS in MAX8925_NR_IRQS, or you add a child
-> node to define
-> a new interrupt controller for tsc irqs.
->
->> +       if (!tsc_irq) {
->>                  dev_warn(chip->dev, "No interrupt support on TSC IRQ\n");
->>                  return 0;
->>          }
->> -       chip->tsc_irq = pdata->tsc_irq;
->> -
->> -       ret = request_threaded_irq(chip->tsc_irq, NULL, max8925_tsc_irq,
->> +       chip->tsc_irq = tsc_irq;
->> +       ret = request_threaded_irq(tsc_irq, NULL, max8925_tsc_irq,
->>                                     flags, "max8925-tsc", chip);
->>          if (ret) {
->>                  dev_err(chip->dev, "Failed to request TSC IRQ: %d\n", ret);
->> @@ -876,7 +903,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
->>          if (pdata && pdata->power) {
->>                  ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
->>                                          ARRAY_SIZE(power_devs),
->> -                                     &power_supply_resources[0], 0, NULL);
->> +                                       &power_supply_resources[0], 0, NULL);
->>                  if (ret < 0) {
->>                          dev_err(chip->dev, "Failed to add power supply "
->>                                  "subdev\n");
->> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
->> index d9e4b36..b713be6 100644
->> --- a/drivers/mfd/max8925-i2c.c
->> +++ b/drivers/mfd/max8925-i2c.c
->> @@ -135,13 +135,35 @@ static const struct i2c_device_id max8925_id_table[] = {
->>   };
->>   MODULE_DEVICE_TABLE(i2c, max8925_id_table);
->>
->> +
->> +static int __devinit max8925_dt_init(struct device_node *np,
->> +                                   struct device *dev,
->> +                                   struct max8925_platform_data *pdata)
->> +{
->> +       return 0;
->> +}
->> +
-> If you don't need this interface, you need define it.
->
->>   static int __devinit max8925_probe(struct i2c_client *client,
->>                                     const struct i2c_device_id *id)
->>   {
->>          struct max8925_platform_data *pdata = client->dev.platform_data;
->>          static struct max8925_chip *chip;
->> +       struct device_node *node = client->dev.of_node;
->> +       int ret;
->>
->> -       if (!pdata) {
->> +       if (node && !pdata) {
->> +               /* parse DT to get platform data */
->> +               pdata = devm_kzalloc(&client->dev,
->> +                                    sizeof(struct max8925_platform_data),
->> +                                    GFP_KERNEL);
->> +               if (!pdata)
->> +                       return -ENOMEM;
->> +               ret = max8925_dt_init(node, &client->dev, pdata);
->> +               if (ret) {
->> +                       pr_info("%s: failed to parse dt info\n", __func__);
->> +                       return -EINVAL;
->> +               }
->> +       } else if (!pdata) {
->>                  pr_info("%s: platform data is missing\n", __func__);
->>                  return -EINVAL;
->>          }
->> @@ -203,11 +225,18 @@ static int max8925_resume(struct device *dev)
->>
->>   static SIMPLE_DEV_PM_OPS(max8925_pm_ops, max8925_suspend, max8925_resume);
->>
->> +static const struct of_device_id max8925_dt_ids[] = {
->> +       { .compatible = "marvell,max8925", },
-> max8925 isn't the product of Marvell. The vendor is maxium.
->> +       {},
->> +};
->> +MODULE_DEVICE_TABLE(of, max8925_dt_ids);
->> +
->>   static struct i2c_driver max8925_driver = {
->>          .driver = {
->>                  .name   = "max8925",
->>                  .owner  = THIS_MODULE,
->>                  .pm     = &max8925_pm_ops,
->> +               .of_match_table = of_match_ptr(max8925_dt_ids),
->>          },
->>          .probe          = max8925_probe,
->>          .remove         = __devexit_p(max8925_remove),
->> @@ -217,7 +246,6 @@ static struct i2c_driver max8925_driver = {
->>   static int __init max8925_i2c_init(void)
->>   {
->>          int ret;
->> -
->>          ret = i2c_add_driver(&max8925_driver);
->>          if (ret != 0)
->>                  pr_err("Failed to register MAX8925 I2C driver: %d\n", ret);
->> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
->> index 74d8e29..67bc540 100644
->> --- a/include/linux/mfd/max8925.h
->> +++ b/include/linux/mfd/max8925.h
->> @@ -185,11 +185,18 @@ enum {
->>          MAX8925_IRQ_GPM_SYSCKEN_R,
->>          MAX8925_IRQ_RTC_ALARM1,
->>          MAX8925_IRQ_RTC_ALARM0,
->> +       MAX8925_NR_IRQS,
->> +};
->> +
->> +/**/
->> +enum {
->>          MAX8925_IRQ_TSC_STICK,
->>          MAX8925_IRQ_TSC_NSTICK,
->> -       MAX8925_NR_IRQS,
->> +       MAX8925_NR_TSC_IRQS,
->>   };
->>
->> +
->> +
->>   struct max8925_chip {
->>          struct device           *dev;
->>          struct i2c_client       *i2c;
->> @@ -201,7 +208,7 @@ struct max8925_chip {
->>          int                     irq_base;
->>          int                     core_irq;
->>          int                     tsc_irq;
->> -
->> +       int                     tsc_irq_base;
->>          unsigned int            wakeup_flag;
->>   };
->>
->> @@ -259,7 +266,6 @@ struct max8925_platform_data {
->>          struct regulator_init_data      *ldo20;
->>
->>          int             irq_base;
->> -       int             tsc_irq;
->>   };
->>
->>   extern int max8925_reg_read(struct i2c_client *, int);
->> --
->> 1.7.0.4
->>
+>> By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
+>> (2.8GHz). I wonder if those on slower hard disk or slower CPU, what
+>> kind of degradation would this cause or just the same?
+> 
+> It'd likely be the same slow down time wise, but as a percentage it
+> would appear smaller on a slower disk.
+> 
+> Could you please test Mikulas' suggestion of changing
+> synchronize_sched() in include/linux/percpu-rwsem.h to
+> synchronize_sched_expedited()?
+> 
+> linux-next also has a re-write of the per-cpu rw sems, out of Andrews
+> tree. It would be a good data point it you could test that, too.
+> 
+> In any case, the slow down definitely isn't acceptable. Fixing an
+> obscure issue like block sizes changing while O_DIRECT is in flight
+> definitely does NOT warrant a mount slow down.
 
-update both dts and this patch in v2, please help me review again,
-thank a lot!!
+Here's Olegs patch, might be easier for you than switching to
+linux-next. Please try that.
 
--Qing
+From: Oleg Nesterov <oleg@redhat.com>
+Subject: percpu_rw_semaphore: reimplement to not block the readers unnecessarily
+
+Currently the writer does msleep() plus synchronize_sched() 3 times to
+acquire/release the semaphore, and during this time the readers are
+blocked completely.  Even if the "write" section was not actually started
+or if it was already finished.
+
+With this patch down_write/up_write does synchronize_sched() twice and
+down_read/up_read are still possible during this time, just they use the
+slow path.
+
+percpu_down_write() first forces the readers to use rw_semaphore and
+increment the "slow" counter to take the lock for reading, then it
+takes that rw_semaphore for writing and blocks the readers.
+
+Also.  With this patch the code relies on the documented behaviour of
+synchronize_sched(), it doesn't try to pair synchronize_sched() with
+barrier.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ include/linux/percpu-rwsem.h |   85 +++-------------------
+ lib/Makefile                 |    2 
+ lib/percpu-rwsem.c           |  123 +++++++++++++++++++++++++++++++++
+ 3 files changed, 138 insertions(+), 72 deletions(-)
+
+diff -puN include/linux/percpu-rwsem.h~percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessarily include/linux/percpu-rwsem.h
+--- a/include/linux/percpu-rwsem.h~percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessarily
++++ a/include/linux/percpu-rwsem.h
+@@ -2,82 +2,25 @@
+ #define _LINUX_PERCPU_RWSEM_H
+ 
+ #include <linux/mutex.h>
++#include <linux/rwsem.h>
+ #include <linux/percpu.h>
+-#include <linux/rcupdate.h>
+-#include <linux/delay.h>
++#include <linux/wait.h>
+ 
+ struct percpu_rw_semaphore {
+-	unsigned __percpu *counters;
+-	bool locked;
+-	struct mutex mtx;
++	unsigned int __percpu	*fast_read_ctr;
++	struct mutex		writer_mutex;
++	struct rw_semaphore	rw_sem;
++	atomic_t		slow_read_ctr;
++	wait_queue_head_t	write_waitq;
+ };
+ 
+-#define light_mb()	barrier()
+-#define heavy_mb()	synchronize_sched()
++extern void percpu_down_read(struct percpu_rw_semaphore *);
++extern void percpu_up_read(struct percpu_rw_semaphore *);
+ 
+-static inline void percpu_down_read(struct percpu_rw_semaphore *p)
+-{
+-	rcu_read_lock_sched();
+-	if (unlikely(p->locked)) {
+-		rcu_read_unlock_sched();
+-		mutex_lock(&p->mtx);
+-		this_cpu_inc(*p->counters);
+-		mutex_unlock(&p->mtx);
+-		return;
+-	}
+-	this_cpu_inc(*p->counters);
+-	rcu_read_unlock_sched();
+-	light_mb(); /* A, between read of p->locked and read of data, paired with D */
+-}
+-
+-static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+-{
+-	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
+-	this_cpu_dec(*p->counters);
+-}
+-
+-static inline unsigned __percpu_count(unsigned __percpu *counters)
+-{
+-	unsigned total = 0;
+-	int cpu;
+-
+-	for_each_possible_cpu(cpu)
+-		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
+-
+-	return total;
+-}
+-
+-static inline void percpu_down_write(struct percpu_rw_semaphore *p)
+-{
+-	mutex_lock(&p->mtx);
+-	p->locked = true;
+-	synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
+-	while (__percpu_count(p->counters))
+-		msleep(1);
+-	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
+-}
+-
+-static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+-{
+-	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
+-	p->locked = false;
+-	mutex_unlock(&p->mtx);
+-}
+-
+-static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
+-{
+-	p->counters = alloc_percpu(unsigned);
+-	if (unlikely(!p->counters))
+-		return -ENOMEM;
+-	p->locked = false;
+-	mutex_init(&p->mtx);
+-	return 0;
+-}
+-
+-static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
+-{
+-	free_percpu(p->counters);
+-	p->counters = NULL; /* catch use after free bugs */
+-}
++extern void percpu_down_write(struct percpu_rw_semaphore *);
++extern void percpu_up_write(struct percpu_rw_semaphore *);
++
++extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
++extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
+ 
+ #endif
+diff -puN lib/Makefile~percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessarily lib/Makefile
+--- a/lib/Makefile~percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessarily
++++ a/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
+ 	 idr.o int_sqrt.o extable.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o earlycpio.o
++	 is_single_threaded.o plist.o decompress.o earlycpio.o percpu-rwsem.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff -puN /dev/null lib/percpu-rwsem.c
+--- /dev/null
++++ a/lib/percpu-rwsem.c
+@@ -0,0 +1,123 @@
++#include <linux/percpu-rwsem.h>
++#include <linux/rcupdate.h>
++#include <linux/sched.h>
++
++int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
++{
++	brw->fast_read_ctr = alloc_percpu(int);
++	if (unlikely(!brw->fast_read_ctr))
++		return -ENOMEM;
++
++	mutex_init(&brw->writer_mutex);
++	init_rwsem(&brw->rw_sem);
++	atomic_set(&brw->slow_read_ctr, 0);
++	init_waitqueue_head(&brw->write_waitq);
++	return 0;
++}
++
++void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
++{
++	free_percpu(brw->fast_read_ctr);
++	brw->fast_read_ctr = NULL; /* catch use after free bugs */
++}
++
++static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
++{
++	bool success = false;
++
++	preempt_disable();
++	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
++		__this_cpu_add(*brw->fast_read_ctr, val);
++		success = true;
++	}
++	preempt_enable();
++
++	return success;
++}
++
++/*
++ * Like the normal down_read() this is not recursive, the writer can
++ * come after the first percpu_down_read() and create the deadlock.
++ */
++void percpu_down_read(struct percpu_rw_semaphore *brw)
++{
++	if (likely(update_fast_ctr(brw, +1)))
++		return;
++
++	down_read(&brw->rw_sem);
++	atomic_inc(&brw->slow_read_ctr);
++	up_read(&brw->rw_sem);
++}
++
++void percpu_up_read(struct percpu_rw_semaphore *brw)
++{
++	if (likely(update_fast_ctr(brw, -1)))
++		return;
++
++	/* false-positive is possible but harmless */
++	if (atomic_dec_and_test(&brw->slow_read_ctr))
++		wake_up_all(&brw->write_waitq);
++}
++
++static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
++{
++	unsigned int sum = 0;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		sum += per_cpu(*brw->fast_read_ctr, cpu);
++		per_cpu(*brw->fast_read_ctr, cpu) = 0;
++	}
++
++	return sum;
++}
++
++/*
++ * A writer takes ->writer_mutex to exclude other writers and to force the
++ * readers to switch to the slow mode, note the mutex_is_locked() check in
++ * update_fast_ctr().
++ *
++ * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
++ * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
++ * counter it represents the number of active readers.
++ *
++ * Finally the writer takes ->rw_sem for writing and blocks the new readers,
++ * then waits until the slow counter becomes zero.
++ */
++void percpu_down_write(struct percpu_rw_semaphore *brw)
++{
++	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
++	mutex_lock(&brw->writer_mutex);
++
++	/*
++	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
++	 *    so that update_fast_ctr() can't succeed.
++	 *
++	 * 2. Ensures we see the result of every previous this_cpu_add() in
++	 *    update_fast_ctr().
++	 *
++	 * 3. Ensures that if any reader has exited its critical section via
++	 *    fast-path, it executes a full memory barrier before we return.
++	 */
++	synchronize_sched();
++
++	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
++	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
++
++	/* block the new readers completely */
++	down_write(&brw->rw_sem);
++
++	/* wait for all readers to complete their percpu_up_read() */
++	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
++}
++
++void percpu_up_write(struct percpu_rw_semaphore *brw)
++{
++	/* allow the new readers, but only the slow-path */
++	up_write(&brw->rw_sem);
++
++	/* insert the barrier before the next fast-path in down_read */
++	synchronize_sched();
++
++	mutex_unlock(&brw->writer_mutex);
++}
+
+-- 
+Jens Axboe
 
