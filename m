@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab2K0XP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:15:27 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26299 "EHLO
+	id S1756422Ab2K0XQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:16:30 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755947Ab2K0XPW (ORCPT
+	by vger.kernel.org with ESMTP id S1753596Ab2K0XP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:22 -0500
+	Tue, 27 Nov 2012 18:15:26 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewOST5N2gwQ
+X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WMUIQrA5JPk3aDBIFP
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 10/19] shrinker: add node awareness
-Date: Wed, 28 Nov 2012 10:14:37 +1100
-Message-Id: <1354058086-27937-11-git-send-email-david@fromorbit.com>
+Subject: [PATCH 13/19] xfs: Node aware direct inode reclaim
+Date: Wed, 28 Nov 2012 10:14:40 +1100
+Message-Id: <1354058086-27937-14-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,108 +25,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Pass the node of the current zone being reclaimed to shrink_slab(),
-allowing the shrinker control nodemask to be set appropriately for
-node aware shrinkers.
+XFS currently only tracks inodes for reclaim via tag bits in the
+inode cache radix tree. While this is awesome for background reclaim
+because it allows inodes to be reclaimed in ascending disk offset
+order, it sucks for direct memory reclaim which really is trying to
+free the oldest inodes from memory.
+
+As such, the direct reclaim code is a bit of a mess. It has all
+sorts of heuristics code to try to avoid dueling shrinker problems
+and to limit each radix tree to a single direct reclaim walker at a
+time. We can do better.
+
+Given that at the point in time that we mark an inode as under
+reclaim, it has been evicted from the VFS inode cache, we can reuse
+the struct inode LRU fields to hold our own reclaim ordered LRU
+list. With the generic LRU code, it doesn't impact on scalability,
+and the shrinker can walk the LRU lists directly giving us
+node-aware inode cache reclaim.
+
+This means that we get the best of both worlds - background reclaim
+runs very efficiently in terms of IO for cleaning dirty reclaimable
+inodes, while direct reclaim can walk the LRU lists and pick inodes
+to reclaim that suit the MM subsystem the best.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/drop_caches.c         |    1 +
- include/linux/shrinker.h |    3 +++
- mm/memory-failure.c      |    2 ++
- mm/vmscan.c              |   12 +++++++++---
- 4 files changed, 15 insertions(+), 3 deletions(-)
+ fs/xfs/xfs_icache.c |   77 ++++++++++++++++++++++++++++++++++++++-------------
+ fs/xfs/xfs_icache.h |    4 +--
+ fs/xfs/xfs_linux.h  |    1 +
+ fs/xfs/xfs_mount.h  |    2 +-
+ fs/xfs/xfs_super.c  |    6 ++--
+ 5 files changed, 65 insertions(+), 25 deletions(-)
 
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index c00e055..9fd702f 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -44,6 +44,7 @@ static void drop_slab(void)
- 		.gfp_mask = GFP_KERNEL,
- 	};
+diff --git a/fs/xfs/xfs_icache.c b/fs/xfs/xfs_icache.c
+index 2f91e2b..82b053f 100644
+--- a/fs/xfs/xfs_icache.c
++++ b/fs/xfs/xfs_icache.c
+@@ -244,6 +244,8 @@ xfs_iget_cache_hit(
  
-+	nodes_setall(shrink.nodes_to_scan);
- 	do {
- 		nr_objects = shrink_slab(&shrink, 1000, 1000);
- 	} while (nr_objects > 10);
-diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-index 4f59615..e71286f 100644
---- a/include/linux/shrinker.h
-+++ b/include/linux/shrinker.h
-@@ -16,6 +16,9 @@ struct shrink_control {
- 
- 	/* How many slab objects shrinker() should scan and try to reclaim */
- 	long nr_to_scan;
+ 		spin_unlock(&ip->i_flags_lock);
+ 		spin_unlock(&pag->pag_ici_lock);
 +
-+	/* shrink from these nodes */
-+	nodemask_t nodes_to_scan;
- };
++		list_lru_del(&mp->m_inode_lru, &VFS_I(ip)->i_lru);
+ 	} else {
+ 		/* If the VFS inode is being torn down, pause and try again. */
+ 		if (!igrab(inode)) {
+@@ -990,6 +992,17 @@ reclaim:
+ 	spin_unlock(&pag->pag_ici_lock);
  
+ 	/*
++	 * iT is safe to do this unlocked check as we've guaranteed that we have
++	 * exclusive access to this inode via the XFS_IRECLAIM flag. Hence
++	 * concurrent LRU list walks will avoid removing this inode from the
++	 * list. For direct reclaim, we know the inode has already been removed
++	 * from any list it might be on, hence there's no need to traffic the
++	 * LRU code to find that out.
++	 */
++	if (!list_empty(&VFS_I(ip)->i_lru))
++		list_lru_del(&ip->i_mount->m_inode_lru, &VFS_I(ip)->i_lru);
++
++	/*
+ 	 * Here we do an (almost) spurious inode lock in order to coordinate
+ 	 * with inode cache radix tree lookups.  This is because the lookup
+ 	 * can reference the inodes in the cache without taking references.
+@@ -1155,6 +1168,32 @@ xfs_reclaim_inodes(
+ 	return xfs_reclaim_inodes_ag(mp, mode, &nr_to_scan);
+ }
+ 
++static int
++xfs_reclaim_inode_isolate(
++	struct list_head	*item,
++	spinlock_t		*lru_lock,
++	void			*cb_arg)
++{
++	struct inode		*inode = container_of(item, struct inode,
++						      i_lru);
++	struct list_head	*dispose = cb_arg;
++
++	rcu_read_lock();
++	if (xfs_reclaim_inode_grab(XFS_I(inode), SYNC_TRYLOCK)) {
++		/* not a reclaim candiate, skip it */
++		rcu_read_unlock();
++		return 2;
++	}
++	rcu_read_unlock();
++
++	/*
++	 * We have the XFS_IRECLAIM flag set now, so nobody is going to touch
++	 * this inode now except us.
++	 */
++	list_move(item, dispose);
++	return 0;
++}
++
  /*
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6c5899b..7bcbde4 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -248,10 +248,12 @@ void shake_page(struct page *p, int access)
+  * Scan a certain number of inodes for reclaim.
+  *
+@@ -1167,36 +1206,34 @@ xfs_reclaim_inodes(
+ long
+ xfs_reclaim_inodes_nr(
+ 	struct xfs_mount	*mp,
+-	long			nr_to_scan)
++	long			nr_to_scan,
++	nodemask_t		*nodes_to_scan)
+ {
+-	long nr = nr_to_scan;
++	LIST_HEAD(dispose);
++	long freed;
+ 
+ 	/* kick background reclaimer and push the AIL */
+ 	xfs_reclaim_work_queue(mp);
+ 	xfs_ail_push_all(mp->m_ail);
+ 
+-	xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT, &nr);
+-	return nr_to_scan - nr;
+-}
++	freed = list_lru_walk_nodemask(&mp->m_inode_lru,
++				       xfs_reclaim_inode_isolate, &dispose,
++				       nr_to_scan, nodes_to_scan);
+ 
+-/*
+- * Return the number of reclaimable inodes in the filesystem for
+- * the shrinker to determine how much to reclaim.
+- */
+-long
+-xfs_reclaim_inodes_count(
+-	struct xfs_mount	*mp)
+-{
+-	struct xfs_perag	*pag;
+-	xfs_agnumber_t		ag = 0;
+-	long			reclaimable = 0;
++	while (!list_empty(&dispose)) {
++		struct xfs_perag *pag;
++		struct inode	*inode;
+ 
+-	while ((pag = xfs_perag_get_tag(mp, ag, XFS_ICI_RECLAIM_TAG))) {
+-		ag = pag->pag_agno + 1;
+-		reclaimable += pag->pag_ici_reclaimable;
++		inode = list_first_entry(&dispose, struct inode, i_lru);
++		list_del_init(&inode->i_lru);
++
++		pag = xfs_perag_get(mp,
++				    XFS_INO_TO_AGNO(mp, XFS_I(inode)->i_ino));
++		xfs_reclaim_inode(XFS_I(inode), pag, SYNC_WAIT);
+ 		xfs_perag_put(pag);
+ 	}
+-	return reclaimable;
++
++	return freed;
+ }
+ 
+ STATIC int
+diff --git a/fs/xfs/xfs_icache.h b/fs/xfs/xfs_icache.h
+index c860d07..4214518 100644
+--- a/fs/xfs/xfs_icache.h
++++ b/fs/xfs/xfs_icache.h
+@@ -30,8 +30,8 @@ int xfs_iget(struct xfs_mount *mp, struct xfs_trans *tp, xfs_ino_t ino,
+ void xfs_reclaim_worker(struct work_struct *work);
+ 
+ int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
+-long xfs_reclaim_inodes_count(struct xfs_mount *mp);
+-long xfs_reclaim_inodes_nr(struct xfs_mount *mp, long nr_to_scan);
++long xfs_reclaim_inodes_nr(struct xfs_mount *mp, long nr_to_scan,
++			   nodemask_t *nodes_to_scan);
+ 
+ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
+ 
+diff --git a/fs/xfs/xfs_linux.h b/fs/xfs/xfs_linux.h
+index fe7e4df..40cc5d1 100644
+--- a/fs/xfs/xfs_linux.h
++++ b/fs/xfs/xfs_linux.h
+@@ -72,6 +72,7 @@
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+ #include <linux/list_sort.h>
++#include <linux/list_lru.h>
+ 
+ #include <asm/page.h>
+ #include <asm/div64.h>
+diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
+index bab8314..859fd5d 100644
+--- a/fs/xfs/xfs_mount.h
++++ b/fs/xfs/xfs_mount.h
+@@ -200,9 +200,9 @@ typedef struct xfs_mount {
+ 						     trimming */
+ 	__int64_t		m_update_flags;	/* sb flags we need to update
+ 						   on the next remount,rw */
+-	struct shrinker		m_inode_shrink;	/* inode reclaim shrinker */
+ 	int64_t			m_low_space[XFS_LOWSP_MAX];
+ 						/* low free space thresholds */
++	struct list_lru		m_inode_lru;	/* direct inode reclaim list */
+ 
+ 	struct workqueue_struct	*m_data_workqueue;
+ 	struct workqueue_struct	*m_unwritten_workqueue;
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index 33d67d5..814e07a 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -968,6 +968,7 @@ xfs_fs_destroy_inode(
+ 	 * reclaim tear down all inodes.
  	 */
- 	if (access) {
- 		int nr;
-+		int nid = page_to_nid(p);
- 		do {
- 			struct shrink_control shrink = {
- 				.gfp_mask = GFP_KERNEL,
- 			};
-+			node_set(nid, shrink.nodes_to_scan);
+ out_reclaim:
++	list_lru_add(&ip->i_mount->m_inode_lru, &inode->i_lru);
+ 	xfs_inode_set_reclaim_tag(ip);
+ }
  
- 			nr = shrink_slab(&shrink, 1000, 1000);
- 			if (page_count(p) == 1)
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 55c4fc9..4a602ec 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2122,15 +2122,20 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		 */
- 		if (global_reclaim(sc)) {
- 			unsigned long lru_pages = 0;
-+
-+			nodes_clear(shrink->nodes_to_scan);
- 			for_each_zone_zonelist(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask)) {
- 				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 					continue;
+@@ -1402,6 +1403,7 @@ xfs_fs_fill_super(
+ 	atomic_set(&mp->m_active_trans, 0);
+ 	INIT_DELAYED_WORK(&mp->m_reclaim_work, xfs_reclaim_worker);
+ 	INIT_DELAYED_WORK(&mp->m_eofblocks_work, xfs_eofblocks_worker);
++	list_lru_init(&mp->m_inode_lru);
  
- 				lru_pages += zone_reclaimable_pages(zone);
-+				node_set(zone_to_nid(zone),
-+					 shrink->nodes_to_scan);
- 			}
+ 	mp->m_super = sb;
+ 	sb->s_fs_info = mp;
+@@ -1519,7 +1521,7 @@ xfs_fs_nr_cached_objects(
+ 	struct super_block	*sb,
+ 	nodemask_t		*nodes_to_count)
+ {
+-	return xfs_reclaim_inodes_count(XFS_M(sb));
++	return list_lru_count_nodemask(&XFS_M(sb)->m_inode_lru, nodes_to_count);
+ }
  
- 			shrink_slab(shrink, sc->nr_scanned, lru_pages);
-+
- 			if (reclaim_state) {
- 				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2682,6 +2687,8 @@ loop_again:
- 				shrink_zone(zone, &sc);
+ static long
+@@ -1528,7 +1530,7 @@ xfs_fs_free_cached_objects(
+ 	long			nr_to_scan,
+ 	nodemask_t		*nodes_to_scan)
+ {
+-	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
++	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan, nodes_to_scan);
+ }
  
- 				reclaim_state->reclaimed_slab = 0;
-+				nodes_clear(shrink.nodes_to_scan);
-+				node_set(zone_to_nid(zone), shrink.nodes_to_scan);
- 				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
- 				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
- 				total_scanned += sc.nr_scanned;
-@@ -3318,10 +3325,9 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		 * number of slab pages and shake the slab until it is reduced
- 		 * by the same nr_pages that we used for reclaiming unmapped
- 		 * pages.
--		 *
--		 * Note that shrink_slab will free memory on all zones and may
--		 * take a long time.
- 		 */
-+		nodes_clear(shrink.nodes_to_scan);
-+		node_set(zone_to_nid(zone), shrink.nodes_to_scan);
- 		for (;;) {
- 			unsigned long lru_pages = zone_reclaimable_pages(zone);
- 
+ static const struct super_operations xfs_super_operations = {
 -- 
 1.7.10
 
