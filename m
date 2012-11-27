@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab2K0GPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:15:49 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35890 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2K0GPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:15:47 -0500
-Message-ID: <50B45A8A.4040307@kernel.org>
-Date: Tue, 27 Nov 2012 01:15:38 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757956Ab2K0GQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:16:14 -0500
+Received: from mga14.intel.com ([143.182.124.37]:12392 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755861Ab2K0GQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 01:16:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,326,1352102400"; 
+   d="scan'208";a="222812975"
+Message-ID: <50B45A2A.7030201@intel.com>
+Date: Tue, 27 Nov 2012 14:14:02 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] cpuidle: Measure idle state durations with monotonic
- clock
-References: <CAODwPW873M32d9zFT9fpJT9+PuMbz8htzUxdF1TNE+J1zR3jYA@mail.gmail.com> <1352944590-8776-1-git-send-email-jwerner@chromium.org> <3364211.o5ZCq4Y6Je@vostro.rjw.lan>
-In-Reply-To: <3364211.o5ZCq4Y6Je@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Benjamin Segall <bsegall@google.com>, mingo@redhat.com,
+        peterz@infradead.org, pjt@google.com, vincent.guittot@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
+References: <1353157457-3649-1-git-send-email-alex.shi@intel.com> <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com> <50B42EB0.8090609@linux.vnet.ibm.com>
+In-Reply-To: <50B42EB0.8090609@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/27/2012 11:08 AM, Preeti U Murthy wrote:
+> Hi everyone,
+> 
+> On 11/27/2012 12:33 AM, Benjamin Segall wrote:
+>> So, I've been trying out using the runnable averages for load balance in
+>> a few ways, but haven't actually gotten any improvement on the
+>> benchmarks I've run. I'll post my patches once I have the numbers down,
+>> but it's generally been about half a percent to 1% worse on the tests
+>> I've tried.
+>>
+>> The basic idea is to use (cfs_rq->runnable_load_avg +
+>> cfs_rq->blocked_load_avg) (which should be equivalent to doing
+>> load_avg_contrib on the rq) for cfs_rqs and possibly the rq, and
+>> p->se.load.weight * p->se.avg.runnable_avg_sum / period for tasks.
+> 
+> Why should cfs_rq->blocked_load_avg be included to calculate the load
+> on the rq? They do not contribute to the active load of the cpu right?
+> 
+> When a task goes to sleep its load is removed from cfs_rq->load.weight
+> as well in account_entity_dequeue(). Which means the load balancer
+> considers a sleeping entity as *not* contributing to the active runqueue
+> load.So shouldn't the new metric consider cfs_rq->runnable_load_avg alone?
+>>
+>> I have not yet tried including wake_affine, so this has just involved
+>> h_load (task_load_down and task_h_load), as that makes everything
+>> (besides wake_affine) be based on either the new averages or the
+>> rq->cpu_load averages.
+>>
+> 
+> Yeah I have been trying to view the performance as well,but with
+> cfs_rq->runnable_load_avg as the rq load contribution and the task load,
+> same as mentioned above.I have not completed my experiments but I would
+> expect some significant performance difference due to the below scenario:
+> 
+>                      Task3(10% task)
+> Task1(100% task)     Task4(10% task)
+> Task2(100% task)     Task5(10% task)
+> ---------------     ----------------       ----------
+> CPU1                  CPU2                  CPU3
+> 
+> When cpu3 triggers load balancing:
+> 
+> CASE1:
+>  without PJT's metric the following loads will be perceived
+>  CPU1->2048
+>  CPU2->3042
+>  Therefore CPU2 might be relieved of one task to result in:
+> 
+> 
+> Task1(100% task)     Task4(10% task)
+> Task2(100% task)     Task5(10% task)       Task3(10% task)
+> ---------------     ----------------       ----------
+> CPU1                  CPU2                  CPU3
+> 
+> CASE2:
+>   with PJT's metric the following loads will be perceived
+>   CPU1->2048
+>   CPU2->1022
+>  Therefore CPU1 might be relieved of one task to result in:
+> 
+>                      Task3(10% task)
+>                      Task4(10% task)
+> Task2(100% task)     Task5(10% task)     Task1(100% task)
+> ---------------     ----------------       ----------
+> CPU1                  CPU2                  CPU3
+> 
+> 
+> The differences between the above two scenarios include:
+> 
+> 1.Reduced latency for Task1 in CASE2,which is the right task to be moved
+> in the above scenario.
+> 
+> 2.Even though in the former case CPU2 is relieved of one task,its of no
+> use if Task3 is going to sleep most of the time.This might result in
+> more load balancing on behalf of cpu3.
+> 
+> What do you guys think?
 
->>  drivers/idle/intel_idle.c                       |   14 +-----
+It looks fine. just a question of CASE 1.
+Usually the cpu2 with 3 10% load task will show nr_running == 0, at 70%
+time. So, how you make rq->nr_running = 3 always?
 
-Acked-by: Len Brown <len.brown@intel.com>
+Guess in most chance load balance with pull task1 or task2 to cpu2 or
+cpu3. not the result of CASE 1.
 
-thanks!
--Len
+
+> 
+> Thank you
+> 
+> Regards
+> Preeti U Murthy
+> 
+> 
+> 
+> 
 
