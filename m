@@ -1,156 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306Ab2K0H6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 02:58:46 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:35145 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758170Ab2K0H6p (ORCPT
+	id S1758277Ab2K0IBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:01:00 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50938 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758203Ab2K0IA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 02:58:45 -0500
+	Tue, 27 Nov 2012 03:00:58 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2a00:1028:d800:d6:7d01:dfb0:7940:e183]
-In-Reply-To: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
-References: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
-From: Tomas M <tomas@slax.org>
-Date: Tue, 27 Nov 2012 08:52:39 +0100
-Message-ID: <CAL1oBhrp+6bWRPh30QA6tg3hKKBjz05Qdb8yZtJ9zSMWtX8w-Q@mail.gmail.com>
-Subject: Re: [PATCH] zram: Prevent use of unmapped buffer
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Mihail Kasadjikov <hamer.mk@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 16:00:56 +0800
+Message-ID: <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+From: Bob Liu <lliubbo@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good work. The patch fixes a serious bug on 3.6.5, 3.6.6, 3.6.7 and 3.6.8
-I hope it gets mainlined ASAP
+Hi Tang,
 
-Tomas M
-slax.org
+On Fri, Nov 23, 2012 at 6:44 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> [What we are doing]
+> This patchset provide a boot option for user to specify ZONE_MOVABLE memory
+> map for each node in the system.
+>
+> movablecore_map=nn[KMG]@ss[KMG]
+>
+> This option make sure memory range from ss to ss+nn is movable memory.
+>
+>
+> [Why we do this]
+> If we hot remove a memroy, the memory cannot have kernel memory,
+> because Linux cannot migrate kernel memory currently. Therefore,
+> we have to guarantee that the hot removed memory has only movable
+> memoroy.
+>
+> Linux has two boot options, kernelcore= and movablecore=, for
+> creating movable memory. These boot options can specify the amount
+> of memory use as kernel or movable memory. Using them, we can
+> create ZONE_MOVABLE which has only movable memory.
+>
+> But it does not fulfill a requirement of memory hot remove, because
+> even if we specify the boot options, movable memory is distributed
+> in each node evenly. So when we want to hot remove memory which
+> memory range is 0x80000000-0c0000000, we have no way to specify
+> the memory as movable memory.
+>
 
+Sorry, I'm still not get your idea.
+Why you need a specify range that is movable?
+Could you describe the requirement and situation a bit more?
+Thank you.
 
-On Tue, Nov 27, 2012 at 8:26 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
-> introduced a bug which caused a kunmap()'ed buffer to be used in case
-> of partial writes where the data was found to be incompressible.
+> So we proposed a new feature which specifies memory range to use as
+> movable memory.
 >
-> This fixes bug 50081:
-> https://bugzilla.kernel.org/show_bug.cgi?id=50081
 >
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-> Reported-by: Tomas M <tomas@slax.org>
-> ---
->  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->  1 file changed, 24 insertions(+), 15 deletions(-)
+> [Ways to do this]
+> There may be 2 ways to specify movable memory.
+>  1. use firmware information
+>  2. use boot option
 >
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index fb4a7c9..f2a73bd 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -265,7 +265,7 @@ out_cleanup:
->  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                            int offset)
->  {
-> -       int ret;
-> +       int ret = 0;
->         size_t clen;
->         unsigned long handle;
->         struct page *page;
-> @@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                         goto out;
->                 }
->                 ret = zram_decompress_page(zram, uncmem, index);
-> -               if (ret) {
-> -                       kfree(uncmem);
-> +               if (ret)
->                         goto out;
-> -               }
->         }
+> 1. use firmware information
+>   According to ACPI spec 5.0, SRAT table has memory affinity structure
+>   and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
+>   Affinity Structure". If we use the information, we might be able to
+>   specify movable memory by firmware. For example, if Hot Pluggable
+>   Filed is enabled, Linux sets the memory as movable memory.
 >
->         /*
-> @@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> 2. use boot option
+>   This is our proposal. New boot option can specify memory range to use
+>   as movable memory.
 >
->         user_mem = kmap_atomic(page);
 >
-> -       if (is_partial_io(bvec))
-> +       if (is_partial_io(bvec)) {
->                 memcpy(uncmem + offset, user_mem + bvec->bv_offset,
->                        bvec->bv_len);
-> -       else
-> +               kunmap_atomic(user_mem);
-> +               user_mem = NULL;
-> +       } else {
->                 uncmem = user_mem;
-> +       }
+> [How we do this]
+> We chose second way, because if we use first way, users cannot change
+> memory range to use as movable memory easily. We think if we create
+> movable memory, performance regression may occur by NUMA. In this case,
+> user can turn off the feature easily if we prepare the boot option.
+> And if we prepare the boot optino, the user can select which memory
+> to use as movable memory easily.
 >
->         if (page_zero_filled(uncmem)) {
-> -               kunmap_atomic(user_mem);
-> -               if (is_partial_io(bvec))
-> -                       kfree(uncmem);
-> +               if (!is_partial_io(bvec))
-> +                       kunmap_atomic(user_mem);
->                 zram_stat_inc(&zram->stats.pages_zero);
->                 zram_set_flag(zram, index, ZRAM_ZERO);
->                 ret = 0;
-> @@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
->                                zram->compress_workmem);
 >
-> -       kunmap_atomic(user_mem);
-> -       if (is_partial_io(bvec))
-> -                       kfree(uncmem);
-> +       if (!is_partial_io(bvec)) {
-> +               kunmap_atomic(user_mem);
-> +               user_mem = NULL;
-> +               uncmem = NULL;
-> +       }
+> [How to use]
+> Specify the following boot option:
+> movablecore_map=nn[KMG]@ss[KMG]
 >
->         if (unlikely(ret != LZO_E_OK)) {
->                 pr_err("Compression failed! err=%d\n", ret);
-> @@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> That means physical address range from ss to ss+nn will be allocated as
+> ZONE_MOVABLE.
 >
->         if (unlikely(clen > max_zpage_size)) {
->                 zram_stat_inc(&zram->stats.bad_compress);
-> -               src = uncmem;
->                 clen = PAGE_SIZE;
-> +               src = NULL;
-> +               if (is_partial_io(bvec))
-> +                       src = uncmem;
->         }
+> And the following points should be considered.
 >
->         handle = zs_malloc(zram->mem_pool, clen);
-> @@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         }
->         cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+> 1) If the range is involved in a single node, then from ss to the end of
+>    the node will be ZONE_MOVABLE.
+> 2) If the range covers two or more nodes, then from ss to the end of
+>    the node will be ZONE_MOVABLE, and all the other nodes will only
+>    have ZONE_MOVABLE.
+> 3) If no range is in the node, then the node will have no ZONE_MOVABLE
+>    unless kernelcore or movablecore is specified.
+> 4) This option could be specified at most MAX_NUMNODES times.
+> 5) If kernelcore or movablecore is also specified, movablecore_map will have
+>    higher priority to be satisfied.
+> 6) This option has no conflict with memmap option.
 >
-> +       if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-> +               src = kmap_atomic(page);
->         memcpy(cmem, src, clen);
-> +       if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-> +               kunmap_atomic(src);
 >
->         zs_unmap_object(zram->mem_pool, handle);
 >
-> @@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         if (clen <= PAGE_SIZE / 2)
->                 zram_stat_inc(&zram->stats.good_compress);
+> Tang Chen (4):
+>   page_alloc: add movable_memmap kernel parameter
+>   page_alloc: Introduce zone_movable_limit[] to keep movable limit for
+>     nodes
+>   page_alloc: Make movablecore_map has higher priority
+>   page_alloc: Bootmem limit with movablecore_map
 >
-> -       return 0;
-> -
->  out:
-> +       if (is_partial_io(bvec))
-> +               kfree(uncmem);
-> +
->         if (ret)
->                 zram_stat64_inc(zram, &zram->stats.failed_writes);
->         return ret;
+> Yasuaki Ishimatsu (1):
+>   x86: get pg_data_t's memory from other node
+>
+>  Documentation/kernel-parameters.txt |   17 +++
+>  arch/x86/mm/numa.c                  |   11 ++-
+>  include/linux/memblock.h            |    1 +
+>  include/linux/mm.h                  |   11 ++
+>  mm/memblock.c                       |   15 +++-
+>  mm/page_alloc.c                     |  216 ++++++++++++++++++++++++++++++++++-
+>  6 files changed, 263 insertions(+), 8 deletions(-)
+>
 > --
-> 1.7.10.4
->
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Regards,
+-Bob
