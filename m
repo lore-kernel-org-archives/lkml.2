@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab2K0G3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:29:34 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13459 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510Ab2K0G3c (ORCPT
+	id S1757781Ab2K0Gcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:32:54 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:50611 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906Ab2K0Gcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:29:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 26 Nov 2012 22:29:24 -0800
-Message-ID: <50B45EA8.7000502@nvidia.com>
-Date: Tue, 27 Nov 2012 08:33:12 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 5/8] ARM: tegra: Add auxiliary data for nvhost
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-6-git-send-email-tbergstrom@nvidia.com> <50B3FDCC.7080709@wwwdotorg.org>
-In-Reply-To: <50B3FDCC.7080709@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 01:32:53 -0500
+Subject: Re: [PATCH] acer-wmi: add Aspire 5741G touchpad toggle key
+From: joeyli <jlee@suse.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20121126183502.GA2749@swordfish>
+References: <20121126183502.GA2749@swordfish>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Nov 2012 14:31:52 +0800
+Message-ID: <1353997912.21227.862.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.11.2012 01:39, Stephen Warren wrote:
-> Clock names shouldn't be passed in platform data; instead, clk_get()
-> should be passed the device object and device-relative (i.e. not global)
-> clock name. I expect if the driver is fixed to make this change, the
-> changes to tegra*_clocks_data.c won't be needed either.
+於 一，2012-11-26 於 21:35 +0300，Sergey Senozhatsky 提到：
+> Add Aspire 5741G KEY_TOUCHPAD_TOGGLE to wmi keymap, preventing
+> "acer_wmi: Unknown key number - 0x85" error.
+> 
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Isn't this code doing exactly that - getting a device relative clock,
-nvhost_module_init() in nvhost.acm.c:
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 
-(...)
-	/* initialize clocks to known state */
-	while (pdata->clocks[i].name && i < NVHOST_MODULE_MAX_CLOCKS) {
-		long rate = pdata->clocks[i].default_rate;
-		struct clk *c;
+Thanks for you resend your patch. 
 
-		c = devm_clk_get(&dev->dev, pdata->clocks[i].name);
-		if (IS_ERR_OR_NULL(c)) {
-			dev_err(&dev->dev, "Cannot get clock %s\n",
-					pdata->clocks[i].name);
-			return -ENODEV;
-		}
+Joey Lee
 
-		rate = clk_round_rate(c, rate);
-		clk_prepare_enable(c);
-		clk_set_rate(c, rate);
-		clk_disable_unprepare(c);
-		pdata->clk[i] = c;
-		i++;
-	}
-(...)
+> 
+> ---
+> 
+>  drivers/platform/x86/acer-wmi.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index 934d861..9a6ee9a 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -127,6 +127,7 @@ static const struct key_entry acer_wmi_keymap[] = {
+>  	{KE_IGNORE, 0x81, {KEY_SLEEP} },
+>  	{KE_KEY, 0x82, {KEY_TOUCHPAD_TOGGLE} },	/* Touch Pad On/Off */
+>  	{KE_IGNORE, 0x83, {KEY_TOUCHPAD_TOGGLE} },
+> +	{KE_KEY, 0x85, {KEY_TOUCHPAD_TOGGLE} },
+>  	{KE_END, 0}
+>  };
+> 
+> 
 
-Without the clock changes, the clocks in board files are now assigned to
-devid "tegra_grhost". I guess the correct way to do this would be to
-assign them to "tegra-gr2d" (2d, epp) and "host1x" - except if we also
-want to drop "tegra-" from the device name.
 
-Terje
