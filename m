@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2K0OiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:38:16 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43540 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab2K0OiP (ORCPT
+	id S1755184Ab2K0OlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:41:20 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62367 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab2K0OlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:38:15 -0500
+	Tue, 27 Nov 2012 09:41:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-Date: Tue, 27 Nov 2012 15:38:14 +0100
-Message-ID: <CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
-Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
- async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
+In-Reply-To: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
+References: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
+Date: Tue, 27 Nov 2012 09:41:18 -0500
+Message-ID: <CA+5PVA6FOTd95tN4WW8KAqD5tVsGs7TTU40zLXr2mkdPRse+mg@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: fix build for various architectures
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Howells <dhowells@redhat.com>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tony Luck <tony.luck@intel.com>, Will Deacon <will.deacon@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
-> I noticed some warnings complaining about dynticks_nesting value, like
+On Tue, Nov 27, 2012 at 7:16 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> The UAPI changes broke the perf tool, and as of 3.7-rc7, it
+> still won't build for arm:
 >
-> [  267.545032] ------------[ cut here ]------------
-> [  267.545032] WARNING: at kernel/rcutree.c:382 rcu_eqs_enter+0xab/0xc0()
-> [  267.545032] Hardware name: Bochs
-> [  267.545032] Modules linked in:
-> [  267.545032] Pid: 0, comm: swapper/2 Not tainted 3.7.0-rc5-next-20121115 #8
-> [  267.545032] Call Trace:
-> [  267.545032]  [<ffffffff8104714f>] warn_slowpath_common+0x7f/0xc0
-> [  267.545032]  [<ffffffff810471aa>] warn_slowpath_null+0x1a/0x20
-> [  267.545032]  [<ffffffff810e607b>] rcu_eqs_enter+0xab/0xc0
-> [  267.545032]  [<ffffffff810e60bb>] rcu_idle_enter+0x2b/0x70
-> [  267.545032]  [<ffffffff8100d44f>] cpu_idle+0x6f/0x100
-> [  267.545032]  [<ffffffff814bf055>] start_secondary+0x205/0x20c
-> [  267.545032] ---[ end trace 924ae80da035028d ]---
+>         In file included from util/../perf.h:81:0,
+>                          from util/cache.h:7,
+>                          from perf.c:12:
+>         util/../../../arch/arm/include/asm/unistd.h:16:29: fatal error: uapi/asm/unistd.h: No such file or directory
+>         compilation terminated.
+>         make: *** [perf.o] Error 1
 >
-> After enabling rcu-dyntick tracing, I got following abnormal
-> dynticks_nesting values (13fffffffffffff, ff00000000000001,etc):
->                         ...
->  1      <idle>-0     [002] dN.2 18739.518567: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
->  2        sshd-696   [002] d..1 18739.518675: rcu_dyntick: ++= 140000000000000 140000000000001  rcu_irq_enter   - apf (not present)
-
-How did that happen? When I look at do_async_page_fault(),
-KVM_PV_REASON_PAGE_NOT_PRESENT doesn't do rcu_irq_enter().
-
+> It seems the perf tool build infrastructure can't map <uapi/*> paths,
+> and several architectures (arm, arm64, ia64, mips, parisc, powerpc,
+> s390) include <uapi/asm/unistd.h> from their <asm/unistd.h>.
 >
->  3      <idle>-0     [002] d..2 18739.518705: rcu_dyntick: Start 140000000000001 0              rcu_idle_enter
->  4      <idle>-0     [002] d..2 18739.521252: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (page ready)
->  5      <idle>-0     [002] dN.2 18739.521261: rcu_dyntick: Start 1 0                            rcu_irq_exit    - apf (page ready)
->  6      <idle>-0     [002] dN.2 18739.521263: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
+> This patch copies 77626081: "perf tools: Fix build on sparc." in simply
+> changing the path to use arch/arm/include/uapi/asm/unistd.h directly for
+> all of these cases.
 >
->  7        sshd-696   [002] d..1 18739.521299: rcu_dyntick: --= 140000000000000 13fffffffffffff  rcu_irq_exit    - apf (not present)
+> I've tested this on arm, but I don't have the necessary toolchains to
+> check the other cases.
+>
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Kyle McMartin <kyle@mcmartin.ca>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> ---
+>  tools/perf/perf.h |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
 
-I'm confused for the same reason here.
+This is correct, but it shouldn't be needed.  Arnaldo has a pull request
+out to Ingo that should fix the build issues on all architectures in a
+more generic way.  See:
 
->  8        sshd-696   [002] d..1 18739.521302: rcu_dyntick: Start 13fffffffffffff 0              rcu_user_enter
->  9        sshd-696   [002] d..1 18739.521330: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (not present)
+http://article.gmane.org/gmane.linux.kernel.cross-arch/15974
 
-Same. Now we certainly need to add some rcu_user_exit() on
-do_async_page_fault(). Although I'm not quite sure when this function
-is called. Is it an exception or an irq?
+I'm really hoping that gets into Linus' tree ASAP or 3.7 will ship with
+a broken perf on non-x86.
 
-Thanks.
+josh
