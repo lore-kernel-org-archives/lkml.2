@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab2K0PkC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:40:02 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:40976 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab2K0PkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:40:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-Date: Tue, 27 Nov 2012 16:39:59 +0100
-Message-ID: <CAFTL4hydk-FT_hqCbcSPFcNCKnqxtWGz0VjTu3nNnQYfbtTz6Q@mail.gmail.com>
+	id S1756026Ab2K0PpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:45:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755698Ab2K0PpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 10:45:00 -0500
+Date: Tue, 27 Nov 2012 17:44:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
 Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
  async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20121127154455.GK12969@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
-> I noticed some warnings complaining about dynticks_nesting value, like
->
-> [  267.545032] ------------[ cut here ]------------
-> [  267.545032] WARNING: at kernel/rcutree.c:382 rcu_eqs_enter+0xab/0xc0()
-> [  267.545032] Hardware name: Bochs
-> [  267.545032] Modules linked in:
-> [  267.545032] Pid: 0, comm: swapper/2 Not tainted 3.7.0-rc5-next-20121115 #8
-> [  267.545032] Call Trace:
-> [  267.545032]  [<ffffffff8104714f>] warn_slowpath_common+0x7f/0xc0
-> [  267.545032]  [<ffffffff810471aa>] warn_slowpath_null+0x1a/0x20
-> [  267.545032]  [<ffffffff810e607b>] rcu_eqs_enter+0xab/0xc0
-> [  267.545032]  [<ffffffff810e60bb>] rcu_idle_enter+0x2b/0x70
-> [  267.545032]  [<ffffffff8100d44f>] cpu_idle+0x6f/0x100
-> [  267.545032]  [<ffffffff814bf055>] start_secondary+0x205/0x20c
-> [  267.545032] ---[ end trace 924ae80da035028d ]---
->
-> After enabling rcu-dyntick tracing, I got following abnormal
-> dynticks_nesting values (13fffffffffffff, ff00000000000001,etc):
->                         ...
->  1      <idle>-0     [002] dN.2 18739.518567: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
->  2        sshd-696   [002] d..1 18739.518675: rcu_dyntick: ++= 140000000000000 140000000000001  rcu_irq_enter   - apf (not present)
->
->  3      <idle>-0     [002] d..2 18739.518705: rcu_dyntick: Start 140000000000001 0              rcu_idle_enter
->  4      <idle>-0     [002] d..2 18739.521252: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (page ready)
->  5      <idle>-0     [002] dN.2 18739.521261: rcu_dyntick: Start 1 0                            rcu_irq_exit    - apf (page ready)
->  6      <idle>-0     [002] dN.2 18739.521263: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
->
->  7        sshd-696   [002] d..1 18739.521299: rcu_dyntick: --= 140000000000000 13fffffffffffff  rcu_irq_exit    - apf (not present)
+On Tue, Nov 27, 2012 at 03:38:14PM +0100, Frederic Weisbecker wrote:
+> 2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > I noticed some warnings complaining about dynticks_nesting value, like
+> >
+> > [  267.545032] ------------[ cut here ]------------
+> > [  267.545032] WARNING: at kernel/rcutree.c:382 rcu_eqs_enter+0xab/0xc0()
+> > [  267.545032] Hardware name: Bochs
+> > [  267.545032] Modules linked in:
+> > [  267.545032] Pid: 0, comm: swapper/2 Not tainted 3.7.0-rc5-next-20121115 #8
+> > [  267.545032] Call Trace:
+> > [  267.545032]  [<ffffffff8104714f>] warn_slowpath_common+0x7f/0xc0
+> > [  267.545032]  [<ffffffff810471aa>] warn_slowpath_null+0x1a/0x20
+> > [  267.545032]  [<ffffffff810e607b>] rcu_eqs_enter+0xab/0xc0
+> > [  267.545032]  [<ffffffff810e60bb>] rcu_idle_enter+0x2b/0x70
+> > [  267.545032]  [<ffffffff8100d44f>] cpu_idle+0x6f/0x100
+> > [  267.545032]  [<ffffffff814bf055>] start_secondary+0x205/0x20c
+> > [  267.545032] ---[ end trace 924ae80da035028d ]---
+> >
+> > After enabling rcu-dyntick tracing, I got following abnormal
+> > dynticks_nesting values (13fffffffffffff, ff00000000000001,etc):
+> >                         ...
+> >  1      <idle>-0     [002] dN.2 18739.518567: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
+> >  2        sshd-696   [002] d..1 18739.518675: rcu_dyntick: ++= 140000000000000 140000000000001  rcu_irq_enter   - apf (not present)
+> 
+> How did that happen? When I look at do_async_page_fault(),
+> KVM_PV_REASON_PAGE_NOT_PRESENT doesn't do rcu_irq_enter().
+> 
+> >
+> >  3      <idle>-0     [002] d..2 18739.518705: rcu_dyntick: Start 140000000000001 0              rcu_idle_enter
+> >  4      <idle>-0     [002] d..2 18739.521252: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (page ready)
+> >  5      <idle>-0     [002] dN.2 18739.521261: rcu_dyntick: Start 1 0                            rcu_irq_exit    - apf (page ready)
+> >  6      <idle>-0     [002] dN.2 18739.521263: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
+> >
+> >  7        sshd-696   [002] d..1 18739.521299: rcu_dyntick: --= 140000000000000 13fffffffffffff  rcu_irq_exit    - apf (not present)
+> 
+> I'm confused for the same reason here.
+> 
+> >  8        sshd-696   [002] d..1 18739.521302: rcu_dyntick: Start 13fffffffffffff 0              rcu_user_enter
+> >  9        sshd-696   [002] d..1 18739.521330: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (not present)
+> 
+> Same. Now we certainly need to add some rcu_user_exit() on
+> do_async_page_fault(). Although I'm not quite sure when this function
+> is called. Is it an exception or an irq?
+> 
+For KVM_PV_REASON_PAGE_NOT_PRESENT it behaves like an exception.
 
-Calling rcu_irq_exit() without a matching rcu_irq_enter() after the
-last rcu_idle_exit() is illegal, isn't it?
+--
+			Gleb.
