@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2K0Wot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 17:44:49 -0500
-Received: from mail.tsu.ge ([217.147.230.9]:53344 "EHLO mail.tsu.ge"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab2K0Wos convert rfc822-to-8bit (ORCPT
+	id S1754714Ab2K0Wry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 17:47:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51706 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab2K0Wrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 17:44:48 -0500
-X-Qmail-Scanner-Diagnostics: from 41.138.178.59 (maia.menteshashvili@tsu.ge@41.138.178.59) by mail (envelope-from <maia.menteshashvili@tsu.ge>, uid 89) with qmail-scanner-2.10st 
- (clamdscan: 0.97.3/15645. mhr: 1.0. spamassassin: 3.3.1. perlscan: 2.10st.  
- Clear:RC:0(41.138.178.59):SA:0(4.3/5.0):. 
- Processed in 22.274921 secs); 27 Nov 2012 22:52:13 -0000
-X-Qmail-Scanner-Mail-From: maia.menteshashvili@tsu.ge via mail
-X-Qmail-Scanner: 2.10st (Clear:RC:0(41.138.178.59):SA:0(4.3/5.0):. Processed in 22.274921 secs Process 24562)
-Content-Type: text/plain; charset="iso-8859-1"
+	Tue, 27 Nov 2012 17:47:53 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WARNING VIRUS DETECTED
-To: Recipients <maia.menteshashvili@tsu.ge>
-From: "WEBMAIL UPGRADE" <maia.menteshashvili@tsu.ge>
-Date: Tue, 27 Nov 2012 13:07:34 -0800
-Reply-To: dewang@dicp.ac.cn
-Message-ID: <1354056710103924562@mail>
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CAAHQ8EFQVxvUR3SAiBZOiK2W_WQ6Ui=UgTTq+zfY8mjfhfpEBg@mail.gmail.com>
+References: <CAAHQ8EFQVxvUR3SAiBZOiK2W_WQ6Ui=UgTTq+zfY8mjfhfpEBg@mail.gmail.com>
+Date: Tue, 27 Nov 2012 23:47:51 +0100
+Message-ID: <CAKMK7uH0u60DtGYjFYqF4+D0tPycv4zyDSg+HBS54YnOrRaYUQ@mail.gmail.com>
+Subject: Re: Your kernel commit 2f4f649a69a9eb51f6e98130e19dd90a260a4145
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Magnus R <marasgp@gmail.com>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strong virus has been detected in your email account, which might make you lose your email account if not deleted. Use the below web link to Delete the virus in your email account:
+On Tue, Nov 27, 2012 at 10:58 PM, Magnus R <marasgp@gmail.com> wrote:
+> I run the 3.7 release candidates on my retina Macbook Pro and starting with
+> rc6 the graphics have become garbled. I have narrowed it down to your above
+> mentioned commit in drivers/gpu/drm/i915/intel_display.c (when I revert that
+> commit the graphics is not garbled). Please point me in the right direction
+> if you would like me to file bug in a more systematic manner, or let me know
+> if I can assist with any data of my configuration.
 
-Click link below:
-https://docs.google.com/spreadsheet/viewform?formkey=dFRMRm9TOHlwS2lVNWtEZEhYTjVoMGc6MQ
+Should be fixed with 9a30a61f3516871c5c638f from the drm-intel-fixes
+tree from http://cgit.freedesktop.org/~danvet/drm-intel The pull
+request for that is currently pending with Dave Airlie.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre
+Cheers, Daniel
+
+PS: When reporting regressions, please always include relevant mailing
+list, so that other people see them to (and maybe also because your
+dear maintainer may miss a mail every once a while ...).
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
