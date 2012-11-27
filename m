@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab2K0KA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:00:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39629 "EHLO song.cn.fujitsu.com"
+	id S933382Ab2K0KBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:01:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20521 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab2K0J60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 04:58:26 -0500
+	id S1758693Ab2K0J6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 04:58:25 -0500
 X-IronPort-AV: E=Sophos;i="4.83,327,1352044800"; 
-   d="scan'208";a="6284842"
+   d="scan'208";a="6284839"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -22,28 +22,24 @@ Cc: David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Jianguo Wu <wujianguo@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
-Subject: [Patch v4 10/12] memory-hotplug: memory_hotplug: clear zone when removing the memory
-Date: Tue, 27 Nov 2012 18:00:20 +0800
-Message-Id: <1354010422-19648-11-git-send-email-wency@cn.fujitsu.com>
+Subject: [Patch v4 03/12] memory-hotplug: remove redundant codes
+Date: Tue, 27 Nov 2012 18:00:13 +0800
+Message-Id: <1354010422-19648-4-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com>
 References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/11/27 17:53:29,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 17:57:50,
-	Serialize complete at 2012/11/27 17:57:50
+ 2012/11/27 17:57:47,
+	Serialize complete at 2012/11/27 17:57:47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-When a memory is added, we update zone's and pgdat's start_pfn and
-spanned_pages in the function __add_zone(). So we should revert them
-when the memory is removed.
-
-The patch adds a new function __remove_zone() to do this.
+offlining memory blocks and checking whether memory blocks are offlined
+are very similar. This patch introduces a new function to remove
+redundant codes.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -52,241 +48,153 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- mm/memory_hotplug.c | 207 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 207 insertions(+)
+ mm/memory_hotplug.c | 101 ++++++++++++++++++++++++++++------------------------
+ 1 file changed, 55 insertions(+), 46 deletions(-)
 
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 7797e91..aa97d56 100644
+index b6d1101..6d06488 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -301,10 +301,213 @@ static int __meminit __add_section(int nid, struct zone *zone,
- 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+@@ -1005,20 +1005,14 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ 	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
  }
  
-+/* find the smallest valid pfn in the range [start_pfn, end_pfn) */
-+static int find_smallest_section_pfn(int nid, struct zone *zone,
-+				     unsigned long start_pfn,
-+				     unsigned long end_pfn)
-+{
-+	struct mem_section *ms;
-+
-+	for (; start_pfn < end_pfn; start_pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(start_pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (unlikely(pfn_to_nid(start_pfn) != nid))
-+			continue;
-+
-+		if (zone && zone != page_zone(pfn_to_page(start_pfn)))
-+			continue;
-+
-+		return start_pfn;
-+	}
-+
-+	return 0;
-+}
-+
-+/* find the biggest valid pfn in the range [start_pfn, end_pfn). */
-+static int find_biggest_section_pfn(int nid, struct zone *zone,
-+				    unsigned long start_pfn,
-+				    unsigned long end_pfn)
-+{
-+	struct mem_section *ms;
-+	unsigned long pfn;
-+
-+	/* pfn is the end pfn of a memory section. */
-+	pfn = end_pfn - 1;
-+	for (; pfn >= start_pfn; pfn -= PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (unlikely(pfn_to_nid(pfn) != nid))
-+			continue;
-+
-+		if (zone && zone != page_zone(pfn_to_page(pfn)))
-+			continue;
-+
-+		return pfn;
-+	}
-+
-+	return 0;
-+}
-+
-+static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
-+			     unsigned long end_pfn)
-+{
-+	unsigned long zone_start_pfn =  zone->zone_start_pfn;
-+	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+	unsigned long pfn;
-+	struct mem_section *ms;
-+	int nid = zone_to_nid(zone);
-+
-+	zone_span_writelock(zone);
-+	if (zone_start_pfn == start_pfn) {
-+		/*
-+		 * If the section is smallest section in the zone, it need
-+		 * shrink zone->zone_start_pfn and zone->zone_spanned_pages.
-+		 * In this case, we find second smallest valid mem_section
-+		 * for shrinking zone.
-+		 */
-+		pfn = find_smallest_section_pfn(nid, zone, end_pfn,
-+						zone_end_pfn);
-+		if (pfn) {
-+			zone->zone_start_pfn = pfn;
-+			zone->spanned_pages = zone_end_pfn - pfn;
-+		}
-+	} else if (zone_end_pfn == end_pfn) {
-+		/*
-+		 * If the section is biggest section in the zone, it need
-+		 * shrink zone->spanned_pages.
-+		 * In this case, we find second biggest valid mem_section for
-+		 * shrinking zone.
-+		 */
-+		pfn = find_biggest_section_pfn(nid, zone, zone_start_pfn,
-+					       start_pfn);
-+		if (pfn)
-+			zone->spanned_pages = pfn - zone_start_pfn + 1;
-+	}
-+
-+	/*
-+	 * The section is not biggest or smallest mem_section in the zone, it
-+	 * only creates a hole in the zone. So in this case, we need not
-+	 * change the zone. But perhaps, the zone has only hole data. Thus
-+	 * it check the zone has only hole or not.
-+	 */
-+	pfn = zone_start_pfn;
-+	for (; pfn < zone_end_pfn; pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (page_zone(pfn_to_page(pfn)) != zone)
-+			continue;
-+
-+		 /* If the section is current section, it continues the loop */
-+		if (start_pfn == pfn)
-+			continue;
-+
-+		/* If we find valid section, we have nothing to do */
-+		zone_span_writeunlock(zone);
-+		return;
-+	}
-+
-+	/* The zone has no valid section */
-+	zone->zone_start_pfn = 0;
-+	zone->spanned_pages = 0;
-+	zone_span_writeunlock(zone);
-+}
-+
-+static void shrink_pgdat_span(struct pglist_data *pgdat,
-+			      unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long pgdat_start_pfn =  pgdat->node_start_pfn;
-+	unsigned long pgdat_end_pfn =
-+		pgdat->node_start_pfn + pgdat->node_spanned_pages;
-+	unsigned long pfn;
-+	struct mem_section *ms;
-+	int nid = pgdat->node_id;
-+
-+	if (pgdat_start_pfn == start_pfn) {
-+		/*
-+		 * If the section is smallest section in the pgdat, it need
-+		 * shrink pgdat->node_start_pfn and pgdat->node_spanned_pages.
-+		 * In this case, we find second smallest valid mem_section
-+		 * for shrinking zone.
-+		 */
-+		pfn = find_smallest_section_pfn(nid, NULL, end_pfn,
-+						pgdat_end_pfn);
-+		if (pfn) {
-+			pgdat->node_start_pfn = pfn;
-+			pgdat->node_spanned_pages = pgdat_end_pfn - pfn;
-+		}
-+	} else if (pgdat_end_pfn == end_pfn) {
-+		/*
-+		 * If the section is biggest section in the pgdat, it need
-+		 * shrink pgdat->node_spanned_pages.
-+		 * In this case, we find second biggest valid mem_section for
-+		 * shrinking zone.
-+		 */
-+		pfn = find_biggest_section_pfn(nid, NULL, pgdat_start_pfn,
-+					       start_pfn);
-+		if (pfn)
-+			pgdat->node_spanned_pages = pfn - pgdat_start_pfn + 1;
-+	}
-+
-+	/*
-+	 * If the section is not biggest or smallest mem_section in the pgdat,
-+	 * it only creates a hole in the pgdat. So in this case, we need not
-+	 * change the pgdat.
-+	 * But perhaps, the pgdat has only hole data. Thus it check the pgdat
-+	 * has only hole or not.
-+	 */
-+	pfn = pgdat_start_pfn;
-+	for (; pfn < pgdat_end_pfn; pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (pfn_to_nid(pfn) != nid)
-+			continue;
-+
-+		 /* If the section is current section, it continues the loop */
-+		if (start_pfn == pfn)
-+			continue;
-+
-+		/* If we find valid section, we have nothing to do */
-+		return;
-+	}
-+
-+	/* The pgdat has no valid section */
-+	pgdat->node_start_pfn = 0;
-+	pgdat->node_spanned_pages = 0;
-+}
-+
-+static void __remove_zone(struct zone *zone, unsigned long start_pfn)
-+{
-+	struct pglist_data *pgdat = zone->zone_pgdat;
-+	int nr_pages = PAGES_PER_SECTION;
-+	int zone_type;
-+	unsigned long flags;
-+
-+	zone_type = zone - pgdat->node_zones;
-+
-+	pgdat_resize_lock(zone->zone_pgdat, &flags);
-+	shrink_zone_span(zone, start_pfn, start_pfn + nr_pages);
-+	shrink_pgdat_span(pgdat, start_pfn, start_pfn + nr_pages);
-+	pgdat_resize_unlock(zone->zone_pgdat, &flags);
-+}
-+
- static int __remove_section(struct zone *zone, struct mem_section *ms)
+-int remove_memory(u64 start, u64 size)
++static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
++		void *arg, int (*func)(struct memory_block *, void *))
  {
- 	unsigned long flags;
- 	struct pglist_data *pgdat = zone->zone_pgdat;
-+	unsigned long start_pfn;
-+	int scn_nr;
- 	int ret = -EINVAL;
+ 	struct memory_block *mem = NULL;
+ 	struct mem_section *section;
+-	unsigned long start_pfn, end_pfn;
+ 	unsigned long pfn, section_nr;
+ 	int ret;
+-	int return_on_error = 0;
+-	int retry = 0;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = start_pfn + PFN_DOWN(size);
  
- 	if (!valid_section(ms))
-@@ -314,6 +517,10 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
- 	if (ret)
- 		return ret;
+-repeat:
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+ 		section_nr = pfn_to_section_nr(pfn);
+ 		if (!present_section_nr(section_nr))
+@@ -1035,22 +1029,61 @@ repeat:
+ 		if (!mem)
+ 			continue;
  
-+	scn_nr = __section_nr(ms);
-+	start_pfn = section_nr_to_pfn(scn_nr);
-+	__remove_zone(zone, start_pfn);
+-		ret = offline_memory_block(mem);
++		ret = func(mem, arg);
+ 		if (ret) {
+-			if (return_on_error) {
+-				kobject_put(&mem->dev.kobj);
+-				return ret;
+-			} else {
+-				retry = 1;
+-			}
++			kobject_put(&mem->dev.kobj);
++			return ret;
+ 		}
+ 	}
+ 
+ 	if (mem)
+ 		kobject_put(&mem->dev.kobj);
+ 
+-	if (retry) {
+-		return_on_error = 1;
++	return 0;
++}
 +
- 	pgdat_resize_lock(pgdat, &flags);
- 	sparse_remove_one_section(zone, ms);
- 	pgdat_resize_unlock(pgdat, &flags);
++static int offline_memory_block_cb(struct memory_block *mem, void *arg)
++{
++	int *ret = arg;
++	int error = offline_memory_block(mem);
++
++	if (error != 0 && *ret == 0)
++		*ret = error;
++
++	return 0;
++}
++
++static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
++{
++	int ret = !is_memblock_offlined(mem);
++
++	if (unlikely(ret))
++		pr_warn("removing memory fails, because memory "
++			"[%#010llx-%#010llx] is onlined\n",
++			PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
++			PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1))-1);
++
++	return ret;
++}
++
++int remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn, end_pfn;
++	int ret = 0;
++	int retry = 1;
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = start_pfn + PFN_DOWN(size);
++
++repeat:
++	walk_memory_range(start_pfn, end_pfn, &ret,
++			  offline_memory_block_cb);
++	if (ret) {
++		if (!retry)
++			return ret;
++
++		retry = 0;
++		ret = 0;
+ 		goto repeat;
+ 	}
+ 
+@@ -1068,37 +1101,13 @@ repeat:
+ 	 * memory blocks are offlined.
+ 	 */
+ 
+-	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+-		section_nr = pfn_to_section_nr(pfn);
+-		if (!present_section_nr(section_nr))
+-			continue;
+-
+-		section = __nr_to_section(section_nr);
+-		/* same memblock? */
+-		if (mem)
+-			if ((section_nr >= mem->start_section_nr) &&
+-			    (section_nr <= mem->end_section_nr))
+-				continue;
+-
+-		mem = find_memory_block_hinted(section, mem);
+-		if (!mem)
+-			continue;
+-
+-		ret = is_memblock_offlined(mem);
+-		if (!ret) {
+-			pr_warn("removing memory fails, because memory "
+-				"[%#010llx-%#010llx] is onlined\n",
+-				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
+-				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
+-
+-			kobject_put(&mem->dev.kobj);
+-			unlock_memory_hotplug();
+-			return ret;
+-		}
++	ret = walk_memory_range(start_pfn, end_pfn, NULL,
++				is_memblock_offlined_cb);
++	if (ret) {
++		unlock_memory_hotplug();
++		return ret;
+ 	}
+ 
+-	if (mem)
+-		kobject_put(&mem->dev.kobj);
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
 -- 
 1.8.0
 
