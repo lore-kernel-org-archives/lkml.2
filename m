@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab2K0Nj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 08:39:59 -0500
-Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:48265 "EHLO
-	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab2K0Nj6 (ORCPT
+	id S1754604Ab2K0NmR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 08:42:17 -0500
+Received: from mga12.intel.com ([143.182.124.36]:22653 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751228Ab2K0NmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 08:39:58 -0500
-Subject: Re: new warnings from partial __devexit removal
-To: gregkh@linuxfoundation.org
-Date: Tue, 27 Nov 2012 08:39:57 -0500
-Cc: arnd@arndb.de (Arnd Bergmann),
-        linux-kernel@vger.kernel.org (linux-kernel@vger.kernel.org)
-In-Reply-To: <20121126225056.GB28995@kroah.com>
-X-Mailer: ELM [version 2.5.8.59.gd925]
+	Tue, 27 Nov 2012 08:42:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20121127133957.63D2D8013C@viridian.itc.virginia.edu>
-From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
+In-Reply-To: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+Date: Tue, 27 Nov 2012 15:42:13 +0200
+Message-ID: <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gregkh@linuxfoundation.org writes:
-> 
-> On Mon, Nov 26, 2012 at 08:38:32PM +0000, Arnd Bergmann wrote:
-> > This is probably known and fixed already, but in case it's not, let me just
-> > mention that I saw two new warnings with ARM allyesconfig about a
-> > __devexit being removed but the __devexit_p() still being there:
-> > 
-> > drivers/tty/serial/xilinx_uartps.c:1000:12: error: 'xuartps_remove' defined but not used [-Werror=unused-function]
-> > drivers/usb/gadget/mv_udc_core.c:2131:12: error: 'mv_udc_remove' defined but not used [-Werror=unused-function]
-> 
-> What platform has -Werror=unused-function set?
-> 
-> Bill, care to send follow-on patches to resolve these warnings?
-> 
+Hello,
 
-I don't understand how my changes would causing the warning.  Both
-functions are put in the platform_driver struct using __exit_p, not
-__devexit_p.  It seems like you should get the warning with or without
-my changes as long as MODULE is not defined.
+Any thoughts about this proposal?
 
--- 
-Bill
+- Dmitry
 
-
+On Thu, Nov 22, 2012 at 11:54 PM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
+> Hello,
+>
+> Here is two patches for policy search speedup.
+>
+> First patch adds additional features flags to superblock.
+> Second - implementation for IMA.
+>
+> Two months ago I was asking about it on mailing lists.
+> Suggestion was not to use s_flags, but e.g. s_feature_flags.
+>
+> Any objections about such approach?
+>
+> Thanks,
+> Dmitry
+>
+> Dmitry Kasatkin (2):
+>   vfs: new super block feature flags attribute
+>   ima: skip policy search for never appraised or measured files
+>
+>  include/linux/fs.h                  |    4 ++++
+>  security/integrity/ima/ima_api.c    |    8 ++------
+>  security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
+>  security/integrity/integrity.h      |    3 +++
+>  4 files changed, 26 insertions(+), 9 deletions(-)
+>
+> --
+> 1.7.10.4
+>
