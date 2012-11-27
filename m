@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2K0Xgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:36:40 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34713 "EHLO hydra.sisk.pl"
+	id S1756839Ab2K0Xm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:42:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab2K0Xgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:36:38 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
-Date: Wed, 28 Nov 2012 00:41:21 +0100
-Message-ID: <2804331.4p7pU4ARvy@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354053827.26955.196.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <20121127183245.GA4674@dhcp-192-168-178-175.profitbricks.localdomain> <1354053827.26955.196.camel@misato.fc.hp.com>
+	id S1756017Ab2K0Xmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 18:42:54 -0500
+Date: Tue, 27 Nov 2012 21:42:03 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+Message-ID: <20121127234203.GC8295@amt.cnet>
+References: <50AAC77C.8040505@linux.vnet.ibm.com>
+ <50AAC7F9.7050305@linux.vnet.ibm.com>
+ <20121126224105.GB10634@amt.cnet>
+ <50B433D0.8060107@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B433D0.8060107@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 27, 2012 03:03:47 PM Toshi Kani wrote:
-> On Tue, 2012-11-27 at 19:32 +0100, Vasilis Liaskovitis wrote:
-> > On Mon, Nov 26, 2012 at 05:19:01PM -0700, Toshi Kani wrote:
-> > > > >> Consider the following sequence of operations for a hotplugged memory
-> > > > >> device:
-> > > > >>
-> > > > >> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> > > > >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > > >>
-> > > > >> If we don't offline/remove the memory, we have no chance to do it in
-> > > > >> step 2. After
-> > > > >> step2, the memory is used by the kernel, but we have powered off it. It
-> > > > >> is very
-> > > > >> dangerous.
-> > > > > 
-> > > > > How does power-off happen after unbind? acpi_eject_store checks for existing
-> > > > > driver before taking any action:
-> > > > > 
-> > > > > #ifndef FORCE_EJECT
-> > > > > 	if (acpi_device->driver == NULL) {
-> > > > > 		ret = -ENODEV;
-> > > > > 		goto err;
-> > > > > 	}
-> > > > > #endif
-> > > > > 
-> > > > > FORCE_EJECT is not defined afaict, so the function returns without scheduling
-> > > > > acpi_bus_hot_remove_device. Is there another code path that calls power-off?
-> > > > 
-> > > > Consider the following case:
-> > > > 
-> > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > 
-> > > > CPUa                                                  CPUb
-> > > > acpi_memory_device_notify()
-> > > >                                        unbind it from the driver
-> > > >     acpi_bus_hot_remove_device()
-> > > 
-> > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > > bound with a driver?  If so, can we make the unbind operation to perform
-> > > unbind only?
-> > 
-> > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> > if it's not present (dev->driver == NULL).
-> > 
-> > But there can still be a race between an eject and an unbind operation happening
-> > simultaneously. This seems like a general problem to me i.e. not specific to an
-> > acpi memory device. How do we ensure an eject does not race with a driver unbind
-> > for other acpi devices?
-> > 
-> > Is there a per-device lock in acpi-core or device-core that can prevent this from
-> > happening? Driver core does a device_lock(dev) on all operations, but this is
-> > probably not grabbed on SCI-initiated acpi ejects.
+On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
 > 
-> Since driver_unbind() calls device_lock(dev->parent) before calling
-> device_release_driver(), I am wondering if we can call
-> device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-> (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-> parent lock is otherwise released after device_release_driver() is done.
+> >>
+> >> -	return false;
+> >> +again:
+> >> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+> >> +
+> >> +	/*
+> >> +	 * if emulation was due to access to shadowed page table
+> >> +	 * and it failed try to unshadow page and re-enter the
+> >> +	 * guest to let CPU execute the instruction.
+> >> +	 */
+> >> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+> > 
+> > Can you explain what is the objective here?
+> > 
+> 
+> Sure. :)
+> 
+> The instruction emulation is caused by fault access on cr3. After unprotect
+> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+> if it return 1, mmu can not fix the mapping, we should report the error,
+> otherwise it is good to return to guest and let it re-execute the instruction
+> again.
+> 
+> page_fault_count is used to avoid the race on other vcpus, since after we
+> unprotect the target page, other cpu can enter page fault path and let the
+> page be write-protected again.
+> 
+> This way can help us to detect all the case that mmu can not be fixed.
 
-I would be careful.  You may introduce some subtle locking-related issues
-this way.
+How about recording the gfn number for shadow pages that have been
+shadowed in the current pagefault run? (which is cheap, compared to
+shadowing these pages).
 
-Besides, there may be an alternative approach to all this.  For example,
-what if we don't remove struct device objects on eject?  The ACPI handles
-associated with them don't go away in that case after all, do they?
-
-Rafael
+If failed instruction emulation is write to one of these gfns, then
+fail.
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
