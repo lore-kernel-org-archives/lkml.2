@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab2K0Fce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:32:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47028 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2K0Fcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:32:32 -0500
-Message-ID: <50B45021.2000009@zytor.com>
-Date: Mon, 26 Nov 2012 21:31:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753464Ab2K0Fij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:38:39 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55716 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab2K0Fih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 00:38:37 -0500
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
-        akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, jiang.liu@huawei.com, yinghai@kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, wujianguo@huawei.com, qiuxishi@huawei.com
-Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com> <50B4304F.4070302@cn.fujitsu.com>
-In-Reply-To: <50B4304F.4070302@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121127154430.36e87542081a7cc50f80d0f6@canb.auug.org.au>
+References: <20121127154430.36e87542081a7cc50f80d0f6@canb.auug.org.au>
+Date: Tue, 27 Nov 2012 11:08:36 +0530
+Message-ID: <CAKohpo=K2kX-M4NM9onrn-Rr4otJwcQ1HxN5cKPYvj+Tza_0Ug@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the slave-dma tree
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 07:15 PM, Wen Congyang wrote:
+On 27 November 2012 10:14, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/mach-spear13xx/spear1310.c between commit b47394911c26 ("ARM:
+> SPEAr13xx: Pass DW DMAC platform data from DT") from the slave-dma tree
+> and commit 300a6856324a ("ARM: SPEAr1310: Fix AUXDATA for compact flash
+> controller") from the arm-soc tree.
 >
-> Hi, hpa
->
-> The problem is that:
-> node1 address rang: [18G, 34G), and the user specifies movable map is [8G, 24G).
-> We don't know node1's address range before numa init. So we can't prevent
-> allocating boot memory in the range [24G, 34G).
->
-> The movable memory should be classified as a non-RAM type in memblock. What
-> do you want to say? We don't save type in memblock because we only
-> add E820_RAM and E820_RESERVED_KERN to memblock.
->
+> I have no idea how to fix this up, so I just effectively dropped the
+> arm-doc tree patch.
 
-We either need to keep the type or not add it to the memblocks.
+Hi Stephen,
 
-	-hpa
+So sorry for that, Can you please take arm-soc version here? Patch 300a6856324a
+is doing the correct thing. i.e. we need
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
++       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_pdata),
 
+instead of
+
++       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
+
+--
+viresh
