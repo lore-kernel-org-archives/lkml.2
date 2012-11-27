@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2K0SrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:47:12 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:49870 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751247Ab2K0SrL (ORCPT
+	id S1752858Ab2K0StV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:49:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47436 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751760Ab2K0StU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:47:11 -0500
-Message-ID: <50B50AA0.7070603@ilyx.ru>
-Date: Tue, 27 Nov 2012 22:46:56 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ilya@ilyx.ru
-Subject: Re: [PATCH v4] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
-References: <50B45A49.2040104@ilyx.ru> <20121127172406.GE24592@kroah.com>
-In-Reply-To: <20121127172406.GE24592@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 13:49:20 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Say what unsupportable voltage constraints are
+Date: Tue, 27 Nov 2012 18:49:18 +0000
+Message-Id: <1354042158-11184-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.11.2012 21:24, Greg Kroah-Hartman wrote:
-> On Tue, Nov 27, 2012 at 10:14:33AM +0400, Ilya Zykov wrote:
->> Sorry. More correct.
-> 
-> In what way?  Should I wait for the 6th version?  :)
-> 
-> thanks,
-> 
-> greg k-h
-> 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-No, if only you will accept:
-[PATCH]tty: Incorrect use tty_ldisc_flush() in TTY drivers.
-
-It can be done another way, simple revert:
-'tty: fix "IRQ45: nobody cared"'
-commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 3db1e01..b701352 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -880,7 +880,9 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* final: [min_uV..max_uV] valid iff constraints valid */
+ 		if (max_uV < min_uV) {
+-			rdev_err(rdev, "unsupportable voltage constraints\n");
++			rdev_err(rdev,
++				 "unsupportable voltage constraints %u-%uuV\n",
++				 min_uV, max_uV);
+ 			return -EINVAL;
+ 		}
+ 
+-- 
+1.7.10.4
 
