@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab2K0VzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:55:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49484 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2K0Vy7 (ORCPT
+	id S1755248Ab2K0WAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 17:00:21 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34525 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab2K0WAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:54:59 -0500
-Date: Tue, 27 Nov 2012 13:54:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm, soft offline: split thp at the beginning of
- soft_offline_page()
-Message-Id: <20121127135458.4b7369f7.akpm@linux-foundation.org>
-In-Reply-To: <1354050331-26844-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1354050331-26844-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 17:00:20 -0500
+Date: Tue, 27 Nov 2012 14:00:16 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: memory allocation: smap large "Size", but unused
+In-Reply-To: <k930p2$8br$1@ger.gmane.org>
+Message-ID: <alpine.DEB.2.00.1211271359260.23576@chino.kir.corp.google.com>
+References: <k930p2$8br$1@ger.gmane.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Nov 2012 16:05:31 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Tue, 27 Nov 2012, Bernd Schubert wrote:
 
-> When we try to soft-offline a thp tail page, put_page() is called on the
-> tail page unthinkingly and VM_BUG_ON is triggered in put_compound_page().
-> This patch splits thp before going into the main body of soft-offlining.
+> I'm just investigating why a user space program has a rather large VmSize, but
+> small VmRSS size. Looking into /proc/$pid/smaps I notice several areas with an
+> size of about 64MB, but otherwise that area is unused. So far I did not find a
+> way how to reproduce that with malloc() calls.
 > 
-> The interface of soft-offlining is open for userspace, so this bug can
-> lead to DoS attack and should be fixed immedately.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
-> ---
->  mm/memory-failure.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git v3.7-rc7.orig/mm/memory-failure.c v3.7-rc7/mm/memory-failure.c
-> index 8fe3640..e48e235 100644
-> --- v3.7-rc7.orig/mm/memory-failure.c
-> +++ v3.7-rc7/mm/memory-failure.c
-> @@ -1548,9 +1548,17 @@ int soft_offline_page(struct page *page, int flags)
->  {
->  	int ret;
->  	unsigned long pfn = page_to_pfn(page);
-> +	struct page *hpage = compound_trans_head(page);
->  
->  	if (PageHuge(page))
->  		return soft_offline_huge_page(page, flags);
-> +	if (PageTransHuge(hpage)) {
-> +		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-> +			pr_info("soft offline: %#lx: failed to split THP\n",
-> +				pfn);
-> +			return -EBUSY;
-> +		}
-> +	}
+> 7ffd34021000-7ffd38000000 ---p 00000000 00:00 0
+> Size:              65404 kB
+> Rss:                   0 kB
 
-We can use PageTransCompound() here, as we know it isn't a hugetlbfs
-page.  This will then permit the PageAnon() test to be omitted, methinks?
+What happens if you do
+
+	sbrk(65404 << 10);
+	sleep(1000);
+
+and check /proc/pid/smaps?  Ah, a memory range need not have any pages in 
+memory.
