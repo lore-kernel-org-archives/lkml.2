@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2K0FT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:19:56 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:55439 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab2K0FTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:19:55 -0500
+	id S1753272Ab2K0FZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:25:04 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33461 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658Ab2K0FZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 00:25:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,325,1352102400"; 
+   d="scan'208";a="247593332"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Svahn, Kai" <kai.svahn@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: RE: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during
+ probe/remove/shutdown
+Thread-Topic: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during
+ probe/remove/shutdown
+Thread-Index: AQHNyxzFNlZlS05PxESF9c/RB1aMn5f9KEcQ
+Date: Tue, 27 Nov 2012 05:24:46 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88BD379D@SHSMSX101.ccr.corp.intel.com>
+References: <1672179.qgDUs0YdYu@vostro.rjw.lan>
+ <6227446.8xPtqi6yHi@vostro.rjw.lan>
+In-Reply-To: <6227446.8xPtqi6yHi@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20121126171539.GZ15971@htj.dyndns.org>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	<20121126171539.GZ15971@htj.dyndns.org>
-Date: Tue, 27 Nov 2012 10:49:54 +0530
-Message-ID: <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>, Vincent Guittot <vincent.guittot@linaro.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, rostedt@goodmis.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAR5PEfV031023
 
-Hi Tejun,
+It looks cleanest unless more abstractions are introduced for other power management providers.
 
-On 26 November 2012 22:45, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Nov 06, 2012 at 04:08:45PM +0530, Viresh Kumar wrote:
+Best regards/Lv Zheng
 
-> I'm pretty skeptical about this.  queue_work() w/o explicit CPU
-> assignment has always guaranteed that the work item will be executed
-> on the same CPU.  I don't think there are too many users depending on
-> that but am not sure at all that there are none.  I asked you last
-> time that you would at the very least need to audit most users but it
-> doesn't seem like there has been any effort there.
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Sunday, November 25, 2012 10:58 PM
+> To: LKML
+> Cc: Greg Kroah-Hartman; Linux PM list; ACPI Devel Maling List; Zhang, Rui;
+> Svahn, Kai; Mika Westerberg; Huang, Ying; Lan, Tianyu; Zheng, Lv; Lu, Aaron;
+> Grant Likely
+> Subject: [PATCH 2/2] platform / ACPI: Attach/detach ACPI PM during
+> probe/remove/shutdown
+> 
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Drivers usually expect that the devices they are supposed to handle will be
+> operational when their .probe() routines are called, but that need not be the
+> case on some ACPI-based systems with ACPI-based device enumeration where
+> the BIOSes don't put devices into D0 by default.  To work around this problem
+> it is sufficient to change bus type .probe() routines to ensure that devices will
+> be powered on before the drivers' .probe() routines run (and their .remove()
+> and .shutdown() routines accordingly).
+> 
+> Modify platform_drv_probe() to run acpi_dev_pm_attach() for devices whose
+> ACPI handles are present, so that ACPI power management is used to change
+> their power states and change their power states to D0 before driver probing.
+> Analogously, modify platform_drv_remove() and
+> platform_drv_shutdown() to call acpi_dev_pm_detach() for those devices, so
+> that they are not subject to ACPI PM any more.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/base/platform.c |   19 +++++++++++++++++--
+>  1 file changed, 17 insertions(+), 2 deletions(-)
+> 
+> Index: linux/drivers/base/platform.c
+> ================================================================
+> ===
+> --- linux.orig/drivers/base/platform.c
+> +++ linux/drivers/base/platform.c
+> @@ -484,8 +484,16 @@ static int platform_drv_probe(struct dev  {
+>  	struct platform_driver *drv = to_platform_driver(_dev->driver);
+>  	struct platform_device *dev = to_platform_device(_dev);
+> +	int ret;
+> 
+> -	return drv->probe(dev);
+> +	if (ACPI_HANDLE(_dev))
+> +		acpi_dev_pm_attach(_dev, true);
+> +
+> +	ret = drv->probe(dev);
+> +	if (ret && ACPI_HANDLE(_dev))
+> +		acpi_dev_pm_detach(_dev, true);
+> +
+> +	return ret;
+>  }
+> 
+>  static int platform_drv_probe_fail(struct device *_dev) @@ -497,8 +505,13
+> @@ static int platform_drv_remove(struct de  {
+>  	struct platform_driver *drv = to_platform_driver(_dev->driver);
+>  	struct platform_device *dev = to_platform_device(_dev);
+> +	int ret;
+> +
+> +	ret = drv->remove(dev);
+> +	if (ACPI_HANDLE(_dev))
+> +		acpi_dev_pm_detach(_dev, true);
+> 
+> -	return drv->remove(dev);
+> +	return ret;
+>  }
+> 
+>  static void platform_drv_shutdown(struct device *_dev) @@ -507,6 +520,8
+> @@ static void platform_drv_shutdown(struct
+>  	struct platform_device *dev = to_platform_device(_dev);
+> 
+>  	drv->shutdown(dev);
+> +	if (ACPI_HANDLE(_dev))
+> +		acpi_dev_pm_detach(_dev, true);
+>  }
+> 
+>  /**
 
-My bad. I completely missed/forgot that comment from your earlier mails.
-Will do it.
-
-> That said, if the obtained benefit is big enough, sure, we can
-> definitely change the behavior, which isn't all that great to begin
-> with, and try to shake out the bugs quicky by e.g. forcing all work
-> items to execute on different CPUs, but you're presenting a few
-> percent of work items being migrated to a different CPU from an
-> already active CPU, which doesn't seem like such a big benefit to me
-> even if the migration target CPU is somewhat more efficient.  How much
-> powersaving are we talking about?
-
-Hmm.. I actually implemented the problem discussed here:
-(I know you have seen this earlier :) )
-
-http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/08/lpc2012-sched-timer-workqueue.pdf
-
-Specifically slides: 12 & 19.
-
-I haven't done much power calculations with it and have tested it more from
-functionality point of view.
-
-@Vincent: Can you add some comments here?
-
---
-viresh
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
