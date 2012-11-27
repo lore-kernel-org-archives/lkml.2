@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab2K0AYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:24:18 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54362 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab2K0AYQ (ORCPT
+	id S1757548Ab2K0A1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:27:18 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:47395 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754871Ab2K0A1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:24:16 -0500
-Message-ID: <50B4082C.5000104@gmail.com>
-Date: Mon, 26 Nov 2012 18:24:12 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 26 Nov 2012 19:27:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgAFAG6Zu08Y1OVO/2dsb2JhbABEohmReIEIghUBAQU4HgYcARALCw0JDAoPCQMCAQIBERYeBg0BBQICh3sBDQGnXogCChmBC4h7iwiCEoMqA4hCghaKQ4VPiiGDBw
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="208548941"
+Message-ID: <50B408DB.5090308@gmail.com>
+Date: Mon, 26 Nov 2012 19:27:07 -0500
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/4 v2] irqdomain: augment add_simple() to allocate descs
-References: <1349076922-25874-1-git-send-email-linus.walleij@stericsson.com> <20121126202601.625213E0A04@localhost> <CACRpkdZo92OvNmBkqBYU+HgmtR5dmF5vFTaOYPdWr8rtZ3XT_g@mail.gmail.com>
-In-Reply-To: <CACRpkdZo92OvNmBkqBYU+HgmtR5dmF5vFTaOYPdWr8rtZ3XT_g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Dmitry Torokhov <dtor@vmware.com>, pv-drivers@vmware.com,
+        George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com> <4072068.8FbmJn8R3Z@dtor-d630.eng.vmware.com> <20121126234426.GA12191@kroah.com> <2961037.z4LULze8vO@dtor-d630.eng.vmware.com> <20121127000330.GA16288@kroah.com>
+In-Reply-To: <20121127000330.GA16288@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 06:13 PM, Linus Walleij wrote:
-> On Mon, Nov 26, 2012 at 9:26 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> 
->>> +                     if (irq_base < 0) {
->>> +                             WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
->>> +                                  first_irq);
->>> +                             irq_base = first_irq;
+Greg KH wrote:
+> On Mon, Nov 26, 2012 at 03:52:31PM -0800, Dmitry Torokhov wrote:
+>> On Monday, November 26, 2012 03:44:26 PM Greg KH wrote:
+>>> On Mon, Nov 26, 2012 at 03:36:52PM -0800, Dmitry Torokhov wrote:
+>>>> On Monday, November 26, 2012 03:23:57 PM Greg KH wrote:
+>>>>> On Mon, Nov 26, 2012 at 03:01:04PM -0800, Dmitry Torokhov wrote:
+>>>>>> On Monday, November 26, 2012 02:37:54 PM Greg KH wrote:
+>>>>>>> On Wed, Nov 21, 2012 at 12:31:04PM -0800, George Zhang wrote:
+>>>>>>>> * * *
+>>>>>>>> This series of VMCI linux upstreaming patches include latest
+>>>>>>>> udpate
+>>>>>>>> from
+>>>>>>>> VMware.
+>>>>>>>>
+>>>>>>>> Summary of changes:
+>>>>>>>> 	- Sparse clean.
+>>>>>>>> 	- Checkpatch clean with one exception, a "complex macro" in
+>>>>>>>> 	
+>>>>>>>> 	  which we can't add parentheses.
+>>>>>>>> 	
+>>>>>>>> 	- Remove all runtime assertions.
+>>>>>>>> 	- Fix device name, so that existing user clients work.
+>>>>>>>> 	- Fix VMCI handle lookup.
+>>>>>>> Given that you failed to answer the questions I asked the last time
+>>>>>>> you
+>>>>>>> posted this series, and you did not make any of the changes I asked
+>>>>>>> for,
+>>>>>>> I can't accept this (nor should you expect me to.)
+>>>>>>>
+>>>>>>> And people wonder why reviewers get so grumpy...
+>>>>>>>
+>>>>>>> My trees are now closed for the 3.8 merge window, so feel free to
+>>>>>>> try
+>>>>>>> again after 3.8-rc1 is out, and you have answered, and addressed,
+>>>>>>> the
+>>>>>>> questions and comments I made.
+>>>>>> Greg, there were 3 specific complaints from you:
+>>>>>>
+>>>>>> 1. "Given that this is a static function, there's no need for these
+>>>>>> "asserts", right?  Please send a follow-on patch removing all BUG_ON()
+>>>>>> calls from these files, it's not acceptable to crash a user's box from
+>>>>>> a driver that is handling parameters you are feeding it."
+>>>>>>
+>>>>>> 2. "You obviously didn't run checkpatch on this file"
+>>>>>>
+>>>>>> 3. "This line causes sparse to complain.  The odds that userspace
+>>>>>> knows
+>>>>>> what gcc is using for "bool" is pretty low."
+>>>>>>
+>>>>>> Given the fact that the series addresses all 3 I fail to understand
+>>>>>> why
+>>>>>> you would be grumpy.
+>>>>> You are ignoring my response to patch 12/12 for some reason (which
+>>>>> repeated a bunch of the questions I had with that patch the last time it
+>>>>> was posted.)  That is what I am referring to here.  None of those
+>>>>> questions were addressed.
+>>>> That one was explicitly acknowledged in
+>>>> <20121030052234.GH32055@dtor-ws.eng.vmware.com> and fixed in series
+>>>> posted on 11/01. Since it was fixed in earlier posting we did not
+>>>> mention it again.
+>>> I questioned it on November 15, in:
+>>> 	Message-ID: <20121116000118.GA8693@kroah.com>
+>>>
+>>> Just ignoring that long response is acceptable?  Really?  I didn't ask
+>>> enough questions in that review?  I see obvious comments in there that
+>>> were _not_ addressed in the November 21st posting of that patch
+>>> (typedefs for u32?  No c99 initializers?)
+>> Hmm, neither I nor Google is aware of that msgid... So that would explain
+>> why we have not addressed the comments that were in it ;)
 >>
->> As I just commented on the previous version, WARN() is probably too
->> verbose (and scary). Make it an informational.
-> 
-> So the discussion began with me removing exactly that kind of WARN()
-> from arch/arm/common/gic.c:
-> http://marc.info/?l=linux-arm-kernel&m=134860088710574&w=2
-> 
-> Which was NACKed by Rob:
-> http://marc.info/?l=linux-arm-kernel&m=134860136515611&w=2
-> Who prefered to leave it in to encourage platforms to get fixed.
-> 
-> This code just follows exactly that pattern.
-> 
-> I'm happy to patch out *both* (or rather patch gic.c to use
-> irq_domain_add_simple()) because I never quite liked
-> it in the first place.
-> 
->> However, I see another problem. What is the requested range straddles
->> the boundary between reserved and non-reserved IRQs? It would be good to
->> give some information about which irq range was requested and maybe
->> report which ones were available.... or check to see if the request is
->> inside or partially inside the reserved region?
-> 
-> Right now the usual symptom of that is that the system hangs.
-> 
-> Do you mean we should probe around a bit with
-> irq_get_next_irq() to figure out more precisely what the
-> problem is, or did you have something more elegant
-> in mind?
+>> Mind resending it, please?
+> Now resent.
+I see both versions of Greg's message - one from 15 Nov, one today's. On 
+my Gmail account...
+So Greg did post it...
 
-My objection was removing completely (which a pr_debug effectively
-does). I think Grant is saying just make the warning more informative
-about why it failed which is fine with me. nr_irqs is already printed
-out, so that provides some info already (although it is pretty terse).
+Cheers, Woody
 
-Rob
