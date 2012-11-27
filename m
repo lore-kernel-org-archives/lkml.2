@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab2K0ASq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:18:46 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:36114 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab2K0ASp (ORCPT
+	id S1755130Ab2K0AVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:21:09 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:49232 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751789Ab2K0AVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:18:45 -0500
-Message-ID: <1353975021.26955.178.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 1/3] acpi: Introduce prepare_remove operation in
- acpi_device_ops
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 26 Nov 2012 17:10:21 -0700
-In-Reply-To: <1353693037-21704-2-git-send-email-vasilis.liaskovitis@profitbricks.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1353693037-21704-2-git-send-email-vasilis.liaskovitis@profitbricks.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Nov 2012 19:21:08 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] irqdomain: stop screaming about preallocated irqdescs
+Date: Tue, 27 Nov 2012 01:20:32 +0100
+Message-ID: <1353975632-1327-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-23 at 18:50 +0100, Vasilis Liaskovitis wrote:
-> This function should be registered for devices that need to execute some
-> non-acpi related action in order to be safely removed. If this function
-> returns zero, the acpi core can continue with removing the device.
-> 
-> Make acpi_bus_remove call the device-specific prepare_remove callback before
-> removing the device. If prepare_remove fails, the removal is aborted.
-> 
-> Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-> ---
->  drivers/acpi/scan.c     |    9 ++++++++-
->  include/acpi/acpi_bus.h |    2 ++
->  2 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 8c4ac6d..e1c1d5d 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1380,10 +1380,16 @@ static int acpi_device_set_context(struct acpi_device *device)
->  
->  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->  {
-> +	int ret = 0;
->  	if (!dev)
->  		return -EINVAL;
->  
->  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
-> +
-> +	if (dev->driver && dev->driver->ops.prepare_remove)
-> +		ret = dev->driver->ops.prepare_remove(dev);
-> +	if (ret)
-> +		return ret;
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Hi Vasilis,
+In the simple irqdomain: don't shout warnings to the user,
+there is no point. An informational print is sufficient.
 
-The above code should be like below. Then you do not need to initialize
-ret, either.  Please also add some comments explaining about
-prepare_remove can fail, but remove cannot.
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ kernel/irq/irqdomain.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-	if (dev->driver && dev->driver->ops.prepare_remove) {
-		ret = dev->driver->ops.prepare_remove(dev);
-		if (ret)
-			return ret;
-	}
-
->  	device_release_driver(&dev->dev);
->  
->  	if (!rmdevice)
-> @@ -1702,7 +1708,8 @@ int acpi_bus_trim(struct acpi_device *start, int rmdevice)
->  				err = acpi_bus_remove(child, rmdevice);
->  			else
->  				err = acpi_bus_remove(child, 1);
-> -
-> +			if (err)
-> +				return err;
->  			continue;
->  		}
->  
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 7ced5dc..9d94a55 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -94,6 +94,7 @@ typedef int (*acpi_op_start) (struct acpi_device * device);
->  typedef int (*acpi_op_bind) (struct acpi_device * device);
->  typedef int (*acpi_op_unbind) (struct acpi_device * device);
->  typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
-> +typedef int (*acpi_op_prepare_remove) (struct acpi_device *device);
->  
->  struct acpi_bus_ops {
->  	u32 acpi_op_add:1;
-> @@ -107,6 +108,7 @@ struct acpi_device_ops {
->  	acpi_op_bind bind;
->  	acpi_op_unbind unbind;
->  	acpi_op_notify notify;
-> +	acpi_op_prepare_remove prepare_remove;
-
-I'd prefer pre_remove, which indicates this interface is called before
-remove.  prepare_remove sounds as if it only performs preparation, which
-may be misleading.
-
-BTW, Rafael mentioned we should avoid extending ACPI driver's
-interface...  But I do not have other idea, either.
-
-
-Thanks,
--Toshi
-
-
-
->  };
->  
->  #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
-
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 4e69e24..96f3a1d 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -177,8 +177,8 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+ 			irq_base = irq_alloc_descs(first_irq, first_irq, size,
+ 						   of_node_to_nid(of_node));
+ 			if (irq_base < 0) {
+-				WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+-				     first_irq);
++				pr_info("Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
++					first_irq);
+ 				irq_base = first_irq;
+ 			}
+ 		} else
+-- 
+1.7.11.3
 
