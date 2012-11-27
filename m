@@ -1,127 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab2K0Bez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 20:34:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50028 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755680Ab2K0Bey convert rfc822-to-8bit (ORCPT
+	id S1757855Ab2K0Bl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 20:41:57 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51767 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757838Ab2K0Blz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 20:34:54 -0500
-X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6279806"
-Message-ID: <50B41849.9040103@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 09:32:57 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Gleb Natapov <gleb@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v8 1/2] x86/kexec: add a new atomic notifier list for
- kdump
-References: <50ADE0C2.1000106@cn.fujitsu.com> <50ADE11A.401@cn.fujitsu.com> <87ip8sxuyh.fsf@xmission.com> <20121126172054.GF12969@redhat.com> <87fw3wuuoh.fsf@xmission.com> <20121126175327.GG12969@redhat.com> <87mwy4teh8.fsf@xmission.com>
-In-Reply-To: <87mwy4teh8.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 09:34:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 09:34:27
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Nov 2012 20:41:55 -0500
+Message-ID: <1353980506.2309.13.camel@localhost>
+Subject: Re: [PATCH] No need to call irq_domain_legacy_revmap() for twice
+From: Mike <qiudayu@linux.vnet.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, benh@kernel.crashing.org
+Date: Tue, 27 Nov 2012 09:41:46 +0800
+In-Reply-To: <20121126201739.13F213E09C2@localhost>
+References: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+	 <20121126201739.13F213E09C2@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+x-cbid: 12112701-2674-0000-0000-000006E2E220
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2012Äê11ÔÂ27ÈÕ 02:18, Eric W. Biederman Ð´µÀ:
-> Gleb Natapov <gleb@redhat.com> writes:
+åœ¨ 2012-11-26ä¸€çš„ 20:17 +0000ï¼ŒGrant Likelyå†™é“ï¼š
+> On Mon, 24 Sep 2012 17:37:55 +0800, Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
+> > Function irq_create_mapping() calls irq_find_mapping(). The later
+> > function has checked if the indicated IRQ domain has hw IRQ mapped to
+> > virtual IRQ through legacy mode or not and return the value of the
+> > legacy irq number by call irq_domain_legacy_revmap(). We needn't
+> > to call irq_domain_legacy_revmap() to do same check in
+> > irq_create_mapping() again.
+> > 
+> > The patch removes the duplicate call.
+> > 
+> > Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+> > ---
+> >  kernel/irq/irqdomain.c |    7 +++++--
+> >  1 files changed, 5 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> > index 49a7772..286d672 100644
+> > --- a/kernel/irq/irqdomain.c
+> > +++ b/kernel/irq/irqdomain.c
+> > @@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+> >  		return virq;
+> >  	}
+> >  
+> > -	/* Get a virtual interrupt number */
+> > +	/*
+> > +	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
+> > +	 * create the IRQ mapping for non-existing one, so just return 0.
+> > +	 */
+> >  	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
+> > -		return irq_domain_legacy_revmap(domain, hwirq);
+> > +		return 0;
 > 
->> On Mon, Nov 26, 2012 at 11:43:10AM -0600, Eric W. Biederman wrote:
->>> Gleb Natapov <gleb@redhat.com> writes:
->>>
->>>> On Mon, Nov 26, 2012 at 09:08:54AM -0600, Eric W. Biederman wrote:
->>>>> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
->>>>>
->>>>>> This patch adds an atomic notifier list named crash_notifier_list.
->>>>>> Currently, when loading kvm-intel module, a notifier will be registered
->>>>>> in the list to enable vmcss loaded on all cpus to be VMCLEAR'd if
->>>>>> needed.
->>>>>
->>>>> crash_notifier_list ick gag please no.  Effectively this makes the kexec
->>>>> on panic code path undebuggable.
->>>>>
->>>>> Instead we need to use direct function calls to whatever you are doing.
->>>>>
->>>> The code walks linked list in kvm-intel module and calls vmclear on
->>>> whatever it finds there. Since the function have to resides in kvm-intel
->>>> module it cannot be called directly. Is callback pointer that is set
->>>> by kvm-intel more acceptable?
->>>
->>> Yes a specific callback function is more acceptable.  Looking a little
->>> deeper vmclear_local_loaded_vmcss is not particularly acceptable. It is
->>> doing a lot of work that is unnecessary to save the virtual registers
->>> on the kexec on panic path.
->>>
->> What work are you referring to in particular that may not be
->> acceptable?
+> But it does need to return the virq assigned to the hwirq. That is why
+> it has to call the revmap function.
 > 
-> The unnecessary work that I was see is all of the software state
-> changing.  Unlinking things from linked lists flipping variables.
-> None of that appears related to the fundamental issue saving cpu
-> state.
+Yes, thanks
+
+this judgment has been done in
+ /*Check if mapping already exists*/
+virq = irq_find_mapping(domain, hwirq);
+
+if the virq equals none zero, the func irq_create_mapping will 
+return the virq value directly(already exists).
+
+otherwise, that means virq equals zero, this has two meanings, one is
+haven't find the already exist mapping, the other one is in
+irq_find_mapping()
+	case IRQ_DOMAIN_MAP_LEGACY:
+		return irq_domain_legacy_revmap(domain, hwirq); 
+this may return zero.
+
+So, when we check if it is a IRQ_DOMAIN_MAP_LEGACY, we just return zero
+is OK. because if it is none zero, it will be return after check if
+mapping already exists, and never come here. also we never try to assign
+the virq for the legacy map.
+
+I don't know if you have understand my explanation.
+
+Thanks 
+Mike
+
+
+
+> g.
 > 
-> Simply reusing a function that does more than what is strictly required
-> makes me nervous.  What is the chance that the function will grow
-> with maintenance and add constructs that are not safe in a kexec on
-> panic situtation.
 
-So in summary,
-
-1. a specific callback function instead of a notifier?
-
-2. Instead of calling vmclear_local_loaded_vmcss, the vmclear operation
-   will just call the vmclear on every vmcss loaded on the cpu?
-
-   like below:
-
-   static void crash_vmclear_local_loaded_vmcss(void)
-   {
-        int cpu = raw_smp_processor_id();
-        struct loaded_vmcs *v, *n;
-
-        if (!crash_local_vmclear_enabled(cpu))
-                return;
-
-        list_for_each_entry_safe(v, n, &per_cpu(loaded_vmcss_on_cpu, cpu),
-                                 loaded_vmcss_on_cpu_link)
-                vmcs_clear(v->vmcs);
-   }
-
-   right?
-
-Thanks
-Zhang
-
-> 
->>> In fact I wonder if it might not just be easier to call vmcs_clear to a
->>> fixed per cpu buffer.
->>>
->> There may be more than one vmcs loaded on a cpu, hence the list.
->>
->>> Performing list walking in interrupt context without locking in
->>> vmclear_local_loaded vmcss looks a bit scary.  Not that locking would
->>> make it any better, as locking would simply add one more way to deadlock
->>> the system.  Only an rcu list walk is at all safe.  A list walk that
->>> modifies the list as vmclear_local_loaded_vmcss does is definitely not safe.
->>>
->> The list vmclear_local_loaded walks is per cpu. Zhang's kvm patch
->> disables kexec callback while list is modified.
-> 
-> If the list is only modified on it's cpu and we are running on that cpu
-> that does look like it will give the necessary protections.  It isn't
-> particularly clear at first glance that is the case unfortunately.
-> 
-> Eric
-> 
 
