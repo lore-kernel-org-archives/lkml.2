@@ -1,117 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab2K0GZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:25:21 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:34551 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2K0GZU (ORCPT
+	id S1758006Ab2K0GZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:25:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51923 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757895Ab2K0GZ3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:25:20 -0500
+	Tue, 27 Nov 2012 01:25:29 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "paul@pwsan.com" <paul@pwsan.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v3 03/10] ARM: OMAP: AM33xx hwmod: Add parent-child
+ relationship for PWM subsystem
+Thread-Topic: [PATCH v3 03/10] ARM: OMAP: AM33xx hwmod: Add parent-child
+ relationship for PWM subsystem
+Thread-Index: AQHNxt2EeUTleDNI/kaFZbNycy/8n5f3RlKggAP68ICAAD55gIAAItEAgAGbnbA=
+Date: Tue, 27 Nov 2012 06:24:03 +0000
+Deferred-Delivery: Tue, 27 Nov 2012 06:24:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9EFFAC@DBDE01.ent.ti.com>
+References: <1353387831-31538-1-git-send-email-avinashphilip@ti.com>
+ <1353387831-31538-4-git-send-email-avinashphilip@ti.com>
+ <518397C60809E147AF5323E0420B992E3E9EEA8C@DBDE01.ent.ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EC4C0FA@DBDE01.ent.ti.com>
+ <50B33043.2020700@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EC4D5C7@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC4D5C7@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1353948027.6276.38.camel@gandalf.local.home>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<CAKohponTxs983vVQV=6Q8zyesC1W1FhFkzfmpAVeEwU-cQXohA@mail.gmail.com>
-	<1353948027.6276.38.camel@gandalf.local.home>
-Date: Tue, 27 Nov 2012 11:55:19 +0530
-Message-ID: <CAKohpon_kUMQxtgTipcGm8qy35_C7_Y87KV1ohbexbeqwYSy5A@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for
- workqueues and timers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Mon, Nov 26, 2012 at 16:37:36, Bedia, Vaibhav wrote:
+> Hi Benoit,
+> 
+> On Mon, Nov 26, 2012 at 14:32:59, Cousson, Benoit wrote:
+> > Hi Vaibhav,
+> > 
+> > On 11/26/2012 06:19 AM, Bedia, Vaibhav wrote:
+> > > On Fri, Nov 23, 2012 at 16:36:06, Philip, Avinash wrote:
+> > >> On Tue, Nov 20, 2012 at 10:33:44, Philip, Avinash wrote:
+> > >>> As part of PWM subsystem integration, PWM subsystem are sharing
+> > >>> resources like clock across submodules (ECAP, EQEP & EHRPWM).
+> > >>> To handle resource sharing & IP integration
+> > >>> 1. Rework on parent child relation between PWMSS and
+> > >>>    ECAP, EQEP & EHRPWM child devices to support runtime PM.
+> > >>> 2. Add support for opt_clks in EHRPWM HWMOD entry to handle additional
+> > >>>    clock gating from control module.
+> > >>> 3. Add HWMOD entries for EQEP PWM submodule.
+> > >>>
+> > >>
+> > >> Is there any review on this patch?
+> > >> This patch depends on ECAP & EHRPWM to work in am335x.
+> > > 
+> > > First of all, I think you should break up this patch as per the 3 points
+> > > that you mentioned above.
 
-Thanks for sharing your opinion. :)
+I will split the patches into 2.
+1. One for correcting hwmod entries  plus adding EQEP HWMOD entry
+2. Adding parent child relation in hwmod entry.
 
-As, this went out to be a long thread of discussion (thanks Paul), i will try to
-answer everything here.
+> > > 
+> > > The usage of opt_clks for this does not look right to me. Based on your
+> > > description this clock is necessary and not optional on AM335x and on 
+> > > Davinci platforms this clock does not exist.
+> 
+> I checked the DA830 TRM and looks like TBCLK for eHRPWM is an always on clock
+> there. So, the only difference in AM335x is an additional enable bit.
+> 
+> Instead of adding this as opt_clk in hwmod, we could add an always on clock node
+> in Davinci clock data and have the driver always do a clk_enable() on the tbclk
+> as part of the probe sequence. On AM335x, with the right clock node this will enable
+> the clock in hardware and on DA830 it turns into a NOP. This way we can avoid adding
+> the opt_clk entry in hwmod of eHRPWM.
 
-On 26 November 2012 22:10, Steven Rostedt <rostedt@goodmis.org> wrote:
-> This is a really bad time of year to post new patches :-/
-> A lot of people are trying to get their own work done by year end and
-> then there's holidays and such that are also distractions. Not to
-> mention that a new merge window will be opening soon.
+I will remove opt_clk in HWMOD and made tbclk is a mandatory clock in EHRPWM driver.
 
-Patches are there since End of September and it was just a ping now (actually
-with bad timing - merge window).
-
-> As workqueues are set off by the CPU that queued it, what real benefit
-> does this give? A CPU was active when it queued the work and the work
-> should be done before it gets back to sleep.
->
-> OK, an interrupt happens on an idle CPU and queues some work. That work
-> should execute before the CPU gets back to sleep, right? I fail to see
-> the benefit of trying to move that work elsewhere. The CPU had to wake
-> up to execute the interrupt. It's no longer in a deep sleep (or any
-> sleep for that matter).
->
-> To me it seems best to avoid waking up an idle CPU in the first place.
->
-> I'm still working off a turkey overdose, so maybe I'm missing something
-> obvious.
-
-Ok, here is the story behind these patches. The idea was first discussed
-by Vincent in LPC this year:
-
-http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/08/lpc2012-sched-timer-workqueue.pdf
-
-Specifically slides: 12 & 19.
-
-cpu idleness here means idleness from scheduler's perspective, i.e.
-For the scheduler CPU is idle, if all below are true:
-- current task is idle task
-- nr_running == 0
-- wake_list is empty
-
-
-There are two use cases of workqueue patch 3/4:
-
-- queue-work from timer interrupt, which re-arms itself (slide 12):
-  Whether timer is deferred or not, it will queue the work on current
-cpu once cpu
-  wakes up. The cpu could have immediately gone back to idle state again, if the
-  work is not queued on it. So, because this cpu is idle (from
-schedulers point of
-  view), we can move this work to other cpu.
-
-- delayed-work, which rearm's itself (slide 19):
-  Again the same thing, we could have kept the cpu in idle state for
-some more time.
-
-There might not be many users with this behavior, but a single user can actually
-have significant impact.
-
-For now, it doesn't take care of big LITTLE stuff that Paul pointed
-out, but yes that
-is in plan. Some work is going on in that direction too:
-
-http://linux.kernel.narkive.com/mCyvFVUX/rfc-0-6-sched-packing-small-tasks
-
-The very first reason of having this patchset was to have a single
-preferred_cpu()
-routine, which can be used by all frameworks. Timers being the first
-user (already),
-workqueues tried to be the second one.
-
-I tested it more from functionality point of view rather than with
-power figures :(
-And i understood, that it is very much required.
-
-Having said that, I believe all the questions raised are on PATCH 3/4
-(workqueue).
-And other 3 patches should be fine. Can you share your opinion on those patches,
-I will then split this patchset and send workqueue stuff after doing some power
-measurements later.
-
---
-viresh
+Thanks
+Avinash
