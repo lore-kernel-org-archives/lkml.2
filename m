@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2K0P2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:28:39 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:42286 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab2K0P2h (ORCPT
+	id S1756020Ab2K0P3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:29:48 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42681 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755373Ab2K0P3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:28:37 -0500
+	Tue, 27 Nov 2012 10:29:46 -0500
 From: Rafal Krypa <r.krypa@samsung.com>
 To: Casey Schaufler <casey@schaufler-ca.com>
 Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: prevent revoke-subject from failing when unseen label
- is written to it
-Date: Tue, 27 Nov 2012 16:28:11 +0100
-Message-id: <1354030091-32501-1-git-send-email-r.krypa@samsung.com>
+Subject: [PATCH] Smack: add missing support for transmute bit in
+ smack_str_from_perm()
+Date: Tue, 27 Nov 2012 16:29:07 +0100
+Message-id: <1354030147-32577-1-git-send-email-r.krypa@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Special file /smack/revoke-subject will silently accept labels that are not
-present on the subject label list. Nothing has to be done for such labels,
-as there are no rules for them to revoke.
+This fixes audit logs for granting or denial of permissions to show
+information about transmute bit.
 
 Targeted for git://git.gitorious.org/smack-next/kernel.git
 
 Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
 ---
- security/smack/smackfs.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ security/smack/smack_access.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 76a5dca..337e32c 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -2035,10 +2035,8 @@ static ssize_t smk_write_revoke_subj(struct file *file, const char __user *buf,
- 	}
- 
- 	skp = smk_find_entry(cp);
--	if (skp == NULL) {
--		rc = -EINVAL;
-+	if (skp == NULL)
- 		goto free_out;
--	}
- 
- 	rule_list = &skp->smk_rules;
- 	rule_lock = &skp->smk_rules_lock;
+diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+index db14689..2e397a8 100644
+--- a/security/smack/smack_access.c
++++ b/security/smack/smack_access.c
+@@ -252,6 +252,8 @@ static inline void smack_str_from_perm(char *string, int access)
+ 		string[i++] = 'x';
+ 	if (access & MAY_APPEND)
+ 		string[i++] = 'a';
++	if (access & MAY_TRANSMUTE)
++		string[i++] = 't';
+ 	string[i] = '\0';
+ }
+ /**
 -- 
 1.7.10.4
 
