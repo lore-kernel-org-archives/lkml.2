@@ -1,113 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab2K0DJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:09:14 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38341 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932732Ab2K0DJN (ORCPT
+	id S933091Ab2K0DLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 22:11:23 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32946 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932732Ab2K0DLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:09:13 -0500
-Message-ID: <50B42EB0.8090609@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 08:38:32 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 26 Nov 2012 22:11:22 -0500
+Message-ID: <50B42F32.4050107@gmail.com>
+Date: Tue, 27 Nov 2012 11:10:42 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Benjamin Segall <bsegall@google.com>
-CC: Alex Shi <alex.shi@intel.com>, mingo@redhat.com, peterz@infradead.org,
-        pjt@google.com, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com> <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com>
-In-Reply-To: <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112703-3568-0000-0000-000002D4E6CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
-
-On 11/27/2012 12:33 AM, Benjamin Segall wrote:
-> So, I've been trying out using the runnable averages for load balance in
-> a few ways, but haven't actually gotten any improvement on the
-> benchmarks I've run. I'll post my patches once I have the numbers down,
-> but it's generally been about half a percent to 1% worse on the tests
-> I've tried.
+On 2012-11-23 18:44, Tang Chen wrote:
+> [What we are doing]
+> This patchset provide a boot option for user to specify ZONE_MOVABLE memory
+> map for each node in the system.
 > 
-> The basic idea is to use (cfs_rq->runnable_load_avg +
-> cfs_rq->blocked_load_avg) (which should be equivalent to doing
-> load_avg_contrib on the rq) for cfs_rqs and possibly the rq, and
-> p->se.load.weight * p->se.avg.runnable_avg_sum / period for tasks.
-
-Why should cfs_rq->blocked_load_avg be included to calculate the load
-on the rq? They do not contribute to the active load of the cpu right?
-
-When a task goes to sleep its load is removed from cfs_rq->load.weight
-as well in account_entity_dequeue(). Which means the load balancer
-considers a sleeping entity as *not* contributing to the active runqueue
-load.So shouldn't the new metric consider cfs_rq->runnable_load_avg alone?
-> 
-> I have not yet tried including wake_affine, so this has just involved
-> h_load (task_load_down and task_h_load), as that makes everything
-> (besides wake_affine) be based on either the new averages or the
-> rq->cpu_load averages.
+> movablecore_map=nn[KMG]@ss[KMG]
 > 
 
-Yeah I have been trying to view the performance as well,but with
-cfs_rq->runnable_load_avg as the rq load contribution and the task load,
-same as mentioned above.I have not completed my experiments but I would
-expect some significant performance difference due to the below scenario:
+Hi Tang,
+	DMA address can't be set as movable, if some one boot kernel with
+movablecore_map=4G@0xa00000 or other memory region that contains DMA address,
+system maybe boot failed. Should this case be handled or mentioned
+in the change log and kernel-parameters.txt?
 
-                     Task3(10% task)
-Task1(100% task)     Task4(10% task)
-Task2(100% task)     Task5(10% task)
----------------     ----------------       ----------
-CPU1                  CPU2                  CPU3
+Thanks,
+Jianguo Wu
 
-When cpu3 triggers load balancing:
-
-CASE1:
- without PJT's metric the following loads will be perceived
- CPU1->2048
- CPU2->3042
- Therefore CPU2 might be relieved of one task to result in:
-
-
-Task1(100% task)     Task4(10% task)
-Task2(100% task)     Task5(10% task)       Task3(10% task)
----------------     ----------------       ----------
-CPU1                  CPU2                  CPU3
-
-CASE2:
-  with PJT's metric the following loads will be perceived
-  CPU1->2048
-  CPU2->1022
- Therefore CPU1 might be relieved of one task to result in:
-
-                     Task3(10% task)
-                     Task4(10% task)
-Task2(100% task)     Task5(10% task)     Task1(100% task)
----------------     ----------------       ----------
-CPU1                  CPU2                  CPU3
-
-
-The differences between the above two scenarios include:
-
-1.Reduced latency for Task1 in CASE2,which is the right task to be moved
-in the above scenario.
-
-2.Even though in the former case CPU2 is relieved of one task,its of no
-use if Task3 is going to sleep most of the time.This might result in
-more load balancing on behalf of cpu3.
-
-What do you guys think?
-
-Thank you
-
-Regards
-Preeti U Murthy
-
-
-
+> This option make sure memory range from ss to ss+nn is movable memory.
+> 
+> 
+> [Why we do this]
+> If we hot remove a memroy, the memory cannot have kernel memory,
+> because Linux cannot migrate kernel memory currently. Therefore,
+> we have to guarantee that the hot removed memory has only movable
+> memoroy.
+> 
+> Linux has two boot options, kernelcore= and movablecore=, for
+> creating movable memory. These boot options can specify the amount
+> of memory use as kernel or movable memory. Using them, we can
+> create ZONE_MOVABLE which has only movable memory.
+> 
+> But it does not fulfill a requirement of memory hot remove, because
+> even if we specify the boot options, movable memory is distributed
+> in each node evenly. So when we want to hot remove memory which
+> memory range is 0x80000000-0c0000000, we have no way to specify
+> the memory as movable memory.
+> 
+> So we proposed a new feature which specifies memory range to use as
+> movable memory.
+> 
+> 
+> [Ways to do this]
+> There may be 2 ways to specify movable memory.
+>  1. use firmware information
+>  2. use boot option
+> 
+> 1. use firmware information
+>   According to ACPI spec 5.0, SRAT table has memory affinity structure
+>   and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
+>   Affinity Structure". If we use the information, we might be able to
+>   specify movable memory by firmware. For example, if Hot Pluggable
+>   Filed is enabled, Linux sets the memory as movable memory.
+> 
+> 2. use boot option
+>   This is our proposal. New boot option can specify memory range to use
+>   as movable memory.
+> 
+> 
+> [How we do this]
+> We chose second way, because if we use first way, users cannot change
+> memory range to use as movable memory easily. We think if we create
+> movable memory, performance regression may occur by NUMA. In this case,
+> user can turn off the feature easily if we prepare the boot option.
+> And if we prepare the boot optino, the user can select which memory
+> to use as movable memory easily. 
+> 
+> 
+> [How to use]
+> Specify the following boot option:
+> movablecore_map=nn[KMG]@ss[KMG]
+> 
+> That means physical address range from ss to ss+nn will be allocated as
+> ZONE_MOVABLE.
+> 
+> And the following points should be considered.
+> 
+> 1) If the range is involved in a single node, then from ss to the end of
+>    the node will be ZONE_MOVABLE.
+> 2) If the range covers two or more nodes, then from ss to the end of
+>    the node will be ZONE_MOVABLE, and all the other nodes will only
+>    have ZONE_MOVABLE.
+> 3) If no range is in the node, then the node will have no ZONE_MOVABLE
+>    unless kernelcore or movablecore is specified.
+> 4) This option could be specified at most MAX_NUMNODES times.
+> 5) If kernelcore or movablecore is also specified, movablecore_map will have
+>    higher priority to be satisfied.
+> 6) This option has no conflict with memmap option.
+> 
+> 
+> 
+> Tang Chen (4):
+>   page_alloc: add movable_memmap kernel parameter
+>   page_alloc: Introduce zone_movable_limit[] to keep movable limit for
+>     nodes
+>   page_alloc: Make movablecore_map has higher priority
+>   page_alloc: Bootmem limit with movablecore_map
+> 
+> Yasuaki Ishimatsu (1):
+>   x86: get pg_data_t's memory from other node
+> 
+>  Documentation/kernel-parameters.txt |   17 +++
+>  arch/x86/mm/numa.c                  |   11 ++-
+>  include/linux/memblock.h            |    1 +
+>  include/linux/mm.h                  |   11 ++
+>  mm/memblock.c                       |   15 +++-
+>  mm/page_alloc.c                     |  216 ++++++++++++++++++++++++++++++++++-
+>  6 files changed, 263 insertions(+), 8 deletions(-)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
