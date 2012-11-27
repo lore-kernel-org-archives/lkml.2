@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594Ab2K0JJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 04:09:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44884 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758423Ab2K0JJK (ORCPT
+	id S1758616Ab2K0JTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 04:19:04 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40575 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758516Ab2K0JTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 04:09:10 -0500
-Date: Tue, 27 Nov 2012 01:05:56 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 10/10] ARM: FIQ: Get rid of init_FIQ()
-Message-ID: <20121127090553.GA12289@lizard>
-References: <20121123003849.GA973@lizard.mcd25758.sjc.wayport.net>
- <1353652071.755665772@f76.mail.ru>
- <20121123065002.GB27827@lizard>
- <1353656161.911816605@f287.mail.ru>
- <20121123075138.GA2136@lizard>
+	Tue, 27 Nov 2012 04:19:00 -0500
+Message-ID: <50B4856F.3060903@in.ibm.com>
+Date: Tue, 27 Nov 2012 14:48:39 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121123075138.GA2136@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: oleg@redhat.com, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
+        anton@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] powerpc: Move the single step enable code to a generic
+ path
+References: <20121126110007.6545.43875.stgit@suzukikp.in.ibm.com> <20121126110448.6545.90588.stgit@suzukikp.in.ibm.com> <50B3B092.90605@linutronix.de>
+In-Reply-To: <50B3B092.90605@linutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112709-0260-0000-0000-000002385B45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 22, 2012 at 11:51:38PM -0800, Anton Vorontsov wrote:
-> On Fri, Nov 23, 2012 at 11:36:01AM +0400, Alexander Shiyan wrote:
-> [...]
-> > got_no_fiq_insn also not initialized.
-> 
-> It is static, so by definition it is initialized to 0.
-> 
-> > I think as a whole on this issue requires additional comments from Russell
-> > as the author of implementation.
-> > 
-> > PS: In any case, I can reproduce it and check it out if you send me a patchset
-> > to my email as an attachment.
-> 
-> Sent privately.
+On 11/26/2012 11:40 PM, Sebastian Andrzej Siewior wrote:
+> On 11/26/2012 12:05 PM, Suzuki K. Poulose wrote:
+>> diff --git a/arch/powerpc/include/asm/probes.h
+>> b/arch/powerpc/include/asm/probes.h
+>> index 5f1e15b..836e9b9 100644
+>> --- a/arch/powerpc/include/asm/probes.h
+>> +++ b/arch/powerpc/include/asm/probes.h
+>> @@ -38,5 +38,34 @@ typedef u32 ppc_opcode_t;
+>>   #define is_trap(instr)        (IS_TW(instr) || IS_TWI(instr))
+>>   #endif /* CONFIG_PPC64 */
+>>
+>> +#ifdef CONFIG_PPC_ADV_DEBUG_REGS
+>> +#define MSR_SINGLESTEP    (MSR_DE)
+>> +#else
+>> +#define MSR_SINGLESTEP    (MSR_SE)
+>> +#endif
+>> +
+>> +/* Enable single stepping for the current task */
+>> +static inline void enable_single_step(struct pt_regs *regs)
+>> +{
+>> +
+>> +    /*
+>> +     * We turn off async exceptions to ensure that the single step will
+>> +     * be for the instruction we have the kprobe on, if we dont its
+> it is
+>
+>> +     * possible we'd get the single step reported for an exception
+>> handler
+>> +     * like Decrementer or External Interrupt
+>> +     */
+>
+> Hmmm. The TRM for E400 says
+>
+> |5.11.1 e500 Exception Priorities
+> |The following is a prioritized listing of e500 exceptions:
+> |   4. Critical input
+> |   5. Debug interrupt
+> |   6. External input
+> |   22. Decrementer
+>
+> The list has been cut down a little. That means the debug interrupt
+> comes before external interrupt and before the decrement fires.
+>
+> And if single step is what wakes you up then DBSR[ICMP] is set. Am I
+> missing something or is this FSL only not not book-e
+>
 
-Andrew, Arnd, just FYI, it works for Alexander.
+You are right. The same priority applies for Book3S as well. The above
+code/comment was initially written for kprobe. So I didn't bother to
+double check the same, when I moved it to the common place.
 
------ Forwarded message from Alexander Shiyan <shc_work@mail.ru> -----
-Date: Tue, 27 Nov 2012 12:42:50 +0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re[2]: FIQ
+I will send a v2 with the required changes.
 
-> Hello Alexander,
-> 
-> On Tue, Nov 27, 2012 at 12:14:28PM +0400, Alexander Shiyan wrote:
-> > Sorry, I lost the original message to the correct answer.
-> > Today I had a test of removal init_FIQ.
-> > The test took place on a custom board with a custom ARM CLPS711X OSS audio
-> > driver, which uses the FIQ interrupts. Everything works fine.
-> 
-> Nice! Thanks a lot for testing!
-> 
-> Can you please reply to the original thread, with the
-> 
-> 	Tested-by: Alexander Shiyan <shc_work@mail.ru>
-> ?
-> 
-> This will help pushing the series forward, plus will give you a credit for
-> your efforts.
+Thanks for the question !
 
-I am lost thread in my mailbox, you can just copy/paste my reply and ping for Arnd.
+Cheers
+Suzuki
 
