@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab2K0Aud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:50:33 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:62967 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757561Ab2K0Auc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:50:32 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "=?iso-8859-1?Q?'Bruno_Pr=E9mont'?=" <bonbons@linux-vserver.org>
-Cc: <support@Supermicro.com>, <linux-kernel@vger.kernel.org>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com> <20121126224245.248f0901@neptune.home>
-In-Reply-To: <20121126224245.248f0901@neptune.home>
-Subject: RE: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware bug question
-Date: Mon, 26 Nov 2012 19:50:30 -0500
-Message-ID: <002901cdcc39$33ae8550$9b0b8ff0$@lucidpixels.com>
+	id S1757649Ab2K0AxQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:53:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757092Ab2K0AxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 19:53:15 -0500
+Date: Mon, 26 Nov 2012 22:53:05 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Linux KVM mailing list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, kvm: Remove incorrect redundant assembly constraint
+Message-ID: <20121127005305.GB6329@amt.cnet>
+References: <B3584E72CFEBED439A3ECA9BCE67A4EF1B17AF90@FMSMSX107.amr.corp.intel.com>
+ <1353537681-18759-1-git-send-email-hpa@linux.intel.com>
+ <50B318C5.8090508@redhat.com>
+ <50B3F1D2.4010200@linux.intel.com>
+ <20121126234820.GA2363@amt.cnet>
+ <50B40010.5050007@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQH421ylXKr/7aSEd56ctRShmAJ9gwGHtGctl5pegPA=
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B40010.5050007@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 26, 2012 at 03:49:36PM -0800, H. Peter Anvin wrote:
+> On 11/26/2012 03:48 PM, Marcelo Tosatti wrote:
+> >>
+> >> Gleb, Marcelo: are you going to apply this or would you prefer I took it
+> >> in x86/urgent?
+> >>
+> >> 	-hpa
+> > 
+> > Feel free to merge it through x86/urgent.
+> > 
+> 
+> I presume that's an Acked-by?
+> 
+> 	-hpa
 
-
-> [    0.696357] ioatdma: Intel(R) QuickData Technology Driver 4.00
-> [    0.696487] ioatdma 0000:00:04.0: channel error register unreachable
-> I assume this is something Supermicro has to fix?
-
-You are probably missing some kernel config option(s) :) - I did fight
-similar
-issues on a Fujitsu SandyBridge Xeon based server.
-
-Check if enabling CONFIG_X86_X2APIC helps as well as other APIC/IOMMU
-options.
-
-Bruno
-
-=> Enabled:
-CONFIG_IOMMU_SUPPORT
-CONFIG_INTEL_IOMMU
-CONFIG_INTEL_IOMMU_DEFAULT_ON
-CONFIG_IRQ_REMAP
-
-Also tried enabling NUMA, etc:
-
-[    0.330998] ACPI FADT declares the system doesn't support PCIe ASPM, so
-disable it
-[    0.331068] ACPI: bus type pci registered
-
-[    0.615234] ACPI: Dynamic OEM Table Load:
-[    0.615373] ACPI: PRAD           (null) 000BE (v02 PRADID  PRADTID
-00000001 MSFT 04000000)
-[    0.615631] \_SB_:_OSC invalid UUID
-[    0.615633] _OSC request data:1 7
-
-
-[    0.663138] pci 0000:ff:13.5: [8086:3c44] type 00 class 0x110100
-[    0.663170] pci 0000:ff:13.6: [8086:3c45] type 00 class 0x088000
-[    0.663211]  pci0000:ff: ACPI _OSC support notification failed, disabling
-PCIe ASPM
-[    0.663281]  pci0000:ff: Unable to request _OSC control (_OSC support
-mask: 0x08)
-
-:(
-
-Justin.
-
-
+Yes.
 
