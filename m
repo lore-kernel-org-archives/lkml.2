@@ -1,225 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab2K0QbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:31:17 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45597 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab2K0QbQ (ORCPT
+	id S932094Ab2K0Qb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:31:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50850 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab2K0QbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:31:16 -0500
-From: Joonsoo Kim <js1304@gmail.com>
-To: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH v2 2/3] ARM: static_vm: introduce an infrastructure for static mapped area
-Date: Wed, 28 Nov 2012 01:28:49 +0900
-Message-Id: <1354033730-850-3-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354033730-850-1-git-send-email-js1304@gmail.com>
-References: <1354033730-850-1-git-send-email-js1304@gmail.com>
+	Tue, 27 Nov 2012 11:31:25 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: bfields@fieldses.org
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] nfsd: prevent NULL ptr derefs on fault injection
+Date: Tue, 27 Nov 2012 11:31:11 -0500
+Message-Id: <1354033871-25815-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, we used ARM-specific flag, that is,
-VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-The purpose of static mapped area is to re-use static mapped area when
-entire physical address range of the ioremap request can be covered
-by this area.
+A recent patch series has moved hashtable initialization to when the net
+struct is initialized.
 
-This implementation causes needless overhead for some cases.
-For example, assume that there is only one static mapped area and
-vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-deciding whether it is matched or not. Moreover, even if there is
-no static mapped area and vmlist has 300 areas, every time we call
-ioremap, we check 300 areas in now.
+When injecting faults, we tried accessing the hashtables even if the struct
+wasn't really initialized (nfsd wasn't in use) - this caused a NULL ptr
+deref.
 
-If we construct a extra list for static mapped area, we can eliminate
-above mentioned overhead.
-With a extra list, if there is one static mapped area,
-we just check only one area and proceed next operation quickly.
+A simple test would be:
 
-In fact, it is not a critical problem, because ioremap is not frequently
-used. But reducing overhead is better idea.
+	echo 1 > /sys/kernel/debug/nfsd/forget_locks
 
-Another reason for doing this work is for removing architecture dependency
-on vmalloc layer. I think that vmlist and vmlist_lock is internal data
-structure for vmalloc layer. Some codes for debugging and stat inevitably
-use vmlist and vmlist_lock. But it is preferable that they are used
-as least as possible in outside of vmalloc.c
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ fs/nfsd/netns.h     | 3 +++
+ fs/nfsd/nfs4state.c | 9 +++++++++
+ 2 files changed, 12 insertions(+)
 
-Now, I introduce an ARM-specific infrastructure for static mapped area. In
-the following patch, we will use this and resolve above mentioned problem.
-
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-
-diff --git a/arch/arm/include/asm/mach/static_vm.h b/arch/arm/include/asm/mach/static_vm.h
-new file mode 100644
-index 0000000..1bb6604
---- /dev/null
-+++ b/arch/arm/include/asm/mach/static_vm.h
-@@ -0,0 +1,45 @@
-+/*
-+ * arch/arm/include/asm/mach/static_vm.h
-+ *
-+ * Copyright (C) 2012 LG Electronics, Joonsoo Kim <js1304@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#ifndef _ASM_MACH_STATIC_VM_H
-+#define _ASM_MACH_STATIC_VM_H
-+
-+#include <linux/types.h>
-+#include <linux/vmalloc.h>
-+
-+struct static_vm {
-+	struct static_vm	*next;
-+	void			*vaddr;
-+	unsigned long		size;
-+	unsigned long		flags;
-+	phys_addr_t		paddr;
-+	const void		*caller;
-+};
-+
-+extern struct static_vm *static_vmlist;
-+extern spinlock_t static_vmlist_lock;
-+
-+extern struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
-+			size_t size, unsigned long flags);
-+extern struct static_vm *find_static_vm_vaddr(void *vaddr, unsigned long flags);
-+extern void init_static_vm(struct static_vm *static_vm,
-+			struct vm_struct *vm, unsigned long flags);
-+extern void insert_static_vm(struct static_vm *vm);
-+
-+#endif /* _ASM_MACH_STATIC_VM_H */
-diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
-index 4e333fa..57b329a 100644
---- a/arch/arm/mm/Makefile
-+++ b/arch/arm/mm/Makefile
-@@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
- 				   iomap.o
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index 227b93e..c5806a57 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -83,5 +83,8 @@ struct nfsd_net {
+ 	struct delayed_work laundromat_work;
+ };
  
- obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
--				   mmap.o pgd.o mmu.o
-+				   mmap.o pgd.o mmu.o static_vm.o
++/* Simple check to find out if a given net was properly initialized */
++#define nfsd_netns_ready(nn) ((nn)->sessionid_hashtbl)
++
+ extern int nfsd_net_id;
+ #endif /* __NFSD_NETNS_H__ */
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index e75872f..0e7428c 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4598,6 +4598,9 @@ void nfsd_forget_clients(u64 num)
+ 	int count = 0;
+ 	struct nfsd_net *nn = net_generic(current->nsproxy->net_ns, nfsd_net_id);
  
- ifneq ($(CONFIG_MMU),y)
- obj-y				+= nommu.o
-diff --git a/arch/arm/mm/static_vm.c b/arch/arm/mm/static_vm.c
-new file mode 100644
-index 0000000..d7677cf
---- /dev/null
-+++ b/arch/arm/mm/static_vm.c
-@@ -0,0 +1,97 @@
-+/*
-+ * arch/arm/mm/static_vm.c
-+ *
-+ * Copyright (C) 2012 LG Electronics, Joonsoo Kim <js1304@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
++	if (!nfsd_netns_ready(nn))
++		return;
 +
-+#include <linux/spinlock.h>
+ 	nfs4_lock_state();
+ 	list_for_each_entry_safe(clp, next, &nn->client_lru, cl_lru) {
+ 		expire_client(clp);
+@@ -4643,6 +4646,9 @@ void nfsd_forget_locks(u64 num)
+ 	int count;
+ 	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
++	if (!nfsd_netns_ready(nn))
++		return;
 +
-+#include <asm/mach/static_vm.h>
+ 	nfs4_lock_state();
+ 	count = nfsd_release_n_owners(num, false, release_lockowner_sop, nn);
+ 	nfs4_unlock_state();
+@@ -4655,6 +4661,9 @@ void nfsd_forget_openowners(u64 num)
+ 	int count;
+ 	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
++	if (!nfsd_netns_ready(nn))
++		return;
 +
-+struct static_vm *static_vmlist;
-+DEFINE_SPINLOCK(static_vmlist_lock);
-+
-+struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
-+			size_t size, unsigned long flags)
-+{
-+	struct static_vm *area;
-+
-+	spin_lock(&static_vmlist_lock);
-+	for (area = static_vmlist; area; area = area->next) {
-+		if ((area->flags & flags) != flags)
-+			continue;
-+
-+		if (area->paddr > paddr ||
-+			paddr + size - 1 > area->paddr + area->size - 1)
-+			continue;
-+
-+		spin_unlock(&static_vmlist_lock);
-+		return area;
-+	}
-+	spin_unlock(&static_vmlist_lock);
-+
-+	return NULL;
-+}
-+
-+struct static_vm *find_static_vm_vaddr(void *vaddr, unsigned long flags)
-+{
-+	struct static_vm *area;
-+
-+	spin_lock(&static_vmlist_lock);
-+	for (area = static_vmlist; area; area = area->next) {
-+		/* static_vmlist is ascending order */
-+		if (area->vaddr > vaddr)
-+			break;
-+
-+		if ((area->flags & flags) != flags)
-+			continue;
-+
-+		if (area->vaddr <= vaddr && area->vaddr + area->size > vaddr) {
-+			spin_unlock(&static_vmlist_lock);
-+			return area;
-+		}
-+	}
-+	spin_unlock(&static_vmlist_lock);
-+
-+	return NULL;
-+}
-+
-+void init_static_vm(struct static_vm *static_vm,
-+				struct vm_struct *vm, unsigned long flags)
-+{
-+	static_vm->vaddr = vm->addr;
-+	static_vm->size = vm->size;
-+	static_vm->paddr = vm->phys_addr;
-+	static_vm->caller = vm->caller;
-+	static_vm->flags = flags;
-+}
-+
-+void insert_static_vm(struct static_vm *vm)
-+{
-+	struct static_vm *tmp, **p;
-+
-+	spin_lock(&static_vmlist_lock);
-+	for (p = &static_vmlist; (tmp = *p) != NULL; p = &tmp->next) {
-+		if (tmp->vaddr >= vm->vaddr) {
-+			BUG_ON(tmp->vaddr < vm->vaddr + vm->size);
-+			break;
-+		} else
-+			BUG_ON(tmp->vaddr + tmp->size > vm->vaddr);
-+	}
-+	vm->next = *p;
-+	*p = vm;
-+	spin_unlock(&static_vmlist_lock);
-+}
+ 	nfs4_lock_state();
+ 	count = nfsd_release_n_owners(num, true, release_openowner_sop, nn);
+ 	nfs4_unlock_state();
 -- 
-1.7.9.5
+1.8.0
 
