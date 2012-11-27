@@ -1,156 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab2K0BCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 20:02:37 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58067 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932495Ab2K0BCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 20:02:36 -0500
-From: <oleg.matcovschi@ti.com>
-To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Oleg Matcovschi <oleg.matcovschi@ti.com>
-Subject: [PATCH v2] OMAP2+: mux: Fixed gpio mux mode analysis.
-Date: Mon, 26 Nov 2012 17:02:03 -0800
-Message-ID: <1353978123-12936-1-git-send-email-oleg.matcovschi@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757652Ab2K0BEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 20:04:51 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64913 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2K0BEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 20:04:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.188.36.244]
+In-Reply-To: <20121116170123.3196.93431.stgit@maximpc.sw.ru>
+References: <20121116170123.3196.93431.stgit@maximpc.sw.ru>
+From: Feng Shuo <steve.shuo.feng@gmail.com>
+Date: Tue, 27 Nov 2012 09:04:18 +0800
+Message-ID: <CALmpHyb5wpn-dABuEwpypUggRY=1aULvJW0z17HpH50pr1=HKg@mail.gmail.com>
+Subject: Re: [PATCH v2 00/14] fuse: An attempt to implement a write-back cache policy
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: miklos@szeredi.hu, dev@parallels.com,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        xemul@openvz.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Matcovschi <oleg.matcovschi@ti.com>
+Hi Maxim,
 
-OMAP_MODE_GPIO() macro verified only OMAP_MUX_MODE4.
-It is not correct for following platforms:
-    2430 - gpio mux mode 3
-    44xx - gpio mux mode 3
-    54xx - gpio mux mode 6
+I'm new to fuse but have some experience with NFS. From my
+understanding after reviewing your patchset, it seems only work with
+local file system or a distributed file system whose file is never
+modified (could be grown but no or very few modified) because it
+doesn't exam the pre/post status of the writing object (e.g. a file).
+So if a file is modified outside, fuse might not get any chance to
+handle it...... Correct me if I got wrong since I'm really new to
+fuse. :-)
 
-Patch reserves first 3 bits in partition flags for storing gpio mux
-mode in same format as stored in control pad register.
-Modified OMAP_MODE_GPIO() macro to handle all possible cases of gpio mux mode.
-Modified omap_mux_init() flags of omap34xx to include OMAP_MUX_GPIO_IN_MODE4.
+On Sat, Nov 17, 2012 at 1:04 AM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+> Hi,
+>
+> This is the second iteration of Pavel Emelyanov's patch-set implementing
+> write-back policy for FUSE page cache. Initial patch-set description was
+> the following:
+>
+> One of the problems with the existing FUSE implementation is that it uses the
+> write-through cache policy which results in performance problems on certain
+> workloads. E.g. when copying a big file into a FUSE file the cp pushes every
+> 128k to the userspace synchronously. This becomes a problem when the userspace
+> back-end uses networking for storing the data.
+>
+> A good solution of this is switching the FUSE page cache into a write-back policy.
+> With this file data are pushed to the userspace with big chunks (depending on the
+> dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
+> handle the size updates in a more efficient manner.
+>
+> The writeback feature is per-connection and is explicitly configurable at the
+> init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
+> turned ON:
+>
+> * still copy writeback pages to temporary buffer when sending a writeback request
+>   and finish the page writeback immediately
+>
+> * make kernel maintain the inode's i_size to avoid frequent i_size synchronization
+>   with the user space
+>
+> * take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
+>   This protects us from having too many dirty pages on FUSE
+>
+> The provided patchset survives the fsx test. Performance measurements are not yet
+> all finished, but the mentioned copying of a huge file becomes noticeably faster
+> even on machines with few RAM and doesn't make the system stuck (the dirty pages
+> balancer does its work OK). Applies on top of v3.5-rc4.
+>
+> We are currently exploring this with our own distributed storage implementation
+> which is heavily oriented on storing big blobs of data with extremely rare meta-data
+> updates (virtual machines' and containers' disk images). With the existing cache
+> policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
+> too much time to proceed, much longer than if it was simply scp-ed over the same
+> network. The write-back policy (as I mentioned) noticeably improves this scenario.
+> Kirill (in Cc) can share more details about the performance and the storage concepts
+> details if required.
+>
+> Changed in v2:
+>  - numerous bugfixes:
+>    - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
+>      on page writeback because page writeback can extend beyond the lifetime of
+>      the page-cache page
+>    - fuse_send_writepages can end_page_writeback on original page only after adding
+>      request to fi->writepages list; otherwise another writeback may happen inside
+>      the gap between end_page_writeback and adding to the list
+>    - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
+>      due to reordering requests
+>    - fuse_flush must flush dirty memory and wait for all writeback on given inode
+>      before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
+>    - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
+>      otherwise a race with a writer extending i_size is possible
+>    - fix handling errors in fuse_writepages and fuse_send_writepages
+>  - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
+>    on buffered writes) for details.
+>  - put enabling writeback cache under fusermount control; (see mount option
+>    'allow_wbcache' introduced by patch #13 (turn writeback cache on))
+>  - rebased on v3.7-rc5
+>
+> Thanks,
+> Maxim
+>
+> ---
+>
+> Maxim Patlasov (14):
+>       fuse: Linking file to inode helper
+>       fuse: Getting file for writeback helper
+>       fuse: Prepare to handle short reads
+>       fuse: Prepare to handle multiple pages in writeback
+>       fuse: Connection bit for enabling writeback
+>       fuse: Trust kernel i_size only
+>       fuse: Update i_mtime on buffered writes
+>       fuse: Flush files on wb close
+>       fuse: Implement writepages and write_begin/write_end callbacks
+>       fuse: fuse_writepage_locked() should wait on writeback
+>       fuse: fuse_flush() should wait on writeback
+>       fuse: Fix O_DIRECT operations vs cached writeback misorder
+>       fuse: Turn writeback cache on
+>       mm: Account for WRITEBACK_TEMP in balance_dirty_pages
+>
+>
+>  fs/fuse/dir.c             |   51 ++++
+>  fs/fuse/file.c            |  523 +++++++++++++++++++++++++++++++++++++++++----
+>  fs/fuse/fuse_i.h          |   20 ++
+>  fs/fuse/inode.c           |   98 ++++++++
+>  include/uapi/linux/fuse.h |    1
+>  mm/page-writeback.c       |    3
+>  6 files changed, 638 insertions(+), 58 deletions(-)
+>
+> --
+> Signature
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: Oleg Matcovschi <oleg.matcovschi@ti.com>
----
- arch/arm/mach-omap2/mux.c     |   10 ++++------
- arch/arm/mach-omap2/mux.h     |   20 +++++++++++++++-----
- arch/arm/mach-omap2/mux34xx.c |    2 +-
- 3 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index 701e17c..1fa39dc 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -134,10 +134,7 @@ static int __init _omap_mux_init_gpio(struct omap_mux_partition *partition,
- 
- 	old_mode = omap_mux_read(partition, gpio_mux->reg_offset);
- 	mux_mode = val & ~(OMAP_MUX_NR_MODES - 1);
--	if (partition->flags & OMAP_MUX_GPIO_IN_MODE3)
--		mux_mode |= OMAP_MUX_MODE3;
--	else
--		mux_mode |= OMAP_MUX_MODE4;
-+	mux_mode |= partition->gpio;
- 	pr_debug("%s: Setting signal %s.gpio%i 0x%04x -> 0x%04x\n", __func__,
- 		 gpio_mux->muxnames[0], gpio, old_mode, mux_mode);
- 	omap_mux_write(partition, mux_mode, gpio_mux->reg_offset);
-@@ -799,7 +796,7 @@ int __init omap_mux_late_init(void)
- 			struct omap_mux *m = &e->mux;
- 			u16 mode = omap_mux_read(partition, m->reg_offset);
- 
--			if (OMAP_MODE_GPIO(mode))
-+			if (OMAP_MODE_GPIO(partition, mode))
- 				continue;
- 
- #ifndef CONFIG_DEBUG_FS
-@@ -1064,7 +1061,7 @@ static void __init omap_mux_init_list(struct omap_mux_partition *partition,
- 		}
- #else
- 		/* Skip pins that are not muxed as GPIO by bootloader */
--		if (!OMAP_MODE_GPIO(omap_mux_read(partition,
-+		if (!OMAP_MODE_GPIO(partition, omap_mux_read(partition,
- 				    superset->reg_offset))) {
- 			superset++;
- 			continue;
-@@ -1131,6 +1128,7 @@ int __init omap_mux_init(const char *name, u32 flags,
- 
- 	partition->name = name;
- 	partition->flags = flags;
-+	partition->gpio = flags & OMAP_MUX_MODE7;
- 	partition->size = mux_size;
- 	partition->phys = mux_pbase;
- 	partition->base = ioremap(mux_pbase, mux_size);
-diff --git a/arch/arm/mach-omap2/mux.h b/arch/arm/mach-omap2/mux.h
-index 76f9b3c..5504e12 100644
---- a/arch/arm/mach-omap2/mux.h
-+++ b/arch/arm/mach-omap2/mux.h
-@@ -58,7 +58,8 @@
- #define OMAP_PIN_OFF_INPUT_PULLDOWN	(OMAP_OFF_EN | OMAP_OFF_PULL_EN)
- #define OMAP_PIN_OFF_WAKEUPENABLE	OMAP_WAKEUP_EN
- 
--#define OMAP_MODE_GPIO(x)	(((x) & OMAP_MUX_MODE7) == OMAP_MUX_MODE4)
-+#define OMAP_MODE_GPIO(partition, x)	(((x) & OMAP_MUX_MODE7) == \
-+					  partition->gpio)
- #define OMAP_MODE_UART(x)	(((x) & OMAP_MUX_MODE7) == OMAP_MUX_MODE0)
- 
- /* Flags for omapX_mux_init */
-@@ -79,13 +80,20 @@
- /*
-  * omap_mux_init flags definition:
-  *
-+ * OMAP_GPIO_MUX_MODE, bits 0-2: gpio muxing mode, same like pad control
-+ *      register which includes values from 0-7.
-  * OMAP_MUX_REG_8BIT: Ensure that access to padconf is done in 8 bits.
-  * The default value is 16 bits.
-- * OMAP_MUX_GPIO_IN_MODE3: The GPIO is selected in mode3.
-- * The default is mode4.
-  */
--#define OMAP_MUX_REG_8BIT		(1 << 0)
--#define OMAP_MUX_GPIO_IN_MODE3		(1 << 1)
-+#define OMAP_MUX_GPIO_IN_MODE0		OMAP_MUX_MODE0
-+#define OMAP_MUX_GPIO_IN_MODE1		OMAP_MUX_MODE1
-+#define OMAP_MUX_GPIO_IN_MODE2		OMAP_MUX_MODE2
-+#define OMAP_MUX_GPIO_IN_MODE3		OMAP_MUX_MODE3
-+#define OMAP_MUX_GPIO_IN_MODE4		OMAP_MUX_MODE4
-+#define OMAP_MUX_GPIO_IN_MODE5		OMAP_MUX_MODE5
-+#define OMAP_MUX_GPIO_IN_MODE6		OMAP_MUX_MODE6
-+#define OMAP_MUX_GPIO_IN_MODE7		OMAP_MUX_MODE7
-+#define OMAP_MUX_REG_8BIT		(1 << 3)
- 
- /**
-  * struct omap_board_data - board specific device data
-@@ -105,6 +113,7 @@ struct omap_board_data {
-  * struct mux_partition - contain partition related information
-  * @name: name of the current partition
-  * @flags: flags specific to this partition
-+ * @gpio: gpio mux mode 
-  * @phys: physical address
-  * @size: partition size
-  * @base: virtual address after ioremap
-@@ -114,6 +123,7 @@ struct omap_board_data {
- struct omap_mux_partition {
- 	const char		*name;
- 	u32			flags;
-+	u32			gpio;
- 	u32			phys;
- 	u32			size;
- 	void __iomem		*base;
-diff --git a/arch/arm/mach-omap2/mux34xx.c b/arch/arm/mach-omap2/mux34xx.c
-index c47140b..c53609f4 100644
---- a/arch/arm/mach-omap2/mux34xx.c
-+++ b/arch/arm/mach-omap2/mux34xx.c
-@@ -2053,7 +2053,7 @@ int __init omap3_mux_init(struct omap_board_mux *board_subset, int flags)
- 		return -EINVAL;
- 	}
- 
--	return omap_mux_init("core", 0,
-+	return omap_mux_init("core", OMAP_MUX_GPIO_IN_MODE4,
- 			     OMAP3_CONTROL_PADCONF_MUX_PBASE,
- 			     OMAP3_CONTROL_PADCONF_MUX_SIZE,
- 			     omap3_muxmodes, package_subset, board_subset,
+
 -- 
-1.7.4.1
-
+Feng Shuo
+Tel: (86)10-59851155-2116
+Fax: (86)10-59851155-2008
+Tianjin Zhongke Blue Whale Information Technologies Co., Ltd
+10th Floor, Tower A, The GATE building, No. 19 Zhong-guan-cun Avenue
+Haidian District, Beijing, China
+Postcode 100080
