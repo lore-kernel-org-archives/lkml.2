@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2K0F5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:57:20 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41864 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab2K0F5S (ORCPT
+	id S1755676Ab2K0F6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:58:37 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57910 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2K0F6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:57:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
-	<20121120180949.GG1408@quack.suse.cz>
-	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
-	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-	<50AF7901.20401@kernel.dk>
-	<CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
-	<Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
-	<CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
-Date: Tue, 27 Nov 2012 13:57:17 +0800
-Message-ID: <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
-Subject: Re: Recent kernel "mount" slow
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Nov 2012 00:58:36 -0500
+Message-ID: <1353995907.14050.60.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [PATCH rcu] use new nesting value for rcu_dyntick trace in
+ rcu_eqs_enter_common
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, dipankar@in.ibm.com
+Date: Tue, 27 Nov 2012 13:58:27 +0800
+In-Reply-To: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12112705-5490-0000-0000-0000028C8CC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->> So it's better to slow down mount.
->
-> I am quite proud of the linux boot time pitting against other OS. Even
-> with 10 partitions. Linux can boot up in just a few seconds, but now
-> you're saying that we need to do this semaphore check at boot up. By
-> doing so, it's inducing additional 4 seconds during boot up.
+This patch uses the real new value of dynticks_nesting instead of 0 in
+rcu_eqs_enter_common(). 
 
-By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
-(2.8GHz). I wonder if those on slower hard disk or slower CPU, what
-kind of degradation would this cause or just the same?
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Jeff
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 7733eb5..6b7e314 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -339,7 +339,7 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
+ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+ 				bool user)
+ {
+-	trace_rcu_dyntick("Start", oldval, 0);
++	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
+ 	if (!user && !is_idle_task(current)) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+-- 
+1.7.11.4
+
