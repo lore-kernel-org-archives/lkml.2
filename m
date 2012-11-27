@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab2K0Qt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:49:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32949 "EHLO mx1.redhat.com"
+	id S1756457Ab2K0Qub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:50:31 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:54458 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756419Ab2K0Qqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:46:46 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com
-Cc: Bart Van Assche <bvanassche@acm.org>
-Subject: [patch,v3,repost 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
-Date: Tue, 27 Nov 2012 11:46:32 -0500
-Message-Id: <1354034799-8460-5-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
-References: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
+	id S1755846Ab2K0Qu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 11:50:29 -0500
+Date: Tue, 27 Nov 2012 08:49:19 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't
+ free skb immediately after sent
+Message-ID: <20121127084919.1587c647@nehalam.linuxnetplumber.net>
+In-Reply-To: <50B46179.4040809@redhat.com>
+References: <1353916612-6357-1-git-send-email-jasowang@redhat.com>
+	<20121126093728.0a10f97f@nehalam.linuxnetplumber.net>
+	<50B46179.4040809@redhat.com>
+Organization: Vyatta
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- drivers/scsi/scsi.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+On Tue, 27 Nov 2012 14:45:13 +0800
+Jason Wang <jasowang@redhat.com> wrote:
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2936b44..1750702 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -173,16 +173,19 @@ static DEFINE_MUTEX(host_cmd_pool_mutex);
-  * NULL on failure
-  */
- static struct scsi_cmnd *
--scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask)
-+scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask,
-+			int node)
- {
- 	struct scsi_cmnd *cmd;
- 
--	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
-+	cmd = kmem_cache_alloc_node(pool->cmd_slab,
-+				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
-+				    node);
- 	if (!cmd)
- 		return NULL;
- 
--	cmd->sense_buffer = kmem_cache_alloc(pool->sense_slab,
--					     gfp_mask | pool->gfp_mask);
-+	cmd->sense_buffer = kmem_cache_alloc_node(pool->sense_slab,
-+					gfp_mask | pool->gfp_mask, node);
- 	if (!cmd->sense_buffer) {
- 		kmem_cache_free(pool->cmd_slab, cmd);
- 		return NULL;
-@@ -223,7 +226,8 @@ scsi_host_alloc_command(struct Scsi_Host *shost, gfp_t gfp_mask)
- {
- 	struct scsi_cmnd *cmd;
- 
--	cmd = scsi_pool_alloc_command(shost->cmd_pool, gfp_mask);
-+	cmd = scsi_pool_alloc_command(shost->cmd_pool, gfp_mask,
-+				      scsi_host_get_numa_node(shost));
- 	if (!cmd)
- 		return NULL;
- 
-@@ -435,7 +439,7 @@ struct scsi_cmnd *scsi_allocate_command(gfp_t gfp_mask)
- 	if (!pool)
- 		return NULL;
- 
--	return scsi_pool_alloc_command(pool, gfp_mask);
-+	return scsi_pool_alloc_command(pool, gfp_mask, NUMA_NO_NODE);
- }
- EXPORT_SYMBOL(scsi_allocate_command);
- 
--- 
-1.7.1
+> On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
+> > On Mon, 26 Nov 2012 15:56:52 +0800
+> > Jason Wang <jasowang@redhat.com> wrote:
+> >
+> >> Some deivces do not free the old tx skbs immediately after it has been sent
+> >> (usually in tx interrupt). One such example is virtio-net which optimizes for
+> >> virt and only free the possible old tx skbs during the next packet sending. This
+> >> would lead the pktgen to wait forever in the refcount of the skb if no other
+> >> pakcet will be sent afterwards.
+> >>
+> >> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY which could
+> >> notify the pktgen that the device does not free skb immediately after it has
+> >> been sent and let it not to wait for the refcount to be one.
+> >>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > Another alternative would be using skb_orphan() and skb->destructor.
+> > There are other cases where skb's are not freed right away.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hi Stephen:
+> 
+> Do you mean registering a skb->destructor for pktgen then set and check 
+> bits in skb->tx_flag?
 
+Yes. Register a destructor that does something like update a counter (number of packets pending),
+then just spin while number of packets pending is over threshold.
