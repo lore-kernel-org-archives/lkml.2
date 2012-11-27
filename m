@@ -1,429 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab2K0XTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:19:45 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26299 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755099Ab2K0XPP (ORCPT
+	id S1756472Ab2K0XUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:20:05 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41517 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab2K0XUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:15 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WMUAeEJAOfS4Z6gwSBTw
-From: Dave Chinner <david@fromorbit.com>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 15/19] xfs: convert dquot cache lru to list_lru
-Date: Wed, 28 Nov 2012 10:14:42 +1100
-Message-Id: <1354058086-27937-16-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+	Tue, 27 Nov 2012 18:20:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121127222637.GG2301@cmpxchg.org>
+References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+ <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
+ <50B52DC4.5000109@redhat.com> <20121127214928.GA20253@cmpxchg.org>
+ <50B5387C.1030005@redhat.com> <20121127222637.GG2301@cmpxchg.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 27 Nov 2012 15:19:38 -0800
+X-Google-Sender-Auth: SLGvZnOr9RHSWqBoIp1ONh1QFRE
+Message-ID: <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
+Subject: Re: kswapd craziness in 3.7
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
+        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+On Tue, Nov 27, 2012 at 2:26 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Tue, Nov 27, 2012 at 05:02:36PM -0500, Rik van Riel wrote:
+>>
+>> Kswapd going crazy is certainly a large part of the problem.
+>>
+>> However, that leaves the issue of page_alloc.c waking up
+>> kswapd when the system is not actually low on memory.
+>>
+>> Instead, kswapd is woken up because memory compaction failed,
+>> potentially even due to lock contention during compaction!
+>>
+>> Ideally the allocation code would only wake up kswapd if
+>> memory needs to be freed, or in order for kswapd to do
+>> memory compaction (so the allocator does not have to).
+>
+> Maybe I missed something, but shouldn't this be solved with my patch?
 
-Convert the XFS dquot lru to use the list_lru construct and convert
-the shrinker to being node aware.
+Ok, guys. Cage fight!
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_dquot.c |    7 +-
- fs/xfs/xfs_qm.c    |  307 ++++++++++++++++++++++++++--------------------------
- fs/xfs/xfs_qm.h    |    4 +-
- 3 files changed, 156 insertions(+), 162 deletions(-)
+The rules are simple: two men enter, one man leaves.
 
-diff --git a/fs/xfs/xfs_dquot.c b/fs/xfs/xfs_dquot.c
-index 9e1bf52..4fcd42e 100644
---- a/fs/xfs/xfs_dquot.c
-+++ b/fs/xfs/xfs_dquot.c
-@@ -843,13 +843,8 @@ xfs_qm_dqput_final(
- 
- 	trace_xfs_dqput_free(dqp);
- 
--	mutex_lock(&qi->qi_lru_lock);
--	if (list_empty(&dqp->q_lru)) {
--		list_add_tail(&dqp->q_lru, &qi->qi_lru_list);
--		qi->qi_lru_count++;
-+	if (list_lru_add(&qi->qi_lru, &dqp->q_lru))
- 		XFS_STATS_INC(xs_qm_dquot_unused);
--	}
--	mutex_unlock(&qi->qi_lru_lock);
- 
- 	/*
- 	 * If we just added a udquot to the freelist, then we want to release
-diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
-index e6a0af0..534b924 100644
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -50,7 +50,6 @@
-  */
- STATIC int	xfs_qm_init_quotainos(xfs_mount_t *);
- STATIC int	xfs_qm_init_quotainfo(xfs_mount_t *);
--STATIC int	xfs_qm_shake(struct shrinker *, struct shrink_control *);
- 
- /*
-  * We use the batch lookup interface to iterate over the dquots as it
-@@ -196,12 +195,9 @@ xfs_qm_dqpurge(
- 	 * We move dquots to the freelist as soon as their reference count
- 	 * hits zero, so it really should be on the freelist here.
- 	 */
--	mutex_lock(&qi->qi_lru_lock);
- 	ASSERT(!list_empty(&dqp->q_lru));
--	list_del_init(&dqp->q_lru);
--	qi->qi_lru_count--;
-+	list_lru_del(&qi->qi_lru, &dqp->q_lru);
- 	XFS_STATS_DEC(xs_qm_dquot_unused);
--	mutex_unlock(&qi->qi_lru_lock);
- 
- 	xfs_qm_dqdestroy(dqp);
- 
-@@ -617,6 +613,156 @@ xfs_qm_dqdetach(
- 	}
- }
- 
-+STATIC void
-+xfs_qm_dqfree_one(
-+	struct xfs_dquot	*dqp)
-+{
-+	struct xfs_mount	*mp = dqp->q_mount;
-+	struct xfs_quotainfo	*qi = mp->m_quotainfo;
-+
-+	mutex_lock(&qi->qi_tree_lock);
-+	radix_tree_delete(XFS_DQUOT_TREE(qi, dqp->q_core.d_flags),
-+					 be32_to_cpu(dqp->q_core.d_id));
-+
-+	qi->qi_dquots--;
-+	mutex_unlock(&qi->qi_tree_lock);
-+
-+	xfs_qm_dqdestroy(dqp);
-+}
-+
-+struct xfs_qm_isolate {
-+	struct list_head	buffers;
-+	struct list_head	dispose;
-+};
-+
-+static int
-+xfs_qm_dquot_isolate(
-+	struct list_head	*item,
-+	spinlock_t		*lru_lock,
-+	void			*arg)
-+{
-+	struct xfs_dquot	*dqp = container_of(item,
-+						struct xfs_dquot, q_lru);
-+	struct xfs_qm_isolate	*isol = arg;
-+
-+	if (!xfs_dqlock_nowait(dqp))
-+		goto out_miss_busy;
-+
-+	/*
-+	 * This dquot has acquired a reference in the meantime remove it from
-+	 * the freelist and try again.
-+	 */
-+	if (dqp->q_nrefs) {
-+		xfs_dqunlock(dqp);
-+		XFS_STATS_INC(xs_qm_dqwants);
-+
-+		trace_xfs_dqreclaim_want(dqp);
-+		list_del_init(&dqp->q_lru);
-+		XFS_STATS_DEC(xs_qm_dquot_unused);
-+		return 0;
-+	}
-+
-+	/*
-+	 * If the dquot is dirty, flush it. If it's already being flushed, just
-+	 * skip it so there is time for the IO to complete before we try to
-+	 * reclaim it again on the next LRU pass.
-+	 */
-+	if (!xfs_dqflock_nowait(dqp))
-+		xfs_dqunlock(dqp);
-+		goto out_miss_busy;
-+
-+	if (XFS_DQ_IS_DIRTY(dqp)) {
-+		struct xfs_buf	*bp = NULL;
-+		int		error;
-+
-+		trace_xfs_dqreclaim_dirty(dqp);
-+
-+		/* we have to drop the LRU lock to flush the dquot */
-+		spin_unlock(lru_lock);
-+
-+		error = xfs_qm_dqflush(dqp, &bp);
-+		if (error) {
-+			xfs_warn(dqp->q_mount, "%s: dquot %p flush failed",
-+				 __func__, dqp);
-+			goto out_unlock_dirty;
-+		}
-+
-+		xfs_buf_delwri_queue(bp, &isol->buffers);
-+		xfs_buf_relse(bp);
-+		goto out_unlock_dirty;
-+	}
-+	xfs_dqfunlock(dqp);
-+
-+	/*
-+	 * Prevent lookups now that we are past the point of no return.
-+	 */
-+	dqp->dq_flags |= XFS_DQ_FREEING;
-+	xfs_dqunlock(dqp);
-+
-+	ASSERT(dqp->q_nrefs == 0);
-+	list_move_tail(&dqp->q_lru, &isol->dispose);
-+	XFS_STATS_DEC(xs_qm_dquot_unused);
-+	trace_xfs_dqreclaim_done(dqp);
-+	XFS_STATS_INC(xs_qm_dqreclaims);
-+	return 0;
-+
-+out_miss_busy:
-+	trace_xfs_dqreclaim_busy(dqp);
-+	XFS_STATS_INC(xs_qm_dqreclaim_misses);
-+	return 2;
-+
-+out_unlock_dirty:
-+	trace_xfs_dqreclaim_busy(dqp);
-+	XFS_STATS_INC(xs_qm_dqreclaim_misses);
-+	return 3;
-+}
-+
-+static long
-+xfs_qm_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	struct xfs_quotainfo	*qi = container_of(shrink,
-+					struct xfs_quotainfo, qi_shrinker);
-+	struct xfs_qm_isolate	isol;
-+	long			freed;
-+	int			error;
-+
-+	if ((sc->gfp_mask & (__GFP_FS|__GFP_WAIT)) != (__GFP_FS|__GFP_WAIT))
-+		return 0;
-+
-+	INIT_LIST_HEAD(&isol.buffers);
-+	INIT_LIST_HEAD(&isol.dispose);
-+
-+	freed = list_lru_walk_nodemask(&qi->qi_lru, xfs_qm_dquot_isolate, &isol,
-+					sc->nr_to_scan, &sc->nodes_to_scan);
-+
-+	error = xfs_buf_delwri_submit(&isol.buffers);
-+	if (error)
-+		xfs_warn(NULL, "%s: dquot reclaim failed", __func__);
-+
-+	while (!list_empty(&isol.dispose)) {
-+		struct xfs_dquot	*dqp;
-+
-+		dqp = list_first_entry(&isol.dispose, struct xfs_dquot, q_lru);
-+		list_del_init(&dqp->q_lru);
-+		xfs_qm_dqfree_one(dqp);
-+	}
-+
-+	return freed;
-+}
-+
-+static long
-+xfs_qm_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
-+	struct xfs_quotainfo	*qi = container_of(shrink,
-+					struct xfs_quotainfo, qi_shrinker);
-+
-+	return list_lru_count_nodemask(&qi->qi_lru, &sc->nodes_to_scan);
-+}
-+
- /*
-  * This initializes all the quota information that's kept in the
-  * mount structure
-@@ -647,9 +793,7 @@ xfs_qm_init_quotainfo(
- 	INIT_RADIX_TREE(&qinf->qi_gquota_tree, GFP_NOFS);
- 	mutex_init(&qinf->qi_tree_lock);
- 
--	INIT_LIST_HEAD(&qinf->qi_lru_list);
--	qinf->qi_lru_count = 0;
--	mutex_init(&qinf->qi_lru_lock);
-+	list_lru_init(&qinf->qi_lru);
- 
- 	/* mutex used to serialize quotaoffs */
- 	mutex_init(&qinf->qi_quotaofflock);
-@@ -716,7 +860,8 @@ xfs_qm_init_quotainfo(
- 		qinf->qi_rtbwarnlimit = XFS_QM_RTBWARNLIMIT;
- 	}
- 
--	qinf->qi_shrinker.shrink = xfs_qm_shake;
-+	qinf->qi_shrinker.count_objects = xfs_qm_shrink_count;
-+	qinf->qi_shrinker.scan_objects = xfs_qm_shrink_scan;
- 	qinf->qi_shrinker.seeks = DEFAULT_SEEKS;
- 	register_shrinker(&qinf->qi_shrinker);
- 	return 0;
-@@ -1428,150 +1573,6 @@ xfs_qm_init_quotainos(
- 	return 0;
- }
- 
--STATIC void
--xfs_qm_dqfree_one(
--	struct xfs_dquot	*dqp)
--{
--	struct xfs_mount	*mp = dqp->q_mount;
--	struct xfs_quotainfo	*qi = mp->m_quotainfo;
--
--	mutex_lock(&qi->qi_tree_lock);
--	radix_tree_delete(XFS_DQUOT_TREE(qi, dqp->q_core.d_flags),
--			  be32_to_cpu(dqp->q_core.d_id));
--
--	qi->qi_dquots--;
--	mutex_unlock(&qi->qi_tree_lock);
--
--	xfs_qm_dqdestroy(dqp);
--}
--
--STATIC void
--xfs_qm_dqreclaim_one(
--	struct xfs_dquot	*dqp,
--	struct list_head	*buffer_list,
--	struct list_head	*dispose_list)
--{
--	struct xfs_mount	*mp = dqp->q_mount;
--	struct xfs_quotainfo	*qi = mp->m_quotainfo;
--	int			error;
--
--	if (!xfs_dqlock_nowait(dqp))
--		goto out_busy;
--
--	/*
--	 * This dquot has acquired a reference in the meantime remove it from
--	 * the freelist and try again.
--	 */
--	if (dqp->q_nrefs) {
--		xfs_dqunlock(dqp);
--
--		trace_xfs_dqreclaim_want(dqp);
--		XFS_STATS_INC(xs_qm_dqwants);
--
--		list_del_init(&dqp->q_lru);
--		qi->qi_lru_count--;
--		XFS_STATS_DEC(xs_qm_dquot_unused);
--		return;
--	}
--
--	/*
--	 * Try to grab the flush lock. If this dquot is in the process of
--	 * getting flushed to disk, we don't want to reclaim it.
--	 */
--	if (!xfs_dqflock_nowait(dqp))
--		goto out_busy;
--
--	if (XFS_DQ_IS_DIRTY(dqp)) {
--		struct xfs_buf	*bp = NULL;
--
--		trace_xfs_dqreclaim_dirty(dqp);
--
--		error = xfs_qm_dqflush(dqp, &bp);
--		if (error) {
--			xfs_warn(mp, "%s: dquot %p flush failed",
--				 __func__, dqp);
--			goto out_busy;
--		}
--
--		xfs_buf_delwri_queue(bp, buffer_list);
--		xfs_buf_relse(bp);
--		/*
--		 * Give the dquot another try on the freelist, as the
--		 * flushing will take some time.
--		 */
--		goto out_busy;
--	}
--	xfs_dqfunlock(dqp);
--
--	/*
--	 * Prevent lookups now that we are past the point of no return.
--	 */
--	dqp->dq_flags |= XFS_DQ_FREEING;
--	xfs_dqunlock(dqp);
--
--	ASSERT(dqp->q_nrefs == 0);
--	list_move_tail(&dqp->q_lru, dispose_list);
--	qi->qi_lru_count--;
--	XFS_STATS_DEC(xs_qm_dquot_unused);
--
--	trace_xfs_dqreclaim_done(dqp);
--	XFS_STATS_INC(xs_qm_dqreclaims);
--	return;
--
--out_busy:
--	xfs_dqunlock(dqp);
--
--	/*
--	 * Move the dquot to the tail of the list so that we don't spin on it.
--	 */
--	list_move_tail(&dqp->q_lru, &qi->qi_lru_list);
--
--	trace_xfs_dqreclaim_busy(dqp);
--	XFS_STATS_INC(xs_qm_dqreclaim_misses);
--}
--
--STATIC int
--xfs_qm_shake(
--	struct shrinker		*shrink,
--	struct shrink_control	*sc)
--{
--	struct xfs_quotainfo	*qi =
--		container_of(shrink, struct xfs_quotainfo, qi_shrinker);
--	int			nr_to_scan = sc->nr_to_scan;
--	LIST_HEAD		(buffer_list);
--	LIST_HEAD		(dispose_list);
--	struct xfs_dquot	*dqp;
--	int			error;
--
--	if ((sc->gfp_mask & (__GFP_FS|__GFP_WAIT)) != (__GFP_FS|__GFP_WAIT))
--		return 0;
--	if (!nr_to_scan)
--		goto out;
--
--	mutex_lock(&qi->qi_lru_lock);
--	while (!list_empty(&qi->qi_lru_list)) {
--		if (nr_to_scan-- <= 0)
--			break;
--		dqp = list_first_entry(&qi->qi_lru_list, struct xfs_dquot,
--				       q_lru);
--		xfs_qm_dqreclaim_one(dqp, &buffer_list, &dispose_list);
--	}
--	mutex_unlock(&qi->qi_lru_lock);
--
--	error = xfs_buf_delwri_submit(&buffer_list);
--	if (error)
--		xfs_warn(NULL, "%s: dquot reclaim failed", __func__);
--
--	while (!list_empty(&dispose_list)) {
--		dqp = list_first_entry(&dispose_list, struct xfs_dquot, q_lru);
--		list_del_init(&dqp->q_lru);
--		xfs_qm_dqfree_one(dqp);
--	}
--
--out:
--	return (qi->qi_lru_count / 100) * sysctl_vfs_cache_pressure;
--}
--
- /*
-  * Start a transaction and write the incore superblock changes to
-  * disk. flags parameter indicates which fields have changed.
-diff --git a/fs/xfs/xfs_qm.h b/fs/xfs/xfs_qm.h
-index 44b858b..d08b72d 100644
---- a/fs/xfs/xfs_qm.h
-+++ b/fs/xfs/xfs_qm.h
-@@ -47,9 +47,7 @@ typedef struct xfs_quotainfo {
- 	struct mutex qi_tree_lock;
- 	xfs_inode_t	*qi_uquotaip;	 /* user quota inode */
- 	xfs_inode_t	*qi_gquotaip;	 /* group quota inode */
--	struct list_head qi_lru_list;
--	struct mutex	 qi_lru_lock;
--	int		 qi_lru_count;
-+	struct list_lru	 qi_lru;
- 	int		 qi_dquots;
- 	time_t		 qi_btimelimit;	 /* limit for blks timer */
- 	time_t		 qi_itimelimit;	 /* limit for inodes timer */
--- 
-1.7.10
+And the one who comes out gets to explain to me which patch(es) I
+should apply, and which I should revert, if any.
 
+My current guess is that I should apply the one Johannes just sent
+("mm: vmscan: fix kswapd endless loop on higher order allocation")
+after having added the cc to stable to it, and then revert the recent
+revert (commit 82b212f40059).
+
+But I await the Thunderdome. <Cue Tina Turner "We Don't Need Another Hero">
+
+                      Linus
