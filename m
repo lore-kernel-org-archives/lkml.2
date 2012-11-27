@@ -1,133 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933212Ab2K0EAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 23:00:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:6862 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933156Ab2K0EAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 23:00:07 -0500
-X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6281117"
-Message-ID: <50B429EC.9000609@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 10:48:12 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S933239Ab2K0EGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 23:06:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56856 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933156Ab2K0EGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 23:06:23 -0500
+Message-ID: <50B43C36.60707@ozlabs.ru>
+Date: Tue, 27 Nov 2012 15:06:14 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Jianguo Wu <wujianguo@huawei.com>
-CC: akpm@linux-foundation.org, rientjes@google.com,
-        Michal Hocko <mhocko@suse.cz>, shangw@linux.vnet.ibm.com,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, Tang Chen <tangchen@cn.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: mm/vmemmap: fix wrong use of virt_to_page
-References: <50B422A9.7050103@huawei.com>
-In-Reply-To: <50B422A9.7050103@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:41:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:41:21,
-	Serialize complete at 2012/11/27 10:41:21
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] vfio powerpc: implemented IOMMU driver for VFIO
+References: <1353435584.2234.87.camel@bling.home>  <1353661396-14374-1-git-send-email-aik@ozlabs.ru>  <1353661396-14374-2-git-send-email-aik@ozlabs.ru> <1353954038.1809.114.camel@bling.home>
+In-Reply-To: <1353954038.1809.114.camel@bling.home>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/27/2012 10:17 AM, Jianguo Wu Wrote:
-> I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing memory hotremove,
-> there is a kernel BUG at arch/x86/mm/physaddr.c:20.
-> 
-> It is caused by free_section_usemap()->virt_to_page(),
-> virt_to_page() is only used for kernel direct mapping address,
-> but sparse-vmemmap uses vmemmap address, so it is going wrong here.
+On 27/11/12 05:20, Alex Williamson wrote:
+> On Fri, 2012-11-23 at 20:03 +1100, Alexey Kardashevskiy wrote:
+>> VFIO implements platform independent stuff such as
+>> a PCI driver, BAR access (via read/write on a file descriptor
+>> or direct mapping when possible) and IRQ signaling.
+>>
+>> The platform dependent part includes IOMMU initialization
+>> and handling. This patch implements an IOMMU driver for VFIO
+>> which does mapping/unmapping pages for the guest IO and
+>> provides information about DMA window (required by a POWERPC
+>> guest).
+>>
+>> The counterpart in QEMU is required to support this functionality.
+>>
+>> Cc: David Gibson <david@gibson.dropbear.id.au>
+>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>> ---
+>>   drivers/vfio/Kconfig                |    6 +
+>>   drivers/vfio/Makefile               |    1 +
+>>   drivers/vfio/vfio_iommu_spapr_tce.c |  247 +++++++++++++++++++++++++++++++++++
+>>   include/linux/vfio.h                |   20 +++
+>>   4 files changed, 274 insertions(+)
+>>   create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
+>>
+>> diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+>> index 7cd5dec..b464687 100644
+>> --- a/drivers/vfio/Kconfig
+>> +++ b/drivers/vfio/Kconfig
+>> @@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
+>>   	depends on VFIO
+>>   	default n
+>>
+>> +config VFIO_IOMMU_SPAPR_TCE
+>> +	tristate
+>> +	depends on VFIO && SPAPR_TCE_IOMMU
+>> +	default n
+>> +
+>>   menuconfig VFIO
+>>   	tristate "VFIO Non-Privileged userspace driver framework"
+>>   	depends on IOMMU_API
+>>   	select VFIO_IOMMU_TYPE1 if X86
+>> +	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
+>>   	help
+>>   	  VFIO provides a framework for secure userspace device drivers.
+>>   	  See Documentation/vfio.txt for more details.
+>> diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+>> index 2398d4a..72bfabc 100644
+>> --- a/drivers/vfio/Makefile
+>> +++ b/drivers/vfio/Makefile
+>> @@ -1,3 +1,4 @@
+>>   obj-$(CONFIG_VFIO) += vfio.o
+>>   obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+>> +obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
+>>   obj-$(CONFIG_VFIO_PCI) += pci/
+>> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+>> new file mode 100644
+>> index 0000000..46a6298
+>> --- /dev/null
+>> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+>> @@ -0,0 +1,247 @@
+>> +/*
+>> + * VFIO: IOMMU DMA mapping support for TCE on POWER
+>> + *
+>> + * Copyright (C) 2012 IBM Corp.  All rights reserved.
+>> + *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * Derived from original vfio_iommu_type1.c:
+>> + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
+>> + *     Author: Alex Williamson <alex.williamson@redhat.com>
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/pci.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/uaccess.h>
+>> +#include <linux/err.h>
+>> +#include <linux/vfio.h>
+>> +#include <asm/iommu.h>
+>> +
+>> +#define DRIVER_VERSION  "0.1"
+>> +#define DRIVER_AUTHOR   "aik@ozlabs.ru"
+>> +#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
+>> +
+>> +static void tce_iommu_detach_group(void *iommu_data,
+>> +		struct iommu_group *iommu_group);
+>> +
+>> +/*
+>> + * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
+>> + */
+>> +
+>> +/*
+>> + * The container descriptor supports only a single group per container.
+>> + * Required by the API as the container is not supplied with the IOMMU group
+>> + * at the moment of initialization.
+>> + */
+>> +struct tce_container {
+>> +	struct mutex lock;
+>> +	struct iommu_table *tbl;
+>> +};
+>> +
+>> +static void *tce_iommu_open(unsigned long arg)
+>> +{
+>> +	struct tce_container *container;
+>> +
+>> +	if (arg != VFIO_SPAPR_TCE_IOMMU) {
+>> +		printk(KERN_ERR "tce_vfio: Wrong IOMMU type\n");
+>> +		return ERR_PTR(-EINVAL);
+>> +	}
+>> +
+>> +	container = kzalloc(sizeof(*container), GFP_KERNEL);
+>> +	if (!container)
+>> +		return ERR_PTR(-ENOMEM);
+>> +
+>> +	mutex_init(&container->lock);
+>> +
+>> +	return container;
+>> +}
+>> +
+>> +static void tce_iommu_release(void *iommu_data)
+>> +{
+>> +	struct tce_container *container = iommu_data;
+>> +
+>> +	WARN_ON(container->tbl && !container->tbl->it_group);
+>
+> I think your patch ordering is backwards here.  it_group isn't added
+> until 2/2.  I'd really like to see the arch/powerpc code approved and
+> merged by the powerpc maintainer before we add the code that makes use
+> of it into vfio.  Otherwise we just get lots of churn if interfaces
+> change or they disapprove of it altogether.
 
-Yes, we can't use virt_to_page() here. I don't enable CONFIG_DEBUG_VIRTUAL,
-so I don't find this problem.
 
-> 
-> [  517.727381] ------------[ cut here ]------------
-> [  517.728851] kernel BUG at arch/x86/mm/physaddr.c:20!
-> [  517.728851] invalid opcode: 0000 [#1] SMP
-> [  517.740170] Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservativ
-> e cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_m
-> od coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspk
-> r iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_c
-> ore mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3
->  jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif p
-> rocessor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc s
-> csi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
-> [  517.740170] CPU 39
-> [  517.740170] Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI Q
-> SSC-S4R/QSSC-S4R
-> [  517.740170] RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+
-> 0x88/0x90
-> [  517.740170] RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
-> [  517.740170] RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
-> 
-> [  517.740170] RDX: 0000620012000000 RSI: 0000000000000000 RDI: ffffea0012000000
-> 
-> [  517.740170] RBP: ffff8804440d7c08 R08: 0070000000000400 R09: 0000000000488000
-> 
-> [  517.740170] R10: 0000000000000091 R11: 0000000000000001 R12: ffff88047fb87800
-> 
-> [  517.740170] R13: ffffea0000000000 R14: ffff88047ffb3440 R15: 0000000000480000
-> 
-> [  517.740170] FS:  00007f0462b49700(0000) GS:ffff8804570c0000(0000) knlGS:00000
-> 00000000000
-> [  517.740170] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  517.740170] CR2: 00007f006dc5fd14 CR3: 0000000440e85000 CR4: 00000000000007e0
-> 
-> [  517.740170] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> 
-> [  517.896799] DR3: 0000000000000000 DR6
-> 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  mm/sparse.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/sparse.c b/mm/sparse.c
-> index fac95f2..a83de2f 100644
-> --- a/mm/sparse.c
-> +++ b/mm/sparse.c
-> @@ -617,7 +617,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->  {
->  	return; /* XXX: Not implemented yet */
->  }
-> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-> +static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  {
->  }
->  #else
-> @@ -658,10 +658,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->  			   get_order(sizeof(struct page) * nr_pages));
->  }
->  
-> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-> +static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  {
->  	unsigned long maps_section_nr, removing_section_nr, i;
->  	unsigned long magic;
-> +	struct page *page = virt_to_page(memmap);
->  
->  	for (i = 0; i < nr_pages; i++, page++) {
->  		magic = (unsigned long) page->lru.next;
-> @@ -710,13 +711,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
->  	 */
->  
->  	if (memmap) {
-> -		struct page *memmap_page;
-> -		memmap_page = virt_to_page(memmap);
-> -
->  		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
->  			>> PAGE_SHIFT;
->  
-> -		free_map_bootmem(memmap_page, nr_pages);
-> +		free_map_bootmem(memmap, nr_pages);
->  	}
->  }
->  
+Makes sense, thanks.
 
-Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
+
+>> +	if (container->tbl && container->tbl->it_group)
+>> +		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
+>> +
+>> +	mutex_destroy(&container->lock);
+>> +
+>> +	kfree(container);
+>> +}
+>> +
+>> +static long tce_iommu_ioctl(void *iommu_data,
+>> +				 unsigned int cmd, unsigned long arg)
+>> +{
+>> +	struct tce_container *container = iommu_data;
+>> +	unsigned long minsz;
+>> +
+>> +	switch (cmd) {
+>> +	case VFIO_CHECK_EXTENSION: {
+>> +		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
+>> +	}
+>> +	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
+>> +		struct vfio_iommu_spapr_tce_info info;
+>> +		struct iommu_table *tbl = container->tbl;
+>> +
+>> +		if (WARN_ON(!tbl))
+>> +			return -ENXIO;
+>> +
+>> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
+>> +				dma64_window_size);
+>> +
+>> +		if (copy_from_user(&info, (void __user *)arg, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		if (info.argsz < minsz)
+>> +			return -EINVAL;
+>> +
+>> +		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
+>> +		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
+>> +		info.dma64_window_start = 0;
+>> +		info.dma64_window_size = 0;
+>> +		info.flags = 0;
+>> +
+>> +		if (copy_to_user((void __user *)arg, &info, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		return 0;
+>> +	}
+>> +	case VFIO_IOMMU_MAP_DMA: {
+>> +		vfio_iommu_spapr_tce_dma_map param;
+>> +		struct iommu_table *tbl = container->tbl;
+>> +		enum dma_data_direction direction = DMA_NONE;
+>> +
+>> +		if (WARN_ON(!tbl))
+>> +			return -ENXIO;
+>> +
+>> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
+>> +
+>> +		if (copy_from_user(&param, (void __user *)arg, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		if (param.argsz < minsz)
+>> +			return -EINVAL;
+>> +
+>> +		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
+>> +				(param.flags & VFIO_DMA_MAP_FLAG_WRITE)) {
+>> +			direction = DMA_BIDIRECTIONAL;
+>> +		} else if (param.flags & VFIO_DMA_MAP_FLAG_READ) {
+>> +			direction = DMA_TO_DEVICE;
+>> +		} else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE) {
+>> +			direction = DMA_FROM_DEVICE;
+>> +		}
+>> +
+>> +		param.size += param.iova & ~IOMMU_PAGE_MASK;
+>> +		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
+>
+> On x86 we force iova, vaddr, and size to all be aligned to the smallest
+> page granularity of the iommu and return -EINVAL if it doesn't fit.
+> What does it imply to the user if they're always aligned to work here?
+> Won't this interface happily map overlapping entries with no indication
+> to the user that the previous mapping is no longer valid?
+> Maybe another reason why a combined unmap/map makes me nervous, we have
+> to assume the user knows what they're doing.
+
+
+I got used to guests which do know what they are doing so I am pretty calm :)
+but ok, I'll move alignment to the QEMU, it makes sense.
+
+
+>> +
+>> +		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
+>> +				param.vaddr & IOMMU_PAGE_MASK, direction,
+>> +				param.size >> IOMMU_PAGE_SHIFT);
+>> +	}
+>> +	case VFIO_IOMMU_UNMAP_DMA: {
+>> +		vfio_iommu_spapr_tce_dma_unmap param;
+>> +		struct iommu_table *tbl = container->tbl;
+>> +
+>> +		if (WARN_ON(!tbl))
+>> +			return -ENXIO;
+>> +
+>> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
+>> +
+>> +		if (copy_from_user(&param, (void __user *)arg, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		if (param.argsz < minsz)
+>> +			return -EINVAL;
+>> +
+>> +		param.size += param.iova & ~IOMMU_PAGE_MASK;
+>> +		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
+>> +
+>> +		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
+>> +				0, DMA_NONE, param.size >> IOMMU_PAGE_SHIFT);
+>> +	}
+>> +	default:
+>> +		printk(KERN_WARNING "tce_vfio: unexpected cmd %x\n", cmd);
+>
+> pr_warn
+>
+>> +	}
+>> +
+>> +	return -ENOTTY;
+>> +}
+>> +
+>> +static int tce_iommu_attach_group(void *iommu_data,
+>> +		struct iommu_group *iommu_group)
+>> +{
+>> +	struct tce_container *container = iommu_data;
+>> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+>> +
+>> +	BUG_ON(!tbl);
+>> +	mutex_lock(&container->lock);
+>> +	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
+>> +			iommu_group_id(iommu_group), iommu_group);
+>> +	if (container->tbl) {
+>> +		printk(KERN_WARNING "tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
+>
+> pr_warn
+>
+>> +				iommu_group_id(container->tbl->it_group),
+>> +				iommu_group_id(iommu_group));
+>> +		mutex_unlock(&container->lock);
+>> +		return -EBUSY;
+>> +	}
+>> +
+>> +	container->tbl = tbl;
+>
+> Would it be too much paranoia to clear all the tce here as you do below
+> on detach?
+
+Guess so. I do unmap on detach() and the guest calls put_tce(0) (i.e. 
+unmaps) the whole DMA window at the boot time.
+
+
+> ie. is there any risk that there's leftover programming?
+> x86 allocates a new domain on open of the iommu, so we always start out
+> clean.
+
+
+>> +	mutex_unlock(&container->lock);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void tce_iommu_detach_group(void *iommu_data,
+>> +		struct iommu_group *iommu_group)
+>> +{
+>> +	struct tce_container *container = iommu_data;
+>> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+>> +
+>> +	BUG_ON(!tbl);
+>> +	mutex_lock(&container->lock);
+>> +	if (tbl != container->tbl) {
+>> +		printk(KERN_WARNING "tce_vfio: detaching group #%u, expected group is #%u\n",
+>
+> pr_warn
+>
+>> +				iommu_group_id(iommu_group),
+>> +				iommu_group_id(tbl->it_group));
+>> +	} else {
+>> +
+>> +		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
+>> +				iommu_group_id(iommu_group), iommu_group);
+>> +
+>> +		iommu_put_tces(tbl, tbl->it_offset, 0, DMA_NONE, tbl->it_size);
+>
+> So this cleans out any mappings when vfio is closed, good.
+>
+>> +		container->tbl = NULL;
+>> +	}
+>> +	mutex_unlock(&container->lock);
+>> +}
+>> +
+>> +const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
+>> +	.name		= "iommu-vfio-powerpc",
+>> +	.owner		= THIS_MODULE,
+>> +	.open		= tce_iommu_open,
+>> +	.release	= tce_iommu_release,
+>> +	.ioctl		= tce_iommu_ioctl,
+>> +	.attach_group	= tce_iommu_attach_group,
+>> +	.detach_group	= tce_iommu_detach_group,
+>> +};
+>> +
+>> +static int __init tce_iommu_init(void)
+>> +{
+>> +	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
+>> +}
+>> +
+>> +static void __exit tce_iommu_cleanup(void)
+>> +{
+>> +	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
+>> +}
+>> +
+>> +module_init(tce_iommu_init);
+>> +module_exit(tce_iommu_cleanup);
+>> +
+>> +MODULE_VERSION(DRIVER_VERSION);
+>> +MODULE_LICENSE("GPL v2");
+>> +MODULE_AUTHOR(DRIVER_AUTHOR);
+>> +MODULE_DESCRIPTION(DRIVER_DESC);
+>> +
+>> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+>> index 0a4f180..3ecd65c 100644
+>> --- a/include/linux/vfio.h
+>> +++ b/include/linux/vfio.h
+>> @@ -99,6 +99,7 @@ extern void vfio_unregister_iommu_driver(
+>>   /* Extensions */
+>>
+>>   #define VFIO_TYPE1_IOMMU		1
+>> +#define VFIO_SPAPR_TCE_IOMMU		2
+>>
+>>   /*
+>>    * The IOCTL interface is designed for extensibility by embedding the
+>> @@ -442,4 +443,23 @@ struct vfio_iommu_type1_dma_unmap {
+>>
+>>   #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
+>>
+>> +/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
+>> +
+>> +struct vfio_iommu_spapr_tce_info {
+>> +	__u32 argsz;
+>> +	__u32 flags;
+>> +	__u32 dma32_window_start;
+>> +	__u32 dma32_window_size;
+>> +	__u64 dma64_window_start;
+>> +	__u64 dma64_window_size;
+>> +};
+>
+> Is there anything we can document about this?
+
+I'll put some.
+
+> It should probably list that size is in bytes.  Is there any need to communicate the IOMMU page
+> size here?
+
+It is always 4k. I'll put it to comments.
+
+>> +
+>> +#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
+>> +
+>> +/* Reuse type1 map/unmap structs as they are the same at the moment */
+>> +typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
+>> +typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
+>> +
+>> +/* ***************************************************************** */
+>> +
+>>   #endif /* VFIO_H */
+>
+> Thanks,
+>
+> Alex
+>
+>
+>
+
+
+-- 
+Alexey
