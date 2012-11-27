@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541Ab2K0KO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:14:28 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:23765 "EHLO
+	id S933610Ab2K0KPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:15:17 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:23737 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933498Ab2K0KMF (ORCPT
+	with ESMTP id S933462Ab2K0KME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:12:05 -0500
+	Tue, 27 Nov 2012 05:12:04 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>
-Subject: [PATCH v3 07/13] scripts/gdb: Add task iteration helper
-Date: Tue, 27 Nov 2012 11:11:38 +0100
-Message-Id: <34f877885ccb44005367d5b80264a775ecd5d196.1354011091.git.jan.kiszka@siemens.com>
+Subject: [PATCH v3 08/13] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Tue, 27 Nov 2012 11:11:39 +0100
+Message-Id: <1d03b2331777e7839f2f8245433b4869d018a7b2.1354011091.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1354011091.git.jan.kiszka@siemens.com>
 References: <cover.1354011091.git.jan.kiszka@siemens.com>
@@ -24,62 +24,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The internal helper for_each_task iterates over all tasks of the target,
-calling the provided function on each. For performance reasons, we cache
-a reference to the gdb type object of a task.
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/task.py |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/task.py
+ scripts/gdb/task.py        |   29 +++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
 diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
-new file mode 100644
-index 0000000..1e4f61e
---- /dev/null
+index 1e4f61e..41d85cc 100644
+--- a/scripts/gdb/task.py
 +++ b/scripts/gdb/task.py
-@@ -0,0 +1,40 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  task & thread tools
-+#
-+# Copyright (c) 2011, 2012 Siemens AG
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
+@@ -38,3 +38,32 @@ def for_each_task(func, arg = None):
+ 					 get_task_ptr_type(), "thread_group")
+ 			if t == g:
+ 				break
 +
-+import gdb
++def get_task_by_pid(pid):
++	def match_pid(t, arg):
++		if int(t['pid']) == arg['pid']:
++			arg['task'] = t
 +
-+from utils import *
++	arg = { 'pid': pid, 'task': None }
++	for_each_task(match_pid, arg)
 +
-+task_ptr_type = None
++	return arg['task']
 +
-+def get_task_ptr_type():
-+	global task_ptr_type
-+	if task_ptr_type == None:
-+		task_ptr_type = get_type("struct task_struct").pointer()
-+	return task_ptr_type
 +
-+def for_each_task(func, arg = None):
-+	init_task = gdb.parse_and_eval("init_task")
-+	g = init_task.address
-+	while True:
-+		g =  container_of(g['tasks']['next'], get_task_ptr_type(),
-+				  "tasks")
-+		if g == init_task.address:
-+			break;
-+		t = g
-+		while True:
-+			func(t, arg)
-+			t = container_of(t['thread_group']['next'],
-+					 get_task_ptr_type(), "thread_group")
-+			if t == g:
-+				break
++class LxTaskByPidFunc(gdb.Function):
++	__doc__ = "Find Linux task by PID and return the task_struct variable.\n" \
++		  "\n" \
++		  "$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and\n" \
++		  "return that task_struct variable which PID matches.\n"
++
++	def __init__(self):
++		super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
++
++	def invoke(self, pid):
++		task = get_task_by_pid(pid)
++		if task:
++			return task.dereference()
++		else:
++			raise gdb.GdbError("No task of PID " + str(pid))
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 8af7084..1a9b293 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -24,3 +24,4 @@ else:
+ 	import utils
+ 	import symbols
+ 	import dmesg
++	import task
 -- 
 1.7.3.4
 
