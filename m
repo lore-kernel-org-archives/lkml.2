@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2K0DN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:13:26 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:33881 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab2K0DNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:13:24 -0500
-Message-ID: <50B42FC7.2080805@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 11:13:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S933095Ab2K0DRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 22:17:23 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35129 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757951Ab2K0DRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 22:17:22 -0500
+Date: Mon, 26 Nov 2012 22:16:55 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: akpm@linux-foundation.org, rientjes@google.com,
+        Michal Hocko <mhocko@suse.cz>, shangw@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: mm/vmemmap: fix wrong use of virt_to_page
+Message-ID: <20121127031655.GF2301@cmpxchg.org>
+References: <50B422A9.7050103@huawei.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: x86: let reexecute_instruction work for tdp
-References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7CE.2050506@linux.vnet.ibm.com> <20121126223712.GA10634@amt.cnet>
-In-Reply-To: <20121126223712.GA10634@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112703-4790-0000-0000-000005BF20CB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B422A9.7050103@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 06:37 AM, Marcelo Tosatti wrote:
-> On Tue, Nov 20, 2012 at 07:59:10AM +0800, Xiao Guangrong wrote:
->> Currently, reexecute_instruction refused to retry all instructions. If
->> nested npt is used, the emulation may be caused by shadow page, it can
->> be fixed by dropping the shadow page
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/x86.c |   14 ++++++++------
->>  1 files changed, 8 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 7be8452..5fe72cc 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4469,17 +4469,19 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->>  	return r;
->>  }
->>
->> -static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->> +static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  {
->> -	gpa_t gpa;
->> +	gpa_t gpa = cr2;
->>  	pfn_t pfn;
->>
->> -	if (tdp_enabled)
->> +	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
->>  		return false;
+On Tue, Nov 27, 2012 at 10:17:13AM +0800, Jianguo Wu wrote:
+> I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing memory hotremove,
+> there is a kernel BUG at arch/x86/mm/physaddr.c:20.
 > 
-> How is indirect_shadow_pages protected? Why is ACCESS_ONCE() being used
-> to read it?
+> It is caused by free_section_usemap()->virt_to_page(),
+> virt_to_page() is only used for kernel direct mapping address,
+> but sparse-vmemmap uses vmemmap address, so it is going wrong here.
+> 
+> [  517.727381] ------------[ cut here ]------------
+> [  517.728851] kernel BUG at arch/x86/mm/physaddr.c:20!
+> [  517.728851] invalid opcode: 0000 [#1] SMP
+> [  517.740170] Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservativ
+> e cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_m
+> od coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspk
+> r iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_c
+> ore mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3
+>  jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif p
+> rocessor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc s
+> csi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+> [  517.740170] CPU 39
+> [  517.740170] Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI Q
+> SSC-S4R/QSSC-S4R
+> [  517.740170] RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+
+> 0x88/0x90
+> [  517.740170] RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
+> [  517.740170] RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
+> 
+> [  517.740170] RDX: 0000620012000000 RSI: 0000000000000000 RDI: ffffea0012000000
+> 
+> [  517.740170] RBP: ffff8804440d7c08 R08: 0070000000000400 R09: 0000000000488000
+> 
+> [  517.740170] R10: 0000000000000091 R11: 0000000000000001 R12: ffff88047fb87800
+> 
+> [  517.740170] R13: ffffea0000000000 R14: ffff88047ffb3440 R15: 0000000000480000
+> 
+> [  517.740170] FS:  00007f0462b49700(0000) GS:ffff8804570c0000(0000) knlGS:00000
+> 00000000000
+> [  517.740170] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  517.740170] CR2: 00007f006dc5fd14 CR3: 0000000440e85000 CR4: 00000000000007e0
+> 
+> [  517.740170] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> 
+> [  517.896799] DR3: 0000000000000000 DR6
+> 
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 
-Hi Marcelo,
-
-It is protected by mmu-lock for it only be changed when mmu-lock is hold. And
-ACCESS_ONCE is used on read path avoiding magic optimization from compiler.
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
