@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933582Ab2K0KOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:14:30 -0500
-Received: from david.siemens.de ([192.35.17.14]:31180 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933336Ab2K0KMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933541Ab2K0KO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:14:28 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:23765 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933498Ab2K0KMF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Nov 2012 05:12:05 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>
-Subject: [PATCH v3 04/13] scripts/gdb: Add get_target_endianness helper
-Date: Tue, 27 Nov 2012 11:11:35 +0100
-Message-Id: <4b6143216411504c48beac38462bd0b9036c2649.1354011091.git.jan.kiszka@siemens.com>
+Subject: [PATCH v3 07/13] scripts/gdb: Add task iteration helper
+Date: Tue, 27 Nov 2012 11:11:38 +0100
+Message-Id: <34f877885ccb44005367d5b80264a775ecd5d196.1354011091.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1354011091.git.jan.kiszka@siemens.com>
 References: <cover.1354011091.git.jan.kiszka@siemens.com>
@@ -23,40 +24,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse the target endianness from the output of "show endian" and cache
-the result to return it via the new helper get_target_endiannes. We will
-need it for reading integers from buffers that contain target memory.
+The internal helper for_each_task iterates over all tasks of the target,
+calling the provided function on each. For performance reasons, we cache
+a reference to the gdb type object of a task.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/utils.py |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ scripts/gdb/task.py |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/task.py
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index f97ef79..e3191c5 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -56,3 +56,20 @@ class ContainerOf(gdb.Function):
- 				    elementname.string())
- 
- ContainerOf()
+diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
+new file mode 100644
+index 0000000..1e4f61e
+--- /dev/null
++++ b/scripts/gdb/task.py
+@@ -0,0 +1,40 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  task & thread tools
++#
++# Copyright (c) 2011, 2012 Siemens AG
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
++import gdb
 +
-+BIG_ENDIAN = 0
-+LITTLE_ENDIAN = 1
-+target_endianness = None
++from utils import *
 +
-+def get_target_endianness():
-+	global target_endianness
-+	if target_endianness == None:
-+		endian = gdb.execute("show endian", False, True)
-+		if endian.find("little endian") >= 0:
-+			target_endianness = LITTLE_ENDIAN
-+		elif endian.find("big endian") >= 0:
-+			target_endianness = BIG_ENDIAN
-+		else:
-+			raise gdb.GdgError("unknown endianness '%s'" % endian)
-+	return target_endianness
++task_ptr_type = None
++
++def get_task_ptr_type():
++	global task_ptr_type
++	if task_ptr_type == None:
++		task_ptr_type = get_type("struct task_struct").pointer()
++	return task_ptr_type
++
++def for_each_task(func, arg = None):
++	init_task = gdb.parse_and_eval("init_task")
++	g = init_task.address
++	while True:
++		g =  container_of(g['tasks']['next'], get_task_ptr_type(),
++				  "tasks")
++		if g == init_task.address:
++			break;
++		t = g
++		while True:
++			func(t, arg)
++			t = container_of(t['thread_group']['next'],
++					 get_task_ptr_type(), "thread_group")
++			if t == g:
++				break
 -- 
 1.7.3.4
 
