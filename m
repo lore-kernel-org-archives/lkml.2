@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2K0MKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 07:10:23 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:41024 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab2K0MKT (ORCPT
+	id S1755773Ab2K0MLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 07:11:11 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54267
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754936Ab2K0MLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 07:10:19 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 8/8] staging/rtl8187se: Use netdev_ printks in ieee80211/ieee80211_softmac_wx.c
-Date: Tue, 27 Nov 2012 21:10:14 +0900
-Message-Id: <1354018214-18374-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354018065-18134-1-git-send-email-yamanetoshi@gmail.com>
-References: <1354018065-18134-1-git-send-email-yamanetoshi@gmail.com>
+	Tue, 27 Nov 2012 07:11:09 -0500
+Message-ID: <50B4AD8A.7020208@kernel.dk>
+Date: Tue, 27 Nov 2012 13:09:46 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Laine Walker-Avina <lwalkera@ieee.org>
+CC: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
+        willy@linux.intel.com, lwalkera@micron.com
+Subject: Re: Alignment Issue with Direct IO to NVMe Drive
+References: <CAMi7pMamJK079wQs+5Kaz=zdYGAPS+BFg2xCRKJMqPFMrQvQPQ@mail.gmail.com>
+In-Reply-To: <CAMi7pMamJK079wQs+5Kaz=zdYGAPS+BFg2xCRKJMqPFMrQvQPQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning fixed.
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+On 2012-11-27 01:35, Laine Walker-Avina wrote:
+> Hi all,
+> 
+> We are experiencing an issue with doing direct IO to a NVMe device I'm
+> helping to develop. Every so often, the physical address given by
+> sg_dma_address() is aligned to 0x800 instead of 0x1000 as specified by
+> blk_queue_dma_alignement(queue, 4095) when the queue is initialized.
+> The request is also split over multiple segments to make up for the
+> missing space (eg: for a 4k IO it's split into two segments 2k in
+> size, and for an 8k IO it's split into 3 segments--2k,4k,2k). Our
+> design requires the physical segments given to the device be aligned
+> to 4k boundaries and be multiples of 4k in size. When not doing direct
+> IO the physical addresses appear to always be 4k aligned as expected.
+> One possible issue is the kernel we're primarily testing against is
+> 2.6.32-220 from CentOS, but we have observed similar behavior from a
+> vanilla 3.3 kernel as well. Any help would be greatly appreciated.
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- .../rtl8187se/ieee80211/ieee80211_softmac_wx.c     |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I'm assuming you set the hardware sector size to 4k as well?
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac_wx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac_wx.c
-index c71fb63..d9add53 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac_wx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac_wx.c
-@@ -419,8 +419,8 @@ int ieee80211_wx_set_rawtx(struct ieee80211_device *ieee,
- 	else
- 		ieee->raw_tx = 0;
- 
--	printk(KERN_INFO"raw TX is %s\n",
--	      ieee->raw_tx ? "enabled" : "disabled");
-+	netdev_info(ieee->dev, "raw TX is %s\n",
-+		    ieee->raw_tx ? "enabled" : "disabled");
- 
- 	if (ieee->iw_mode == IW_MODE_MONITOR) {
- 		if (prev == 0 && ieee->raw_tx) {
 -- 
-1.7.9.5
+Jens Axboe
 
