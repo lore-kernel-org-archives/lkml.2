@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115Ab2K0Due (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:50:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51171 "EHLO song.cn.fujitsu.com"
+	id S933212Ab2K0EAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 23:00:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6862 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757895Ab2K0Duc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:50:32 -0500
+	id S933156Ab2K0EAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 23:00:07 -0500
 X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
-   d="scan'208";a="6281003"
-Message-ID: <50B42798.4030402@cn.fujitsu.com>
-Date: Tue, 27 Nov 2012 10:38:16 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+   d="scan'208";a="6281117"
+Message-ID: <50B429EC.9000609@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 10:48:12 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Hanjun Guo <guohanjun@huawei.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, yinghai@kernel.org,
-        bhelgaas@google.com, lenb@kernel.org, jiang.liu@huawei.com,
-        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <50B3014E.3040107@huawei.com> <50B306E0.3050207@cn.fujitsu.com> <50B4127F.3080400@huawei.com>
-In-Reply-To: <50B4127F.3080400@huawei.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+CC: akpm@linux-foundation.org, rientjes@google.com,
+        Michal Hocko <mhocko@suse.cz>, shangw@linux.vnet.ibm.com,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: mm/vmemmap: fix wrong use of virt_to_page
+References: <50B422A9.7050103@huawei.com>
+In-Reply-To: <50B422A9.7050103@huawei.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:38:53,
+ 2012/11/27 10:41:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/27 10:38:57
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+ 2012/11/27 10:41:21,
+	Serialize complete at 2012/11/27 10:41:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 09:08 AM, Hanjun Guo wrote:
-> On 2012/11/26 14:06, Tang Chen wrote:
->> On 11/26/2012 01:42 PM, Hanjun Guo wrote:
->>>
->>> Hi all,
->>> I think Yasuaki mentioned the key point for the container device remove,
->>> that is dependency.
->>>
->>> Currently, container, processor, and memory hotpulg are managed by different ACPI
->>> hotplug drivers, the driver works when handle device hotplug individually, but they
->>> have no idea for each other.
->>>
->>> This may introduce some issues, such as Yasuaki mentioned above, that is to say, we
->>> should remove its child before remove the device itself, and hot add its parent before
->>> the device itself.
->>>
->>> According to the ACPI namespace, we can resolve most of dependency issues. On a typical
->>> two processor sockets system, the namespace is like this:
->>>
->>> /_SB                   ---container device, with HID ACPI0004
->>>       |_SCK0             ---container device, with HID ACPI0004
->>>        |_CPU0       ---processor device, with HID ACPI0009 or LNXCPU
->>>             |_...
->>>             |_CPUx
->>>             |_MEM0       ---Memory device, with HID PNP0C80
->>>       |_SCK1
->>>        |_CPU0
->>>             |_...
->>>             |_CPUx
->>>             |_MEM1
->>>       |_PCI0            ---Host bridge, with HID PNP0A03 or PNP0A08
->>>
->>> If hot remove the container device, such as SCK0, we can easily know the dependency list
->>> is CPU0~CPUx and MEM0, but I think the ACPI hotplug driver haven't resolve this now.
->>>
->>> And there is another corner case for hotplug devices in the namespace above, that is:
->>> 1) Remove SCK0. yes, we can remove it with no dependency to the host bridge PCI0;
->>>
->>> 2) Remove SCK1 after SCK0. we should remove the host bridge PCI0 first,
->>>      or the system will crash down. yes, dynamic dependency analysis is needed here.
->>>      and the ACPI hotplug driver totally have no idea of this.
->>>
->>> so, should we do something to settle this down ?
->>
->> Hi Guo,
->>
->> I am trying to do this too. :)
->
-> Great， what's your idea of this?
->
-Hi Guo,
+At 11/27/2012 10:17 AM, Jianguo Wu Wrote:
+> I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing memory hotremove,
+> there is a kernel BUG at arch/x86/mm/physaddr.c:20.
+> 
+> It is caused by free_section_usemap()->virt_to_page(),
+> virt_to_page() is only used for kernel direct mapping address,
+> but sparse-vmemmap uses vmemmap address, so it is going wrong here.
 
-I noticed they had a lot of discussion on this topic.
-https://lkml.org/lkml/2012/11/15/159
+Yes, we can't use virt_to_page() here. I don't enable CONFIG_DEBUG_VIRTUAL,
+so I don't find this problem.
 
-And Vasilis's latest patches are here:
-https://lkml.org/lkml/2012/11/23/335
+> 
+> [  517.727381] ------------[ cut here ]------------
+> [  517.728851] kernel BUG at arch/x86/mm/physaddr.c:20!
+> [  517.728851] invalid opcode: 0000 [#1] SMP
+> [  517.740170] Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservativ
+> e cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_m
+> od coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspk
+> r iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_c
+> ore mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3
+>  jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif p
+> rocessor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc s
+> csi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+> [  517.740170] CPU 39
+> [  517.740170] Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI Q
+> SSC-S4R/QSSC-S4R
+> [  517.740170] RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+
+> 0x88/0x90
+> [  517.740170] RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
+> [  517.740170] RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
+> 
+> [  517.740170] RDX: 0000620012000000 RSI: 0000000000000000 RDI: ffffea0012000000
+> 
+> [  517.740170] RBP: ffff8804440d7c08 R08: 0070000000000400 R09: 0000000000488000
+> 
+> [  517.740170] R10: 0000000000000091 R11: 0000000000000001 R12: ffff88047fb87800
+> 
+> [  517.740170] R13: ffffea0000000000 R14: ffff88047ffb3440 R15: 0000000000480000
+> 
+> [  517.740170] FS:  00007f0462b49700(0000) GS:ffff8804570c0000(0000) knlGS:00000
+> 00000000000
+> [  517.740170] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  517.740170] CR2: 00007f006dc5fd14 CR3: 0000000440e85000 CR4: 00000000000007e0
+> 
+> [  517.740170] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> 
+> [  517.896799] DR3: 0000000000000000 DR6
+> 
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  mm/sparse.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> index fac95f2..a83de2f 100644
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -617,7 +617,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>  {
+>  	return; /* XXX: Not implemented yet */
+>  }
+> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+> +static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  {
+>  }
+>  #else
+> @@ -658,10 +658,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>  			   get_order(sizeof(struct page) * nr_pages));
+>  }
+>  
+> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+> +static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  {
+>  	unsigned long maps_section_nr, removing_section_nr, i;
+>  	unsigned long magic;
+> +	struct page *page = virt_to_page(memmap);
+>  
+>  	for (i = 0; i < nr_pages; i++, page++) {
+>  		magic = (unsigned long) page->lru.next;
+> @@ -710,13 +711,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+>  	 */
+>  
+>  	if (memmap) {
+> -		struct page *memmap_page;
+> -		memmap_page = virt_to_page(memmap);
+> -
+>  		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+>  			>> PAGE_SHIFT;
+>  
+> -		free_map_bootmem(memmap_page, nr_pages);
+> +		free_map_bootmem(memmap, nr_pages);
+>  	}
+>  }
+>  
 
-I think we can have a review of this patchset first. :)
-
-And also, as you said, the new ACPI hotplug framework from Liu Jiang
-will settle this problem more properly.
-So I think any solution now could be temporary. :)
+Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
