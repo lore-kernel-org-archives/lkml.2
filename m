@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab2K0Iuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:50:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57753 "EHLO comal.ext.ti.com"
+	id S1758620Ab2K0Iuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:50:51 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45388 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758423Ab2K0Iuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:50:35 -0500
+	id S1758423Ab2K0Ius (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 03:50:48 -0500
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>
@@ -14,9 +14,9 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
         "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v5 06/12] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-Date: Tue, 27 Nov 2012 14:18:11 +0530
-Message-ID: <1354006097-25895-7-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v5 07/12] pwm: pwm-tiehrpwm: Adding TBCLK gating support.
+Date: Tue, 27 Nov 2012 14:18:12 +0530
+Message-ID: <1354006097-25895-8-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
 References: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
@@ -26,93 +26,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EHRPWM module requires explicit clock gating of TBCLK from control
-module. Hence add TBCLK clock node in clock tree for EHRPWM modules.
+Some platforms (like AM33XX) requires clock gating from control module
+explicitly for TBCLK. Enabling of this clock required for the
+functioning of the time base sub module in EHRPWM module. Adding support
+for handling by enabling the clock on PWM device enable & disable on PWM
+device disable. Platforms don't have explicit TBCLK gating has to add
+dummy TBCLK node.
 
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
 Changes since v4:
-	- Add dev_id field in clcok tree for TBCLK to remove support
-	  for optional HWMOD clock support for EHRPWM.
+	- Made TBCLK gating as a must clock for EHRPWM. Platforms don't
+	  have explicit TBCLK gating, has to populate dummy clock node for
+	  TBCLK.
 
- arch/arm/mach-omap2/clock33xx_data.c |   37 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/control.h        |    8 +++++++
- 2 files changed, 45 insertions(+), 0 deletions(-)
+ drivers/pwm/pwm-tiehrpwm.c |   14 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/clock33xx_data.c b/arch/arm/mach-omap2/clock33xx_data.c
-index 1a45d6b..d08cd9a 100644
---- a/arch/arm/mach-omap2/clock33xx_data.c
-+++ b/arch/arm/mach-omap2/clock33xx_data.c
-@@ -996,6 +996,40 @@ static struct clk wdt1_fck = {
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index d3c1dff..56a1325 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -115,6 +115,7 @@ struct ehrpwm_pwm_chip {
+ 	void __iomem	*mmio_base;
+ 	unsigned long period_cycles[NUM_PWM_CHANNEL];
+ 	enum pwm_polarity polarity[NUM_PWM_CHANNEL];
++	struct	clk	*tbclk;
  };
  
- /*
-+ * PWMSS Time based module clock node. This node is
-+ * requred to enable clock gating for EHRPWM TBCLK.
-+ */
-+static struct clk ehrpwm0_tbclk = {
-+	.name		= "ehrpwm0_tbclk",
-+	.clkdm_name	= "l4ls_clkdm",
-+	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+	.enable_bit	= AM33XX_PWMSS0_TBCLKEN_SHIFT,
-+	.ops		= &clkops_omap2_dflt,
-+	.parent		= &l4ls_gclk,
-+	.recalc		= &followparent_recalc,
-+};
-+
-+static struct clk ehrpwm1_tbclk = {
-+	.name		= "ehrpwm1_tbclk",
-+	.clkdm_name	= "l4ls_clkdm",
-+	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+	.enable_bit	= AM33XX_PWMSS1_TBCLKEN_SHIFT,
-+	.ops		= &clkops_omap2_dflt,
-+	.parent		= &l4ls_gclk,
-+	.recalc		= &followparent_recalc,
-+};
-+
-+static struct clk ehrpwm2_tbclk = {
-+	.name		= "ehrpwm2_tbclk",
-+	.clkdm_name	= "l4ls_clkdm",
-+	.enable_reg	= AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+	.enable_bit	= AM33XX_PWMSS2_TBCLKEN_SHIFT,
-+	.ops		= &clkops_omap2_dflt,
-+	.parent		= &l4ls_gclk,
-+	.recalc		= &followparent_recalc,
-+};
-+
-+/*
-  * clkdev
-  */
- static struct omap_clk am33xx_clks[] = {
-@@ -1075,6 +1109,9 @@ static struct omap_clk am33xx_clks[] = {
- 	CLK(NULL,	"clkout2_ck",		&clkout2_ck,	CK_AM33XX),
- 	CLK(NULL,	"timer_32k_ck",		&clkdiv32k_ick,	CK_AM33XX),
- 	CLK(NULL,	"timer_sys_ck",		&sys_clkin_ck,	CK_AM33XX),
-+	CLK("48300200.ehrpwm",	"tbclk",	&ehrpwm0_tbclk,	CK_AM33XX),
-+	CLK("48302200.ehrpwm",	"tbclk",	&ehrpwm1_tbclk,	CK_AM33XX),
-+	CLK("48304200.ehrpwm",	"tbclk",	&ehrpwm2_tbclk,	CK_AM33XX),
- };
+ static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
+@@ -335,6 +336,9 @@ static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	/* Channels polarity can be configured from action qualifier module */
+ 	configure_polarity(pc, pwm->hwpwm);
  
- int __init am33xx_clk_init(void)
-diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-index a89e825..c0e34e6 100644
---- a/arch/arm/mach-omap2/control.h
-+++ b/arch/arm/mach-omap2/control.h
-@@ -357,6 +357,14 @@
- #define AM33XX_CONTROL_STATUS_SYSBOOT1_WIDTH		0x2
- #define AM33XX_CONTROL_STATUS_SYSBOOT1_MASK		(0x3 << 22)
- 
-+/* AM33XX PWMSS Control register */
-+#define AM33XX_PWMSS_TBCLK_CLKCTRL			0x664
++	/* Enable TBCLK before enabling PWM device */
++	clk_enable(pc->tbclk);
 +
-+/* AM33XX  PWMSS Control bitfields */
-+#define AM33XX_PWMSS0_TBCLKEN_SHIFT			0
-+#define AM33XX_PWMSS1_TBCLKEN_SHIFT			1
-+#define AM33XX_PWMSS2_TBCLKEN_SHIFT			2
-+
- /* CONTROL OMAP STATUS register to identify OMAP3 features */
- #define OMAP3_CONTROL_OMAP_STATUS	0x044c
+ 	/* Enable time counter for free_run */
+ 	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_FREE_RUN);
+ 	return 0;
+@@ -363,6 +367,9 @@ static void ehrpwm_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
  
+ 	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
+ 
++	/* Disabling TBCLK on PWM disable */
++	clk_disable(pc->tbclk);
++
+ 	/* Stop Time base counter */
+ 	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_STOP_NEXT);
+ 
+@@ -432,6 +439,13 @@ static int __devinit ehrpwm_pwm_probe(struct platform_device *pdev)
+ 	if (!pc->mmio_base)
+ 		return  -EADDRNOTAVAIL;
+ 
++	/* Acquire tbclk for Time Base EHRPWM submodule */
++	pc->tbclk = devm_clk_get(&pdev->dev, "tbclk");
++	if (IS_ERR(pc->tbclk)) {
++		dev_err(&pdev->dev, "Failed to get tbclk\n");
++		return PTR_ERR(pc->tbclk);
++	}
++
+ 	ret = pwmchip_add(&pc->chip);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
 -- 
 1.7.0.4
 
