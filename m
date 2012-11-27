@@ -1,136 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab2K0MQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 07:16:40 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45770 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab2K0MQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 07:16:39 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Howells <dhowells@redhat.com>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tony Luck <tony.luck@intel.com>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH] perf tools: fix build for various architectures
-Date: Tue, 27 Nov 2012 12:16:31 +0000
-Message-Id: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 27 Nov 2012 12:16:35.0897 (UTC) FILETIME=[0B857290:01CDCC99]
-X-MC-Unique: 112112712163610801
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1752743Ab2K0MTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 07:19:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916Ab2K0MTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 07:19:00 -0500
+Date: Tue, 27 Nov 2012 14:18:47 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "x86@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if
+ necessary
+Message-ID: <20121127121847.GU25516@redhat.com>
+References: <50B43299.9030409@cn.fujitsu.com>
+ <50B432CA.70804@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B432CA.70804@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qARCGi5O000629
 
-The UAPI changes broke the perf tool, and as of 3.7-rc7, it
-still won't build for arm:
+Eric, can you ACK it?
 
-	In file included from util/../perf.h:81:0,
-			 from util/cache.h:7,
-			 from perf.c:12:
-	util/../../../arch/arm/include/asm/unistd.h:16:29: fatal error: uapi/asm/unistd.h: No such file or directory
-	compilation terminated.
-	make: *** [perf.o] Error 1
+On Tue, Nov 27, 2012 at 11:26:02AM +0800, Zhang Yanfei wrote:
+> This patch provides a way to VMCLEAR VMCSs related to guests
+> on all cpus before executing the VMXOFF when doing kdump. This
+> is used to ensure the VMCSs in the vmcore updated and
+> non-corrupted.
+> 
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kexec.h |    2 ++
+>  arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
+>  2 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+> index 317ff17..28feeba 100644
+> --- a/arch/x86/include/asm/kexec.h
+> +++ b/arch/x86/include/asm/kexec.h
+> @@ -163,6 +163,8 @@ struct kimage_arch {
+>  };
+>  #endif
+>  
+> +extern void (*crash_vmclear_loaded_vmcss)(void);
+> +
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif /* _ASM_X86_KEXEC_H */
+> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+> index 13ad899..4a2a12f 100644
+> --- a/arch/x86/kernel/crash.c
+> +++ b/arch/x86/kernel/crash.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/elf.h>
+>  #include <linux/elfcore.h>
+> +#include <linux/module.h>
+>  
+>  #include <asm/processor.h>
+>  #include <asm/hardirq.h>
+> @@ -29,6 +30,20 @@
+>  #include <asm/virtext.h>
+>  
+>  int in_crash_kexec;
+> + 
+> +/*
+> + * This is used to VMCLEAR all VMCSs loaded on the
+> + * processor. And when loading kvm_intel module, the
+> + * callback function pointer will be assigned.
+> + */
+> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
+> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
+> +
+> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
+> +{
+> +	if (crash_vmclear_loaded_vmcss)
+> +		crash_vmclear_loaded_vmcss();
+> +}
+>  
+>  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
+>  
+> @@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+>  #endif
+>  	crash_save_cpu(regs, cpu);
+>  
+> +	/*
+> +	 * VMCLEAR VMCSs loaded on all cpus if needed.
+> +	 */
+> +	cpu_emergency_vmclear_loaded_vmcss();
+> +
+>  	/* Disable VMX or SVM if needed.
+>  	 *
+>  	 * We need to disable virtualization on all CPUs.
+> @@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+>  
+>  	kdump_nmi_shootdown_cpus();
+>  
+> +	/*
+> +	 * VMCLEAR VMCSs loaded on this cpu if needed.
+> +	 */
+> +	cpu_emergency_vmclear_loaded_vmcss();
+> +
+>  	/* Booting kdump kernel with VMX or SVM enabled won't work,
+>  	 * because (among other limitations) we can't disable paging
+>  	 * with the virt flags.
+> -- 
+> 1.7.1
 
-It seems the perf tool build infrastructure can't map <uapi/*> paths,
-and several architectures (arm, arm64, ia64, mips, parisc, powerpc,
-s390) include <uapi/asm/unistd.h> from their <asm/unistd.h>.
-
-This patch copies 77626081: "perf tools: Fix build on sparc." in simply
-changing the path to use arch/arm/include/uapi/asm/unistd.h directly for
-all of these cases.
-
-I've tested this on arm, but I don't have the necessary toolchains to
-check the other cases.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Will Deacon <will.deacon@arm.com>
----
- tools/perf/perf.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index c50985e..b42fd6a 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -26,14 +26,14 @@ void get_term_dimensions(struct winsize *ws);
- #endif
- 
- #ifdef __powerpc__
--#include "../../arch/powerpc/include/asm/unistd.h"
-+#include "../../arch/powerpc/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile ("sync" ::: "memory")
- #define cpu_relax()	asm volatile ("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __s390__
--#include "../../arch/s390/include/asm/unistd.h"
-+#include "../../arch/s390/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile("bcr 15,0" ::: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory");
- #endif
-@@ -50,7 +50,7 @@ void get_term_dimensions(struct winsize *ws);
- #endif
- 
- #ifdef __hppa__
--#include "../../arch/parisc/include/asm/unistd.h"
-+#include "../../arch/parisc/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile("" ::: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
-@@ -71,14 +71,14 @@ void get_term_dimensions(struct winsize *ws);
- #endif
- 
- #ifdef __ia64__
--#include "../../arch/ia64/include/asm/unistd.h"
-+#include "../../arch/ia64/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile ("mf" ::: "memory")
- #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
- #define CPUINFO_PROC	"model name"
- #endif
- 
- #ifdef __arm__
--#include "../../arch/arm/include/asm/unistd.h"
-+#include "../../arch/arm/include/uapi/asm/unistd.h"
- /*
-  * Use the __kuser_memory_barrier helper in the CPU helper page. See
-  * arch/arm/kernel/entry-armv.S in the kernel source for details.
-@@ -89,13 +89,13 @@ void get_term_dimensions(struct winsize *ws);
- #endif
- 
- #ifdef __aarch64__
--#include "../../arch/arm64/include/asm/unistd.h"
-+#include "../../arch/arm64/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile("dmb ld" ::: "memory")
- #define cpu_relax()	asm volatile("yield" ::: "memory")
- #endif
- 
- #ifdef __mips__
--#include "../../arch/mips/include/asm/unistd.h"
-+#include "../../arch/mips/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile(					\
- 				".set	mips2\n\t"			\
- 				"sync\n\t"				\
--- 
-1.7.0.4
-
-
+--
+			Gleb.
