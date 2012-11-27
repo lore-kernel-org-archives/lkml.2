@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab2K0VDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:03:42 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:40548 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab2K0VDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:03:41 -0500
-Date: Tue, 27 Nov 2012 16:03:32 -0500
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Michael Wolf <mjw@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, mtosatti@redhat.com, glommer@parallels.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 2/5] Expand the steal time msr to also contain the
- consigned time.
-Message-ID: <20121127210331.GA2710@phenom.dumpdata.com>
-References: <20121126203603.28840.38736.stgit@lambeau>
- <20121126203645.28840.56280.stgit@lambeau>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126203645.28840.56280.stgit@lambeau>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756718Ab2K0VGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 16:06:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab2K0VGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 16:06:16 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] mm, soft offline: split thp at the beginning of soft_offline_page()
+Date: Tue, 27 Nov 2012 16:05:31 -0500
+Message-Id: <1354050331-26844-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 02:36:45PM -0600, Michael Wolf wrote:
-> Add a consigned field.  This field will hold the time lost due to capping or overcommit.
-> The rest of the time will still show up in the steal-time field.
-> 
-> Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/paravirt.h       |    4 ++--
->  arch/x86/include/asm/paravirt_types.h |    2 +-
->  arch/x86/kernel/kvm.c                 |    7 ++-----
->  kernel/sched/core.c                   |   10 +++++++++-
->  kernel/sched/cputime.c                |    2 +-
->  5 files changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-> index a0facf3..a5f9f30 100644
-> --- a/arch/x86/include/asm/paravirt.h
-> +++ b/arch/x86/include/asm/paravirt.h
-> @@ -196,9 +196,9 @@ struct static_key;
->  extern struct static_key paravirt_steal_enabled;
->  extern struct static_key paravirt_steal_rq_enabled;
->  
-> -static inline u64 paravirt_steal_clock(int cpu)
-> +static inline u64 paravirt_steal_clock(int cpu, u64 *steal)
+When we try to soft-offline a thp tail page, put_page() is called on the
+tail page unthinkingly and VM_BUG_ON is triggered in put_compound_page().
+This patch splits thp before going into the main body of soft-offlining.
 
-So its u64 here.
->  {
-> -	return PVOP_CALL1(u64, pv_time_ops.steal_clock, cpu);
-> +	PVOP_VCALL2(pv_time_ops.steal_clock, cpu, steal);
->  }
->  
->  static inline unsigned long long paravirt_read_pmc(int counter)
-> diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-> index 142236e..5d4fc8b 100644
-> --- a/arch/x86/include/asm/paravirt_types.h
-> +++ b/arch/x86/include/asm/paravirt_types.h
-> @@ -95,7 +95,7 @@ struct pv_lazy_ops {
->  
->  struct pv_time_ops {
->  	unsigned long long (*sched_clock)(void);
-> -	unsigned long long (*steal_clock)(int cpu);
-> +	void (*steal_clock)(int cpu, unsigned long long *steal);
+The interface of soft-offlining is open for userspace, so this bug can
+lead to DoS attack and should be fixed immedately.
 
-But not u64 here? Any particular reason?
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: stable@vger.kernel.org
+---
+ mm/memory-failure.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git v3.7-rc7.orig/mm/memory-failure.c v3.7-rc7/mm/memory-failure.c
+index 8fe3640..e48e235 100644
+--- v3.7-rc7.orig/mm/memory-failure.c
++++ v3.7-rc7/mm/memory-failure.c
+@@ -1548,9 +1548,17 @@ int soft_offline_page(struct page *page, int flags)
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
++	struct page *hpage = compound_trans_head(page);
+ 
+ 	if (PageHuge(page))
+ 		return soft_offline_huge_page(page, flags);
++	if (PageTransHuge(hpage)) {
++		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
++			pr_info("soft offline: %#lx: failed to split THP\n",
++				pfn);
++			return -EBUSY;
++		}
++	}
+ 
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-- 
+1.7.11.7
+
