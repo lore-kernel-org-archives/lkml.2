@@ -1,137 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab2K0Kf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:35:57 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36290 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2K0Kfz (ORCPT
+	id S1754092Ab2K0Khw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:37:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:61628 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab2K0Khu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:35:55 -0500
-Message-ID: <50B49658.7080507@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 16:00:48 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 27 Nov 2012 05:37:50 -0500
+Date: Tue, 27 Nov 2012 11:37:39 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        Dave Airlie <airlied@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+Message-ID: <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+ <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+ <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
+ <50B46336.8030605@nvidia.com>
+ <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
+ <50B476E1.4070403@nvidia.com>
+ <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+ <50B47DA8.60609@nvidia.com>
+ <1354011776.1479.31.camel@tellur>
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
- target runqueue has one task
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com>
-In-Reply-To: <20121126133501.GA9830@turtle.usersys.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112710-8878-0000-0000-000004F20C2A
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
+Content-Disposition: inline
+In-Reply-To: <1354011776.1479.31.camel@tellur>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:h1uYoQpRBhkrtqNtHlFdNMwp8aAJ0ud4JRue5gOp+tZ
+ zJCGdtXz5H7gYlsrPos3dw76BqL9pdhijM5XtAknoyr/pvI9jH
+ YjOvnVfUS4wglyd/YxmIVLT1CXMxKdYdjwzJxDy50LaVXPtZd7
+ KHTMBO9exl+wlNX6JMGzfDG2yr6MDGmya9jsuxDA2tONekp/iD
+ PNmmi7iIe+ahRjPTRUlxaolhzVVkHD/g2kwuiJJLiS4uQry4hq
+ +GsJuxkw3zCYfBrVHYjeXy/lbTwaoYMM6UNuU+mA1EBN3pn84H
+ 2gi60AyDhCPwobugm8nIBpgWA3G3cQIvoGOyHq21uSNBNsV/gi
+ Wi0piWNxbQF8v6nNcEzPHIgSiUz43UCXotPQCGZLoZkULBiAeN
+ ms8dIKhdMo3uq+xoSTnIR8X0k3RnChSIwI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 07:05 PM, Andrew Jones wrote:
-> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
->> From: Peter Zijlstra <peterz@infradead.org>
->>
->> In case of undercomitted scenarios, especially in large guests
->> yield_to overhead is significantly high. when run queue length of
->> source and target is one, take an opportunity to bail out and return
->> -ESRCH. This return condition can be further exploited to quickly come
->> out of PLE handler.
->>
->> (History: Raghavendra initially worked on break out of kvm ple handler upon
->>   seeing source runqueue length = 1, but it had to export rq length).
->>   Peter came up with the elegant idea of return -ESRCH in scheduler core.
->>
->> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
->> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->> ---
->>
->>   kernel/sched/core.c |   25 +++++++++++++++++++------
->>   1 file changed, 19 insertions(+), 6 deletions(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 2d8927f..fc219a5 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->>    * It's the caller's job to ensure that the target task struct
->>    * can't go away on us before we can do any checks.
->>    *
->> - * Returns true if we indeed boosted the target task.
->> + * Returns:
->> + *	true (>0) if we indeed boosted the target task.
->> + *	false (0) if we failed to boost the target.
->> + *	-ESRCH if there's no task to yield to.
->>    */
->>   bool __sched yield_to(struct task_struct *p, bool preempt)
->>   {
->> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->>
->>   again:
->>   	p_rq = task_rq(p);
->> +	/*
->> +	 * If we're the only runnable task on the rq and target rq also
->> +	 * has only one task, there's absolutely no point in yielding.
->> +	 */
->> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
->> +		yielded = -ESRCH;
->> +		goto out_irq;
->> +	}
->> +
->>   	double_rq_lock(rq, p_rq);
->>   	while (task_rq(p) != p_rq) {
->>   		double_rq_unlock(rq, p_rq);
->> @@ -4310,13 +4322,13 @@ again:
->>   	}
->>
->>   	if (!curr->sched_class->yield_to_task)
->> -		goto out;
->> +		goto out_unlock;
->>
->>   	if (curr->sched_class != p->sched_class)
->> -		goto out;
->> +		goto out_unlock;
->>
->>   	if (task_running(p_rq, p) || p->state)
->> -		goto out;
->> +		goto out_unlock;
->>
->>   	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->>   	if (yielded) {
->> @@ -4329,11 +4341,12 @@ again:
->>   			resched_task(p_rq->curr);
->>   	}
->>
->> -out:
->> +out_unlock:
->>   	double_rq_unlock(rq, p_rq);
->> +out_irq:
->>   	local_irq_restore(flags);
->>
->> -	if (yielded)
->> +	if (yielded > 0)
->>   		schedule();
->>
->>   	return yielded;
->>
->
-> Acked-by: Andrew Jones <drjones@redhat.com>
->
 
-Thank you Drew.
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Marcelo Gleb.. Please let me know if you have comments / concerns on the 
-patches..
+On Tue, Nov 27, 2012 at 11:22:56AM +0100, Lucas Stach wrote:
+> Am Dienstag, den 27.11.2012, 10:45 +0200 schrieb Terje Bergstr=C3=B6m:
+> > On 27.11.2012 10:32, Dave Airlie wrote:
+> > > On Tue, Nov 27, 2012 at 8:16 AM, Terje Bergstr=C3=B6m <tbergstrom@nvi=
+dia.com> wrote:
+> > >> Thanks for the pointer, I looked at exynos code. It indeed checks the
+> > >> registers written to, but it doesn't prevent overrun by checking siz=
+es
+> > >> of buffers and compare against requests.
+> > > They probably need to add that, its not as important as the base
+> > > addresses, unless it takes negative strides, generally base addresses
+> > > means you can target current->uid quite easily!
+> >=20
+> > Ok. We'll implement the firewall, unless we come up with even a better
+> > choice.
+> >=20
+> > >> If this is the way to go, I'll put the firewall behind a Kconfig fla=
+g so
+> > >> that system integrator can decide if his system needs it.
+> > > We don't generally make security like this optional :-)
+> > >=20
+> > > If you do that you should restrict the drm device to root users only,
+> > > and never let a user with a browser anywhere near it.
+> >=20
+> Personally I would never trust any binary, but that's just my personal
+> opinion.
+>=20
+> But I'm in favour of having the command stream checking optional, simply
+> backed by the fact that we are likely to use the same 2D driver
+> infrastructure for Tegra 2 and 3. On Tegra 3 we can most likely go
+> without in-depth command stream checking as the graphics core there sits
+> behind the IOMMU, which can provide an appropriate level of security.
 
-Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
-especially for large guests where we do have overhead of vcpu iteration
-of ple handler..
+But in that case it should be made mandatory at first until proper IOMMU
+support is enabled on Tegra30. Then it can be checked at driver probe
+time whether or not to enable the extra checks. That way we don't need a
+special Kconfig option and we still get all the security that we need,
+right?
 
+Thierry
+
+--oyUTqETQ0mS9luUI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtJfyAAoJEN0jrNd/PrOh2FoQAK4C00WzKClXUijHGIM90g7d
+yCYzjsE465J5G2aFGKF1t7tzkydHHbmSVeBHmO576p5CdTaaSi3yTSD+zIUE1paM
+45pSRrbLSZM79k++elWDP0Nccre5gC11XfGRMwBpQDDfM6gFNRyffLgpd6B4WzTT
+27bjJjEHZAME8W5IohZDk5+4nZuHfDinI7w3FQFcRHdk1ac6xfODFeWVcmzMb/1e
+jdnFR4x4RkmcFbb4eD1Nm5PSeC2dgK02NGsqISoRsNBeVDfsnYnl0HPLHQGR+tQe
+KmwsK6fy3XNkKJFduCtrcxtw3p39O3kw1Sd2jaQmeNfxW07Fa/EGoiVYROOh7wwl
+j3Z7usEDBvdNPp8iLBV7qIOQ/j3SB1BXaGcp+9Cjlqe4S+IGEomP8Nt7jOyKTIqE
+W+RB1xUGTyA879uIerBf6+uU/pSSVd3+RZKNUwAqdOdzaEBQRAkg+RsTB2LlWxft
+TOk41cKuWCa0JmtJdiVVr5UlnV4UvzjxNdGkKu5Efz57CDKpAueqDtMlFVe6S8wp
++uxLF1qpB0sVCGWV7INB7skPr2A5yoiUYVy371uGlgSvT2LYucBqm8V6xsdFZGVZ
+ycbptP/H2dX6c9doK7Qk6N3FeTQB8ii5sKdnpB/c5+tiEHGSDYf80A+VYC07AyAc
+sb5Jdh0iJCjfjABEwjpb
+=rjAF
+-----END PGP SIGNATURE-----
+
+--oyUTqETQ0mS9luUI--
