@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab2K0MTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 07:19:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31352 "EHLO mx1.redhat.com"
+	id S1752815Ab2K0MYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 07:24:31 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:53626 "EHLO mx3.cyfra.ua"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab2K0MTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 07:19:00 -0500
-Date: Tue, 27 Nov 2012 14:18:47 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "x86@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if
- necessary
-Message-ID: <20121127121847.GU25516@redhat.com>
-References: <50B43299.9030409@cn.fujitsu.com>
- <50B432CA.70804@cn.fujitsu.com>
+	id S1750822Ab2K0MYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 07:24:30 -0500
+X-Greylist: delayed 2173 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 07:24:30 EST
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+Date: Tue, 27 Nov 2012 13:48:14 +0200
+User-Agent: KMail/1.9.10
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B432CA.70804@cn.fujitsu.com>
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211271348.14603.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric, can you ACK it?
+Fix warning: 'ret' might be used uninitialized
 
-On Tue, Nov 27, 2012 at 11:26:02AM +0800, Zhang Yanfei wrote:
-> This patch provides a way to VMCLEAR VMCSs related to guests
-> on all cpus before executing the VMXOFF when doing kdump. This
-> is used to ensure the VMCSs in the vmcore updated and
-> non-corrupted.
-> 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kexec.h |    2 ++
->  arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
->  2 files changed, 27 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-> index 317ff17..28feeba 100644
-> --- a/arch/x86/include/asm/kexec.h
-> +++ b/arch/x86/include/asm/kexec.h
-> @@ -163,6 +163,8 @@ struct kimage_arch {
->  };
->  #endif
->  
-> +extern void (*crash_vmclear_loaded_vmcss)(void);
-> +
->  #endif /* __ASSEMBLY__ */
->  
->  #endif /* _ASM_X86_KEXEC_H */
-> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> index 13ad899..4a2a12f 100644
-> --- a/arch/x86/kernel/crash.c
-> +++ b/arch/x86/kernel/crash.c
-> @@ -16,6 +16,7 @@
->  #include <linux/delay.h>
->  #include <linux/elf.h>
->  #include <linux/elfcore.h>
-> +#include <linux/module.h>
->  
->  #include <asm/processor.h>
->  #include <asm/hardirq.h>
-> @@ -29,6 +30,20 @@
->  #include <asm/virtext.h>
->  
->  int in_crash_kexec;
-> + 
-> +/*
-> + * This is used to VMCLEAR all VMCSs loaded on the
-> + * processor. And when loading kvm_intel module, the
-> + * callback function pointer will be assigned.
-> + */
-> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
-> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
-> +
-> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
-> +{
-> +	if (crash_vmclear_loaded_vmcss)
-> +		crash_vmclear_loaded_vmcss();
-> +}
->  
->  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
->  
-> @@ -46,6 +61,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
->  #endif
->  	crash_save_cpu(regs, cpu);
->  
-> +	/*
-> +	 * VMCLEAR VMCSs loaded on all cpus if needed.
-> +	 */
-> +	cpu_emergency_vmclear_loaded_vmcss();
-> +
->  	/* Disable VMX or SVM if needed.
->  	 *
->  	 * We need to disable virtualization on all CPUs.
-> @@ -88,6 +108,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
->  
->  	kdump_nmi_shootdown_cpus();
->  
-> +	/*
-> +	 * VMCLEAR VMCSs loaded on this cpu if needed.
-> +	 */
-> +	cpu_emergency_vmclear_loaded_vmcss();
-> +
->  	/* Booting kdump kernel with VMX or SVM enabled won't work,
->  	 * because (among other limitations) we can't disable paging
->  	 * with the virt flags.
-> -- 
-> 1.7.1
+Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+---
+ drivers/uio/uio.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
---
-			Gleb.
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 5110f36..c33fd18 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -280,12 +280,16 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 			map_found = 1;
+ 			idev->map_dir = kobject_create_and_add("maps",
+ 							&idev->dev->kobj);
+-			if (!idev->map_dir)
++			if (!idev->map_dir) {
++				ret = -ENOMEM;
+ 				goto err_map;
++			}
+ 		}
+ 		map = kzalloc(sizeof(*map), GFP_KERNEL);
+-		if (!map)
++		if (!map) {
++			ret = -ENOMEM;
+ 			goto err_map;
++		}
+ 		kobject_init(&map->kobj, &map_attr_type);
+ 		map->mem = mem;
+ 		mem->map = map;
+@@ -305,12 +309,16 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 			portio_found = 1;
+ 			idev->portio_dir = kobject_create_and_add("portio",
+ 							&idev->dev->kobj);
+-			if (!idev->portio_dir)
++			if (!idev->portio_dir) {
++				ret = -ENOMEM;
+ 				goto err_portio;
++			}
+ 		}
+ 		portio = kzalloc(sizeof(*portio), GFP_KERNEL);
+-		if (!portio)
++		if (!portio) {
++			ret = -ENOMEM;
+ 			goto err_portio;
++		}
+ 		kobject_init(&portio->kobj, &portio_attr_type);
+ 		portio->port = port;
+ 		port->portio = portio;
+-- 
+1.7.8.6
