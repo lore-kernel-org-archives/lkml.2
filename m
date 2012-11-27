@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab2K0XPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:15:35 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26421 "EHLO
+	id S1756251Ab2K0XPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:15:33 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756187Ab2K0XPa (ORCPT
+	by vger.kernel.org with ESMTP id S1756106Ab2K0XP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:30 -0500
+	Tue, 27 Nov 2012 18:15:29 -0500
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewOmRYME
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 19/19] shrinker: Kill old ->shrink API.
-Date: Wed, 28 Nov 2012 10:14:46 +1100
-Message-Id: <1354058086-27937-20-git-send-email-david@fromorbit.com>
+Subject: [PATCH 18/19] shrinker: convert remaining shrinkers to count/scan API
+Date: Wed, 28 Nov 2012 10:14:45 +1100
+Message-Id: <1354058086-27937-19-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,154 +25,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-There are no more users of this API, so kill it dead, dead, dead and
-quietly bury the corpse in a shallow, unmarked grave in a dark
-forest deep in the hills...
+Convert the remaining couple of random shrinkers in the tree to the
+new API.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- include/linux/shrinker.h      |   15 +++++----------
- include/trace/events/vmscan.h |    4 ++--
- mm/vmscan.c                   |   39 ++++++++-------------------------------
- 3 files changed, 15 insertions(+), 43 deletions(-)
+ arch/x86/kvm/mmu.c |   35 +++++++++++++++++++++++++----------
+ net/sunrpc/auth.c  |   45 +++++++++++++++++++++++++++++++--------------
+ 2 files changed, 56 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-index e71286f..d4636a0 100644
---- a/include/linux/shrinker.h
-+++ b/include/linux/shrinker.h
-@@ -7,14 +7,15 @@
-  *
-  * The 'gfpmask' refers to the allocation we are currently trying to
-  * fulfil.
-- *
-- * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
-- * querying the cache size, so a fastpath for that case is appropriate.
-  */
- struct shrink_control {
- 	gfp_t gfp_mask;
- 
--	/* How many slab objects shrinker() should scan and try to reclaim */
-+	/*
-+	 * How many objects scan_objects should scan and try to reclaim.
-+	 * This is reset before every call, so it is safe for callees
-+	 * to modify.
-+	 */
- 	long nr_to_scan;
- 
- 	/* shrink from these nodes */
-@@ -24,11 +25,6 @@ struct shrink_control {
- /*
-  * A callback you can register to apply pressure to ageable caches.
-  *
-- * @shrink() should look through the least-recently-used 'nr_to_scan' entries
-- * and attempt to free them up.  It should return the number of objects which
-- * remain in the cache.  If it returns -1, it means it cannot do any scanning at
-- * this time (eg. there is a risk of deadlock).
-- *
-  * @count_objects should return the number of freeable items in the cache. If
-  * there are no objects to free or the number of freeable items cannot be
-  * determined, it should return 0. No deadlock checks should be done during the
-@@ -44,7 +40,6 @@ struct shrink_control {
-  * @scan_objects will be made from the current reclaim context.
-  */
- struct shrinker {
--	int (*shrink)(struct shrinker *, struct shrink_control *sc);
- 	long (*count_objects)(struct shrinker *, struct shrink_control *sc);
- 	long (*scan_objects)(struct shrinker *, struct shrink_control *sc);
- 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index 63cfccc..132a985 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -202,7 +202,7 @@ TRACE_EVENT(mm_shrink_slab_start,
- 
- 	TP_fast_assign(
- 		__entry->shr = shr;
--		__entry->shrink = shr->shrink;
-+		__entry->shrink = shr->scan_objects;
- 		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
- 		__entry->gfp_flags = sc->gfp_mask;
- 		__entry->pgs_scanned = pgs_scanned;
-@@ -241,7 +241,7 @@ TRACE_EVENT(mm_shrink_slab_end,
- 
- 	TP_fast_assign(
- 		__entry->shr = shr;
--		__entry->shrink = shr->shrink;
-+		__entry->shrink = shr->scan_objects;
- 		__entry->unused_scan = unused_scan_cnt;
- 		__entry->new_scan = new_scan_cnt;
- 		__entry->retval = shrinker_retval;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4a602ec..81731f5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -176,14 +176,6 @@ void unregister_shrinker(struct shrinker *shrinker)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 6f85fe0..3dbc3c0 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -4212,26 +4212,28 @@ restart:
+ 	spin_unlock(&kvm->mmu_lock);
  }
- EXPORT_SYMBOL(unregister_shrinker);
  
--static inline int do_shrinker_shrink(struct shrinker *shrinker,
--				     struct shrink_control *sc,
--				     unsigned long nr_to_scan)
--{
--	sc->nr_to_scan = nr_to_scan;
--	return (*shrinker->shrink)(shrinker, sc);
--}
+-static void kvm_mmu_remove_some_alloc_mmu_pages(struct kvm *kvm,
++static long kvm_mmu_remove_some_alloc_mmu_pages(struct kvm *kvm,
+ 						struct list_head *invalid_list)
+ {
+ 	struct kvm_mmu_page *page;
+ 
+ 	if (list_empty(&kvm->arch.active_mmu_pages))
+-		return;
++		return 0;
+ 
+ 	page = container_of(kvm->arch.active_mmu_pages.prev,
+ 			    struct kvm_mmu_page, link);
+-	kvm_mmu_prepare_zap_page(kvm, page, invalid_list);
++	return kvm_mmu_prepare_zap_page(kvm, page, invalid_list);
+ }
+ 
+-static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
++
++static long
++mmu_shrink_scan(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
+ {
+ 	struct kvm *kvm;
+ 	int nr_to_scan = sc->nr_to_scan;
 -
- #define SHRINK_BATCH 128
- /*
-  * Call the shrink functions to age shrinkable caches
-@@ -229,11 +221,8 @@ unsigned long shrink_slab(struct shrink_control *sc,
- 		long batch_size = shrinker->batch ? shrinker->batch
- 						  : SHRINK_BATCH;
+-	if (nr_to_scan == 0)
+-		goto out;
++	long freed = 0;
  
--		if (shrinker->scan_objects) {
--			max_pass = shrinker->count_objects(shrinker, sc);
--			WARN_ON(max_pass < 0);
--		} else
--			max_pass = do_shrinker_shrink(shrinker, sc, 0);
-+		max_pass = shrinker->count_objects(shrinker, sc);
-+		WARN_ON(max_pass < 0);
- 		if (max_pass <= 0)
+ 	raw_spin_lock(&kvm_lock);
+ 
+@@ -4259,24 +4261,37 @@ static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
+ 		idx = srcu_read_lock(&kvm->srcu);
+ 		spin_lock(&kvm->mmu_lock);
+ 
+-		kvm_mmu_remove_some_alloc_mmu_pages(kvm, &invalid_list);
++		freed += kvm_mmu_remove_some_alloc_mmu_pages(kvm, &invalid_list);
+ 		kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 
+ 		spin_unlock(&kvm->mmu_lock);
+ 		srcu_read_unlock(&kvm->srcu, idx);
+ 
++		/*
++		 * unfair on small ones
++		 * per-vm shrinkers cry out
++		 * sadness comes quickly
++		 */
+ 		list_move_tail(&kvm->vm_list, &vm_list);
+ 		break;
+ 	}
+ 
+ 	raw_spin_unlock(&kvm_lock);
++	return freed;
+ 
+-out:
++}
++
++static long
++mmu_shrink_count(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
++{
+ 	return percpu_counter_read_positive(&kvm_total_used_mmu_pages);
+ }
+ 
+ static struct shrinker mmu_shrinker = {
+-	.shrink = mmu_shrink,
++	.count_objects = mmu_shrink_count,
++	.scan_objects = mmu_shrink_scan,
+ 	.seeks = DEFAULT_SEEKS * 10,
+ };
+ 
+diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+index b5c067b..969c629 100644
+--- a/net/sunrpc/auth.c
++++ b/net/sunrpc/auth.c
+@@ -340,12 +340,13 @@ EXPORT_SYMBOL_GPL(rpcauth_destroy_credcache);
+ /*
+  * Remove stale credentials. Avoid sleeping inside the loop.
+  */
+-static int
++static long
+ rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
+ {
+ 	spinlock_t *cache_lock;
+ 	struct rpc_cred *cred, *next;
+ 	unsigned long expired = jiffies - RPC_AUTH_EXPIRY_MORATORIUM;
++	long freed = 0;
+ 
+ 	list_for_each_entry_safe(cred, next, &cred_unused, cr_lru) {
+ 
+@@ -357,10 +358,11 @@ rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
+ 		 */
+ 		if (time_in_range(cred->cr_expire, expired, jiffies) &&
+ 		    test_bit(RPCAUTH_CRED_HASHED, &cred->cr_flags) != 0)
+-			return 0;
++			break;
+ 
+ 		list_del_init(&cred->cr_lru);
+ 		number_cred_unused--;
++		freed++;
+ 		if (atomic_read(&cred->cr_count) != 0)
  			continue;
  
-@@ -252,7 +241,7 @@ unsigned long shrink_slab(struct shrink_control *sc,
- 		if (total_scan < 0) {
- 			printk(KERN_ERR
- 			"shrink_slab: %pF negative objects to delete nr=%ld\n",
--			       shrinker->shrink, total_scan);
-+			       shrinker->scan_objects, total_scan);
- 			total_scan = max_pass;
+@@ -373,29 +375,43 @@ rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
  		}
+ 		spin_unlock(cache_lock);
+ 	}
+-	return (number_cred_unused / 100) * sysctl_vfs_cache_pressure;
++	return freed;
+ }
  
-@@ -286,24 +275,12 @@ unsigned long shrink_slab(struct shrink_control *sc,
- 		while (total_scan >= batch_size) {
- 			long ret;
+ /*
+  * Run memory cache shrinker.
+  */
+-static int
+-rpcauth_cache_shrinker(struct shrinker *shrink, struct shrink_control *sc)
++static long
++rpcauth_cache_shrink_scan(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
++
+ {
+ 	LIST_HEAD(free);
+-	int res;
+-	int nr_to_scan = sc->nr_to_scan;
+-	gfp_t gfp_mask = sc->gfp_mask;
++	long freed;
++
++	if ((sc->gfp_mask & GFP_KERNEL) != GFP_KERNEL)
++		return -1;
  
--			if (shrinker->scan_objects) {
--				sc->nr_to_scan = batch_size;
--				ret = shrinker->scan_objects(shrinker, sc);
-+			sc->nr_to_scan = batch_size;
-+			ret = shrinker->scan_objects(shrinker, sc);
+-	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
+-		return (nr_to_scan == 0) ? 0 : -1;
++	/* nothing left, don't come back */
+ 	if (list_empty(&cred_unused))
+-		return 0;
++		return -1;
++
+ 	spin_lock(&rpc_credcache_lock);
+-	res = rpcauth_prune_expired(&free, nr_to_scan);
++	freed = rpcauth_prune_expired(&free, sc->nr_to_scan);
+ 	spin_unlock(&rpc_credcache_lock);
+ 	rpcauth_destroy_credlist(&free);
+-	return res;
++
++	return freed;
++}
++
++static long
++rpcauth_cache_shrink_count(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
++
++{
++	return (number_cred_unused / 100) * sysctl_vfs_cache_pressure;
+ }
  
--				if (ret == -1)
--					break;
--				freed += ret;
--			} else {
--				int nr_before;
--
--				nr_before = do_shrinker_shrink(shrinker, sc, 0);
--				ret = do_shrinker_shrink(shrinker, sc,
--								batch_size);
--				if (ret == -1)
--					break;
--				if (ret < nr_before)
--					freed += nr_before - ret;
--			}
-+			if (ret == -1)
-+				break;
-+			freed += ret;
- 			count_vm_events(SLABS_SCANNED, batch_size);
- 			total_scan -= batch_size;
+ /*
+@@ -712,7 +728,8 @@ rpcauth_uptodatecred(struct rpc_task *task)
+ }
+ 
+ static struct shrinker rpc_cred_shrinker = {
+-	.shrink = rpcauth_cache_shrinker,
++	.count_objects = rpcauth_cache_shrink_count,
++	.scan_objects = rpcauth_cache_shrink_scan,
+ 	.seeks = DEFAULT_SEEKS,
+ };
  
 -- 
 1.7.10
