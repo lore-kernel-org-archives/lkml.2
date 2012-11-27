@@ -1,195 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab2K0Kce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:32:34 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56777 "EHLO
+	id S1755417Ab2K0Kf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:35:57 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36290 "EHLO
 	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab2K0Kcb (ORCPT
+	with ESMTP id S1752684Ab2K0Kfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:32:31 -0500
-Message-ID: <50B4958D.104@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 15:57:25 +0530
+	Tue, 27 Nov 2012 05:35:55 -0500
+Message-ID: <50B49658.7080507@linux.vnet.ibm.com>
+Date: Tue, 27 Nov 2012 16:00:48 +0530
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 Organization: IBM
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>
-CC: riel@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
+To: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120804.2595.20280.sendpatchset@codeblue> <20121126134301.GB9830@turtle.usersys.redhat.com>
-In-Reply-To: <20121126134301.GB9830@turtle.usersys.redhat.com>
+Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
+ target runqueue has one task
+References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com>
+In-Reply-To: <20121126133501.GA9830@turtle.usersys.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112710-8878-0000-0000-000004F208D6
+x-cbid: 12112710-8878-0000-0000-000004F20C2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 07:13 PM, Andrew Jones wrote:
-> On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
->> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+On 11/26/2012 07:05 PM, Andrew Jones wrote:
+> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
+>> From: Peter Zijlstra <peterz@infradead.org>
 >>
->> yield_to returns -ESRCH, When source and target of yield_to
->> run queue length is one. When we see three successive failures of
->> yield_to we assume we are in potential undercommit case and abort
->> from PLE handler.
->> The assumption is backed by low probability of wrong decision
->> for even worst case scenarios such as average runqueue length
->> between 1 and 2.
+>> In case of undercomitted scenarios, especially in large guests
+>> yield_to overhead is significantly high. when run queue length of
+>> source and target is one, take an opportunity to bail out and return
+>> -ESRCH. This return condition can be further exploited to quickly come
+>> out of PLE handler.
 >>
->> note that we do not update last boosted vcpu in failure cases.
->> Thank Avi for raising question on aborting after first fail from
-yield_to.
+>> (History: Raghavendra initially worked on break out of kvm ple handler upon
+>>   seeing source runqueue length = 1, but it had to export rq length).
+>>   Peter came up with the elegant idea of return -ESRCH in scheduler core.
 >>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
 >> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 >> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 >> ---
->>   virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
->>   1 file changed, 16 insertions(+), 10 deletions(-)
 >>
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index be70035..053f494 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+>>   kernel/sched/core.c |   25 +++++++++++++++++++------
+>>   1 file changed, 19 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 2d8927f..fc219a5 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+>>    * It's the caller's job to ensure that the target task struct
+>>    * can't go away on us before we can do any checks.
+>>    *
+>> - * Returns true if we indeed boosted the target task.
+>> + * Returns:
+>> + *	true (>0) if we indeed boosted the target task.
+>> + *	false (0) if we failed to boost the target.
+>> + *	-ESRCH if there's no task to yield to.
+>>    */
+>>   bool __sched yield_to(struct task_struct *p, bool preempt)
 >>   {
->>   	struct pid *pid;
->>   	struct task_struct *task = NULL;
->> +	bool ret = false;
+>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
 >>
->>   	rcu_read_lock();
->>   	pid = rcu_dereference(target->pid);
->> @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
->>   		task = get_pid_task(target->pid, PIDTYPE_PID);
->>   	rcu_read_unlock();
->>   	if (!task)
->> -		return false;
->> +		return ret;
->>   	if (task->flags & PF_VCPU) {
->>   		put_task_struct(task);
->> -		return false;
->> -	}
->> -	if (yield_to(task, 1)) {
->> -		put_task_struct(task);
->> -		return true;
->> +		return ret;
->>   	}
->> +	ret = yield_to(task, 1);
->>   	put_task_struct(task);
->> -	return false;
+>>   again:
+>>   	p_rq = task_rq(p);
+>> +	/*
+>> +	 * If we're the only runnable task on the rq and target rq also
+>> +	 * has only one task, there's absolutely no point in yielding.
+>> +	 */
+>> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>> +		yielded = -ESRCH;
+>> +		goto out_irq;
+>> +	}
 >> +
->> +	return ret;
->>   }
->>   EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
->>
->> @@ -1697,12 +1696,14 @@ bool
-kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
->>   	return eligible;
->>   }
->>   #endif
->> +
->>   void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>   {
->>   	struct kvm *kvm = me->kvm;
->>   	struct kvm_vcpu *vcpu;
->>   	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
->>   	int yielded = 0;
->> +	int try = 3;
->>   	int pass;
->>   	int i;
->>
->> @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>   	 * VCPU is holding the lock that we need and will release it.
->>   	 * We approximate round-robin by starting at the last boosted VCPU.
->>   	 */
->> -	for (pass = 0; pass < 2 && !yielded; pass++) {
->> +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
->>   		kvm_for_each_vcpu(i, vcpu, kvm) {
->>   			if (!pass && i <= last_boosted_vcpu) {
->>   				i = last_boosted_vcpu;
->> @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>   				continue;
->>   			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
->>   				continue;
->> -			if (kvm_vcpu_yield_to(vcpu)) {
->> +
->> +			yielded = kvm_vcpu_yield_to(vcpu);
->> +			if (yielded > 0) {
->>   				kvm->last_boosted_vcpu = i;
->> -				yielded = 1;
->>   				break;
->> +			} else if (yielded < 0) {
->> +				try--;
->> +				if (!try)
->> +					break;
->>   			}
->>   		}
+>>   	double_rq_lock(rq, p_rq);
+>>   	while (task_rq(p) != p_rq) {
+>>   		double_rq_unlock(rq, p_rq);
+>> @@ -4310,13 +4322,13 @@ again:
 >>   	}
 >>
-
-Drew, Thanks for reviewing this.
+>>   	if (!curr->sched_class->yield_to_task)
+>> -		goto out;
+>> +		goto out_unlock;
+>>
+>>   	if (curr->sched_class != p->sched_class)
+>> -		goto out;
+>> +		goto out_unlock;
+>>
+>>   	if (task_running(p_rq, p) || p->state)
+>> -		goto out;
+>> +		goto out_unlock;
+>>
+>>   	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>>   	if (yielded) {
+>> @@ -4329,11 +4341,12 @@ again:
+>>   			resched_task(p_rq->curr);
+>>   	}
+>>
+>> -out:
+>> +out_unlock:
+>>   	double_rq_unlock(rq, p_rq);
+>> +out_irq:
+>>   	local_irq_restore(flags);
+>>
+>> -	if (yielded)
+>> +	if (yielded > 0)
+>>   		schedule();
+>>
+>>   	return yielded;
+>>
 >
-> The check done in patch 1/2 is done before the double_rq_lock, so it's
-> cheap. Now, this patch is to avoid doing too many get_pid_task calls.I
-> wonder if it would make more sense to change the vcpu state from tracking
-> the pid to tracking the task. If that was done, then I don't believe this
-> patch is necessary.
+> Acked-by: Andrew Jones <drjones@redhat.com>
+>
 
-We would need a logic not to break upon first failure of yield_to. 
-(which happens otherwise with patch1 alone). Breaking upon first
-failure out of ple handler resulted in degradation in moderate
-overcommits due to false exits even when we have more than one task in
-other cpu run queues.
+Thank you Drew.
 
-But your suggestion triggered an idea to me, what would be the cost of
-iterating over all vcpus despite of yield_to failure?
+Marcelo Gleb.. Please let me know if you have comments / concerns on the 
+patches..
 
-(Where we breakout of PLE handler only if we have successful yield i.e 
-yielded > 0) with something like this:
-
--       for (pass = 0; pass < 2 && !yielded; pass++) {
-+       for (pass = 0; pass < 2 && yielded <=0 ; pass++) {
-                 kvm_for_each_vcpu(i, vcpu, kvm) {
-                         if (!pass && i <= last_boosted_vcpu) {
-                                 i = last_boosted_vcpu;
-@@ -1727,11 +1727,12 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-                                 continue;
-                         if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
-                                 continue;
--                       if (kvm_vcpu_yield_to(vcpu)) {
-+
-+                       yielded = kvm_vcpu_yield_to(vcpu);
-+                       if (yielded > 0) {
-                                 kvm->last_boosted_vcpu = i;
--                               yielded = 1;
-                                 break;
-
-Here is the result of the above patch w.r.t to base and current patch
-series.
-
-benchmark     improvement w.r.t base   improvement w.r.t current patch
-ebizzy_1x      131.22287               -9.76%
-ebizzy_4x      -7.97198                -21.1%
-
-dbench_1x       25.67077               -25.55%
-dbench_4x       -69.19086              -122.46%
-
-
-Current patches perform better. So this means iterating over vcpus
-has some overhead.  Though we have IMO for bigger machine with large 
-guests, this is
-significant..
-
-Let me know if this patch sounds good to you..
+Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
+especially for large guests where we do have overhead of vcpu iteration
+of ple handler..
 
