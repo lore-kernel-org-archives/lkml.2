@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2K0RFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:05:14 -0500
-Received: from mga03.intel.com ([143.182.124.21]:29698 "EHLO mga03.intel.com"
+	id S932243Ab2K0RGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:06:14 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:63598 "EHLO mx12.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab2K0RFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:05:12 -0500
-X-ExtLoop1: 1
+	id S932122Ab2K0RGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 12:06:13 -0500
 X-IronPort-AV: E=Sophos;i="4.83,328,1352102400"; 
-   d="scan'208";a="173178455"
-Date: Tue, 27 Nov 2012 12:05:09 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Laine Walker-Avina <lwalkera@ieee.org>, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lwalkera@micron.com
-Subject: Re: Alignment Issue with Direct IO to NVMe Drive
-Message-ID: <20121127170509.GA5100@linux.intel.com>
-References: <CAMi7pMamJK079wQs+5Kaz=zdYGAPS+BFg2xCRKJMqPFMrQvQPQ@mail.gmail.com>
- <50B4AD8A.7020208@kernel.dk>
+   d="scan'208";a="282249922"
+Message-ID: <50B4F302.8010304@netapp.com>
+Date: Tue, 27 Nov 2012 12:06:10 -0500
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B4AD8A.7020208@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd: prevent NULL ptr derefs on fault injection
+References: <1354033871-25815-1-git-send-email-sasha.levin@oracle.com> <20121127170136.GE27142@fieldses.org>
+In-Reply-To: <20121127170136.GE27142@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 01:09:46PM +0100, Jens Axboe wrote:
-> On 2012-11-27 01:35, Laine Walker-Avina wrote:
-> > Hi all,
-> > 
-> > We are experiencing an issue with doing direct IO to a NVMe device I'm
-> > helping to develop. Every so often, the physical address given by
-> > sg_dma_address() is aligned to 0x800 instead of 0x1000 as specified by
-> > blk_queue_dma_alignement(queue, 4095) when the queue is initialized.
-
-FYI, this is a modification to the driver that Laine has made; presumably
-for a limitation of the prototype hardware he's working with.  The NVMe
-spec requires the device to be able to do I/Os to 4 byte boundaries.
-
-Laine, when this occurs, what is the alignment of 'offset' in the sg
-entry you're looking at?  If userspace is passing in an unaligned address,
-I don't think there's anything we do to try to align it.
-
-> > The request is also split over multiple segments to make up for the
-> > missing space (eg: for a 4k IO it's split into two segments 2k in
-> > size, and for an 8k IO it's split into 3 segments--2k,4k,2k). Our
-> > design requires the physical segments given to the device be aligned
-> > to 4k boundaries and be multiples of 4k in size. When not doing direct
-> > IO the physical addresses appear to always be 4k aligned as expected.
-> > One possible issue is the kernel we're primarily testing against is
-> > 2.6.32-220 from CentOS, but we have observed similar behavior from a
-> > vanilla 3.3 kernel as well. Any help would be greatly appreciated.
+On 11/27/2012 12:01 PM, J. Bruce Fields wrote:
+> On Tue, Nov 27, 2012 at 11:31:11AM -0500, Sasha Levin wrote:
+>> A recent patch series has moved hashtable initialization to when the net
+>> struct is initialized.
+>>
+>> When injecting faults, we tried accessing the hashtables even if the struct
+>> wasn't really initialized (nfsd wasn't in use) - this caused a NULL ptr
+>> deref.
 > 
-> I'm assuming you set the hardware sector size to 4k as well?
+> Thanks, adding Bryan to cc.--b.
+
+I was just looking over this :).  Unfortunately, this patch changes code that my most recent patch set removes so my patches will need to change again if this goes in first.  I'm looking for the best place to put this check to avoid having to change each of the forget_something() functions.
+
+- Bryan
 > 
-> -- 
-> Jens Axboe
+>>
+>> A simple test would be:
+>>
+>> 	echo 1 > /sys/kernel/debug/nfsd/forget_locks
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> ---
+>>  fs/nfsd/netns.h     | 3 +++
+>>  fs/nfsd/nfs4state.c | 9 +++++++++
+>>  2 files changed, 12 insertions(+)
+>>
+>> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+>> index 227b93e..c5806a57 100644
+>> --- a/fs/nfsd/netns.h
+>> +++ b/fs/nfsd/netns.h
+>> @@ -83,5 +83,8 @@ struct nfsd_net {
+>>  	struct delayed_work laundromat_work;
+>>  };
+>>  
+>> +/* Simple check to find out if a given net was properly initialized */
+>> +#define nfsd_netns_ready(nn) ((nn)->sessionid_hashtbl)
+>> +
+>>  extern int nfsd_net_id;
+>>  #endif /* __NFSD_NETNS_H__ */
+>> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+>> index e75872f..0e7428c 100644
+>> --- a/fs/nfsd/nfs4state.c
+>> +++ b/fs/nfsd/nfs4state.c
+>> @@ -4598,6 +4598,9 @@ void nfsd_forget_clients(u64 num)
+>>  	int count = 0;
+>>  	struct nfsd_net *nn = net_generic(current->nsproxy->net_ns, nfsd_net_id);
+>>  
+>> +	if (!nfsd_netns_ready(nn))
+>> +		return;
+>> +
+>>  	nfs4_lock_state();
+>>  	list_for_each_entry_safe(clp, next, &nn->client_lru, cl_lru) {
+>>  		expire_client(clp);
+>> @@ -4643,6 +4646,9 @@ void nfsd_forget_locks(u64 num)
+>>  	int count;
+>>  	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+>>  
+>> +	if (!nfsd_netns_ready(nn))
+>> +		return;
+>> +
+>>  	nfs4_lock_state();
+>>  	count = nfsd_release_n_owners(num, false, release_lockowner_sop, nn);
+>>  	nfs4_unlock_state();
+>> @@ -4655,6 +4661,9 @@ void nfsd_forget_openowners(u64 num)
+>>  	int count;
+>>  	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+>>  
+>> +	if (!nfsd_netns_ready(nn))
+>> +		return;
+>> +
+>>  	nfs4_lock_state();
+>>  	count = nfsd_release_n_owners(num, true, release_openowner_sop, nn);
+>>  	nfs4_unlock_state();
+>> -- 
+>> 1.8.0
+>>
+
