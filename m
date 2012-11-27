@@ -1,161 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab2K0Jdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 04:33:50 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43170 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253Ab2K0Jdr (ORCPT
+	id S1758415Ab2K0Je6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 04:34:58 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56942 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758300Ab2K0Je4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 04:33:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <50B3F31F.6080203@synaptics.com>
-References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
-	<1353124734-16803-3-git-send-email-cheiny@synaptics.com>
-	<CAN+gG=HLjJzGs3aZ9JTB0vvbMkJQWv=8cZXNpBhpFNYxdvKmVw@mail.gmail.com>
-	<50B3F31F.6080203@synaptics.com>
-Date: Tue, 27 Nov 2012 10:33:45 +0100
-Message-ID: <CAN+gG=GmGJYMvAOMHUskuFT6UkUvyEbgCSQ6bfNvXUnGzxB1Zw@mail.gmail.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Nov 2012 04:34:56 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/1] ARM: ux500: Fix u9540 booting issues
+Date: Tue, 27 Nov 2012 09:34:50 +0000
+Message-Id: <1354008890-10476-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 11:54 PM, Christopher Heiny
-<cheiny@synaptics.com> wrote:
-> On 11/26/2012 10:41 AM, Benjamin Tissoires wrote:
->>
->> Hi Christopher,
->>
->> On Sat, Nov 17, 2012 at 4:58 AM, Christopher Heiny <cheiny@synaptics.com>
->> wrote:
->>>
->>> rmi_bus.c implements the basic functionality of the RMI bus.  This file
->>> is
->>> greatly simplified compared to the previous patch - we've switched from
->>> "do it yourself" device/driver binding to using device_type to
->>> distinguish
->>> between the two kinds of devices on the bus (sensor devices and function
->>> specific devices) and using the standard bus implementation to manage
->>> devices
->>> and drivers.
->>>
->>>
->>> rmi_driver.c is a driver for the general functionality of the RMI sensor
->>> as a
->>> whole, managing those behaviors (including IRQ handling) that are not
->>> specific
->>> to any RMI4 function.  It has some unavoidable dependencies on F01
->>> behavior,
->>> though we have worked to minimize those as far as possible.
->>>
->>>
->>> The header file rmi_driver.h provides definitions that are shared among
->>> the modules of the RMI implementation, but not thought to be necessary
->>> outside it.
->>>
->>>
->>> Greg KH - Linus Walleij recommended that we seek your input on these core
->>> files, particularly the bus implementation.
->>>
->>>
->>> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
->>>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>> Cc: Linus Walleij <linus.walleij@stericsson.com>
->>> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
->>> Cc: Joeri de Gram <j.de.gram@gmail.com>
->>>
->>> ---
->>>
->>>   drivers/input/rmi4/rmi_bus.c    |  248 ++++++
->>>   drivers/input/rmi4/rmi_driver.c | 1663
->>> +++++++++++++++++++++++++++++++++++++++
->>>   drivers/input/rmi4/rmi_driver.h |  139 ++++
->>>   include/uapi/linux/input.h      |    1 +
->>>   4 files changed, 2051 insertions(+), 0 deletions(-)
->>>
->> [snipped]
->>>
->>> diff --git a/drivers/input/rmi4/rmi_driver.c
->>> b/drivers/input/rmi4/rmi_driver.c
->>> new file mode 100644
->>> index 0000000..05a73ae
->>> --- /dev/null
->>> +++ b/drivers/input/rmi4/rmi_driver.c
->>
->> [snipped]
->>>
->>> +/* extract product ID */
->>> +void get_prod_id(struct rmi_device *rmi_dev, struct rmi_driver_data
->>> *drvdata)
->>> +{
->>> +       struct device *dev = &rmi_dev->dev;
->>> +       int retval;
->>> +       int board = 0, rev = 0;
->>> +       int i;
->>> +       static const char * const pattern[] = {
->>> +               "tm%4d-%d", "s%4d-%d", "s%4d-ver%1d"};
->>> +       u8 product_id[RMI_PRODUCT_ID_LENGTH+1];
->>> +
->>> +       retval = rmi_read_block(rmi_dev,
->>> +               drvdata->f01_container->fd.query_base_addr+
->>> +               sizeof(struct f01_basic_queries),
->>> +               product_id, RMI_PRODUCT_ID_LENGTH);
->>> +       if (retval < 0) {
->>> +               dev_err(dev, "Failed to read product id, code=%d!",
->>> retval);
->>> +               return;
->>> +       }
->>> +       product_id[RMI_PRODUCT_ID_LENGTH] = '\0';
->>> +
->>> +       for (i = 0; i < sizeof(product_id); i++)
->>> +               product_id[i] = tolower(product_id[i]);
->>> +
->>> +       for (i = 0; i < sizeof(pattern); i++) {
->>
->>
->> This should be ARRAY_SIZE(pattern).
->> It gave me a wonderful kernel oops :)
->
->
-> Yep, that's a bug!  Oddly enough, it runs without barfing on my systems
-> (though who knows what horrible things are happening under the hood). Thanks
-> for letting us know.
+The u9540 stopped booting after the v3.7 merge window due to
+a lack of common clk support and early PRCMU initialisation.
+In this patch we rectify these issues, placing the u9540
+development board back into a successfully booting state.
 
-That's because the product id advertised by the touchpad you sent to
-me is 'DS4 R3.0'. So it's not compliant with the patterns that are
-advertised: "tm%4d-%d", "s%4d-%d", "s%4d-ver%1d".
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/cpu.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-If you present one of these patterns, thanks to the break, you leave
-the for loop. But as I'm not in this optimal case, I'm having i > 2,
-which introduced segfault.
+diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
+index 721e7b4..d4dcec5 100644
+--- a/arch/arm/mach-ux500/cpu.c
++++ b/arch/arm/mach-ux500/cpu.c
+@@ -71,13 +71,11 @@ void __init ux500_init_irq(void)
+ 	 * Init clocks here so that they are available for system timer
+ 	 * initialization.
+ 	 */
+-	if (cpu_is_u8500_family())
++	if (cpu_is_u8500_family() || cpu_is_u9540())
+ 		db8500_prcmu_early_init();
+ 
+-	if (cpu_is_u8500_family())
++	if (cpu_is_u8500_family() || cpu_is_u9540())
+ 		u8500_clk_init();
+-	else if (cpu_is_u9540())
+-		u9540_clk_init();
+ 	else if (cpu_is_u8540())
+ 		u8540_clk_init();
+ }
+-- 
+1.7.9.5
 
-Cheers,
-Benjamin
-
->
->                                         Chris
->
->>
->> Cheers,
->> Benjamin
->
->
-> [snip]
