@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab2K0RhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:37:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36651 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756620Ab2K0RhR (ORCPT
+	id S1756651Ab2K0RjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:39:11 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:49049 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755959Ab2K0RjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:37:17 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: arizona: Register haptics devices
-Date: Tue, 27 Nov 2012 17:37:13 +0000
-Message-Id: <1354037834-32061-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 27 Nov 2012 12:39:10 -0500
+Date: Tue, 27 Nov 2012 18:39:06 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121127173906.GA11390@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354036592.2534.6.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both WM5102 and WM5110 support haptics, register the device.
+On Tue, Nov 27, 2012 at 05:16:32PM +0000, David Woodhouse wrote:
+> Krzysztof, you've fixed a bunch of races... but I think there's one
+> still left.
+> 
+> An ATM driver will often have code like this, which gets called from
+> arbitrary contexts:
+>         if (vcc->pop)
+>                 vcc->pop(vcc, skb);
+> 
+> Now, what happens if pppoatm_send(vcc, NULL) happens after the address
+> of vcc->pop (currently pppoatm_pop) has been loaded, but before the
+> function is actually called?
+> 
+> You tear down all the setup and set vcc->user_back to NULL. And then
+> pppoatm_pop() gets called. And promptly crashes because pvcc is NULL.
+> 
+> A lot of these problems exist for br2684 too, and in prodding at it a
+> little I can consistently crash the system by sending a flood of
+> outbound packets while I kill the br2684ctl program. I end up in
+> br2684_pop() with vcc->user_back == NULL. In looking to see how you'd
+> fixed that in pppoatm, I realised that you haven't... :)
+> 
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    2 ++
- 1 file changed, 2 insertions(+)
+Yes, I missed that one - it's even worse, I introduced that bug 
+in "[PATCH 1/7] atm: detach protocol before closing vcc". Before that
+patch that scenario shouldn't happen because vcc was closed before
+calling pppoatm_send(vcc, NULL) - the driver should provide appropriate
+synchronization.
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 5e4e9c5..8572dfd 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -272,6 +272,7 @@ static struct mfd_cell early_devs[] = {
- static struct mfd_cell wm5102_devs[] = {
- 	{ .name = "arizona-extcon" },
- 	{ .name = "arizona-gpio" },
-+	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-micsupp" },
- 	{ .name = "arizona-pwm" },
- 	{ .name = "wm5102-codec" },
-@@ -280,6 +281,7 @@ static struct mfd_cell wm5102_devs[] = {
- static struct mfd_cell wm5110_devs[] = {
- 	{ .name = "arizona-extcon" },
- 	{ .name = "arizona-gpio" },
-+	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-micsupp" },
- 	{ .name = "arizona-pwm" },
- 	{ .name = "wm5110-codec" },
--- 
-1.7.10.4
+I think that we should just drop that patch. With later changes it's not
+necessary - the pppoatm_send() can be safely called while closing vcc.
 
+Krzysiek
