@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab2K0XPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:15:33 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26375 "EHLO
+	id S1756099Ab2K0XP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:15:27 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26299 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756106Ab2K0XP3 (ORCPT
+	by vger.kernel.org with ESMTP id S1755947Ab2K0XPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:29 -0500
+	Tue, 27 Nov 2012 18:15:22 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewOmRYME
+X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WQewOST5N2gwQ
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 18/19] shrinker: convert remaining shrinkers to count/scan API
-Date: Wed, 28 Nov 2012 10:14:45 +1100
-Message-Id: <1354058086-27937-19-git-send-email-david@fromorbit.com>
+Subject: [PATCH 10/19] shrinker: add node awareness
+Date: Wed, 28 Nov 2012 10:14:37 +1100
+Message-Id: <1354058086-27937-11-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,192 +25,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Convert the remaining couple of random shrinkers in the tree to the
-new API.
+Pass the node of the current zone being reclaimed to shrink_slab(),
+allowing the shrinker control nodemask to be set appropriately for
+node aware shrinkers.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- arch/x86/kvm/mmu.c |   35 +++++++++++++++++++++++++----------
- net/sunrpc/auth.c  |   45 +++++++++++++++++++++++++++++++--------------
- 2 files changed, 56 insertions(+), 24 deletions(-)
+ fs/drop_caches.c         |    1 +
+ include/linux/shrinker.h |    3 +++
+ mm/memory-failure.c      |    2 ++
+ mm/vmscan.c              |   12 +++++++++---
+ 4 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 6f85fe0..3dbc3c0 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -4212,26 +4212,28 @@ restart:
- 	spin_unlock(&kvm->mmu_lock);
- }
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index c00e055..9fd702f 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -44,6 +44,7 @@ static void drop_slab(void)
+ 		.gfp_mask = GFP_KERNEL,
+ 	};
  
--static void kvm_mmu_remove_some_alloc_mmu_pages(struct kvm *kvm,
-+static long kvm_mmu_remove_some_alloc_mmu_pages(struct kvm *kvm,
- 						struct list_head *invalid_list)
- {
- 	struct kvm_mmu_page *page;
++	nodes_setall(shrink.nodes_to_scan);
+ 	do {
+ 		nr_objects = shrink_slab(&shrink, 1000, 1000);
+ 	} while (nr_objects > 10);
+diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
+index 4f59615..e71286f 100644
+--- a/include/linux/shrinker.h
++++ b/include/linux/shrinker.h
+@@ -16,6 +16,9 @@ struct shrink_control {
  
- 	if (list_empty(&kvm->arch.active_mmu_pages))
--		return;
-+		return 0;
- 
- 	page = container_of(kvm->arch.active_mmu_pages.prev,
- 			    struct kvm_mmu_page, link);
--	kvm_mmu_prepare_zap_page(kvm, page, invalid_list);
-+	return kvm_mmu_prepare_zap_page(kvm, page, invalid_list);
- }
- 
--static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
+ 	/* How many slab objects shrinker() should scan and try to reclaim */
+ 	long nr_to_scan;
 +
-+static long
-+mmu_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
- {
- 	struct kvm *kvm;
- 	int nr_to_scan = sc->nr_to_scan;
--
--	if (nr_to_scan == 0)
--		goto out;
-+	long freed = 0;
- 
- 	raw_spin_lock(&kvm_lock);
- 
-@@ -4259,24 +4261,37 @@ static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
- 		idx = srcu_read_lock(&kvm->srcu);
- 		spin_lock(&kvm->mmu_lock);
- 
--		kvm_mmu_remove_some_alloc_mmu_pages(kvm, &invalid_list);
-+		freed += kvm_mmu_remove_some_alloc_mmu_pages(kvm, &invalid_list);
- 		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 
- 		spin_unlock(&kvm->mmu_lock);
- 		srcu_read_unlock(&kvm->srcu, idx);
- 
-+		/*
-+		 * unfair on small ones
-+		 * per-vm shrinkers cry out
-+		 * sadness comes quickly
-+		 */
- 		list_move_tail(&kvm->vm_list, &vm_list);
- 		break;
- 	}
- 
- 	raw_spin_unlock(&kvm_lock);
-+	return freed;
- 
--out:
-+}
-+
-+static long
-+mmu_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+{
- 	return percpu_counter_read_positive(&kvm_total_used_mmu_pages);
- }
- 
- static struct shrinker mmu_shrinker = {
--	.shrink = mmu_shrink,
-+	.count_objects = mmu_shrink_count,
-+	.scan_objects = mmu_shrink_scan,
- 	.seeks = DEFAULT_SEEKS * 10,
++	/* shrink from these nodes */
++	nodemask_t nodes_to_scan;
  };
  
-diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-index b5c067b..969c629 100644
---- a/net/sunrpc/auth.c
-+++ b/net/sunrpc/auth.c
-@@ -340,12 +340,13 @@ EXPORT_SYMBOL_GPL(rpcauth_destroy_credcache);
  /*
-  * Remove stale credentials. Avoid sleeping inside the loop.
-  */
--static int
-+static long
- rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
- {
- 	spinlock_t *cache_lock;
- 	struct rpc_cred *cred, *next;
- 	unsigned long expired = jiffies - RPC_AUTH_EXPIRY_MORATORIUM;
-+	long freed = 0;
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 6c5899b..7bcbde4 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -248,10 +248,12 @@ void shake_page(struct page *p, int access)
+ 	 */
+ 	if (access) {
+ 		int nr;
++		int nid = page_to_nid(p);
+ 		do {
+ 			struct shrink_control shrink = {
+ 				.gfp_mask = GFP_KERNEL,
+ 			};
++			node_set(nid, shrink.nodes_to_scan);
  
- 	list_for_each_entry_safe(cred, next, &cred_unused, cr_lru) {
- 
-@@ -357,10 +358,11 @@ rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
+ 			nr = shrink_slab(&shrink, 1000, 1000);
+ 			if (page_count(p) == 1)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 55c4fc9..4a602ec 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2122,15 +2122,20 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
  		 */
- 		if (time_in_range(cred->cr_expire, expired, jiffies) &&
- 		    test_bit(RPCAUTH_CRED_HASHED, &cred->cr_flags) != 0)
--			return 0;
-+			break;
- 
- 		list_del_init(&cred->cr_lru);
- 		number_cred_unused--;
-+		freed++;
- 		if (atomic_read(&cred->cr_count) != 0)
- 			continue;
- 
-@@ -373,29 +375,43 @@ rpcauth_prune_expired(struct list_head *free, int nr_to_scan)
- 		}
- 		spin_unlock(cache_lock);
- 	}
--	return (number_cred_unused / 100) * sysctl_vfs_cache_pressure;
-+	return freed;
- }
- 
- /*
-  * Run memory cache shrinker.
-  */
--static int
--rpcauth_cache_shrinker(struct shrinker *shrink, struct shrink_control *sc)
-+static long
-+rpcauth_cache_shrink_scan(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
+ 		if (global_reclaim(sc)) {
+ 			unsigned long lru_pages = 0;
 +
- {
- 	LIST_HEAD(free);
--	int res;
--	int nr_to_scan = sc->nr_to_scan;
--	gfp_t gfp_mask = sc->gfp_mask;
-+	long freed;
-+
-+	if ((sc->gfp_mask & GFP_KERNEL) != GFP_KERNEL)
-+		return -1;
++			nodes_clear(shrink->nodes_to_scan);
+ 			for_each_zone_zonelist(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask)) {
+ 				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 					continue;
  
--	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
--		return (nr_to_scan == 0) ? 0 : -1;
-+	/* nothing left, don't come back */
- 	if (list_empty(&cred_unused))
--		return 0;
-+		return -1;
-+
- 	spin_lock(&rpc_credcache_lock);
--	res = rpcauth_prune_expired(&free, nr_to_scan);
-+	freed = rpcauth_prune_expired(&free, sc->nr_to_scan);
- 	spin_unlock(&rpc_credcache_lock);
- 	rpcauth_destroy_credlist(&free);
--	return res;
-+
-+	return freed;
-+}
-+
-+static long
-+rpcauth_cache_shrink_count(
-+	struct shrinker		*shrink,
-+	struct shrink_control	*sc)
-+
-+{
-+	return (number_cred_unused / 100) * sysctl_vfs_cache_pressure;
- }
+ 				lru_pages += zone_reclaimable_pages(zone);
++				node_set(zone_to_nid(zone),
++					 shrink->nodes_to_scan);
+ 			}
  
- /*
-@@ -712,7 +728,8 @@ rpcauth_uptodatecred(struct rpc_task *task)
- }
+ 			shrink_slab(shrink, sc->nr_scanned, lru_pages);
++
+ 			if (reclaim_state) {
+ 				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+ 				reclaim_state->reclaimed_slab = 0;
+@@ -2682,6 +2687,8 @@ loop_again:
+ 				shrink_zone(zone, &sc);
  
- static struct shrinker rpc_cred_shrinker = {
--	.shrink = rpcauth_cache_shrinker,
-+	.count_objects = rpcauth_cache_shrink_count,
-+	.scan_objects = rpcauth_cache_shrink_scan,
- 	.seeks = DEFAULT_SEEKS,
- };
+ 				reclaim_state->reclaimed_slab = 0;
++				nodes_clear(shrink.nodes_to_scan);
++				node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+ 				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+ 				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+ 				total_scanned += sc.nr_scanned;
+@@ -3318,10 +3325,9 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		 * number of slab pages and shake the slab until it is reduced
+ 		 * by the same nr_pages that we used for reclaiming unmapped
+ 		 * pages.
+-		 *
+-		 * Note that shrink_slab will free memory on all zones and may
+-		 * take a long time.
+ 		 */
++		nodes_clear(shrink.nodes_to_scan);
++		node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+ 		for (;;) {
+ 			unsigned long lru_pages = zone_reclaimable_pages(zone);
  
 -- 
 1.7.10
