@@ -1,109 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab2K0PAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:00:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43354 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab2K0PAX (ORCPT
+	id S1755753Ab2K0PBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:01:38 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50691 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab2K0PBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:00:23 -0500
-Message-ID: <1354028413.4266.53.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 053/270] mmc: sdhci-s3c: fix the wrong number of max bus
- clocks
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Chris Ball <cjb@laptop.org>
-Date: Tue, 27 Nov 2012 15:00:13 +0000
-In-Reply-To: <1353949160-26803-54-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-54-git-send-email-herton.krzesinski@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-TNMabX/afI0DBmyz17Er"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 27 Nov 2012 10:01:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121119234619.GB447@bbox>
+References: <1351702597-10795-1-git-send-email-js1304@gmail.com>
+	<1351702597-10795-5-git-send-email-js1304@gmail.com>
+	<20121101050347.GD24883@bbox>
+	<CAAmzW4P=YdFt9KFmHcQh=tJheuZuvZVojYGNTqfO4YDy+C8_1g@mail.gmail.com>
+	<20121102224236.GB2070@barrios>
+	<CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
+	<20121113124937.GA4360@barrios>
+	<CAAmzW4Oz6pAsF7cA6Q5Hvr3Md8dsZtaaX8k_HaJcP+9=iBb3nQ@mail.gmail.com>
+	<20121113150159.GA5296@barrios>
+	<CAAmzW4MxZYXCV3UqmPpCfzunLS5ufcqNOjeTSHABEyfTASTn=w@mail.gmail.com>
+	<20121119234619.GB447@bbox>
+Date: Wed, 28 Nov 2012 00:01:35 +0900
+Message-ID: <CAAmzW4PtzcB2nPTaLigPkyUwHR1XmoGetJwxH+38g=Osk+-NCA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
+ index of first flushed entry
+From: JoonSoo Kim <js1304@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Andrew.
 
---=-TNMabX/afI0DBmyz17Er
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Jaehoon Chung <jh80.chung@samsung.com>
->=20
-> commit 5feb54a1ab91a237e247c013b8c4fb100ea347b1 upstream.
->=20
-> We can use up to four bus-clocks; but on module remove, we didn't
-> disable the fourth bus clock.
->=20
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Chris Ball <cjb@laptop.org>
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+2012/11/20 Minchan Kim <minchan@kernel.org>:
+> Hi Joonsoo,
+> Sorry for the delay.
 >
+> On Thu, Nov 15, 2012 at 02:09:04AM +0900, JoonSoo Kim wrote:
+>> Hi, Minchan.
+>>
+>> 2012/11/14 Minchan Kim <minchan@kernel.org>:
+>> > On Tue, Nov 13, 2012 at 11:12:28PM +0900, JoonSoo Kim wrote:
+>> >> 2012/11/13 Minchan Kim <minchan@kernel.org>:
+>> >> > On Tue, Nov 13, 2012 at 09:30:57AM +0900, JoonSoo Kim wrote:
+>> >> >> 2012/11/3 Minchan Kim <minchan@kernel.org>:
+>> >> >> > Hi Joonsoo,
+>> >> >> >
+>> >> >> > On Sat, Nov 03, 2012 at 04:07:25AM +0900, JoonSoo Kim wrote:
+>> >> >> >> Hello, Minchan.
+>> >> >> >>
+>> >> >> >> 2012/11/1 Minchan Kim <minchan@kernel.org>:
+>> >> >> >> > On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
+>> >> >> >> >> In current code, after flush_all_zero_pkmaps() is invoked,
+>> >> >> >> >> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
+>> >> >> >> >> return index of first flushed entry. With this index,
+>> >> >> >> >> we can immediately map highmem page to virtual address represented by index.
+>> >> >> >> >> So change return type of flush_all_zero_pkmaps()
+>> >> >> >> >> and return index of first flushed entry.
+>> >> >> >> >>
+>> >> >> >> >> Additionally, update last_pkmap_nr to this index.
+>> >> >> >> >> It is certain that entry which is below this index is occupied by other mapping,
+>> >> >> >> >> therefore updating last_pkmap_nr to this index is reasonable optimization.
+>> >> >> >> >>
+>> >> >> >> >> Cc: Mel Gorman <mel@csn.ul.ie>
+>> >> >> >> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> >> >> >> >> Cc: Minchan Kim <minchan@kernel.org>
+>> >> >> >> >> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>> >> >> >> >>
+>> >> >> >> >> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+>> >> >> >> >> index ef788b5..97ad208 100644
+>> >> >> >> >> --- a/include/linux/highmem.h
+>> >> >> >> >> +++ b/include/linux/highmem.h
+>> >> >> >> >> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+>> >> >> >> >>
+>> >> >> >> >>  #ifdef CONFIG_HIGHMEM
+>> >> >> >> >>  #include <asm/highmem.h>
+>> >> >> >> >> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
+>> >> >> >> >>
+>> >> >> >> >>  /* declarations for linux/mm/highmem.c */
+>> >> >> >> >>  unsigned int nr_free_highpages(void);
+>> >> >> >> >> diff --git a/mm/highmem.c b/mm/highmem.c
+>> >> >> >> >> index d98b0a9..b365f7b 100644
+>> >> >> >> >> --- a/mm/highmem.c
+>> >> >> >> >> +++ b/mm/highmem.c
+>> >> >> >> >> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
+>> >> >> >> >>       return virt_to_page(addr);
+>> >> >> >> >>  }
+>> >> >> >> >>
+>> >> >> >> >> -static void flush_all_zero_pkmaps(void)
+>> >> >> >> >> +static unsigned int flush_all_zero_pkmaps(void)
+>> >> >> >> >>  {
+>> >> >> >> >>       int i;
+>> >> >> >> >> -     int need_flush = 0;
+>> >> >> >> >> +     unsigned int index = PKMAP_INVALID_INDEX;
+>> >> >> >> >>
+>> >> >> >> >>       flush_cache_kmaps();
+>> >> >> >> >>
+>> >> >> >> >> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
+>> >> >> >> >>                         &pkmap_page_table[i]);
+>> >> >> >> >>
+>> >> >> >> >>               set_page_address(page, NULL);
+>> >> >> >> >> -             need_flush = 1;
+>> >> >> >> >> +             if (index == PKMAP_INVALID_INDEX)
+>> >> >> >> >> +                     index = i;
+>> >> >> >> >>       }
+>> >> >> >> >> -     if (need_flush)
+>> >> >> >> >> +     if (index != PKMAP_INVALID_INDEX)
+>> >> >> >> >>               flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+>> >> >> >> >> +
+>> >> >> >> >> +     return index;
+>> >> >> >> >>  }
+>> >> >> >> >>
+>> >> >> >> >>  /**
+>> >> >> >> >> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
+>> >> >> >> >>   */
+>> >> >> >> >>  void kmap_flush_unused(void)
+>> >> >> >> >>  {
+>> >> >> >> >> +     unsigned int index;
+>> >> >> >> >> +
+>> >> >> >> >>       lock_kmap();
+>> >> >> >> >> -     flush_all_zero_pkmaps();
+>> >> >> >> >> +     index = flush_all_zero_pkmaps();
+>> >> >> >> >> +     if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
+>> >> >> >> >> +             last_pkmap_nr = index;
+>> >> >> >> >
+>> >> >> >> > I don't know how kmap_flush_unused is really fast path so how my nitpick
+>> >> >> >> > is effective. Anyway,
+>> >> >> >> > What problem happens if we do following as?
+>> >> >> >> >
+>> >> >> >> > lock()
+>> >> >> >> > index = flush_all_zero_pkmaps();
+>> >> >> >> > if (index != PKMAP_INVALID_INDEX)
+>> >> >> >> >         last_pkmap_nr = index;
+>> >> >> >> > unlock();
+>> >> >> >> >
+>> >> >> >> > Normally, last_pkmap_nr is increased with searching empty slot in
+>> >> >> >> > map_new_virtual. So I expect return value of flush_all_zero_pkmaps
+>> >> >> >> > in kmap_flush_unused normally become either less than last_pkmap_nr
+>> >> >> >> > or last_pkmap_nr + 1.
+>> >> >> >>
+>> >> >> >> There is a case that return value of kmap_flush_unused() is larger
+>> >> >> >> than last_pkmap_nr.
+>> >> >> >
+>> >> >> > I see but why it's problem? kmap_flush_unused returns larger value than
+>> >> >> > last_pkmap_nr means that there is no free slot at below the value.
+>> >> >> > So unconditional last_pkmap_nr update is vaild.
+>> >> >>
+>> >> >> I think that this is not true.
+>> >> >> Look at the slightly different example.
+>> >> >>
+>> >> >> Assume last_pkmap = 20 and index 1-9, 12-19 is kmapped. 10, 11 is kunmapped.
+>> >> >>
+>> >> >> do kmap_flush_unused() => flush index 10,11 => last_pkmap = 10;
+>> >> >> do kunmap() with index 17
+>> >> >> do kmap_flush_unused() => flush index 17 => last_pkmap = 17?
+>> >> >>
+>> >> >> In this case, unconditional last_pkmap_nr update skip one kunmapped index.
+>> >> >> So, conditional update is needed.
+>> >> >
+>> >> > Thanks for pouinting out, Joonsoo.
+>> >> > You're right. I misunderstood your flush_all_zero_pkmaps change.
+>> >> > As your change, flush_all_zero_pkmaps returns first *flushed* free slot index.
+>> >> > What's the benefit returning flushed flushed free slot index rather than free slot index?
+>> >>
+>> >> If flush_all_zero_pkmaps() return free slot index rather than first
+>> >> flushed free slot,
+>> >> we need another comparison like as 'if pkmap_count[i] == 0' and
+>> >> need another local variable for determining whether flush is occurred or not.
+>> >> I want to minimize these overhead and churning of the code, although
+>> >> they are negligible.
+>> >>
+>> >> > I think flush_all_zero_pkmaps should return first free slot because customer of
+>> >> > flush_all_zero_pkmaps doesn't care whether it's just flushed or not.
+>> >> > What he want is just free or not. In such case, we can remove above check and it makes
+>> >> > flusha_all_zero_pkmaps more intuitive.
+>> >>
+>> >> Yes, it is more intuitive, but as I mentioned above, it need another comparison,
+>> >> so with that, a benefit which prevent to re-iterate when there is no
+>> >> free slot, may be disappeared.
+>> >
+>> > If you're very keen on the performance, why do you have such code?
+>> > You can remove below branch if you were keen on the performance.
+>> >
+>> > diff --git a/mm/highmem.c b/mm/highmem.c
+>> > index c8be376..44a88dd 100644
+>> > --- a/mm/highmem.c
+>> > +++ b/mm/highmem.c
+>> > @@ -114,7 +114,7 @@ static unsigned int flush_all_zero_pkmaps(void)
+>> >
+>> >         flush_cache_kmaps();
+>> >
+>> > -       for (i = 0; i < LAST_PKMAP; i++) {
+>> > +       for (i = LAST_PKMAP - 1; i >= 0; i--) {
+>> >                 struct page *page;
+>> >
+>> >                 /*
+>> > @@ -141,8 +141,7 @@ static unsigned int flush_all_zero_pkmaps(void)
+>> >                 pte_clear(&init_mm, PKMAP_ADDR(i), &pkmap_page_table[i]);
+>> >
+>> >                 set_page_address(page, NULL);
+>> > -               if (index == PKMAP_INVALID_INDEX)
+>> > -                       index = i;
+>> > +               index = i;
+>> >         }
+>> >         if (index != PKMAP_INVALID_INDEX)
+>> >                 flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+>> >
+>> >
+>> > Anyway, if you have the concern of performance, Okay let's give up making code clear
+>> > although I didn't see any report about kmap perfomance. Instead, please consider above
+>> > optimization because you have already broken what you mentioned.
+>> > If we can't make function clear, another method for it is to add function comment. Please.
+>>
+>> Yes, I also didn't see any report about kmap performance.
+>> By your reviewing comment, I eventually reach that this patch will not
+>> give any benefit.
+>> So how about to drop it?
+>
+> Personally, I prefer to proceed but if you don't have a confidence about gain,
+> No problem to drop it.
+> Thanks.
+>
+>>
+>> Thanks for review.
 
-This is missing from 3.4 and 3.6 (but not 3.2); it apparently needed its
-context adjusted.
+During the review, I concluded that this patch have no gain.
+And this patch churn the code too much.
+So I want to drop this patch for your tree.
 
-Ben.
-
-> ---
->  drivers/mmc/host/sdhci-s3c.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-> index a50c205..02b7a4a 100644
-> --- a/drivers/mmc/host/sdhci-s3c.c
-> +++ b/drivers/mmc/host/sdhci-s3c.c
-> @@ -656,7 +656,7 @@ static int __devexit sdhci_s3c_remove(struct platform=
-_device *pdev)
-> =20
->  	pm_runtime_disable(&pdev->dev);
-> =20
-> -	for (ptr =3D 0; ptr < 3; ptr++) {
-> +	for (ptr =3D 0; ptr < MAX_BUS_CLK; ptr++) {
->  		if (sc->clk_bus[ptr]) {
->  			clk_disable(sc->clk_bus[ptr]);
->  			clk_put(sc->clk_bus[ptr]);
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-TNMabX/afI0DBmyz17Er
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULTVfee/yOyVhhEJAQqKFw/7B+NTLRnugSBk7APQ6Srpso9M4nJ8GQuY
-pQm6SMfzbdWoXEwXTjTf96/DV49ShGLUm4ZYAA3MzYTbm7gUP9t8mBV428IE/B0C
-l2DxM7R1d1j/ELaFLx8wmxv+6wIQiUeS+YvChZztEJxnqpen/h4uskD8BUK4CSTU
-+eMVyucMKVQn7D2mPyrvlwlM0gG/dSAkkLLdPr060ePSUoI0Fd0uKee1e4+kLn6s
-Qew/NrtV9Myf/UNN2SnuykXcMYOftr5dQ8AzXLfKcBIgwOjVZTdeApLkWFACpLO2
-3sSGVnGsDn83p1FuXPpAVk1IV5u2X2goM4CvvUwIL7fXUNgnyJm4acP0n5qTYrlY
-3bwDnB6l9sfZ2OSBnniWF5WLHpuX9/Jvn7BrRUFs/1ni4ICQxc/VILpf7o0ab+Kd
-cn0jwJITuWwC8CCbok61Jh2/raT4SpxI6e3S6W/TIPcsB91KLiotjajd1zkHsdvB
-lP+8UZPaimYSev/v76iGbupVijgIo0vap2oMsBssYiFmX8Y/RKgkF3SGc5wOJXVK
-YU/4jSnLXdaJGG+rUbaBcO6f2ccsxJ1YEH4KBgQXOKXT9rvm7leaK70ZKzhYPb3q
-bhMDUAE2vFfVPDPDimOwGKboAxuXQebQbTu5OwlOOEaIgkk6dt4HenS2Un/8xodo
-m2KSGM0vQ/s=
-=6W1l
------END PGP SIGNATURE-----
-
---=-TNMabX/afI0DBmyz17Er--
+Sorry for late notification.
