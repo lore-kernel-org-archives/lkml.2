@@ -1,174 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2K0FN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:13:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45794 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab2K0FN2 (ORCPT
+	id S1751866Ab2K0FPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:15:39 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43046 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab2K0FPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:13:28 -0500
-Message-ID: <50B44BF4.30803@vflare.org>
-Date: Mon, 26 Nov 2012 21:13:24 -0800
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 2/2] zram: allocate metadata when disksize is set up
-References: <1353638567-3981-1-git-send-email-minchan@kernel.org> <1353638567-3981-2-git-send-email-minchan@kernel.org>
-In-Reply-To: <1353638567-3981-2-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 27 Nov 2012 00:15:38 -0500
+Message-ID: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: paulmck@linux.vnet.ibm.com, sasha.levin@oracle.com, gleb@redhat.com,
+        avi@redhat.com, fweisbec@gmail.com
+Date: Tue, 27 Nov 2012 13:15:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12112705-1618-0000-0000-000002EDBA48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2012 06:42 PM, Minchan Kim wrote:
-> Lockdep complains about recursive deadlock of zram->init_lock.
-> Because zram_init_device could be called in reclaim context and
-> it requires a page with GFP_KERNEL.
->
-> We can fix it via replacing GFP_KERNEL with GFP_NOIO.
-> But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
-> We can change it with __vmalloc which can receive gfp_t.
-> But still we have a problem. Although __vmalloc can handle gfp_t, it calls
-> allocation of GFP_KERNEL. That's why I sent the patch.
-> https://lkml.org/lkml/2012/4/23/77
->
-> Yes. Fundamental problem is utter crap API vmalloc.
-> If we can fix it, everyone would be happy. But life isn't simple
-> like seeing my thread of the patch.
->
-> So next option is to give up lazy initialization and initialize it at the
-> very disksize setting time. But it makes unnecessary metadata waste until
-> zram is really used. But let's think about it.
->
-> 1) User of zram normally do mkfs.xxx or mkswap before using
->     the zram block device(ex, normally, do it at booting time)
->     It ends up allocating such metadata of zram before real usage so
->     benefit of lazy initialzation would be mitigated.
->
-> 2) Some user want to use zram when memory pressure is high.(ie, load zram
->     dynamically, NOT booting time). It does make sense because people don't
->     want to waste memory until memory pressure is high(ie, where zram is really
->     helpful time). In this case, lazy initialzation could be failed easily
->     because we will use GFP_NOIO instead of GFP_KERNEL for avoiding deadlock.
->     So the benefit of lazy initialzation would be mitigated, too.
->
-> 3) Metadata overhead is not critical and Nitin has a plan to diet it.
->     4K : 12 byte(64bit machine) -> 64G : 192M so 0.3% isn't big overhead
->     If insane user use such big zram device up to 20, it could consume 6% of ram
->     but efficieny of zram will cover the waste.
->
-> So this patch gives up lazy initialization and instead we initialize metadata
-> at disksize setting time.
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->   drivers/staging/zram/zram_drv.c   |   21 ++++-----------------
->   drivers/staging/zram/zram_sysfs.c |    1 +
->   2 files changed, 5 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 9ef1eca..f364fb5 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -441,16 +441,13 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
->   {
->   	struct zram *zram = queue->queuedata;
->
-> -	if (unlikely(!zram->init_done) && zram_init_device(zram))
-> -		goto error;
-> -
->   	down_read(&zram->init_lock);
->   	if (unlikely(!zram->init_done))
-> -		goto error_unlock;
-> +		goto error;
->
->   	if (!valid_io_request(zram, bio)) {
->   		zram_stat64_inc(zram, &zram->stats.invalid_io);
-> -		goto error_unlock;
-> +		goto error;
->   	}
->
->   	__zram_make_request(zram, bio, bio_data_dir(bio));
-> @@ -458,9 +455,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
->
->   	return;
->
-> -error_unlock:
-> -	up_read(&zram->init_lock);
->   error:
-> +	up_read(&zram->init_lock);
->   	bio_io_error(bio);
->   }
->
-> @@ -509,19 +505,12 @@ void zram_reset_device(struct zram *zram)
->   	up_write(&zram->init_lock);
->   }
->
-> +/* zram->init_lock should be hold */
+I noticed some warnings complaining about dynticks_nesting value, like 
 
-s/hold/held
+[  267.545032] ------------[ cut here ]------------
+[  267.545032] WARNING: at kernel/rcutree.c:382 rcu_eqs_enter+0xab/0xc0()
+[  267.545032] Hardware name: Bochs
+[  267.545032] Modules linked in:
+[  267.545032] Pid: 0, comm: swapper/2 Not tainted 3.7.0-rc5-next-20121115 #8
+[  267.545032] Call Trace:
+[  267.545032]  [<ffffffff8104714f>] warn_slowpath_common+0x7f/0xc0
+[  267.545032]  [<ffffffff810471aa>] warn_slowpath_null+0x1a/0x20
+[  267.545032]  [<ffffffff810e607b>] rcu_eqs_enter+0xab/0xc0
+[  267.545032]  [<ffffffff810e60bb>] rcu_idle_enter+0x2b/0x70
+[  267.545032]  [<ffffffff8100d44f>] cpu_idle+0x6f/0x100
+[  267.545032]  [<ffffffff814bf055>] start_secondary+0x205/0x20c
+[  267.545032] ---[ end trace 924ae80da035028d ]---
 
-btw, shouldn't we also change GFP_KERNEL to GFP_NOIO in is_partial_io() 
-case in both read/write handlers?
+After enabling rcu-dyntick tracing, I got following abnormal
+dynticks_nesting values (13fffffffffffff, ff00000000000001,etc):
+			...
+ 1	<idle>-0     [002] dN.2 18739.518567: rcu_dyntick: End 0 140000000000000		rcu_idle_exit
+ 2	  sshd-696   [002] d..1 18739.518675: rcu_dyntick: ++= 140000000000000 140000000000001	rcu_irq_enter   - apf (not present)
 
-Rest of the patch looks good.
+ 3	<idle>-0     [002] d..2 18739.518705: rcu_dyntick: Start 140000000000001 0		rcu_idle_enter
+ 4	<idle>-0     [002] d..2 18739.521252: rcu_dyntick: End 0 1				rcu_irq_enter	- apf (page ready)
+ 5	<idle>-0     [002] dN.2 18739.521261: rcu_dyntick: Start 1 0				rcu_irq_exit	- apf (page ready)
+ 6	<idle>-0     [002] dN.2 18739.521263: rcu_dyntick: End 0 140000000000000		rcu_idle_exit
 
+ 7	  sshd-696   [002] d..1 18739.521299: rcu_dyntick: --= 140000000000000 13fffffffffffff	rcu_irq_exit	- apf (not present)
+ 8	  sshd-696   [002] d..1 18739.521302: rcu_dyntick: Start 13fffffffffffff 0		rcu_user_enter
+ 9	  sshd-696   [002] d..1 18739.521330: rcu_dyntick: End 0 1				rcu_irq_enter   - apf (not present)
 
-Thanks,
-Nitin
+10	<idle>-0     [002] d..2 18739.521346: rcu_dyntick: Start 1 0				rcu_idle_enter - old value 1, warning
+11	<idle>-0     [002] d..2 18739.530021: rcu_dyntick: ++= ff00000000000001 ff00000000000002
+12	<idle>-0     [002] dN.2 18739.530029: rcu_dyntick: --= ff00000000000002 ff00000000000001
+		...
 
->   int zram_init_device(struct zram *zram)
->   {
->   	int ret;
->   	size_t num_pages;
->
-> -	down_write(&zram->init_lock);
-> -	if (zram->init_done) {
-> -		up_write(&zram->init_lock);
-> -		return 0;
-> -	}
-> -
-> -	BUG_ON(!zram->disksize);
-> -
->   	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
->   		pr_info(
->   		"There is little point creating a zram of greater than "
-> @@ -570,7 +559,6 @@ int zram_init_device(struct zram *zram)
->   	}
->
->   	zram->init_done = 1;
-> -	up_write(&zram->init_lock);
->
->   	pr_debug("Initialization done!\n");
->   	return 0;
-> @@ -580,7 +568,6 @@ fail_no_table:
->   	zram->disksize = 0;
->   fail:
->   	__zram_reset_device(zram);
-> -	up_write(&zram->init_lock);
->   	pr_err("Initialization failed: err=%d\n", ret);
->   	return ret;
->   }
-> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> index 4143af9..369db12 100644
-> --- a/drivers/staging/zram/zram_sysfs.c
-> +++ b/drivers/staging/zram/zram_sysfs.c
-> @@ -71,6 +71,7 @@ static ssize_t disksize_store(struct device *dev,
->
->   	zram->disksize = PAGE_ALIGN(disksize);
->   	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> +	zram_init_device(zram);
->   	up_write(&zram->init_lock);
->
->   	return len;
->
+I added the functions I guess which printed the tracing after each
+line. 
+
+Line #1, the idle-0 process calls rcu_idle_exit(), and finishes one
+loop, to switch to sshd-696
+
+Line #2, sshd-696 calls rcu_irq_enter() because of async page fault(page
+not present), and puts itself to wait for page ready
+
+Line #3, idle-0 is switched in, and clears the dynticks_nesting to 0
+
+Line #4-5, I think the rcu_irq_enter/exit() is called because the page
+for sshd-696 is ready
+
+Line #6, idle-0 calls rcu_idle_exit(), to switch to sshd-696
+
+Line #7, sshd-696 calls rcu_irq_exit() in the apf (page not present)
+code path, decreasing dynticks_nesting to 13fffffffffffff. 
+
+Line #8-9, sshd-696 calls rcu_user_enter() to start user eqs, and gets
+async page fault again. It puts itself sleep again, with
+dynticks_nesting value as 1.
+
+Line #10, idle-0 switches in, as the dynticks_nesting value is 1, so
+warning is reported in rcu_idle_enter(), then the value is decreased to
+ff00000000000001. (In the tracing log, the new value is 0, that's
+because rcu hard-code the value to be 0. I will send another patch for
+this.)
+
+This patch below tries to replace the rcu_irq_enter/exit() with
+rcu_idle_exit/enter(), if it is in rcu idle, and it is idle process;
+otherwise, rcu_user_exit() is called to exit user eqs if necessary. 
+
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/kvm.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 4180a87..f65648d 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -247,10 +247,17 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 		break;
+ 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+ 		/* page is swapped out by the host. */
+-		rcu_irq_enter();
++		if (is_idle_task(current) && rcu_is_cpu_idle())
++			rcu_idle_exit();
++		else
++			rcu_user_exit();
++
+ 		exit_idle();
+ 		kvm_async_pf_task_wait((u32)read_cr2());
+-		rcu_irq_exit();
++
++		if (is_idle_task(current) && rcu_is_cpu_idle())
++			rcu_idle_enter();
++
+ 		break;
+ 	case KVM_PV_REASON_PAGE_READY:
+ 		rcu_irq_enter();
+-- 
+1.7.11.4
 
