@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab2K0BNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 20:13:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44553 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab2K0BNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 20:13:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,323,1352102400"; 
-   d="scan'208";a="252939636"
-Message-ID: <50B41346.3030606@intel.com>
-Date: Tue, 27 Nov 2012 09:11:34 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1757785Ab2K0BPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 20:15:05 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36192 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757702Ab2K0BPC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 20:15:02 -0500
+Message-ID: <50B41395.60808@huawei.com>
+Date: Tue, 27 Nov 2012 09:12:53 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Benjamin Segall <bsegall@google.com>
-CC: mingo@redhat.com, peterz@infradead.org, pjt@google.com,
-        preeti@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com> <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com>
-In-Reply-To: <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
+        <akpm@linux-foundation.org>, <rob@landley.net>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <wency@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
+        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-doc@vger.kernel.org>, <wujianguo@huawei.com>,
+        <qiuxishi@huawei.com>
+Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com>
+In-Reply-To: <50B38F69.6020902@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 03:03 AM, Benjamin Segall wrote:
-> So, I've been trying out using the runnable averages for load balance in
-> a few ways, but haven't actually gotten any improvement on the
-> benchmarks I've run. I'll post my patches once I have the numbers down,
-> but it's generally been about half a percent to 1% worse on the tests
-> I've tried.
+On 2012-11-26 23:48, H. Peter Anvin wrote:
+> On 11/26/2012 05:15 AM, Tang Chen wrote:
+>>
+>> Hi Wu,
+>>
+>> That is really a problem. And, before numa memory got initialized,
+>> memblock subsystem would be used to allocate memory. I didn't find any
+>> approach that could fully address it when I making the patches. There
+>> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
+>> we can only do our best to prevent it from happening.
+>>
+>> Your patch is very helpful. And after a shot look at the code, it seems
+>> that acpi_numa_memory_affinity_init() is an architecture dependent
+>> function. Could we do this somewhere which is not depending on the
+>> architecture ?
+>>
+> 
+> The movable memory should be classified as a non-RAM type in memblock,
+> that way we will not allocate from it early on.
+Hi Peter,
 
-Did you tried this rfc patch? and what's the result of it? :)
+I have tried to reserved movable memory from bootmem allocator, but the
+ACPICA subsystem is initialized later than setting up movable zone.
+So still trying to figure out a way to setup/reserve movable zones
+according to information from static ACPI tables such as SRAT/MPST etc.
+
+Regards!
+Gerry
 
 > 
-> The basic idea is to use (cfs_rq->runnable_load_avg +
-> cfs_rq->blocked_load_avg) (which should be equivalent to doing
-> load_avg_contrib on the rq) for cfs_rqs and possibly the rq, and
-> p->se.load.weight * p->se.avg.runnable_avg_sum / period for tasks.
+> 	-hpa
 > 
-> I have not yet tried including wake_affine, so this has just involved
-> h_load (task_load_down and task_h_load), as that makes everything
-> (besides wake_affine) be based on either the new averages or the
-> rq->cpu_load averages.
 > 
+> .
+> 
+
 
