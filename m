@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab2K0Xb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:31:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab2K0Xb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:31:27 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, aquini@redhat.com
-Subject: [PATCH] mm: fix balloon_page_movable() page->flags check
-Date: Tue, 27 Nov 2012 21:31:10 -0200
-Message-Id: <1ccb1c95a52185bcc6009761cb2829197e2737ea.1354058194.git.aquini@redhat.com>
-In-Reply-To: <20121127145708.c7173d0d.akpm@linux-foundation.org>
-References: <20121127145708.c7173d0d.akpm@linux-foundation.org>
+	id S1756812Ab2K0Xb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:31:58 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37102 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab2K0X3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 18:29:33 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V7 2/7] ARM: dt: change .dtb build rules to build in dts directory
+Date: Tue, 27 Nov 2012 16:29:11 -0700
+Message-Id: <1354058956-7199-2-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following crash by fixing and enhancing the way 
-page->flags are tested to identify a ballooned page.
+From: Grant Likely <grant.likely@secretlab.ca>
 
----8<---
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000194
-IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
---->8---
+The current rules have the .dtb files build in a different directory
+from the .dts files. The only reason for this is that it was what
+PowerPC has done historically. This patch changes ARM to use the generic
+dtb rule which builds .dtb files in the same directory as the source .dts.
 
-The NULL pointer deref was taking place because balloon_page_movable()
-page->flags tests were incomplete and we ended up 
-inadvertently poking at private pages.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+[swarren: added rm command for old stale .dtb files]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- include/linux/balloon_compaction.h | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+v7: New patch.
+---
+ arch/arm/Makefile          |    4 ++--
+ arch/arm/boot/Makefile     |   12 ------------
+ arch/arm/boot/dts/Makefile |    8 ++++++++
+ 3 files changed, 10 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
-index 68893bc..634a19b 100644
---- a/include/linux/balloon_compaction.h
-+++ b/include/linux/balloon_compaction.h
-@@ -107,6 +107,23 @@ static inline void balloon_mapping_free(struct address_space *balloon_mapping)
- }
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 1ec5f67..5f92252 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -291,10 +291,10 @@ zinstall uinstall install: vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
  
- /*
-+ * __balloon_page_flags - helper to perform balloon @page ->flags tests.
-+ *
-+ * As balloon pages are got from Buddy, and we do not play with page->flags
-+ * at driver level (exception made when we get the page lock for compaction),
-+ * therefore we can safely identify a ballooned page by checking if the
-+ * NR_PAGEFLAGS rightmost bits from the page->flags are all cleared.
-+ * This approach also helps on skipping ballooned pages that are locked for
-+ * compaction or release, thus mitigating their racy check at
-+ * balloon_page_movable()
-+ */
-+#define BALLOON_PAGE_FLAGS_MASK       ((1UL << NR_PAGEFLAGS) - 1)
-+static inline bool __balloon_page_flags(struct page *page)
-+{
-+	return page->flags & BALLOON_PAGE_FLAGS_MASK ? false : true;
-+}
+ %.dtb: scripts
+-	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
+ 
+ dtbs: scripts
+-	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) dtbs
+ 
+ # We use MRPROPER_FILES and CLEAN_FILES now
+ archclean:
+diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+index 9137df5..abfce28 100644
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -15,8 +15,6 @@ ifneq ($(MACHINE),)
+ include $(srctree)/$(MACHINE)/Makefile.boot
+ endif
+ 
+-include $(srctree)/arch/arm/boot/dts/Makefile
+-
+ # Note: the following conditions must always be true:
+ #   ZRELADDR == virt_to_phys(PAGE_OFFSET + TEXT_OFFSET)
+ #   PARAMS_PHYS must be within 4MB of ZRELADDR
+@@ -59,16 +57,6 @@ $(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
+ 
+ endif
+ 
+-targets += $(dtb-y)
+-
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+-$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+-
+-clean-files := *.dtb
+-
+ ifneq ($(LOADADDR),)
+   UIMAGE_LOADADDR=$(LOADADDR)
+ else
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index a17d5ab..cb217f8 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -136,4 +136,12 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+ 	wm8650-mid.dtb
+ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
+ 
++targets += dtbs
+ endif
 +
-+/*
-  * __is_movable_balloon_page - helper to perform @page mapping->flags tests
-  */
- static inline bool __is_movable_balloon_page(struct page *page)
-@@ -135,8 +152,8 @@ static inline bool balloon_page_movable(struct page *page)
- 	 * Before dereferencing and testing mapping->flags, lets make sure
- 	 * this is not a page that uses ->mapping in a different way
- 	 */
--	if (!PageSlab(page) && !PageSwapCache(page) && !PageAnon(page) &&
--	    !page_mapped(page))
-+	if (__balloon_page_flags(page) && !page_mapped(page) &&
-+	    page_count(page) == 1)
- 		return __is_movable_balloon_page(page);
- 
- 	return false;
++dtbs: $(addprefix $(obj)/, $(dtb-y))
++	# *.dtb used to be generated in the directory above. Clean out the
++	# old build results so people don't accidentally use them.
++	rm -f $(obj)/../*.dtb
++
++clean-files := *.dtb
 -- 
-1.7.11.7
+1.7.10.4
 
