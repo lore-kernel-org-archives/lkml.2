@@ -1,73 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2K0Gff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:35:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41460 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758021Ab2K0Gfc (ORCPT
+	id S1758045Ab2K0Gf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:35:56 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59420 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757944Ab2K0GfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:35:32 -0500
-Date: Tue, 27 Nov 2012 06:35:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: arizona: Only set GPIO if it has been requested
-Message-ID: <20121127063528.GU9411@opensource.wolfsonmicro.com>
-References: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <50B3FAAB.9090406@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uUozbLrG2OP+gMtx"
-Content-Disposition: inline
-In-Reply-To: <50B3FAAB.9090406@samsung.com>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Nov 2012 01:35:17 -0500
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4 v7] AMD64 EDAC: Fix type usage in NB IDs and memory ranges
+Date: Tue, 27 Nov 2012 14:32:12 +0800
+Message-Id: <1353997932-8475-4-git-send-email-daniel@numascale-asia.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+References: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use appropriate types for northbridge IDs and memory ranges.
 
---uUozbLrG2OP+gMtx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+v7: Refactor patches grouping changes
 
-On Tue, Nov 27, 2012 at 08:26:35AM +0900, Chanwoo Choi wrote:
-> On 11/26/2012 08:28 PM, Mark Brown wrote:
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+---
+ arch/x86/include/asm/amd_nb.h |    2 +-
+ drivers/edac/amd64_edac.c     |   20 ++++++++++----------
+ drivers/edac/amd64_edac.h     |    6 +++---
+ 3 files changed, 14 insertions(+), 14 deletions(-)
 
-> > +	if (arizona->pdata.micd_pol_gpio > 0)
-> > +		gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
-> > +					info->micd_modes[mode].gpio);
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 417eb24..d2e703b 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -76,7 +76,7 @@ static inline bool amd_nb_has_feature(unsigned feature)
+ 	return ((amd_northbridges.flags & feature) == feature);
+ }
+ 
+-static inline struct amd_northbridge *node_to_amd_nb(int node)
++static inline struct amd_northbridge *node_to_amd_nb(u16 node)
+ {
+ 	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+ }
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 62b7b17..b27412a 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -239,7 +239,7 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
+  * DRAM base/limit associated with node_id
+  */
+ static bool amd64_base_limit_match(struct amd64_pvt *pvt, u64 sys_addr,
+-				   unsigned nid)
++				   u8 nid)
+ {
+ 	u64 addr;
+ 
+@@ -265,7 +265,7 @@ static struct mem_ctl_info *find_mc_by_sys_addr(struct mem_ctl_info *mci,
+ 						u64 sys_addr)
+ {
+ 	struct amd64_pvt *pvt;
+-	unsigned node_id;
++	u8 node_id;
+ 	u32 intlv_en, bits;
+ 
+ 	/*
+@@ -1348,7 +1348,7 @@ static u8 f1x_determine_channel(struct amd64_pvt *pvt, u64 sys_addr,
+ }
+ 
+ /* Convert the sys_addr to the normalized DCT address */
+-static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, unsigned range,
++static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, u8 range,
+ 				 u64 sys_addr, bool hi_rng,
+ 				 u32 dct_sel_base_addr)
+ {
+@@ -1399,7 +1399,7 @@ static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, unsigned range,
+  * checks if the csrow passed in is marked as SPARED, if so returns the new
+  * spare row
+  */
+-static int f10_process_possible_spare(struct amd64_pvt *pvt, u8 dct, int csrow)
++static int f10_process_possible_spare(struct amd64_pvt *pvt, u16 dct, int csrow)
+ {
+ 	int tmp_cs;
+ 
+@@ -1424,7 +1424,7 @@ static int f10_process_possible_spare(struct amd64_pvt *pvt, u8 dct, int csrow)
+  *	-EINVAL:  NOT FOUND
+  *	0..csrow = Chip-Select Row
+  */
+-static int f1x_lookup_addr_in_dct(u64 in_addr, u32 nid, u8 dct)
++static int f1x_lookup_addr_in_dct(u64 in_addr, u8 nid, u8 dct)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct amd64_pvt *pvt;
+@@ -2266,7 +2266,7 @@ static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, u16 nid)
+ }
+ 
+ /* check MCG_CTL on all the cpus on this node */
+-static bool amd64_nb_mce_bank_enabled_on_node(unsigned nid)
++static bool amd64_nb_mce_bank_enabled_on_node(u16 nid)
+ {
+ 	cpumask_var_t mask;
+ 	int cpu, nbe;
+@@ -2299,7 +2299,7 @@ out:
+ 	return ret;
+ }
+ 
+-static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
++static int toggle_ecc_err_reporting(struct ecc_settings *s, u16 nid, bool on)
+ {
+ 	cpumask_var_t cmask;
+ 	int cpu;
+@@ -2337,7 +2337,7 @@ static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
+ 	return 0;
+ }
+ 
+-static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
++static bool enable_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+ 				       struct pci_dev *F3)
+ {
+ 	bool ret = true;
+@@ -2389,7 +2389,7 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+ 	return ret;
+ }
+ 
+-static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
++static void restore_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+ 					struct pci_dev *F3)
+ {
+ 	u32 value, mask = 0x3;		/* UECC/CECC enable */
+@@ -2428,7 +2428,7 @@ static const char *ecc_msg =
+ 	"'ecc_enable_override'.\n"
+ 	" (Note that use of the override may cause unknown side effects.)\n";
+ 
+-static bool ecc_enabled(struct pci_dev *F3, u8 nid)
++static bool ecc_enabled(struct pci_dev *F3, u16 nid)
+ {
+ 	u32 value;
+ 	u8 ecc_en = 0;
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index cecd0c4..a558084 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -332,7 +332,7 @@ struct amd64_pvt {
+ 	/* pci_device handles which we utilize */
+ 	struct pci_dev *F1, *F2, *F3;
+ 
+-	unsigned mc_node_id;	/* MC index of this MC node */
++	u16 mc_node_id;		/* MC index of this MC node */
+ 	int ext_model;		/* extended model value of this node */
+ 	int channel_count;
+ 
+@@ -368,7 +368,7 @@ struct amd64_pvt {
+ 	struct error_injection injection;
+ };
+ 
+-static inline u64 get_dram_base(struct amd64_pvt *pvt, unsigned i)
++static inline u64 get_dram_base(struct amd64_pvt *pvt, u8 i)
+ {
+ 	u64 addr = ((u64)pvt->ranges[i].base.lo & 0xffff0000) << 8;
+ 
+@@ -378,7 +378,7 @@ static inline u64 get_dram_base(struct amd64_pvt *pvt, unsigned i)
+ 	return (((u64)pvt->ranges[i].base.hi & 0x000000ff) << 40) | addr;
+ }
+ 
+-static inline u64 get_dram_limit(struct amd64_pvt *pvt, unsigned i)
++static inline u64 get_dram_limit(struct amd64_pvt *pvt, u8 i)
+ {
+ 	u64 lim = (((u64)pvt->ranges[i].lim.lo & 0xffff0000) << 8) | 0x00ffffff;
+ 
+-- 
+1.7.10.4
 
-> Why not use gpio_is_valid() function to test arizona->pdata.micd_pol_gpio ?
-
-Zero is normally a valid GPIO (since it's an index into a big array
-after all) but this is unhelpful when checking to see if someone filled
-in platform data as it's also the default value for uninitialised member
-variables.  It's much more likely that someone didn't fill in a GPIO
-than that GPIO 0 got assigned to this.
-
---uUozbLrG2OP+gMtx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtF8RAAoJELSic+t+oim9/foQAJJKOIbWxsnX1ge/RBCklzsu
-jC4a82DHFjuJG3HaeBp5IaqihlglvfccrERW2YKW54fau3PWnuL1x/MCIYIIlvyq
-Cv/ZI4CHK1x80731MZ3NoANtfwjmcGpk1bHUMfkn/YwrEzs3503T/oHw4HE/UNld
-qT2l/LZArpi8v2G6NCuY+aWAfTzHQuViOo82kJHRjradsl6VGZtCMoFh3eqC5/bR
-ysQC019DzRCb/nPnVeG0N/E9lIogbApfR/Aw9bf0nKWN0De6LlW5UZBV1sKsyQEy
-yaz7cwEQqENElNilLEifMYTTNfIMEQRbs6sh7qDT1YP15utZAKmVdGPoj/9V66eo
-K5RJEWq+Qe7H45K7AA6FXWI9YXxdgUHnz3l2JAIG6o1ETt7sXkNyvNxos3t3vWWc
-4EMGi0jnSAm2fOWsNc+nTd1H4FND/+e+cJql2bz4DYNvPQ2ld5kcRYWfZ1sQ7X8k
-GNh6sFOZ+fOu4o8HS0UnGhcQCixJOssTzEiKsVPoq+T51ItCldr7ufA63Aq+MsCE
-6lXf282TnQ6X8YYGXvumj6OnWp71061cGnitoACzoOzXdqlCuzXYjePH1Fk92ZmC
-6eA65O1UhVnQUBydR4RmJXc5Ma0D3P3w+tjv0xh8PZVoroZa2XzUHyxIT0G9pGuJ
-m6iZ8ixTeF7Tuzga3juc
-=0JxP
------END PGP SIGNATURE-----
-
---uUozbLrG2OP+gMtx--
