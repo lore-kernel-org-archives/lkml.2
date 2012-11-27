@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab2K0XXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:23:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44536 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2K0XXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:23:06 -0500
-Message-ID: <1354058574.6138.1.camel@phoenix>
-Subject: [PATCH RESEND] regulator: tps51632: Use linear_min_sel and
- regulator_[map|list]_voltage_linear
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Nov 2012 07:22:54 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755089Ab2K0XZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:25:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753092Ab2K0XZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 18:25:15 -0500
+Date: Tue, 27 Nov 2012 21:24:42 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Michael Wolf <mjw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, kvm@vger.kernel.org,
+        peterz@infradead.org, glommer@parallels.com, mingo@redhat.com
+Subject: Re: [PATCH 0/5] Alter steal time reporting in KVM
+Message-ID: <20121127232442.GA8295@amt.cnet>
+References: <20121126203603.28840.38736.stgit@lambeau>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126203603.28840.38736.stgit@lambeau>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps51632-regulator.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+On Mon, Nov 26, 2012 at 02:36:24PM -0600, Michael Wolf wrote:
+> In the case of where you have a system that is running in a
+> capped or overcommitted environment the user may see steal time
+> being reported in accounting tools such as top or vmstat.
 
-diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
-index 3460364..dce5eb3 100644
---- a/drivers/regulator/tps51632-regulator.c
-+++ b/drivers/regulator/tps51632-regulator.c
-@@ -106,29 +106,23 @@ static int tps51632_dcdc_get_voltage_sel(struct regulator_dev *rdev)
- 	}
- 
- 	vsel = data & TPS51632_VOUT_MASK;
--
--	if (vsel < TPS51632_MIN_VSEL)
--		return 0;
--	else
--		return vsel - TPS51632_MIN_VSEL;
-+	return vsel;
- }
- 
- static int tps51632_dcdc_set_voltage_sel(struct regulator_dev *rdev,
- 		unsigned selector)
- {
- 	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
--	int vsel;
- 	int ret;
- 	unsigned int reg = TPS51632_VOLTAGE_SELECT_REG;
- 
- 	if (tps->enable_pwm_dvfs)
- 		reg = TPS51632_VOLTAGE_BASE_REG;
- 
--	vsel = selector + TPS51632_MIN_VSEL;
--	if (vsel > TPS51632_MAX_VSEL)
-+	if (selector > TPS51632_MAX_VSEL)
- 		return -EINVAL;
- 
--	ret = regmap_write(tps->regmap, TPS51632_VOLTAGE_SELECT_REG, vsel);
-+	ret = regmap_write(tps->regmap, TPS51632_VOLTAGE_SELECT_REG, selector);
- 	if (ret < 0)
- 		dev_err(tps->dev, "reg write failed, err %d\n", ret);
- 	return ret;
-@@ -254,7 +248,8 @@ static int __devinit tps51632_probe(struct i2c_client *client,
- 	tps->desc.ramp_delay = TPS51632_DEFAULT_RAMP_DELAY;
- 	tps->desc.min_uV = TPS51632_MIN_VOLATGE;
- 	tps->desc.uV_step = TPS51632_VOLATGE_STEP_10mV;
--	tps->desc.n_voltages = (TPS51632_MAX_VSEL - TPS51632_MIN_VSEL) + 1;
-+	tps->desc.linear_min_sel = TPS51632_MIN_VSEL;
-+	tps->desc.n_voltages = TPS51632_MAX_VSEL + 1;
- 	tps->desc.ops = &tps51632_dcdc_ops;
- 	tps->desc.type = REGULATOR_VOLTAGE;
- 	tps->desc.owner = THIS_MODULE;
--- 
-1.7.9.5
+The definition of stolen time is 'time during which the virtual CPU is
+runnable to not running'. Overcommit is the main scenario which steal
+time helps to detect.
 
+Can you describe the 'capped' case?
 
-
+>  This can
+> cause confusion for the end user.  To ease the confusion this patch set
+> adds the idea of consigned (expected steal) time.  The host will separate
+> the consigned time from the steal time.  The consignment limit passed to the
+> host will be the amount of steal time expected within a fixed period of
+> time.  Any other steal time accruing during that period will show as the
+> traditional steal time.
+> 
+> ---
+> 
+> Michael Wolf (5):
+>       Alter the amount of steal time reported by the guest.
+>       Expand the steal time msr to also contain the consigned time.
+>       Add the code to send the consigned time from the host to the guest
+>       Add a timer to allow the separation of consigned from steal time.
+>       Add an ioctl to communicate the consign limit to the host.
+> 
+> 
+>  arch/x86/include/asm/kvm_host.h       |   11 +++++++
+>  arch/x86/include/asm/kvm_para.h       |    3 +-
+>  arch/x86/include/asm/paravirt.h       |    4 +--
+>  arch/x86/include/asm/paravirt_types.h |    2 +
+>  arch/x86/kernel/kvm.c                 |    8 ++---
+>  arch/x86/kernel/paravirt.c            |    4 +--
+>  arch/x86/kvm/x86.c                    |   50 ++++++++++++++++++++++++++++++++-
+>  fs/proc/stat.c                        |    9 +++++-
+>  include/linux/kernel_stat.h           |    2 +
+>  include/linux/kvm_host.h              |    2 +
+>  include/uapi/linux/kvm.h              |    2 +
+>  kernel/sched/core.c                   |   10 ++++++-
+>  kernel/sched/cputime.c                |   21 +++++++++++++-
+>  kernel/sched/sched.h                  |    2 +
+>  virt/kvm/kvm_main.c                   |    7 +++++
+>  15 files changed, 120 insertions(+), 17 deletions(-)
+> 
+> -- 
+> Signature
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
