@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2K0L0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 06:26:45 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51893 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab2K0L0o (ORCPT
+	id S1755253Ab2K0L1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 06:27:39 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3481 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab2K0L1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 06:26:44 -0500
+	Tue, 27 Nov 2012 06:27:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 27 Nov 2012 03:27:26 -0800
+Message-ID: <50B4A483.8030305@nvidia.com>
+Date: Tue, 27 Nov 2012 13:31:15 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <87624rfgav.fsf@devron.myhome.or.jp>
-References: <1353504190-5766-1-git-send-email-linkinjeon@gmail.com>
-	<87624rfgav.fsf@devron.myhome.or.jp>
-Date: Tue, 27 Nov 2012 20:26:43 +0900
-Message-ID: <CAKYAXd8wzBnf7M-ruOc-=qtGcUWEBMBP6QNEwBrM5BzmdHD+PQ@mail.gmail.com>
-Subject: Re: [PATCH v5 0/8] fat: fix estale error on VFAT over NFS.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Lucas Stach <dev@lynxeye.de>, Dave Airlie <airlied@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com> <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com> <50B46336.8030605@nvidia.com> <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com> <50B476E1.4070403@nvidia.com> <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com> <50B47DA8.60609@nvidia.com> <1354011776.1479.31.camel@tellur> <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> This patch-set eliminates the client side ESTALE errors when a FAT
->> partition
->> exported over NFS has its dentries evicted from the cache.
->>
->> One of the reasons for this error is lack of permanent inode numbers on
->> FAT
->> which makes it difficult to construct persistent file handles.
->> This can be overcome by using fat_encode_fh() that include i_pos in file
->> handle.
->>
->> Once the i_pos is available, it is only a matter of reading the directory
->> entries from the disk clusters to locate the matching entry and rebuild
->> the corresponding inode.
->>
->> We reached the conclusion support stable inode's read-only export first
->> after
->> discussing with OGAWA and Bruce.
->> And will make it writable with some operation(unlink and rename)
->> limitation
->> next time.
->
-> I will review at this weekend. sorry.
-No problem. I will wait.
-Thanks for reply.
->
->> Namjae Jeon (8)
->>  fat: modify nfs mount option
->>  fat: move fat_i_pos_read to fat.h
->>  fat: pass superblock pointer instead of inode pointer to fat_ent_read()
->>  fat: introduce a helper fat_get_blknr_offset()
->>  fat: restructure export_operations
->>  fat (exportfs): rebuild inode if ilookup() fails
->>  fat (exportfs): rebuild directory-inode if fat_dget() fails
->>  Documentation: update nfs option in filesystem/vfat.txt
->>
->> ---
->> 1.7.9.5
->>
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+On 27.11.2012 12:37, Thierry Reding wrote:
+> But in that case it should be made mandatory at first until proper IOMMU
+> support is enabled on Tegra30. Then it can be checked at driver probe
+> time whether or not to enable the extra checks. That way we don't need a
+> special Kconfig option and we still get all the security that we need,
+> right?
+
+I guess it depends on the level of security.
+
+If we want to only protect kernel and user space memory, this would be
+sufficient and no firewall is needed if IOMMU is turned on.
+
+If we want to protect 2D buffers from each other, this is not sufficient.
+
+Terje
