@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab2K0Iv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:51:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48352 "EHLO mail.zytor.com"
+	id S1758643Ab2K0Ivn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:51:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57807 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933252Ab2K0IvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:51:23 -0500
-Message-ID: <50B47EB7.20000@zytor.com>
-Date: Tue, 27 Nov 2012 00:49:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758594Ab2K0Ivk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 03:51:40 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>
+CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH v5 09/12] pwm: pwm-tiehrpwm: pinctrl support
+Date: Tue, 27 Nov 2012 14:18:14 +0530
+Message-ID: <1354006097-25895-10-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
+References: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Bob Liu <lliubbo@gmail.com>, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com> <50B479FA.6010307@cn.fujitsu.com>
-In-Reply-To: <50B479FA.6010307@cn.fujitsu.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 12:29 AM, Tang Chen wrote:
-> Another approach is like the following:
-> movable_node = 1,3-5,8
-> This could set all the memory on the nodes to be movable. And the rest
-> of memory works as usual. But movablecore_map is more flexible.
+Enable pinctrl for pwm-tiehrpwm if pinctrl driver available, else
+bail out with warning message.
 
-... but *much* harder for users, so movable_node is better in most cases.
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+Changes since v4:
+	- Changes warning message.
 
-	-hpa
+ drivers/pwm/pwm-tiehrpwm.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index d3194c0..e8683bc 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -26,6 +26,7 @@
+ #include <linux/clk.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/of_device.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ #include "pwm-tipwmss.h"
+ 
+@@ -415,6 +416,11 @@ static int __devinit ehrpwm_pwm_probe(struct platform_device *pdev)
+ 	struct clk *clk;
+ 	struct ehrpwm_pwm_chip *pc;
+ 	u16 status;
++	struct pinctrl *pinctrl;
++
++	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&pdev->dev, "unable to select pin group\n");
+ 
+ 	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
+ 	if (!pc) {
+-- 
+1.7.0.4
 
