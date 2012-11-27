@@ -1,126 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2K0Bnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 20:43:55 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37298 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2K0Bny (ORCPT
+	id S932754Ab2K0Btw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 20:49:52 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:47022 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab2K0Btv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 20:43:54 -0500
-Message-ID: <50B41AC7.8030904@infradead.org>
-Date: Mon, 26 Nov 2012 17:43:35 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 26 Nov 2012 20:49:51 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Gleb Natapov <gleb@redhat.com>, "x86\@kernel.org" <x86@kernel.org>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>
+References: <50ADE0C2.1000106@cn.fujitsu.com> <50ADE11A.401@cn.fujitsu.com>
+	<87ip8sxuyh.fsf@xmission.com> <20121126172054.GF12969@redhat.com>
+	<87fw3wuuoh.fsf@xmission.com> <20121126175327.GG12969@redhat.com>
+	<87mwy4teh8.fsf@xmission.com> <50B41849.9040103@cn.fujitsu.com>
+Date: Mon, 26 Nov 2012 19:49:39 -0600
+In-Reply-To: <50B41849.9040103@cn.fujitsu.com> (Zhang Yanfei's message of
+	"Tue, 27 Nov 2012 09:32:57 +0800")
+Message-ID: <87haobolvw.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Daniel Santos <daniel.santos@pobox.com>, Michal Marek <mmarek@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCHv2 2/2] scripts/kernel-doc: check that non-void fcts describe
- their return value
-References: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com> <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com>
-In-Reply-To: <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19vQzZpsOXJchO+qTEOw3jl1FCZ93lDhls=
+X-SA-Exim-Connect-IP: 75.135.205.0
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v8 1/2] x86/kexec: add a new atomic notifier list for kdump
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 01:22 PM, Yacine Belkadi wrote:
+Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
 
-> If a function has a return value, but its kernel-doc comment doesn't contain a
-> "Return" section, then emit the following warning:
-> 
->    Warning(file.h:129): No description found for return value of 'fct'
-> 
-> Note: This check emits a lot of warnings at the moment, because many functions
-> don't have a 'Return' doc section. So until the number of warnings goes
-> sufficiently down, the check is only performed in verbose mode.
-> 
-> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> So in summary,
+>
+> 1. a specific callback function instead of a notifier?
 
+Yes.
 
-Both patches:
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> 2. Instead of calling vmclear_local_loaded_vmcss, the vmclear operation
+>    will just call the vmclear on every vmcss loaded on the cpu?
+>
+>    like below:
+>
+>    static void crash_vmclear_local_loaded_vmcss(void)
+>    {
+>         int cpu = raw_smp_processor_id();
+>         struct loaded_vmcs *v, *n;
+>
+>         if (!crash_local_vmclear_enabled(cpu))
+>                 return;
+>
+>         list_for_each_entry_safe(v, n, &per_cpu(loaded_vmcss_on_cpu, cpu),
+>                                  loaded_vmcss_on_cpu_link)
+>                 vmcs_clear(v->vmcs);
+>    }
+>
+>    right?
 
-Michal, please merge patches 1 and 2.
+Yeah that looks good.  I would do list_for_each_entry because the list
+isn't changing.
 
-Thanks.
-
-> ---
->  scripts/kernel-doc |   34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
-> 
-> diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-> index 46e7aff..28b7615 100755
-> --- a/scripts/kernel-doc
-> +++ b/scripts/kernel-doc
-> @@ -137,6 +137,8 @@ use strict;
->  # should document the "Context:" of the function, e.g. whether the functions
->  # can be called form interrupts. Unlike other sections you can end it with an
->  # empty line.
-> +# A non-void function should have a "Return:" section describing the return
-> +# value(s).
->  # Example-sections should contain the string EXAMPLE so that they are marked
->  # appropriately in DocBook.
->  #
-> @@ -315,6 +317,7 @@ my $section_default = "Description";	# default section
->  my $section_intro = "Introduction";
->  my $section = $section_default;
->  my $section_context = "Context";
-> +my $section_return = "Return";
->  
->  my $undescribed = "-- undescribed --";
->  
-> @@ -2039,6 +2042,28 @@ sub check_sections($$$$$$) {
->  }
->  
->  ##
-> +# Checks the section describing the return value of a function.
-> +sub check_return_section {
-> +        my $file = shift;
-> +        my $declaration_name = shift;
-> +        my $return_type = shift;
-> +
-> +        # Ignore an empty return type (It's a macro)
-> +        # Ignore functions with a "void" return type. (But don't ignore "void *")
-> +        if (($return_type eq "") || ($return_type =~ /void\s*\w*\s*$/)) {
-> +                return;
-> +        }
-> +
-> +        if (!defined($sections{$section_return}) ||
-> +            $sections{$section_return} eq "") {
-> +                print STDERR "Warning(${file}:$.): " .
-> +                        "No description found for return value of " .
-> +                        "'$declaration_name'\n";
-> +                ++$warnings;
-> +        }
-> +}
-> +
-> +##
->  # takes a function prototype and the name of the current file being
->  # processed and spits out all the details stored in the global
->  # arrays/hashes.
-> @@ -2109,6 +2134,15 @@ sub dump_function($$) {
->  	my $prms = join " ", @parameterlist;
->  	check_sections($file, $declaration_name, "function", $sectcheck, $prms, "");
->  
-> +        # This check emits a lot of warnings at the moment, because many
-> +        # functions don't have a 'Return' doc section. So until the number
-> +        # of warnings goes sufficiently down, the check is only performed in
-> +        # verbose mode.
-> +        # TODO: always perform the check.
-> +        if ($verbose) {
-> +                check_return_section($file, $declaration_name, $return_type);
-> +        }
-> +
->      output_declaration($declaration_name,
->  		       'function',
->  		       {'function' => $declaration_name,
-
-
-
--- 
-~Randy
+Eric
