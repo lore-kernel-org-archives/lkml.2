@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab2K0Dae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 22:30:34 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35308 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933062Ab2K0Dac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 22:30:32 -0500
-Message-ID: <50B433D0.8060107@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 11:30:24 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1757973Ab2K0DuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 22:50:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15229 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755878Ab2K0DuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 22:50:24 -0500
+X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
+   d="scan'208";a="6280969"
+Message-ID: <50B4304F.4070302@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 11:15:27 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet>
-In-Reply-To: <20121126224105.GB10634@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
+        akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, jiang.liu@huawei.com, yinghai@kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org, wujianguo@huawei.com, qiuxishi@huawei.com
+Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com>
+In-Reply-To: <50B38F69.6020902@zytor.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 11:08:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 11:08:41,
+	Serialize complete at 2012/11/27 11:08:41
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112703-0260-0000-0000-00000237EC37
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
-
+At 11/26/2012 11:48 PM, H. Peter Anvin Wrote:
+> On 11/26/2012 05:15 AM, Tang Chen wrote:
 >>
->> -	return false;
->> +again:
->> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
->> +
->> +	/*
->> +	 * if emulation was due to access to shadowed page table
->> +	 * and it failed try to unshadow page and re-enter the
->> +	 * guest to let CPU execute the instruction.
->> +	 */
->> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+>> Hi Wu,
+>>
+>> That is really a problem. And, before numa memory got initialized,
+>> memblock subsystem would be used to allocate memory. I didn't find any
+>> approach that could fully address it when I making the patches. There
+>> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
+>> we can only do our best to prevent it from happening.
+>>
+>> Your patch is very helpful. And after a shot look at the code, it seems
+>> that acpi_numa_memory_affinity_init() is an architecture dependent
+>> function. Could we do this somewhere which is not depending on the
+>> architecture ?
+>>
 > 
-> Can you explain what is the objective here?
+> The movable memory should be classified as a non-RAM type in memblock,
+> that way we will not allocate from it early on.
+
+Hi, hpa
+
+The problem is that:
+node1 address rang: [18G, 34G), and the user specifies movable map is [8G, 24G).
+We don't know node1's address range before numa init. So we can't prevent
+allocating boot memory in the range [24G, 34G).
+
+The movable memory should be classified as a non-RAM type in memblock. What
+do you want to say? We don't save type in memblock because we only
+add E820_RAM and E820_RESERVED_KERN to memblock.
+
+Thanks
+Wen Congyang
+
 > 
-
-Sure. :)
-
-The instruction emulation is caused by fault access on cr3. After unprotect
-the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
-if it return 1, mmu can not fix the mapping, we should report the error,
-otherwise it is good to return to guest and let it re-execute the instruction
-again.
-
-page_fault_count is used to avoid the race on other vcpus, since after we
-unprotect the target page, other cpu can enter page fault path and let the
-page be write-protected again.
-
-This way can help us to detect all the case that mmu can not be fixed.
+> 	-hpa
+> 
+> 
 
