@@ -1,132 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2K0Trt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 14:47:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37698 "EHLO mx2.suse.de"
+	id S1755659Ab2K0Ts3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 14:48:29 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35168 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab2K0Trs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 14:47:48 -0500
-Date: Tue, 27 Nov 2012 20:47:43 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] HID: hid-input factorize hid_input allocation
-In-Reply-To: <1353684694-5723-2-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211272047340.3933@pobox.suse.cz>
-References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com> <1353684694-5723-2-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753938Ab2K0Ts1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 14:48:27 -0500
+Date: Tue, 27 Nov 2012 14:48:13 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121127194813.GP24381@cmpxchg.org>
+References: <20121122233434.3D5E35E6@pobox.sk>
+ <20121123074023.GA24698@dhcp22.suse.cz>
+ <20121123102137.10D6D653@pobox.sk>
+ <20121123100438.GF24698@dhcp22.suse.cz>
+ <20121125011047.7477BB5E@pobox.sk>
+ <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <50B403CA.501@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B403CA.501@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Benjamin Tissoires wrote:
-
-> This just refactors the allocation of hid_input.
-> No semantic changes.
+On Tue, Nov 27, 2012 at 09:05:30AM +0900, Kamezawa Hiroyuki wrote:
+> (2012/11/26 22:18), Michal Hocko wrote:
+> >[CCing also Johannes - the thread started here:
+> >https://lkml.org/lkml/2012/11/21/497]
+> >
+> >On Mon 26-11-12 01:38:55, azurIt wrote:
+> >>>This is hackish but it should help you in this case. Kamezawa, what do
+> >>>you think about that? Should we generalize this and prepare something
+> >>>like mem_cgroup_cache_charge_locked which would add __GFP_NORETRY
+> >>>automatically and use the function whenever we are in a locked context?
+> >>>To be honest I do not like this very much but nothing more sensible
+> >>>(without touching non-memcg paths) comes to my mind.
+> >>
+> >>
+> >>I installed kernel with this patch, will report back if problem occurs
+> >>again OR in few weeks if everything will be ok. Thank you!
+> >
+> >Now that I am looking at the patch closer it will not work because it
+> >depends on other patch which is not merged yet and even that one would
+> >help on its own because __GFP_NORETRY doesn't break the charge loop.
+> >Sorry I have missed that...
+> >
+> >The patch bellow should help though. (it is based on top of the current
+> >-mm tree but I will send a backport to 3.2 in the reply as well)
+> >---
+> > From 7796f942d62081ad45726efd90b5292b80e7c690 Mon Sep 17 00:00:00 2001
+> >From: Michal Hocko <mhocko@suse.cz>
+> >Date: Mon, 26 Nov 2012 11:47:57 +0100
+> >Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
+> >
+> >memcg oom killer might deadlock if the process which falls down to
+> >mem_cgroup_handle_oom holds a lock which prevents other task to
+> >terminate because it is blocked on the very same lock.
+> >This can happen when a write system call needs to allocate a page but
+> >the allocation hits the memcg hard limit and there is nothing to reclaim
+> >(e.g. there is no swap or swap limit is hit as well and all cache pages
+> >have been reclaimed already) and the process selected by memcg OOM
+> >killer is blocked on i_mutex on the same inode (e.g. truncate it).
+> >
+> >Process A
+> >[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+> >[<ffffffff81121c90>] do_last+0x250/0xa30
+> >[<ffffffff81122547>] path_openat+0xd7/0x440
+> >[<ffffffff811229c9>] do_filp_open+0x49/0xa0
+> >[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+> >[<ffffffff8110f950>] sys_open+0x20/0x30
+> >[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> >[<ffffffffffffffff>] 0xffffffffffffffff
+> >
+> >Process B
+> >[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> >[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> >[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+> >[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+> >[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+> >[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+> >[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+> >[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+> >[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+> >[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+> >[<ffffffff8111156a>] do_sync_write+0xea/0x130
+> >[<ffffffff81112183>] vfs_write+0xf3/0x1f0
+> >[<ffffffff81112381>] sys_write+0x51/0x90
+> >[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> >[<ffffffffffffffff>] 0xffffffffffffffff
+> >
+> >This is not a hard deadlock though because administrator can still
+> >intervene and increase the limit on the group which helps the writer to
+> >finish the allocation and release the lock.
+> >
+> >This patch heals the problem by forbidding OOM from page cache charges
+> >(namely add_ro_page_cache_locked). mem_cgroup_cache_charge_no_oom helper
+> >function is defined which adds GFP_MEMCG_NO_OOM to the gfp mask which
+> >then tells mem_cgroup_charge_common that OOM is not allowed for the
+> >charge. No OOM from this path, except for fixing the bug, also make some
+> >sense as we really do not want to cause an OOM because of a page cache
+> >usage.
+> >As a possibly visible result add_to_page_cache_lru might fail more often
+> >with ENOMEM but this is to be expected if the limit is set and it is
+> >preferable than OOM killer IMO.
+> >
+> >__GFP_NORETRY is abused for this memcg specific flag because it has been
+> >used to prevent from OOM already (since not-merged-yet "memcg: reclaim
+> >when more than one page needed"). The only difference is that the flag
+> >doesn't prevent from reclaim anymore which kind of makes sense because
+> >the global memory allocator triggers reclaim as well. The retry without
+> >any reclaim on __GFP_NORETRY doesn't make much sense anyway because this
+> >is effectively a busy loop with allowed OOM in this path.
+> >
+> >Reported-by: azurIt <azurit@pobox.sk>
+> >Signed-off-by: Michal Hocko <mhocko@suse.cz>
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> As a short term fix, I think this patch will work enough and seems simple enough.
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Fine by me, thanks.
+Yes, let's do this for now.
 
-> ---
->  drivers/hid/hid-input.c | 61 +++++++++++++++++++++++++++----------------------
->  1 file changed, 34 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 7015080..47f98a3 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -1163,6 +1163,38 @@ static void report_features(struct hid_device *hid)
->  			}
->  }
->  
-> +static struct hid_input *hidinput_allocate(struct hid_device *hid)
-> +{
-> +	struct hid_input *hidinput = kzalloc(sizeof(*hidinput), GFP_KERNEL);
-> +	struct input_dev *input_dev = input_allocate_device();
-> +	if (!hidinput || !input_dev) {
-> +		kfree(hidinput);
-> +		input_free_device(input_dev);
-> +		hid_err(hid, "Out of memory during hid input probe\n");
-> +		return NULL;
-> +	}
-> +
-> +	input_set_drvdata(input_dev, hid);
-> +	input_dev->event = hid->ll_driver->hidinput_input_event;
-> +	input_dev->open = hidinput_open;
-> +	input_dev->close = hidinput_close;
-> +	input_dev->setkeycode = hidinput_setkeycode;
-> +	input_dev->getkeycode = hidinput_getkeycode;
-> +
-> +	input_dev->name = hid->name;
-> +	input_dev->phys = hid->phys;
-> +	input_dev->uniq = hid->uniq;
-> +	input_dev->id.bustype = hid->bus;
-> +	input_dev->id.vendor  = hid->vendor;
-> +	input_dev->id.product = hid->product;
-> +	input_dev->id.version = hid->version;
-> +	input_dev->dev.parent = hid->dev.parent;
-> +	hidinput->input = input_dev;
-> +	list_add_tail(&hidinput->list, &hid->inputs);
-> +
-> +	return hidinput;
-> +}
-> +
->  /*
->   * Register the input device; print a message.
->   * Configure the input layer interface
-> @@ -1174,7 +1206,6 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  	struct hid_driver *drv = hid->driver;
->  	struct hid_report *report;
->  	struct hid_input *hidinput = NULL;
-> -	struct input_dev *input_dev;
->  	int i, j, k;
->  
->  	INIT_LIST_HEAD(&hid->inputs);
-> @@ -1205,33 +1236,9 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  				continue;
->  
->  			if (!hidinput) {
-> -				hidinput = kzalloc(sizeof(*hidinput), GFP_KERNEL);
-> -				input_dev = input_allocate_device();
-> -				if (!hidinput || !input_dev) {
-> -					kfree(hidinput);
-> -					input_free_device(input_dev);
-> -					hid_err(hid, "Out of memory during hid input probe\n");
-> +				hidinput = hidinput_allocate(hid);
-> +				if (!hidinput)
->  					goto out_unwind;
-> -				}
-> -
-> -				input_set_drvdata(input_dev, hid);
-> -				input_dev->event =
-> -					hid->ll_driver->hidinput_input_event;
-> -				input_dev->open = hidinput_open;
-> -				input_dev->close = hidinput_close;
-> -				input_dev->setkeycode = hidinput_setkeycode;
-> -				input_dev->getkeycode = hidinput_getkeycode;
-> -
-> -				input_dev->name = hid->name;
-> -				input_dev->phys = hid->phys;
-> -				input_dev->uniq = hid->uniq;
-> -				input_dev->id.bustype = hid->bus;
-> -				input_dev->id.vendor  = hid->vendor;
-> -				input_dev->id.product = hid->product;
-> -				input_dev->id.version = hid->version;
-> -				input_dev->dev.parent = hid->dev.parent;
-> -				hidinput->input = input_dev;
-> -				list_add_tail(&hidinput->list, &hid->inputs);
->  			}
->  
->  			for (i = 0; i < report->maxfield; i++)
-> -- 
-> 1.8.0
-> 
+> >diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> >index 10e667f..aac9b21 100644
+> >--- a/include/linux/gfp.h
+> >+++ b/include/linux/gfp.h
+> >@@ -152,6 +152,9 @@ struct vm_area_struct;
+> >  /* 4GB DMA on some platforms */
+> >  #define GFP_DMA32	__GFP_DMA32
+> >
+> >+/* memcg oom killer is not allowed */
+> >+#define GFP_MEMCG_NO_OOM	__GFP_NORETRY
 
--- 
-Jiri Kosina
-SUSE Labs
+Could we leave this within memcg, please?  An extra flag to
+mem_cgroup_cache_charge() or the like.  GFP flags are about
+controlling the page allocator, this seems abusive.  We have an oom
+flag down in try_charge, maybe just propagate this up the stack?
+
+> >diff --git a/mm/filemap.c b/mm/filemap.c
+> >index 83efee7..ef14351 100644
+> >--- a/mm/filemap.c
+> >+++ b/mm/filemap.c
+> >@@ -447,7 +447,13 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+> >  	VM_BUG_ON(!PageLocked(page));
+> >  	VM_BUG_ON(PageSwapBacked(page));
+> >
+> >-	error = mem_cgroup_cache_charge(page, current->mm,
+> >+	/*
+> >+	 * Cannot trigger OOM even if gfp_mask would allow that normally
+> >+	 * because we might be called from a locked context and that
+> >+	 * could lead to deadlocks if the killed process is waiting for
+> >+	 * the same lock.
+> >+	 */
+> >+	error = mem_cgroup_cache_charge_no_oom(page, current->mm,
+> >  					gfp_mask & GFP_RECLAIM_MASK);
+> >  	if (error)
+> >  		goto out;
+
+Shmem does not use this function but also charges under the i_mutex in
+the write path and fallocate at least.
