@@ -1,132 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab2K0ORE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:17:04 -0500
-Received: from [207.46.163.26] ([207.46.163.26]:5727 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755673Ab2K0ORB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:17:01 -0500
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2fh2a8h683h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h15d0l1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Tomas Hozza <thozza@redhat.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>
-Subject: RE: [PATCH 2/3] tools/hv: Fix /var subdirectory
-Thread-Topic: [PATCH 2/3] tools/hv: Fix /var subdirectory
-Thread-Index: AQHNzHT+XQ8vevmswkmoyWX/Hzk9g5f9tdcw
-Date: Tue, 27 Nov 2012 13:59:29 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930E5AC90@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <426367E2313C2449837CD2DE46E7EAF930E5A96D@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <1354002994-2094-1-git-send-email-thozza@redhat.com>
- <1354002994-2094-2-git-send-email-thozza@redhat.com>
-In-Reply-To: <1354002994-2094-2-git-send-email-thozza@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.144]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755807Ab2K0ORy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:17:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49114 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755348Ab2K0ORx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 09:17:53 -0500
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Save PG_compound or PG_head value in VMCOREINFO
+Date: Tue, 27 Nov 2012 15:13:32 +0100
+Message-ID: <3774326.lMtTTFYZT3@azariah.suse.cz>
+Organization: SUSE LINUX, s.r.o.
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; i686; ; )
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+To allow filtering of huge pages, makedumpfile must be able to identify
+them in the dump. This can be done by checking for the appropriate
+page flag, so communicate its value to makedumpfile through the VMCOREINFO 
+interface.
 
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
 
-> -----Original Message-----
-> From: Tomas Hozza [mailto:thozza@redhat.com]
-> Sent: Tuesday, November 27, 2012 2:57 AM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; KY Srinivasan; ben@decadent.org.uk
-> Cc: Tomas Hozza
-> Subject: [PATCH 2/3] tools/hv: Fix /var subdirectory
-> 
-> Initial patch by Ben Hutchings <ben@decadent.org.uk>
-> 
-> We will install this in /usr, so it must use /var/lib for its state.
-> Only programs installed under /opt should use /var/opt.
-> 
-> Signed-off-by: Tomas Hozza <thozza@redhat.com>
-Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+---
+ kernel/kexec.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-> ---
->  tools/hv/hv_kvp_daemon.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> index 90f1f07..e266251 100644
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -98,7 +98,7 @@ static struct utsname uts_buf;
->   * The location of the interface configuration file.
->   */
-> 
-> -#define KVP_CONFIG_LOC	"/var/opt/"
-> +#define KVP_CONFIG_LOC	"/var/lib/hyperv"
-> 
->  #define MAX_FILE_NAME 100
->  #define ENTRIES_PER_BLOCK 50
-> @@ -235,9 +235,9 @@ static int kvp_file_init(void)
->  	int i;
->  	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
-> 
-> -	if (access("/var/opt/hyperv", F_OK)) {
-> -		if (mkdir("/var/opt/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
-> -			syslog(LOG_ERR, " Failed to create /var/opt/hyperv");
-> +	if (access(KVP_CONFIG_LOC, F_OK)) {
-> +		if (mkdir(KVP_CONFIG_LOC, S_IRUSR | S_IWUSR | S_IROTH)) {
-> +			syslog(LOG_ERR, " Failed to create %s",
-> KVP_CONFIG_LOC);
->  			exit(EXIT_FAILURE);
->  		}
->  	}
-> @@ -246,7 +246,7 @@ static int kvp_file_init(void)
->  		fname = kvp_file_info[i].fname;
->  		records_read = 0;
->  		num_blocks = 1;
-> -		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
-> +		sprintf(fname, "%s/.kvp_pool_%d", KVP_CONFIG_LOC, i);
->  		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR |
-> S_IROTH);
-> 
->  		if (fd == -1)
-> @@ -1263,7 +1263,7 @@ static int kvp_set_ip_info(char *if_name, struct
-> hv_kvp_ipaddr_value *new_val)
->  	 */
-> 
->  	snprintf(if_file, sizeof(if_file), "%s%s%s", KVP_CONFIG_LOC,
-> -		"hyperv/ifcfg-", if_name);
-> +		"/ifcfg-", if_name);
-> 
->  	file = fopen(if_file, "w");
-> 
-> --
-> 1.7.11.7
-> 
-> 
-
-
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1511,6 +1511,11 @@ static int __init crash_save_vmcoreinfo_
+ 	VMCOREINFO_NUMBER(NR_FREE_PAGES);
+ 	VMCOREINFO_NUMBER(PG_lru);
+ 	VMCOREINFO_NUMBER(PG_private);
++#ifdef CONFIG_PAGEFLAGS_EXTENDED
++	VMCOREINFO_NUMBER(PG_head);
++#else
++	VMCOREINFO_NUMBER(PG_compound);
++#endif
+ 	VMCOREINFO_NUMBER(PG_swapcache);
+ 
+ 	arch_crash_save_vmcoreinfo();
 
