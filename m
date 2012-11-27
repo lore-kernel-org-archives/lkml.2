@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab2K0UZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:25:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49037 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab2K0UZh (ORCPT
+	id S932410Ab2K0UZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:25:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60457 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932320Ab2K0UZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:25:37 -0500
-Date: Tue, 27 Nov 2012 12:25:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v6 0/6] solve deadlock caused by memory allocation with
- I/O
-Message-Id: <20121127122536.a0e94ab8.akpm@linux-foundation.org>
-In-Reply-To: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 15:25:51 -0500
+Date: Tue, 27 Nov 2012 20:25:49 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: as3711: Fix valid min_uV/max_UV checking
+ in as3711_bound_check
+Message-ID: <20121127202549.GG32691@opensource.wolfsonmicro.com>
+References: <1353689452.3260.4.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E69HUUNAyIJqGpVn"
+Content-Disposition: inline
+In-Reply-To: <1353689452.3260.4.camel@phoenix>
+X-Cookie: Your ignorance cramps my conversation.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Nov 2012 20:59:12 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
 
-> This patchset try to solve one deadlock problem which might be caused
-> by memory allocation with block I/O during runtime PM and block device
-> error handling path. Traditionly, the problem is addressed by passing
-> GFP_NOIO statically to mm, but that is not a effective solution, see
-> detailed description in patch 1's commit log.
-> 
-> This patch set introduces one process flag and trys to fix the deadlock
-> problem on block device/network device during runtime PM or usb bus reset.
-> 
-> The 1st one is the change on include/sched.h and mm.
-> 
-> The 2nd patch introduces the flag of memalloc_noio on 'dev_pm_info',
-> and pm_runtime_set_memalloc_noio(), so that PM Core can teach mm to not
-> allocate mm with GFP_IO during the runtime_resume callback only on
-> device with the flag set.
-> 
-> The following 2 patches apply the introduced pm_runtime_set_memalloc_noio()
-> to mark all devices as memalloc_noio_resume in the path from the block or
-> network device to the root device in device tree.
-> 
-> The last 2 patches are applied again PM and USB subsystem to demonstrate
-> how to use the introduced mechanism to fix the deadlock problem.
-> 
-> Andrew, could you queue these patches into your tree since V6 fixes all
-> your concerns and looks no one objects these patches?
+--E69HUUNAyIJqGpVn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, this patchset looks ready to run with.  But as we're at -rc7 I'll ask
-you to refresh, retest and resend after 3.8-rc1, please.
+On Sat, Nov 24, 2012 at 12:50:52AM +0800, Axel Lin wrote:
+> Below cases are supposed to be valid:
+>=20
+> min_uV =3D=3D max_uV =3D=3D info->max_uV
+> min_uV =3D=3D max_uV =3D=3D rdev->desc->min_uV
+
+Applied both, thanks.
+
+--E69HUUNAyIJqGpVn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtSG9AAoJELSic+t+oim94WAP/j072SfDBBaGNKe6OiI13NZN
+UkAEGSfYO2xxZVXZOBBFZRP70wcnPkVygPmi+6fa97xrvj/gRYJoXxPZVoS1t6Y0
+pzNjkFepbRDA5fYGRP62O1oBiTe4no1hBHHawg6YOnFYXCjlLWynj6ppLUeCjiRf
+h1tFkOrlJOZ+Lk/IiTDX68kwEA3pfRLU7/Ap6B0iybBXqMm+tbpgM/369jRbjciT
+A5Rccqg0l2ULgCjOTa20P3ERYx14DIredJ2322cXJ5DGSLlM/rNSc/5mJTVtoCTg
+LJvj26BeLu3Nz0cAHBepA3X9Tq+Au1L2oY9UAat569v/sPWXqoiR6lHY0ms3K/yb
+rQ7K4mIB/o8Kd76N/oEZj7MNtELSORRvK4jg8LCfGTy23IXL5yIXenuzkMjJMY1U
+SBojbu/uYrpe6HBS1gEKu8koOck9Yz3Hfz6GyN8DpzxAQyc+VKY8EQ1pK2G1QhgF
+aLT2uzrnGPzxTOxDo1xWAOYF+0DvXBHFwxMH3G3GUxf18x/qyckFXF6YVBedjis0
+LItxz2fiay5oaUGPhCQr3VghOlXhr9ZeQTbcyzNtKEDROfyPhzP8vjqjnqtp0TAH
+0PhQPvi7kwUsFQU9P+8bVS1VYxG1tmSQ+dwmxwbWLCEuBaHDjvLnoPabY9SI8Kkl
+32P0/Kp0eynU3VbmCZ3+
+=/FqJ
+-----END PGP SIGNATURE-----
+
+--E69HUUNAyIJqGpVn--
