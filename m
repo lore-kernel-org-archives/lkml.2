@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab2K0PEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:04:40 -0500
-Received: from smtp201.dfw.emailsrvr.com ([67.192.241.201]:51347 "EHLO
-	smtp201.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2K0PEg (ORCPT
+	id S1755891Ab2K0PFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:05:07 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9741 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab2K0PFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:04:36 -0500
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 1/6 v5] arm: use devicetree to get smp_twd clock
-Date: Tue, 27 Nov 2012 09:04:29 -0600
-Message-Id: <1354028674-23685-2-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com>
+	Tue, 27 Nov 2012 10:05:03 -0500
+X-Authority-Analysis: v=2.0 cv=cuMZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=f2n6SYgbXc8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wIjj_We_h9UA:10 a=zEd6NGsiv2MS_FDxLnYA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354028699.6276.83.camel@gandalf.local.home>
+Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
+ instead of current one
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, pjt@google.com,
+        paul.mckenney@linaro.org, tglx@linutronix.de, tj@kernel.org,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+Date: Tue, 27 Nov 2012 10:04:59 -0500
+In-Reply-To: <CAKfTPtD6T8oTHFeB82NFDOt6anAL=23vaShsDws0c7812=GkFQ@mail.gmail.com>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	 <ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
+	 <1354022770.6276.63.camel@gandalf.local.home>
+	 <CAKohpok5toHdxxjBU+bPJwkZt9Sv-QGY8o8X6HErza1WT-DWOA@mail.gmail.com>
+	 <1354024743.6276.79.camel@gandalf.local.home>
+	 <CAKfTPtD6T8oTHFeB82NFDOt6anAL=23vaShsDws0c7812=GkFQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Tue, 2012-11-27 at 15:55 +0100, Vincent Guittot wrote:
+> On 27 November 2012 14:59, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Tue, 2012-11-27 at 19:18 +0530, Viresh Kumar wrote:
+> >> On 27 November 2012 18:56, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> > A couple of things. The sched_select_cpu() is not cheap. It has a double
+> >> > loop of domains/cpus looking for a non idle cpu. If we have 1024 CPUs,
+> >> > and we are CPU 1023 and all other CPUs happen to be idle, we could be
+> >> > searching 1023 CPUs before we come up with our own.
+> >>
+> >> Not sure if you missed the first check sched_select_cpu()
+> >>
+> >> +int sched_select_cpu(unsigned int sd_flags)
+> >> +{
+> >> +       /* If Current cpu isn't idle, don't migrate anything */
+> >> +       if (!idle_cpu(cpu))
+> >> +               return cpu;
+> >>
+> >> We aren't going to search if we aren't idle.
+> >
+> > OK, we are idle, but CPU 1022 isn't. We still need a large search. But,
+> > heh we are idle we can spin. But then why go through this in the first
+> > place ;-)
+> 
+> By migrating it now, it will create its activity and wake up on the
+> right CPU next time.
+> 
+> If migrating on any CPUs seems a bit risky, we could restrict the
+> migration on a CPU on the same node. We can pass such contraints on
+> sched_select_cpu
+> 
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
----
-Changes from v4
-	None.
-Changes from v3
-        No longer setting *clk to NULL in twd_get_clock().
-Changes from v2
-        Turned the check for the node pointer into an if-then-else statement.
-        Removed the second, redundant clk_get_rate.
-Changes from v1
-        None.
+That's assuming that the CPUs stay idle. Now if we move the work to
+another CPU and it goes idle, then it may move that again. It could end
+up being a ping pong approach.
 
- arch/arm/kernel/smp_twd.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+I don't think idle is a strong enough heuristic for the general case. If
+interrupts are constantly going off on a CPU that happens to be idle
+most of the time, it will constantly be moving work onto CPUs that are
+currently doing real work, and by doing so, it will be slowing those
+CPUs down.
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index b22d700..af46b80 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -237,12 +237,15 @@ static irqreturn_t twd_handler(int irq, void *dev_id)
- 	return IRQ_NONE;
- }
- 
--static struct clk *twd_get_clock(void)
-+static struct clk *twd_get_clock(struct device_node *np)
- {
- 	struct clk *clk;
- 	int err;
- 
--	clk = clk_get_sys("smp_twd", NULL);
-+	if (np)
-+		clk = of_clk_get(np, 0);
-+	else
-+		clk = clk_get_sys("smp_twd", NULL);
- 	if (IS_ERR(clk)) {
- 		pr_err("smp_twd: clock not found: %d\n", (int)PTR_ERR(clk));
- 		return clk;
-@@ -263,6 +266,7 @@ static struct clk *twd_get_clock(void)
- 		return ERR_PTR(err);
- 	}
- 
-+	twd_timer_rate = clk_get_rate(clk);
- 	return clk;
- }
- 
-@@ -273,12 +277,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- {
- 	struct clock_event_device **this_cpu_clk;
- 
--	if (!twd_clk)
--		twd_clk = twd_get_clock();
--
--	if (!IS_ERR_OR_NULL(twd_clk))
--		twd_timer_rate = clk_get_rate(twd_clk);
--	else
-+	if (IS_ERR_OR_NULL(twd_clk))
- 		twd_calibrate_rate();
- 
- 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
-@@ -349,6 +348,8 @@ int __init twd_local_timer_register(struct twd_local_timer *tlt)
- 	if (!twd_base)
- 		return -ENOMEM;
- 
-+	twd_clk = twd_get_clock(NULL);
-+
- 	return twd_local_timer_common_register();
- }
- 
-@@ -383,6 +384,8 @@ void __init twd_local_timer_of_register(void)
- 		goto out;
- 	}
- 
-+	twd_clk = twd_get_clock(np);
-+
- 	err = twd_local_timer_common_register();
- 
- out:
--- 
-1.7.11.7
+-- Steve
+
 
