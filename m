@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2K0XA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:00:57 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:55148 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab2K0XAz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:00:55 -0500
+	id S1755468Ab2K0XHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:07:50 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51416 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab2K0XHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 18:07:49 -0500
+Date: Wed, 28 Nov 2012 00:07:47 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory leak &
+ confusing labels
+Message-ID: <20121127230747.GB2605@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
-In-Reply-To: <50B4A483.8030305@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	<CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	<50B46336.8030605@nvidia.com>
-	<CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	<50B476E1.4070403@nvidia.com>
-	<CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-	<50B47DA8.60609@nvidia.com>
-	<1354011776.1479.31.camel@tellur>
-	<20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-	<50B4A483.8030305@nvidia.com>
-Date: Wed, 28 Nov 2012 09:00:54 +1000
-Message-ID: <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Lucas Stach <dev@lynxeye.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211271929.32315.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 9:31 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
-> On 27.11.2012 12:37, Thierry Reding wrote:
->> But in that case it should be made mandatory at first until proper IOMMU
->> support is enabled on Tegra30. Then it can be checked at driver probe
->> time whether or not to enable the extra checks. That way we don't need a
->> special Kconfig option and we still get all the security that we need,
->> right?
->
-> I guess it depends on the level of security.
->
-> If we want to only protect kernel and user space memory, this would be
-> sufficient and no firewall is needed if IOMMU is turned on.
->
-> If we want to protect 2D buffers from each other, this is not sufficient.
+On Tue, Nov 27, 2012 at 07:29:32PM +0200, Vitalii Demianets wrote:
+> Memory leak was caused by jumping to the wrong exit label. So, it is good time
+> to improve misleading label names too.
 
-We  generally aim for the first, to stop the gpu from reading/writing
-any memory it hasn't been granted access to,
-the second is nice to have though, but really requires a GPU with VM
-to implement properly.
+I agree that bad0, bad1, and bad2 are not the best choice for label names...
+I don't have any objections to your renaming.
 
-Dave.
+But there's a more serious bug, maybe you can fix that as well while you're
+at it? (See below)
+
+Thanks,
+Hans
+
+> 
+> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   21 +++++++++++----------
+>  1 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 42202cd..b88cf7b 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -110,7 +110,7 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  		if (!uioinfo) {
+>  			ret = -ENOMEM;
+>  			dev_err(&pdev->dev, "unable to kmalloc\n");
+> -			goto bad2;
+> +			goto out;
+>  		}
+>  		uioinfo->name = pdev->dev.of_node->name;
+>  		uioinfo->version = "devicetree";
+> @@ -125,20 +125,20 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	if (uioinfo->handler || uioinfo->irqcontrol ||
+>  	    uioinfo->irq_flags & IRQF_SHARED) {
+>  		dev_err(&pdev->dev, "interrupt configuration error\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+>  	if (!priv) {
+>  		ret = -ENOMEM;
+>  		dev_err(&pdev->dev, "unable to kmalloc\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv->uioinfo = uioinfo;
+> @@ -150,7 +150,7 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  		ret = platform_get_irq(pdev, 0);
+>  		if (ret < 0) {
+>  			dev_err(&pdev->dev, "failed to get IRQ\n");
+> -			goto bad0;
+> +			goto out_priv;
+>  		}
+>  		uioinfo->irq = ret;
+>  	}
+> @@ -205,19 +205,20 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to register uio device\n");
+> -		goto bad1;
+> +		goto out_pm;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, priv);
+>  	return 0;
+> - bad1:
+> -	kfree(priv);
+> +out_pm:
+>  	pm_runtime_disable(&pdev->dev);
+> - bad0:
+> +out_priv:
+> +	kfree(priv);
+> +out_uioinfo:
+>  	/* kfree uioinfo for OF */
+>  	if (pdev->dev.of_node)
+>  		kfree(uioinfo);
+
+The free() depends on pdev->dev.of_node, while the allocation doesn't!!!!
+That's another source of memory leaks.
+
+> - bad2:
+> +out:
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.8.6
+> 
