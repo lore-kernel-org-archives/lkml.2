@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab2K0RaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:30:11 -0500
-Received: from smtp109.biz.mail.bf1.yahoo.com ([98.139.244.33]:35894 "HELO
-	smtp109.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755959Ab2K0RaJ (ORCPT
+	id S932210Ab2K0Raf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:30:35 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34360 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab2K0Rad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:30:09 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 12:30:08 EST
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ASSvk4oVM1kwZTjya7Fu63ZD6EEKCHnlh5kQws5p5cwhc8v
- 4TQ8VWsAMp9OPNXONWBZWL0_Qt4G2udTEDyyX8hxLdrDAZK3H2vev6jt489_
- rcJvnz3E7tumUu_RNZYWQPzJNkAQhJqyM1V_mVC7FtjH4y6kLqTtZTiNI0Aa
- m5QIJnAhGfzPfmFJM24sA._pLwOIrqQOdX3c24ZdqUEZUh9VQQWSrm.g7M0b
- 0_0sWigab.t7lys5WqqPYjHpiodQn5TE79dDNf.ShtMGQZUkjG4LaScBOW4D
- Jw5QuahtLoUvLI4tGfZ348i3jGKaRApW3Ku5cXWyAcAdWJWF02PESFp2RBFy
- _effFumiZ02RN13EfxTHJrxAAbsEEGdNJH8BVH07t3gbBkd2pA1PfvxuL_ge
- 3N2_jLDOAu4CATc1PVcbkurm9p3NWmhPh7SIygT7MWoIRkT8k4MZ9r.gOvrb
- O_HPaQplDejL4l2DusKMSucG6w4tyIp45Ov3vegzIIW2Xirvi.2gJOUP5ZbO
- Cw2aN4BjkDI2MwX5kh9GwLyXJCy1_hnXETagaLSatL1Ee2m0WH4tJ
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50B4F717.4010605@schaufler-ca.com>
-Date: Tue, 27 Nov 2012 09:23:35 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 27 Nov 2012 12:30:33 -0500
 MIME-Version: 1.0
-To: Rafal Krypa <r.krypa@samsung.com>
-CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: add missing support for transmute bit in smack_str_from_perm()
-References: <1354030147-32577-1-git-send-email-r.krypa@samsung.com>
-In-Reply-To: <1354030147-32577-1-git-send-email-r.krypa@samsung.com>
+In-Reply-To: <20121127170026.GM12969@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+	<CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
+	<20121127154455.GK12969@redhat.com>
+	<CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
+	<20121127163910.GL12969@redhat.com>
+	<CAFTL4hyzVLismy0ckx0Tu47EAgNn9WjAFEx=ptF5587-zp65hQ@mail.gmail.com>
+	<20121127170026.GM12969@redhat.com>
+Date: Tue, 27 Nov 2012 18:30:32 +0100
+Message-ID: <CAFTL4hyb0qYYhy1OE9HDHymFkmHDb5jNyuLNSR2aQ3dKPpuZkw@mail.gmail.com>
+Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 7:29 AM, Rafal Krypa wrote:
-> This fixes audit logs for granting or denial of permissions to show
-> information about transmute bit.
+2012/11/27 Gleb Natapov <gleb@redhat.com>:
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 4180a87..636800d 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -113,7 +113,7 @@ void kvm_async_pf_task_wait(u32 token)
+>         int cpu, idle;
 >
-> Targeted for git://git.gitorious.org/smack-next/kernel.git
+>         cpu = get_cpu();
+> -       idle = idle_cpu(cpu);
+> +       idle = is_idle_task(current);
 
-I will queue this for 3.9 as I've just submitted the 3.8 Smack
-changes.
+I suggest this part goes to a standalone patch.
 
+>         put_cpu();
 >
-> Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
-> ---
->  security/smack/smack_access.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-> index db14689..2e397a8 100644
-> --- a/security/smack/smack_access.c
-> +++ b/security/smack/smack_access.c
-> @@ -252,6 +252,8 @@ static inline void smack_str_from_perm(char *string, int access)
->  		string[i++] = 'x';
->  	if (access & MAY_APPEND)
->  		string[i++] = 'a';
-> +	if (access & MAY_TRANSMUTE)
-> +		string[i++] = 't';
->  	string[i] = '\0';
->  }
->  /**
+>         spin_lock(&b->lock);
+> @@ -247,10 +247,7 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>                 break;
+>         case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>                 /* page is swapped out by the host. */
+> -               rcu_irq_enter();
+> -               exit_idle();
+>                 kvm_async_pf_task_wait((u32)read_cr2());
+> -               rcu_irq_exit();
 
+Hmm, we still need those above around. I believe we just need to add
+rcu_user_exit() in the beginning of that case.
