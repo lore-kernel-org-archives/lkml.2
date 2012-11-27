@@ -1,89 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab2K0KA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:00:29 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49539 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260Ab2K0KAZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:00:25 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50B48F0B.60704@jp.fujitsu.com>
-Date: Tue, 27 Nov 2012 18:59:39 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>
-CC: Bob Liu <lliubbo@gmail.com>, <akpm@linux-foundation.org>,
-        <rob@landley.net>, <laijs@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <linfeng@cn.fujitsu.com>, <jiang.liu@huawei.com>, <yinghai@kernel.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com> <50B479FA.6010307@cn.fujitsu.com> <50B47EB7.20000@zytor.com>
-In-Reply-To: <50B47EB7.20000@zytor.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933367Ab2K0KA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:00:59 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39629 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758705Ab2K0J60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 04:58:26 -0500
+X-IronPort-AV: E=Sophos;i="4.83,327,1352044800"; 
+   d="scan'208";a="6284842"
+From: Wen Congyang <wency@cn.fujitsu.com>
+To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Cc: David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Len Brown <len.brown@intel.com>, benh@kernel.crashing.org,
+        paulus@samba.org, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
+Subject: [Patch v4 10/12] memory-hotplug: memory_hotplug: clear zone when removing the memory
+Date: Tue, 27 Nov 2012 18:00:20 +0800
+Message-Id: <1354010422-19648-11-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com>
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 17:53:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 17:57:50,
+	Serialize complete at 2012/11/27 17:57:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi HPA and Tang,
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-2012/11/27 17:49, H. Peter Anvin wrote:
-> On 11/27/2012 12:29 AM, Tang Chen wrote:
->> Another approach is like the following:
->> movable_node = 1,3-5,8
->> This could set all the memory on the nodes to be movable. And the rest
->> of memory works as usual. But movablecore_map is more flexible.
->
-> ... but *much* harder for users, so movable_node is better in most cases.
+When a memory is added, we update zone's and pgdat's start_pfn and
+spanned_pages in the function __add_zone(). So we should revert them
+when the memory is removed.
 
-It seems that movable_node is easier to use than movablecore_map.
-But I do not think movable_node is better because the node number is set
-by OS and changed easily.
+The patch adds a new function __remove_zone() to do this.
 
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ mm/memory_hotplug.c | 207 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 207 insertions(+)
 
-For exmaple:
-If system has 4 nodes and we set moveble_node=2, we can hot remove node2.
-
-    node0   node1   node2   node3
-   +-----+ +-----+ +-----+ +-----+
-   |     | |     | |/////| |     |
-   |     | |     | |/////| |     |
-   |     | |     | |/////| |     |
-   |     | |     | |/////| |     |
-   +-----+ +-----+ +-----+ +-----+
-                   movable
-                    node
-
-But if we hot remove node2 and reboot the system, node3 is changed to node2
-and set to movable node.
-
-    node0   node1           node2
-   +-----+ +-----+         +-----+
-   |     | |     |         |/////|
-   |     | |     |         |/////|
-   |     | |     |         |/////|
-   |     | |     |         |/////|
-   +-----+ +-----+         +-----+
-                           movable
-                            node
-
-Originally, node3 is not movable node. Changing the node attribution to
-movable node is not intended. So if user uses movable_node,
-user must confirm whether boot option is correctly set at hotplug.
-
-But memory range is set by firmware and not changed. So if we set node2
-as movable node by movablecore_map, the issue does not occur.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> 	-hpa
->
-
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 7797e91..aa97d56 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -301,10 +301,213 @@ static int __meminit __add_section(int nid, struct zone *zone,
+ 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+ }
+ 
++/* find the smallest valid pfn in the range [start_pfn, end_pfn) */
++static int find_smallest_section_pfn(int nid, struct zone *zone,
++				     unsigned long start_pfn,
++				     unsigned long end_pfn)
++{
++	struct mem_section *ms;
++
++	for (; start_pfn < end_pfn; start_pfn += PAGES_PER_SECTION) {
++		ms = __pfn_to_section(start_pfn);
++
++		if (unlikely(!valid_section(ms)))
++			continue;
++
++		if (unlikely(pfn_to_nid(start_pfn) != nid))
++			continue;
++
++		if (zone && zone != page_zone(pfn_to_page(start_pfn)))
++			continue;
++
++		return start_pfn;
++	}
++
++	return 0;
++}
++
++/* find the biggest valid pfn in the range [start_pfn, end_pfn). */
++static int find_biggest_section_pfn(int nid, struct zone *zone,
++				    unsigned long start_pfn,
++				    unsigned long end_pfn)
++{
++	struct mem_section *ms;
++	unsigned long pfn;
++
++	/* pfn is the end pfn of a memory section. */
++	pfn = end_pfn - 1;
++	for (; pfn >= start_pfn; pfn -= PAGES_PER_SECTION) {
++		ms = __pfn_to_section(pfn);
++
++		if (unlikely(!valid_section(ms)))
++			continue;
++
++		if (unlikely(pfn_to_nid(pfn) != nid))
++			continue;
++
++		if (zone && zone != page_zone(pfn_to_page(pfn)))
++			continue;
++
++		return pfn;
++	}
++
++	return 0;
++}
++
++static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
++			     unsigned long end_pfn)
++{
++	unsigned long zone_start_pfn =  zone->zone_start_pfn;
++	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	unsigned long pfn;
++	struct mem_section *ms;
++	int nid = zone_to_nid(zone);
++
++	zone_span_writelock(zone);
++	if (zone_start_pfn == start_pfn) {
++		/*
++		 * If the section is smallest section in the zone, it need
++		 * shrink zone->zone_start_pfn and zone->zone_spanned_pages.
++		 * In this case, we find second smallest valid mem_section
++		 * for shrinking zone.
++		 */
++		pfn = find_smallest_section_pfn(nid, zone, end_pfn,
++						zone_end_pfn);
++		if (pfn) {
++			zone->zone_start_pfn = pfn;
++			zone->spanned_pages = zone_end_pfn - pfn;
++		}
++	} else if (zone_end_pfn == end_pfn) {
++		/*
++		 * If the section is biggest section in the zone, it need
++		 * shrink zone->spanned_pages.
++		 * In this case, we find second biggest valid mem_section for
++		 * shrinking zone.
++		 */
++		pfn = find_biggest_section_pfn(nid, zone, zone_start_pfn,
++					       start_pfn);
++		if (pfn)
++			zone->spanned_pages = pfn - zone_start_pfn + 1;
++	}
++
++	/*
++	 * The section is not biggest or smallest mem_section in the zone, it
++	 * only creates a hole in the zone. So in this case, we need not
++	 * change the zone. But perhaps, the zone has only hole data. Thus
++	 * it check the zone has only hole or not.
++	 */
++	pfn = zone_start_pfn;
++	for (; pfn < zone_end_pfn; pfn += PAGES_PER_SECTION) {
++		ms = __pfn_to_section(pfn);
++
++		if (unlikely(!valid_section(ms)))
++			continue;
++
++		if (page_zone(pfn_to_page(pfn)) != zone)
++			continue;
++
++		 /* If the section is current section, it continues the loop */
++		if (start_pfn == pfn)
++			continue;
++
++		/* If we find valid section, we have nothing to do */
++		zone_span_writeunlock(zone);
++		return;
++	}
++
++	/* The zone has no valid section */
++	zone->zone_start_pfn = 0;
++	zone->spanned_pages = 0;
++	zone_span_writeunlock(zone);
++}
++
++static void shrink_pgdat_span(struct pglist_data *pgdat,
++			      unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long pgdat_start_pfn =  pgdat->node_start_pfn;
++	unsigned long pgdat_end_pfn =
++		pgdat->node_start_pfn + pgdat->node_spanned_pages;
++	unsigned long pfn;
++	struct mem_section *ms;
++	int nid = pgdat->node_id;
++
++	if (pgdat_start_pfn == start_pfn) {
++		/*
++		 * If the section is smallest section in the pgdat, it need
++		 * shrink pgdat->node_start_pfn and pgdat->node_spanned_pages.
++		 * In this case, we find second smallest valid mem_section
++		 * for shrinking zone.
++		 */
++		pfn = find_smallest_section_pfn(nid, NULL, end_pfn,
++						pgdat_end_pfn);
++		if (pfn) {
++			pgdat->node_start_pfn = pfn;
++			pgdat->node_spanned_pages = pgdat_end_pfn - pfn;
++		}
++	} else if (pgdat_end_pfn == end_pfn) {
++		/*
++		 * If the section is biggest section in the pgdat, it need
++		 * shrink pgdat->node_spanned_pages.
++		 * In this case, we find second biggest valid mem_section for
++		 * shrinking zone.
++		 */
++		pfn = find_biggest_section_pfn(nid, NULL, pgdat_start_pfn,
++					       start_pfn);
++		if (pfn)
++			pgdat->node_spanned_pages = pfn - pgdat_start_pfn + 1;
++	}
++
++	/*
++	 * If the section is not biggest or smallest mem_section in the pgdat,
++	 * it only creates a hole in the pgdat. So in this case, we need not
++	 * change the pgdat.
++	 * But perhaps, the pgdat has only hole data. Thus it check the pgdat
++	 * has only hole or not.
++	 */
++	pfn = pgdat_start_pfn;
++	for (; pfn < pgdat_end_pfn; pfn += PAGES_PER_SECTION) {
++		ms = __pfn_to_section(pfn);
++
++		if (unlikely(!valid_section(ms)))
++			continue;
++
++		if (pfn_to_nid(pfn) != nid)
++			continue;
++
++		 /* If the section is current section, it continues the loop */
++		if (start_pfn == pfn)
++			continue;
++
++		/* If we find valid section, we have nothing to do */
++		return;
++	}
++
++	/* The pgdat has no valid section */
++	pgdat->node_start_pfn = 0;
++	pgdat->node_spanned_pages = 0;
++}
++
++static void __remove_zone(struct zone *zone, unsigned long start_pfn)
++{
++	struct pglist_data *pgdat = zone->zone_pgdat;
++	int nr_pages = PAGES_PER_SECTION;
++	int zone_type;
++	unsigned long flags;
++
++	zone_type = zone - pgdat->node_zones;
++
++	pgdat_resize_lock(zone->zone_pgdat, &flags);
++	shrink_zone_span(zone, start_pfn, start_pfn + nr_pages);
++	shrink_pgdat_span(pgdat, start_pfn, start_pfn + nr_pages);
++	pgdat_resize_unlock(zone->zone_pgdat, &flags);
++}
++
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ {
+ 	unsigned long flags;
+ 	struct pglist_data *pgdat = zone->zone_pgdat;
++	unsigned long start_pfn;
++	int scn_nr;
+ 	int ret = -EINVAL;
+ 
+ 	if (!valid_section(ms))
+@@ -314,6 +517,10 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ 	if (ret)
+ 		return ret;
+ 
++	scn_nr = __section_nr(ms);
++	start_pfn = section_nr_to_pfn(scn_nr);
++	__remove_zone(zone, start_pfn);
++
+ 	pgdat_resize_lock(pgdat, &flags);
+ 	sparse_remove_one_section(zone, ms);
+ 	pgdat_resize_unlock(pgdat, &flags);
+-- 
+1.8.0
 
