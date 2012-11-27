@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2K0Q3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:29:38 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42720 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab2K0Q3h convert rfc822-to-8bit (ORCPT
+	id S1756137Ab2K0QbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:31:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35346 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755866Ab2K0QbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:29:37 -0500
-MIME-Version: 1.0
-Date: Tue, 27 Nov 2012 17:29:36 +0100
-Message-ID: <CADDKRnDBHhqDzZVgB-8gv366OWKkamM9wR0+OcyfdX0kp_fKdA@mail.gmail.com>
-Subject: [v3.7-rcx] drm/i915: *ERROR* Timed out waiting for forcewake old ack
- to clear
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Nov 2012 11:31:08 -0500
+From: Joonsoo Kim <js1304@gmail.com>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH v2 0/3] introduce static_vm for ARM-specific static mapped area
+Date: Wed, 28 Nov 2012 01:28:47 +0900
+Message-Id: <1354033730-850-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At boot-up with newer kernels (at least v3.6.x, v3.7-rc) I always see
-following on the bootup-display:
+In current implementation, we used ARM-specific flag, that is,
+VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+The purpose of static mapped area is to re-use static mapped area when
+entire physical address range of the ioremap request can be covered
+by this area.
 
-3.7-rcx: [drm:__gen6_gt_force_wake_mt_get] *ERROR* Timed out waiting
-for forcewake old ack to clear.
-3.6.x:    [drm:__gen6_gt_force_wake_mt_get] *ERROR* Force wake wait timed out
+This implementation causes needless overhead for some cases.
+For example, assume that there is only one static mapped area and
+vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+deciding whether it is matched or not. Moreover, even if there is
+no static mapped area and vmlist has 300 areas, every time we call
+ioremap, we check 300 areas in now.
 
-It's an Ivy Bridge/64Bit Notebook.
+If we construct a extra list for static mapped area, we can eliminate
+above mentioned overhead.
+With a extra list, if there is one static mapped area,
+we just check only one area and proceed next operation quickly.
 
-I know there is a patch at
-http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg14602.html
-but it doesn't apply to v3.7-rcx.
+In fact, it is not a critical problem, because ioremap is not frequently
+used. But reducing overhead is better idea.
 
-This does not occur with the distro kernel (kubuntu, kernel 3.2.29).
+Another reason for doing this work is for removing architecture dependency
+on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+structure for vmalloc layer. Some codes for debugging and stat inevitably
+use vmlist and vmlist_lock. But it is preferable that they are used
+as least as possible in outside of vmalloc.c
 
-Jörg.
+Changelog
+v1->v2: 
+  [2/3]: patch description is improved.
+  Rebased on v3.7-rc7
 
-Please  CC me, I am not subsribed
+Joonsoo Kim (3):
+  ARM: vmregion: remove vmregion code entirely
+  ARM: static_vm: introduce an infrastructure for static mapped area
+  ARM: mm: use static_vm for managing static mapped areas
 
----
-$ lspci
-00:00.0 Host bridge: Intel Corporation Ivy Bridge DRAM Controller (rev 09)
-00:02.0 VGA compatible controller: Intel Corporation Ivy Bridge
-Graphics Controller (rev 09)
-00:14.0 USB controller: Intel Corporation Panther Point USB xHCI Host
-Controller (rev 04)
-00:16.0 Communication controller: Intel Corporation Panther Point MEI
-Controller #1 (rev 04)
-00:1a.0 USB controller: Intel Corporation Panther Point USB Enhanced
-Host Controller #2 (rev 04)
-00:1b.0 Audio device: Intel Corporation Panther Point High Definition
-Audio Controller (rev 04)
-00:1c.0 PCI bridge: Intel Corporation Panther Point PCI Express Root
-Port 1 (rev c4)
-00:1c.2 PCI bridge: Intel Corporation Panther Point PCI Express Root
-Port 3 (rev c4)
-00:1c.4 PCI bridge: Intel Corporation Panther Point PCI Express Root
-Port 5 (rev c4)
-00:1c.5 PCI bridge: Intel Corporation Panther Point PCI Express Root
-Port 6 (rev c4)
-00:1d.0 USB controller: Intel Corporation Panther Point USB Enhanced
-Host Controller #1 (rev 04)
-00:1f.0 ISA bridge: Intel Corporation Panther Point LPC Controller (rev 04)
-00:1f.2 SATA controller: Intel Corporation Panther Point 6 port SATA
-Controller [AHCI mode] (rev 04)
-00:1f.3 SMBus: Intel Corporation Panther Point SMBus Controller (rev 04)
-02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 07)
-08:00.0 Network controller: Intel Corporation Centrino Wireless-N 2230 (rev c4)
+ arch/arm/include/asm/mach/static_vm.h |   51 ++++++++
+ arch/arm/mm/Makefile                  |    2 +-
+ arch/arm/mm/ioremap.c                 |   69 ++++-------
+ arch/arm/mm/mm.h                      |   10 --
+ arch/arm/mm/mmu.c                     |   55 +++++----
+ arch/arm/mm/static_vm.c               |   97 ++++++++++++++++
+ arch/arm/mm/vmregion.c                |  205 ---------------------------------
+ arch/arm/mm/vmregion.h                |   31 -----
+ 8 files changed, 208 insertions(+), 312 deletions(-)
+ create mode 100644 arch/arm/include/asm/mach/static_vm.h
+ create mode 100644 arch/arm/mm/static_vm.c
+ delete mode 100644 arch/arm/mm/vmregion.c
+ delete mode 100644 arch/arm/mm/vmregion.h
 
-$ lspci -vs 00:02.0
-00:02.0 VGA compatible controller: Intel Corporation Ivy Bridge
-Graphics Controller (rev 09) (prog-if 00 [VGA controller])
-        Subsystem: Fujitsu Limited. Device 16c2
-        Flags: bus master, fast devsel, latency 0, IRQ 40
-        Memory at f0000000 (64-bit, non-prefetchable) [size=4M]
-        Memory at e0000000 (64-bit, prefetchable) [size=256M]
-        I/O ports at 4000 [size=64]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Capabilities: [a4] PCI Advanced Features
-        Kernel driver in use: i915
+-- 
+1.7.9.5
+
