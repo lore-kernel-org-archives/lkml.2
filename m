@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab2K0GfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:35:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59420 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2K0GfG (ORCPT
+	id S1758009Ab2K0GfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:35:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37202 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab2K0GfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:35:06 -0500
+	Tue, 27 Nov 2012 01:35:12 -0500
 From: Daniel J Blueman <daniel@numascale-asia.com>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Daniel J Blueman <daniel@numascale-asia.com>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4 v7] AMD64 EDAC: Consistently use u16 for northbridge IDs in amd_get_nb_id
-Date: Tue, 27 Nov 2012 14:32:10 +0800
-Message-Id: <1353997932-8475-2-git-send-email-daniel@numascale-asia.com>
+Subject: [PATCH 3/4 v7] AMD64 EDAC: Fix PCI function lookup
+Date: Tue, 27 Nov 2012 14:32:11 +0800
+Message-Id: <1353997932-8475-3-git-send-email-daniel@numascale-asia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
 References: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
@@ -23,70 +23,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change amd_get_nb_id to return u16 to support >255 memory controllers,
-and related consistency fixes.
+Fix locating sibling memory controller PCI functions by using the
+correct PCI domain.
 
 v7: Refactor patches grouping changes
 
 Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 ---
- arch/x86/include/asm/processor.h |    2 +-
- arch/x86/kernel/cpu/amd.c        |    4 ++--
- drivers/edac/amd64_edac.c        |    5 +++--
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/edac/amd64_edac.c |   40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index ad1fc85..eb3ba58 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -934,7 +934,7 @@ extern void start_thread(struct pt_regs *regs, unsigned long new_ip,
- extern int get_tsc_mode(unsigned long adr);
- extern int set_tsc_mode(unsigned int val);
- 
--extern int amd_get_nb_id(int cpu);
-+extern u16 amd_get_nb_id(int cpu);
- 
- struct aperfmperf {
- 	u64 aperf, mperf;
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 1b7d165..2e298e9 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -364,9 +364,9 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- #endif
- }
- 
--int amd_get_nb_id(int cpu)
-+u16 amd_get_nb_id(int cpu)
- {
--	int id = 0;
-+	u16 id = 0;
- #ifdef CONFIG_SMP
- 	id = per_cpu(cpu_llc_id, cpu);
- #endif
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 9ba70a5..60e93fa 100644
+index 60e93fa..62b7b17 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -942,7 +942,8 @@ static u64 get_error_address(struct mce *m)
- 		struct amd64_pvt *pvt;
- 		u64 cc6_base, tmp_addr;
- 		u32 tmp;
--		u8 mce_nid, intlv_en;
-+		u16 mce_nid;
-+		u8 intlv_en;
- 
- 		if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
- 			return addr;
-@@ -2253,7 +2254,7 @@ static int init_csrows(struct mem_ctl_info *mci)
+@@ -983,6 +983,24 @@ static u64 get_error_address(struct mce *m)
+ 	return addr;
  }
  
- /* get all cores on this DCT */
--static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, unsigned nid)
-+static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, u16 nid)
++static struct pci_dev *pci_get_related_function(unsigned int vendor,
++						unsigned int device,
++						struct pci_dev *related)
++{
++	struct pci_dev *dev = NULL;
++
++	dev = pci_get_device(vendor, device, dev);
++	while (dev) {
++		if (pci_domain_nr(dev->bus) == pci_domain_nr(related->bus) &&
++		    (dev->bus->number == related->bus->number) &&
++		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
++			break;
++		dev = pci_get_device(vendor, device, dev);
++	}
++
++	return dev;
++}
++
+ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
  {
- 	int cpu;
+ 	struct cpuinfo_x86 *c = &boot_cpu_data;
+@@ -1002,11 +1020,12 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
  
+ 	/* Factor in CC6 save area by reading dst node's limit reg */
+ 	if (c->x86 == 0x15) {
+-		struct pci_dev *f1 = NULL;
++		struct pci_dev *misc, *f1 = NULL;
+ 		u8 nid = dram_dst_node(pvt, range);
+ 		u32 llim;
+ 
+-		f1 = pci_get_domain_bus_and_slot(0, 0, PCI_DEVFN(0x18 + nid, 1));
++		misc = node_to_amd_nb(nid)->misc;
++		f1 = pci_get_related_function(misc->vendor, PCI_DEVICE_ID_AMD_15H_NB_F1, misc);
+ 		if (WARN_ON(!f1))
+ 			return;
+ 
+@@ -1713,23 +1732,6 @@ static struct amd64_family_type amd64_family_types[] = {
+ 	},
+ };
+ 
+-static struct pci_dev *pci_get_related_function(unsigned int vendor,
+-						unsigned int device,
+-						struct pci_dev *related)
+-{
+-	struct pci_dev *dev = NULL;
+-
+-	dev = pci_get_device(vendor, device, dev);
+-	while (dev) {
+-		if ((dev->bus->number == related->bus->number) &&
+-		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
+-			break;
+-		dev = pci_get_device(vendor, device, dev);
+-	}
+-
+-	return dev;
+-}
+-
+ /*
+  * These are tables of eigenvectors (one per line) which can be used for the
+  * construction of the syndrome tables. The modified syndrome search algorithm
 -- 
 1.7.10.4
 
