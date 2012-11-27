@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab2K0VJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:09:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59266 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab2K0VJh (ORCPT
+	id S1755722Ab2K0VNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 16:13:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21144 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab2K0VNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:09:37 -0500
-Date: Wed, 28 Nov 2012 08:09:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for Nov 27 (file notify)
-Message-Id: <20121128080928.498fcbf68e9afac415bdc27b@canb.auug.org.au>
-In-Reply-To: <50B4EDBF.8070304@infradead.org>
-References: <20121127172548.cd502ebfb903face1dc98554@canb.auug.org.au>
-	<50B4EDBF.8070304@infradead.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Nov_2012_08_09_28_+1100_m/c+HUBT.wzF_bxf"
+	Tue, 27 Nov 2012 16:13:21 -0500
+Date: Tue, 27 Nov 2012 16:12:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, andi@firstfloor.org,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        yinghan@google.com, dan.magenheimer@oracle.com
+Subject: Re: [PATCH 1/1] mm: Export a function to get vm committed memory
+Message-ID: <20121127211206.GA10391@phenom.dumpdata.com>
+References: <1352818957-9229-1-git-send-email-kys@microsoft.com>
+ <alpine.DEB.2.00.1211131307090.5164@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211131307090.5164@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Nov_2012_08_09_28_+1100_m/c+HUBT.wzF_bxf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 13, 2012 at 01:07:30PM -0800, David Rientjes wrote:
+> On Tue, 13 Nov 2012, K. Y. Srinivasan wrote:
+> 
+> > It will be useful to be able to access global memory commitment from device
+> > drivers. On the Hyper-V platform, the host has a policy engine to balance
+> > the available physical memory amongst all competing virtual machines
+> > hosted on a given node. This policy engine is driven by a number of metrics
+> > including the memory commitment reported by the guests. The balloon driver
+> > for Linux on Hyper-V will use this function to retrieve guest memory commitment.
+> > This function is also used in Xen self ballooning code.
+> > 
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
 
-[Just adding some more cc's]
+I am bit late to this party - and back from vacation - so not sure if this
+is merged in or not. Either way:
 
-On Tue, 27 Nov 2012 08:43:43 -0800 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> On 11/26/2012 10:25 PM, Stephen Rothwell wrote:
->=20
-> > Hi all,
-> >=20
-> > Changes since 20121126:
-> >=20
->=20
->=20
-> when CONFIG_PROC_FS is not enabled (also seen in mmotm):
->=20
-> fs/notify/fanotify/fanotify_user.c:436:17: error: 'fanotify_show_fdinfo' =
-undeclared here (not in a function)
-> fs/notify/inotify/inotify_user.c:333:17: error: 'inotify_show_fdinfo' und=
-eclared here (not in a function)
->=20
->=20
->=20
-> --=20
-> ~Randy
->=20
-
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__28_Nov_2012_08_09_28_+1100_m/c+HUBT.wzF_bxf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtSwIAAoJEECxmPOUX5FEPWcP/jmFlcg21wn2d3Eobmfw1xG3
-ngaDwu9exLBczWhxKPq6h/SHI7SQfSlugXk8zcjMh25+xe7Y+HCkcRFKeFzoNHpj
-4x6AcLIvtmalZNDuK+xkm2IaSTZ/mOQda0SgVFYZiu2tRQgEn3AqiMaO5zuxvU6k
-HA0kIhGE3KkTJ6P1UVRB3lw96O6hO66iOM+y7db/Zw+V+GeeBMO9IFRnYBcVoJXC
-ljVw3qCa949C2QF/Qe8E1kuiGVNTMRoIhjZ4A9sV4jNAr9EhC312jJNCTaqb+VIs
-Ld1nCR2Ha0N+tZ6ekhjMB8ND+lLOjYIF8v7eJChWxH+it5gd7KkOFVvE88xYwvtB
-w8eoFANeCVg0zWaemmnJDeYSirlmez1cVgW7yhA85aNdVo44jh8JSSemfVK6y48v
-69bb1wI1y2bOI776vQAWX07mz1h+UaRD2O7MIVDyr/cSK5tP4ubJgGjTsouvZzcm
-5TGChWbiaRVgK3xZRi5o1bCEvTZ7tc024BGUa5LAuHvzpqKKzF7yHPEAWo7IpBwK
-BEEEOhCDsf5I0/JA4pNBP54oaVRITSpsshjyQfa8Q2SnhJwqzDhaFfPzOgsoyFVc
-kpXf56UX9HapBl/KTdi73MEWFJmuQlGHWz9xkra44BfwWshxhQyVKklXzcxRVEin
-4mLuVIBkibTk4/wm8igP
-=UXEX
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Nov_2012_08_09_28_+1100_m/c+HUBT.wzF_bxf--
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> on the drivers/xen* side.
