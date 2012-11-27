@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab2K0RBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:01:44 -0500
-Received: from fieldses.org ([174.143.236.118]:56432 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935Ab2K0RBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:01:43 -0500
-Date: Tue, 27 Nov 2012 12:01:36 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bjschuma@netapp.com
-Subject: Re: [PATCH] nfsd: prevent NULL ptr derefs on fault injection
-Message-ID: <20121127170136.GE27142@fieldses.org>
-References: <1354033871-25815-1-git-send-email-sasha.levin@oracle.com>
+	id S1756573Ab2K0RCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:02:44 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43733 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab2K0RCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 12:02:43 -0500
+Date: Tue, 27 Nov 2012 09:04:07 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH 9/9] TTY: call tty_port_destroy in the rest of drivers
+Message-ID: <20121127170407.GC2687@kroah.com>
+References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
+ <1352969396-23760-10-git-send-email-jslaby@suse.cz>
+ <1354035129.3284.54.camel@thor>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354033871-25815-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1354035129.3284.54.camel@thor>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 11:31:11AM -0500, Sasha Levin wrote:
-> A recent patch series has moved hashtable initialization to when the net
-> struct is initialized.
+On Tue, Nov 27, 2012 at 11:52:09AM -0500, Peter Hurley wrote:
+> On Thu, 2012-11-15 at 09:49 +0100, Jiri Slaby wrote:
+> > After commit "TTY: move tty buffers to tty_port", the tty buffers are
+> > not freed in some drivers. This is because tty_port_destructor is not
+> > called whenever a tty_port is freed. This was an assumption I counted
+> > with but was unfortunately untrue. So fix the drivers to fulfil this
+> > assumption.
+> > 
+> > To be sure, the TTY buffers (and later some stuff) are gone along with
+> > the tty_port, we have to call tty_port_destroy at tear-down places.
+> > This is mostly where the structure containing a tty_port is freed.
+> > This patch does exactly that -- put tty_port_destroy at those places.
+> > 
+> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 > 
-> When injecting faults, we tried accessing the hashtables even if the struct
-> wasn't really initialized (nfsd wasn't in use) - this caused a NULL ptr
-> deref.
+> Hi Jiri & Greg & Alan,
+> 
+> I'd be more than willing to fixup staging/fwserial against this series
+> but I'm unclear on the mechanics since this series isn't in staging-next
+> and staging/fwserial isn't in tty-next.
 
-Thanks, adding Bryan to cc.--b.
+The series is in tty-next, right?  Make it against linux-next, which has
+the trees combined, and I'll work to figure it out when/where to apply
+it.
 
-> 
-> A simple test would be:
-> 
-> 	echo 1 > /sys/kernel/debug/nfsd/forget_locks
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  fs/nfsd/netns.h     | 3 +++
->  fs/nfsd/nfs4state.c | 9 +++++++++
->  2 files changed, 12 insertions(+)
-> 
-> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-> index 227b93e..c5806a57 100644
-> --- a/fs/nfsd/netns.h
-> +++ b/fs/nfsd/netns.h
-> @@ -83,5 +83,8 @@ struct nfsd_net {
->  	struct delayed_work laundromat_work;
->  };
->  
-> +/* Simple check to find out if a given net was properly initialized */
-> +#define nfsd_netns_ready(nn) ((nn)->sessionid_hashtbl)
-> +
->  extern int nfsd_net_id;
->  #endif /* __NFSD_NETNS_H__ */
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index e75872f..0e7428c 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -4598,6 +4598,9 @@ void nfsd_forget_clients(u64 num)
->  	int count = 0;
->  	struct nfsd_net *nn = net_generic(current->nsproxy->net_ns, nfsd_net_id);
->  
-> +	if (!nfsd_netns_ready(nn))
-> +		return;
-> +
->  	nfs4_lock_state();
->  	list_for_each_entry_safe(clp, next, &nn->client_lru, cl_lru) {
->  		expire_client(clp);
-> @@ -4643,6 +4646,9 @@ void nfsd_forget_locks(u64 num)
->  	int count;
->  	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
->  
-> +	if (!nfsd_netns_ready(nn))
-> +		return;
-> +
->  	nfs4_lock_state();
->  	count = nfsd_release_n_owners(num, false, release_lockowner_sop, nn);
->  	nfs4_unlock_state();
-> @@ -4655,6 +4661,9 @@ void nfsd_forget_openowners(u64 num)
->  	int count;
->  	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
->  
-> +	if (!nfsd_netns_ready(nn))
-> +		return;
-> +
->  	nfs4_lock_state();
->  	count = nfsd_release_n_owners(num, true, release_openowner_sop, nn);
->  	nfs4_unlock_state();
-> -- 
-> 1.8.0
-> 
+thanks,
+
+greg k-h
