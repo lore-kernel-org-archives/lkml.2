@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab2K0XZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:25:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49922 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2K0XZS (ORCPT
+	id S1755901Ab2K0X2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:28:17 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60529 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab2K0X2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:25:18 -0500
-Date: Tue, 27 Nov 2012 15:25:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-        jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
-        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2 v2] wait: add wait_event_lock_irq() interface
-Message-Id: <20121127152516.ce512600.akpm@linux-foundation.org>
-In-Reply-To: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
-References: <1353572315-4508-1-git-send-email-lczerner@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 27 Nov 2012 18:28:15 -0500
+Date: Wed, 28 Nov 2012 10:28:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: unusual update of the security tree
+Message-Id: <20121128102800.97a1a4d895f0bfaf72b80272@canb.auug.org.au>
+In-Reply-To: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au>
+References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Nov_2012_10_28_00_+1100_F_BFlzfGO68Eq_B8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Nov 2012 09:18:34 +0100
-Lukas Czerner <lczerner@redhat.com> wrote:
+--Signature=_Wed__28_Nov_2012_10_28_00_+1100_F_BFlzfGO68Eq_B8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
-> moves the private wait_event_lock_irq() macro from MD to regular wait
-> includes, introduces new macro wait_event_lock_irq_cmd() instead of using
-> the old method with omitting cmd parameter which is ugly and makes a use
-> of new macros in the MD. It also introduces the _interruptible_ variant.
-> 
-> The use of new interface is when one have a special lock to protect data
-> structures used in the condition, or one also needs to invoke "cmd"
-> before putting it to sleep. "cmd" is always invoked before checking the
-> "condition" so in case it will change the condition outcome we would not
-> have to sleep unnecessarily.
-> 
-> All new macros are expected to be called with the lock taken. The lock
-> is released before sleep and is reacquired afterwards. We will leave the
-> macro with the lock held.
-> 
-> Note to DM: IMO this should also fix theoretical race on waitqueue while
-> using simultaneously wait_event_lock_irq() and wait_event() because of
-> lack of locking around current state setting and wait queue removal.
-> 
-> ...
+Hi James,
+
+On Wed, 28 Nov 2012 10:16:35 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> +#define __wait_event_lock_irq(wq, condition, lock, cmd)			\
-> +do {									\
-> +	DEFINE_WAIT(__wait);						\
-> +									\
-> +	cmd;								\
-> +	for (;;) {							\
-> +		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> +		if (condition)						\
-> +			break;						\
-> +		spin_unlock_irq(&lock);					\
-> +		schedule();						\
-> +		cmd;							\
-> +		spin_lock_irq(&lock);					\
-> +	}								\
-> +	finish_wait(&wq, &__wait);					\
-> +} while (0)
->
-> ...
->
-> +#define __wait_event_interruptible_lock_irq(wq, condition,		\
-> +					    lock, ret, cmd)		\
-> +do {									\
-> +	DEFINE_WAIT(__wait);						\
-> +									\
-> +	cmd;								\
-> +	for (;;) {							\
-> +		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-> +		if (condition)						\
-> +			break;						\
-> +		if (signal_pending(current)) {				\
-> +			ret = -ERESTARTSYS;				\
-> +			break;						\
-> +		}							\
-> +		spin_unlock_irq(&lock);					\
-> +		schedule();						\
-> +		cmd;							\
-> +		spin_lock_irq(&lock);					\
-> +	}								\
-> +	finish_wait(&wq, &__wait);					\
-> +} while (0)
+> The security tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git=
+#next)
+> looks a bit strange today ... It appears to have been created by Casey
+> Schaufler (cc'd) and contains some quite old commits and back merges of
+> your tree.  I *guess* you have merged in Casey's tree after he merged in
+> your tree from yesterday.
 
-These could be combined - use
+If that is what happened, it may be worth always using the --no-ff flag
+to git merge/pull to make sure that the top commit on your tree always
+has you as the committer (and maybe SOB).
 
-	if (flags == TASK_INTERRUPTIBLE && signal_pending(current)) {	\
-		ret = -ERESTARTSYS;					\
-		break;							\
-	}								\
+Linus, does that make sense in general for maintainers?
 
-and the compiler will fully remove that code for the
-__wait_event_lock_irq() case.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-But that's all a pretty small gain, IMO.
+--Signature=_Wed__28_Nov_2012_10_28_00_+1100_F_BFlzfGO68Eq_B8
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQtUyAAAoJEECxmPOUX5FE7qQP+gORigVM9Hkv9RgdAQ1oKRi5
+Pvj3yGt7LU+qLvBuEpC73zhLVyhK6hmAPtzSe0bpV55q9RUwaQmTyUqMQrMhrEiw
+iUNqvawfdkv9yuLCSXvF2pzrudDUOIKXDgbdCO1qPLyzUIes0S4rK8wkHx5d3cxi
++jKH2p51x56WLpty9Huhv1z7xDdYFSz4z9ZH5aZzNL9JQeBPO6LXZXdFoWfCMIl3
+//efmhXfTn7Isj8ebVzLbNYvgNjDz8RmcfME0GhcoSGhgVCNFj7zRKFYIlLSiCC7
+PQLCg0Qg/c0ReUYfnahNnT4LzMeMgMB8UFsQobe6TAoCDW1H6NSaRwRv8MIIkoON
+8rAkAvh6/T8KUVR+dATN72A11UvtwS8ogbdCKpadbWrDrvaMkwsggvqYc8JHZsa9
+F7lJSPok+XYCM0u1+2/XJHgyj2D813ArUq/dIr1YjbZjfR9nJof3QfQvQgSt3RIv
+y+ebK5L8LxONzyaFSUuyF+hdt9Df4o54pESiNehdGeCQ70FcrGqtruL/7g2ep0V9
+5Bu9zdfHiLzjJ0LATYMXRq94mI1KdAuQyqLnRt1+V7RhwFz/+9nVUbUHz96m08JC
+b1+L5Rg9ryWdbo0S6WeioaXryLrwz968PvkeQO25bnb4CViKUyNmu7uHHDyYw9BT
+gpXMdSTa6D4TlFK/QKH8
+=EGBE
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Nov_2012_10_28_00_+1100_F_BFlzfGO68Eq_B8--
