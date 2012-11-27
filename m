@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2K0Mx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 07:53:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54754 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2K0Mx0 convert rfc822-to-8bit (ORCPT
+	id S1753284Ab2K0Myp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 07:54:45 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37754 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab2K0Myn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 07:53:26 -0500
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>, "Girdwood, Liam" <lrg@ti.com>,
-        "perex@perex.cz" <perex@perex.cz>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "rob@landley.net" <rob@landley.net>
-Subject: RE: [PATCH 2/2] ASoC: Davinci: machine: Add device tree binding
-Thread-Topic: [PATCH 2/2] ASoC: Davinci: machine: Add device tree binding
-Thread-Index: AQHNyGaRGoEnLR/QDkiU6/YbCdqFLJf7rRaAgAH9QRA=
-Date: Tue, 27 Nov 2012 12:53:00 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EADA52C@DBDE01.ent.ti.com>
-References: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
- <1353557099-21599-3-git-send-email-gururaja.hebbar@ti.com>
- <20121126115619.GF9411@opensource.wolfsonmicro.com>
-In-Reply-To: <20121126115619.GF9411@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Nov 2012 07:54:43 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
+	<20121126171539.GZ15971@htj.dyndns.org>
+	<CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
+Date: Tue, 27 Nov 2012 13:54:41 +0100
+Message-ID: <CAKfTPtBZ+c8+XvUQatXbbbHOiBCBpacsRh0a0XYyM=G9QE657Q@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
+ instead of current one
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Tejun Heo <tj@kernel.org>, pjt@google.com, paul.mckenney@linaro.org,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org,
+        Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org,
+        patches@linaro.org, pdsw-power-team@arm.com,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 17:26:19, Mark Brown wrote:
-> On Thu, Nov 22, 2012 at 09:34:59AM +0530, Hebbar, Gururaja wrote:
-> 
-> > +- dai-data		: A list of DAI data used by SOC code to register
-> > +			  DAI, Codecs platform.
-> > +			  The string index "should" be as shown below.
-> > +dai-data =
-> > +"<DAI Name>", 		"<DAI Stream Name>",
-> > +"<CODEC DAI Name>",	"<true if evm_aic3x_init is required, else false>",
-> > +"<evm ops required (evm_ops or evm_spdif_ops)>";
-> 
-> This continues to have the same issue as with previous versions, this is
-> all Linux internals (especially the evm_aic3x_init thing) not a
-> description of the hardware, there's not enough information to allow
-> someone to work out what the bindings for their system should be.
+On 27 November 2012 06:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Hi Tejun,
+>
+> On 26 November 2012 22:45, Tejun Heo <tj@kernel.org> wrote:
+>> On Tue, Nov 06, 2012 at 04:08:45PM +0530, Viresh Kumar wrote:
+>
+>> I'm pretty skeptical about this.  queue_work() w/o explicit CPU
+>> assignment has always guaranteed that the work item will be executed
+>> on the same CPU.  I don't think there are too many users depending on
+>> that but am not sure at all that there are none.  I asked you last
+>> time that you would at the very least need to audit most users but it
+>> doesn't seem like there has been any effort there.
+>
+> My bad. I completely missed/forgot that comment from your earlier mails.
+> Will do it.
+>
+>> That said, if the obtained benefit is big enough, sure, we can
+>> definitely change the behavior, which isn't all that great to begin
+>> with, and try to shake out the bugs quicky by e.g. forcing all work
+>> items to execute on different CPUs, but you're presenting a few
+>> percent of work items being migrated to a different CPU from an
+>> already active CPU, which doesn't seem like such a big benefit to me
+>> even if the migration target CPU is somewhat more efficient.  How much
+>> powersaving are we talking about?
+>
+> Hmm.. I actually implemented the problem discussed here:
+> (I know you have seen this earlier :) )
+>
+> http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/08/lpc2012-sched-timer-workqueue.pdf
+>
+> Specifically slides: 12 & 19.
+>
+> I haven't done much power calculations with it and have tested it more from
+> functionality point of view.
+>
+> @Vincent: Can you add some comments here?
 
-Last time when you gave the review comments for this, I misunderstood it for
-missing/incomplete documentation, which is why I added more details to the
-binding document in V3. 
+Sorry for this late reply.
 
-Now that I have understood correctly, I will be removing references to 
-linux/software parts in the DT and will handle it internally in the driver
-code. 
+We have faced some situations on TC2 (as an example) where the tasks
+are running in the LITTLE cluster whereas some periodic works stay on
+the big cluster so we can have one cluster that wakes up for tasks and
+another one that wakes up for work. We would like to consolidate the
+behaviour of the work with the tasks behaviour.
 
-Kindly accept my apologies in this regard.
+Sorry, I don't have relevant figures as the patches are used with
+other ones which also impact the power consumption.
 
-> 
-> Do not post *ANY* further versions that have this evm_aic3x_init stuff
-> in them, it's very annoying that you keep on ignoring this feedback.
+This series introduces the possibility to run a work on another CPU
+which is necessary if we want a better correlation of task and work
+scheduling on the system. Most of the time the queue_work is used when
+a driver don't mind the CPU on which you want to run whereas it looks
+like it should be used only if you want to run locally. We would like
+to solve this point with the new interface that is proposed by viresh
 
-Sure will remove the reference and repost it soon.
+Vincent
 
-Thanks for all the review and guidance.
-
-> 
-
-
-Regards, 
-Gururaja
+>
+> --
+> viresh
