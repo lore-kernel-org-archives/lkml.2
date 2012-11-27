@@ -1,341 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab2K0FMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:12:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:49345 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab2K0FMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:12:24 -0500
-Date: Tue, 27 Nov 2012 16:06:00 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 1/2] vfio powerpc: implemented IOMMU driver for VFIO
-Message-ID: <20121127050600.GC4745@truffula.fritz.box>
-References: <1353435584.2234.87.camel@bling.home>
- <1353661396-14374-1-git-send-email-aik@ozlabs.ru>
- <1353661396-14374-2-git-send-email-aik@ozlabs.ru>
- <1353954038.1809.114.camel@bling.home>
- <50B43C36.60707@ozlabs.ru>
- <1353990588.1809.148.camel@bling.home>
- <50B44866.5000905@ozlabs.ru>
+	id S1751705Ab2K0FN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:13:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45794 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab2K0FN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 00:13:28 -0500
+Message-ID: <50B44BF4.30803@vflare.org>
+Date: Mon, 26 Nov 2012 21:13:24 -0800
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B44866.5000905@ozlabs.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 2/2] zram: allocate metadata when disksize is set up
+References: <1353638567-3981-1-git-send-email-minchan@kernel.org> <1353638567-3981-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1353638567-3981-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 03:58:14PM +1100, Alexey Kardashevskiy wrote:
-> On 27/11/12 15:29, Alex Williamson wrote:
-> >On Tue, 2012-11-27 at 15:06 +1100, Alexey Kardashevskiy wrote:
-> >>On 27/11/12 05:20, Alex Williamson wrote:
-> >>>On Fri, 2012-11-23 at 20:03 +1100, Alexey Kardashevskiy wrote:
-> >>>>VFIO implements platform independent stuff such as
-> >>>>a PCI driver, BAR access (via read/write on a file descriptor
-> >>>>or direct mapping when possible) and IRQ signaling.
-> >>>>
-> >>>>The platform dependent part includes IOMMU initialization
-> >>>>and handling. This patch implements an IOMMU driver for VFIO
-> >>>>which does mapping/unmapping pages for the guest IO and
-> >>>>provides information about DMA window (required by a POWERPC
-> >>>>guest).
-> >>>>
-> >>>>The counterpart in QEMU is required to support this functionality.
-> >>>>
-> >>>>Cc: David Gibson <david@gibson.dropbear.id.au>
-> >>>>Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >>>>---
-> >>>>   drivers/vfio/Kconfig                |    6 +
-> >>>>   drivers/vfio/Makefile               |    1 +
-> >>>>   drivers/vfio/vfio_iommu_spapr_tce.c |  247 +++++++++++++++++++++++++++++++++++
-> >>>>   include/linux/vfio.h                |   20 +++
-> >>>>   4 files changed, 274 insertions(+)
-> >>>>   create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
-> >>>>
-> >>>>diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-> >>>>index 7cd5dec..b464687 100644
-> >>>>--- a/drivers/vfio/Kconfig
-> >>>>+++ b/drivers/vfio/Kconfig
-> >>>>@@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
-> >>>>   	depends on VFIO
-> >>>>   	default n
-> >>>>
-> >>>>+config VFIO_IOMMU_SPAPR_TCE
-> >>>>+	tristate
-> >>>>+	depends on VFIO && SPAPR_TCE_IOMMU
-> >>>>+	default n
-> >>>>+
-> >>>>   menuconfig VFIO
-> >>>>   	tristate "VFIO Non-Privileged userspace driver framework"
-> >>>>   	depends on IOMMU_API
-> >>>>   	select VFIO_IOMMU_TYPE1 if X86
-> >>>>+	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
-> >>>>   	help
-> >>>>   	  VFIO provides a framework for secure userspace device drivers.
-> >>>>   	  See Documentation/vfio.txt for more details.
-> >>>>diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-> >>>>index 2398d4a..72bfabc 100644
-> >>>>--- a/drivers/vfio/Makefile
-> >>>>+++ b/drivers/vfio/Makefile
-> >>>>@@ -1,3 +1,4 @@
-> >>>>   obj-$(CONFIG_VFIO) += vfio.o
-> >>>>   obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
-> >>>>+obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
-> >>>>   obj-$(CONFIG_VFIO_PCI) += pci/
-> >>>>diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-> >>>>new file mode 100644
-> >>>>index 0000000..46a6298
-> >>>>--- /dev/null
-> >>>>+++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-> >>>>@@ -0,0 +1,247 @@
-> >>>>+/*
-> >>>>+ * VFIO: IOMMU DMA mapping support for TCE on POWER
-> >>>>+ *
-> >>>>+ * Copyright (C) 2012 IBM Corp.  All rights reserved.
-> >>>>+ *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >>>>+ *
-> >>>>+ * This program is free software; you can redistribute it and/or modify
-> >>>>+ * it under the terms of the GNU General Public License version 2 as
-> >>>>+ * published by the Free Software Foundation.
-> >>>>+ *
-> >>>>+ * Derived from original vfio_iommu_type1.c:
-> >>>>+ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
-> >>>>+ *     Author: Alex Williamson <alex.williamson@redhat.com>
-> >>>>+ */
-> >>>>+
-> >>>>+#include <linux/module.h>
-> >>>>+#include <linux/pci.h>
-> >>>>+#include <linux/slab.h>
-> >>>>+#include <linux/uaccess.h>
-> >>>>+#include <linux/err.h>
-> >>>>+#include <linux/vfio.h>
-> >>>>+#include <asm/iommu.h>
-> >>>>+
-> >>>>+#define DRIVER_VERSION  "0.1"
-> >>>>+#define DRIVER_AUTHOR   "aik@ozlabs.ru"
-> >>>>+#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
-> >>>>+
-> >>>>+static void tce_iommu_detach_group(void *iommu_data,
-> >>>>+		struct iommu_group *iommu_group);
-> >>>>+
-> >>>>+/*
-> >>>>+ * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
-> >>>>+ */
-> >>>>+
-> >>>>+/*
-> >>>>+ * The container descriptor supports only a single group per container.
-> >>>>+ * Required by the API as the container is not supplied with the IOMMU group
-> >>>>+ * at the moment of initialization.
-> >>>>+ */
-> >>>>+struct tce_container {
-> >>>>+	struct mutex lock;
-> >>>>+	struct iommu_table *tbl;
-> >>>>+};
-> >>>>+
-> >>>>+static void *tce_iommu_open(unsigned long arg)
-> >>>>+{
-> >>>>+	struct tce_container *container;
-> >>>>+
-> >>>>+	if (arg != VFIO_SPAPR_TCE_IOMMU) {
-> >>>>+		printk(KERN_ERR "tce_vfio: Wrong IOMMU type\n");
-> >>>>+		return ERR_PTR(-EINVAL);
-> >>>>+	}
-> >>>>+
-> >>>>+	container = kzalloc(sizeof(*container), GFP_KERNEL);
-> >>>>+	if (!container)
-> >>>>+		return ERR_PTR(-ENOMEM);
-> >>>>+
-> >>>>+	mutex_init(&container->lock);
-> >>>>+
-> >>>>+	return container;
-> >>>>+}
-> >>>>+
-> >>>>+static void tce_iommu_release(void *iommu_data)
-> >>>>+{
-> >>>>+	struct tce_container *container = iommu_data;
-> >>>>+
-> >>>>+	WARN_ON(container->tbl && !container->tbl->it_group);
-> >>>
-> >>>I think your patch ordering is backwards here.  it_group isn't added
-> >>>until 2/2.  I'd really like to see the arch/powerpc code approved and
-> >>>merged by the powerpc maintainer before we add the code that makes use
-> >>>of it into vfio.  Otherwise we just get lots of churn if interfaces
-> >>>change or they disapprove of it altogether.
-> >>
-> >>
-> >>Makes sense, thanks.
-> >>
-> >>
-> >>>>+	if (container->tbl && container->tbl->it_group)
-> >>>>+		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
-> >>>>+
-> >>>>+	mutex_destroy(&container->lock);
-> >>>>+
-> >>>>+	kfree(container);
-> >>>>+}
-> >>>>+
-> >>>>+static long tce_iommu_ioctl(void *iommu_data,
-> >>>>+				 unsigned int cmd, unsigned long arg)
-> >>>>+{
-> >>>>+	struct tce_container *container = iommu_data;
-> >>>>+	unsigned long minsz;
-> >>>>+
-> >>>>+	switch (cmd) {
-> >>>>+	case VFIO_CHECK_EXTENSION: {
-> >>>>+		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
-> >>>>+	}
-> >>>>+	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
-> >>>>+		struct vfio_iommu_spapr_tce_info info;
-> >>>>+		struct iommu_table *tbl = container->tbl;
-> >>>>+
-> >>>>+		if (WARN_ON(!tbl))
-> >>>>+			return -ENXIO;
-> >>>>+
-> >>>>+		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
-> >>>>+				dma64_window_size);
-> >>>>+
-> >>>>+		if (copy_from_user(&info, (void __user *)arg, minsz))
-> >>>>+			return -EFAULT;
-> >>>>+
-> >>>>+		if (info.argsz < minsz)
-> >>>>+			return -EINVAL;
-> >>>>+
-> >>>>+		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
-> >>>>+		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
-> >>>>+		info.dma64_window_start = 0;
-> >>>>+		info.dma64_window_size = 0;
-> >>>>+		info.flags = 0;
-> >>>>+
-> >>>>+		if (copy_to_user((void __user *)arg, &info, minsz))
-> >>>>+			return -EFAULT;
-> >>>>+
-> >>>>+		return 0;
-> >>>>+	}
-> >>>>+	case VFIO_IOMMU_MAP_DMA: {
-> >>>>+		vfio_iommu_spapr_tce_dma_map param;
-> >>>>+		struct iommu_table *tbl = container->tbl;
-> >>>>+		enum dma_data_direction direction = DMA_NONE;
-> >>>>+
-> >>>>+		if (WARN_ON(!tbl))
-> >>>>+			return -ENXIO;
-> >>>>+
-> >>>>+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
-> >>>>+
-> >>>>+		if (copy_from_user(&param, (void __user *)arg, minsz))
-> >>>>+			return -EFAULT;
-> >>>>+
-> >>>>+		if (param.argsz < minsz)
-> >>>>+			return -EINVAL;
-> >>>>+
-> >>>>+		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
-> >>>>+				(param.flags & VFIO_DMA_MAP_FLAG_WRITE)) {
-> >>>>+			direction = DMA_BIDIRECTIONAL;
-> >>>>+		} else if (param.flags & VFIO_DMA_MAP_FLAG_READ) {
-> >>>>+			direction = DMA_TO_DEVICE;
-> >>>>+		} else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE) {
-> >>>>+			direction = DMA_FROM_DEVICE;
-> >>>>+		}
-> >>>>+
-> >>>>+		param.size += param.iova & ~IOMMU_PAGE_MASK;
-> >>>>+		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
-> >>>
-> >>>On x86 we force iova, vaddr, and size to all be aligned to the smallest
-> >>>page granularity of the iommu and return -EINVAL if it doesn't fit.
-> >>>What does it imply to the user if they're always aligned to work here?
-> >>>Won't this interface happily map overlapping entries with no indication
-> >>>to the user that the previous mapping is no longer valid?
-> >>>Maybe another reason why a combined unmap/map makes me nervous, we have
-> >>>to assume the user knows what they're doing.
-> >>
-> >>
-> >>I got used to guests which do know what they are doing so I am pretty calm :)
-> >>but ok, I'll move alignment to the QEMU, it makes sense.
-> >>
-> >>
-> >>>>+
-> >>>>+		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-> >>>>+				param.vaddr & IOMMU_PAGE_MASK, direction,
-> >>>>+				param.size >> IOMMU_PAGE_SHIFT);
-> >>>>+	}
-> >>>>+	case VFIO_IOMMU_UNMAP_DMA: {
-> >>>>+		vfio_iommu_spapr_tce_dma_unmap param;
-> >>>>+		struct iommu_table *tbl = container->tbl;
-> >>>>+
-> >>>>+		if (WARN_ON(!tbl))
-> >>>>+			return -ENXIO;
-> >>>>+
-> >>>>+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
-> >>>>+
-> >>>>+		if (copy_from_user(&param, (void __user *)arg, minsz))
-> >>>>+			return -EFAULT;
-> >>>>+
-> >>>>+		if (param.argsz < minsz)
-> >>>>+			return -EINVAL;
-> >>>>+
-> >>>>+		param.size += param.iova & ~IOMMU_PAGE_MASK;
-> >>>>+		param.size = _ALIGN_UP(param.size, IOMMU_PAGE_SIZE);
-> >>>>+
-> >>>>+		return iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-> >>>>+				0, DMA_NONE, param.size >> IOMMU_PAGE_SHIFT);
-> >>>>+	}
-> >>>>+	default:
-> >>>>+		printk(KERN_WARNING "tce_vfio: unexpected cmd %x\n", cmd);
-> >>>
-> >>>pr_warn
-> >>>
-> >>>>+	}
-> >>>>+
-> >>>>+	return -ENOTTY;
-> >>>>+}
-> >>>>+
-> >>>>+static int tce_iommu_attach_group(void *iommu_data,
-> >>>>+		struct iommu_group *iommu_group)
-> >>>>+{
-> >>>>+	struct tce_container *container = iommu_data;
-> >>>>+	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-> >>>>+
-> >>>>+	BUG_ON(!tbl);
-> >>>>+	mutex_lock(&container->lock);
-> >>>>+	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
-> >>>>+			iommu_group_id(iommu_group), iommu_group);
-> >>>>+	if (container->tbl) {
-> >>>>+		printk(KERN_WARNING "tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
-> >>>
-> >>>pr_warn
-> >>>
-> >>>>+				iommu_group_id(container->tbl->it_group),
-> >>>>+				iommu_group_id(iommu_group));
-> >>>>+		mutex_unlock(&container->lock);
-> >>>>+		return -EBUSY;
-> >>>>+	}
-> >>>>+
-> >>>>+	container->tbl = tbl;
-> >>>
-> >>>Would it be too much paranoia to clear all the tce here as you do below
-> >>>on detach?
-> >>
-> >>Guess so. I do unmap on detach() and the guest calls put_tce(0) (i.e.
-> >>unmaps) the whole DMA window at the boot time.
-> >
-> >But that's just one user of this interface, we can't assume they'll all
-> >be so agreeable.  If any tces were enabled here, a malicious user would
-> >have a window to host memory, right?  Thanks,
-> 
-> 
-> But I still release pages on detach(), how can this code be not
-> called on the guest exit (normal or crashed)?
+On 11/22/2012 06:42 PM, Minchan Kim wrote:
+> Lockdep complains about recursive deadlock of zram->init_lock.
+> Because zram_init_device could be called in reclaim context and
+> it requires a page with GFP_KERNEL.
+>
+> We can fix it via replacing GFP_KERNEL with GFP_NOIO.
+> But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
+> We can change it with __vmalloc which can receive gfp_t.
+> But still we have a problem. Although __vmalloc can handle gfp_t, it calls
+> allocation of GFP_KERNEL. That's why I sent the patch.
+> https://lkml.org/lkml/2012/4/23/77
+>
+> Yes. Fundamental problem is utter crap API vmalloc.
+> If we can fix it, everyone would be happy. But life isn't simple
+> like seeing my thread of the patch.
+>
+> So next option is to give up lazy initialization and initialize it at the
+> very disksize setting time. But it makes unnecessary metadata waste until
+> zram is really used. But let's think about it.
+>
+> 1) User of zram normally do mkfs.xxx or mkswap before using
+>     the zram block device(ex, normally, do it at booting time)
+>     It ends up allocating such metadata of zram before real usage so
+>     benefit of lazy initialzation would be mitigated.
+>
+> 2) Some user want to use zram when memory pressure is high.(ie, load zram
+>     dynamically, NOT booting time). It does make sense because people don't
+>     want to waste memory until memory pressure is high(ie, where zram is really
+>     helpful time). In this case, lazy initialzation could be failed easily
+>     because we will use GFP_NOIO instead of GFP_KERNEL for avoiding deadlock.
+>     So the benefit of lazy initialzation would be mitigated, too.
+>
+> 3) Metadata overhead is not critical and Nitin has a plan to diet it.
+>     4K : 12 byte(64bit machine) -> 64G : 192M so 0.3% isn't big overhead
+>     If insane user use such big zram device up to 20, it could consume 6% of ram
+>     but efficieny of zram will cover the waste.
+>
+> So this patch gives up lazy initialization and instead we initialize metadata
+> at disksize setting time.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>   drivers/staging/zram/zram_drv.c   |   21 ++++-----------------
+>   drivers/staging/zram/zram_sysfs.c |    1 +
+>   2 files changed, 5 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 9ef1eca..f364fb5 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -441,16 +441,13 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>   {
+>   	struct zram *zram = queue->queuedata;
+>
+> -	if (unlikely(!zram->init_done) && zram_init_device(zram))
+> -		goto error;
+> -
+>   	down_read(&zram->init_lock);
+>   	if (unlikely(!zram->init_done))
+> -		goto error_unlock;
+> +		goto error;
+>
+>   	if (!valid_io_request(zram, bio)) {
+>   		zram_stat64_inc(zram, &zram->stats.invalid_io);
+> -		goto error_unlock;
+> +		goto error;
+>   	}
+>
+>   	__zram_make_request(zram, bio, bio_data_dir(bio));
+> @@ -458,9 +455,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>
+>   	return;
+>
+> -error_unlock:
+> -	up_read(&zram->init_lock);
+>   error:
+> +	up_read(&zram->init_lock);
+>   	bio_io_error(bio);
+>   }
+>
+> @@ -509,19 +505,12 @@ void zram_reset_device(struct zram *zram)
+>   	up_write(&zram->init_lock);
+>   }
+>
+> +/* zram->init_lock should be hold */
 
-I think the concern is about robustness if some bug elsewhere in the
-kernel left some TCE entries in place before the table was handed over
-to VFIO.
+s/hold/held
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+btw, shouldn't we also change GFP_KERNEL to GFP_NOIO in is_partial_io() 
+case in both read/write handlers?
+
+Rest of the patch looks good.
+
+
+Thanks,
+Nitin
+
+>   int zram_init_device(struct zram *zram)
+>   {
+>   	int ret;
+>   	size_t num_pages;
+>
+> -	down_write(&zram->init_lock);
+> -	if (zram->init_done) {
+> -		up_write(&zram->init_lock);
+> -		return 0;
+> -	}
+> -
+> -	BUG_ON(!zram->disksize);
+> -
+>   	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+>   		pr_info(
+>   		"There is little point creating a zram of greater than "
+> @@ -570,7 +559,6 @@ int zram_init_device(struct zram *zram)
+>   	}
+>
+>   	zram->init_done = 1;
+> -	up_write(&zram->init_lock);
+>
+>   	pr_debug("Initialization done!\n");
+>   	return 0;
+> @@ -580,7 +568,6 @@ fail_no_table:
+>   	zram->disksize = 0;
+>   fail:
+>   	__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+>   	pr_err("Initialization failed: err=%d\n", ret);
+>   	return ret;
+>   }
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index 4143af9..369db12 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -71,6 +71,7 @@ static ssize_t disksize_store(struct device *dev,
+>
+>   	zram->disksize = PAGE_ALIGN(disksize);
+>   	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> +	zram_init_device(zram);
+>   	up_write(&zram->init_lock);
+>
+>   	return len;
+>
+
