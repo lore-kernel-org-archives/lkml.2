@@ -1,55 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab2K0VSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:18:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab2K0VSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:18:41 -0500
-Message-ID: <50B52DC4.5000109@redhat.com>
-Date: Tue, 27 Nov 2012 16:16:52 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
+	id S1756741Ab2K0VS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 16:18:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:47898 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013Ab2K0VS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 16:18:57 -0500
+Date: Tue, 27 Nov 2012 16:17:55 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org> <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-In-Reply-To: <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 00/46] x86, mm: map ram from top-down with BRK and
+ memblock.
+Message-ID: <20121127211755.GC10391@phenom.dumpdata.com>
+References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 03:58 PM, Linus Torvalds wrote:
-> Note that in the meantime, I've also applied (through Andrew) the
-> patch that reverts commit c654345924f7 (see commit 82b212f40059
-> 'Revert "mm: remove __GFP_NO_KSWAPD"').
->
-> I wonder if that revert may be bogus, and a result of this same issue.
-> Maybe that revert should be reverted, and replaced with your patch?
->
-> Mel? Zdenek? What's the status here?
+On Fri, Nov 16, 2012 at 07:38:37PM -0800, Yinghai Lu wrote:
+> rebase patchset together tip/x86/mm2 on top of linus v3.7-rc4
+> 
 
-Mel posted several patches to fix the kswapd issue.  This one is
-slightly more risky than the outright revert, but probably preferred
-from a performance point of view:
+Pardon me for taking so long to respond. Right after you posted it I had
+a mini-conference and then vacation and I am just now unburrying myself
+from email avalanche.
 
-https://lkml.org/lkml/2012/11/12/151
+I will take a look at them tomorrow and review them.
 
-It works by skipping the kswapd wakeup for THP allocations, only
-if compaction is deferred or contended.
 
--- 
-All rights reversed
+> so this one include patchset : x86, mm: init_memory_mapping cleanup
+> in tip/x86/mm2
+> ---
+> Current kernel init memory mapping between [0, TOML) and [4G, TOMH)
+> Some AMD systems have mem hole between 4G and TOMH, around 1T.
+> According to HPA, we should only mapping ram range.
+> 1. Seperate calculate_table_space_size and find_early_page_table out with
+>    init_memory_mapping.
+> 2. For all ranges, will allocate page table one time
+> 3. init mapping for ram range one by one.
+> ---
+> 
+> pre mapping page table patcheset includes:
+> 1. use brk to mapping first PMD_SIZE range under end of ram.
+> 2. top down to initialize page table range by range.
+> 3. get rid of calculate_page_table, and find_early_page_table.
+> 4. remove early_ioremap in page table accessing.
+> 5. remove workaround in xen to mark page RO.
+> 
+> v2: changes, update xen interface about pagetable_reserve, so not
+>    use pgt_buf_* in xen code directly.
+> v3: use range top-down to initialize page table, so will not use
+>    calculating/find early table anymore.
+>    also reorder the patches sequence.
+> v4: add mapping_mark_page_ro to fix xen, also move pgt_buf_* to init.c
+>     and merge alloc_low_page(), and for 32bit need to add alloc_low_pages
+>     to fix 32bit kmap setting.
+> v5: remove mark_page_ro workaround  and add another 5 cleanup patches.
+> v6: rebase on v3.7-rc4 and add 4 cleanup patches.
+> v7: fix max_low_pfn_mapped for xen domu memmap that does not have hole under 4g
+>     add pfn_range_is_mapped() calling for left over.
+> v8: updated some changelog and add some Acks from Stefano.
+>     Put v8 on every patch's subject, so hpa would not check old version.
+>     hope could catch window for v3.8
+> 
+> could be found at:
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+> 
+> Jacob Shin (3):
+>   x86, mm: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+>   x86, mm: Fixup code testing if a pfn is direct mapped
+>   x86, mm: Only direct map addresses that are marked as E820_RAM
+> 
+> Stefano Stabellini (1):
+>   x86, mm: Add pointer about Xen mmu requirement for alloc_low_pages
+> 
+> Yinghai Lu (42):
+>   x86, mm: Add global page_size_mask and probe one time only
+>   x86, mm: Split out split_mem_range from init_memory_mapping
+>   x86, mm: Move down find_early_table_space()
+>   x86, mm: Move init_memory_mapping calling out of setup.c
+>   x86, mm: Revert back good_end setting for 64bit
+>   x86, mm: Change find_early_table_space() paramters
+>   x86, mm: Find early page table buffer together
+>   x86, mm: Separate out calculate_table_space_size()
+>   x86, mm: Set memblock initial limit to 1M
+>   x86, mm: use pfn_range_is_mapped() with CPA
+>   x86, mm: use pfn_range_is_mapped() with gart
+>   x86, mm: use pfn_range_is_mapped() with reserve_initrd
+>   x86, mm: relocate initrd under all mem for 64bit
+>   x86, mm: Align start address to correct big page size
+>   x86, mm: Use big page size for small memory range
+>   x86, mm: Don't clear page table if range is ram
+>   x86, mm: Break down init_all_memory_mapping
+>   x86, mm: setup page table in top-down
+>   x86, mm: Remove early_memremap workaround for page table accessing on 64bit
+>   x86, mm: Remove parameter in alloc_low_page for 64bit
+>   x86, mm: Merge alloc_low_page between 64bit and 32bit
+>   x86, mm: Move min_pfn_mapped back to mm/init.c
+>   x86, mm, Xen: Remove mapping_pagetable_reserve()
+>   x86, mm: Add alloc_low_pages(num)
+>   x86, mm: only call early_ioremap_page_table_range_init() once
+>   x86, mm: Move back pgt_buf_* to mm/init.c
+>   x86, mm: Move init_gbpages() out of setup.c
+>   x86, mm: change low/hignmem_pfn_init to static on 32bit
+>   x86, mm: Move function declaration into mm_internal.h
+>   x86, mm: Add check before clear pte above max_low_pfn on 32bit
+>   x86, mm: use round_up/down in split_mem_range()
+>   x86, mm: use PFN_DOWN in split_mem_range()
+>   x86, mm: use pfn instead of pos in split_mem_range
+>   x86, mm: use limit_pfn for end pfn
+>   x86, mm: Unifying after_bootmem for 32bit and 64bit
+>   x86, mm: Move after_bootmem to mm_internel.h
+>   x86, mm: Use clamp_t() in init_range_memory_mapping
+>   x86, mm: kill numa_free_all_bootmem()
+>   x86, mm: kill numa_64.h
+>   sparc, mm: Remove calling of free_all_bootmem_node()
+>   mm: Kill NO_BOOTMEM version free_all_bootmem_node()
+>   x86, mm: Let "memmap=" take more entries one time
+> 
+>  arch/sparc/mm/init_64.c              |   24 +-
+>  arch/x86/include/asm/init.h          |   21 +--
+>  arch/x86/include/asm/numa.h          |    2 -
+>  arch/x86/include/asm/numa_64.h       |    6 -
+>  arch/x86/include/asm/page_types.h    |    2 +
+>  arch/x86/include/asm/pgtable.h       |    2 +
+>  arch/x86/include/asm/pgtable_types.h |    1 -
+>  arch/x86/include/asm/x86_init.h      |   12 -
+>  arch/x86/kernel/acpi/boot.c          |    1 -
+>  arch/x86/kernel/amd_gart_64.c        |    5 +-
+>  arch/x86/kernel/cpu/amd.c            |    9 +-
+>  arch/x86/kernel/cpu/intel.c          |    1 -
+>  arch/x86/kernel/e820.c               |   16 ++-
+>  arch/x86/kernel/setup.c              |  121 ++++------
+>  arch/x86/kernel/x86_init.c           |    4 -
+>  arch/x86/mm/init.c                   |  449 ++++++++++++++++++++++------------
+>  arch/x86/mm/init_32.c                |  106 +++++---
+>  arch/x86/mm/init_64.c                |  140 ++++-------
+>  arch/x86/mm/mm_internal.h            |   19 ++
+>  arch/x86/mm/numa_64.c                |   13 -
+>  arch/x86/mm/pageattr.c               |   16 +-
+>  arch/x86/platform/efi/efi.c          |    7 +-
+>  arch/x86/xen/mmu.c                   |   28 --
+>  include/linux/mm.h                   |    1 -
+>  mm/nobootmem.c                       |   14 -
+>  25 files changed, 516 insertions(+), 504 deletions(-)
+>  delete mode 100644 arch/x86/include/asm/numa_64.h
+>  create mode 100644 arch/x86/mm/mm_internal.h
+> 
+> -- 
+> 1.7.7
