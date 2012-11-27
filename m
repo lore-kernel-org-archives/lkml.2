@@ -1,74 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042Ab2K0CHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 21:07:06 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49292 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633Ab2K0CHE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 21:07:04 -0500
+	id S933030Ab2K0CS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 21:18:27 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:2719 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755614Ab2K0CSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 21:18:23 -0500
+X-IronPort-AV: E=Sophos;i="4.83,325,1352044800"; 
+   d="scan'208";a="6280252"
+Message-ID: <50B42471.6060403@cn.fujitsu.com>
+Date: Tue, 27 Nov 2012 10:24:49 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Message-ID: <b46b84cf-3688-4fd7-b741-4e96f2663517@default>
-Date: Mon, 26 Nov 2012 18:06:45 -0800 (PST)
-From: Mary Mcgrath <mary.mcgrath@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: "Dave, Tushar N" <tushar.n.dave@intel.com>, netdev@vger.kernel.org,
-        e1000-devel@lists.sf.net, linux-kernel@vger.kernel.org
-Subject: RE: [E1000-devel] 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
- <50A30656.6090508@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
- <50A43828.6000702@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
- <50A9C5CC.1030300@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
- <50AB8471.7080607@oracle.com>
- <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
- <50B41077.3080009@oracle.com>
-In-Reply-To: <50B41077.3080009@oracle.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Jianguo Wu <wujianguo106@gmail.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v3 11/12] memory-hotplug: remove sysfs file of node
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com> <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com> <50B37C52.2060301@gmail.com>
+In-Reply-To: <50B37C52.2060301@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 10:17:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/27 10:17:55,
+	Serialize complete at 2012/11/27 10:17:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe
-Thank you for working this.
-I would love to find out how they expect a customer to make the modification
-To  "word  0x1A, and see if the 8th bit is 0 or 1, and to change to 0."
-
-I have in turn asked the ct for the lspci command on eth3, maybe the incorrect setting is upstream.
-
-Again,  thank you.
-Regards
-Mary
-
-
-
------Original Message-----
-From: Joe Jin 
-Sent: Monday, November 26, 2012 8:00 PM
-To: Fujinaka, Todd
-Cc: Dave, Tushar N; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; Mary Mcgrath
-Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
-
-On 11/27/12 00:23, Fujinaka, Todd wrote:
-> If you look at the previous section, DevCap, you'll see that it's 
-> correctly advertising 256 bytes but the system is negotiating 128 for 
-> the link to the Ethernet controller. Things on the "other" side of the 
-> link are controlled outside of the e1000 driver.
+At 11/26/2012 10:27 PM, Jianguo Wu Wrote:
+> On 2012/11/1 17:44, Wen Congyang wrote:
+>> This patch introduces a new function try_offline_node() to
+>> remove sysfs file of node when all memory sections of this
+>> node are removed. If some memory sections of this node are
+>> not removed, this function does nothing.
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  drivers/acpi/acpi_memhotplug.c |  8 +++++-
+>>  include/linux/memory_hotplug.h |  2 +-
+>>  mm/memory_hotplug.c            | 58 ++++++++++++++++++++++++++++++++++++++++--
+>>  3 files changed, 64 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+>> index 24c807f..0780f99 100644
+>> --- a/drivers/acpi/acpi_memhotplug.c
+>> +++ b/drivers/acpi/acpi_memhotplug.c
+>> @@ -310,7 +310,9 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>  {
+>>  	int result;
+>>  	struct acpi_memory_info *info, *n;
+>> +	int node;
+>>  
+>> +	node = acpi_get_node(mem_device->device->handle);
+>>  
+>>  	/*
+>>  	 * Ask the VM to offline this memory range.
+>> @@ -318,7 +320,11 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>  	 */
+>>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>>  		if (info->enabled) {
+>> -			result = remove_memory(info->start_addr, info->length);
+>> +			if (node < 0)
+>> +				node = memory_add_physaddr_to_nid(
+>> +					info->start_addr);
+>> +			result = remove_memory(node, info->start_addr,
+>> +				info->length);
+>>  			if (result)
+>>  				return result;
+>>  		}
+>> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+>> index d4c4402..7b4cfe6 100644
+>> --- a/include/linux/memory_hotplug.h
+>> +++ b/include/linux/memory_hotplug.h
+>> @@ -231,7 +231,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
+>>  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+>>  extern int offline_memory_block(struct memory_block *mem);
+>>  extern bool is_memblock_offlined(struct memory_block *mem);
+>> -extern int remove_memory(u64 start, u64 size);
+>> +extern int remove_memory(int node, u64 start, u64 size);
+>>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>>  								int nr_pages);
+>>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index 7bcced0..d965da3 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -29,6 +29,7 @@
+>>  #include <linux/suspend.h>
+>>  #include <linux/mm_inline.h>
+>>  #include <linux/firmware-map.h>
+>> +#include <linux/stop_machine.h>
+>>  
+>>  #include <asm/tlbflush.h>
+>>  
+>> @@ -1299,7 +1300,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+>>  	return ret;
+>>  }
+>>  
+>> -int __ref remove_memory(u64 start, u64 size)
+>> +static int check_cpu_on_node(void *data)
+>> +{
+>> +	struct pglist_data *pgdat = data;
+>> +	int cpu;
+>> +
+>> +	for_each_present_cpu(cpu) {
+>> +		if (cpu_to_node(cpu) == pgdat->node_id)
+>> +			/*
+>> +			 * the cpu on this node isn't removed, and we can't
+>> +			 * offline this node.
+>> +			 */
+>> +			return -EBUSY;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* offline the node if all memory sections of this node are removed */
+>> +static void try_offline_node(int nid)
+>> +{
+>> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+>> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+>> +	unsigned long pfn;
+>> +
+>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>> +		unsigned long section_nr = pfn_to_section_nr(pfn);
+>> +
+>> +		if (!present_section_nr(section_nr))
+>> +			continue;
+>> +
+>> +		if (pfn_to_nid(pfn) != nid)
+>> +			continue;
+>> +
+>> +		/*
+>> +		 * some memory sections of this node are not removed, and we
+>> +		 * can't offline node now.
+>> +		 */
+>> +		return;
+>> +	}
+>> +
+>> +	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
+>> +		return;
 > 
-> Tushar's first suggestion was to check the PCIe payload settings in 
-> the entire chain. Have you done that? Mismatches will cause hangs.
+> how about:
+> 	if (nr_cpus_node(nid))
 
-Hi Todd,
+If all cpus on the node is offlined, but not removed, nr_cpus_node(nid) will
+return 0. In this case, we still can't offline the node.
 
-So far I had to know how to modify the maxpayload size, since BIOS have not entry to change this, so I had to use ethtool, now I need to get the offset of MaxPayload size in eeprom, I ever tried to find from Intel online document but failed, any idea?
+Another purpose to use stop_machine() is to prevent cpu hotplug. We can't lock
+cpuhotplug here.
 
-Thanks in advance,
-Joe
+Thanks
+Wen Congyang
+
+> 		return;
+>> +
+>> +	/*
+>> +	 * all memory/cpu of this node are removed, we can offline this
+>> +	 * node now.
+>> +	 */
+>> +	node_set_offline(nid);
+>> +	unregister_one_node(nid);
+>> +}
+>> +
+>> +int __ref remove_memory(int nid, u64 start, u64 size)
+>>  {
+>>  	unsigned long start_pfn, end_pfn;
+>>  	int ret = 0;
+>> @@ -1346,6 +1398,8 @@ repeat:
+>>  
+>>  	arch_remove_memory(start, size);
+>>  
+>> +	try_offline_node(nid);
+>> +
+>>  	unlock_memory_hotplug();
+>>  
+>>  	return 0;
+>> @@ -1355,7 +1409,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+>>  {
+>>  	return -EINVAL;
+>>  }
+>> -int remove_memory(u64 start, u64 size)
+>> +int remove_memory(int nid, u64 start, u64 size)
+>>  {
+>>  	return -EINVAL;
+>>  }
+>>
+> 
+> 
+
