@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab2K0UNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:13:08 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:40341 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab2K0UNG (ORCPT
+	id S1756244Ab2K0UOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:14:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51803 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755512Ab2K0UOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:13:06 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al1wAHketVBV5qjOPGdsb2JhbABFhUCFI7U6FwMBAQEBODSCHgEBBAEnExwjBQsIA0YUDRgKGhOHewMJCq96hmENiVQUiz2ESWEDkk+BXYFUhXuDUIFqiAE
-X-IronPort-AV: E=Sophos;i="4.83,330,1352070000"; 
-   d="scan'208";a="237724933"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 27 Nov 2012 21:14:07 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+	Tue, 27 Nov 2012 15:14:47 -0500
+Date: Tue, 27 Nov 2012 20:14:45 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] HID: hid-input: simplify hid_input allocation and
- registration
-Message-ID: <20121127201407.GA884@polaris.bitmath.org>
-References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
- <1353684694-5723-3-git-send-email-benjamin.tissoires@gmail.com>
+Subject: Re: [RFC/RFT][PATCH 4/4] regulator: tps51632: Use linear_min_sel and
+ regulator_[map|list]_voltage_linear
+Message-ID: <20121127201445.GA32691@opensource.wolfsonmicro.com>
+References: <1353983073.5422.2.camel@phoenix>
+ <1353983327.5422.8.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
 Content-Disposition: inline
-In-Reply-To: <1353684694-5723-3-git-send-email-benjamin.tissoires@gmail.com>
+In-Reply-To: <1353983327.5422.8.camel@phoenix>
+X-Cookie: Your ignorance cramps my conversation.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
 
-> In order to provide fine control for the creation of different
-> input devices in probe function of third party drivers, this patch
-> split the allocations, the registrations and the free of input
-> devices.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-input.c | 28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't like this patch, nor its purpose. Drivers should not depend on
-the hid core working in a particular way internally, that spells
-disaster. There must be some other way in which the same effect can be
-achieved?
+On Tue, Nov 27, 2012 at 10:28:47AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com
 
-> 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 47f98a3..eea02b0 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -1206,6 +1206,7 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  	struct hid_driver *drv = hid->driver;
->  	struct hid_report *report;
->  	struct hid_input *hidinput = NULL;
-> +	struct hid_input *next;
->  	int i, j, k;
->  
->  	INIT_LIST_HEAD(&hid->inputs);
-> @@ -1238,7 +1239,7 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  			if (!hidinput) {
->  				hidinput = hidinput_allocate(hid);
->  				if (!hidinput)
-> -					goto out_unwind;
-> +					goto out_cleanup;
->  			}
->  
->  			for (i = 0; i < report->maxfield; i++)
-> @@ -1253,29 +1254,36 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  				 * UGCI) cram a lot of unrelated inputs into the
->  				 * same interface. */
->  				hidinput->report = report;
-> -				if (drv->input_configured)
-> -					drv->input_configured(hid, hidinput);
-> -				if (input_register_device(hidinput->input))
-> -					goto out_cleanup;
->  				hidinput = NULL;
->  			}
->  		}
->  	}
->  
-> -	if (hidinput) {
-> +	list_for_each_entry(hidinput, &hid->inputs, list) {
->  		if (drv->input_configured)
->  			drv->input_configured(hid, hidinput);
->  		if (input_register_device(hidinput->input))
-> -			goto out_cleanup;
-> +			goto out_unwind;
->  	}
->  
->  	return 0;
->  
->  out_cleanup:
-> -	list_del(&hidinput->list);
-> -	input_free_device(hidinput->input);
-> -	kfree(hidinput);
-> +	list_for_each_entry_safe(hidinput, next, &hid->inputs, list) {
-> +		list_del(&hidinput->list);
-> +		input_free_device(hidinput->input);
-> +		kfree(hidinput);
-> +	}
-> +	return -1;
+I got some conflicts applying this one, can you check my topic/min
+branch please?  The conflicts looked pretty trivial but too easy for me
+to fat finger doing them by hand.
 
-Irregular return in the error path?
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +
->  out_unwind:
-> +	/* free the non-registered hidinput, starting from the faulty one */
-> +	list_for_each_entry_safe_from(hidinput, next, &hid->inputs, list) {
-> +		list_del(&hidinput->list);
-> +		input_free_device(hidinput->input);
-> +		kfree(hidinput);
-> +	}
-> +
->  	/* unwind the ones we already registered */
->  	hidinput_disconnect(hid);
->  
-> -- 
-> 1.8.0
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
-Henrik
+iQIcBAEBAgAGBQJQtR8VAAoJELSic+t+oim9fVMP+wdd4txT7Xj1AJ9wv9m64QZj
+ZrB6bG4NuC0yif9VWXJ0cUgjQARSVF+RW3CPuPbDvqzbTB5r7dGG3yEfMg5sDd4P
+PIdoDYtOqBXlUeDBlg3uyzo711Rhss7KsXh6W2AUu8h1ewb1I9HMccQEG7GCBmRe
+Yev++5xGx8uDlIHl7Vccp4rrY2iw0rB/ULsDXLRcSfXrrQ4cDtJTj2J0QcOqPsFi
+/T2nw9/onEgTVFJzo/NWCb0GH+/18umGs4EZTkLCSgGkR0WEAvpDy/TairNipoIQ
+E3LBEjUX4NkR6ND6bSq0qhDlSzIj8eWIJXVjDwF0eQ6yzomZ1RQkTyxhzP2n3+DO
+GFkcVG+2VCpRE+WSWPpUsiIcNOKOEbwVygDDKyyveIk8WQGp3lgdj/RD6QpI2qu4
+nHQXHKg8WvV62HsfZlWSlAOmgFBBE7dphSxprJW09NdqRFWluZ5dNQZthJNzWqFm
+Q0IqWCMPQCWmToKdSycHy2mC7PuFDQ3hYu62JEeaCL2XQBrXaq0d8TugoGIq26tE
+J6BsUcszW3P0X2uPMkBQiulgSJh4t8cUbg+1d3fbLZlhfjwCF4rbYx7/2uz2qeC1
+4GWbAQHpm8nmOjjHYBYMhO5eCCcizjY3nI09VMtXThSRr05A4i/IFWawUahf8dnm
+zDp2o70ZdfibcaQ9xedF
+=q9KU
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
