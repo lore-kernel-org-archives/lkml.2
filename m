@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab2K0Ouy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:50:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43280 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753233Ab2K0Oux (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:50:53 -0500
-Message-ID: <1354027837.4266.52.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 1/3] tools/hv: Fix for long file names from readdir
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Tomas Hozza <thozza@redhat.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, kys@microsoft.com
-Date: Tue, 27 Nov 2012 14:50:37 +0000
-In-Reply-To: <1354002994-2094-1-git-send-email-thozza@redhat.com>
-References: <426367E2313C2449837CD2DE46E7EAF930E5A96D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <1354002994-2094-1-git-send-email-thozza@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-rBgYmNah1Pe1eyl/RaNz"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755488Ab2K0Oxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:53:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280Ab2K0Oxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 09:53:38 -0500
+Date: Tue, 27 Nov 2012 09:55:05 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Prasad Koya <prasad.koya@gmail.com>
+Cc: aarcange@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: vmalloc_sync_all(), 64bit kernel, patches
+ 9c48f1c629ecfa114850c03f875c6691003214de,
+ a79e53d85683c6dd9f99c90511028adc2043031f
+Message-ID: <20121127145505.GA14805@redhat.com>
+References: <CAGXD9OfAMUmrdFBap3aOYXOhXE6=i8qL7=+SsJYnrdEr3kyMKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXD9OfAMUmrdFBap3aOYXOhXE6=i8qL7=+SsJYnrdEr3kyMKw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 26, 2012 at 03:06:53PM -0800, Prasad Koya wrote:
+> Hi
+> 
+> Before going into crashkernel, nmi_shootdown_cpus() calls
+> register_die_notifier(), which calls vmalloc_sync_all(). I'm seeing
+> lockup in sync_global_pgds() (init_64.c). From 3.2 and up,
+> register_die_notifier() is replaced with register_nmi_handler() (patch
+> 9c48f1c629ecfa114850c03f875c6691003214de), which doesn't call
+> vmalloc_sync_all(). Is it ok to skip vmalloc_sync_all() in this path?
+> I see sync_global_pgds() was touched by this patch:
+> a79e53d85683c6dd9f99c90511028adc2043031f. There are no virtual
+> machines involved and I see lockups at times.
 
---=-rBgYmNah1Pe1eyl/RaNz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+What problems are you seeing?  What are you trying to solve?
 
-On Tue, 2012-11-27 at 08:56 +0100, Tomas Hozza wrote:
-> kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
-> sized buffers which could be too small to store really long names.
->
-> Buffer sizes have been changed to PATH_MAX, include "limits.h" where
-> PATH_MAX is defined was added and length checks ware added via snprintf.
-[...]
+Cheers,
+Don
 
-PATH_MAX has nothing to do with any actual kernel limit; it's no more
-meaningful than the current value of 256.  Network interface names are
-limited to 15 characters, thus the current array is more than long
-enough.  So I think this is entirely unnecessary.
-
-Using snprintf() is a good idea, but you need to check the return value
-and handle the truncation case somehow.
-
-Ben.
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-rBgYmNah1Pe1eyl/RaNz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULTTPee/yOyVhhEJAQpF/w//bZ7Adj4F4j/1HaW1XMzHnUXZcjGkfUZT
-MoLSPG7JknIJjUJPtsR3KNX7mruXTMINRWLlAOQ1jxgzgW+PIc6ko0QoTAifef7d
-TVUDMgOGj2CwargTvlrCh8lpGWJJRijidScPwD0pgPcPVEK8cho3IxG9ETk/cumE
-IOuKSY8QztoDujZATLpMUEEbvkZYDJTlnJXDvX6jtW8dAyVcQUFl59sDtjQJve3b
-V5PW8gwtGIwDBn0AEoyQrEmxcIKJyapHVlxJzj1yjonqEbQeF7uEQZqjnu6OvqbR
-doZN1viJsFyPLwZAQrmzx7VaQYf5gzL9APTZrloGhyieFIFsrRfNtqxHgJQWsE8h
-PXM7H8Cft30UM0v9CbDL9yXgO7yaSu2r6ZOy60RHZCsgWfIoyp/1APszZWdpunTn
-5ukQUUUVZbE2s2tfCmjvW898FNtZz1pvS3wIHZSKSiLrOgx1UPdHJXHnL3YlwtH+
-9NEDon5ljGQpCP2xmPz+KiWwZqiKCKuApRv/wvGQQRaAb32FTiB6d2pOl0R+Cofw
-+Xw3uA4hXHO58J86tPm5yZHW0S5tA84Xor8kDHhX9t4o0AGPHYPLgJagGRH7WvVP
-QrRZrfAjT0p6AMiFA779kZkqwxmgZMXrZxxfIgMG+ulW4zLDwlDWnuTkrtBrujbY
-roM+phAyd9U=
-=dwJd
------END PGP SIGNATURE-----
-
---=-rBgYmNah1Pe1eyl/RaNz--
+> 
+> thank you.
+> Prasad
+> 
+> /* Halt all other CPUs, calling the specified function on each of them
+>   *
+>   * This function can be used to halt all other CPUs on crash
+> @@ -794,7 +784,8 @@ void nmi_shootdown_cpus(nmi_shootdown_cb callback)
+> 
+>         atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
+>         /* Would it be better to replace the trap vector here? */
+> -       if (register_die_notifier(&crash_nmi_nb))
+> +       if (register_nmi_handler(NMI_LOCAL, crash_nmi_callback,
+> +                                NMI_FLAG_FIRST, "crash"))
+>                 return;         /* return what? */
