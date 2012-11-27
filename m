@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2K0Fzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 00:55:53 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55343 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab2K0Fzv (ORCPT
+	id S1755060Ab2K0F5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 00:57:20 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41864 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab2K0F5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 00:55:51 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "Hebbar\, Gururaja" <gururaja.hebbar@ti.com>, alsa-devel@alsa-project.org,
-        sudhakar.raj@ti.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        nsekhar@ti.com, davinci-linux-open-source@linux.davincidsp.com,
-        perex@perex.cz, lrg@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ASoC: davinci-mcasp: Add pinctrl support
-References: <1353557099-21599-1-git-send-email-gururaja.hebbar@ti.com>
-	<1353557099-21599-2-git-send-email-gururaja.hebbar@ti.com>
-	<20121126114511.GE9411@opensource.wolfsonmicro.com>
-Date: Mon, 26 Nov 2012 21:55:33 -0800
-In-Reply-To: <20121126114511.GE9411@opensource.wolfsonmicro.com> (Mark Brown's
-	message of "Mon, 26 Nov 2012 11:45:11 +0000")
-Message-ID: <87y5hn1tey.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 27 Nov 2012 00:57:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+	<20121120180949.GG1408@quack.suse.cz>
+	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
+	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+	<50AF7901.20401@kernel.dk>
+	<CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+	<Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+	<CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+Date: Tue, 27 Nov 2012 13:57:17 +0800
+Message-ID: <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+Subject: Re: Recent kernel "mount" slow
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mark" == Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>> So it's better to slow down mount.
+>
+> I am quite proud of the linux boot time pitting against other OS. Even
+> with 10 partitions. Linux can boot up in just a few seconds, but now
+> you're saying that we need to do this semaphore check at boot up. By
+> doing so, it's inducing additional 4 seconds during boot up.
 
-Hi,
+By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
+(2.8GHz). I wonder if those on slower hard disk or slower CPU, what
+kind of degradation would this cause or just the same?
 
- Mark> On Thu, Nov 22, 2012 at 09:34:58AM +0530, Hebbar, Gururaja wrote:
- >> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
- >> +	if (IS_ERR(pinctrl))
- >> +		dev_warn(&pdev->dev,
- >> +			"pins are not configured from the driver\n");
-
- Mark> Since the driver is happy to continue without the pins why is it
- Mark> bothering requesting them in the first place?  In other words, this
- Mark> should be a hard error.
-
-Sorry, I disagree. As was discussed recently, there's several reasons
-why the pinctrl call might fail, and not all are fatal (E.G. pinmux
-already setup by bootloader):
-
-http://article.gmane.org/gmane.linux.kernel/1399756
-
--- 
-Bye, Peter Korsgaard
+Thanks,
+Jeff
