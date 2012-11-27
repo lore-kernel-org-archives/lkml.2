@@ -1,76 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2K0A13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:27:29 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:32763 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab2K0A10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:27:26 -0500
-Message-ID: <1353975541.26955.182.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wencongyang@gmail.com>, linux-acpi@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 26 Nov 2012 17:19:01 -0700
-In-Reply-To: <50B3323E.7020907@cn.fujitsu.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1353693037-21704-4-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <50B0F3DF.4000802@gmail.com>
-	 <20121126083634.GA4574@dhcp-192-168-178-175.profitbricks.localdomain>
-	 <50B3323E.7020907@cn.fujitsu.com>
+	id S1757559Ab2K0A2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:28:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18361 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757512Ab2K0A23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 19:28:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,323,1352102400"; 
+   d="scan'208";a="247464422"
+Message-ID: <1353976106.28789.125.camel@yhuang-dev>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent
+ in D3cold
+From: Huang Ying <ying.huang@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Tue, 27 Nov 2012 08:28:26 +0800
+In-Reply-To: <20121126193014.GA3413@kroah.com>
+References: <20121122003904.262382971@linuxfoundation.org>
+	 <20121122003904.516735571@linuxfoundation.org>
+	 <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+	 <1353640177.28789.21.camel@yhuang-dev> <20121126185505.GE21012@kroah.com>
+	 <20121126190818.GA22409@kroah.com> <20121126193014.GA3413@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Consider the following sequence of operations for a hotplugged memory
-> >> device:
-> >>
-> >> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> >>
-> >> If we don't offline/remove the memory, we have no chance to do it in
-> >> step 2. After
-> >> step2, the memory is used by the kernel, but we have powered off it. It
-> >> is very
-> >> dangerous.
+On Mon, 2012-11-26 at 11:30 -0800, Greg Kroah-Hartman wrote:
+> On Mon, Nov 26, 2012 at 11:08:18AM -0800, Greg Kroah-Hartman wrote:
+> > On Mon, Nov 26, 2012 at 10:55:05AM -0800, Greg Kroah-Hartman wrote:
+> > > On Fri, Nov 23, 2012 at 11:09:37AM +0800, Huang Ying wrote:
+> > > > On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
+> > > > > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
+> > > > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > > > > > 
+> > > > > > ------------------
+> > > > > > 
+> > > > > > From: Huang Ying <ying.huang@intel.com>
+> > > > > > 
+> > > > > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
+> > > > > > 
+> > > > > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > > > > device will trigger deadlock as follow:
+> > > > > > 
+> > > > > > - driver_unbind
+> > > > > >   - device_release_driver
+> > > > > >     - device_lock(dev)				<--- previous lock here
+> > > > > >     - __device_release_driver
+> > > > > >       - pm_runtime_get_sync
+> > > > > >         ...
+> > > > > >           - rpm_resume(dev)
+> > > > > >             - rpm_resume(dev->parent)
+> > > > > >               ...
+> > > > > >                 - pci_pm_runtime_resume
+> > > > > >                   ...
+> > > > > >                   - pci_set_power_state
+> > > > > >                     - __pci_start_power_transition
+> > > > > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > > > > >                         - pci_walk_bus
+> > > > > >                           - device_lock(dev)	<--- deadlock here
+> > > > > > 
+> > > > > > 
+> > > > > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+> > > > > > Device_lock in pci_walk_bus is introduced in commit:
+> > > > > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > > > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > > > > said device_lock is added to pci_walk_bus because:
+> > > > > > 
+> > > > > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > > > > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > > > > >   device, as the cb might call driver's callback function.
+> > > > > > 
+> > > > > > So I fixed the deadlock as follows:
+> > > > > > 
+> > > > > > - remove device_lock from pci_walk_bus
+> > > > > > - add device_lock into callback if callback will call driver's callback
+> > > > > > 
+> > > > > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > > > > device lock.
+> > > > > [...]
+> > > > > 
+> > > > > What about eeh_report_error() in
+> > > > > arch/powerpc/platforms/pseries/eeh_driver.c?
+> > > > 
+> > > > En...  Because pci_walk_bus() invocation is removed in 3.7, so this
+> > > > patch is only valid for 3.7.  We need another version for 3.6.
+> > > > 
+> > > > > Also, is the deadlock even possible before this change in Linux 3.6?
+> > > > > 
+> > > > > commit 448bd857d48e69b33ef323739dc6d8ca20d4cda7
+> > > > > Author: Huang Ying <ying.huang@intel.com>
+> > > > > Date:   Sat Jun 23 10:23:51 2012 +0800
+> > > > > 
+> > > > >     PCI/PM: add PCIe runtime D3cold support
+> > > > 
+> > > > Before this, there will be no deadlock.  So we do not need fixes before
+> > > > Linux 3.6.
+> > > 
+> > > So the first patch mentioned here should not be included in the 3.0 and
+> > > 3.4 stable kernel releases?
 > > 
-> > How does power-off happen after unbind? acpi_eject_store checks for existing
-> > driver before taking any action:
+> > Ok, I've dropped the patch from 3.0 and 3.4-stable trees now.
 > > 
-> > #ifndef FORCE_EJECT
-> > 	if (acpi_device->driver == NULL) {
-> > 		ret = -ENODEV;
-> > 		goto err;
-> > 	}
-> > #endif
-> > 
-> > FORCE_EJECT is not defined afaict, so the function returns without scheduling
-> > acpi_bus_hot_remove_device. Is there another code path that calls power-off?
+> > For 3.6, what should I do?
 > 
-> Consider the following case:
-> 
-> We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> 
-> CPUa                                                  CPUb
-> acpi_memory_device_notify()
->                                        unbind it from the driver
->     acpi_bus_hot_remove_device()
+> Ok, for now, I've dropped this patch from 3.6-stable as well.  If you
+> think it still needs to go there, can you provide something that works?
+> I see you posted one patch in this thread, but I don't understand if
+> that is what needs to go upstream in Linus's tree, or if it is for the
+> 3.6-stable tree.  Please clarify.
 
-Can we make acpi_bus_remove() to fail if a given acpi_device is not
-bound with a driver?  If so, can we make the unbind operation to perform
-unbind only?
+Sorry for late.  The patch I posted in this thread is for 3.6-stable
+tree.  But I have no powerpc machine to test it, just build test it.
 
-Thanks,
--Toshi
+Best Regards,
+Huang Ying
 
 
