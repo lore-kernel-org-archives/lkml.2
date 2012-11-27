@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2K0NPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 08:15:46 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48091 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab2K0NPp (ORCPT
+	id S1754145Ab2K0NWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 08:22:16 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56833 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab2K0NWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 08:15:45 -0500
+	Tue, 27 Nov 2012 08:22:13 -0500
 MIME-Version: 1.0
-Date: Tue, 27 Nov 2012 21:15:44 +0800
-Message-ID: <CAJd=RBD-5zq-7U3yPWCsb9P_AMzf_GoT47onxXiihgK9J7-wOA@mail.gmail.com>
-Subject: [PATCH 2/3] balancenuma: set last_nid on newly allocated page
+Date: Tue, 27 Nov 2012 21:22:12 +0800
+Message-ID: <CAJd=RBD8VJJ75BHR9+KogGtOwaZf36Br9_ehj7oLCcCw9Qiuew@mail.gmail.com>
+Subject: [PATCH 3/3] balancenuma: set last_nid on tail page
 From: Hillf Danton <dhillf@gmail.com>
 To: Mel Gorman <mgorman@suse.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, dhillf@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass last_nid from misplaced page to newly allocated migration target page.
+Pass last_nid from head page to tail page.
 
 Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
 
---- a/mm/migrate.c	Tue Nov 27 20:16:48 2012
-+++ b/mm/migrate.c	Tue Nov 27 20:19:12 2012
-@@ -1457,6 +1457,9 @@ static struct page *alloc_misplaced_dst_
- 					  __GFP_NOMEMALLOC | __GFP_NORETRY |
- 					  __GFP_NOWARN) &
- 					 ~GFP_IOFS, 0);
-+	if (newpage)
-+		page_xchg_last_nid(newpage, page_last_nid(page));
-+
- 	return newpage;
- }
+--- a/mm/huge_memory.c	Tue Nov 27 20:45:56 2012
++++ b/mm/huge_memory.c	Tue Nov 27 20:54:54 2012
+@@ -1382,6 +1382,7 @@ static void __split_huge_page_refcount(s
+ 		page_tail->mapping = page->mapping;
 
-@@ -1627,6 +1630,8 @@ int migrate_misplaced_transhuge_page(str
- 		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
- 	if (!new_page)
- 		goto out_dropref;
-+
-+	page_xchg_last_nid(new_page, page_last_nid(page));
+ 		page_tail->index = page->index + i;
++		page_xchg_last_nid(page_tail, page_last_nid(page));
 
- 	isolated = numamigrate_isolate_page(pgdat, page);
- 	if (!isolated) {
+ 		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
 --
