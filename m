@@ -1,172 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab2K0QSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:18:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:33422 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100Ab2K0QSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:18:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,328,1352102400"; 
-   d="scan'208";a="223083040"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        myungjoo.ham@samsung.com, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        anish kumar <anish198519851985@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH] EXTCON: Get and set cable properties
-Date: Wed, 28 Nov 2012 03:19:16 +0530
-Message-Id: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755764Ab2K0QTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:19:44 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42483 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab2K0QTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 11:19:42 -0500
+Date: Tue, 27 Nov 2012 08:16:39 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, sasha.levin@oracle.com,
+        gleb@redhat.com, avi@redhat.com
+Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+Message-ID: <20121127161639.GF2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hydk-FT_hqCbcSPFcNCKnqxtWGz0VjTu3nNnQYfbtTz6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hydk-FT_hqCbcSPFcNCKnqxtWGz0VjTu3nNnQYfbtTz6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112716-2876-0000-0000-000002725328
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Existing EXTCON implementation doesn't give a mechanim to read the cable
-properties and extra states a cable needs to support. There are scenarios
-where a cable can have more than two states(CONNECT/DISCONNECT/SUSPEND/RESUME etc)
-and can have some properties associated with cables(mA)
+On Tue, Nov 27, 2012 at 04:39:59PM +0100, Frederic Weisbecker wrote:
+> 2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > I noticed some warnings complaining about dynticks_nesting value, like
+> >
+> > [  267.545032] ------------[ cut here ]------------
+> > [  267.545032] WARNING: at kernel/rcutree.c:382 rcu_eqs_enter+0xab/0xc0()
+> > [  267.545032] Hardware name: Bochs
+> > [  267.545032] Modules linked in:
+> > [  267.545032] Pid: 0, comm: swapper/2 Not tainted 3.7.0-rc5-next-20121115 #8
+> > [  267.545032] Call Trace:
+> > [  267.545032]  [<ffffffff8104714f>] warn_slowpath_common+0x7f/0xc0
+> > [  267.545032]  [<ffffffff810471aa>] warn_slowpath_null+0x1a/0x20
+> > [  267.545032]  [<ffffffff810e607b>] rcu_eqs_enter+0xab/0xc0
+> > [  267.545032]  [<ffffffff810e60bb>] rcu_idle_enter+0x2b/0x70
+> > [  267.545032]  [<ffffffff8100d44f>] cpu_idle+0x6f/0x100
+> > [  267.545032]  [<ffffffff814bf055>] start_secondary+0x205/0x20c
+> > [  267.545032] ---[ end trace 924ae80da035028d ]---
+> >
+> > After enabling rcu-dyntick tracing, I got following abnormal
+> > dynticks_nesting values (13fffffffffffff, ff00000000000001,etc):
+> >                         ...
+> >  1      <idle>-0     [002] dN.2 18739.518567: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
+> >  2        sshd-696   [002] d..1 18739.518675: rcu_dyntick: ++= 140000000000000 140000000000001  rcu_irq_enter   - apf (not present)
+> >
+> >  3      <idle>-0     [002] d..2 18739.518705: rcu_dyntick: Start 140000000000001 0              rcu_idle_enter
+> >  4      <idle>-0     [002] d..2 18739.521252: rcu_dyntick: End 0 1                              rcu_irq_enter   - apf (page ready)
+> >  5      <idle>-0     [002] dN.2 18739.521261: rcu_dyntick: Start 1 0                            rcu_irq_exit    - apf (page ready)
+> >  6      <idle>-0     [002] dN.2 18739.521263: rcu_dyntick: End 0 140000000000000                rcu_idle_exit
+> >
+> >  7        sshd-696   [002] d..1 18739.521299: rcu_dyntick: --= 140000000000000 13fffffffffffff  rcu_irq_exit    - apf (not present)
+> 
+> Calling rcu_irq_exit() without a matching rcu_irq_enter() after the
+> last rcu_idle_exit() is illegal, isn't it?
 
-This patch introduces interface to get and set cable properties
-from EXTCON framework. The cable property can be set either by
-the extcon cable provider or by other subsystems who know the cable
-properties using eth API extcon_cable_set_data()
+It is OK to call rcu_irq_exit() without a matching rcu_irq_enter() -only-
+if you have also called rcu_idle_exit() since the last rcu_idle_enter().
+There will be a similar rule for rcu_user_exit().
 
-When the consumer gets a notification from the extcon, it can use the
-extcon_cable_get_data() to get the cable properties irrespective of who
-provides the cable data.
+More generally, it is OK to call rcu_irq_exit() without a matching
+rcu_irq_enter() only if RCU believes that the CPU you are running on is
+non-idle.  On 32-bit systems, you are only allowed a few tens of million
+such unmatched rcu_irq_enter() calls in a given RCU-non-idle region.
 
-This gives a single interface for setting and getting the cable properties.
+All courtesy of RCU's need to tolerate architectures that enter
+interrupt handlers without ever leaving them and vice versa.  ;-)
 
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
----
- drivers/extcon/extcon-class.c |   30 ++++++++++++++++++++++++++++++
- include/linux/extcon.h        |   39 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 69 insertions(+)
-
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index d398821..304f343 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -545,6 +545,36 @@ int extcon_unregister_notifier(struct extcon_dev *edev,
- }
- EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
- 
-+/**
-+ * extcon_cable_set_data() - Set the data structure for a cable
-+ * @edev:	the extcon device
-+ * @cable_index:	the cable index of the correspondant
-+ * @type:	type of the data structure
-+ * @data:
-+ */
-+void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
-+			   enum extcon_cable_name type,
-+			   union extcon_cable_data data)
-+{
-+	edev->cables[cable_index].type = type;
-+	edev->cables[cable_index].data = data;
-+}
-+
-+/**
-+ * extcon_cable_get_data() - Get the data structure for a cable
-+ * @edev:	the extcon device
-+ * @cable_index:	the cable index of the correspondant
-+ * @type:	type of the data structure
-+ * @data:	the corresponding data structure (e.g., regulator)
-+ */
-+void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
-+			   enum extcon_cable_name *type,
-+			   union extcon_cable_data *data)
-+{
-+	*type = edev->cables[cable_index].type;
-+	*data = edev->cables[cable_index].data;
-+}
-+
- static struct device_attribute extcon_attrs[] = {
- 	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
- 	__ATTR_RO(name),
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index 2c26c14..4556cc5 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -135,6 +135,19 @@ struct extcon_dev {
- 	struct device_attribute *d_attrs_muex;
- };
- 
-+/* FIXME: Is this the right place for this structure definition?
-+ * Do we need to move it to power_supply.h?
-+ */
-+struct extcon_chrgr_cable_props {
-+	unsigned long state;
-+	int mA;
-+};
-+
-+union extcon_cable_data {
-+	struct extcon_chrgr_cable_props chrgr_cbl_props;
-+	/* Please add accordingly*/
-+};
-+
- /**
-  * struct extcon_cable	- An internal data for each cable of extcon device.
-  * @edev	The extcon device
-@@ -143,6 +156,8 @@ struct extcon_dev {
-  * @attr_name	"name" sysfs entry
-  * @attr_state	"state" sysfs entry
-  * @attrs	Array pointing to attr_name and attr_state for attr_g
-+ * @type:	The type of @data.
-+ * @data:	The data structure representing the status and states of this cable.
-  */
- struct extcon_cable {
- 	struct extcon_dev *edev;
-@@ -153,6 +168,11 @@ struct extcon_cable {
- 	struct device_attribute attr_state;
- 
- 	struct attribute *attrs[3]; /* to be fed to attr_g.attrs */
-+
-+	union extcon_cable_data data;
-+
-+	/* extcon cable type */
-+	enum extcon_cable_name type;
- };
- 
- /**
-@@ -183,6 +203,17 @@ extern void extcon_dev_unregister(struct extcon_dev *edev);
- extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
- 
- /*
-+ * Following APIs are for managing the status and states of each cable.
-+ * For example, if a cable is represented as a regulator, then the cable
-+ * may have struct regulator as its data.
-+ */
-+extern void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
-+			enum extcon_cable_name type,
-+			union extcon_cable_data data);
-+extern void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
-+			enum extcon_cable_name *type,
-+			union extcon_cable_data *data);
-+/*
-  * get/set/update_state access the 32b encoded state value, which represents
-  * states of all possible cables of the multistate port. For example, if one
-  * calls extcon_set_state(edev, 0x7), it may mean that all the three cables
-@@ -244,6 +275,14 @@ static inline int extcon_dev_register(struct extcon_dev *edev,
- 
- static inline void extcon_dev_unregister(struct extcon_dev *edev) { }
- 
-+static void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
-+				enum extcon_cable_name type,
-+				union extcon_cable_data data) { }
-+
-+static void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
-+				enum extcon_cable_name *type,
-+				union extcon_cable_data *data) { }
-+
- static inline u32 extcon_get_state(struct extcon_dev *edev)
- {
- 	return 0;
--- 
-1.7.9.5
+							Thanx, Paul
 
