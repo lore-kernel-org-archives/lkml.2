@@ -1,129 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab2K0Gqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:46:37 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38717 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756732Ab2K0Gqe (ORCPT
+	id S1758048Ab2K0Gqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:46:33 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:59184 "HELO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756732Ab2K0Gq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:46:34 -0500
-Message-ID: <50B461A3.8000200@linux.vnet.ibm.com>
-Date: Tue, 27 Nov 2012 12:15:55 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 27 Nov 2012 01:46:29 -0500
+Message-ID: <50B460FA.1080603@mellanox.com>
+Date: Tue, 27 Nov 2012 08:43:06 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: Benjamin Segall <bsegall@google.com>, mingo@redhat.com,
-        peterz@infradead.org, pjt@google.com, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com> <xm26ehjg5gra.fsf@sword-of-the-dawn.mtv.corp.google.com> <50B42EB0.8090609@linux.vnet.ibm.com> <50B45A2A.7030201@intel.com>
-In-Reply-To: <50B45A2A.7030201@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>, <linux-rdma@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Amir Vadai <amirv@mellanox.com>
+Subject: Re: linux-next: manual merge of the net-next tree with the infiniband
+ tree
+References: <20121127114751.6961da02245ed6851190aca2@canb.auug.org.au>
+In-Reply-To: <20121127114751.6961da02245ed6851190aca2@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112706-1396-0000-0000-000002384E51
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 11/27/2012 11:44 AM, Alex Shi wrote:
-> On 11/27/2012 11:08 AM, Preeti U Murthy wrote:
->> Hi everyone,
->>
->> On 11/27/2012 12:33 AM, Benjamin Segall wrote:
->>> So, I've been trying out using the runnable averages for load balance in
->>> a few ways, but haven't actually gotten any improvement on the
->>> benchmarks I've run. I'll post my patches once I have the numbers down,
->>> but it's generally been about half a percent to 1% worse on the tests
->>> I've tried.
->>>
->>> The basic idea is to use (cfs_rq->runnable_load_avg +
->>> cfs_rq->blocked_load_avg) (which should be equivalent to doing
->>> load_avg_contrib on the rq) for cfs_rqs and possibly the rq, and
->>> p->se.load.weight * p->se.avg.runnable_avg_sum / period for tasks.
->>
->> Why should cfs_rq->blocked_load_avg be included to calculate the load
->> on the rq? They do not contribute to the active load of the cpu right?
->>
->> When a task goes to sleep its load is removed from cfs_rq->load.weight
->> as well in account_entity_dequeue(). Which means the load balancer
->> considers a sleeping entity as *not* contributing to the active runqueue
->> load.So shouldn't the new metric consider cfs_rq->runnable_load_avg alone?
->>>
->>> I have not yet tried including wake_affine, so this has just involved
->>> h_load (task_load_down and task_h_load), as that makes everything
->>> (besides wake_affine) be based on either the new averages or the
->>> rq->cpu_load averages.
->>>
->>
->> Yeah I have been trying to view the performance as well,but with
->> cfs_rq->runnable_load_avg as the rq load contribution and the task load,
->> same as mentioned above.I have not completed my experiments but I would
->> expect some significant performance difference due to the below scenario:
->>
->>                      Task3(10% task)
->> Task1(100% task)     Task4(10% task)
->> Task2(100% task)     Task5(10% task)
->> ---------------     ----------------       ----------
->> CPU1                  CPU2                  CPU3
->>
->> When cpu3 triggers load balancing:
->>
->> CASE1:
->>  without PJT's metric the following loads will be perceived
->>  CPU1->2048
->>  CPU2->3042
->>  Therefore CPU2 might be relieved of one task to result in:
->>
->>
->> Task1(100% task)     Task4(10% task)
->> Task2(100% task)     Task5(10% task)       Task3(10% task)
->> ---------------     ----------------       ----------
->> CPU1                  CPU2                  CPU3
->>
->> CASE2:
->>   with PJT's metric the following loads will be perceived
->>   CPU1->2048
->>   CPU2->1022
->>  Therefore CPU1 might be relieved of one task to result in:
->>
->>                      Task3(10% task)
->>                      Task4(10% task)
->> Task2(100% task)     Task5(10% task)     Task1(100% task)
->> ---------------     ----------------       ----------
->> CPU1                  CPU2                  CPU3
->>
->>
->> The differences between the above two scenarios include:
->>
->> 1.Reduced latency for Task1 in CASE2,which is the right task to be moved
->> in the above scenario.
->>
->> 2.Even though in the former case CPU2 is relieved of one task,its of no
->> use if Task3 is going to sleep most of the time.This might result in
->> more load balancing on behalf of cpu3.
->>
->> What do you guys think?
-> 
-> It looks fine. just a question of CASE 1.
-> Usually the cpu2 with 3 10% load task will show nr_running == 0, at 70%
-> time. So, how you make rq->nr_running = 3 always?
-> 
-> Guess in most chance load balance with pull task1 or task2 to cpu2 or
-> cpu3. not the result of CASE 1.
+On 27/11/2012 02:47, Stephen Rothwell wrote:
+> Hi all,
+>
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/mellanox/mlx4/en_rx.c between commit 08ff32352d6f
+> ("mlx4: 64-byte CQE/EQE support") from the infiniband tree and commit
+> f1d29a3fa68b ("mlx4_en: Remove remnants of LRO support") from the
+> net-next tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+>
 
-Thats right Alex.Most of the time the nr_running on CPU2 will be shown
-to be 0 or perhaps 1/2.But whether you use PJT's metric or not,the load
-balancer in such circumstances will behave the same, as you have rightly
-pointed out: pull task1/2 to cpu2/3.
-
-But the issue usually arises when all three wake up at the same time on
-cpu2,portraying wrongly that the load is 3042, if PJT's metric is not
-used.This could lead to load balancing one of these short running tasks
-as shown by CASE1.This is the situation where in my opinion,PJT's metric
-could make a difference.
-
-Regards
-Preeti U Murthy
-
+Acked-by: Or Geritz <ogerlitz@mellanox.com>
