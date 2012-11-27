@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab2K0A72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:59:28 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:3319 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842Ab2K0A71 (ORCPT
+	id S933010Ab2K0A7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:59:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:31892 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757516Ab2K0A7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:59:27 -0500
-Message-ID: <50B41041.6030902@huawei.com>
-Date: Tue, 27 Nov 2012 08:58:41 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 26 Nov 2012 19:59:48 -0500
+Message-ID: <50B41077.3080009@oracle.com>
+Date: Tue, 27 Nov 2012 08:59:35 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, wujianguo <wujianguo106@gmail.com>,
-        <akpm@linux-foundation.org>, <rob@landley.net>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>,
-        <jiang.liu@huawei.com>, <yinghai@kernel.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-doc@vger.kernel.org>, <qiuxishi@huawei.com>
-Subject: Re: [PATCH v2 5/5] page_alloc: Bootmem limit with movablecore_map
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-6-git-send-email-tangchen@cn.fujitsu.com> <50B36354.7040501@gmail.com> <50B36B54.7050506@cn.fujitsu.com> <50B38F69.6020902@zytor.com>
-In-Reply-To: <50B38F69.6020902@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
+To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+CC: "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>
+Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com> <50A30656.6090508@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com> <50A43828.6000702@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com> <50A9C5CC.1030300@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com> <50AB8471.7080607@oracle.com> <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/26 23:48, H. Peter Anvin wrote:
-
-> On 11/26/2012 05:15 AM, Tang Chen wrote:
->>
->> Hi Wu,
->>
->> That is really a problem. And, before numa memory got initialized,
->> memblock subsystem would be used to allocate memory. I didn't find any
->> approach that could fully address it when I making the patches. There
->> always be risk that memblock allocates memory on ZONE_MOVABLE. I think
->> we can only do our best to prevent it from happening.
->>
->> Your patch is very helpful. And after a shot look at the code, it seems
->> that acpi_numa_memory_affinity_init() is an architecture dependent
->> function. Could we do this somewhere which is not depending on the
->> architecture ?
->>
+On 11/27/12 00:23, Fujinaka, Todd wrote:
+> If you look at the previous section, DevCap, you'll see that it's
+> correctly advertising 256 bytes but the system is negotiating 128 for
+> the link to the Ethernet controller. Things on the "other" side of the
+> link are controlled outside of the e1000 driver.
 > 
-> The movable memory should be classified as a non-RAM type in memblock,
-> that way we will not allocate from it early on.
-> 
-> 	-hpa
+> Tushar's first suggestion was to check the PCIe payload settings in the
+> entire chain. Have you done that? Mismatches will cause hangs.
 
+Hi Todd,
 
-yep, we can put movable memory in reserved.regions in memblock.
+So far I had to know how to modify the maxpayload size, since BIOS have not
+entry to change this, so I had to use ethtool, now I need to get the offset
+of MaxPayload size in eeprom, I ever tried to find from Intel online document
+but failed, any idea?
 
-> 
-> 
-> .
-> 
-
-
-
+Thanks in advance,
+Joe
