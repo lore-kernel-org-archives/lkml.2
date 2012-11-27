@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab2K0VZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:25:53 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:35296 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2K0VZv (ORCPT
+	id S1756078Ab2K0V1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 16:27:23 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29979 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2K0V1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:25:51 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <3774326.lMtTTFYZT3@azariah.suse.cz>
-Date: Tue, 27 Nov 2012 15:25:35 -0600
-In-Reply-To: <3774326.lMtTTFYZT3@azariah.suse.cz> (Petr Tesarik's message of
-	"Tue, 27 Nov 2012 15:13:32 +0100")
-Message-ID: <87ehjeivqo.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 27 Nov 2012 16:27:22 -0500
+Date: Tue, 27 Nov 2012 16:26:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bob Liu <lliubbo@gmail.com>, sjenning@linux.vnet.ibm.com,
+        dan.magenheimer@oracle.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        minchan@kernel.org, mgorman@suse.de, fschmaus@gmail.com,
+        andor.daam@googlemail.com, ilendir@googlemail.com
+Subject: Re: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
+Message-ID: <20121127212617.GA13890@phenom.dumpdata.com>
+References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+ <1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
+ <20121116151619.aa60acff.akpm@linux-foundation.org>
+ <CAA_GA1crg1ngNx2MAv-fJbgKYqSKmkapZHq=8F4QcNgFja1A-w@mail.gmail.com>
+ <20121119142516.b2936a7c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1880Pgms8tFdmPUdGyq6lwjgG4nmyFaM7k=
-X-SA-Exim-Connect-IP: 75.135.205.0
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Petr Tesarik <ptesarik@suse.cz>
-X-Spam-Relay-Country: 
-Subject: Re: Save PG_compound or PG_head value in VMCOREINFO
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119142516.b2936a7c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Petr Tesarik <ptesarik@suse.cz> writes:
+On Mon, Nov 19, 2012 at 02:25:16PM -0800, Andrew Morton wrote:
+> On Mon, 19 Nov 2012 08:53:46 +0800
+> Bob Liu <lliubbo@gmail.com> wrote:
+> 
+> > On Sat, Nov 17, 2012 at 7:16 AM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> > > On Wed, 14 Nov 2012 13:57:06 -0500
+> > > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > >
+> > >> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > >>
+> > >> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
+> > >> built/loaded as modules rather than built-in and enabled by a boot parameter,
+> > >> this patch provides "lazy initialization", allowing backends to register to
+> > >> frontswap even after swapon was run. Before a backend registers all calls
+> > >> to init are recorded and the creation of tmem_pools delayed until a backend
+> > >> registers or until a frontswap put is attempted.
+> > >>
+> > >>
+> > >> ...
+> > >>
+> > >> --- a/mm/frontswap.c
+> > >> +++ b/mm/frontswap.c
+> > >> @@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
+> > >>  static inline void inc_frontswap_failed_stores(void) { }
+> > >>  static inline void inc_frontswap_invalidates(void) { }
+> > >>  #endif
+> > >> +
+> > >> +/*
+> > >> + * When no backend is registered all calls to init are registered and
+> > >
+> > > What is "init"?  Spell it out fully, please.
+> > >
+> > 
+> > I think it's frontswap_init().
+> > swapon will call frontswap_init() and in it we need to call init
+> > function of backends with some parameters
+> > like swap_type.
+> 
+> Well, let's improve that comment please.
+> 
+> > >> + * remembered but fail to create tmem_pools. When a backend registers with
+> > >> + * frontswap the previous calls to init are executed to create tmem_pools
+> > >> + * and set the respective poolids.
+> > >
+> > > Again, seems really hacky.  Why can't we just change callers so they
+> > > call things in the correct order?
+> > >
+> > 
+> > I don't think so, because it asynchronous.
+> > 
+> > The original idea was to make backends like zcache/tmem modularization.
+> > So that it's more convenient and flexible to use and testing.
+> > 
+> > But currently callers like swapon only invoke frontswap_init() once,
+> > it fail if backend not registered.
+> > We have no way to notify swap to call frontswap_init() again when
+> > backend registered in some random time
+> >  in future.
+> 
+> We could add such a way?
 
-> To allow filtering of huge pages, makedumpfile must be able to identify
-> them in the dump. This can be done by checking for the appropriate
-> page flag, so communicate its value to makedumpfile through the VMCOREINFO 
-> interface.
+Hey Andrew,
 
-I don't have any siginificant problems with exporting this information.
-However that #ifddef looks nasty and confusing.
+Sorry for the late email. Right at as you posted your questions I went on vacation :-)
+Let me respond to your email and rebase the patch per your comments/ideas this week.
 
-Does that #ifdef exist in the huge page code as well?
 
-Can we always export both?  Can we only export one?
-
-What is the purpose of the #ifdef?
-
-As it stands that looks like code that will figure out how to bitrot
-if we just leave it sitting there.
-
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
->
-> ---
->  kernel/kexec.c |    5 +++++
->  1 file changed, 5 insertions(+)
->
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1511,6 +1511,11 @@ static int __init crash_save_vmcoreinfo_
->  	VMCOREINFO_NUMBER(NR_FREE_PAGES);
->  	VMCOREINFO_NUMBER(PG_lru);
->  	VMCOREINFO_NUMBER(PG_private);
-> +#ifdef CONFIG_PAGEFLAGS_EXTENDED
-> +	VMCOREINFO_NUMBER(PG_head);
-> +#else
-> +	VMCOREINFO_NUMBER(PG_compound);
-> +#endif
->  	VMCOREINFO_NUMBER(PG_swapcache);
->  
->  	arch_crash_save_vmcoreinfo();
