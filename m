@@ -1,125 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab2K0Utu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:49:50 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35197 "EHLO zene.cmpxchg.org"
+	id S1756666Ab2K0Utt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:49:49 -0500
+Received: from ishtar.tlinx.org ([173.164.175.65]:37937 "EHLO Ishtar.tlinx.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756513Ab2K0Utp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:49:45 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jslaby@suse.cz>,
-        Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: vmscan: fix kswapd endless loop on higher order allocation
-Date: Tue, 27 Nov 2012 15:48:35 -0500
-Message-Id: <1354049315-12874-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+	id S1756483Ab2K0Utq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 15:49:46 -0500
+X-Greylist: delayed 733 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 15:49:46 EST
+Message-ID: <50B5248A.5010908@tlinx.org>
+Date: Tue, 27 Nov 2012 12:37:30 -0800
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: BUG: scheduling while atomic: ifup-bonding/3711/0x00000002 --  V3.6.7
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kswapd does not in all places have the same criteria for a balanced
-zone.  Zones are only being reclaimed when their high watermark is
-breached, but compaction checks loop over the zonelist again when the
-zone does not meet the low watermark plus two times the size of the
-allocation.  This gets kswapd stuck in an endless loop over a small
-zone, like the DMA zone, where the high watermark is smaller than the
-compaction requirement.
 
-Add a function, zone_balanced(), that checks the watermark, and, for
-higher order allocations, if compaction has enough free memory.  Then
-use it uniformly to check for balanced zones.
 
-This makes sure that when the compaction watermark is not met, at
-least reclaim happens and progress is made - or the zone is declared
-unreclaimable at some point and skipped entirely.
+Is this a known problem / bug, or should I file a bug on it?  
+It doesn't cause a complete failure, and it happens multiple times (~28 
+times
+in 2.5 days?... so maybe 10x/day?)  about 8 start with ifup, and the rest
+start @ kworker -- both happen upon enabling the bonding driver
+on a 10Gb dual port adapter (trying to get 1 20Gb adapter).
 
-Reported-by: George Spelvin <linux@horizon.com>
-Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reported-by: Tomas Racek <tracek@redhat.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+The 2 tracebacks tyeps (ifup-bonding + kworker) follow:
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 48550c6..3b0aef4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2397,6 +2397,19 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
- 	} while (memcg);
- }
- 
-+static bool zone_balanced(struct zone *zone, int order,
-+			  unsigned long balance_gap, int classzone_idx)
-+{
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
-+				    balance_gap, classzone_idx, 0))
-+		return false;
-+
-+	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * pgdat_balanced is used when checking if a node is balanced for high-order
-  * allocations. Only zones that meet watermarks and are in a zone allowed
-@@ -2475,8 +2488,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 			continue;
- 		}
- 
--		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
--							i, 0))
-+		if (!zone_balanced(zone, order, 0, i))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2585,8 +2597,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				break;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), 0, 0)) {
-+			if (!zone_balanced(zone, order, 0, 0)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -2662,9 +2673,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				testorder = 0;
- 
- 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
--				    !zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone) + balance_gap,
--					end_zone, 0)) {
-+			    !zone_balanced(zone, testorder,
-+					   balance_gap, end_zone)) {
- 				shrink_zone(zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2691,8 +2701,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				continue;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone), end_zone, 0)) {
-+			if (!zone_balanced(zone, testorder, 0, end_zone)) {
- 				all_zones_ok = 0;
- 				/*
- 				 * We are still under min water mark.  This
--- 
-1.7.11.7
+
+----------------- ifup-bonding traceback:
+
+[  229.208603] bonding: bond0: Setting MII monitoring interval to 100.
+[  229.222336] bonding: bond0: Adding slave p2p1.
+[  229.685599] BUG: scheduling while atomic: ifup-bonding/3711/0x00000002
+[  229.692166] 4 locks held by ifup-bonding/3711:
+[  229.696645]  #0:  (&buffer->mutex){......}, at: [<ffffffff811acd3f>] 
+sysfs_write_file+0x3f/0x150
+[  229.705721]  #1:  (s_active#75){......}, at: [<ffffffff811acdbb>] 
+sysfs_write_file+0xbb/0x150
+[  229.714538]  #2:  (rtnl_mutex){......}, at: [<ffffffff8159e1e0>] 
+rtnl_trylock+0x10/0x20
+[  229.722772]  #3:  (&bond->lock){......}, at: [<ffffffffa02964af>] 
+bond_enslave+0x4df/0xb50 [bonding]
+[  229.732188] Modules linked in: bonding fan mousedev kvm_intel 
+iTCO_wdt iTCO_vendor_support gpio_ich kvm acpi_cpufreq mperf tpm_tis tpm 
+tpm_bios processor button
+[  229.747197] Pid: 3711, comm: ifup-bonding Not tainted 3.6.7-Isht-Van #1
+[  229.753843] Call Trace:
+[  229.756333]  [<ffffffff8168ead9>] __schedule_bug+0x5e/0x6c
+[  229.761863]  [<ffffffff8169893c>] __schedule+0x77c/0x810
+[  229.767214]  [<ffffffff81698a54>] schedule+0x24/0x70
+[  229.772214]  [<ffffffff81697b6c>] 
+schedule_hrtimeout_range_clock+0xfc/0x140
+[  229.779210]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  229.784645]  [<ffffffff81065a1f>] ? hrtimer_start_range_ns+0xf/0x20
+[  229.790950]  [<ffffffff81697bbe>] schedule_hrtimeout_range+0xe/0x10
+[  229.797254]  [<ffffffff8104bddb>] usleep_range+0x3b/0x40
+[  229.802611]  [<ffffffff814c519c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x110
+[  229.809429]  [<ffffffff814c146d>] ixgbe_read_phy_reg_generic+0x3d/0x120
+[  229.816078]  [<ffffffff814c16dc>] 
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[  229.824022]  [<ffffffffa02964af>] ? bond_enslave+0x4df/0xb50 [bonding]
+[  229.830581]  [<ffffffff814b93e4>] ixgbe_get_settings+0x34/0x2b0
+[  229.836534]  [<ffffffff81594385>] __ethtool_get_settings+0x85/0x140
+[  229.842837]  [<ffffffffa0292303>] bond_update_speed_duplex+0x23/0x60 
+[bonding]
+[  229.850092]  [<ffffffffa0296518>] bond_enslave+0x548/0xb50 [bonding]
+[  229.856478]  [<ffffffffa029e62f>] bonding_store_slaves+0x13f/0x190 
+[bonding]
+[  229.863556]  [<ffffffff813fe163>] dev_attr_store+0x13/0x30
+[  229.869074]  [<ffffffff811acdd4>] sysfs_write_file+0xd4/0x150
+[  229.874856]  [<ffffffff81142c01>] vfs_write+0xb1/0x180
+[  229.880034]  [<ffffffff81142f28>] sys_write+0x48/0x90
+[  229.885125]  [<ffffffff8169b162>] system_call_fastpath+0x16/0x1b
+[  229.891259] BUG: scheduling while atomic: ifup-bonding/3711/0x00000002
+[  229.897839] 4 locks held by ifup-bonding/3711:
+[  229.902320]  #0:  (&buffer->mutex){......}, at: [<ffffffff811acd3f>] 
+sysfs_write_file+0x3f/0x150
+[  229.911395]  #1:  (s_active#75){......}, at: [<ffffffff811acdbb>] 
+sysfs_write_file+0xbb/0x150
+[  229.920212]  #2:  (rtnl_mutex){......}, at: [<ffffffff8159e1e0>] 
+rtnl_trylock+0x10/0x20
+[  229.928449]  #3:  (&bond->lock){......}, at: [<ffffffffa02964af>] 
+bond_enslave+0x4df/0xb50 [bonding]
+[  229.937866] Modules linked in: bonding fan mousedev kvm_intel 
+iTCO_wdt iTCO_vendor_support gpio_ich kvm acpi_cpufreq mperf tpm_tis tpm 
+tpm_bios processor button
+[  229.952904] Pid: 3711, comm: ifup-bonding Tainted: G        W    
+3.6.7-Isht-Van #1
+[  229.960507] Call Trace:
+[  229.962997]  [<ffffffff8168ead9>] __schedule_bug+0x5e/0x6c
+[  229.968526]  [<ffffffff8169893c>] __schedule+0x77c/0x810
+[  229.973875]  [<ffffffff81698a54>] schedule+0x24/0x70
+[  229.978876]  [<ffffffff81697b6c>] 
+schedule_hrtimeout_range_clock+0xfc/0x140
+[  229.985871]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  229.991303]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  229.996739]  [<ffffffff81065a1f>] ? hrtimer_start_range_ns+0xf/0x20
+[  230.003040]  [<ffffffff81697bbe>] schedule_hrtimeout_range+0xe/0x10
+[  230.009344]  [<ffffffff8104bddb>] usleep_range+0x3b/0x40
+[  230.014698]  [<ffffffff814c50ce>] ixgbe_release_swfw_sync_X540+0x4e/0x60
+[  230.021435]  [<ffffffff814c1531>] ixgbe_read_phy_reg_generic+0x101/0x120
+[  230.028171]  [<ffffffff814c16dc>] 
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[  230.036117]  [<ffffffffa02964af>] ? bond_enslave+0x4df/0xb50 [bonding]
+[  230.042677]  [<ffffffff814b93e4>] ixgbe_get_settings+0x34/0x2b0
+[  230.048630]  [<ffffffff81594385>] __ethtool_get_settings+0x85/0x140
+[  230.054934]  [<ffffffffa0292303>] bond_update_speed_duplex+0x23/0x60 
+[bonding]
+[  230.062189]  [<ffffffffa0296518>] bond_enslave+0x548/0xb50 [bonding]
+[  230.068580]  [<ffffffffa029e62f>] bonding_store_slaves+0x13f/0x190 
+[bonding]
+[  230.075660]  [<ffffffff813fe163>] dev_attr_store+0x13/0x30
+[  230.081189]  [<ffffffff811acdd4>] sysfs_write_file+0xd4/0x150
+[  230.086971]  [<ffffffff81142c01>] vfs_write+0xb1/0x180
+[  230.092148]  [<ffffffff81142f28>] sys_write+0x48/0x90
+[  230.097245]  [<ffffffff8169b162>] system_call_fastpath+0x16/0x1b
+[  230.103427] bonding: bond0: enslaving p2p1 as an active interface 
+with a down link.
+[  230.120623] bonding: bond0: Adding slave p2p2.
+[  230.575194] BUG: scheduling while atomic: ifup-bonding/3711/0x00000002
+[  230.581782] 4 locks held by ifup-bonding/3711:
+[  230.586262]  #0:  (&buffer->mutex){......}, at: [<ffffffff811acd3f>] 
+sysfs_write_file+0x3f/0x150
+[  230.595287]  #1:  (s_active#75){......}, at: [<ffffffff811acdbb>] 
+sysfs_write_file+0xbb/0x150
+[  230.604105]  #2:  (rtnl_mutex){......}, at: [<ffffffff8159e1e0>] 
+rtnl_trylock+0x10/0x20
+[  230.612393]  #3:  (&bond->lock){......}, at: [<ffffffffa02964af>] 
+bond_enslave+0x4df/0xb50 [bonding]
+[  230.621801] Modules linked in: bonding fan mousedev kvm_intel 
+iTCO_wdt iTCO_vendor_support gpio_ich kvm acpi_cpufreq mperf tpm_tis tpm 
+tpm_bios processor button
+[  230.636922] Pid: 3711, comm: ifup-bonding Tainted: G        W    
+3.6.7-Isht-Van #1
+[  230.644516] Call Trace:
+[  230.647009]  [<ffffffff8168ead9>] __schedule_bug+0x5e/0x6c
+[  230.652537]  [<ffffffff8169893c>] __schedule+0x77c/0x810
+[  230.657886]  [<ffffffff81698a54>] schedule+0x24/0x70
+[  230.662889]  [<ffffffff81697b6c>] 
+schedule_hrtimeout_range_clock+0xfc/0x140
+[  230.669884]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  230.675320]  [<ffffffff81065a1f>] ? hrtimer_start_range_ns+0xf/0x20
+[  230.681622]  [<ffffffff81697bbe>] schedule_hrtimeout_range+0xe/0x10
+[  230.687921]  [<ffffffff8104bddb>] usleep_range+0x3b/0x40
+[  230.693283]  [<ffffffff814c519c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x110
+[  230.700113]  [<ffffffff814c146d>] ixgbe_read_phy_reg_generic+0x3d/0x120
+[  230.706763]  [<ffffffff814c16dc>] 
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[  230.714713]  [<ffffffffa02964af>] ? bond_enslave+0x4df/0xb50 [bonding]
+[  230.721275]  [<ffffffff814b93e4>] ixgbe_get_settings+0x34/0x2b0
+[  230.727231]  [<ffffffff81594385>] __ethtool_get_settings+0x85/0x140
+[  230.733535]  [<ffffffffa0292303>] bond_update_speed_duplex+0x23/0x60 
+[bonding]
+[  230.740790]  [<ffffffffa0296518>] bond_enslave+0x548/0xb50 [bonding]
+[  230.747189]  [<ffffffffa029e62f>] bonding_store_slaves+0x13f/0x190 
+[bonding]
+[  230.754270]  [<ffffffff813fe163>] dev_attr_store+0x13/0x30
+[  230.759792]  [<ffffffff811acdd4>] sysfs_write_file+0xd4/0x150
+[  230.765576]  [<ffffffff81142c01>] vfs_write+0xb1/0x180
+[  230.770753]  [<ffffffff81142f28>] sys_write+0x48/0x90
+[  230.775840]  [<ffffffff8169b162>] system_call_fastpath+0x16/0x1b
+[  230.781933] BUG: scheduling while atomic: ifup-bonding/3711/0x00000002
+[  230.788499] 4 locks held by ifup-bonding/3711:
+[  230.793021]  #0:  (&buffer->mutex){......}, at: [<ffffffff811acd3f>] 
+sysfs_write_file+0x3f/0x150
+[  230.802051]  #1:  (s_active#75){......}, at: [<ffffffff811acdbb>] 
+sysfs_write_file+0xbb/0x150
+[  230.810872]  #2:  (rtnl_mutex){......}, at: [<ffffffff8159e1e0>] 
+rtnl_trylock+0x10/0x20
+[  230.819160]  #3:  (&bond->lock){......}, at: [<ffffffffa02964af>] 
+bond_enslave+0x4df/0xb50 [bonding]
+[  230.828575] Modules linked in: bonding fan mousedev kvm_intel 
+iTCO_wdt iTCO_vendor_support gpio_ich kvm acpi_cpufreq mperf tpm_tis tpm 
+tpm_bios processor button
+[  230.843673] Pid: 3711, comm: ifup-bonding Tainted: G        W    
+3.6.7-Isht-Van #1
+[  230.851271] Call Trace:
+[  230.853759]  [<ffffffff8168ead9>] __schedule_bug+0x5e/0x6c
+[  230.859282]  [<ffffffff8169893c>] __schedule+0x77c/0x810
+[  230.864637]  [<ffffffff81698a54>] schedule+0x24/0x70
+[  230.869598]  [<ffffffff81697b6c>] 
+schedule_hrtimeout_range_clock+0xfc/0x140
+[  230.876548]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  230.881966]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  230.887359]  [<ffffffff81065a1f>] ? hrtimer_start_range_ns+0xf/0x20
+[  230.893649]  [<ffffffff81697bbe>] schedule_hrtimeout_range+0xe/0x10
+[  230.899907]  [<ffffffff8104bddb>] usleep_range+0x3b/0x40
+[  230.905213]  [<ffffffff814c50ce>] ixgbe_release_swfw_sync_X540+0x4e/0x60
+[  230.911908]  [<ffffffff814c1531>] ixgbe_read_phy_reg_generic+0x101/0x120
+[  230.918599]  [<ffffffff814c16dc>] 
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[  230.926501]  [<ffffffffa02964af>] ? bond_enslave+0x4df/0xb50 [bonding]
+[  230.933018]  [<ffffffff814b93e4>] ixgbe_get_settings+0x34/0x2b0
+[  230.938929]  [<ffffffff81594385>] __ethtool_get_settings+0x85/0x140
+[  230.945185]  [<ffffffffa0292303>] bond_update_speed_duplex+0x23/0x60 
+[bonding]
+[  230.952392]  [<ffffffffa0296518>] bond_enslave+0x548/0xb50 [bonding]
+[  230.958739]  [<ffffffffa029e62f>] bonding_store_slaves+0x13f/0x190 
+[bonding]
+[  230.965774]  [<ffffffff813fe163>] dev_attr_store+0x13/0x30
+[  230.971251]  [<ffffffff811acdd4>] sysfs_write_file+0xd4/0x150
+[  230.976988]  [<ffffffff81142c01>] vfs_write+0xb1/0x180
+[  230.982146]  [<ffffffff81142f28>] sys_write+0x48/0x90
+[  230.987192]  [<ffffffff8169b162>] system_call_fastpath+0x16/0x1b
+[  230.993297] bonding: bond0: enslaving p2p2 as an active interface 
+with a down link.
+[  231.014761] ixgbe 0000:06:00.0: p2p1: changing MTU from 1500 to 9000
+[  231.863728] ixgbe 0000:06:00.1: p2p2: changing MTU from 1500 to 9000
+
+
+---------- kworker traceback:
+[  236.268690] ixgbe 0000:06:00.0: p2p1: NIC Link is Up 10 Gbps, Flow 
+Control: None
+[  236.305628] BUG: scheduling while atomic: kworker/u:2/106/0x00000002
+[  236.312025] 4 locks held by kworker/u:2/106:
+[  236.312037]  #0:  ((bond_dev->name)){......}, at: 
+[<ffffffff8105a956>] process_one_work+0x146/0x680
+[  236.312049]  #1:  ((&(&bond->mii_work)->work)){......}, at: 
+[<ffffffff8105a956>] process_one_work+0x146/0x680
+[  236.312056]  #2:  (rtnl_mutex){......}, at: [<ffffffff8159e1e0>] 
+rtnl_trylock+0x10/0x20
+[  236.312065]  #3:  (&bond->lock){......}, at: [<ffffffffa02955ad>] 
+bond_mii_monitor+0x2ed/0x640 [bonding]
+[  236.312078] Modules linked in: ipv6 bonding fan mousedev kvm_intel 
+iTCO_wdt iTCO_vendor_support gpio_ich kvm acpi_cpufreq mperf tpm_tis tpm 
+tpm_bios processor button
+[  236.312082] Pid: 106, comm: kworker/u:2 Tainted: G        W    
+3.6.7-Isht-Van #1
+[  236.312083] Call Trace:
+[  236.312092]  [<ffffffff8168ead9>] __schedule_bug+0x5e/0x6c
+[  236.312102]  [<ffffffff8169893c>] __schedule+0x77c/0x810
+[  236.312108]  [<ffffffff81698a54>] schedule+0x24/0x70
+[  236.312114]  [<ffffffff81697b6c>] 
+schedule_hrtimeout_range_clock+0xfc/0x140
+[  236.312121]  [<ffffffff81064c80>] ? update_rmtp+0x60/0x60
+[  236.312129]  [<ffffffff81065a1f>] ? hrtimer_start_range_ns+0xf/0x20
+[  236.312134]  [<ffffffff81697bbe>] schedule_hrtimeout_range+0xe/0x10
+[  236.312144]  [<ffffffff8104bddb>] usleep_range+0x3b/0x40
+[  236.312150]  [<ffffffff814c519c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x110
+[  236.312157]  [<ffffffff814c146d>] ixgbe_read_phy_reg_generic+0x3d/0x120
+[  236.312161]  [<ffffffff814c16dc>] 
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[  236.312166]  [<ffffffffa02955ad>] ? bond_mii_monitor+0x2ed/0x640 
+[bonding]
+[  236.312170]  [<ffffffff814b93e4>] ixgbe_get_settings+0x34/0x2b0
+[  236.312177]  [<ffffffff81594385>] __ethtool_get_settings+0x85/0x140
+[  236.312182]  [<ffffffffa0292303>] bond_update_speed_duplex+0x23/0x60 
+[bonding]
+[  236.312188]  [<ffffffffa0295614>] bond_mii_monitor+0x354/0x640 [bonding]
+[  236.312198]  [<ffffffff8105a9b7>] process_one_work+0x1a7/0x680
+[  236.312203]  [<ffffffff8105a956>] ? process_one_work+0x146/0x680
+[  236.312210]  [<ffffffff8108c7ce>] ? put_lock_stats.isra.21+0xe/0x40
+[  236.312215]  [<ffffffffa02952c0>] ? 
+bond_loadbalance_arp_mon+0x2c0/0x2c0 [bonding]
+[  236.312234]  [<ffffffff8105b9ed>] worker_thread+0x18d/0x4f0
+[  236.312239]  [<ffffffff81070991>] ? sub_preempt_count+0x51/0x60
+[  236.312242]  [<ffffffff8105b860>] ? manage_workers+0x320/0x320
+[  236.312247]  [<ffffffff81060f7d>] kthread+0x9d/0xb0
+[  236.312250]  [<ffffffff8169c264>] kernel_thread_helper+0x4/0x10
+[  236.312254]  [<ffffffff8106c197>] ? finish_task_switch+0x77/0x100
+[  236.312262]  [<ffffffff8169a4a6>] ? _raw_spin_unlock_irq+0x36/0x60
+[  236.312268]  [<ffffffff8169a9dd>] ? retint_restore_args+0xe/0xe
+[  236.312273]  [<ffffffff81060ee0>] ? flush_kthread_worker+0x160/0x160
+[  236.312277]  [<ffffffff8169c260>] ? gs_change+0xb/0xb
+
 
