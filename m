@@ -1,234 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab2K0XUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:20:19 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42712 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2K0XUN (ORCPT
+	id S1755175Ab2K0XPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:15:14 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26291 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754888Ab2K0XPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:20:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121127145505.GA14805@redhat.com>
-References: <CAGXD9OfAMUmrdFBap3aOYXOhXE6=i8qL7=+SsJYnrdEr3kyMKw@mail.gmail.com>
-	<20121127145505.GA14805@redhat.com>
-Date: Tue, 27 Nov 2012 15:20:11 -0800
-Message-ID: <CAGXD9OeokxUx_2WdpkYthyrYc52SCvne=H9vi45p_6ovo6EGpQ@mail.gmail.com>
-Subject: Re: vmalloc_sync_all(), 64bit kernel, patches 9c48f1c629ecfa114850c03f875c6691003214de,
- a79e53d85683c6dd9f99c90511028adc2043031f
-From: Prasad Koya <prasad.koya@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: aarcange@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Nov 2012 18:15:09 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiYGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgkwvIxiBAgOIQL91kHsDi02RDYlrgwQ
+From: Dave Chinner <david@fromorbit.com>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
+Date: Wed, 28 Nov 2012 10:14:27 +1100
+Message-Id: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one of our test cases that test if we are properly entering
-craskkernel, I'm seeing lockup inside sync_global_pgds(). This is with
-2.6.38.8. sync_global_pgds() is called by vmalloc_sync_all(). Here is
-the call chain:
+Hi Glauber,
 
-machine_crash_shutdown -> native_machine_crash_shutdown ->
-nmi_shootdown_cpus -> register_die_notifier -> vmalloc_sync_all. Below
-is the backtrace with 2.6.38 with the issue reproduced.
+Here's a working version of my patchset for generic LRU lists and
+NUMA-aware shrinkers.
 
-There are no virtual machines involved. I'm suspecting if
-sync_global_pgds() is trying to spin on page_table_lock that is taken
-inside handle_pte_fault().
+There are several parts to this patch set. The NUMA aware shrinkers
+are based on having a generic node-based LRU list implementation,
+and there are subsystems that need to be converted to use these
+lists as part of the process. There is also a long overdue change to
+the shrinker API to give it separate object count and object scan
+callbacks, getting rid of the magic and confusing "nr_to_scan = 0"
+semantics.
 
+First of all, the patch set is based on a current 3.7-rc7 tree with
+the current xfs dev tree merged into it [can be found at
+git://oss.sgi.com/xfs/xfs]. That's because there are lots of XFS
+changes in the patch set, and theres no way I'm going to write them
+a second time in a couple of weeks when the current dev tree is
+merged into 3.8-rc1....
 
-ame=SCSI_DISPATCH_CMD cpoint_type=LOOP cpoint_count=1smod /tmp/lkdtm.ko cpoint_n
-/mnt/flash/DELIBERATE KERNEL CRASH
-cat /mnt/usb/text > /dev/null
--bash-4.1# [  142.124878] Call Trace:
-[  142.128009] [<ffffffffa007a14d>] ? lkdtm_do_action+0x12/0x198 [lkdtm]
-cat /mnt/flash/E[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffffa007a438>] ? lkdtm_handler+0x70/0x7e [lkdtm]
-[  142.128009] [<ffffffffa007a44f>] ? jp_scsi_dispatch_cmd+0x9/0x12 [lkdtm]
-[  142.128009] [<ffffffff811d2b52>] ? scsi_request_fn+0x3c1/0x3ed
-[  142.128009] [<ffffffff81073fa0>] ? sync_page+0x0/0x37
-[  142.128009] [<ffffffff81175261>] ? __generic_unplug_device+0x35/0x3a
-[  142.128009] [<ffffffff81175291>] ? generic_unplug_device+0x2b/0x3b
-[  142.128009] [<ffffffff81173221>] ? blk_unplug+0x12/0x14
-[  142.128009] [<ffffffff81173230>] ? blk_backing_dev_unplug+0xd/0xf
-[  142.128009] [<ffffffff810bd6e0>] ? block_sync_page+0x31/0x33
-[  142.128009] [<ffffffff81073fce>] ? sync_page+0x2e/0x37
-[  142.128009] [<ffffffff81347cf1>] ? __wait_on_bit_lock+0x41/0x8a
-[  142.128009] [<ffffffff81073f8c>] ? __lock_page+0x61/0x68
-[  142.128009] [<ffffffff81048a8d>] ? wake_bit_function+0x0/0x2e
-[  142.128009] [<ffffffff810bbe2a>] ? __generic_file_splice_read+0x281/0x448
-[  142.128009] [<ffffffff8102ddf5>] ? load_balance+0xbb/0x5e4
-[  142.128009] [<ffffffff810ba637>] ? spd_release_page+0x0/0x14
-[  142.128009] [<ffffffff810bc038>] ? generic_file_splice_read+0x47/0x73
-[  142.128009] [<ffffffff810ba6ba>] ? do_splice_to+0x6f/0x7c
-[  142.128009] [<ffffffff810ba78b>] ? splice_direct_to_actor+0xc4/0x18f
-[  142.128009] [<ffffffff811cc5d4>] ? lo_direct_splice_actor+0x0/0x12
-[  142.128009] [<ffffffff811cc33a>] ? do_bio_filebacked+0x22f/0x289
-[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffff811cc59a>] ? loop_thread+0x206/0x240
-[  142.128009] [<ffffffff811cc394>] ? loop_thread+0x0/0x240
-[  142.128009] [<ffffffff81048a59>] ? autoremove_wake_function+0x0/0x34
-[  142.128009] [<ffffffff811cc394>] ? loop_thread+0x0/0x240
-[  142.128009] [<ffffffff81048697>] ? kthread+0x7d/0x85
-[  142.128009] [<ffffffff810036d4>] ? kernel_thread_helper+0x4/0x10
-[  142.128009] [<ffffffff8104861a>] ? kthread+0x0/0x85
-[  142.128009] [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
-[  142.128009] lkdtm_do_action: jiffies 4294928414 inirq 0 ininterrupt
-0 preemptcount 1 cpu 0
-ll
-[  142.128009] Kernel panic - not syncing: Watchdog detected hard
-LOCKUP on cpu 0
-[  142.128009] Call Trace:
-[  142.128009]  <NMI>
-[  142.128009] [<ffffffff81346abd>] ? panic+0x83/0x190
-[  142.128009] [<ffffffff81061eb6>] ? watchdog_overflow_callback+0x7b/0xa2
-[  142.128009] [<ffffffff810717b4>] ? __perf_event_overflow+0x139/0x1b3
-[  142.128009] [<ffffffff8106c876>] ? perf_event_update_userpage+0xc5/0xca
-[  142.128009] [<ffffffff810719a8>] ? perf_event_overflow+0x14/0x16
-[  142.128009] [<ffffffff81010f0b>] ? x86_pmu_handle_irq+0xd0/0x10b
-[  142.128009] [<ffffffff8134b0e0>] ? perf_event_nmi_handler+0x58/0xa2
-[  142.128009] [<ffffffff8134c838>] ? notifier_call_chain+0x32/0x5e
-[  142.128009] [<ffffffff8134c89c>] ? __atomic_notifier_call_chain+0x38/0x4a
-[  142.128009] [<ffffffff8134c8bd>] ? atomic_notifier_call_chain+0xf/0x11
-[  142.128009] [<ffffffff8134c8ed>] ? notify_die+0x2e/0x30
-[  142.128009] [<ffffffff8134a7d6>] ? do_nmi+0x67/0x210
-[  142.128009] [<ffffffff8134a2ea>] ? nmi+0x1a/0x20
-[  142.128009] [<ffffffffa007a207>] ? lkdtm_do_action+0xcc/0x198 [lkdtm]
-[  142.128009]  <<EOE>>
-[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffffa007a438>] ? lkdtm_handler+0x70/0x7e [lkdtm]
-[  142.128009] [<ffffffffa007a44f>] ? jp_scsi_dispatch_cmd+0x9/0x12 [lkdtm]
-[  142.128009] [<ffffffff811d2b52>] ? scsi_request_fn+0x3c1/0x3ed
-[  142.128009] [<ffffffff81073fa0>] ? sync_page+0x0/0x37
-[  142.128009] [<ffffffff81175261>] ? __generic_unplug_device+0x35/0x3a
-[  142.128009] [<ffffffff81175291>] ? generic_unplug_device+0x2b/0x3b
-[  142.128009] [<ffffffff81173221>] ? blk_unplug+0x12/0x14
-[  142.128009] [<ffffffff81173230>] ? blk_backing_dev_unplug+0xd/0xf
-[  142.128009] [<ffffffff810bd6e0>] ? block_sync_page+0x31/0x33
-[  142.128009] [<ffffffff81073fce>] ? sync_page+0x2e/0x37
-[  142.128009] [<ffffffff81347cf1>] ? __wait_on_bit_lock+0x41/0x8a
-[  142.128009] [<ffffffff81073f8c>] ? __lock_page+0x61/0x68
-[  142.128009] [<ffffffff81048a8d>] ? wake_bit_function+0x0/0x2e
-[  142.128009] [<ffffffff810bbe2a>] ? __generic_file_splice_read+0x281/0x448
-[  142.128009] [<ffffffff8102ddf5>] ? load_balance+0xbb/0x5e4
-[  142.128009] [<ffffffff810ba637>] ? spd_release_page+0x0/0x14
-[  142.128009] [<ffffffff810bc038>] ? generic_file_splice_read+0x47/0x73
-[  142.128009] [<ffffffff810ba6ba>] ? do_splice_to+0x6f/0x7c
-[  142.128009] [<ffffffff810ba78b>] ? splice_direct_to_actor+0xc4/0x18f
-[  142.128009] [<ffffffff811cc5d4>] ? lo_direct_splice_actor+0x0/0x12
-[  142.128009] [<ffffffff811cc33a>] ? do_bio_filebacked+0x22f/0x289
-[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  142.128009] [<ffffffff811cc59a>] ? loop_thread+0x206/0x240
-[  142.128009] [<ffffffff811cc394>] ? loop_thread+0x0/0x240
-[  142.128009] [<ffffffff81048a59>] ? autoremove_wake_function+0x0/0x34
-[  142.128009] [<ffffffff811cc394>] ? loop_thread+0x0/0x240
-[  142.128009] [<ffffffff81048697>] ? kthread+0x7d/0x85
-[  142.128009] [<ffffffff810036d4>] ? kernel_thread_helper+0x4/0x10
-[  142.128009] [<ffffffff8104861a>] ? kthread+0x0/0x85
-[  142.128009] [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
-[  168.272021] BUG: soft lockup - CPU#1 stuck for 22s! [bash:2779]
-[  168.272143] Stack:
-[  168.272160] Call Trace:
-[  168.272166] [<ffffffff81022c34>] flush_tlb_page+0x78/0xa3
-[  168.272171] [<ffffffff81021ffa>] ptep_set_access_flags+0x22/0x28
-[  168.272176] [<ffffffff81088906>] handle_pte_fault+0x5dd/0xa11
-[  168.272181] [<ffffffff81089f82>] handle_mm_fault+0x134/0x14a
-[  168.272186] [<ffffffff8134c689>] do_page_fault+0x449/0x46e
-[  168.272192] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  168.272196] [<ffffffff8134c740>] ? sub_preempt_count+0x92/0xa6
-[  168.272200] [<ffffffff813499d0>] ? _raw_spin_unlock+0x13/0x2e
-[  168.272205] [<ffffffff81099575>] ? fd_install+0x54/0x5d
-[  168.272209] [<ffffffff810a2515>] ? do_pipe_flags+0x8a/0xc7
-[  168.272214] [<ffffffff8134a08f>] page_fault+0x1f/0x30
-[  168.272217] Code: 85 c0 49 89 84 24 78 2a 6f 81 74 21 48 8b 05 32
-bd 63 00 41 8d b7 f0 00 00 00 4c 89 f7 ff 90 e0 00 00 00 eb 02 f3 90
-41 f6 06 03 <75> f8 4c 89 ef 49 c7 84 24 40 2a 6f 81 00 00 00 00 49 c7
-84 24
-[  168.272300] Kernel panic - not syncing: softlockup: hung tasks
-[  168.272306] Call Trace:
-[  168.272308]  <IRQ>
-[  168.272313] [<ffffffff81346abd>] ? panic+0x83/0x190
-[  168.272318] [<ffffffff81005f0d>] ? show_trace_log_lvl+0x44/0x4b
-[  168.272323] [<ffffffff81061c8f>] ? watchdog_timer_fn+0x139/0x15d
-[  168.272326] [<ffffffff81061b56>] ? watchdog_timer_fn+0x0/0x15d
-[  168.272332] [<ffffffff8104b7ba>] ? __run_hrtimer+0x52/0xb4
-[  168.272336] [<ffffffff8104ba51>] ? hrtimer_interrupt+0xc9/0x1c5
-[  168.272342] [<ffffffff81017fb5>] ? smp_apic_timer_interrupt+0x82/0x95
-[  168.272346] [<ffffffff81003293>] ? apic_timer_interrupt+0x13/0x20
-[  168.272348]  <EOI>
-[  168.272353] [<ffffffff81022a86>] ? flush_tlb_others_ipi+0xad/0xde
-[  168.272357] [<ffffffff81022a7e>] ? flush_tlb_others_ipi+0xa5/0xde
-[  168.272362] [<ffffffff81022c34>] ? flush_tlb_page+0x78/0xa3
-[  168.272366] [<ffffffff81021ffa>] ? ptep_set_access_flags+0x22/0x28
-[  168.272370] [<ffffffff81088906>] ? handle_pte_fault+0x5dd/0xa11
-[  168.272374] [<ffffffff81089f82>] ? handle_mm_fault+0x134/0x14a
-[  168.272379] [<ffffffff8134c689>] ? do_page_fault+0x449/0x46e
-[  168.272383] [<ffffffff8102b74b>] ? get_parent_ip+0x11/0x41
-[  168.272387] [<ffffffff8134c740>] ? sub_preempt_count+0x92/0xa6
-[  168.272391] [<ffffffff813499d0>] ? _raw_spin_unlock+0x13/0x2e
-[  168.272394] [<ffffffff81099575>] ? fd_install+0x54/0x5d
-[  168.272398] [<ffffffff810a2515>] ? do_pipe_flags+0x8a/0xc7
-[  168.272402] [<ffffffff8134a08f>] ? page_fault+0x1f/0x30
-[  168.276002] Rebooting in 60 seconds..
+So, where's what the patches do:
 
+[PATCH 01/19] dcache: convert dentry_stat.nr_unused to per-cpu
+[PATCH 02/19] dentry: move to per-sb LRU locks
+[PATCH 03/19] dcache: remove dentries from LRU before putting on
 
-I'm definitely seeing above lockup with 2.6.38.8. In 3.2 and up kernel
-nmi_shootdown_cpus() replaced register_die_notifier() with
-register_nmi_handler() which doesn't call vmalloc_sync_all. If I patch
-my 2.6.38.8 so it behaves as 3.2 in this regard ie., skip
-vmalloc_sync_all, I don't see any issue.
+These three patches are preparation of the dcache for moving to the
+generic LRU list API. it basically gets rid of the global dentry LRU
+lock, and in doing so has to avoid several creative abuses of the
+lru list detection to allow dentries on shrink lists to be still
+magically be on the LRU list. The main change here is that now
+dentries on the shrink lists *must* have the DCACHE_SHRINK_LIST flag
+set and be entirely removed from the LRU before being disposed of.
 
-So my question is, is it safe to bypass calling vmalloc_sync_all() as
-part of setting up NMI handler? Maybe with a patch like below:
+This is probably a good cleanup to do regardless of the rest of the
+patch set because it removes a couple of landmines in
+shrink_dentry_list() that took me a while to work out...
 
---- linux-2.6.38.orig/kernel/notifier.c
-+++ linux-2.6.38/kernel/notifier.c
-@@ -574,7 +574,8 @@ int notrace __kprobes notify_die(enum di
+[PATCH 04/19] mm: new shrinker API
+[PATCH 05/19] shrinker: convert superblock shrinkers to new API
 
- int register_die_notifier(struct notifier_block *nb)
- {
--       vmalloc_sync_all();
-+       if (!oops_in_progress)
-+               vmalloc_sync_all();
-        return atomic_notifier_chain_register(&die_chain, nb);
- }
- EXPORT_SYMBOL_GPL(register_die_notifier);
+These introduce the count/scan shrinker API, and for testing
+purposes convert the superblock shrinker to use it before any other
+changes are made. This gives a clean separation of counting the
+number of objects in a cache for pressure calculations, and the act
+of scanning objects in an attempt to free memory. Indeed, the
+scan_objects() callback now returns the number of objects freed by
+the scan instead of having to try to work out whether any progress
+was made by comparing absolute counts.
 
-thank you.
+This is also more efficient as we don't have to count all the
+objects in a cache on every scan pass. It is now done once per
+shrink_slab() invocation to calculate how much to scan, and we get
+direct feedback on how much gets reclaimed in that pass. i.e. we get
+reliable, accurate feedback on shrinker progress.
 
-On Tue, Nov 27, 2012 at 6:55 AM, Don Zickus <dzickus@redhat.com> wrote:
-> On Mon, Nov 26, 2012 at 03:06:53PM -0800, Prasad Koya wrote:
->> Hi
->>
->> Before going into crashkernel, nmi_shootdown_cpus() calls
->> register_die_notifier(), which calls vmalloc_sync_all(). I'm seeing
->> lockup in sync_global_pgds() (init_64.c). From 3.2 and up,
->> register_die_notifier() is replaced with register_nmi_handler() (patch
->> 9c48f1c629ecfa114850c03f875c6691003214de), which doesn't call
->> vmalloc_sync_all(). Is it ok to skip vmalloc_sync_all() in this path?
->> I see sync_global_pgds() was touched by this patch:
->> a79e53d85683c6dd9f99c90511028adc2043031f. There are no virtual
->> machines involved and I see lockups at times.
->
-> What problems are you seeing?  What are you trying to solve?
->
-> Cheers,
-> Don
->
->>
->> thank you.
->> Prasad
->>
->> /* Halt all other CPUs, calling the specified function on each of them
->>   *
->>   * This function can be used to halt all other CPUs on crash
->> @@ -794,7 +784,8 @@ void nmi_shootdown_cpus(nmi_shootdown_cb callback)
->>
->>         atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
->>         /* Would it be better to replace the trap vector here? */
->> -       if (register_die_notifier(&crash_nmi_nb))
->> +       if (register_nmi_handler(NMI_LOCAL, crash_nmi_callback,
->> +                                NMI_FLAG_FIRST, "crash"))
->>                 return;         /* return what? */
+[PATCH 06/19] list: add a new LRU list type
+[PATCH 07/19] inode: convert inode lru list to generic lru list
+[PATCH 08/19] dcache: convert to use new lru list infrastructure
+
+These add the generic LRU list API and infrastructure and convert
+the inode and dentry caches to use it. This is still just a single
+global list per LRU at this point, so it's really only changing the
+where the LRU implemenation is rather than the fundamental
+algorithm. It does, however, introduce a new method of walking the
+LRU lists and building the dispose list of items for shrinkers, but
+because we are still dealing with a global list the algorithmic
+changes are minimal.
+
+[PATCH 09/19] list_lru: per-node list infrastructure
+
+This makes the generic LRU list much more scalable by changing it to
+a {list,lock,count} tuple per node. There are no external API
+changes to this changeover, so is transparent to current users.
+
+[PATCH 10/19] shrinker: add node awareness
+[PATCH 11/19] fs: convert inode and dentry shrinking to be node
+
+Adds a nodemask to the struct shrink_control for callers of
+shrink_slab to set appropriately for their reclaim context. This
+nodemask is then passed by the inode and dentry cache reclaim code
+to the generic LRU list code to implement node aware shrinking.
+
+What this doesn't do is convert the internal shrink_slab() algorithm
+to be node aware. I'm not sure what the best approach is here, but
+it strikes me that it should really be calculating and keeping track
+of scan counts and pressure on a per-node basis. The current code
+seems to work OK at the moment, though.
+
+[PATCH 12/19] xfs: convert buftarg LRU to generic code
+[PATCH 13/19] xfs: Node aware direct inode reclaim
+[PATCH 14/19] xfs: use generic AG walk for background inode reclaim
+[PATCH 15/19] xfs: convert dquot cache lru to list_lru
+
+These patches convert all the XFS LRUs and shrinkers to be node
+aware. This gets rid of a lot of hairy, special case code in the
+inode cache shrinker for avoiding concurrent shrinker contention and
+to throttle direct reclaim to prevent premature OOM conditions.
+Removing this code greatly simplifies inode cache reclaim whilst
+reducing overhead and improving performance. In all, it converts
+three separate caches and shrinkers to use the generic LRU lists and
+pass nodemasks around appropriately.
+
+This is how I've really tested the code - lots of interesting
+filesystem workloads that generate simultaneous slab and page cache
+pressure on VM's with and without fake_numa configs....
+
+[PATCH 16/19] fs: convert fs shrinkers to new scan/count API
+[PATCH 17/19] drivers: convert shrinkers to new count/scan API
+[PATCH 18/19] shrinker: convert remaining shrinkers to count/scan
+[PATCH 19/19] shrinker: Kill old ->shrink API.
+
+These last three patches convert all the other shrinker
+implementations to the new count/scan API.  The fs, android and dm
+shrinkers are pretty well behaved and are implemented as is expected
+for there intended purposes. The driver and staging code, however,
+is basically a bunch of hacks to try to do something resembling
+reclaim when a shrinker tells it there is memory pressure. Looking
+at all the driver and staging code is not an exercise I recommend if
+you value your eyes and/or your sanity.
+
+I haven't even tried to compile this on a CONFIG_SMP=n
+configuration, nor have I done extensive allmod style build tests
+and it's only been built and tested on x86-64. That said, apart from
+CONFIG_SMP=n, I don't see there being any major problems here.
+
+There's still a bunch of cleanup work needed. e.g. the LRU list
+walk/isolation code needs to use enums for the isolate callback
+return code, there needs to be a generic list_lru_for_each() style
+function for walking all the objects in the cache (which will allow
+the list_lru structures to be used for things like the per-sb inode
+list). Indeed, even the name "list_lru" is probably something that
+should be changed - I think the list has become more of a general
+per-node list than it's initial functionality as a scalable LRU list
+implementation and I can see uses for it outside of LRUs...
+
+Comments, thoughts and flames all welcome.
+
+Cheers,
+
+Dave.
+
