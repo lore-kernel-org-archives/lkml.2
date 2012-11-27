@@ -1,170 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab2K0Ts3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 14:48:29 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35168 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab2K0Ts1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 14:48:27 -0500
-Date: Tue, 27 Nov 2012 14:48:13 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [PATCH -mm] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121127194813.GP24381@cmpxchg.org>
-References: <20121122233434.3D5E35E6@pobox.sk>
- <20121123074023.GA24698@dhcp22.suse.cz>
- <20121123102137.10D6D653@pobox.sk>
- <20121123100438.GF24698@dhcp22.suse.cz>
- <20121125011047.7477BB5E@pobox.sk>
- <20121125120524.GB10623@dhcp22.suse.cz>
- <20121125135542.GE10623@dhcp22.suse.cz>
- <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <50B403CA.501@jp.fujitsu.com>
+	id S1755729Ab2K0Txh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 14:53:37 -0500
+Received: from smtp111.dfw.emailsrvr.com ([67.192.241.111]:50366 "EHLO
+	smtp111.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab2K0Txf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 14:53:35 -0500
+Message-ID: <50B51A41.8030006@calxeda.com>
+Date: Tue, 27 Nov 2012 13:53:37 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B403CA.501@jp.fujitsu.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 4/6 v5] arm highbank: add support for pl320 IPC
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-5-git-send-email-mark.langsdorf@calxeda.com> <20121127171250.3984e990@skate>
+In-Reply-To: <20121127171250.3984e990@skate>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 09:05:30AM +0900, Kamezawa Hiroyuki wrote:
-> (2012/11/26 22:18), Michal Hocko wrote:
-> >[CCing also Johannes - the thread started here:
-> >https://lkml.org/lkml/2012/11/21/497]
-> >
-> >On Mon 26-11-12 01:38:55, azurIt wrote:
-> >>>This is hackish but it should help you in this case. Kamezawa, what do
-> >>>you think about that? Should we generalize this and prepare something
-> >>>like mem_cgroup_cache_charge_locked which would add __GFP_NORETRY
-> >>>automatically and use the function whenever we are in a locked context?
-> >>>To be honest I do not like this very much but nothing more sensible
-> >>>(without touching non-memcg paths) comes to my mind.
-> >>
-> >>
-> >>I installed kernel with this patch, will report back if problem occurs
-> >>again OR in few weeks if everything will be ok. Thank you!
-> >
-> >Now that I am looking at the patch closer it will not work because it
-> >depends on other patch which is not merged yet and even that one would
-> >help on its own because __GFP_NORETRY doesn't break the charge loop.
-> >Sorry I have missed that...
-> >
-> >The patch bellow should help though. (it is based on top of the current
-> >-mm tree but I will send a backport to 3.2 in the reply as well)
-> >---
-> > From 7796f942d62081ad45726efd90b5292b80e7c690 Mon Sep 17 00:00:00 2001
-> >From: Michal Hocko <mhocko@suse.cz>
-> >Date: Mon, 26 Nov 2012 11:47:57 +0100
-> >Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
-> >
-> >memcg oom killer might deadlock if the process which falls down to
-> >mem_cgroup_handle_oom holds a lock which prevents other task to
-> >terminate because it is blocked on the very same lock.
-> >This can happen when a write system call needs to allocate a page but
-> >the allocation hits the memcg hard limit and there is nothing to reclaim
-> >(e.g. there is no swap or swap limit is hit as well and all cache pages
-> >have been reclaimed already) and the process selected by memcg OOM
-> >killer is blocked on i_mutex on the same inode (e.g. truncate it).
-> >
-> >Process A
-> >[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
-> >[<ffffffff81121c90>] do_last+0x250/0xa30
-> >[<ffffffff81122547>] path_openat+0xd7/0x440
-> >[<ffffffff811229c9>] do_filp_open+0x49/0xa0
-> >[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
-> >[<ffffffff8110f950>] sys_open+0x20/0x30
-> >[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-> >[<ffffffffffffffff>] 0xffffffffffffffff
-> >
-> >Process B
-> >[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-> >[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
-> >[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
-> >[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
-> >[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
-> >[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
-> >[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
-> >[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
-> >[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
-> >[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
-> >[<ffffffff8111156a>] do_sync_write+0xea/0x130
-> >[<ffffffff81112183>] vfs_write+0xf3/0x1f0
-> >[<ffffffff81112381>] sys_write+0x51/0x90
-> >[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-> >[<ffffffffffffffff>] 0xffffffffffffffff
-> >
-> >This is not a hard deadlock though because administrator can still
-> >intervene and increase the limit on the group which helps the writer to
-> >finish the allocation and release the lock.
-> >
-> >This patch heals the problem by forbidding OOM from page cache charges
-> >(namely add_ro_page_cache_locked). mem_cgroup_cache_charge_no_oom helper
-> >function is defined which adds GFP_MEMCG_NO_OOM to the gfp mask which
-> >then tells mem_cgroup_charge_common that OOM is not allowed for the
-> >charge. No OOM from this path, except for fixing the bug, also make some
-> >sense as we really do not want to cause an OOM because of a page cache
-> >usage.
-> >As a possibly visible result add_to_page_cache_lru might fail more often
-> >with ENOMEM but this is to be expected if the limit is set and it is
-> >preferable than OOM killer IMO.
-> >
-> >__GFP_NORETRY is abused for this memcg specific flag because it has been
-> >used to prevent from OOM already (since not-merged-yet "memcg: reclaim
-> >when more than one page needed"). The only difference is that the flag
-> >doesn't prevent from reclaim anymore which kind of makes sense because
-> >the global memory allocator triggers reclaim as well. The retry without
-> >any reclaim on __GFP_NORETRY doesn't make much sense anyway because this
-> >is effectively a busy loop with allowed OOM in this path.
-> >
-> >Reported-by: azurIt <azurit@pobox.sk>
-> >Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On 11/27/2012 10:12 AM, Thomas Petazzoni wrote:
+> Dear Mark Langsdorf,
 > 
-> As a short term fix, I think this patch will work enough and seems simple enough.
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> On Tue, 27 Nov 2012 09:04:32 -0600, Mark Langsdorf wrote:
+> 
+>> +int ipc_transmit(u32 *data);
+> 
+> ipc_transmit() looks to me like a way to generic name to be exposed to
+> the entire kernel.
 
-Yes, let's do this for now.
+Good point. Changed to pl320_ipc_transmit()
 
-> >diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> >index 10e667f..aac9b21 100644
-> >--- a/include/linux/gfp.h
-> >+++ b/include/linux/gfp.h
-> >@@ -152,6 +152,9 @@ struct vm_area_struct;
-> >  /* 4GB DMA on some platforms */
-> >  #define GFP_DMA32	__GFP_DMA32
-> >
-> >+/* memcg oom killer is not allowed */
-> >+#define GFP_MEMCG_NO_OOM	__GFP_NORETRY
+>> +extern int pl320_ipc_register_notifier(struct notifier_block *nb);
+>> +extern int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+> 
+> Why some "extern" here? You don't have these for the other functions in
+> this header file.
 
-Could we leave this within memcg, please?  An extra flag to
-mem_cgroup_cache_charge() or the like.  GFP flags are about
-controlling the page allocator, this seems abusive.  We have an oom
-flag down in try_charge, maybe just propagate this up the stack?
+Nice catch. Fixed to export them in cpufreq.
 
-> >diff --git a/mm/filemap.c b/mm/filemap.c
-> >index 83efee7..ef14351 100644
-> >--- a/mm/filemap.c
-> >+++ b/mm/filemap.c
-> >@@ -447,7 +447,13 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
-> >  	VM_BUG_ON(!PageLocked(page));
-> >  	VM_BUG_ON(PageSwapBacked(page));
-> >
-> >-	error = mem_cgroup_cache_charge(page, current->mm,
-> >+	/*
-> >+	 * Cannot trigger OOM even if gfp_mask would allow that normally
-> >+	 * because we might be called from a locked context and that
-> >+	 * could lead to deadlocks if the killed process is waiting for
-> >+	 * the same lock.
-> >+	 */
-> >+	error = mem_cgroup_cache_charge_no_oom(page, current->mm,
-> >  					gfp_mask & GFP_RECLAIM_MASK);
-> >  	if (error)
-> >  		goto out;
+--Mark Langsdorf
+Calxeda, Inc.
 
-Shmem does not use this function but also charges under the i_mutex in
-the write path and fallocate at least.
