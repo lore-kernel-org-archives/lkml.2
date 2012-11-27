@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab2K0KLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:11:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33159 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933396Ab2K0KKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:10:22 -0500
+	id S933482Ab2K0KLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:11:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55513 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933336Ab2K0KKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 05:10:21 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Thierry Reding <thierry.reding@avionic-design.de>
 CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
@@ -15,9 +16,9 @@ CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
         <linux-doc@vger.kernel.org>
-Subject: [PATCH v4 2/3] pwm: New driver to support PWM driven LEDs on TWL4030/6030 series of PMICs
-Date: Tue, 27 Nov 2012 11:09:58 +0100
-Message-ID: <1354010999-31371-3-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v4 1/3] pwm: New driver to support PWMs on TWL4030/6030 series of PMICs
+Date: Tue, 27 Nov 2012 11:09:57 +0100
+Message-ID: <1354010999-31371-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1354010999-31371-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1354010999-31371-1-git-send-email-peter.ujfalusi@ti.com>
@@ -27,91 +28,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver supports the following LED outputs as generic PWM driver:
-TWL4030 LEDA and LEDB (PWMA and PWMB)
-TWL6030 Charging indicator LED (PWM LED)
+The driver supports the following PWM outputs:
+TWL4030 PWM0 and PWM1
+TWL6030 PWM1 and PWM2
 
-On TWL6030 when the PWM requested LED is configured to be controlled by SW.
-In this case the user can enable/disable and set the duty period freely.
-When the PWM has been freed, the LED driver is put back to HW control.
+On TWL4030 the PWM signals are muxed. Upon requesting the PWM the driver
+will select the correct mux so the PWM can be used. When the PWM has been
+freed the original configuration is going to be restored.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- .../devicetree/bindings/pwm/ti,twl-pwmled.txt      |  17 +
+ .../devicetree/bindings/pwm/ti,twl-pwm.txt         |  17 +
  drivers/pwm/Kconfig                                |   9 +
  drivers/pwm/Makefile                               |   1 +
- drivers/pwm/pwm-twl-led.c                          | 342 +++++++++++++++++++++
- 4 files changed, 369 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
- create mode 100644 drivers/pwm/pwm-twl-led.c
+ drivers/pwm/pwm-twl.c                              | 357 +++++++++++++++++++++
+ 4 files changed, 384 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
+ create mode 100644 drivers/pwm/pwm-twl.c
 
-diff --git a/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt b/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
+diff --git a/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt b/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
 new file mode 100644
-index 0000000..cb64f3a
+index 0000000..2943ee5
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
++++ b/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
 @@ -0,0 +1,17 @@
-+Texas Instruments TWL series PWM drivers connected to LED terminals
++Texas Instruments TWL series PWM drivers
 +
 +Supported PWMs:
-+On TWL4030 series: PWMA and PWMB (connected to LEDA and LEDB terminals)
-+On TWL6030 series: LED PWM (mainly used as charging indicator LED)
++On TWL4030 series: PWM1 and PWM2
++On TWL6030 series: PWM0 and PWM1
 +
 +Required properties:
-+- compatible: "ti,twl4030-pwmled" or "ti,twl6030-pwmled"
++- compatible: "ti,twl4030-pwm" or "ti,twl6030-pwm"
 +- #pwm-cells: should be 2.  The first cell specifies the per-chip index
 +  of the PWM to use and the second cell is the period in nanoseconds.
 +
 +Example:
 +
-+twl_pwmled: pwmled {
-+	compatible = "ti,twl6030-pwmled";
++twl_pwm: pwm {
++	compatible = "ti,twl6030-pwm";
 +	#pwm-cells = <2>;
 +};
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 8ed64dd..aa89354 100644
+index ed81720..8ed64dd 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
-@@ -160,6 +160,15 @@ config PWM_TWL
+@@ -151,6 +151,15 @@ config PWM_TWL6030
  	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-twl.
+ 	  will be called pwm-twl6030.
  
-+config PWM_TWL_LED
-+	tristate "TWL4030/6030 PWM support for LED drivers"
++config PWM_TWL
++	tristate "TWL4030/6030 PWM support"
 +	depends on TWL4030_CORE
 +	help
-+	  Generic PWM framework driver for TWL4030/6030 LED terminals.
++	  Generic PWM framework driver for TWL4030/6030.
 +
 +	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-twl-led.
++	  will be called pwm-twl.
 +
  config PWM_VT8500
  	tristate "vt8500 pwm support"
  	depends on ARCH_VT8500
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 49fabfa..82a92c7 100644
+index acfe482..49fabfa 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
-@@ -13,4 +13,5 @@ obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
+@@ -12,4 +12,5 @@ obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
+ obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
  obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
  obj-$(CONFIG_PWM_TWL6030)	+= pwm-twl6030.o
- obj-$(CONFIG_PWM_TWL)		+= pwm-twl.o
-+obj-$(CONFIG_PWM_TWL_LED)	+= pwm-twl-led.o
++obj-$(CONFIG_PWM_TWL)		+= pwm-twl.o
  obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-twl-led.c b/drivers/pwm/pwm-twl-led.c
+diff --git a/drivers/pwm/pwm-twl.c b/drivers/pwm/pwm-twl.c
 new file mode 100644
-index 0000000..c8fb47f
+index 0000000..3274177
 --- /dev/null
-+++ b/drivers/pwm/pwm-twl-led.c
-@@ -0,0 +1,342 @@
++++ b/drivers/pwm/pwm-twl.c
+@@ -0,0 +1,357 @@
 +/*
-+ * Driver for TWL4030/6030 Pulse Width Modulator used as LED driver
++ * Driver for TWL4030/6030 Generic Pulse Width Modulator
 + *
 + * Copyright (C) 2012 Texas Instruments
 + * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
-+ *
-+ * This driver is a complete rewrite of the former pwm-twl6030.c authorded by:
-+ * Hemanth V <hemanthv@ti.com>
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms of the GNU General Public License version 2 as published by
@@ -133,48 +131,53 @@ index 0000000..c8fb47f
 +#include <linux/slab.h>
 +
 +/*
-+ * This driver handles the PWM driven LED terminals of TWL4030 and TWL6030.
-+ * To generate the signal on TWL4030:
-+ *  - LEDA uses PWMA
-+ *  - LEDB uses PWMB
-+ * TWL6030 has one LED pin with dedicated LEDPWM
++ * This driver handles the PWMs of TWL4030 and TWL6030.
++ * The TRM names for the PWMs on TWL4030 are: PWM0, PWM1
++ * TWL6030 also have two PWMs named in the TRM as PWM1, PWM2
 + */
 +
-+#define TWL4030_LED_MAX		0x7f
-+#define TWL6030_LED_MAX		0xff
++#define TWL_PWM_MAX		0x7f
 +
 +/* Registers, bits and macro for TWL4030 */
-+#define TWL4030_LEDEN_REG	0x00
-+#define TWL4030_PWMA_REG	0x01
++#define TWL4030_GPBR1_REG	0x0c
++#define TWL4030_PMBR1_REG	0x0d
 +
-+#define TWL4030_LEDXON		(1 << 0)
-+#define TWL4030_LEDXPWM		(1 << 4)
-+#define TWL4030_LED_PINS	(TWL4030_LEDXON | TWL4030_LEDXPWM)
-+#define TWL4030_LED_TOGGLE(led, x)	((x) << (led))
++/* GPBR1 register bits */
++#define TWL4030_PWMXCLK_ENABLE	(1 << 0)
++#define TWL4030_PWMX_ENABLE	(1 << 2)
++#define TWL4030_PWMX_BITS	(TWL4030_PWMX_ENABLE | TWL4030_PWMXCLK_ENABLE)
++#define TWL4030_PWM_TOGGLE(pwm, x)	((x) << (pwm))
++
++/* PMBR1 register bits */
++#define TWL4030_GPIO6_PWM0_MUTE_MASK		(0x03 << 2)
++#define TWL4030_GPIO6_PWM0_MUTE_PWM0		(0x01 << 2)
++#define TWL4030_GPIO7_VIBRASYNC_PWM1_MASK	(0x03 << 4)
++#define TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1	(0x03 << 4)
 +
 +/* Register, bits and macro for TWL6030 */
-+#define TWL6030_LED_PWM_CTRL1	0xf4
-+#define TWL6030_LED_PWM_CTRL2	0xf5
++#define TWL6030_TOGGLE3_REG	0x92
 +
-+#define TWL6040_LED_MODE_HW	0x00
-+#define TWL6040_LED_MODE_ON	0x01
-+#define TWL6040_LED_MODE_OFF	0x02
-+#define TWL6040_LED_MODE_MASK	0x03
++#define TWL6030_PWMXR		(1 << 0)
++#define TWL6030_PWMXS		(1 << 1)
++#define TWL6030_PWMXEN		(1 << 2)
++#define TWL6030_PWM_TOGGLE(pwm, x)	((x) << (pwm * 3))
 +
-+struct twl_pwmled_chip {
++struct twl_pwm_chip {
 +	struct pwm_chip chip;
 +	struct mutex mutex;
++	u8 twl6030_toggle3;
++	u8 twl4030_pwm_mux;
 +};
 +
-+static inline struct twl_pwmled_chip *to_twl(struct pwm_chip *chip)
++static inline struct twl_pwm_chip *to_twl(struct pwm_chip *chip)
 +{
-+	return container_of(chip, struct twl_pwmled_chip, chip);
++	return container_of(chip, struct twl_pwm_chip, chip);
 +}
 +
-+static int twl4030_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
++static int twl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 +			      int duty_ns, int period_ns)
 +{
-+	int duty_cycle = DIV_ROUND_UP(duty_ns * TWL4030_LED_MAX, period_ns) + 1;
++	int duty_cycle = DIV_ROUND_UP(duty_ns * TWL_PWM_MAX, period_ns) + 1;
 +	u8 pwm_config[2] = {1, 0};
 +	int base, ret;
 +
@@ -191,36 +194,42 @@ index 0000000..c8fb47f
 +	 */
 +	if (duty_cycle == 1)
 +		duty_cycle = 2;
-+	else if (duty_cycle > TWL4030_LED_MAX)
++	else if (duty_cycle > TWL_PWM_MAX)
 +		duty_cycle = 1;
 +
-+	base = pwm->hwpwm * 2 + TWL4030_PWMA_REG;
++	base = pwm->hwpwm * 3;
 +
 +	pwm_config[1] = duty_cycle;
 +
-+	ret = twl_i2c_write(TWL4030_MODULE_LED, pwm_config, base, 2);
++	ret = twl_i2c_write(TWL_MODULE_PWM, pwm_config, base, 2);
 +	if (ret < 0)
 +		dev_err(chip->dev, "%s: Failed to configure PWM\n", pwm->label);
 +
 +	return ret;
 +}
 +
-+static int twl4030_pwmled_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
++	struct twl_pwm_chip *twl = to_twl(chip);
 +	int ret;
 +	u8 val;
 +
 +	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_LED, &val, TWL4030_LEDEN_REG);
++	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
 +	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read LEDEN\n", pwm->label);
++		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
 +		goto out;
 +	}
 +
-+	val |= TWL4030_LED_TOGGLE(pwm->hwpwm, TWL4030_LED_PINS);
++	val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
 +
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_LED, val, TWL4030_LEDEN_REG);
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
++
++	val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
++
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
 +	if (ret < 0)
 +		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
 +
@@ -229,23 +238,28 @@ index 0000000..c8fb47f
 +	return ret;
 +}
 +
-+static void twl4030_pwmled_disable(struct pwm_chip *chip,
-+				   struct pwm_device *pwm)
++static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
++	struct twl_pwm_chip *twl = to_twl(chip);
 +	int ret;
 +	u8 val;
 +
 +	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_LED, &val, TWL4030_LEDEN_REG);
++	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
 +	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read LEDEN\n", pwm->label);
++		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
 +		goto out;
 +	}
 +
-+	val &= ~TWL4030_LED_TOGGLE(pwm->hwpwm, TWL4030_LED_PINS);
++	val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
 +
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_LED, val, TWL4030_LEDEN_REG);
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
++
++	val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
++
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
 +	if (ret < 0)
 +		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
 +
@@ -253,93 +267,36 @@ index 0000000..c8fb47f
 +	mutex_unlock(&twl->mutex);
 +}
 +
-+static int twl6030_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      int duty_ns, int period_ns)
++static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	int duty_cycle = (duty_ns * TWL6030_LED_MAX) / period_ns;
-+	u8 on_time;
++	struct twl_pwm_chip *twl = to_twl(chip);
 +	int ret;
++	u8 val, mask, bits;
 +
-+	on_time = duty_cycle & 0xff;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, on_time,
-+			       TWL6030_LED_PWM_CTRL1);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to configure PWM\n", pwm->label);
-+
-+	return ret;
-+}
-+
-+static int twl6030_pwmled_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
-+	int ret;
-+	u8 val;
++	if (pwm->hwpwm == 1) {
++		mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
++		bits = TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
++	} else {
++		mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
++		bits = TWL4030_GPIO6_PWM0_MUTE_PWM0;
++	}
 +
 +	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, TWL6030_LED_PWM_CTRL2);
++	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
 +	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PWM_CTRL2\n",
-+			pwm->label);
++		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
 +		goto out;
 +	}
 +
-+	val &= ~TWL6040_LED_MODE_MASK;
-+	val |= TWL6040_LED_MODE_ON;
++	/* Save the current MUX configuration for the PWM */
++	twl->twl4030_pwm_mux &= ~mask;
++	twl->twl4030_pwm_mux |= (val & mask);
 +
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_LED_PWM_CTRL2);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
++	/* Select PWM functionality */
++	val &= ~mask;
++	val |= bits;
 +
-+out:
-+	mutex_unlock(&twl->mutex);
-+	return ret;
-+}
-+
-+static void twl6030_pwmled_disable(struct pwm_chip *chip,
-+				   struct pwm_device *pwm)
-+{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
-+	int ret;
-+	u8 val;
-+
-+	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, TWL6030_LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PWM_CTRL2\n",
-+			pwm->label);
-+		goto out;
-+	}
-+
-+	val &= ~TWL6040_LED_MODE_MASK;
-+	val |= TWL6040_LED_MODE_OFF;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_LED_PWM_CTRL2);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-+
-+out:
-+	mutex_unlock(&twl->mutex);
-+}
-+
-+static int twl6030_pwmled_request(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
-+	int ret;
-+	u8 val;
-+
-+	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, TWL6030_LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PWM_CTRL2\n",
-+			pwm->label);
-+		goto out;
-+	}
-+
-+	val &= ~TWL6040_LED_MODE_MASK;
-+	val |= TWL6040_LED_MODE_OFF;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_LED_PWM_CTRL2);
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
 +	if (ret < 0)
 +		dev_err(chip->dev, "%s: Failed to request PWM\n", pwm->label);
 +
@@ -348,24 +305,30 @@ index 0000000..c8fb47f
 +	return ret;
 +}
 +
-+static void twl6030_pwmled_free(struct pwm_chip *chip, struct pwm_device *pwm)
++static void twl4030_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct twl_pwmled_chip *twl = to_twl(chip);
++	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
++						chip);
 +	int ret;
-+	u8 val;
++	u8 val, mask;
++
++	if (pwm->hwpwm == 1)
++		mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
++	else
++		mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
 +
 +	mutex_lock(&twl->mutex);
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, TWL6030_LED_PWM_CTRL2);
++	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
 +	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PWM_CTRL2\n",
-+			pwm->label);
++		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
 +		goto out;
 +	}
 +
-+	val &= ~TWL6040_LED_MODE_MASK;
-+	val |= TWL6040_LED_MODE_HW;
++	/* Restore the MUX configuration for the PWM */
++	val &= ~mask;
++	val |= (twl->twl4030_pwm_mux & mask);
 +
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_LED_PWM_CTRL2);
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
 +	if (ret < 0)
 +		dev_err(chip->dev, "%s: Failed to free PWM\n", pwm->label);
 +
@@ -373,39 +336,92 @@ index 0000000..c8fb47f
 +	mutex_unlock(&twl->mutex);
 +}
 +
-+static const struct pwm_ops twl4030_pwmled_ops = {
-+	.enable = twl4030_pwmled_enable,
-+	.disable = twl4030_pwmled_disable,
-+	.config = twl4030_pwmled_config,
-+};
-+
-+static const struct pwm_ops twl6030_pwmled_ops = {
-+	.enable = twl6030_pwmled_enable,
-+	.disable = twl6030_pwmled_disable,
-+	.config = twl6030_pwmled_config,
-+	.request = twl6030_pwmled_request,
-+	.free = twl6030_pwmled_free,
-+};
-+
-+static int twl_pwmled_probe(struct platform_device *pdev)
++static int twl6030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct twl_pwmled_chip *twl;
++	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
++						chip);
++	int ret;
++	u8 val;
++
++	mutex_lock(&twl->mutex);
++	val = twl->twl6030_toggle3;
++	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
++	val &= ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
++
++	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
++	if (ret < 0) {
++		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
++		goto out;
++	}
++
++	twl->twl6030_toggle3 = val;
++out:
++	mutex_unlock(&twl->mutex);
++	return 0;
++}
++
++static void twl6030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
++						chip);
++	int ret;
++	u8 val;
++
++	mutex_lock(&twl->mutex);
++	val = twl->twl6030_toggle3;
++	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
++	val &= ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
++
++	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
++	if (ret < 0) {
++		dev_err(chip->dev, "%s: Failed to read TOGGLE3\n", pwm->label);
++		goto out;
++	}
++
++	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
++
++	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
++	if (ret < 0) {
++		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
++		goto out;
++	}
++
++	twl->twl6030_toggle3 = val;
++out:
++	mutex_unlock(&twl->mutex);
++}
++
++static const struct pwm_ops twl4030_pwm_ops = {
++	.config = twl_pwm_config,
++	.enable = twl4030_pwm_enable,
++	.disable = twl4030_pwm_disable,
++	.request = twl4030_pwm_request,
++	.free = twl4030_pwm_free,
++};
++
++static const struct pwm_ops twl6030_pwm_ops = {
++	.config = twl_pwm_config,
++	.enable = twl6030_pwm_enable,
++	.disable = twl6030_pwm_disable,
++};
++
++static int twl_pwm_probe(struct platform_device *pdev)
++{
++	struct twl_pwm_chip *twl;
 +	int ret;
 +
 +	twl = devm_kzalloc(&pdev->dev, sizeof(*twl), GFP_KERNEL);
 +	if (!twl)
 +		return -ENOMEM;
 +
-+	if (twl_class_is_4030()) {
-+		twl->chip.ops = &twl4030_pwmled_ops;
-+		twl->chip.npwm = 2;
-+	} else {
-+		twl->chip.ops = &twl6030_pwmled_ops;
-+		twl->chip.npwm = 1;
-+	}
++	if (twl_class_is_4030())
++		twl->chip.ops = &twl4030_pwm_ops;
++	else
++		twl->chip.ops = &twl6030_pwm_ops;
 +
 +	twl->chip.dev = &pdev->dev;
 +	twl->chip.base = -1;
++	twl->chip.npwm = 2;
 +
 +	mutex_init(&twl->mutex);
 +
@@ -418,33 +434,33 @@ index 0000000..c8fb47f
 +	return 0;
 +}
 +
-+static int twl_pwmled_remove(struct platform_device *pdev)
++static int twl_pwm_remove(struct platform_device *pdev)
 +{
-+	struct twl_pwmled_chip *twl = platform_get_drvdata(pdev);
++	struct twl_pwm_chip *twl = platform_get_drvdata(pdev);
 +
 +	return pwmchip_remove(&twl->chip);
 +}
 +
-+static struct of_device_id twl_pwmled_of_match[] = {
-+	{ .compatible = "ti,twl4030-pwmled" },
-+	{ .compatible = "ti,twl6030-pwmled" },
++static struct of_device_id twl_pwm_of_match[] = {
++	{ .compatible = "ti,twl4030-pwm" },
++	{ .compatible = "ti,twl6030-pwm" },
 +	{ },
 +};
-+MODULE_DEVICE_TABLE(of, twl_pwmled_of_match);
++MODULE_DEVICE_TABLE(of, twl_pwm_of_match);
 +
-+static struct platform_driver twl_pwmled_driver = {
++static struct platform_driver twl_pwm_driver = {
 +	.driver = {
-+		.name = "twl-pwmled",
-+		.of_match_table = of_match_ptr(twl_pwmled_of_match),
++		.name = "twl-pwm",
++		.of_match_table = of_match_ptr(twl_pwm_of_match),
 +	},
-+	.probe = twl_pwmled_probe,
-+	.remove = twl_pwmled_remove,
++	.probe = twl_pwm_probe,
++	.remove = twl_pwm_remove,
 +};
-+module_platform_driver(twl_pwmled_driver);
++module_platform_driver(twl_pwm_driver);
 +
 +MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
-+MODULE_DESCRIPTION("PWM driver for TWL4030 and TWL6030 LED outputs");
-+MODULE_ALIAS("platform:twl-pwmled");
++MODULE_DESCRIPTION("PWM driver for TWL4030 and TWL6030");
++MODULE_ALIAS("platform:twl-pwm");
 +MODULE_LICENSE("GPL");
 -- 
 1.8.0
