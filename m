@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab2K0Q3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:29:12 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46239 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab2K0Q3K (ORCPT
+	id S1756209Ab2K0Q3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:29:38 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42720 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab2K0Q3h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:29:10 -0500
+	Tue, 27 Nov 2012 11:29:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-Date: Tue, 27 Nov 2012 17:29:09 +0100
-Message-ID: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
- async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
+Date: Tue, 27 Nov 2012 17:29:36 +0100
+Message-ID: <CADDKRnDBHhqDzZVgB-8gv366OWKkamM9wR0+OcyfdX0kp_fKdA@mail.gmail.com>
+Subject: [v3.7-rcx] drm/i915: *ERROR* Timed out waiting for forcewake old ack
+ to clear
+From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/27 Li Zhong <zhong@linux.vnet.ibm.com>:
-> @@ -247,10 +247,17 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->                 break;
->         case KVM_PV_REASON_PAGE_NOT_PRESENT:
->                 /* page is swapped out by the host. */
-> -               rcu_irq_enter();
-> +               if (is_idle_task(current) && rcu_is_cpu_idle())
+At boot-up with newer kernels (at least v3.6.x, v3.7-rc) I always see
+following on the bootup-display:
 
-If the task is idle we can't schedule so I guess we don't need to call
-rcu_idle_exit()
+3.7-rcx: [drm:__gen6_gt_force_wake_mt_get] *ERROR* Timed out waiting
+for forcewake old ack to clear.
+3.6.x:    [drm:__gen6_gt_force_wake_mt_get] *ERROR* Force wake wait timed out
 
-> +                       rcu_idle_exit();
-> +               else
-> +                       rcu_user_exit();
+It's an Ivy Bridge/64Bit Notebook.
 
-rcu_user_exit() must be called in any case yeah.
+I know there is a patch at
+http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg14602.html
+but it doesn't apply to v3.7-rcx.
 
-> +
->                 exit_idle();
->                 kvm_async_pf_task_wait((u32)read_cr2());
-> -               rcu_irq_exit();
-> +
-> +               if (is_idle_task(current) && rcu_is_cpu_idle())
-> +                       rcu_idle_enter();
-> +
+This does not occur with the distro kernel (kubuntu, kernel 3.2.29).
 
-I think that only adding rcu_user_exit() in the beginning and let the
-rest as is (rcu_irq_enter() / rcu_irq_exit()) is enough. If we are
-idle we won't schedule out. If we are not idle then we exit rcu user
-mode if necessary and we can call rcu_irq_enter() in any case. If we
-schedule we can safely cal rcu_irq_exit() even if somebody called
-rcu_idle_enter() / rcu_idle_exit() since our matching rcu_irq_enter()
-called before we scheduled. This works because we are not in RCU idle
-mode and Paul says this is legal to have irq exit without matching irq
-entry (his famous "vice-versa" on his previous email ;-)
+Jörg.
+
+Please  CC me, I am not subsribed
+
+---
+$ lspci
+00:00.0 Host bridge: Intel Corporation Ivy Bridge DRAM Controller (rev 09)
+00:02.0 VGA compatible controller: Intel Corporation Ivy Bridge
+Graphics Controller (rev 09)
+00:14.0 USB controller: Intel Corporation Panther Point USB xHCI Host
+Controller (rev 04)
+00:16.0 Communication controller: Intel Corporation Panther Point MEI
+Controller #1 (rev 04)
+00:1a.0 USB controller: Intel Corporation Panther Point USB Enhanced
+Host Controller #2 (rev 04)
+00:1b.0 Audio device: Intel Corporation Panther Point High Definition
+Audio Controller (rev 04)
+00:1c.0 PCI bridge: Intel Corporation Panther Point PCI Express Root
+Port 1 (rev c4)
+00:1c.2 PCI bridge: Intel Corporation Panther Point PCI Express Root
+Port 3 (rev c4)
+00:1c.4 PCI bridge: Intel Corporation Panther Point PCI Express Root
+Port 5 (rev c4)
+00:1c.5 PCI bridge: Intel Corporation Panther Point PCI Express Root
+Port 6 (rev c4)
+00:1d.0 USB controller: Intel Corporation Panther Point USB Enhanced
+Host Controller #1 (rev 04)
+00:1f.0 ISA bridge: Intel Corporation Panther Point LPC Controller (rev 04)
+00:1f.2 SATA controller: Intel Corporation Panther Point 6 port SATA
+Controller [AHCI mode] (rev 04)
+00:1f.3 SMBus: Intel Corporation Panther Point SMBus Controller (rev 04)
+02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
+RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 07)
+08:00.0 Network controller: Intel Corporation Centrino Wireless-N 2230 (rev c4)
+
+$ lspci -vs 00:02.0
+00:02.0 VGA compatible controller: Intel Corporation Ivy Bridge
+Graphics Controller (rev 09) (prog-if 00 [VGA controller])
+        Subsystem: Fujitsu Limited. Device 16c2
+        Flags: bus master, fast devsel, latency 0, IRQ 40
+        Memory at f0000000 (64-bit, non-prefetchable) [size=4M]
+        Memory at e0000000 (64-bit, prefetchable) [size=256M]
+        I/O ports at 4000 [size=64]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+        Capabilities: [d0] Power Management version 2
+        Capabilities: [a4] PCI Advanced Features
+        Kernel driver in use: i915
