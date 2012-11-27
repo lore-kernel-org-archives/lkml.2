@@ -1,131 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab2K0VTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 16:19:45 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34597 "EHLO hydra.sisk.pl"
+	id S1756661Ab2K0VYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 16:24:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6938 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab2K0VTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 16:19:43 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pm@vger.kernel.org
-Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v6 5/6] PM / Runtime: force memory allocation with no I/O during Runtime PM callbcack
-Date: Tue, 27 Nov 2012 22:24:27 +0100
-Message-ID: <1354069667.BsTEhItmLz@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1353761958-12810-6-git-send-email-ming.lei@canonical.com>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com> <1353761958-12810-6-git-send-email-ming.lei@canonical.com>
+	id S1753857Ab2K0VYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 16:24:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,174,1355126400"; 
+   d="scan'208";a="223250660"
+Message-ID: <50B52F70.6080209@intel.com>
+Date: Tue, 27 Nov 2012 14:24:00 -0700
+From: Dave Jiang <dave.jiang@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dan Williams <djbw@fb.com>
+CC: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ioat: remove chanerr mask setting for IOAT v3.x
+References: <20121116232638.1766.86886.stgit@djiang5-linux.ch.intel.com> <CAA9_cmfYpa+ByFDJNwqxsj+e_3xrZD-=EP-NGQmWuWjgc7ZRtw@mail.gmail.com>
+In-Reply-To: <CAA9_cmfYpa+ByFDJNwqxsj+e_3xrZD-=EP-NGQmWuWjgc7ZRtw@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 24, 2012 08:59:17 PM Ming Lei wrote:
-> This patch applies the introduced memalloc_noio_save() and
-> memalloc_noio_restore() to force memory allocation with no I/O
-> during runtime_resume/runtime_suspend callback on device with
-> the flag of 'memalloc_noio' set.
-> 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
-> v5:
-> 	- use inline memalloc_noio_save()
-> v4:
-> 	- runtime_suspend need this too because rpm_resume may wait for
-> 	completion of concurrent runtime_suspend, so deadlock still may
-> 	be triggered in runtime_suspend path.
-> ---
->  drivers/base/power/runtime.c |   32 ++++++++++++++++++++++++++++++--
->  1 file changed, 30 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 3e198a0..96d99ea 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -371,6 +371,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  	int (*callback)(struct device *);
->  	struct device *parent = NULL;
->  	int retval;
-> +	unsigned int noio_flag;
->  
->  	trace_rpm_suspend(dev, rpmflags);
->  
-> @@ -480,7 +481,20 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  	if (!callback && dev->driver && dev->driver->pm)
->  		callback = dev->driver->pm->runtime_suspend;
->  
-> -	retval = rpm_callback(callback, dev);
-> +	/*
-> +	 * Deadlock might be caused if memory allocation with GFP_KERNEL
-> +	 * happens inside runtime_suspend callback of one block device's
-> +	 * ancestor or the block device itself. Network device might be
-> +	 * thought as part of iSCSI block device, so network device and
-> +	 * its ancestor should be marked as memalloc_noio.
-> +	 */
-> +	if (dev->power.memalloc_noio) {
-> +		noio_flag = memalloc_noio_save();
-> +		retval = rpm_callback(callback, dev);
-> +		memalloc_noio_restore(noio_flag);
-> +	} else {
-> +		retval = rpm_callback(callback, dev);
-> +	}
->  	if (retval)
->  		goto fail;
->  
-> @@ -563,6 +577,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
->  	int (*callback)(struct device *);
->  	struct device *parent = NULL;
->  	int retval = 0;
-> +	unsigned int noio_flag;
->  
->  	trace_rpm_resume(dev, rpmflags);
->  
-> @@ -712,7 +727,20 @@ static int rpm_resume(struct device *dev, int rpmflags)
->  	if (!callback && dev->driver && dev->driver->pm)
->  		callback = dev->driver->pm->runtime_resume;
->  
-> -	retval = rpm_callback(callback, dev);
-> +	/*
-> +	 * Deadlock might be caused if memory allocation with GFP_KERNEL
-> +	 * happens inside runtime_resume callback of one block device's
-> +	 * ancestor or the block device itself. Network device might be
-> +	 * thought as part of iSCSI block device, so network device and
-> +	 * its ancestor should be marked as memalloc_noio.
-> +	 */
-> +	if (dev->power.memalloc_noio) {
-> +		noio_flag = memalloc_noio_save();
-> +		retval = rpm_callback(callback, dev);
-> +		memalloc_noio_restore(noio_flag);
-> +	} else {
-> +		retval = rpm_callback(callback, dev);
-> +	}
+On 11/26/2012 09:56 PM, Dan Williams wrote:
+> On Fri, Nov 16, 2012 at 3:26 PM, Dave Jiang <dave.jiang@intel.com> wrote:
+>> The CHANERRMSK_INT register should be 0. The existing code set a value
+>> for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
+>> has been fixed when the hardware was released. There is no need for this
+>> code.
+>>
+>> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+>> ---
+>>
+>>  drivers/dma/ioat/dma_v3.c |    8 ++------
+>>  1 file changed, 2 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+>> index f7f1dc6..60c15c4 100644
+>> --- a/drivers/dma/ioat/dma_v3.c
+>> +++ b/drivers/dma/ioat/dma_v3.c
+>> @@ -1126,12 +1126,8 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+>>         chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+>>         writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
+>>
+>> -       /* -= IOAT ver.3 workarounds =- */
+>> -       /* Write CHANERRMSK_INT with 3E07h to mask out the errors
+>> -        * that can cause stability issues for IOAT ver.3, and clear any
+>> -        * pending errors
+>> -        */
+>> -       pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
+>> +       /* clearn CHANERRMASK_INT and clear any pending errors */
+>> +       pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0);
+> Can we get rid of this write / register access altogether?  Then the
+> driver will load on systems where extended pci configuration space is
+> not available.
 
-Please don't duplicate code this way.
+So this entire thing does read and write to a mask register and the
+error register. Were you wanting both removed? I think we may still want
+to clear the error register. If that's the case, it doesn't get around
+the extended PCI config space issue.
 
-You can move that whole thing to rpm_callback().  Yes, you'll probably need to
-check dev->power.memalloc_noio twice in there, but that's OK.
-
-
->  	if (retval) {
->  		__update_runtime_status(dev, RPM_SUSPENDED);
->  		pm_runtime_cancel_pending(dev);
-> 
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
