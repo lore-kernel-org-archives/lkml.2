@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab2K0KXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 05:23:01 -0500
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:55529 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933309Ab2K0KW7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 05:22:59 -0500
-Message-ID: <1354011776.1479.31.camel@tellur>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Lucas Stach <dev@lynxeye.de>
-To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Date: Tue, 27 Nov 2012 11:22:56 +0100
-In-Reply-To: <50B47DA8.60609@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	 <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	 <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	 <50B46336.8030605@nvidia.com>
-	 <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	 <50B476E1.4070403@nvidia.com>
-	 <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-	 <50B47DA8.60609@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1758639Ab2K0KYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 05:24:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758312Ab2K0KYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 05:24:15 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr,
+        shiyer@redhat.com, Jason Wang <jasowang@redhat.com>
+Subject: [net-next rfc v7 0/3] Multiqueue virtio-net
+Date: Tue, 27 Nov 2012 18:15:57 +0800
+Message-Id: <1354011360-39479-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 27.11.2012, 10:45 +0200 schrieb Terje Bergström:
-> On 27.11.2012 10:32, Dave Airlie wrote:
-> > On Tue, Nov 27, 2012 at 8:16 AM, Terje Bergström <tbergstrom@nvidia.com> wrote:
-> >> Thanks for the pointer, I looked at exynos code. It indeed checks the
-> >> registers written to, but it doesn't prevent overrun by checking sizes
-> >> of buffers and compare against requests.
-> > They probably need to add that, its not as important as the base
-> > addresses, unless it takes negative strides, generally base addresses
-> > means you can target current->uid quite easily!
-> 
-> Ok. We'll implement the firewall, unless we come up with even a better
-> choice.
-> 
-> >> If this is the way to go, I'll put the firewall behind a Kconfig flag so
-> >> that system integrator can decide if his system needs it.
-> > We don't generally make security like this optional :-)
-> > 
-> > If you do that you should restrict the drm device to root users only,
-> > and never let a user with a browser anywhere near it.
-> 
-Personally I would never trust any binary, but that's just my personal
-opinion.
+Hi all:
 
-But I'm in favour of having the command stream checking optional, simply
-backed by the fact that we are likely to use the same 2D driver
-infrastructure for Tegra 2 and 3. On Tegra 3 we can most likely go
-without in-depth command stream checking as the graphics core there sits
-behind the IOMMU, which can provide an appropriate level of security.
+This series is an update version of multiqueue virtio-net driver based on
+Krishna Kumar's work to let virtio-net use multiple rx/tx queues to do the
+packets reception and transmission. Please review and comments.
 
-Regards,
-Lucas
+A protype implementation of qemu-kvm support could by found in
+git://github.com/jasowang/qemu-kvm-mq.git. To start a guest with two queues, you
+could specify the queues parameters to both tap and virtio-net like:
 
+./qemu-kvm -netdev tap,queues=2,... -device virtio-net-pci,queues=2,...
+
+then enable the multiqueue through ethtool by:
+
+ethtool -L eth0 combined 2
+
+Changes from V6:
+- Align the implementation with the RFC spec update v5
+- Addressing Rusty's comments:
+  * split the patches
+  * rename to max_queue_pairs and curr_queue_pairs
+  * remove the useless status
+  * fix the hibernation bug
+- Addressing Ben's comments:
+  * check other parameters in ethtool_set_queues
+
+Changes from v5:
+- Align the implementation with the RFC spec update v4
+- Switch the mode between single mode and multiqueue mode without reset
+- Remove the 256 limitation of queues
+- Use helpers to do the mapping between virtqueues and tx/rx queues
+- Use commbined channels instead of separated rx/tx queus when do the queue
+number configuartion
+- Other coding style comments from Michael
+
+Changes from V4:
+- Add ability to negotiate the number of queues through control virtqueue
+- Ethtool -{L|l} support and default the tx/rx queue number to 1
+- Expose the API to set irq affinity instead of irq itself
+
+Changes from V3:
+- Rebase to the net-next
+- Let queue 2 to be the control virtqueue to obey the spec
+- Prodives irq affinity
+- Choose txq based on processor id
+
+Reference:
+- Virtio spec RFC: http://patchwork.ozlabs.org/patch/201303/
+- V6: https://lkml.org/lkml/2012/10/30/127
+- V5: http://lwn.net/Articles/505388/
+- V4: https://lkml.org/lkml/2012/6/25/120
+- V2: http://lwn.net/Articles/467283/
+
+
+Perf Numbers:
+
+Will do some basic test and post as a reply to this mail.
+
+Jason Wang (3):
+  virtio-net: separate fields of sending/receiving queue from
+    virtnet_info
+  virtio_net: multiqueue support
+  virtio-net: change the number of queues through ethtool
+
+ drivers/net/virtio_net.c        |  716 ++++++++++++++++++++++++++++-----------
+ include/uapi/linux/virtio_net.h |   16 +
+ 2 files changed, 536 insertions(+), 196 deletions(-)
 
