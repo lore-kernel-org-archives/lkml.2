@@ -1,94 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab2K0OVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:21:00 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:62342 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab2K0OU6 (ORCPT
+	id S1754686Ab2K0OXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:23:14 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:25597 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab2K0OXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:20:58 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: "Philip\, Avinash" <avinashphilip@ti.com>,
-        "paul\@pwsan.com" <paul@pwsan.com>,
-        "tony\@atomide.com" <tony@atomide.com>,
-        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson\, Benoit" <b-cousson@ti.com>,
-        "Hiremath\, Vaibhav" <hvaibhav@ti.com>,
-        "AnilKumar\, Chimata" <anilkumar@ti.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss\@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori\, Sekhar" <nsekhar@ti.com>,
-        "Hebbar\, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia\, Vaibhav" <vaibhav.bedia@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 05/11] pwm: pwm-tiecap: pinctrl support
-References: <1353503469-18634-1-git-send-email-avinashphilip@ti.com>
-	<1353503469-18634-6-git-send-email-avinashphilip@ti.com>
-	<20121122205944.GC16716@avionic-0098.adnet.avionic-design.de>
-	<518397C60809E147AF5323E0420B992E3E9EE991@DBDE01.ent.ti.com>
-	<20121123105110.GA6884@avionic-0098.adnet.avionic-design.de>
-	<518397C60809E147AF5323E0420B992E3E9EEAAA@DBDE01.ent.ti.com>
-	<20121123111811.GA5072@avionic-0098.adnet.avionic-design.de>
-	<87mwy8eb7w.fsf@dell.be.48ers.dk>
-	<20121124203423.GA26951@avionic-0098.adnet.avionic-design.de>
-Date: Tue, 27 Nov 2012 06:20:55 -0800
-In-Reply-To: <20121124203423.GA26951@avionic-0098.adnet.avionic-design.de>
-	(Thierry Reding's message of "Sat, 24 Nov 2012 21:34:23 +0100")
-Message-ID: <87txsb160o.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 27 Nov 2012 09:23:12 -0500
+Message-ID: <50B4CCC8.60401@hp.com>
+Date: Tue, 27 Nov 2012 06:23:04 -0800
+From: Chegu Vinod <chegu_vinod@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
+ target runqueue has one task
+References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com> <50B49658.7080507@linux.vnet.ibm.com>
+In-Reply-To: <50B49658.7080507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Thierry" == Thierry Reding <thierry.reding@avionic-design.de> writes:
+On 11/27/2012 2:30 AM, Raghavendra K T wrote:
+> On 11/26/2012 07:05 PM, Andrew Jones wrote:
+>> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
+>>> From: Peter Zijlstra <peterz@infradead.org>
+>>>
+>>> In case of undercomitted scenarios, especially in large guests
+>>> yield_to overhead is significantly high. when run queue length of
+>>> source and target is one, take an opportunity to bail out and return
+>>> -ESRCH. This return condition can be further exploited to quickly come
+>>> out of PLE handler.
+>>>
+>>> (History: Raghavendra initially worked on break out of kvm ple 
+>>> handler upon
+>>>   seeing source runqueue length = 1, but it had to export rq length).
+>>>   Peter came up with the elegant idea of return -ESRCH in scheduler 
+>>> core.
+>>>
+>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>> Raghavendra, Checking the rq length of target vcpu condition 
+>>> added.(thanks Avi)
+>>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>> ---
+>>>
+>>>   kernel/sched/core.c |   25 +++++++++++++++++++------
+>>>   1 file changed, 19 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>> index 2d8927f..fc219a5 100644
+>>> --- a/kernel/sched/core.c
+>>> +++ b/kernel/sched/core.c
+>>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+>>>    * It's the caller's job to ensure that the target task struct
+>>>    * can't go away on us before we can do any checks.
+>>>    *
+>>> - * Returns true if we indeed boosted the target task.
+>>> + * Returns:
+>>> + *    true (>0) if we indeed boosted the target task.
+>>> + *    false (0) if we failed to boost the target.
+>>> + *    -ESRCH if there's no task to yield to.
+>>>    */
+>>>   bool __sched yield_to(struct task_struct *p, bool preempt)
+>>>   {
+>>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, 
+>>> bool preempt)
+>>>
+>>>   again:
+>>>       p_rq = task_rq(p);
+>>> +    /*
+>>> +     * If we're the only runnable task on the rq and target rq also
+>>> +     * has only one task, there's absolutely no point in yielding.
+>>> +     */
+>>> +    if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>>> +        yielded = -ESRCH;
+>>> +        goto out_irq;
+>>> +    }
+>>> +
+>>>       double_rq_lock(rq, p_rq);
+>>>       while (task_rq(p) != p_rq) {
+>>>           double_rq_unlock(rq, p_rq);
+>>> @@ -4310,13 +4322,13 @@ again:
+>>>       }
+>>>
+>>>       if (!curr->sched_class->yield_to_task)
+>>> -        goto out;
+>>> +        goto out_unlock;
+>>>
+>>>       if (curr->sched_class != p->sched_class)
+>>> -        goto out;
+>>> +        goto out_unlock;
+>>>
+>>>       if (task_running(p_rq, p) || p->state)
+>>> -        goto out;
+>>> +        goto out_unlock;
+>>>
+>>>       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>>>       if (yielded) {
+>>> @@ -4329,11 +4341,12 @@ again:
+>>>               resched_task(p_rq->curr);
+>>>       }
+>>>
+>>> -out:
+>>> +out_unlock:
+>>>       double_rq_unlock(rq, p_rq);
+>>> +out_irq:
+>>>       local_irq_restore(flags);
+>>>
+>>> -    if (yielded)
+>>> +    if (yielded > 0)
+>>>           schedule();
+>>>
+>>>       return yielded;
+>>>
+>>
+>> Acked-by: Andrew Jones <drjones@redhat.com>
+>>
+>
+> Thank you Drew.
+>
+> Marcelo Gleb.. Please let me know if you have comments / concerns on 
+> the patches..
+>
+> Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
+> especially for large guests where we do have overhead of vcpu iteration
+> of ple handler..
+>
+> .
+>
+Thanks Raghu. Will try to get this latest patch set evaluated and get 
+back to you.
 
-Hi,
+Vinod
 
- >> There's several different situations:
- >> 
- >> - Platform without pinctrl support
- >> - Platform with pinctrl support but no pinmux specified in dt for device
- >> (E.G. pinmux setup in bootloader)
- >> - Pinmux specified in dt
- >> - Some kind of misconfiguration in dt
- >> 
- >> You could argue that devm_pinctrl_get_select_default() shouldn't return
- >> an error for the first situation, but how should it be able to know the
- >> difference between 2 and 4?
-
- Thierry> In case where the platform supports pinctrl but no pinmux is specified
- Thierry> for the device it should just assume that no pinmuxing is needed. That
- Thierry> sounds like the most logical behaviour to me. In those cases pinctrl
- Thierry> could just assume that the default has already been selected and not
- Thierry> return an error.
-
-Agreed.
-
- Thierry> But you can't reasonably expect to cope with misconfigured DT
- Thierry> content.  Heck, there's no way for you to even know if it is
- Thierry> misconfigured.
-
-With 'misconfigured DT' I just mean any kind of real error.
-
-
- Thierry> That said, I'm not sure how much of an issue this really
- Thierry> is. Pinmuxing is only used for functions local to a given
- Thierry> chip, right? So if an SoC supports pinctrl and a given
- Thierry> peripheral needs pinmuxing then we can reasonably assume that
- Thierry> your second case can't happen, can't we?
-
-Well, peripherals only need pinmuxing if the bootloader didn't already
-set it up in advance. We could naturally enforce people to add
-"redundant" pinmux info to their .dts files, but I'm not sure I like
-that idea.
-
--- 
-Bye, Peter Korsgaard
