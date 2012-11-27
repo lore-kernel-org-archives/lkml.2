@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab2K0UFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:05:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37548 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755690Ab2K0UFq (ORCPT
+	id S1756327Ab2K0UGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:06:07 -0500
+Received: from smtp111.dfw.emailsrvr.com ([67.192.241.111]:42236 "EHLO
+	smtp111.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab2K0UEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:05:46 -0500
-Date: Tue, 27 Nov 2012 20:05:44 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        myungjoo.ham@samsung.com, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com, t.figa@samsung.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] regulator: add device tree support for max8997
-Message-ID: <20121127200543.GK4468@opensource.wolfsonmicro.com>
-References: <20121126144603.GL9411@opensource.wolfsonmicro.com>
- <1354005272-24214-1-git-send-email-thomas.abraham@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9JSHP372f+2dzJ8X"
-Content-Disposition: inline
-In-Reply-To: <1354005272-24214-1-git-send-email-thomas.abraham@linaro.org>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Nov 2012 15:04:35 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH 5/6 v6] power: export opp cpufreq functions
+Date: Tue, 27 Nov 2012 14:04:31 -0600
+Message-Id: <1354046672-7392-6-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These functions are needed to make the cpufreq-core0 and highbank-cpufreq
+drivers loadable as modules.
 
---9JSHP372f+2dzJ8X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Acked-by: Nishanth Menon <nm@ti.com>
+---
+Changes from v4, v5
+        None.
+Changes from v3
+        includes linux/export.h instead of module.h.
+Changes from v2
+        None.
+Changes from v1
+        Added Nishanth Menon's ack.
+        Clarified the purpose of the change in the commit message.
 
-On Tue, Nov 27, 2012 at 02:04:32PM +0530, Thomas Abraham wrote:
-> Add device tree based discovery support for max8997.
+ drivers/base/power/opp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Applied, thanks.
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index d946864..4062ec3 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -23,6 +23,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/opp.h>
+ #include <linux/of.h>
++#include <linux/export.h>
+ 
+ /*
+  * Internal data structure organization with the OPP layer library is as
+@@ -643,6 +644,7 @@ int opp_init_cpufreq_table(struct device *dev,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(opp_init_cpufreq_table);
+ 
+ /**
+  * opp_free_cpufreq_table() - free the cpufreq table
+@@ -660,6 +662,7 @@ void opp_free_cpufreq_table(struct device *dev,
+ 	kfree(*table);
+ 	*table = NULL;
+ }
++EXPORT_SYMBOL(opp_free_cpufreq_table);
+ #endif		/* CONFIG_CPU_FREQ */
+ 
+ /**
+@@ -720,4 +723,5 @@ int of_init_opp_table(struct device *dev)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(of_init_opp_table);
+ #endif
+-- 
+1.7.11.7
 
---9JSHP372f+2dzJ8X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtR0KAAoJELSic+t+oim93cQQAIpnzu0M/qWHEWArjWsNOJAd
-ji97Q2kuF0vSDt/dKrSOsrYa1keufsiALl5RjLS4j2DTJy7opPDr6C5vcwuQtz/B
-m6gtXWIhpvlnB4f6rXUaCSS5tO5b7Rkv32M211jlH4N+IqUmhMTWBT/dhy703F7Z
-EBXj5+2VbCtLvnhOZ7unwCEAAIgrp9GuCamv3ARYsjGu8cv38Nqbzf7uoX71ZU0r
-WEiB5l1TAnk+1RFiJ+8+j+3Hf5wVH44aOXW0/SX5qa4gD1tS93e3LZfZGZwK+GFy
-PujIOs2xPrn1SqWKWtIMdTzYASMKC/hMBvh+FW3yw2/naKhVZX0EQCTD0UVTUeum
-E4cvL2FRw2e80gvFV1dcsjkcwaTjHK6wygcxo9RJ2zU3yO2ziXLhYo0cutlHgzpx
-7+M+N5EefXNIXbV7v6+z7zC/rC4vOtuKd1zOIPcDMPYsgERDjLgDS4F5+YM6us+s
-1B9+RmiUdsZgFR0zgZA1KwOmpgpBAouxwzJgGtOHUmwzYnrp/QzWBS6ZoatCpDYd
-XtAEkk+oQ1t8TPHfw8pHmeJIcfUlr+at2uWX8SeMpELtovRRibyZHEekEfvwS+4t
-FdA/lcCqFBdwkXiC1b6WJ9QUfaiTfcxweTx0T+sh63co/jK5cZ6aWiC2DdiTk+LO
-8/8+woDVEQ1RT7Axcz7d
-=GacC
------END PGP SIGNATURE-----
-
---9JSHP372f+2dzJ8X--
