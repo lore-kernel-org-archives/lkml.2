@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab2K0R1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:27:35 -0500
-Received: from nm16-vm6.bullet.mail.ne1.yahoo.com ([98.138.91.109]:25016 "EHLO
-	nm16-vm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755959Ab2K0R1d (ORCPT
+	id S1756419Ab2K0R3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 12:29:15 -0500
+Received: from nm2-vm10.bullet.mail.gq1.yahoo.com ([98.136.218.137]:33666 "EHLO
+	nm2-vm10.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755514Ab2K0R3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:27:33 -0500
-X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 12:27:31 EST
+	Tue, 27 Nov 2012 12:29:14 -0500
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Nov 2012 12:29:13 EST
 X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 86684.12951.bm@omp1019.access.mail.sp2.yahoo.com
-X-YMail-OSG: Stn7GhcVM1nc4o11ZvoUbPz4jGmjxraGgWAHoi9ElYqVw82
- s7UqqWy2nTtOCp_bo1CnEDWlE9Kmzb3GAu2kjT2BiU4e4tLA9185Cx.G2FLB
- 6b50ecER.BoN0fBze6UOG2f0VDjUMpP2zbmnFXRvnY0y2cTtL23_8e6p3iH7
- pZZ0ur0LT2G35llZpFCQji8cYREdZIjW3IHurIZIvsKRnQ97O.U8ld_bJ55p
- 0lgezjc8iMoHqz1w.YDVMMkbp0oURp8qgziLti7GHCuZD4Rdr7Yf9d78pXs_
- FvKuy_4UW62ZsjfM1paGbAAoIvADT1c4hWDC1B1Nrl2_veUveNYgCU_r4bu5
- UXoC7a_TZuh9ZC0E4GrMhrKqh9o1GCrEhJNDPsBD1S9BS7udeRNrwj_Inwxe
- vJirlKv7uJJt4GXxNUVy5xFq20TMnYYdelUtjGZg1nZirQeo6ZR4HAPDJJtl
- qWt1QfgZH4Bm2ADvyL6mmGzXmIklP4s0R1A0iW8NYnZEK7OIInt501KHPms.
- cM3F5
+X-Yahoo-Newman-Id: 77997.71391.bm@omp1020.access.mail.sp2.yahoo.com
+X-YMail-OSG: Nj2RIJ8VM1mUBC.PbLJy4MfNDzRkMvtIPdIVCUzGAmo62I4
+ 2p9DHtIKeLWbuAqVY9TIgVDUmDE8OPheETsQwQF32FsWERGQrNtMy_H1QRZ9
+ sKkYuUsRN3e3r9qewu2_fNGdnMuc7HsQGsvLCDbev2Av4GmC6TVVuy6dbXAu
+ c4F7A468mc2lfq9GOZ9L4p2c2CvEUf6QK77zUg_WMPWleshqbudj6J3xdPB8
+ giCF_m.dLR9Ha5QDkxpfZEzPSSN7BW4iskxRveKsFLwVGv3LIRybPFOcBH8s
+ VfphCLd1z8.38Trd1NxTpEUO6T.gOjmhN_xXCDnuCLzaSOX8iH17fSKkNmlj
+ nL.oiXA5XNWPX8wTtx2KI9.BKUang_.a3ef9w3gY6JBy48TnpX.Q7.4UIn6B
+ leYPwYliya57q7GHOlQejI19jrA8.r5cE2r4dLASci76n0qfGwveNC1.BJIn
+ BWOnA5P0AQuaAPMiYCHdVDA3syWBNCeGRWQ7VpYQqOusJYfEGT0vafGklJL0
+ V2jXp
 X-Rocket-MIMEInfo: 001.001,CgEwAQEBAQ--
 X-RocketYMMF: webyeslove
 X-Mailer: YahooMailRC/718 YahooMailWebService/0.8.127.475
-Message-ID: <1354036878.70631.YahooMailRC@web5707.biz.mail.ne1.yahoo.com>
-Date: Tue, 27 Nov 2012 09:21:18 -0800 (PST)
+Message-ID: <1354036976.42786.YahooMailRC@web5707.biz.mail.ne1.yahoo.com>
+Date: Tue, 27 Nov 2012 09:22:56 -0800 (PST)
 From: UNITED NATIONS <awardawardm2012@gmail.com>
 Reply-To: UNITED NATIONS <kanjarryoffice2012@yahoo.com>
 Subject: Good News Kindly Open The Attachment File
 To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-945142638-896536023-1354036878=:70631"
+Content-Type: multipart/mixed; boundary="-945142638-533454679-1354036976=:42786"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----945142638-896536023-1354036878=:70631
+---945142638-533454679-1354036976=:42786
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
 
 =0A
----945142638-896536023-1354036878=:70631
+---945142638-533454679-1354036976=:42786
 Content-Type: application/msword; name="UN..doc"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="UN..doc"
@@ -7852,4 +7852,4 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAA==
 
----945142638-896536023-1354036878=:70631--
+---945142638-533454679-1354036976=:42786--
