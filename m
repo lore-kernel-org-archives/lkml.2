@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2K0UYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:24:43 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60445 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756316Ab2K0UYm (ORCPT
+	id S1756645Ab2K0UYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:24:53 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:40660 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472Ab2K0UYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:24:42 -0500
-Date: Tue, 27 Nov 2012 20:24:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: s2mps11: Fix ramp delay value shift operation
-Message-ID: <20121127202440.GF32691@opensource.wolfsonmicro.com>
-References: <000001cdc9e9$4e417cd0$eac47670$@com>
+	Tue, 27 Nov 2012 15:24:51 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjN3AEAhtVBV5qjOPGdsb2JhbABFhUAiAYUAtToXAwEBAQE4NIIeAQEFOhwjEAgDGC4UDRgKGhOHewMTr22GXw2JVBSLPWmDYGEDlCyBVIV7hTqIAQ
+X-IronPort-AV: E=Sophos;i="4.83,330,1352070000"; 
+   d="scan'208";a="233816050"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 27 Nov 2012 21:25:54 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/11] HID: hid-multitouch: creates and handle stylus
+ report with dual-sensors
+Message-ID: <20121127202554.GA901@polaris.bitmath.org>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1353684694-5723-5-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ExXT7PjY8AI4Hyfa"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000001cdc9e9$4e417cd0$eac47670$@com>
-X-Cookie: Your ignorance cramps my conversation.
+In-Reply-To: <1353684694-5723-5-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 23, 2012 at 04:31:27PM +0100, Benjamin Tissoires wrote:
+> Now that drivers can create new inputs, let's use this to split
+> the reports coming from the pen and from the touch.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 30 +++++++++++++++++++++++++-----
+>  1 file changed, 25 insertions(+), 5 deletions(-)
 
---ExXT7PjY8AI4Hyfa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+NAK on this one in its present form. I appreciate the idea, just not
+the implementation, sorry.
 
-On Sat, Nov 24, 2012 at 11:13:28AM +0900, Sangbeom Kim wrote:
-> This patch fix the abnormal ramp delay setting.
-> The shift operation was wrong.
-
-applied, thanks.
-
---ExXT7PjY8AI4Hyfa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtSFsAAoJELSic+t+oim9CoQP/2jlgUoHR/dfp9h6LYqsv12B
-RvNaN34xbN6dkopEkCE3X5G8d1yHxdQqU4x+vLDVpIP/pAm4Xa9tzKKniS6CXsRX
-aeGnLImzSzTCGonSrn9GFTG/PtNwTB7hSJ/D2MprHBagfEgTGc71WYEP6GRFCBzH
-GxZynnZ0qpHbFe6Vfks5FEbrzTwD0+4NPukSaVmlUxhdFWSDAVp663WmFMXx+NHJ
-vn80+SCiZ4MPVj5AGYzem9hNgVtu2OIY1YOrZHR/16DdYPB/OY+yuOBQXTAKgj4w
-j/ZwexxACp/WapEKmAWiV5ujKF56tBiVOXBZdADLLXil1yhLXOgnZQ3FkPFAjqF7
-NtLn5fH5TnM7ZL4za8lfjPLLEnPSJnTFA/UPJQtZoRQc/0R7A689/crjFXvo/PuV
-wwomSHay+SKQqz4qDLtCfbSjIliNAJSzY9u0ijUP+obBKfrJUiRR2XksiH9VFs5H
-2fnVsqf59SQrU1aCHNsQ9z/MdGxxlH2nA3vKNFHUlAv/Vk5rtltEzKaKthL/sVxr
-XYSK3+BpOOw0p061X9fK9xBe8YHCY6k+uNrLxKxndH/F0i8gCbpoICphtVEU5LgT
-Y0S+iIdomlWB+fynstGrDIy8yITs+c7YkZVr4tiTYp5s1yqu6F2XD+TKonNBnLeB
-ST/n34BbImnSOKEIuQoY
-=RixZ
------END PGP SIGNATURE-----
-
---ExXT7PjY8AI4Hyfa--
+Thanks,
+Henrik
