@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758481Ab2K0ItX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:49:23 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51803 "EHLO
+	id S1758525Ab2K0Itj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:49:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51823 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758334Ab2K0ItV (ORCPT
+	with ESMTP id S1758500Ab2K0Ith (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:49:21 -0500
+	Tue, 27 Nov 2012 03:49:37 -0500
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>
@@ -15,9 +15,9 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
         "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v5 01/12] PWMSS: Add PWM Subsystem driver for parent<->child relationship
-Date: Tue, 27 Nov 2012 14:18:06 +0530
-Message-ID: <1354006097-25895-2-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v5 02/12] ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem HWMOD entries
+Date: Tue, 27 Nov 2012 14:18:07 +0530
+Message-ID: <1354006097-25895-3-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
 References: <1354006097-25895-1-git-send-email-avinashphilip@ti.com>
@@ -27,331 +27,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some platforms (like am33xx), PWM sub modules (ECAP, EHRPWM, EQEP)
-are integrated to PWM subsystem. These PWM submodules has resources
-shared and only one register bit-field is provided to control
-module/clock enable/disable, makes it difficult to handle common
-resources from independent PWMSS submodule drivers.
-
-So the solution here implemented in this patch is, to create driver for
-PWMSS and take the role of parent driver for PWM submodules. PWMSS
-parent driver enumerates all the child nodes under PWMSS module. Also
-symbol "pwmss_submodule_state_change" exported to enable clock gating
-for individual PWMSS submodules, and submodule drivers has to enable
-clock gating from their drivers.
-
-As this is only supported during DT boot, the parent<->child relationship
-is created and populated in DT execution flow. The only required change
-is inside DTS file, making EHRPWM & ECAP as a child to PWMSS node.
+EQEP entry is HWMOD entry is not present in HWMOD entry. Also address
+ranges specified for EACP & EHRPWM is not correct & HWMOD flags of
+ADDR_TYPE_RT is added to PWM subsystem register address space. This
+patch
+1. Corrects register address mapping for ECAP & EHRPWM
+2. Removes  HWMOD flags in PWM submodule register address space.
+3. Adds EQEP HWMOD entries.
 
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
 Changes since v4:
-        - Made dt match property in single line for consistency
-	- Use SIMPLE_DEV_PM_OPS
+	- Split the HWMOD patches to handle correction of PWMi
+	  subsystem correction.
 
-Changes since v3:
-	- Corrected the usage of ranges property in documentation.
-	- Add pwm prefix to tipwmss.h file
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  158 +++++++++++++++++++++++++---
+ 1 files changed, 145 insertions(+), 13 deletions(-)
 
-Changes since v2:
-	- Set build attribute to bool type.
-	- Add pwm prefix to tipwmss.c file
-	- Span mutex protection for read modify approach.
-	- Use SET_SYSTEM_SLEEP_PM_OPS
-	- Add PWM subsystem bit fields to tipwmss.h
-	- Remove devinit & devexit attributes.
-	- Left out adding of child node's DT property in Documentation
-	  as those definitions are part of later patches.
-
-Changes since v1:
-	- Add conditional check for PWM subsystem clock enabling.
-	- Add context save/restore for PWM subsystem clock config register.
-
- .../devicetree/bindings/pwm/pwm-tipwmss.txt        |   31 +++++
- drivers/pwm/Kconfig                                |   11 ++
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-tipwmss.c                          |  139 ++++++++++++++++++++
- drivers/pwm/pwm-tipwmss.h                          |   39 ++++++
- 5 files changed, 221 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt
- create mode 100644 drivers/pwm/pwm-tipwmss.c
- create mode 100644 drivers/pwm/pwm-tipwmss.h
-
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt b/Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt
-new file mode 100644
-index 0000000..f7eae77
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-tipwmss.txt
-@@ -0,0 +1,31 @@
-+TI SOC based PWM Subsystem
-+
-+Required properties:
-+- compatible: Must be "ti,am33xx-pwmss";
-+- reg: physical base address and size of the registers map.
-+- address-cells: Specify the number of u32 entries needed in child nodes.
-+		  Should set to 1.
-+- size-cells: specify number of u32 entries needed to specify child nodes size
-+		in reg property. Should set to 1.
-+- ranges: describes the address mapping of a memory-mapped bus. Should set to
-+	   physical address map of child's base address, physical address within
-+	   parent's address  space and length of the address map. For am33xx,
-+	   3 set of child register maps present, ECAP register space, EQEP
-+	   register space, EHRPWM register space.
-+
-+Also child nodes should also populated under PWMSS DT node.
-+
-+Example:
-+pwmss0: pwmss@48300000 {
-+	compatible = "ti,am33xx-pwmss";
-+	reg = <0x48300000 0x10>;
-+	ti,hwmods = "epwmss0";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	status = "disabled";
-+	ranges = <0x48300100 0x48300100 0x80   /* ECAP */
-+		  0x48300180 0x48300180 0x80   /* EQEP */
-+		  0x48300200 0x48300200 0x80>; /* EHRPWM */
-+
-+	/* child nodes go here */
-+};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index ed81720..1dc32a8 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -125,6 +125,7 @@ config PWM_TEGRA
- config  PWM_TIECAP
- 	tristate "ECAP PWM support"
- 	depends on SOC_AM33XX
-+	select PWM_TIPWMSS
- 	help
- 	  PWM driver support for the ECAP APWM controller found on AM33XX
- 	  TI SOC
-@@ -135,6 +136,7 @@ config  PWM_TIECAP
- config  PWM_TIEHRPWM
- 	tristate "EHRPWM PWM support"
- 	depends on SOC_AM33XX
-+	select PWM_TIPWMSS
- 	help
- 	  PWM driver support for the EHRPWM controller found on AM33XX
- 	  TI SOC
-@@ -142,6 +144,15 @@ config  PWM_TIEHRPWM
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-tiehrpwm.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+index 59d5c1c..9ed0bcf 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+@@ -769,7 +769,7 @@ static struct omap_hwmod am33xx_elm_hwmod = {
+ };
  
-+config  PWM_TIPWMSS
-+	bool
-+	depends on SOC_AM33XX && (PWM_TIEHRPWM || PWM_TIECAP)
-+	help
-+	  PWM Subsystem driver support for AM33xx SOC.
-+
-+	  PWM submodules require PWM config space access from submodule
-+	  drivers and require common parent driver support.
-+
- config PWM_TWL6030
- 	tristate "TWL6030 PWM support"
- 	depends on TWL4030_CORE
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index acfe482..e12b722 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -11,5 +11,6 @@ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
-+obj-$(CONFIG_PWM_TIPWMSS)	+= pwm-tipwmss.o
- obj-$(CONFIG_PWM_TWL6030)	+= pwm-twl6030.o
- obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-tipwmss.c b/drivers/pwm/pwm-tipwmss.c
-new file mode 100644
-index 0000000..3448a1c
---- /dev/null
-+++ b/drivers/pwm/pwm-tipwmss.c
-@@ -0,0 +1,139 @@
-+/*
-+ * TI PWM Subsystem driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/of_device.h>
-+
-+#include "pwm-tipwmss.h"
-+
-+#define PWMSS_CLKCONFIG		0x8	/* Clock gating reg */
-+#define PWMSS_CLKSTATUS		0xc	/* Clock gating status reg */
-+
-+struct pwmss_info {
-+	void __iomem	*mmio_base;
-+	struct mutex	pwmss_lock;
-+	u16		pwmss_clkconfig;
+ /*
+- * 'epwmss' class: ecap0,1,2,  ehrpwm0,1,2
++ * 'epwmss' class: ehrpwm0,1,2 eqep0,1,2 ecap0,1,2
+  */
+ static struct omap_hwmod_class_sysconfig am33xx_epwmss_sysc = {
+ 	.rev_offs	= 0x0,
+@@ -849,6 +849,66 @@ static struct omap_hwmod am33xx_ehrpwm2_hwmod = {
+ 	},
+ };
+ 
++/* eqep0 */
++static struct omap_hwmod_irq_info am33xx_eqep0_irqs[] = {
++	{ .irq = 79 + OMAP_INTC_START, },
++	{ .irq = -1 },
 +};
 +
-+u16 pwmss_submodule_state_change(struct device *dev, int set)
-+{
-+	struct pwmss_info *info = dev_get_drvdata(dev);
-+	u16 val;
-+
-+	mutex_lock(&info->pwmss_lock);
-+	val = readw(info->mmio_base + PWMSS_CLKCONFIG);
-+	val |= set;
-+	writew(val , info->mmio_base + PWMSS_CLKCONFIG);
-+	mutex_unlock(&info->pwmss_lock);
-+
-+	return readw(info->mmio_base + PWMSS_CLKSTATUS);
-+}
-+EXPORT_SYMBOL(pwmss_submodule_state_change);
-+
-+static const struct of_device_id pwmss_of_match[] = {
-+	{ .compatible	= "ti,am33xx-pwmss" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, pwmss_of_match);
-+
-+static int pwmss_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct resource *r;
-+	struct pwmss_info *info;
-+	struct device_node *node = pdev->dev.of_node;
-+
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
-+	if (!info) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	mutex_init(&info->pwmss_lock);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		return -ENODEV;
-+	}
-+
-+	info->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (!info->mmio_base)
-+		return -EADDRNOTAVAIL;
-+
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+	platform_set_drvdata(pdev, info);
-+
-+	/* Populate all the child nodes here... */
-+	ret = of_platform_populate(node, NULL, NULL, &pdev->dev);
-+	if (ret)
-+		dev_err(&pdev->dev, "no child node found\n");
-+
-+	return ret;
-+}
-+
-+static int pwmss_remove(struct platform_device *pdev)
-+{
-+	struct pwmss_info *info = platform_get_drvdata(pdev);
-+
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+	mutex_destroy(&info->pwmss_lock);
-+	return 0;
-+}
-+
-+static int pwmss_suspend(struct device *dev)
-+{
-+	struct pwmss_info *info = dev_get_drvdata(dev);
-+
-+	info->pwmss_clkconfig = readw(info->mmio_base + PWMSS_CLKCONFIG);
-+	pm_runtime_put_sync(dev);
-+	return 0;
-+}
-+
-+static int pwmss_resume(struct device *dev)
-+{
-+	struct pwmss_info *info = dev_get_drvdata(dev);
-+
-+	pm_runtime_get_sync(dev);
-+	writew(info->pwmss_clkconfig, info->mmio_base + PWMSS_CLKCONFIG);
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(pwmss_pm_ops, pwmss_suspend, pwmss_resume);
-+
-+static struct platform_driver pwmss_driver = {
-+	.driver	= {
-+		.name	= "pwmss",
-+		.owner	= THIS_MODULE,
-+		.pm	= &pwmss_pm_ops,
-+		.of_match_table	= pwmss_of_match,
++static struct omap_hwmod am33xx_eqep0_hwmod = {
++	.name		= "eqep0",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep0_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS0_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
 +	},
-+	.probe	= pwmss_probe,
-+	.remove	= pwmss_remove,
 +};
 +
-+module_platform_driver(pwmss_driver);
++/* eqep1 */
++static struct omap_hwmod_irq_info am33xx_eqep1_irqs[] = {
++	{ .irq = 88 + OMAP_INTC_START, },
++	{ .irq = -1 },
++};
 +
-+MODULE_DESCRIPTION("PWM Subsystem driver");
-+MODULE_AUTHOR("Texas Instruments");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/pwm/pwm-tipwmss.h b/drivers/pwm/pwm-tipwmss.h
-new file mode 100644
-index 0000000..11f76a1
---- /dev/null
-+++ b/drivers/pwm/pwm-tipwmss.h
-@@ -0,0 +1,39 @@
++static struct omap_hwmod am33xx_eqep1_hwmod = {
++	.name		= "eqep1",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep1_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS1_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* eqep2 */
++static struct omap_hwmod_irq_info am33xx_eqep2_irqs[] = {
++	{ .irq = 89 + OMAP_INTC_START, },
++	{ .irq = -1 },
++};
++
++static struct omap_hwmod am33xx_eqep2_hwmod = {
++	.name		= "eqep2",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep2_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS2_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
++};
++
+ /* ecap0 */
+ static struct omap_hwmod_irq_info am33xx_ecap0_irqs[] = {
+ 	{ .irq = 31 + OMAP_INTC_START, },
+@@ -2530,8 +2590,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm0_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48300200,
+-		.pa_end		= 0x48300200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48300200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2556,8 +2615,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm1_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48302200,
+-		.pa_end		= 0x48302200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48302200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2582,8 +2640,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm2_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48304200,
+-		.pa_end		= 0x48304200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48304200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2600,6 +2657,81 @@ static struct omap_hwmod_ocp_if am33xx_l4_ls__ehrpwm2 = {
+  * Splitting the resources to handle access of PWMSS config space
+  * and module specific part independently
+  */
++static struct omap_hwmod_addr_space am33xx_eqep0_addr_space[] = {
++	{
++		.pa_start	= 0x48300000,
++		.pa_end		= 0x48300000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48300180,
++		.pa_end		= 0x48300180 + SZ_128 - 1,
++	},
++	{ }
++};
++
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep0 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep0_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep0_addr_space,
++	.user		= OCP_USER_MPU,
++};
++
 +/*
-+ * TI PWM Subsystem driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
 + */
++static struct omap_hwmod_addr_space am33xx_eqep1_addr_space[] = {
++	{
++		.pa_start	= 0x48302000,
++		.pa_end		= 0x48302000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48302180,
++		.pa_end		= 0x48302180 + SZ_128 - 1,
++	},
++	{ }
++};
 +
-+#ifndef __TIPWMSS_H
-+#define __TIPWMSS_H
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep1 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep1_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep1_addr_space,
++	.user		= OCP_USER_MPU,
++};
 +
-+#ifdef CONFIG_PWM_TIPWMSS
-+/* PWM substem clock gating */
-+#define PWMSS_ECAPCLK_EN	BIT(0)
-+#define PWMSS_ECAPCLK_STOP_REQ	BIT(1)
-+#define PWMSS_EPWMCLK_EN	BIT(8)
-+#define PWMSS_EPWMCLK_STOP_REQ	BIT(9)
++/*
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
++ */
++static struct omap_hwmod_addr_space am33xx_eqep2_addr_space[] = {
++	{
++		.pa_start	= 0x48304000,
++		.pa_end		= 0x48304000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48304180,
++		.pa_end		= 0x48304180 + SZ_128 - 1,
++	},
++	{ }
++};
 +
-+#define PWMSS_ECAPCLK_EN_ACK	BIT(0)
-+#define PWMSS_EPWMCLK_EN_ACK	BIT(8)
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep2 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep2_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep2_addr_space,
++	.user		= OCP_USER_MPU,
++};
 +
-+extern u16 pwmss_submodule_state_change(struct device *dev, int set);
-+#else
-+static inline u16 pwmss_submodule_state_change(struct device *dev, int set)
-+{
-+	/* return success status value */
-+	return 0xFFFF;
-+}
-+#endif
-+#endif	/* __TIPWMSS_H */
++/*
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
++ */
+ static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
+ 	{
+ 		.pa_start	= 0x48300000,
+@@ -2608,8 +2740,7 @@ static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48300100,
+-		.pa_end		= 0x48300100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48300100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2634,8 +2765,7 @@ static struct omap_hwmod_addr_space am33xx_ecap1_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48302100,
+-		.pa_end		= 0x48302100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48302100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2660,8 +2790,7 @@ static struct omap_hwmod_addr_space am33xx_ecap2_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48304100,
+-		.pa_end		= 0x48304100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48304100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -3359,6 +3488,9 @@ static struct omap_hwmod_ocp_if *am33xx_hwmod_ocp_ifs[] __initdata = {
+ 	&am33xx_l4_ls__ehrpwm0,
+ 	&am33xx_l4_ls__ehrpwm1,
+ 	&am33xx_l4_ls__ehrpwm2,
++	&am33xx_l4_ls__eqep0,
++	&am33xx_l4_ls__eqep1,
++	&am33xx_l4_ls__eqep2,
+ 	&am33xx_l4_ls__ecap0,
+ 	&am33xx_l4_ls__ecap1,
+ 	&am33xx_l4_ls__ecap2,
 -- 
 1.7.0.4
 
