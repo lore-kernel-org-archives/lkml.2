@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab2K0Ick (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:32:40 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:60469 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab2K0Ici convert rfc822-to-8bit (ORCPT
+	id S932938Ab2K0IiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:38:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62166 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab2K0IiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:32:38 -0500
+	Tue, 27 Nov 2012 03:38:01 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+Date: Tue, 27 Nov 2012 08:37:48 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Bill Pemberton <wfp5p@virginia.edu>, Greg KH <greg@kroah.com>
+References: <20121127155732.c3422fdbf62501ee134024d7@canb.auug.org.au>
+In-Reply-To: <20121127155732.c3422fdbf62501ee134024d7@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <50B476E1.4070403@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	<CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	<50B46336.8030605@nvidia.com>
-	<CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	<50B476E1.4070403@nvidia.com>
-Date: Tue, 27 Nov 2012 08:32:38 +0000
-Message-ID: <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211270837.48458.arnd@arndb.de>
+X-Provags-ID: V02:K0:vw1jnZf6rK2ePuiQ2tKhluDafGaoXUeZkxr/L/LOOPD
+ cbGv5lcfb6vg45jPlTXXUPJ+q79LDJHfGNrFkMQ4ansm6n5bBx
+ m8x4lgK03krhnlwngsYQA3Ttso2ZAiuhkW34D0apZxX54oXVAO
+ oxYa4E3IGj1Dwg7x/vG21hVzFjt0ue7qfxOVZBbOZUOMBbwCvv
+ Wvgqc8v8ZCtUyzlgNSH7lrx60NpAZZtVkydvKmRuh4TCtXPROU
+ Eu3xf1OfU4zj8mn39TIlhsm6nGfVYI6nbuCQbX7Briai0Ycdob
+ 6pJzjDTvvBPHX6DOkT2KNcOLhRboJMoNVem6X8IJHlKw/nua8X
+ 0YEdzqcUi036IN9hXDHE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 8:16 AM, Terje Bergström <tbergstrom@nvidia.com> wrote:
-> On 27.11.2012 09:33, Dave Airlie wrote:
->>> Third would be having a firewall in 2D driver checking the stream and
->>> ensuring all registers that accept addresses are written by values
->>> derived from dmabufs. I haven't tried implementing this, but it'd
->>> involve a lookup table in kernel and CPU reading through the command
->>> stream. Offsets and sizes would also need to be validated. There would
->>> be a performance hit.
->>
->> This is the standard mechanism, and what exynos does as well.
->>
->> The per process VM method is also used as an extension to this on some hw.
->
-> Hi,
->
-> Thanks for the pointer, I looked at exynos code. It indeed checks the
-> registers written to, but it doesn't prevent overrun by checking sizes
-> of buffers and compare against requests.
+On Tuesday 27 November 2012, Stephen Rothwell wrote:
+> @@@ -167,7 -184,9 +170,9 @@@ ehci_orion_conf_mbus_windows(struct usb
+>         }
+>   }
+>   
+> + static u64 ehci_orion_dma_mask = DMA_BIT_MASK(32);
+> + 
+>  -static int __devinit ehci_orion_drv_probe(struct platform_device *pdev)
+>  +static int ehci_orion_drv_probe(struct platform_device *pdev)
+>   {
+>         struct orion_ehci_data *pd = pdev->dev.platform_data;
+>         const struct mbus_dram_target_info *dram;
 
-They probably need to add that, its not as important as the base
-addresses, unless it takes negative strides, generally base addresses
-means you can target current->uid quite easily!
+Looks good, thanks!
 
-> Based on my experience with Tegra graphics stack, going through command
-> streams in kernel is bad for performance. For 2D operations this is
-> probably ok as the command streams are pretty simple. Anything more
-> complex is going to cause severe degradation of performance, but it's
-> also outside the scope of this patch set.
->
-> If this is the way to go, I'll put the firewall behind a Kconfig flag so
-> that system integrator can decide if his system needs it.
-
-We don't generally make security like this optional :-)
-
-If you do that you should restrict the drm device to root users only,
-and never let a user with a browser anywhere near it.
-
-Like I know what you guys get away with in closed source world, but
-here we don't write root holes into our driver deliberately.
-
-Dave.
+	Arnd
