@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2K0AqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:46:00 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:50845 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754753Ab2K0Ap7 (ORCPT
+	id S932999Ab2K0ArT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:47:19 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:44132 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757416Ab2K0ArS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:45:59 -0500
+	Mon, 26 Nov 2012 19:47:18 -0500
+Date: Mon, 26 Nov 2012 16:47:18 -0800
 From: Dmitry Torokhov <dtor@vmware.com>
-To: pv-drivers@vmware.com
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+To: Woody Suwalski <terraluna977@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, pv-drivers@vmware.com,
+        George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 12/12] VMCI: Some header and config files.
-Date: Mon, 26 Nov 2012 16:45:58 -0800
-Message-ID: <1733473.DLmiAWnRYk@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121127003239.GA32298@kroah.com>
-References: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com> <20121127002357.GA27683@core.coreip.homeip.net> <20121127003239.GA32298@kroah.com>
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121127004717.GA18403@dtor-ws.eng.vmware.com>
+References: <20121121202625.13252.86346.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <4072068.8FbmJn8R3Z@dtor-d630.eng.vmware.com>
+ <20121126234426.GA12191@kroah.com>
+ <2961037.z4LULze8vO@dtor-d630.eng.vmware.com>
+ <20121127000330.GA16288@kroah.com>
+ <50B408DB.5090308@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B408DB.5090308@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 26, 2012 04:32:39 PM Greg KH wrote:
-> On Mon, Nov 26, 2012 at 04:23:57PM -0800, Dmitry Torokhov wrote:
-> > Hi Greg,
-> > 
-> > For some reason it still didn't go through to our corporate mail server
-> > but I see it on LKML.
+On Mon, Nov 26, 2012 at 07:27:07PM -0500, Woody Suwalski wrote:
+> Greg KH wrote:
+> >On Mon, Nov 26, 2012 at 03:52:31PM -0800, Dmitry Torokhov wrote:
+> >>
+> >>Mind resending it, please?
+> >Now resent.
+> I see both versions of Greg's message - one from 15 Nov, one
+> today's. On my Gmail account...
+> So Greg did post it...
 > 
-> Good.
-> 
-> > On Mon, Nov 26, 2012 at 04:03:04PM -0800, Greg KH wrote:
-> > > On Wed, Nov 07, 2012 at 10:43:03AM -0800, George Zhang wrote:
-> > > > +static inline struct vmci_handle VMCI_MAKE_HANDLE(vmci_id cid,
-> > > > vmci_id rid) +{
-> > > > +	struct vmci_handle h;
-> > > > +	h.context = cid;
-> > > > +	h.resource = rid;
-> > > > +	return h;
-> > > > +}
-> > > 
-> > > You return a structure on the stack that just went away?  Yeah, I know
-> > > it's an inline, but come on, that's not ok.
-> > 
-> > This is certainly OK even if it is not inline, we return the _value_,
-> > not the pointer to the stacki memory. And yes, the structure is 64 bit
-> > value so it is returned in registers.
-> 
-> Even on a 32bit processor? 
 
-I thought it would, but it looks like it won't. Maybe we'll just switch it
-to a macro with C99 style initializators to keep the same semantic but
-avoid the question.
-
-> Also, you already have another function that
-> does this same thing, so having 2 functions in the same patch seems odd,
-> right?
-
-Yes, you can say that it is probably a bit excessive.
-
-OK, now that we are on the same page we'll go and fix the issues.
+Right, I also see it now in my personal LKML archive but for some
+reason it didn't get delivered to my corporate mailbox. Weird.
 
 Thanks,
 Dmitry
