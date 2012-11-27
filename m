@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab2K0HXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 02:23:52 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:14798 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758140Ab2K0HXu (ORCPT
+	id S1758231Ab2K0H0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 02:26:17 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:62117 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758140Ab2K0H0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 02:23:50 -0500
-Message-id: <50B46A83.8020703@samsung.com>
-Date: Tue, 27 Nov 2012 08:23:47 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Subject: Re: [PATCH] media: fix a typo CONFIG_HAVE_GENERIC_DMA_COHERENT in
- videobuf2-dma-contig.c
-References: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
-In-reply-to: <1353995979-28792-1-git-send-email-prabhakar.lad@ti.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Tue, 27 Nov 2012 02:26:16 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
+        Mihail Kasadjikov <hamer.mk@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] zram: Prevent use of unmapped buffer
+Date: Mon, 26 Nov 2012 23:26:07 -0800
+Message-Id: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
+introduced a bug which caused a kunmap()'ed buffer to be used in case
+of partial writes where the data was found to be incompressible.
 
-On 11/27/2012 6:59 AM, Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->
-> from commit 93049b9368a2e257ace66252ab2cc066f3399cad, which adds
-> a check HAVE_GENERIC_DMA_COHERENT for dma ops, the check was wrongly
-> made it should have been HAVE_GENERIC_DMA_COHERENT but it was
-> CONFIG_HAVE_GENERIC_DMA_COHERENT.
-> This patch fixes the typo, which was causing following build error:
->
-> videobuf2-dma-contig.c:743: error: 'vb2_dc_get_dmabuf' undeclared here (not in a function)
-> make[3]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+This fixes bug 50081:
+https://bugzilla.kernel.org/show_bug.cgi?id=50081
 
-The CONFIG_HAVE_GENERIC_DMA_COHERENT based patch was a quick workaround
-for the build problem in linux-next and should be reverted now. The
-correct patch has been posted for drivers/base/dma-mapping.c to LKML,
-see http://www.spinics.net/lists/linux-next/msg22890.html
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+Reported-by: Tomas M <tomas@slax.org>
+---
+ drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
-> ---
->   drivers/media/v4l2-core/videobuf2-dma-contig.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> index 5729450..dfea692 100644
-> --- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> +++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> @@ -739,7 +739,7 @@ static void *vb2_dc_attach_dmabuf(void *alloc_ctx, struct dma_buf *dbuf,
->   const struct vb2_mem_ops vb2_dma_contig_memops = {
->   	.alloc		= vb2_dc_alloc,
->   	.put		= vb2_dc_put,
-> -#ifdef CONFIG_HAVE_GENERIC_DMA_COHERENT
-> +#ifdef HAVE_GENERIC_DMA_COHERENT
->   	.get_dmabuf	= vb2_dc_get_dmabuf,
->   #endif
->   	.cookie		= vb2_dc_cookie,
-
-Best regards
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index fb4a7c9..f2a73bd 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -265,7 +265,7 @@ out_cleanup:
+ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			   int offset)
+ {
+-	int ret;
++	int ret = 0;
+ 	size_t clen;
+ 	unsigned long handle;
+ 	struct page *page;
+@@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			goto out;
+ 		}
+ 		ret = zram_decompress_page(zram, uncmem, index);
+-		if (ret) {
+-			kfree(uncmem);
++		if (ret)
+ 			goto out;
+-		}
+ 	}
+ 
+ 	/*
+@@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 
+ 	user_mem = kmap_atomic(page);
+ 
+-	if (is_partial_io(bvec))
++	if (is_partial_io(bvec)) {
+ 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
+ 		       bvec->bv_len);
+-	else
++		kunmap_atomic(user_mem);
++		user_mem = NULL;
++	} else {
+ 		uncmem = user_mem;
++	}
+ 
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem);
+-		if (is_partial_io(bvec))
+-			kfree(uncmem);
++		if (!is_partial_io(bvec))
++			kunmap_atomic(user_mem);
+ 		zram_stat_inc(&zram->stats.pages_zero);
+ 		zram_set_flag(zram, index, ZRAM_ZERO);
+ 		ret = 0;
+@@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+ 			       zram->compress_workmem);
+ 
+-	kunmap_atomic(user_mem);
+-	if (is_partial_io(bvec))
+-			kfree(uncmem);
++	if (!is_partial_io(bvec)) {
++		kunmap_atomic(user_mem);
++		user_mem = NULL;
++		uncmem = NULL;
++	}
+ 
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Compression failed! err=%d\n", ret);
+@@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 
+ 	if (unlikely(clen > max_zpage_size)) {
+ 		zram_stat_inc(&zram->stats.bad_compress);
+-		src = uncmem;
+ 		clen = PAGE_SIZE;
++		src = NULL;
++		if (is_partial_io(bvec))
++			src = uncmem;
+ 	}
+ 
+ 	handle = zs_malloc(zram->mem_pool, clen);
+@@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	}
+ 	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+ 
++	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
++		src = kmap_atomic(page);
+ 	memcpy(cmem, src, clen);
++	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
++		kunmap_atomic(src);
+ 
+ 	zs_unmap_object(zram->mem_pool, handle);
+ 
+@@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	if (clen <= PAGE_SIZE / 2)
+ 		zram_stat_inc(&zram->stats.good_compress);
+ 
+-	return 0;
+-
+ out:
++	if (is_partial_io(bvec))
++		kfree(uncmem);
++
+ 	if (ret)
+ 		zram_stat64_inc(zram, &zram->stats.failed_writes);
+ 	return ret;
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+1.7.10.4
 
