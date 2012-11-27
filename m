@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab2K0Xvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:51:37 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:36554 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756773Ab2K0Xve (ORCPT
+	id S1756992Ab2K0XwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:52:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756935Ab2K0XwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:51:34 -0500
-Date: Wed, 28 Nov 2012 00:51:29 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
-Message-ID: <20121127235129.GA20080@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
- <1354055783.2534.18.camel@shinybook.infradead.org>
- <1354058916.2534.25.camel@shinybook.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354058916.2534.25.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Nov 2012 18:52:03 -0500
+Date: Tue, 27 Nov 2012 15:52:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: fix balloon_page_movable() page->flags check
+Message-Id: <20121127155201.ddfea7e1.akpm@linux-foundation.org>
+In-Reply-To: <1ccb1c95a52185bcc6009761cb2829197e2737ea.1354058194.git.aquini@redhat.com>
+References: <20121127145708.c7173d0d.akpm@linux-foundation.org>
+	<1ccb1c95a52185bcc6009761cb2829197e2737ea.1354058194.git.aquini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 11:28:36PM +0000, David Woodhouse wrote:
-> Avoid submitting patches to a vcc which is being closed. Things go badly
-> wrong when the ->pop method gets later called after everything's been
-> torn down.
-> 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
-> On Tue, 2012-11-27 at 22:36 +0000, David Woodhouse wrote:
-> > Nathan, does this help? 
-> 
-> I think that's necessary, but not sufficient. You'll want something like
-> this too... I can now kill br2684ctl while there's a flood of outgoing
-> packets, and get a handful of the printks that I had in here until a few
-> seconds ago when I edited it out of the patch in my mail client... and
-> no more panic.
-> 
-> I do also now have Krzysztof's patch 1/7 (detach protocol before closing
-> vcc) but I don't think it actually matters any more. 
+On Tue, 27 Nov 2012 21:31:10 -0200
+Rafael Aquini <aquini@redhat.com> wrote:
 
-If you do this actually it's better to don't use patch 1/7 because
-it introduces race condition that you found earlier.
-
+> This patch fixes the following crash by fixing and enhancing the way 
+> page->flags are tested to identify a ballooned page.
 > 
-> --- a/net/atm/br2684.c~	2012-11-23 23:14:29.000000000 +0000
-> +++ b/net/atm/br2684.c	2012-11-27 23:09:18.502403881 +0000
-> @@ -249,6 +249,12 @@ static int br2684_xmit_vcc(struct sk_buf
->  	skb_debug(skb);
+> ---8<---
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000194
+> IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
+> --->8---
+> 
+> The NULL pointer deref was taking place because balloon_page_movable()
+> page->flags tests were incomplete and we ended up 
+> inadvertently poking at private pages.
+> 
+> ....
+>
+>  /*
+> + * __balloon_page_flags - helper to perform balloon @page ->flags tests.
+> + *
+> + * As balloon pages are got from Buddy, and we do not play with page->flags
+> + * at driver level (exception made when we get the page lock for compaction),
+> + * therefore we can safely identify a ballooned page by checking if the
+> + * NR_PAGEFLAGS rightmost bits from the page->flags are all cleared.
+> + * This approach also helps on skipping ballooned pages that are locked for
+> + * compaction or release, thus mitigating their racy check at
+> + * balloon_page_movable()
+> + */
+> +#define BALLOON_PAGE_FLAGS_MASK       ((1UL << NR_PAGEFLAGS) - 1)
+
+hm, this seems a bit fragile.
+
+What's actually going on here?  You're assuming that a page fresh from
+buddy has all flags 0..NR_PAGEFLAGS cleared?
+
+That may be true, I'm unsure.  Please take a look at
+PAGE_FLAGS_CHECK_AT_FREE and PAGE_FLAGS_CHECK_AT_PREP and work out why
+the heck these aren't the same thing!
+
+Either way around, doing
+
+	#define BALLOON_PAGE_FLAGS_MASK PAGE_FLAGS_CHECK_AT_PREP
+
+seems rather more maintainable.
+
+> +static inline bool __balloon_page_flags(struct page *page)
+> +{
+> +	return page->flags & BALLOON_PAGE_FLAGS_MASK ? false : true;
+
+We have a neater way of doing the scalar-to-boolean conversion:
+
+	return !(page->flags & BALLOON_PAGE_FLAGS_MASK);
+
+> +}
+> +
+> +/*
+>   * __is_movable_balloon_page - helper to perform @page mapping->flags tests
+>   */
+>  static inline bool __is_movable_balloon_page(struct page *page)
+> @@ -135,8 +152,8 @@ static inline bool balloon_page_movable(struct page *page)
+>  	 * Before dereferencing and testing mapping->flags, lets make sure
+>  	 * this is not a page that uses ->mapping in a different way
+>  	 */
+> -	if (!PageSlab(page) && !PageSwapCache(page) && !PageAnon(page) &&
+> -	    !page_mapped(page))
+> +	if (__balloon_page_flags(page) && !page_mapped(page) &&
+> +	    page_count(page) == 1)
+>  		return __is_movable_balloon_page(page);
 >  
->  	ATM_SKB(skb)->vcc = atmvcc = brvcc->atmvcc;
-> +	if (test_bit(ATM_VF_RELEASED, &atmvcc->flags)
-> +	    || test_bit(ATM_VF_CLOSE, &atmvcc->flags)
-> +	    || !test_bit(ATM_VF_READY, &atmvcc->flags)) {
-> +		dev_kfree_skb(skb);
-> +		return 0;
-> +	}
->  	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n", skb, atmvcc, atmvcc->dev);
->  	atomic_add(skb->truesize, &sk_atm(atmvcc)->sk_wmem_alloc);
->  	ATM_SKB(skb)->atm_options = atmvcc->atm_options;
-> 
-
-With this patch you have still theoretical race that was fixed in patches
-5 and 8 in pppoatm series, but I never seen that in practice.
-
-Acked-by: Krzysztof Mazur <krzysiek@podlesie.net>
-
-Krzysiek
+>  	return false;
+>
+> ...
+>
