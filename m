@@ -1,144 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab2K0Rww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 12:52:52 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:62476 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755552Ab2K0Rwv convert rfc822-to-8bit (ORCPT
+	id S1756665Ab2K0SBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:01:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:35847 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab2K0SBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 12:52:51 -0500
+	Tue, 27 Nov 2012 13:01:10 -0500
+Date: Tue, 27 Nov 2012 19:01:08 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH RESEND] tty: don't dead lock while flushing workqueue
+Message-ID: <20121127180108.GA7376@linutronix.de>
+References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
+ <20121121140426.1860d093@pyramind.ukuu.org.uk>
+ <20121127095357.GA3536@breakpoint.cc>
+ <20121127172249.GB24592@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20121126195742.21126.16500@nucleus>
-References: <1353957609-1295-1-git-send-email-Russ.Dill@ti.com>
-	<20121126195742.21126.16500@nucleus>
-Date: Tue, 27 Nov 2012 09:52:50 -0800
-X-Google-Sender-Auth: wNHs5UyUWHN6BEAvrO0dkt_4t1s
-Message-ID: <CA+Bv8XbR68-VcOF3JkL47+L9yZFkpv16JTbQfA02yZUGnPZvEQ@mail.gmail.com>
-Subject: Re: [PATCH] Don't mark shared helper functions as inline
-From: Russ Dill <Russ.Dill@ti.com>
-To: Mike Turquette <mturquette@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121127172249.GB24592@kroah.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 11:57 AM, Mike Turquette <mturquette@ti.com> wrote:
->
-> Quoting Russ Dill (2012-11-26 11:20:09)
-> > The helper functions that access the opaque struct clk should
-> > not be marked inline since they are contained in clk.c, but expected
-> > to be used by other compilation units. This causes compile errors
-> > under gcc-4.7
-> >
-> > In file included from arch/arm/mach-omap2/clockdomain.c:25:0:
-> > arch/arm/mach-omap2/clockdomain.c: In function ‘clkdm_clk_disable’:
-> > include/linux/clk-provider.h:338:12: error: inlining failed in call to always_inline ‘__clk_get_enable_count’: function body not available
-> > arch/arm/mach-omap2/clockdomain.c:1001:28: error: called from here
-> > make[1]: *** [arch/arm/mach-omap2/clockdomain.o] Error 1
-> > make: *** [arch/arm/mach-omap2] Error 2
-> >
->
-> Hi Russ,
->
-> A fix for this was merged into rc7.  See 93532c8a, "clk: remove inline
-> usage from clk-provider.h".
->
-> Regardless, I'm still considering this patch.  I've heard many times
-> that we should trust the compiler to optimize for us and some folks look
-> down on inlining in general.  If anyone has an opinion on removing
-> inlines from the common clk core then please do speak up.
->
-> Russ, can you update to the latest rc and verify if that fix is enough
-> for you?
+Since commit 89c8d91e31f2 ("tty: localise the lock") I see a dead lock
+in one of my dummy_hcd + g_nokia test cases. The first run one was usually
+okay, the second often resulted in a splat by lockdep and the third was
+usually a dead lock.
+Lockdep complained about tty->hangup_work and tty->legacy_mutex taken
+both ways:
+| ======================================================
+| [ INFO: possible circular locking dependency detected ]
+| 3.7.0-rc6+ #204 Not tainted
+| -------------------------------------------------------
+| kworker/2:1/35 is trying to acquire lock:
+|  (&tty->legacy_mutex){+.+.+.}, at: [<c14051e6>] tty_lock_nested+0x36/0x80
+|
+| but task is already holding lock:
+|  ((&tty->hangup_work)){+.+...}, at: [<c104f6e4>] process_one_work+0x124/0x5e0
+|
+| which lock already depends on the new lock.
+|
+| the existing dependency chain (in reverse order) is:
+|
+| -> #2 ((&tty->hangup_work)){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c104d82d>] flush_work+0x3d/0x240
+|        [<c12e6986>] tty_ldisc_flush_works+0x16/0x30
+|        [<c12e7861>] tty_ldisc_release+0x21/0x70
+|        [<c12e0dfc>] tty_release+0x35c/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #1 (&tty->legacy_mutex/1){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c1405279>] tty_lock_pair+0x29/0x70
+|        [<c12e0bb8>] tty_release+0x118/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #0 (&tty->legacy_mutex){+.+.+.}:
+|        [<c107f3c9>] __lock_acquire+0x1189/0x16a0
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c140523f>] tty_lock+0xf/0x20
+|        [<c12df8e4>] __tty_hangup+0x54/0x410
+|        [<c12dfcb2>] do_tty_hangup+0x12/0x20
+|        [<c104f763>] process_one_work+0x1a3/0x5e0
+|        [<c104fec9>] worker_thread+0x119/0x3a0
+|        [<c1055084>] kthread+0x94/0xa0
+|        [<c140ca37>] ret_from_kernel_thread+0x1b/0x28
+|
+|other info that might help us debug this:
+|
+|Chain exists of:
+|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
+|
+| Possible unsafe locking scenario:
+|
+|       CPU0                    CPU1
+|       ----                    ----
+|  lock((&tty->hangup_work));
+|                               lock(&tty->legacy_mutex/1);
+|                               lock((&tty->hangup_work));
+|  lock(&tty->legacy_mutex);
+|
+| *** DEADLOCK ***
 
-Yes, that commit fixes the compile issue too. I'd go with the more
-complete removal of inlines though. If you have a declaration in a
-header, it makes no sense to call it inline in the .c
+Before the path mentioned tty_ldisc_release() look like this:
 
-> Regards,
-> Mike
->
-> >
-> > Signed-off-by: Russ Dill <Russ.Dill@ti.com>
-> > ---
-> >  drivers/clk/clk.c            | 14 +++++++-------
-> >  include/linux/clk-provider.h |  4 ++--
-> >  2 files changed, 9 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> > index 56e4495e..ed01746 100644
-> > --- a/drivers/clk/clk.c
-> > +++ b/drivers/clk/clk.c
-> > @@ -249,32 +249,32 @@ late_initcall(clk_disable_unused);
-> >
-> >  /***    helper functions   ***/
-> >
-> > -inline const char *__clk_get_name(struct clk *clk)
-> > +const char *__clk_get_name(struct clk *clk)
-> >  {
-> >         return !clk ? NULL : clk->name;
-> >  }
-> >
-> > -inline struct clk_hw *__clk_get_hw(struct clk *clk)
-> > +struct clk_hw *__clk_get_hw(struct clk *clk)
-> >  {
-> >         return !clk ? NULL : clk->hw;
-> >  }
-> >
-> > -inline u8 __clk_get_num_parents(struct clk *clk)
-> > +u8 __clk_get_num_parents(struct clk *clk)
-> >  {
-> >         return !clk ? -EINVAL : clk->num_parents;
-> >  }
-> >
-> > -inline struct clk *__clk_get_parent(struct clk *clk)
-> > +struct clk *__clk_get_parent(struct clk *clk)
-> >  {
-> >         return !clk ? NULL : clk->parent;
-> >  }
-> >
-> > -inline int __clk_get_enable_count(struct clk *clk)
-> > +int __clk_get_enable_count(struct clk *clk)
-> >  {
-> >         return !clk ? -EINVAL : clk->enable_count;
-> >  }
-> >
-> > -inline int __clk_get_prepare_count(struct clk *clk)
-> > +int __clk_get_prepare_count(struct clk *clk)
-> >  {
-> >         return !clk ? -EINVAL : clk->prepare_count;
-> >  }
-> > @@ -300,7 +300,7 @@ out:
-> >         return ret;
-> >  }
-> >
-> > -inline unsigned long __clk_get_flags(struct clk *clk)
-> > +unsigned long __clk_get_flags(struct clk *clk)
-> >  {
-> >         return !clk ? -EINVAL : clk->flags;
-> >  }
-> > diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> > index c127315..f9f5e9e 100644
-> > --- a/include/linux/clk-provider.h
-> > +++ b/include/linux/clk-provider.h
-> > @@ -335,8 +335,8 @@ const char *__clk_get_name(struct clk *clk);
-> >  struct clk_hw *__clk_get_hw(struct clk *clk);
-> >  u8 __clk_get_num_parents(struct clk *clk);
-> >  struct clk *__clk_get_parent(struct clk *clk);
-> > -inline int __clk_get_enable_count(struct clk *clk);
-> > -inline int __clk_get_prepare_count(struct clk *clk);
-> > +int __clk_get_enable_count(struct clk *clk);
-> > +int __clk_get_prepare_count(struct clk *clk);
-> >  unsigned long __clk_get_rate(struct clk *clk);
-> >  unsigned long __clk_get_flags(struct clk *clk);
-> >  int __clk_is_enabled(struct clk *clk);
-> > --
-> > 1.8.0
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
+|	tty_lock();
+
+As it can be seen, it first flushes the workqueue and then grabs the
+tty_lock. Now we grab the lock first:
+
+|	tty_lock_pair(tty, o_tty);
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
+
+so lockdep's complaint seems valid.
+
+The other user of tty_ldisc_flush_works() is tty_set_ldisc() and I tried
+to mimnic its logic:
+- grab tty lock
+- grab ldisc_mutex lock
+- release the tty lock
+- call tty_ldisc_halt()
+- release ldisc_mutex
+- call tty_ldisc_flush_works()
+The code under tty_ldisc_kill() was executed earlier with the tty lock
+taken so it is taken again.
+
+I don't see any problems in my testcase.
+
+Cc: stable@vger.kernel.org #v3.7
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+Greg, here is the resend. I added Acked-By Alan Cox because he wrote
+
+|This looks fine to me as by the time we call tty_ldisc_release we have
+|already set TTY_CLOSING on both sides.
+
+See http://lkml.org/lkml/2012/11/21/347
+
+ drivers/tty/tty_ldisc.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 0f2a2c5..fb76818 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -930,16 +930,21 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	 */
+ 
+ 	tty_lock_pair(tty, o_tty);
++	mutex_lock(&tty->ldisc_mutex);
++	tty_unlock_pair(tty, o_tty);
++
+ 	tty_ldisc_halt(tty);
+-	tty_ldisc_flush_works(tty);
+-	if (o_tty) {
++	if (o_tty)
+ 		tty_ldisc_halt(o_tty);
++	mutex_unlock(&tty->ldisc_mutex);
++
++	tty_ldisc_flush_works(tty);
++	if (o_tty)
+ 		tty_ldisc_flush_works(o_tty);
+-	}
+ 
++	tty_lock_pair(tty, o_tty);
+ 	/* This will need doing differently if we need to lock */
+ 	tty_ldisc_kill(tty);
+-
+ 	if (o_tty)
+ 		tty_ldisc_kill(o_tty);
+ 
+-- 
+1.7.10.4
+
