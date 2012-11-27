@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab2K0GfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:35:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37202 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2K0GfM (ORCPT
+	id S1758038Ab2K0Gff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:35:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41460 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758021Ab2K0Gfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:35:12 -0500
-From: Daniel J Blueman <daniel@numascale-asia.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4 v7] AMD64 EDAC: Fix PCI function lookup
-Date: Tue, 27 Nov 2012 14:32:11 +0800
-Message-Id: <1353997932-8475-3-git-send-email-daniel@numascale-asia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
-References: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+	Tue, 27 Nov 2012 01:35:32 -0500
+Date: Tue, 27 Nov 2012 06:35:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Only set GPIO if it has been requested
+Message-ID: <20121127063528.GU9411@opensource.wolfsonmicro.com>
+References: <1353929315-8874-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <50B3FAAB.9090406@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uUozbLrG2OP+gMtx"
+Content-Disposition: inline
+In-Reply-To: <50B3FAAB.9090406@samsung.com>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix locating sibling memory controller PCI functions by using the
-correct PCI domain.
 
-v7: Refactor patches grouping changes
+--uUozbLrG2OP+gMtx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
----
- drivers/edac/amd64_edac.c |   40 +++++++++++++++++++++-------------------
- 1 file changed, 21 insertions(+), 19 deletions(-)
+On Tue, Nov 27, 2012 at 08:26:35AM +0900, Chanwoo Choi wrote:
+> On 11/26/2012 08:28 PM, Mark Brown wrote:
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 60e93fa..62b7b17 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -983,6 +983,24 @@ static u64 get_error_address(struct mce *m)
- 	return addr;
- }
- 
-+static struct pci_dev *pci_get_related_function(unsigned int vendor,
-+						unsigned int device,
-+						struct pci_dev *related)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	dev = pci_get_device(vendor, device, dev);
-+	while (dev) {
-+		if (pci_domain_nr(dev->bus) == pci_domain_nr(related->bus) &&
-+		    (dev->bus->number == related->bus->number) &&
-+		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
-+			break;
-+		dev = pci_get_device(vendor, device, dev);
-+	}
-+
-+	return dev;
-+}
-+
- static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- {
- 	struct cpuinfo_x86 *c = &boot_cpu_data;
-@@ -1002,11 +1020,12 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- 
- 	/* Factor in CC6 save area by reading dst node's limit reg */
- 	if (c->x86 == 0x15) {
--		struct pci_dev *f1 = NULL;
-+		struct pci_dev *misc, *f1 = NULL;
- 		u8 nid = dram_dst_node(pvt, range);
- 		u32 llim;
- 
--		f1 = pci_get_domain_bus_and_slot(0, 0, PCI_DEVFN(0x18 + nid, 1));
-+		misc = node_to_amd_nb(nid)->misc;
-+		f1 = pci_get_related_function(misc->vendor, PCI_DEVICE_ID_AMD_15H_NB_F1, misc);
- 		if (WARN_ON(!f1))
- 			return;
- 
-@@ -1713,23 +1732,6 @@ static struct amd64_family_type amd64_family_types[] = {
- 	},
- };
- 
--static struct pci_dev *pci_get_related_function(unsigned int vendor,
--						unsigned int device,
--						struct pci_dev *related)
--{
--	struct pci_dev *dev = NULL;
--
--	dev = pci_get_device(vendor, device, dev);
--	while (dev) {
--		if ((dev->bus->number == related->bus->number) &&
--		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
--			break;
--		dev = pci_get_device(vendor, device, dev);
--	}
--
--	return dev;
--}
--
- /*
-  * These are tables of eigenvectors (one per line) which can be used for the
-  * construction of the syndrome tables. The modified syndrome search algorithm
--- 
-1.7.10.4
+> > +	if (arizona->pdata.micd_pol_gpio > 0)
+> > +		gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
+> > +					info->micd_modes[mode].gpio);
 
+> Why not use gpio_is_valid() function to test arizona->pdata.micd_pol_gpio ?
+
+Zero is normally a valid GPIO (since it's an index into a big array
+after all) but this is unhelpful when checking to see if someone filled
+in platform data as it's also the default value for uninitialised member
+variables.  It's much more likely that someone didn't fill in a GPIO
+than that GPIO 0 got assigned to this.
+
+--uUozbLrG2OP+gMtx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtF8RAAoJELSic+t+oim9/foQAJJKOIbWxsnX1ge/RBCklzsu
+jC4a82DHFjuJG3HaeBp5IaqihlglvfccrERW2YKW54fau3PWnuL1x/MCIYIIlvyq
+Cv/ZI4CHK1x80731MZ3NoANtfwjmcGpk1bHUMfkn/YwrEzs3503T/oHw4HE/UNld
+qT2l/LZArpi8v2G6NCuY+aWAfTzHQuViOo82kJHRjradsl6VGZtCMoFh3eqC5/bR
+ysQC019DzRCb/nPnVeG0N/E9lIogbApfR/Aw9bf0nKWN0De6LlW5UZBV1sKsyQEy
+yaz7cwEQqENElNilLEifMYTTNfIMEQRbs6sh7qDT1YP15utZAKmVdGPoj/9V66eo
+K5RJEWq+Qe7H45K7AA6FXWI9YXxdgUHnz3l2JAIG6o1ETt7sXkNyvNxos3t3vWWc
+4EMGi0jnSAm2fOWsNc+nTd1H4FND/+e+cJql2bz4DYNvPQ2ld5kcRYWfZ1sQ7X8k
+GNh6sFOZ+fOu4o8HS0UnGhcQCixJOssTzEiKsVPoq+T51ItCldr7ufA63Aq+MsCE
+6lXf282TnQ6X8YYGXvumj6OnWp71061cGnitoACzoOzXdqlCuzXYjePH1Fk92ZmC
+6eA65O1UhVnQUBydR4RmJXc5Ma0D3P3w+tjv0xh8PZVoroZa2XzUHyxIT0G9pGuJ
+m6iZ8ixTeF7Tuzga3juc
+=0JxP
+-----END PGP SIGNATURE-----
+
+--uUozbLrG2OP+gMtx--
