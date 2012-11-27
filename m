@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab2K0XPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:15:16 -0500
+	id S1756332Ab2K0XTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:19:45 -0500
 Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:26299 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754905Ab2K0XPK (ORCPT
+	by vger.kernel.org with ESMTP id S1755099Ab2K0XPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:15:10 -0500
+	Tue, 27 Nov 2012 18:15:15 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AigGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgYGTkDGxmIDL91jUiDMwOLTZENiWuDBA
+X-IronPort-Anti-Spam-Result: AicGABZJtVB5LIZ7/2dsb2JhbABFi320IRdzgh4BAQUnLyMQCBgxOQMbGYgMv3WMUAeEJAOfS4Z6gwSBTw
 From: Dave Chinner <david@fromorbit.com>
 To: glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 03/19] dcache: remove dentries from LRU before putting on dispose list
-Date: Wed, 28 Nov 2012 10:14:30 +1100
-Message-Id: <1354058086-27937-4-git-send-email-david@fromorbit.com>
+Subject: [PATCH 15/19] xfs: convert dquot cache lru to list_lru
+Date: Wed, 28 Nov 2012 10:14:42 +1100
+Message-Id: <1354058086-27937-16-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
 References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
@@ -25,189 +25,405 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-One of the big problems with modifying the way the dcache shrinker
-and LRU implementation works is that the LRU is abused in several
-ways. One of these is shrink_dentry_list().
-
-Basically, we can move a dentry off the LRU onto a different list
-without doing any accounting changes, and then use dentry_lru_prune()
-to remove it from what-ever list it is now on to do the LRU
-accounting at that point.
-
-This makes it -really hard- to change the LRU implementation. The
-use of the per-sb LRU lock serialises movement of the dentries
-between the different lists and the removal of them, and this is the
-only reason that it works. If we want to break up the dentry LRU
-lock and lists into, say, per-node lists, we remove the only
-serialisation that allows this lru list/dispose list abuse to work.
-
-To make this work effectively, the dispose list has to be isolated
-from the LRU list - dentries have to be removed from the LRU
-*before* being placed on the dispose list. This means that the LRU
-accounting and isolation is completed before disposal is started,
-and that means we can change the LRU implementation freely in
-future.
-
-This means that dentries *must* be marked with DCACHE_SHRINK_LIST
-when they are placed on the dispose list so that we don't think that
-parent dentries found in try_prune_one_dentry() are on the LRU when
-the are actually on the dispose list. This would result in
-accounting the dentry to the LRU a second time. Hence
-dentry_lru_prune() has to handle the DCACHE_SHRINK_LIST case
-differently because the dentry isn't on the LRU list.
+Convert the XFS dquot lru to use the list_lru construct and convert
+the shrinker to being node aware.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/dcache.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 63 insertions(+), 10 deletions(-)
+ fs/xfs/xfs_dquot.c |    7 +-
+ fs/xfs/xfs_qm.c    |  307 ++++++++++++++++++++++++++--------------------------
+ fs/xfs/xfs_qm.h    |    4 +-
+ 3 files changed, 156 insertions(+), 162 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index e0c97fe..0124a84 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -330,7 +330,6 @@ static void dentry_lru_add(struct dentry *dentry)
- static void __dentry_lru_del(struct dentry *dentry)
- {
- 	list_del_init(&dentry->d_lru);
--	dentry->d_flags &= ~DCACHE_SHRINK_LIST;
- 	dentry->d_sb->s_nr_dentry_unused--;
- 	this_cpu_dec(nr_dentry_unused);
- }
-@@ -340,6 +339,8 @@ static void __dentry_lru_del(struct dentry *dentry)
-  */
- static void dentry_lru_del(struct dentry *dentry)
- {
-+	BUG_ON(dentry->d_flags & DCACHE_SHRINK_LIST);
-+
- 	if (!list_empty(&dentry->d_lru)) {
- 		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
- 		__dentry_lru_del(dentry);
-@@ -351,28 +352,42 @@ static void dentry_lru_del(struct dentry *dentry)
-  * Remove a dentry that is unreferenced and about to be pruned
-  * (unhashed and destroyed) from the LRU, and inform the file system.
-  * This wrapper should be called _prior_ to unhashing a victim dentry.
-+ *
-+ * Check that the dentry really is on the LRU as it may be on a private dispose
-+ * list and in that case we do not want to call the generic LRU removal
-+ * functions. This typically happens when shrink_dcache_sb() clears the LRU in
-+ * one go and then try_prune_one_dentry() walks back up the parent chain finding
-+ * dentries that are also on the dispose list.
-  */
- static void dentry_lru_prune(struct dentry *dentry)
- {
- 	if (!list_empty(&dentry->d_lru)) {
-+
- 		if (dentry->d_flags & DCACHE_OP_PRUNE)
- 			dentry->d_op->d_prune(dentry);
+diff --git a/fs/xfs/xfs_dquot.c b/fs/xfs/xfs_dquot.c
+index 9e1bf52..4fcd42e 100644
+--- a/fs/xfs/xfs_dquot.c
++++ b/fs/xfs/xfs_dquot.c
+@@ -843,13 +843,8 @@ xfs_qm_dqput_final(
  
--		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
--		__dentry_lru_del(dentry);
--		spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
-+		if ((dentry->d_flags & DCACHE_SHRINK_LIST))
-+			list_del_init(&dentry->d_lru);
-+		else {
-+			spin_lock(&dentry->d_sb->s_dentry_lru_lock);
-+			__dentry_lru_del(dentry);
-+			spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
-+		}
-+		dentry->d_flags &= ~DCACHE_SHRINK_LIST;
+ 	trace_xfs_dqput_free(dqp);
+ 
+-	mutex_lock(&qi->qi_lru_lock);
+-	if (list_empty(&dqp->q_lru)) {
+-		list_add_tail(&dqp->q_lru, &qi->qi_lru_list);
+-		qi->qi_lru_count++;
++	if (list_lru_add(&qi->qi_lru, &dqp->q_lru))
+ 		XFS_STATS_INC(xs_qm_dquot_unused);
+-	}
+-	mutex_unlock(&qi->qi_lru_lock);
+ 
+ 	/*
+ 	 * If we just added a udquot to the freelist, then we want to release
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index e6a0af0..534b924 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -50,7 +50,6 @@
+  */
+ STATIC int	xfs_qm_init_quotainos(xfs_mount_t *);
+ STATIC int	xfs_qm_init_quotainfo(xfs_mount_t *);
+-STATIC int	xfs_qm_shake(struct shrinker *, struct shrink_control *);
+ 
+ /*
+  * We use the batch lookup interface to iterate over the dquots as it
+@@ -196,12 +195,9 @@ xfs_qm_dqpurge(
+ 	 * We move dquots to the freelist as soon as their reference count
+ 	 * hits zero, so it really should be on the freelist here.
+ 	 */
+-	mutex_lock(&qi->qi_lru_lock);
+ 	ASSERT(!list_empty(&dqp->q_lru));
+-	list_del_init(&dqp->q_lru);
+-	qi->qi_lru_count--;
++	list_lru_del(&qi->qi_lru, &dqp->q_lru);
+ 	XFS_STATS_DEC(xs_qm_dquot_unused);
+-	mutex_unlock(&qi->qi_lru_lock);
+ 
+ 	xfs_qm_dqdestroy(dqp);
+ 
+@@ -617,6 +613,156 @@ xfs_qm_dqdetach(
  	}
  }
  
- static void dentry_lru_move_list(struct dentry *dentry, struct list_head *list)
- {
-+	BUG_ON(dentry->d_flags & DCACHE_SHRINK_LIST);
-+
- 	spin_lock(&dentry->d_sb->s_dentry_lru_lock);
- 	if (list_empty(&dentry->d_lru)) {
- 		list_add_tail(&dentry->d_lru, list);
--		dentry->d_sb->s_nr_dentry_unused++;
--		this_cpu_inc(nr_dentry_unused);
- 	} else {
- 		list_move_tail(&dentry->d_lru, list);
-+		dentry->d_sb->s_nr_dentry_unused--;
-+		this_cpu_dec(nr_dentry_unused);
- 	}
- 	spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
- }
-@@ -840,12 +855,18 @@ static void shrink_dentry_list(struct list_head *list)
- 		}
- 
- 		/*
-+		 * The dispose list is isolated and dentries are not accounted
-+		 * to the LRU here, so we can simply remove it from the list
-+		 * here regardless of whether it is referenced or not.
-+		 */
-+		list_del_init(&dentry->d_lru);
-+
-+		/*
- 		 * We found an inuse dentry which was not removed from
--		 * the LRU because of laziness during lookup.  Do not free
--		 * it - just keep it off the LRU list.
-+		 * the LRU because of laziness during lookup. Do not free it.
- 		 */
- 		if (dentry->d_count) {
--			dentry_lru_del(dentry);
-+			dentry->d_flags &= ~DCACHE_SHRINK_LIST;
- 			spin_unlock(&dentry->d_lock);
- 			continue;
- 		}
-@@ -897,6 +918,8 @@ relock:
- 		} else {
- 			list_move_tail(&dentry->d_lru, &tmp);
- 			dentry->d_flags |= DCACHE_SHRINK_LIST;
-+			this_cpu_dec(nr_dentry_unused);
-+			sb->s_nr_dentry_unused--;
- 			spin_unlock(&dentry->d_lock);
- 			if (!--count)
- 				break;
-@@ -910,6 +933,28 @@ relock:
- 	shrink_dentry_list(&tmp);
- }
- 
-+/*
-+ * Mark all the dentries as on being the dispose list so we don't think they are
-+ * still on the LRU if we try to kill them from ascending the parent chain in
-+ * try_prune_one_dentry() rather than directly from the dispose list.
-+ */
-+static void
-+shrink_dcache_list(
-+	struct list_head *dispose)
++STATIC void
++xfs_qm_dqfree_one(
++	struct xfs_dquot	*dqp)
 +{
-+	struct dentry *dentry;
++	struct xfs_mount	*mp = dqp->q_mount;
++	struct xfs_quotainfo	*qi = mp->m_quotainfo;
 +
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(dentry, dispose, d_lru) {
-+		spin_lock(&dentry->d_lock);
-+		dentry->d_flags |= DCACHE_SHRINK_LIST;
-+		this_cpu_dec(nr_dentry_unused);
-+		spin_unlock(&dentry->d_lock);
-+	}
-+	rcu_read_unlock();
-+	shrink_dentry_list(dispose);
++	mutex_lock(&qi->qi_tree_lock);
++	radix_tree_delete(XFS_DQUOT_TREE(qi, dqp->q_core.d_flags),
++					 be32_to_cpu(dqp->q_core.d_id));
++
++	qi->qi_dquots--;
++	mutex_unlock(&qi->qi_tree_lock);
++
++	xfs_qm_dqdestroy(dqp);
 +}
 +
- /**
-  * shrink_dcache_sb - shrink dcache for a superblock
-  * @sb: superblock
-@@ -924,8 +969,16 @@ void shrink_dcache_sb(struct super_block *sb)
- 	spin_lock(&sb->s_dentry_lru_lock);
- 	while (!list_empty(&sb->s_dentry_lru)) {
- 		list_splice_init(&sb->s_dentry_lru, &tmp);
++struct xfs_qm_isolate {
++	struct list_head	buffers;
++	struct list_head	dispose;
++};
 +
-+		/*
-+		 * account for removal here so we don't need to handle it later
-+		 * even though the dentry is no longer on the lru list.
-+		 */
-+		this_cpu_sub(nr_dentry_unused, sb->s_nr_dentry_unused);
-+		sb->s_nr_dentry_unused = 0;
++static int
++xfs_qm_dquot_isolate(
++	struct list_head	*item,
++	spinlock_t		*lru_lock,
++	void			*arg)
++{
++	struct xfs_dquot	*dqp = container_of(item,
++						struct xfs_dquot, q_lru);
++	struct xfs_qm_isolate	*isol = arg;
 +
- 		spin_unlock(&sb->s_dentry_lru_lock);
--		shrink_dentry_list(&tmp);
-+		shrink_dcache_list(&tmp);
- 		spin_lock(&sb->s_dentry_lru_lock);
++	if (!xfs_dqlock_nowait(dqp))
++		goto out_miss_busy;
++
++	/*
++	 * This dquot has acquired a reference in the meantime remove it from
++	 * the freelist and try again.
++	 */
++	if (dqp->q_nrefs) {
++		xfs_dqunlock(dqp);
++		XFS_STATS_INC(xs_qm_dqwants);
++
++		trace_xfs_dqreclaim_want(dqp);
++		list_del_init(&dqp->q_lru);
++		XFS_STATS_DEC(xs_qm_dquot_unused);
++		return 0;
++	}
++
++	/*
++	 * If the dquot is dirty, flush it. If it's already being flushed, just
++	 * skip it so there is time for the IO to complete before we try to
++	 * reclaim it again on the next LRU pass.
++	 */
++	if (!xfs_dqflock_nowait(dqp))
++		xfs_dqunlock(dqp);
++		goto out_miss_busy;
++
++	if (XFS_DQ_IS_DIRTY(dqp)) {
++		struct xfs_buf	*bp = NULL;
++		int		error;
++
++		trace_xfs_dqreclaim_dirty(dqp);
++
++		/* we have to drop the LRU lock to flush the dquot */
++		spin_unlock(lru_lock);
++
++		error = xfs_qm_dqflush(dqp, &bp);
++		if (error) {
++			xfs_warn(dqp->q_mount, "%s: dquot %p flush failed",
++				 __func__, dqp);
++			goto out_unlock_dirty;
++		}
++
++		xfs_buf_delwri_queue(bp, &isol->buffers);
++		xfs_buf_relse(bp);
++		goto out_unlock_dirty;
++	}
++	xfs_dqfunlock(dqp);
++
++	/*
++	 * Prevent lookups now that we are past the point of no return.
++	 */
++	dqp->dq_flags |= XFS_DQ_FREEING;
++	xfs_dqunlock(dqp);
++
++	ASSERT(dqp->q_nrefs == 0);
++	list_move_tail(&dqp->q_lru, &isol->dispose);
++	XFS_STATS_DEC(xs_qm_dquot_unused);
++	trace_xfs_dqreclaim_done(dqp);
++	XFS_STATS_INC(xs_qm_dqreclaims);
++	return 0;
++
++out_miss_busy:
++	trace_xfs_dqreclaim_busy(dqp);
++	XFS_STATS_INC(xs_qm_dqreclaim_misses);
++	return 2;
++
++out_unlock_dirty:
++	trace_xfs_dqreclaim_busy(dqp);
++	XFS_STATS_INC(xs_qm_dqreclaim_misses);
++	return 3;
++}
++
++static long
++xfs_qm_shrink_scan(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
++{
++	struct xfs_quotainfo	*qi = container_of(shrink,
++					struct xfs_quotainfo, qi_shrinker);
++	struct xfs_qm_isolate	isol;
++	long			freed;
++	int			error;
++
++	if ((sc->gfp_mask & (__GFP_FS|__GFP_WAIT)) != (__GFP_FS|__GFP_WAIT))
++		return 0;
++
++	INIT_LIST_HEAD(&isol.buffers);
++	INIT_LIST_HEAD(&isol.dispose);
++
++	freed = list_lru_walk_nodemask(&qi->qi_lru, xfs_qm_dquot_isolate, &isol,
++					sc->nr_to_scan, &sc->nodes_to_scan);
++
++	error = xfs_buf_delwri_submit(&isol.buffers);
++	if (error)
++		xfs_warn(NULL, "%s: dquot reclaim failed", __func__);
++
++	while (!list_empty(&isol.dispose)) {
++		struct xfs_dquot	*dqp;
++
++		dqp = list_first_entry(&isol.dispose, struct xfs_dquot, q_lru);
++		list_del_init(&dqp->q_lru);
++		xfs_qm_dqfree_one(dqp);
++	}
++
++	return freed;
++}
++
++static long
++xfs_qm_shrink_count(
++	struct shrinker		*shrink,
++	struct shrink_control	*sc)
++{
++	struct xfs_quotainfo	*qi = container_of(shrink,
++					struct xfs_quotainfo, qi_shrinker);
++
++	return list_lru_count_nodemask(&qi->qi_lru, &sc->nodes_to_scan);
++}
++
+ /*
+  * This initializes all the quota information that's kept in the
+  * mount structure
+@@ -647,9 +793,7 @@ xfs_qm_init_quotainfo(
+ 	INIT_RADIX_TREE(&qinf->qi_gquota_tree, GFP_NOFS);
+ 	mutex_init(&qinf->qi_tree_lock);
+ 
+-	INIT_LIST_HEAD(&qinf->qi_lru_list);
+-	qinf->qi_lru_count = 0;
+-	mutex_init(&qinf->qi_lru_lock);
++	list_lru_init(&qinf->qi_lru);
+ 
+ 	/* mutex used to serialize quotaoffs */
+ 	mutex_init(&qinf->qi_quotaofflock);
+@@ -716,7 +860,8 @@ xfs_qm_init_quotainfo(
+ 		qinf->qi_rtbwarnlimit = XFS_QM_RTBWARNLIMIT;
  	}
- 	spin_unlock(&sb->s_dentry_lru_lock);
+ 
+-	qinf->qi_shrinker.shrink = xfs_qm_shake;
++	qinf->qi_shrinker.count_objects = xfs_qm_shrink_count;
++	qinf->qi_shrinker.scan_objects = xfs_qm_shrink_scan;
+ 	qinf->qi_shrinker.seeks = DEFAULT_SEEKS;
+ 	register_shrinker(&qinf->qi_shrinker);
+ 	return 0;
+@@ -1428,150 +1573,6 @@ xfs_qm_init_quotainos(
+ 	return 0;
+ }
+ 
+-STATIC void
+-xfs_qm_dqfree_one(
+-	struct xfs_dquot	*dqp)
+-{
+-	struct xfs_mount	*mp = dqp->q_mount;
+-	struct xfs_quotainfo	*qi = mp->m_quotainfo;
+-
+-	mutex_lock(&qi->qi_tree_lock);
+-	radix_tree_delete(XFS_DQUOT_TREE(qi, dqp->q_core.d_flags),
+-			  be32_to_cpu(dqp->q_core.d_id));
+-
+-	qi->qi_dquots--;
+-	mutex_unlock(&qi->qi_tree_lock);
+-
+-	xfs_qm_dqdestroy(dqp);
+-}
+-
+-STATIC void
+-xfs_qm_dqreclaim_one(
+-	struct xfs_dquot	*dqp,
+-	struct list_head	*buffer_list,
+-	struct list_head	*dispose_list)
+-{
+-	struct xfs_mount	*mp = dqp->q_mount;
+-	struct xfs_quotainfo	*qi = mp->m_quotainfo;
+-	int			error;
+-
+-	if (!xfs_dqlock_nowait(dqp))
+-		goto out_busy;
+-
+-	/*
+-	 * This dquot has acquired a reference in the meantime remove it from
+-	 * the freelist and try again.
+-	 */
+-	if (dqp->q_nrefs) {
+-		xfs_dqunlock(dqp);
+-
+-		trace_xfs_dqreclaim_want(dqp);
+-		XFS_STATS_INC(xs_qm_dqwants);
+-
+-		list_del_init(&dqp->q_lru);
+-		qi->qi_lru_count--;
+-		XFS_STATS_DEC(xs_qm_dquot_unused);
+-		return;
+-	}
+-
+-	/*
+-	 * Try to grab the flush lock. If this dquot is in the process of
+-	 * getting flushed to disk, we don't want to reclaim it.
+-	 */
+-	if (!xfs_dqflock_nowait(dqp))
+-		goto out_busy;
+-
+-	if (XFS_DQ_IS_DIRTY(dqp)) {
+-		struct xfs_buf	*bp = NULL;
+-
+-		trace_xfs_dqreclaim_dirty(dqp);
+-
+-		error = xfs_qm_dqflush(dqp, &bp);
+-		if (error) {
+-			xfs_warn(mp, "%s: dquot %p flush failed",
+-				 __func__, dqp);
+-			goto out_busy;
+-		}
+-
+-		xfs_buf_delwri_queue(bp, buffer_list);
+-		xfs_buf_relse(bp);
+-		/*
+-		 * Give the dquot another try on the freelist, as the
+-		 * flushing will take some time.
+-		 */
+-		goto out_busy;
+-	}
+-	xfs_dqfunlock(dqp);
+-
+-	/*
+-	 * Prevent lookups now that we are past the point of no return.
+-	 */
+-	dqp->dq_flags |= XFS_DQ_FREEING;
+-	xfs_dqunlock(dqp);
+-
+-	ASSERT(dqp->q_nrefs == 0);
+-	list_move_tail(&dqp->q_lru, dispose_list);
+-	qi->qi_lru_count--;
+-	XFS_STATS_DEC(xs_qm_dquot_unused);
+-
+-	trace_xfs_dqreclaim_done(dqp);
+-	XFS_STATS_INC(xs_qm_dqreclaims);
+-	return;
+-
+-out_busy:
+-	xfs_dqunlock(dqp);
+-
+-	/*
+-	 * Move the dquot to the tail of the list so that we don't spin on it.
+-	 */
+-	list_move_tail(&dqp->q_lru, &qi->qi_lru_list);
+-
+-	trace_xfs_dqreclaim_busy(dqp);
+-	XFS_STATS_INC(xs_qm_dqreclaim_misses);
+-}
+-
+-STATIC int
+-xfs_qm_shake(
+-	struct shrinker		*shrink,
+-	struct shrink_control	*sc)
+-{
+-	struct xfs_quotainfo	*qi =
+-		container_of(shrink, struct xfs_quotainfo, qi_shrinker);
+-	int			nr_to_scan = sc->nr_to_scan;
+-	LIST_HEAD		(buffer_list);
+-	LIST_HEAD		(dispose_list);
+-	struct xfs_dquot	*dqp;
+-	int			error;
+-
+-	if ((sc->gfp_mask & (__GFP_FS|__GFP_WAIT)) != (__GFP_FS|__GFP_WAIT))
+-		return 0;
+-	if (!nr_to_scan)
+-		goto out;
+-
+-	mutex_lock(&qi->qi_lru_lock);
+-	while (!list_empty(&qi->qi_lru_list)) {
+-		if (nr_to_scan-- <= 0)
+-			break;
+-		dqp = list_first_entry(&qi->qi_lru_list, struct xfs_dquot,
+-				       q_lru);
+-		xfs_qm_dqreclaim_one(dqp, &buffer_list, &dispose_list);
+-	}
+-	mutex_unlock(&qi->qi_lru_lock);
+-
+-	error = xfs_buf_delwri_submit(&buffer_list);
+-	if (error)
+-		xfs_warn(NULL, "%s: dquot reclaim failed", __func__);
+-
+-	while (!list_empty(&dispose_list)) {
+-		dqp = list_first_entry(&dispose_list, struct xfs_dquot, q_lru);
+-		list_del_init(&dqp->q_lru);
+-		xfs_qm_dqfree_one(dqp);
+-	}
+-
+-out:
+-	return (qi->qi_lru_count / 100) * sysctl_vfs_cache_pressure;
+-}
+-
+ /*
+  * Start a transaction and write the incore superblock changes to
+  * disk. flags parameter indicates which fields have changed.
+diff --git a/fs/xfs/xfs_qm.h b/fs/xfs/xfs_qm.h
+index 44b858b..d08b72d 100644
+--- a/fs/xfs/xfs_qm.h
++++ b/fs/xfs/xfs_qm.h
+@@ -47,9 +47,7 @@ typedef struct xfs_quotainfo {
+ 	struct mutex qi_tree_lock;
+ 	xfs_inode_t	*qi_uquotaip;	 /* user quota inode */
+ 	xfs_inode_t	*qi_gquotaip;	 /* group quota inode */
+-	struct list_head qi_lru_list;
+-	struct mutex	 qi_lru_lock;
+-	int		 qi_lru_count;
++	struct list_lru	 qi_lru;
+ 	int		 qi_dquots;
+ 	time_t		 qi_btimelimit;	 /* limit for blks timer */
+ 	time_t		 qi_itimelimit;	 /* limit for inodes timer */
 -- 
 1.7.10
 
