@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab2K0Qqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 11:46:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756316Ab2K0Qqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 11:46:45 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com
-Cc: Bart Van Assche <bvanassche@acm.org>
-Subject: [patch,v3,repost 01/10] scsi: add scsi_host_alloc_node
-Date: Tue, 27 Nov 2012 11:46:29 -0500
-Message-Id: <1354034799-8460-2-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
-References: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
+	id S1756544Ab2K0QsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 11:48:23 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60137 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756123Ab2K0QsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 11:48:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121127161925.GG2474@linux.vnet.ibm.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+	<CAFTL4hzzumANj7hF5hJPZ5pKPhz4YWC-Ukb3yUKdy_DO+vb3wg@mail.gmail.com>
+	<20121127154455.GK12969@redhat.com>
+	<CAFTL4hyfCt2imzBYW+Sn5QUAwham=ZQ2nNER5Np7Hq4yg1LzxA@mail.gmail.com>
+	<20121127161925.GG2474@linux.vnet.ibm.com>
+Date: Tue, 27 Nov 2012 17:48:18 +0100
+Message-ID: <CAFTL4hyjsyj+=g7Pe46M7hL2vqnUgzORGsydZ_X=QOHM7jb78g@mail.gmail.com>
+Subject: Re: [RFC PATCH] Fix abnormal rcu dynticks_nesting values related to
+ async page fault
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Gleb Natapov <gleb@redhat.com>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, sasha.levin@oracle.com,
+        avi@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow an LLD to specify on which numa node to allocate scsi data
-structures.  Thanks to Bart Van Assche for the suggestion.
+2012/11/27 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Tue, Nov 27, 2012 at 04:56:30PM +0100, Frederic Weisbecker wrote:
+>> 2012/11/27 Gleb Natapov <gleb@redhat.com>:
+>> > For KVM_PV_REASON_PAGE_NOT_PRESENT it behaves like an exception.
+>>
+>> Ok.
+>> There seem to be a bug in kvm_async_pf_task_wait(). Using
+>> idle_cpu(cpu) to find out if the current task is the idle task may not
+>> work if there is pending wake up. Me may schedule another task but
+>> when that other task sleeps later we can't schedule back to idle until
+>> the fault is completed.
+>>
+>> The right way is to use is_idle_task(current)
+>
+> Agreed.  But if you instead need to figure out whether or not RCU believes
+> that the CPU is idle, use rcu_is_cpu_idle().  You need to figure out
+> whether or not RCU believes that the CPU is idle if you are trying to
+> play fast and loose with rcu_irq_enter() and rcu_irq_exit().
 
-Reviewed-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- drivers/scsi/hosts.c     |   13 +++++++++++--
- include/scsi/scsi_host.h |   28 ++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 2 deletions(-)
+Right. I was referring to another problem though. They don't want to
+schedule on the following cases:
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 593085a..06ce602 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -336,16 +336,25 @@ static struct device_type scsi_host_type = {
-  **/
- struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- {
-+	return scsi_host_alloc_node(sht, privsize, NUMA_NO_NODE);
-+}
-+EXPORT_SYMBOL(scsi_host_alloc);
-+
-+struct Scsi_Host *scsi_host_alloc_node(struct scsi_host_template *sht,
-+				       int privsize, int node)
-+{
- 	struct Scsi_Host *shost;
- 	gfp_t gfp_mask = GFP_KERNEL;
- 
- 	if (sht->unchecked_isa_dma && privsize)
- 		gfp_mask |= __GFP_DMA;
- 
--	shost = kzalloc(sizeof(struct Scsi_Host) + privsize, gfp_mask);
-+	shost = kzalloc_node(sizeof(struct Scsi_Host) + privsize,
-+			     gfp_mask, node);
- 	if (!shost)
- 		return NULL;
- 
-+	scsi_host_set_numa_node(shost, node);
- 	shost->host_lock = &shost->default_lock;
- 	spin_lock_init(shost->host_lock);
- 	shost->shost_state = SHOST_CREATED;
-@@ -443,7 +452,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- 	kfree(shost);
- 	return NULL;
- }
--EXPORT_SYMBOL(scsi_host_alloc);
-+EXPORT_SYMBOL(scsi_host_alloc_node);
- 
- struct Scsi_Host *scsi_register(struct scsi_host_template *sht, int privsize)
- {
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 4908480..438856d 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -732,6 +732,14 @@ struct Scsi_Host {
- 	 */
- 	struct device *dma_dev;
- 
-+#ifdef CONFIG_NUMA
-+	/*
-+	 * Numa node this device is closest to, used for allocating
-+	 * data structures locally.
-+	 */
-+	int numa_node;
-+#endif
-+
- 	/*
- 	 * We should ensure that this is aligned, both for better performance
- 	 * and also because some compilers (m68k) don't automatically force
-@@ -776,6 +784,8 @@ extern int scsi_queue_work(struct Scsi_Host *, struct work_struct *);
- extern void scsi_flush_work(struct Scsi_Host *);
- 
- extern struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *, int);
-+extern struct Scsi_Host *scsi_host_alloc_node(struct scsi_host_template *,
-+					      int, int);
- extern int __must_check scsi_add_host_with_dma(struct Scsi_Host *,
- 					       struct device *,
- 					       struct device *);
-@@ -919,6 +929,24 @@ static inline unsigned char scsi_host_get_guard(struct Scsi_Host *shost)
- 	return shost->prot_guard_type;
- }
- 
-+#ifdef CONFIG_NUMA
-+static inline int scsi_host_get_numa_node(struct Scsi_Host *shost)
-+{
-+	return shost->numa_node;
-+}
-+
-+static inline void scsi_host_set_numa_node(struct Scsi_Host *shost, int node)
-+{
-+	shost->numa_node = node;
-+}
-+#else /* CONFIG_NUMA */
-+static inline int scsi_host_get_numa_node(struct Scsi_Host *shost)
-+{
-+	return NUMA_NO_NODE;
-+}
-+static inline void scsi_host_set_numa_node(struct Scsi_Host *shost, int node) {}
-+#endif
-+
- /* legacy interfaces */
- extern struct Scsi_Host *scsi_register(struct scsi_host_template *, int);
- extern void scsi_unregister(struct Scsi_Host *);
--- 
-1.7.1
+1) preemption disabled, of course.
+3) we are in the idle task. Because if we want to sleep in order to
+wait for the page fault completion, we need to be able to schedule the
+idle task. But we are already the idle task.
 
+Now idle_cpu(cpu) is the wrong check for that.
