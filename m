@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758377Ab2K0IkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 03:40:15 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39639 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307Ab2K0IkN (ORCPT
+	id S933046Ab2K0Ilw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 03:41:52 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2788 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758356Ab2K0Ils convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 03:40:13 -0500
-Date: Tue, 27 Nov 2012 08:40:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
-Message-ID: <20121127084007.GA7897@gmail.com>
-References: <57384ebc52c7d39d1bae31ba3baa6f820b4ac696.1353610436.git.viresh.kumar@linaro.org>
- <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
- <20121123094132.EFCB73E07BE@localhost>
- <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
- <20121126184015.784993E091F@localhost>
- <CAKohpo=dHz-fJRdwovOWesAZJwibgrNk-+2t--JK+T_sBsu9Tw@mail.gmail.com>
- <CAKohpomOxfLhpZqpk3aymdNa7UAGRcex7d+N5srkFDnrhtULTw@mail.gmail.com>
+	Tue, 27 Nov 2012 03:41:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 27 Nov 2012 00:41:38 -0800
+Message-ID: <50B47DA8.60609@nvidia.com>
+Date: Tue, 27 Nov 2012 10:45:28 +0200
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpomOxfLhpZqpk3aymdNa7UAGRcex7d+N5srkFDnrhtULTw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Airlie <airlied@gmail.com>
+CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com> <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com> <50B46336.8030605@nvidia.com> <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com> <50B476E1.4070403@nvidia.com> <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+In-Reply-To: <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Nov 2012, Viresh Kumar wrote:
+On 27.11.2012 10:32, Dave Airlie wrote:
+> On Tue, Nov 27, 2012 at 8:16 AM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+>> Thanks for the pointer, I looked at exynos code. It indeed checks the
+>> registers written to, but it doesn't prevent overrun by checking sizes
+>> of buffers and compare against requests.
+> They probably need to add that, its not as important as the base
+> addresses, unless it takes negative strides, generally base addresses
+> means you can target current->uid quite easily!
 
-> On 27 November 2012 08:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 27 November 2012 00:10, Grant Likely <grant.likely@secretlab.ca> wrote:
-> >> It would actually be good to ask the interrupt controller driver what
-> >> kind of interrupt signal it expects for a given interrupt line. That
-> >> should also solve the problem and I think it would be more useful to
-> >> other devices. Can you investigate whether or not
-> >> irqd_get_trigger_type() returns the information you need?
-> >
-> > That's a pretty cool function to use. :)
-> >
-> > Will check it out :)
+Ok. We'll implement the firewall, unless we come up with even a better
+choice.
+
+>> If this is the way to go, I'll put the firewall behind a Kconfig flag so
+>> that system integrator can decide if his system needs it.
+> We don't generally make security like this optional :-)
 > 
-> I was thinking about this logic in my earlier mail, don't know what stopped me
-> from thinking it is wrong. :(
-> 
-> Problem is with invert polarity, which the interrupt controller is not aware of.
-> For example, suppose interrupt controller needs Rising edge interrupt, but
-> the board has inverted the line between stmpe and IC. So, we will get
-> Rising high from the routine you mentioned, but we need to generate
-> opposite of that to make it rising high.
+> If you do that you should restrict the drm device to root users only,
+> and never let a user with a browser anywhere near it.
 
-Surely that would be a hardware design error/quirk?
+My thinking was that the system integrator can decide how much he trusts
+the binaries (incl. browser plugins) in the system. If he trusts the
+binaries, the firewall can be turned off.
 
-Can you give an example where this has happened?
+> Like I know what you guys get away with in closed source world, but
+> here we don't write root holes into our driver deliberately.
 
-> And so interrupt polarity field is still required.
+Duly noted. :-)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Terje
