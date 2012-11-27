@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2K0UYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 15:24:53 -0500
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:40660 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab2K0UYv (ORCPT
+	id S932311Ab2K0UZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 15:25:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49037 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab2K0UZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 15:24:51 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjN3AEAhtVBV5qjOPGdsb2JhbABFhUAiAYUAtToXAwEBAQE4NIIeAQEFOhwjEAgDGC4UDRgKGhOHewMTr22GXw2JVBSLPWmDYGEDlCyBVIV7hTqIAQ
-X-IronPort-AV: E=Sophos;i="4.83,330,1352070000"; 
-   d="scan'208";a="233816050"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 27 Nov 2012 21:25:54 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/11] HID: hid-multitouch: creates and handle stylus
- report with dual-sensors
-Message-ID: <20121127202554.GA901@polaris.bitmath.org>
-References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
- <1353684694-5723-5-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353684694-5723-5-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Nov 2012 15:25:37 -0500
+Date: Tue, 27 Nov 2012 12:25:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v6 0/6] solve deadlock caused by memory allocation with
+ I/O
+Message-Id: <20121127122536.a0e94ab8.akpm@linux-foundation.org>
+In-Reply-To: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 04:31:27PM +0100, Benjamin Tissoires wrote:
-> Now that drivers can create new inputs, let's use this to split
-> the reports coming from the pen and from the touch.
+On Sat, 24 Nov 2012 20:59:12 +0800
+Ming Lei <ming.lei@canonical.com> wrote:
+
+> This patchset try to solve one deadlock problem which might be caused
+> by memory allocation with block I/O during runtime PM and block device
+> error handling path. Traditionly, the problem is addressed by passing
+> GFP_NOIO statically to mm, but that is not a effective solution, see
+> detailed description in patch 1's commit log.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 30 +++++++++++++++++++++++++-----
->  1 file changed, 25 insertions(+), 5 deletions(-)
+> This patch set introduces one process flag and trys to fix the deadlock
+> problem on block device/network device during runtime PM or usb bus reset.
+> 
+> The 1st one is the change on include/sched.h and mm.
+> 
+> The 2nd patch introduces the flag of memalloc_noio on 'dev_pm_info',
+> and pm_runtime_set_memalloc_noio(), so that PM Core can teach mm to not
+> allocate mm with GFP_IO during the runtime_resume callback only on
+> device with the flag set.
+> 
+> The following 2 patches apply the introduced pm_runtime_set_memalloc_noio()
+> to mark all devices as memalloc_noio_resume in the path from the block or
+> network device to the root device in device tree.
+> 
+> The last 2 patches are applied again PM and USB subsystem to demonstrate
+> how to use the introduced mechanism to fix the deadlock problem.
+> 
+> Andrew, could you queue these patches into your tree since V6 fixes all
+> your concerns and looks no one objects these patches?
 
-NAK on this one in its present form. I appreciate the idea, just not
-the implementation, sorry.
-
-Thanks,
-Henrik
+Yes, this patchset looks ready to run with.  But as we're at -rc7 I'll ask
+you to refresh, retest and resend after 3.8-rc1, please.
