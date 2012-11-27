@@ -1,111 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab2K0PIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 10:08:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43424 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755296Ab2K0PIa (ORCPT
+	id S1755886Ab2K0PKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 10:10:43 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38863 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698Ab2K0PKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 10:08:30 -0500
-Message-ID: <1354028907.4266.56.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 061/270] timekeeping: Cast raw_interval to u64 to avoid
- shift overflow
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Dan Carpenter <dan.carpenter@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Date: Tue, 27 Nov 2012 15:08:27 +0000
-In-Reply-To: <1353949160-26803-62-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-62-git-send-email-herton.krzesinski@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-ynHKSbGTJyXvruWRNfIO"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 27 Nov 2012 10:10:42 -0500
+Message-ID: <50B4D7E8.9020306@linux.vnet.ibm.com>
+Date: Tue, 27 Nov 2012 09:10:32 -0600
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, riel@redhat.com, kvm@vger.kernel.org,
+        peterz@infradead.org, mtosatti@redhat.com, mingo@redhat.com,
+        anthony@codemonkey.ws,
+        "gleb@redhat.com >> Gleb Natapov" <gleb@redhat.com>
+Subject: Re: [PATCH 0/5] Alter steal time reporting in KVM
+References: <20121126203603.28840.38736.stgit@lambeau> <50B47E40.5030805@parallels.com>
+In-Reply-To: <50B47E40.5030805@parallels.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112715-9264-0000-0000-000002C252C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/27/2012 02:48 AM, Glauber Costa wrote:
+> Hi,
+>
+> On 11/27/2012 12:36 AM, Michael Wolf wrote:
+>> In the case of where you have a system that is running in a
+>> capped or overcommitted environment the user may see steal time
+>> being reported in accounting tools such as top or vmstat.  This can
+>> cause confusion for the end user.  To ease the confusion this patch set
+>> adds the idea of consigned (expected steal) time.  The host will separate
+>> the consigned time from the steal time.  The consignment limit passed to the
+>> host will be the amount of steal time expected within a fixed period of
+>> time.  Any other steal time accruing during that period will show as the
+>> traditional steal time.
+> If you submit this again, please include a version number in your series.
+Will do.  The patchset was sent twice yesterday by mistake.  Got an 
+error the first time and didn't
+think the patches went out.  This has been corrected.
+>
+> It would also be helpful to include a small changelog about what changed
+> between last version and this version, so we could focus on that.
+yes, will do that.  When I took the RFC off the patches I was looking at 
+it as a new patchset which was
+a mistake.  I will make sure to add a changelog when I submit again.
+>
+> As for the rest, I answered your previous two submissions saying I don't
+> agree with the concept. If you hadn't changed anything, resending it
+> won't change my mind.
+>
+> I could of course, be mistaken or misguided. But I had also not seen any
+> wave of support in favor of this previously, so basically I have no new
+> data to make me believe I should see it any differently.
+>
+> Let's try this again:
+>
+> * Rik asked you in your last submission how does ppc handle this. You
+> said, and I quote: "In the case of lpar on POWER systems they simply
+> report steal time and do not alter it in any way.
+> They do however report how much processor is assigned to the partition
+> and that information is in /proc/ppc64/lparcfg."
+Yes, but we still get questions from users asking what is steal time? 
+why am I seeing this?
+>
+> Now, that is a *way* more sensible thing to do. Much more. "Confusing
+> users" is something extremely subjective. This is specially true about
+> concepts that are know for quite some time, like steal time. If you out
+> of a sudden change the meaning of this, it is sure to confuse a lot more
+> users than it would clarify.
+Something like this could certainly be done.  But when I was submitting 
+the patch set as
+an RFC then qemu was passing a cpu percentage that would be used by the 
+guest kernel
+to adjust the steal time. This percentage was being stored on the guest 
+as a sysctl value.
+Avi stated he didn't like that kind of coupling, and that the value
+could get out of sync.  Anthony stated "The guest shouldn't need to know 
+it's entitlement. Or at least, it's up to a management tool to report 
+that in a way that's meaningful for the guest."
 
---=-ynHKSbGTJyXvruWRNfIO
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+So perhaps I misunderstood what they were suggesting, but I took it to 
+mean that they did not
+want the guest to know what the entitlement was.  That the host should 
+take care of it and just
+report the already adjusted data to the guest.  So in this version of 
+the code the host would use a set
+period for a timer and be passed essentially a number of ticks of 
+expected steal time.  The host
+would then use the timer to break out the steal time into consigned and 
+steal buckets which would be
+reported to the guest.
 
-On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Dan Carpenter <dan.carpenter@oracle.com>
->=20
-> commit 5b3900cd409466c0070b234d941650685ad0c791 upstream.
->=20
-> We fixed a bunch of integer overflows in timekeeping code during the 3.6
-> cycle.  I did an audit based on that and found this potential overflow.
->=20
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Acked-by: John Stultz <johnstul@us.ibm.com>
-> Link: http://lkml.kernel.org/r/20121009071823.GA19159@elgon.mountain
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> [ herton: adapt for 3.5, timekeeper instead of tk pointer ]
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+Both the consigned and the steal would be reported via /proc/stat. So 
+anyone needing to see total
+time away could add the two fields together.  The user, however, when 
+using tools like top or vmstat
+would see the usage based on what the guest is entitled to.
+
+Do you have suggestions for how I can build consensus around one of the 
+two approaches?
+
+
+>
+>
+>
+>
+>> ---
+>>
+>> Michael Wolf (5):
+>>        Alter the amount of steal time reported by the guest.
+>>        Expand the steal time msr to also contain the consigned time.
+>>        Add the code to send the consigned time from the host to the guest
+>>        Add a timer to allow the separation of consigned from steal time.
+>>        Add an ioctl to communicate the consign limit to the host.
+>>
+>>
+>>   arch/x86/include/asm/kvm_host.h       |   11 +++++++
+>>   arch/x86/include/asm/kvm_para.h       |    3 +-
+>>   arch/x86/include/asm/paravirt.h       |    4 +--
+>>   arch/x86/include/asm/paravirt_types.h |    2 +
+>>   arch/x86/kernel/kvm.c                 |    8 ++---
+>>   arch/x86/kernel/paravirt.c            |    4 +--
+>>   arch/x86/kvm/x86.c                    |   50 ++++++++++++++++++++++++++++++++-
+>>   fs/proc/stat.c                        |    9 +++++-
+>>   include/linux/kernel_stat.h           |    2 +
+>>   include/linux/kvm_host.h              |    2 +
+>>   include/uapi/linux/kvm.h              |    2 +
+>>   kernel/sched/core.c                   |   10 ++++++-
+>>   kernel/sched/cputime.c                |   21 +++++++++++++-
+>>   kernel/sched/sched.h                  |    2 +
+>>   virt/kvm/kvm_main.c                   |    7 +++++
+>>   15 files changed, 120 insertions(+), 17 deletions(-)
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-This is also missing from 3.4; looks like Herton's version is
-applicable.
-
-Ben.
-
-> ---
->  kernel/time/timekeeping.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 63c88c1..8954990 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -1012,7 +1012,7 @@ static cycle_t logarithmic_accumulation(cycle_t off=
-set, int shift)
->  	}
-> =20
->  	/* Accumulate raw time */
-> -	raw_nsecs =3D timekeeper.raw_interval << shift;
-> +	raw_nsecs =3D (u64)timekeeper.raw_interval << shift;
->  	raw_nsecs +=3D timekeeper.raw_time.tv_nsec;
->  	if (raw_nsecs >=3D NSEC_PER_SEC) {
->  		u64 raw_secs =3D raw_nsecs;
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-ynHKSbGTJyXvruWRNfIO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAULTXa+e/yOyVhhEJAQrJlw/9Evw6BTXwhGZ4vUomFfXwUU6Bz6tMDLTx
-L1CcaPsdWA4RZDSN71Mj8AtWwH1DRwXpQ985G+OPyWUk2NDcAPBXOIDKp3yz3xpy
-M/cZJKgI9ur6SIqvJdgVWo8Xc+EYzAzupcERvbgcSDhwASsqV0itXTdFc4L/z0Pu
-u77eHs1ev6EaAKEISsvOw1Bq0kU6Cj3nUgdM7clNzzbR9VxVOzZRdSWR9txVKmEi
-eQKX3daunx+E26QikUZsciHMN1M+Bgxnz0/JUml5k+NpiK+o+Jp1HlR3yPTaLY7Z
-tfeiR9ik18nr9ieGY1x9vc8Dix7gN8G8CLlSR43llyqMIg/H2xFCIYdDbamGZjdo
-d5rkjuBpfhYiUL3jcnh2AoxyHoTxaXIWKxnSjBa7VDnKAL77W6HtC2Ee73at9Te/
-Y9gpmyJmV7r/I+bVJXSvZrZ7/Nha5z1vmh68vZ3c7wg3QvUK+DlrlbRSppDOPjcC
-2/D+rgy9xe3JQueP4VL9jWV3EyU8RpHKkZdQXSdSkn4UWTSV1MtWBKpm9677xP1J
-AyVDuDOM6D4Nr5SrGz9zsi12Let+zrWYQz5OqtTlWM2KGJ6Ve7FgWsS8mIclRIFt
-FLP+yfWLJCiGO6xwUzBYUF509FXUsT9Kv9fURQx1pkYSi0U8kvjOpF/YJy+A0RZf
-dgFyPVby7mQ=
-=QxNN
------END PGP SIGNATURE-----
-
---=-ynHKSbGTJyXvruWRNfIO--
