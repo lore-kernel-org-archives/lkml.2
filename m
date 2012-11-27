@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2K0StV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:49:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47436 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751760Ab2K0StU (ORCPT
+	id S1753470Ab2K0SzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:55:00 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:34517 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab2K0Sy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:49:20 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Say what unsupportable voltage constraints are
-Date: Tue, 27 Nov 2012 18:49:18 +0000
-Message-Id: <1354042158-11184-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 27 Nov 2012 13:54:59 -0500
+Date: Tue, 27 Nov 2012 13:54:34 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Krzysztof Mazur <krzysiek@podlesie.net>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1354039349.2534.11.camel@shinybook.infradead.org>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+On Tue, 27 Nov 2012 18:02:29 +0000
+David Woodhouse <dwmw2@infradead.org> wrote:
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 3db1e01..b701352 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -880,7 +880,9 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
- 
- 		/* final: [min_uV..max_uV] valid iff constraints valid */
- 		if (max_uV < min_uV) {
--			rdev_err(rdev, "unsupportable voltage constraints\n");
-+			rdev_err(rdev,
-+				 "unsupportable voltage constraints %u-%uuV\n",
-+				 min_uV, max_uV);
- 			return -EINVAL;
- 		}
- 
--- 
-1.7.10.4
+> In solos-pci at least, the ops->close() function doesn't flush all
+> pending skbs for this vcc before returning. So can be a tasklet
+> somewhere which has loaded the address of the vcc->pop function from one
+> of them, and is going to call it in some unspecified amount of time.
+> 
+> Should we make the device's ->close function wait for all TX and RX skbs
+> for this vcc to complete? 
 
+the driver's close routine should wait for any of the pending tx and rx
+to complete.  take a look at the he.c in driver/atm
