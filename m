@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab2K0Acm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Nov 2012 19:32:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41495 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364Ab2K0Acl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Nov 2012 19:32:41 -0500
-Date: Mon, 26 Nov 2012 16:32:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        acking@vmware.com
-Subject: Re: [PATCH 12/12] VMCI: Some header and config files.
-Message-ID: <20121127003239.GA32298@kroah.com>
-References: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121107184258.9658.95698.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121127000304.GA18680@kroah.com>
- <20121127002357.GA27683@core.coreip.homeip.net>
+	id S1757574Ab2K0AfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Nov 2012 19:35:18 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58046 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab2K0AfQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Nov 2012 19:35:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121127002357.GA27683@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 26 Nov 2012 16:35:15 -0800
+X-Google-Sender-Auth: VYS0AoxCXr--fm_5A3L4J5xM3I8
+Message-ID: <CAMi7pMamJK079wQs+5Kaz=zdYGAPS+BFg2xCRKJMqPFMrQvQPQ@mail.gmail.com>
+Subject: Alignment Issue with Direct IO to NVMe Drive
+From: Laine Walker-Avina <lwalkera@ieee.org>
+To: Jens Axboe <axboe@kernel.dk>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Cc: lwalkera@micron.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 04:23:57PM -0800, Dmitry Torokhov wrote:
-> Hi Greg,
-> 
-> For some reason it still didn't go through to our corporate mail server
-> but I see it on LKML.
+Hi all,
 
-Good.
+We are experiencing an issue with doing direct IO to a NVMe device I'm
+helping to develop. Every so often, the physical address given by
+sg_dma_address() is aligned to 0x800 instead of 0x1000 as specified by
+blk_queue_dma_alignement(queue, 4095) when the queue is initialized.
+The request is also split over multiple segments to make up for the
+missing space (eg: for a 4k IO it's split into two segments 2k in
+size, and for an 8k IO it's split into 3 segments--2k,4k,2k). Our
+design requires the physical segments given to the device be aligned
+to 4k boundaries and be multiples of 4k in size. When not doing direct
+IO the physical addresses appear to always be 4k aligned as expected.
+One possible issue is the kernel we're primarily testing against is
+2.6.32-220 from CentOS, but we have observed similar behavior from a
+vanilla 3.3 kernel as well. Any help would be greatly appreciated.
 
-> On Mon, Nov 26, 2012 at 04:03:04PM -0800, Greg KH wrote:
-> > On Wed, Nov 07, 2012 at 10:43:03AM -0800, George Zhang wrote:
-> > 
-> > > +static inline struct vmci_handle VMCI_MAKE_HANDLE(vmci_id cid, vmci_id rid)
-> > > +{
-> > > +	struct vmci_handle h;
-> > > +	h.context = cid;
-> > > +	h.resource = rid;
-> > > +	return h;
-> > > +}
-> > 
-> > You return a structure on the stack that just went away?  Yeah, I know
-> > it's an inline, but come on, that's not ok.
-> 
-> This is certainly OK even if it is not inline, we return the _value_,
-> not the pointer to the stacki memory. And yes, the structure is 64 bit
-> value so it is returned in registers.
-
-Even on a 32bit processor?  Also, you already have another function that
-does this same thing, so having 2 functions in the same patch seems odd,
-right?
-
-greg k-h
+Thanks,
+Laine Walker-Avina
