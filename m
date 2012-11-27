@@ -1,110 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab2K0Wnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 17:43:45 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51412 "EHLO www.hansjkoch.de"
+	id S1755291Ab2K0Wot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 17:44:49 -0500
+Received: from mail.tsu.ge ([217.147.230.9]:53344 "EHLO mail.tsu.ge"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752985Ab2K0Wno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 17:43:44 -0500
-Date: Tue, 27 Nov 2012 23:43:41 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Message-ID: <20121127224341.GA2605@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
+	id S1753617Ab2K0Wos convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 17:44:48 -0500
+X-Qmail-Scanner-Diagnostics: from 41.138.178.59 (maia.menteshashvili@tsu.ge@41.138.178.59) by mail (envelope-from <maia.menteshashvili@tsu.ge>, uid 89) with qmail-scanner-2.10st 
+ (clamdscan: 0.97.3/15645. mhr: 1.0. spamassassin: 3.3.1. perlscan: 2.10st.  
+ Clear:RC:0(41.138.178.59):SA:0(4.3/5.0):. 
+ Processed in 22.274921 secs); 27 Nov 2012 22:52:13 -0000
+X-Qmail-Scanner-Mail-From: maia.menteshashvili@tsu.ge via mail
+X-Qmail-Scanner: 2.10st (Clear:RC:0(41.138.178.59):SA:0(4.3/5.0):. Processed in 22.274921 secs Process 24562)
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211271348.14603.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING VIRUS DETECTED
+To: Recipients <maia.menteshashvili@tsu.ge>
+From: "WEBMAIL UPGRADE" <maia.menteshashvili@tsu.ge>
+Date: Tue, 27 Nov 2012 13:07:34 -0800
+Reply-To: dewang@dicp.ac.cn
+Message-ID: <1354056710103924562@mail>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 01:48:14PM +0200, Vitalii Demianets wrote:
-> Fix warning: 'ret' might be used uninitialized
-> 
-> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-> ---
->  drivers/uio/uio.c |   16 ++++++++++++----
->  1 files changed, 12 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index 5110f36..c33fd18 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -280,12 +280,16 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->  			map_found = 1;
->  			idev->map_dir = kobject_create_and_add("maps",
->  							&idev->dev->kobj);
-> -			if (!idev->map_dir)
-> +			if (!idev->map_dir) {
-> +				ret = -ENOMEM;
->  				goto err_map;
-> +			}
->  		}
->  		map = kzalloc(sizeof(*map), GFP_KERNEL);
-> -		if (!map)
-> +		if (!map) {
-> +			ret = -ENOMEM;
->  			goto err_map;
-> +		}
->  		kobject_init(&map->kobj, &map_attr_type);
->  		map->mem = mem;
->  		mem->map = map;
-> @@ -305,12 +309,16 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->  			portio_found = 1;
->  			idev->portio_dir = kobject_create_and_add("portio",
->  							&idev->dev->kobj);
-> -			if (!idev->portio_dir)
-> +			if (!idev->portio_dir) {
-> +				ret = -ENOMEM;
->  				goto err_portio;
-> +			}
->  		}
->  		portio = kzalloc(sizeof(*portio), GFP_KERNEL);
-> -		if (!portio)
-> +		if (!portio) {
-> +			ret = -ENOMEM;
->  			goto err_portio;
-> +		}
->  		kobject_init(&portio->kobj, &portio_attr_type);
->  		portio->port = port;
->  		port->portio = portio;
-> -- 
-> 1.7.8.6
-> 
+Strong virus has been detected in your email account, which might make you lose your email account if not deleted. Use the below web link to Delete the virus in your email account:
 
-Thanks, good catch, but why don't you simply do this:
+Click link below:
+https://docs.google.com/spreadsheet/viewform?formkey=dFRMRm9TOHlwS2lVNWtEZEhYTjVoMGc6MQ
 
-
->From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-Date: Tue, 27 Nov 2012 23:38:00 +0100
-Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-
-In two cases, the return value variable "ret" can be undefined.
-
-Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
----
- drivers/uio/uio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 5110f36..fc60e35 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -263,7 +263,7 @@ static struct class uio_class = {
-  */
- static int uio_dev_add_attributes(struct uio_device *idev)
- {
--	int ret;
-+	int ret = -ENOMEM;
- 	int mi, pi;
- 	int map_found = 0;
- 	int portio_found = 0;
--- 
-1.7.9
-
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre
