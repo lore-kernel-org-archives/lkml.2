@@ -1,149 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab2K0OXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 09:23:14 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:25597 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab2K0OXM (ORCPT
+	id S1755240Ab2K0OYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 09:24:15 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53579 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab2K0OYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 09:23:12 -0500
-Message-ID: <50B4CCC8.60401@hp.com>
-Date: Tue, 27 Nov 2012 06:23:04 -0800
-From: Chegu Vinod <chegu_vinod@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 27 Nov 2012 09:24:13 -0500
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
- target runqueue has one task
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com> <50B49658.7080507@linux.vnet.ibm.com>
-In-Reply-To: <50B49658.7080507@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121127125805.GB31484@netboy.at.omicron.at>
+References: <201211270941.52055.tim01@iss.tu-darmstadt.de> <20121127125805.GB31484@netboy.at.omicron.at>
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Tue, 27 Nov 2012 15:23:51 +0100
+Message-ID: <CAGm1_kswo5mp75G8z8_PvnvXp2nfZQ5WnMv4gQsOoj1U_7c1hw@mail.gmail.com>
+Subject: Re: am33xx beaglebone mainline status?
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Tim Sander <tim01@iss.tu-darmstadt.de>,
+        kernel list <linux-kernel@vger.kernel.org>, linux@arm.linux.org.uk,
+        linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 2:30 AM, Raghavendra K T wrote:
-> On 11/26/2012 07:05 PM, Andrew Jones wrote:
->> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
->>> From: Peter Zijlstra <peterz@infradead.org>
->>>
->>> In case of undercomitted scenarios, especially in large guests
->>> yield_to overhead is significantly high. when run queue length of
->>> source and target is one, take an opportunity to bail out and return
->>> -ESRCH. This return condition can be further exploited to quickly come
->>> out of PLE handler.
->>>
->>> (History: Raghavendra initially worked on break out of kvm ple 
->>> handler upon
->>>   seeing source runqueue length = 1, but it had to export rq length).
->>>   Peter came up with the elegant idea of return -ESRCH in scheduler 
->>> core.
->>>
->>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>> Raghavendra, Checking the rq length of target vcpu condition 
->>> added.(thanks Avi)
->>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>> ---
->>>
->>>   kernel/sched/core.c |   25 +++++++++++++++++++------
->>>   1 file changed, 19 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 2d8927f..fc219a5 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->>>    * It's the caller's job to ensure that the target task struct
->>>    * can't go away on us before we can do any checks.
->>>    *
->>> - * Returns true if we indeed boosted the target task.
->>> + * Returns:
->>> + *    true (>0) if we indeed boosted the target task.
->>> + *    false (0) if we failed to boost the target.
->>> + *    -ESRCH if there's no task to yield to.
->>>    */
->>>   bool __sched yield_to(struct task_struct *p, bool preempt)
->>>   {
->>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, 
->>> bool preempt)
->>>
->>>   again:
->>>       p_rq = task_rq(p);
->>> +    /*
->>> +     * If we're the only runnable task on the rq and target rq also
->>> +     * has only one task, there's absolutely no point in yielding.
->>> +     */
->>> +    if (rq->nr_running == 1 && p_rq->nr_running == 1) {
->>> +        yielded = -ESRCH;
->>> +        goto out_irq;
->>> +    }
->>> +
->>>       double_rq_lock(rq, p_rq);
->>>       while (task_rq(p) != p_rq) {
->>>           double_rq_unlock(rq, p_rq);
->>> @@ -4310,13 +4322,13 @@ again:
->>>       }
->>>
->>>       if (!curr->sched_class->yield_to_task)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       if (curr->sched_class != p->sched_class)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       if (task_running(p_rq, p) || p->state)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->>>       if (yielded) {
->>> @@ -4329,11 +4341,12 @@ again:
->>>               resched_task(p_rq->curr);
->>>       }
->>>
->>> -out:
->>> +out_unlock:
->>>       double_rq_unlock(rq, p_rq);
->>> +out_irq:
->>>       local_irq_restore(flags);
->>>
->>> -    if (yielded)
->>> +    if (yielded > 0)
->>>           schedule();
->>>
->>>       return yielded;
->>>
+On Tue, Nov 27, 2012 at 1:58 PM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> On Tue, Nov 27, 2012 at 09:41:51AM +0100, Tim Sander wrote:
+>> Hi
 >>
->> Acked-by: Andrew Jones <drjones@redhat.com>
->>
+>> I have been trying to get the 3.7-rc6 kernel to compile for a beaglebone board
+>> with device tree but it seems there are still bits missing. Especially it
+>> seems as if the sd card reader and network is not working properly?
 >
-> Thank you Drew.
->
-> Marcelo Gleb.. Please let me know if you have comments / concerns on 
-> the patches..
->
-> Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
-> especially for large guests where we do have overhead of vcpu iteration
-> of ple handler..
->
-> .
->
-Thanks Raghu. Will try to get this latest patch set evaluated and get 
-back to you.
+> The CPSW network driver is working in net-next, and so it will be
+> working in v3.8. Don't know about SD, since I only boot with a ramfs.
 
-Vinod
+MMC support is still not there. There patches on the linux-omap
+mailing list, AFAIK they are in review process.
 
+How do you load your rootfs: embedded into kernel or separately?
+
+Do you know if frame buffer is functioning in main line?
+
+Yegor
