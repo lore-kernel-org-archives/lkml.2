@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2K0Sm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 13:42:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44874 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab2K0Sm1 (ORCPT
+	id S1752386Ab2K0SrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 13:47:12 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:49870 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751247Ab2K0SrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 13:42:27 -0500
-Message-ID: <50B50985.1010700@infradead.org>
-Date: Tue, 27 Nov 2012 10:42:13 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 27 Nov 2012 13:47:11 -0500
+Message-ID: <50B50AA0.7070603@ilyx.ru>
+Date: Tue, 27 Nov 2012 22:46:56 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] staging/fwserial: Fix build breakage when !CONFIG_BUG
-References: <20121127011738.9ecd7971a7ea2e3d09a9450d@canb.auug.org.au>	 <50B3D767.70604@infradead.org> <1354000267.3284.4.camel@thor>
-In-Reply-To: <1354000267.3284.4.camel@thor>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ilya@ilyx.ru
+Subject: Re: [PATCH v4] tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+References: <50B45A49.2040104@ilyx.ru> <20121127172406.GE24592@kroah.com>
+In-Reply-To: <20121127172406.GE24592@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 11:11 PM, Peter Hurley wrote:
-
-> Use WARN() as intended.
+On 27.11.2012 21:24, Greg Kroah-Hartman wrote:
+> On Tue, Nov 27, 2012 at 10:14:33AM +0400, Ilya Zykov wrote:
+>> Sorry. More correct.
 > 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
->  drivers/staging/fwserial/dma_fifo.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
+> In what way?  Should I wait for the 6th version?  :)
 > 
-> diff --git a/drivers/staging/fwserial/dma_fifo.c b/drivers/staging/fwserial/dma_fifo.c
-> index 72aa053..5e84634 100644
-> --- a/drivers/staging/fwserial/dma_fifo.c
-> +++ b/drivers/staging/fwserial/dma_fifo.c
-> @@ -33,10 +33,7 @@
->  
->  #define FAIL(fifo, condition, format...) ({				\
->  	fifo->corrupt = !!(condition);					\
-> -	if (unlikely(fifo->corrupt)) {					\
-> -		__WARN_printf(format);					\
-> -	}								\
-> -	unlikely(fifo->corrupt);					\
-> +	WARN(fifo->corrupt, format);					\
->  })
->  
->  /*
+> thanks,
+> 
+> greg k-h
+> 
 
+No, if only you will accept:
+[PATCH]tty: Incorrect use tty_ldisc_flush() in TTY drivers.
 
+It can be done another way, simple revert:
+'tty: fix "IRQ45: nobody cared"'
+commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
 
--- 
-~Randy
