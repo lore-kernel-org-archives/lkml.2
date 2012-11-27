@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab2K0GVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 01:21:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47331 "EHLO mail.zytor.com"
+	id S1758014Ab2K0GWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 01:22:10 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53892 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754499Ab2K0GVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 01:21:48 -0500
-Message-ID: <50B45BBA.3090300@zytor.com>
-Date: Mon, 26 Nov 2012 22:20:42 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757963Ab2K0GWJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 01:22:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,326,1352102400"; 
+   d="scan'208";a="172974127"
+From: "Jiang, Dave" <dave.jiang@intel.com>
+To: Dan Williams <djbw@fb.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ioat: remove chanerr mask setting for IOAT v3.x
+Thread-Topic: [PATCH] ioat: remove chanerr mask setting for IOAT v3.x
+Thread-Index: AQHNzFuGDwLbTVc0eU2Gjp5sVbxJLpf9Nkkl
+Date: Tue, 27 Nov 2012 06:21:57 +0000
+Message-ID: <9460C9B6-F861-4822-8576-508BB627CF70@intel.com>
+References: <20121116232638.1766.86886.stgit@djiang5-linux.ch.intel.com>,<CAA9_cmfYpa+ByFDJNwqxsj+e_3xrZD-=EP-NGQmWuWjgc7ZRtw@mail.gmail.com>
+In-Reply-To: <CAA9_cmfYpa+ByFDJNwqxsj+e_3xrZD-=EP-NGQmWuWjgc7ZRtw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: wujianguo <wujianguo106@gmail.com>, akpm@linux-foundation.org,
-        rob@landley.net, isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B42F32.4050107@gmail.com> <50B45318.3020605@cn.fujitsu.com>
-In-Reply-To: <50B45318.3020605@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 09:43 PM, Tang Chen wrote:
->
-> And about how to fix it, as you said, we can handle the situation if
-> user specified DMA address as movable. But how to handle "too little
-> memory for kernel to start" case ?  Is there any info about how much
-> at least memory kernel needs ?
->
 
-Not really, and it depends on so many variables.
+On Nov 26, 2012, at 9:56 PM, "Dan Williams" <djbw@fb.com> wrote:
 
-	-hpa
+> On Fri, Nov 16, 2012 at 3:26 PM, Dave Jiang <dave.jiang@intel.com> wrote:
+>> The CHANERRMSK_INT register should be 0. The existing code set a value
+>> for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
+>> has been fixed when the hardware was released. There is no need for this
+>> code.
+>> 
+>> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+>> ---
+>> 
+>> drivers/dma/ioat/dma_v3.c |    8 ++------
+>> 1 file changed, 2 insertions(+), 6 deletions(-)
+>> 
+>> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+>> index f7f1dc6..60c15c4 100644
+>> --- a/drivers/dma/ioat/dma_v3.c
+>> +++ b/drivers/dma/ioat/dma_v3.c
+>> @@ -1126,12 +1126,8 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+>>        chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+>>        writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
+>> 
+>> -       /* -= IOAT ver.3 workarounds =- */
+>> -       /* Write CHANERRMSK_INT with 3E07h to mask out the errors
+>> -        * that can cause stability issues for IOAT ver.3, and clear any
+>> -        * pending errors
+>> -        */
+>> -       pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
+>> +       /* clearn CHANERRMASK_INT and clear any pending errors */
+>> +       pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0);
+> 
+> Can we get rid of this write / register access altogether?  Then the
+> driver will load on systems where extended pci configuration space is
+> not available.
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Yes I will generate new patch. 
