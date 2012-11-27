@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2K0Nsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 08:48:42 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35745 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab2K0Nsl (ORCPT
+	id S1755271Ab2K0Nsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 08:48:47 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:48415 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab2K0Nsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 08:48:41 -0500
+	Tue, 27 Nov 2012 08:48:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <1354022770.6276.63.camel@gandalf.local.home>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	<1354022770.6276.63.camel@gandalf.local.home>
-Date: Tue, 27 Nov 2012 19:18:40 +0530
-Message-ID: <CAKohpok5toHdxxjBU+bPJwkZt9Sv-QGY8o8X6HErza1WT-DWOA@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
+In-Reply-To: <1353912241.30446.1257.camel@edumazet-glaptop>
+References: <1353900555-5966-1-git-send-email-ling.ma.program@gmail.com>
+	<1353912241.30446.1257.camel@edumazet-glaptop>
+Date: Tue, 27 Nov 2012 21:48:42 +0800
+Message-ID: <CAOGi=dPQWC8hgt4jhMEHcVPb6j+jMTguNAchiLjdvvHjarCW4Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] [INET]: Get cirtical word in first 64bit of cache line
+From: Ling Ma <ling.ma.program@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 November 2012 18:56, Steven Rostedt <rostedt@goodmis.org> wrote:
-> A couple of things. The sched_select_cpu() is not cheap. It has a double
-> loop of domains/cpus looking for a non idle cpu. If we have 1024 CPUs,
-> and we are CPU 1023 and all other CPUs happen to be idle, we could be
-> searching 1023 CPUs before we come up with our own.
+> networking patches should be sent to netdev.
+>
+> (I understand this patch is more a generic one, but at least CC netdev)
+Ling: OK, this is my first inet patch, I will send to netdev later.
 
-Not sure if you missed the first check sched_select_cpu()
+> You give no performance numbers for this change...
+Ling: after I get machine, I will send out test result.
 
-+int sched_select_cpu(unsigned int sd_flags)
-+{
-+       /* If Current cpu isn't idle, don't migrate anything */
-+       if (!idle_cpu(cpu))
-+               return cpu;
+> I never heard of this CWF/ER, where are the official Intel documents
+> about this, and what models really benefit from it ?
+Ling:
+Arm implemented it.
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0388f/Caccifbd.html
+AMD also used it.
+http://classes.soe.ucsc.edu/cmpe202/Fall04/papers/opteron.pdf
 
-We aren't going to search if we aren't idle.
+> Also, why not moving skc_net as well ?
+>
+> BTW, skc_daddr & skc_rcv_saddr are 'critical' as well, we use them in
+> INET_MATCH()
+Ling: in the looking-up routine, hash value is the most important key,
+if it is matched,  the other values have most possibility to be
+satisfied, and CFW is limited by memory bandwidth(64bit usually), so
+we only move hash value as critical first word.
 
-> Also, I really don't like this as a default behavior. It seems that this
-> solution is for a very special case, and this can become very intrusive
-> for the normal case.
-
-We tried with an KCONFIG option for it, which Tejun rejected.
-
-> To be honest, I'm uncomfortable with this approach. It seems to be
-> fighting a symptom and not the disease. I'd rather find a way to keep
-> work from being queued on wrong CPU. If it is a timer, find a way to
-> move the timer. If it is something else, lets work to fix that. Doing
-> searches of possibly all CPUs (unlikely, but it is there), just seems
-> wrong to me.
-
-As Vincent pointed out, on big LITTLE systems we just don't want to
-serve works on big cores. That would be wasting too much of power.
-Specially if we are going to wake up big cores.
-
-It would be difficult to control the source driver (which queues work) to
-little cores. We thought, if somebody wanted to queue work on current
-cpu then they must use queue_work_on().
-
---
-viresh
+Thanks
+Ling
