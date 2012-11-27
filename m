@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab2K0LDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 06:03:05 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13899 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab2K0LDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 06:03:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 27 Nov 2012 03:02:58 -0800
-Date: Tue, 27 Nov 2012 13:02:59 +0200
-From: Sivaram Nair <sivaramn@nvidia.com>
-To: Terje Bergstrom <tbergstrom@nvidia.com>
-CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 2/8] video: tegra: Add syncpoint wait and interrupts
-Message-ID: <20121127110259.GE10090@sivaramn-lnx>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
- <1353935954-13763-3-git-send-email-tbergstrom@nvidia.com>
+	id S1753326Ab2K0LHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 06:07:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40125 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab2K0LHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 06:07:51 -0500
+Date: Tue, 27 Nov 2012 11:07:47 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: akpm@osdl.org, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Fix return value of capture_free_page
+Message-ID: <20121127110746.GN8218@suse.de>
+References: <20121121192151.3FFE0A9A@kernel.stglabs.ibm.com>
+ <20121126112350.GI8218@suse.de>
+ <50B3858D.2060404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1353935954-13763-3-git-send-email-tbergstrom@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <50B3858D.2060404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 02:19:08PM +0100, Terje Bergstrom wrote:
-> +void nvhost_intr_stop(struct nvhost_intr *intr)
-> +{
-> +       unsigned int id;
-> +       struct nvhost_intr_syncpt *syncpt;
-> +       u32 nb_pts = nvhost_syncpt_nb_pts(&intr_to_dev(intr)->syncpt);
-> +
-> +       mutex_lock(&intr->mutex);
-> +
-> +       intr_op().disable_all_syncpt_intrs(intr);
-> +
-> +       for (id = 0, syncpt = intr->syncpt;
-> +            id < nb_pts;
-> +            ++id, ++syncpt) {
-> +               struct nvhost_waitlist *waiter, *next;
-> +               list_for_each_entry_safe(waiter, next,
-> +                               &syncpt->wait_head, list) {
-> +                       if (atomic_cmpxchg(&waiter->state,
-> +                                               WLS_CANCELLED, WLS_HANDLED)
-> +                               == WLS_CANCELLED) {
-> +                               list_del(&waiter->list);
-> +                               kref_put(&waiter->refcount, waiter_release);
-> +                       }
-> +               }
-> +
-> +               if (!list_empty(&syncpt->wait_head)) {  /* output diagnostics */
-> +                       pr_warn("%s cannot stop syncpt intr id=%d\n",
-> +                                       __func__, id);
-> +                       return;
+On Mon, Nov 26, 2012 at 07:06:53AM -0800, Dave Hansen wrote:
+> On 11/26/2012 03:23 AM, Mel Gorman wrote:
+> > On Wed, Nov 21, 2012 at 02:21:51PM -0500, Dave Hansen wrote:
+> >>
+> >> This needs to make it in before 3.7 is released.
+> >>
+> > 
+> > This is also required. Dave, can you double check? The surprise is that
+> > this does not blow up very obviously.
+> ...
+> > @@ -1422,7 +1422,7 @@ int capture_free_page(struct page *page, int alloc_order, int migratetype)
+> >  		}
+> >  	}
+> > 
+> > -	return 1UL << order;
+> > +	return 1UL << alloc_order;
+> >  }
+> 
+> compact_capture_page() only looks at the boolean return value out of
+> capture_free_page(), so it wouldn't notice.  split_free_page() does.
+> But, when it calls capture_free_page(), order==alloc_order, so it
+> wouldn't make a difference.  So, there's probably no actual bug here,
+> but it's certainly a wrong return value.
+> 
 
-mutex_unlock() missing before return.
+I don't think it is fine in this case.
 
--Sivaram
+isolate_freepages_block
+isolated = split_free_page(page);
+  -> split_free_page
+     nr_pages = capture_free_page(page, order, 0);
+     -> capture_free_page (returns wrong value of too many pages)
+     return nr_pages;
+
+so now isolate_freepages_block has the wrong value with nr_pages holding
+a value for a larger number of pages than are really isolated and does
+this
+
+                for (i = 0; i < isolated; i++) {
+                        list_add(&page->lru, freelist);
+                        page++;
+                }
+
+so potentially that is now adding pages that are already on the buddy list
+to the local free list and "fun" ensues.
+
+-- 
+Mel Gorman
+SUSE Labs
