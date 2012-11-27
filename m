@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2K0Myp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 07:54:45 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:37754 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab2K0Myn (ORCPT
+	id S1753405Ab2K0Mzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 07:55:32 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3188 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab2K0Mza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 07:54:43 -0500
+	Tue, 27 Nov 2012 07:55:30 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 27 Nov 2012 04:55:20 -0800
+Message-ID: <50B4B91D.7060008@nvidia.com>
+Date: Tue, 27 Nov 2012 14:59:09 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	<20121126171539.GZ15971@htj.dyndns.org>
-	<CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-Date: Tue, 27 Nov 2012 13:54:41 +0100
-Message-ID: <CAKfTPtBZ+c8+XvUQatXbbbHOiBCBpacsRh0a0XYyM=G9QE657Q@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Tejun Heo <tj@kernel.org>, pjt@google.com, paul.mckenney@linaro.org,
-        tglx@linutronix.de, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org,
-        Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org,
-        patches@linaro.org, pdsw-power-team@arm.com,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lucas Stach <dev@lynxeye.de>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Dave Airlie <airlied@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>  <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>  <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>  <50B46336.8030605@nvidia.com>  <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>  <50B476E1.4070403@nvidia.com>  <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>  <50B47DA8.60609@nvidia.com> <1354011776.1479.31.camel@tellur>  <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>  <50B4A483.8030305@nvidia.com> <1354016870.1479.41.camel@tellur>
+In-Reply-To: <1354016870.1479.41.camel@tellur>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 November 2012 06:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Hi Tejun,
->
-> On 26 November 2012 22:45, Tejun Heo <tj@kernel.org> wrote:
->> On Tue, Nov 06, 2012 at 04:08:45PM +0530, Viresh Kumar wrote:
->
->> I'm pretty skeptical about this.  queue_work() w/o explicit CPU
->> assignment has always guaranteed that the work item will be executed
->> on the same CPU.  I don't think there are too many users depending on
->> that but am not sure at all that there are none.  I asked you last
->> time that you would at the very least need to audit most users but it
->> doesn't seem like there has been any effort there.
->
-> My bad. I completely missed/forgot that comment from your earlier mails.
-> Will do it.
->
->> That said, if the obtained benefit is big enough, sure, we can
->> definitely change the behavior, which isn't all that great to begin
->> with, and try to shake out the bugs quicky by e.g. forcing all work
->> items to execute on different CPUs, but you're presenting a few
->> percent of work items being migrated to a different CPU from an
->> already active CPU, which doesn't seem like such a big benefit to me
->> even if the migration target CPU is somewhat more efficient.  How much
->> powersaving are we talking about?
->
-> Hmm.. I actually implemented the problem discussed here:
-> (I know you have seen this earlier :) )
->
-> http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/08/lpc2012-sched-timer-workqueue.pdf
->
-> Specifically slides: 12 & 19.
->
-> I haven't done much power calculations with it and have tested it more from
-> functionality point of view.
->
-> @Vincent: Can you add some comments here?
+On 27.11.2012 13:47, Lucas Stach wrote:
+> I guess we could change IOMMU address spaces for the graphics units
+> depending on the active channel. This would still be a bit of a
+> performance hit, because of the necessary TLB flushing and so on, but
+> should be much better than checking the whole command stream. This way
+> you at least get security on a process level, as no process is able to
+> corrupt another processes graphics resources.
 
-Sorry for this late reply.
+One physical channel is shared with all users of the 2D unit. Each job
+is just added to the queue, and host1x will happily cross from one job
+to the next without intervention from CPU. This is done to keep CPU
+overhead down to improve power and performance.
 
-We have faced some situations on TC2 (as an example) where the tasks
-are running in the LITTLE cluster whereas some periodic works stay on
-the big cluster so we can have one cluster that wakes up for tasks and
-another one that wakes up for work. We would like to consolidate the
-behaviour of the work with the tasks behaviour.
+This also means that we cannot change the IOMMU settings between jobs
+from different processes, unless we pause the channel after every job.
 
-Sorry, I don't have relevant figures as the patches are used with
-other ones which also impact the power consumption.
+This is still an interesting thought - can we postpone binding of a
+buffer to address space until submit time, and give each process its own
+address space? We would have a limit of "submits from three processes
+going on at once" instead of "three processes can open 2D channel at
+once". That's a limitation we could live with.
 
-This series introduces the possibility to run a work on another CPU
-which is necessary if we want a better correlation of task and work
-scheduling on the system. Most of the time the queue_work is used when
-a driver don't mind the CPU on which you want to run whereas it looks
-like it should be used only if you want to run locally. We would like
-to solve this point with the new interface that is proposed by viresh
+Naturally, Tegra2 is still left in the cold.
 
-Vincent
+> This is the same level of security as provided by the nouveau driver.
+> But to do so all memory management has to be done in kernel and from the
+> current submissions of the 2D infrastructure I fear that the current
+> architecture does too much of that in userspace, but I'll hold back with
+> any judgement until we actually get to see the userspace parts.
 
->
-> --
-> viresh
+User space allocates buffer, exports as dmabuf fd, and passes the fd in
+submits to kernel, and frees the buffer. No other memory management is
+done in user space.
+
+> Also to implement this strategy you have to take ownership of the
+> graphics address space on a much lower level than the DMA API. This
+> might take some work together with the IOMMU guys.
+
+I'll go through this with Hiroshi, who knows that area.
+
+Terje
