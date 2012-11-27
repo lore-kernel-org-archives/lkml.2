@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab2K0Xve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 18:51:34 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57562 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab2K0Xvc (ORCPT
+	id S1756944Ab2K0Xvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 18:51:37 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:36554 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773Ab2K0Xve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 18:51:32 -0500
+	Tue, 27 Nov 2012 18:51:34 -0500
+Date: Wed, 28 Nov 2012 00:51:29 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
+Message-ID: <20121127235129.GA20080@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+ <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
+ <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+ <1354055783.2534.18.camel@shinybook.infradead.org>
+ <1354058916.2534.25.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <1353958423.6276.54.camel@gandalf.local.home>
-References: <1353680484-7302-1-git-send-email-fweisbec@gmail.com>
-	<1353680484-7302-3-git-send-email-fweisbec@gmail.com>
-	<1353956163.6276.46.camel@gandalf.local.home>
-	<CAFTL4hxxE8Ggw4Ae-VfgBZ8rtoOMpUQnmSGUado1gxeruwQ9rg@mail.gmail.com>
-	<1353958423.6276.54.camel@gandalf.local.home>
-Date: Wed, 28 Nov 2012 00:51:32 +0100
-Message-ID: <CAFTL4hzRmngv+RY0VWfOONCig-Gdvn-2XFVp0fzkc_a83PNO_w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] cputime: Rename thread_group_times to thread_group_cputime_adjusted
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354058916.2534.25.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/26 Steven Rostedt <rostedt@goodmis.org>:
-> OK, let's take a look at the other version now:
->
-> void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+On Tue, Nov 27, 2012 at 11:28:36PM +0000, David Woodhouse wrote:
+> Avoid submitting patches to a vcc which is being closed. Things go badly
+> wrong when the ->pop method gets later called after everything's been
+> torn down.
+> 
+> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+> ---
+> On Tue, 2012-11-27 at 22:36 +0000, David Woodhouse wrote:
+> > Nathan, does this help? 
+> 
+> I think that's necessary, but not sufficient. You'll want something like
+> this too... I can now kill br2684ctl while there's a flood of outgoing
+> packets, and get a handful of the printks that I had in here until a few
+> seconds ago when I edited it out of the patch in my mail client... and
+> no more panic.
+> 
+> I do also now have Krzysztof's patch 1/7 (detach protocol before closing
+> vcc) but I don't think it actually matters any more. 
 
-So this does the same thing than thread_group_cputime(), ie: fetch the
-raw cputime stats from the task/signal struct, with a two adjustments:
+If you do this actually it's better to don't use patch 1/7 because
+it introduces race condition that you found earlier.
 
-* It scales the raw values with the CFS stats.
-* It ensures the stats are increased monotonically across
-thread_group_times() calls
+> 
+> --- a/net/atm/br2684.c~	2012-11-23 23:14:29.000000000 +0000
+> +++ b/net/atm/br2684.c	2012-11-27 23:09:18.502403881 +0000
+> @@ -249,6 +249,12 @@ static int br2684_xmit_vcc(struct sk_buf
+>  	skb_debug(skb);
+>  
+>  	ATM_SKB(skb)->vcc = atmvcc = brvcc->atmvcc;
+> +	if (test_bit(ATM_VF_RELEASED, &atmvcc->flags)
+> +	    || test_bit(ATM_VF_CLOSE, &atmvcc->flags)
+> +	    || !test_bit(ATM_VF_READY, &atmvcc->flags)) {
+> +		dev_kfree_skb(skb);
+> +		return 0;
+> +	}
+>  	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n", skb, atmvcc, atmvcc->dev);
+>  	atomic_add(skb->truesize, &sk_atm(atmvcc)->sk_wmem_alloc);
+>  	ATM_SKB(skb)->atm_options = atmvcc->atm_options;
+> 
 
-More details below:
+With this patch you have still theoretical race that was fixed in patches
+5 and 8 in pppoatm series, but I never seen that in practice.
 
-> {
->         struct signal_struct *sig = p->signal;
->         struct task_cputime cputime;
->         cputime_t rtime, utime, total;
->
->         thread_group_cputime(p, &cputime);
->
->         total = cputime.utime + cputime.stime;
->         rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
->
->         if (total)
->                 utime = scale_utime(cputime.utime, rtime, total);
->         else
->                 utime = rtime;
+Acked-by: Krzysztof Mazur <krzysiek@podlesie.net>
 
-raw cputime values (tsk->utime and tsk->stime) have a per tick
-granularity. So the precision is not the best. For example a tick can
-interrupt the same task 5 times while that task has actually ran for
-no more than a jiffy overall. This can happen if the task runs for
-short slices and get unlucky enough to often run at the same time the
-tick fired.
-
-The opposite can also happen: the task has ran for 5 jiffies but
-wasn't much interrupted by the tick.
-
-To fix this we scale utime and stime values against CFS accumulated
-runtime for the task. As follows:
-
-total_ticks_runtime = utime + stime
-utime = utime * (total_cfs_runtime / total_ticks_runtime)
-stime = total_cfs_runtime - utime
-
->
->         sig->prev_utime = max(sig->prev_utime, utime);
->         sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
-
-Now this scaling brings another problem. If between two calls of
-thread_group_times(), tsk->utime has increased a lot and the cfs tsk
-runtime hasn't increased that much, the resulting value of adjusted
-stime may decrease from the 2nd to the 1st call of the function. But
-userspace relies on the monotonicity of cputime. The same can happen
-with utime if tsk->stime has increased a lot.
-
-To fix this we apply the above monotonicity fixup.
-
-I can add these explanations on comments in a new patch.
-
->
->         *ut = sig->prev_utime;
->         *st = sig->prev_stime;
-> }
->
-> So this version also updates the task's signal->prev_[us]times as well.
->
-> I guess I'll wait for you to explain to me more about what is going
-> on :-)
->
-> -- Steve
->
->
+Krzysiek
