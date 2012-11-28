@@ -1,134 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab2K1O2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:28:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64356 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753842Ab2K1O2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:28:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,179,1355126400"; 
-   d="scan'208";a="225791932"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] serial: 8250_dw: Set FIFO size dynamically
-Date: Wed, 28 Nov 2012 16:29:30 +0200
-Message-Id: <1354112970-30325-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20121128133704.GB14698@as23.pp.htv.fi>
-References: <20121128133704.GB14698@as23.pp.htv.fi>
+	id S932170Ab2K1OcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:32:17 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:38956
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754781Ab2K1OcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 09:32:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dIzz1de0h1202h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 28 Nov 2012 22:58:02 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank
+ cpufreq
+Message-ID: <20121128145759.GB28170@S2100-06.ap.freescale.net>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com>
+ <20121128023240.GA28170@S2100-06.ap.freescale.net>
+ <50B60E9C.9000405@calxeda.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <50B60E9C.9000405@calxeda.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Designware UART provides optional Component Parameter
-Register that lists most of the capabilities of the UART,
-including FIFO size. This uses that register to set FIFO
-size for the port before registering it.
+On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
+> Standard practice is to have cpufreq_set_target() handle voltage
+> transitions and leave clk_set_rate() handle the frequency changes.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c |   57 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 53 insertions(+), 4 deletions(-)
+The standard practice is to have cpufreq_set_target() handle both
+voltage and frequency transitions, while voltage is handled by regulator
+and frequency by clk API.
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index bfbfb07..2041220 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -25,6 +25,28 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- 
-+/* Offsets for the DesignWare specific registers */
-+#define DW_UART_USR	0x1f /* UART Status Register */
-+#define DW_UART_CPR	0xf4 /* Component Parameter Register */
-+#define DW_UART_UCV	0xf8 /* UART Component Version */
-+
-+/* Component Parameter Register bits */
-+#define DW_UART_CPR_ABP_DATA_WIDTH	(3 << 0)
-+#define DW_UART_CPR_AFCE_MODE		(1 << 4)
-+#define DW_UART_CPR_THRE_MODE		(1 << 5)
-+#define DW_UART_CPR_SIR_MODE		(1 << 6)
-+#define DW_UART_CPR_SIR_LP_MODE		(1 << 7)
-+#define DW_UART_CPR_ADDITIONAL_FEATURES	(1 << 8)
-+#define DW_UART_CPR_FIFO_ACCESS		(1 << 9)
-+#define DW_UART_CPR_FIFO_STAT		(1 << 10)
-+#define DW_UART_CPR_SHADOW		(1 << 11)
-+#define DW_UART_CPR_ENCODED_PARMS	(1 << 12)
-+#define DW_UART_CPR_DMA_EXTRA		(1 << 13)
-+#define DW_UART_CPR_FIFO_MODE		(0xff << 16)
-+/* Helper for fifo size calculation */
-+#define DW_UART_CPR_FIFO_SIZE(a)	(((a >> 16) & 0xff) * 16)
-+
-+
- struct dw8250_data {
- 	int	last_lcr;
- 	int	line;
-@@ -66,9 +88,6 @@ static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
- 	return readl(p->membase + offset);
- }
- 
--/* Offset for the DesignWare's UART Status Register. */
--#define UART_USR	0x1f
--
- static int dw8250_handle_irq(struct uart_port *p)
- {
- 	struct dw8250_data *d = p->private_data;
-@@ -78,7 +97,7 @@ static int dw8250_handle_irq(struct uart_port *p)
- 		return 1;
- 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
- 		/* Clear the USR and write the LCR again. */
--		(void)p->serial_in(p, UART_USR);
-+		(void)p->serial_in(p, DW_UART_USR);
- 		p->serial_out(p, d->last_lcr, UART_LCR);
- 
- 		return 1;
-@@ -119,6 +138,34 @@ static int __devinit dw8250_probe_of(struct uart_port *p)
- 	return 0;
- }
- 
-+static void __devinit dw8250_setup_port(struct uart_8250_port *up)
-+{
-+	struct uart_port	*p = &up->port;
-+	u32			reg = readl(p->membase + DW_UART_UCV);
-+
-+	/*
-+	 * If the Component Version Register returns zero, we know that
-+	 * ADDITIONAL_FEATURES are not enabled. No need to go any further.
-+	 */
-+	if (!reg)
-+		return;
-+
-+	dev_dbg_ratelimited(p->dev, "Designware UART version %c.%c%c\n",
-+		(reg >> 24) & 0xff, (reg >> 16) & 0xff, (reg >> 8) & 0xff);
-+
-+	reg = readl(p->membase + DW_UART_CPR);
-+	if (!reg)
-+		return;
-+
-+	/* Select the type based on fifo */
-+	if (reg & DW_UART_CPR_FIFO_MODE) {
-+		p->type = PORT_16550A;
-+		p->flags |= UPF_FIXED_TYPE;
-+		p->fifosize = DW_UART_CPR_FIFO_SIZE(reg);
-+		up->tx_loadsz = p->fifosize;
-+	}
-+}
-+
- static int __devinit dw8250_probe(struct platform_device *pdev)
- {
- 	struct uart_8250_port uart = {};
-@@ -156,6 +203,8 @@ static int __devinit dw8250_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
-+	dw8250_setup_port(&uart);
-+
- 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
--- 
-1.7.10.4
+> I'd
+> have to move most of the logic of hb_set_target() into
+> clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
+> cpufreq is not enabled/loaded.
+
+You only need to move hb_voltage_change() into cpu clock's .set_rate()
+hook with no need of checking if cpufreq is enabled or not.
+
+> I don't think the clk maintainers would
+> take that patch, either.
+
+This is all handled platform clock specific .set_rate() hook.  I doubt
+it will concern clk maintainers at all, especially when doing so we
+will avoid another cpufreq driver by just using cpufreq-cpu0 driver.
+
+Shawn
 
