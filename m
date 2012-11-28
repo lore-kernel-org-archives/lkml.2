@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2K1QwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:52:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38290 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab2K1QvG (ORCPT
+	id S1754792Ab2K1QoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:44:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45503 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2K1QoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:51:06 -0500
-Date: Wed, 28 Nov 2012 11:50:07 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 06/46] x86, mm: Change find_early_table_space()
- paramters
-Message-ID: <20121128165007.GE21266@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
- <1353123563-3103-7-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353123563-3103-7-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 28 Nov 2012 11:44:06 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
+        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 05/25] char: add aio_{read,write} to /dev/{null,zero}
+Date: Wed, 28 Nov 2012 08:43:29 -0800
+Message-Id: <1354121029-1376-6-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Zach Brown <zab@redhat.com>
 
-s/paramters/parameters/
+These are handy for measuring the cost of the aio infrastructure with
+operations that do very little and complete immediately.
 
-On Fri, Nov 16, 2012 at 07:38:43PM -0800, Yinghai Lu wrote:
-> call split_mem_range inside the function.
+Signed-off-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ drivers/char/mem.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-So this looks to introduce an extra split_mem_range which
-does the same operations on 'mr' that is done in find_early_table_space.
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 0537903..968ae6e 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -627,6 +627,18 @@ static ssize_t write_null(struct file *file, const char __user *buf,
+ 	return count;
+ }
+ 
++static ssize_t aio_read_null(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	return 0;
++}
++
++static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
++			      unsigned long nr_segs, loff_t pos)
++{
++	return iov_length(iov, nr_segs);
++}
++
+ static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
+ 			struct splice_desc *sd)
+ {
+@@ -670,6 +682,24 @@ static ssize_t read_zero(struct file *file, char __user *buf,
+ 	return written ? written : -EFAULT;
+ }
+ 
++static ssize_t aio_read_zero(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	size_t written = 0;
++	unsigned long i;
++	ssize_t ret;
++
++	for (i = 0; i < nr_segs; i++) {
++		ret = read_zero(iocb->ki_filp, iov[i].iov_base, iov[i].iov_len,
++				&pos);
++		if (ret < 0)
++			break;
++		written += ret;
++	}
++
++	return written ? written : -EFAULT;
++}
++
+ static int mmap_zero(struct file *file, struct vm_area_struct *vma)
+ {
+ #ifndef CONFIG_MMU
+@@ -738,6 +768,7 @@ static int open_port(struct inode * inode, struct file * filp)
+ #define full_lseek      null_lseek
+ #define write_zero	write_null
+ #define read_full       read_zero
++#define aio_write_zero	aio_write_null
+ #define open_mem	open_port
+ #define open_kmem	open_mem
+ #define open_oldmem	open_mem
+@@ -766,6 +797,8 @@ static const struct file_operations null_fops = {
+ 	.llseek		= null_lseek,
+ 	.read		= read_null,
+ 	.write		= write_null,
++	.aio_read	= aio_read_null,
++	.aio_write	= aio_write_null,
+ 	.splice_write	= splice_write_null,
+ };
+ 
+@@ -782,6 +815,8 @@ static const struct file_operations zero_fops = {
+ 	.llseek		= zero_lseek,
+ 	.read		= read_zero,
+ 	.write		= write_zero,
++	.aio_read	= aio_read_zero,
++	.aio_write	= aio_write_zero,
+ 	.mmap		= mmap_zero,
+ };
+ 
+-- 
+1.7.12
 
-Could the find_early_table_space use the init_memory_mapping
-'mr' and 'nr_range'?
-
-This is the call chain:
-	nr_range = split_mem_range(mr, nr_range, start, end)
-
-	..
-	if (!after_bootmem)
-		find_early_table_space(..)
-			nr_rnage = split_mem_range(mr, nr_range, start, end)
-
-Perhaps you could modify find_early_table_space to just return
-the nr_range (and also use the 'mr')?
-
-And then you would do:
-
-	if (!after_bootmem)
-		nr_range = find_early_table_space(..)
-	else {
-		memset(mr, 0, sizeof(mr));
-        	nr_range = split_mem_range(mr, 0, start, end);
-	}
-
-
-Ah, I see you redid this in the next patch. Can you then point
-this out in the commit description please? Say:
-
-"The patch: x86, mm: Find early page table buffer together
-tidies this up so we do not end up calling split_mem_range twice."
-
-
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/mm/init.c |   12 +++++++++---
->  1 files changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index dbef4ff..51f919f 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -196,12 +196,18 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
->   * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
->   * pages. Then find enough contiguous space for those page tables.
->   */
-> -static void __init find_early_table_space(struct map_range *mr, int nr_range)
-> +static void __init find_early_table_space(unsigned long start, unsigned long end)
->  {
->  	int i;
->  	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
-> -	unsigned long start = 0, good_end;
-> +	unsigned long good_end;
->  	phys_addr_t base;
-> +	struct map_range mr[NR_RANGE_MR];
-> +	int nr_range;
-> +
-> +	memset(mr, 0, sizeof(mr));
-> +	nr_range = 0;
-> +	nr_range = split_mem_range(mr, nr_range, start, end);
->  
->  	for (i = 0; i < nr_range; i++) {
->  		unsigned long range, extra;
-> @@ -276,7 +282,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->  	 * nodes are discovered.
->  	 */
->  	if (!after_bootmem)
-> -		find_early_table_space(mr, nr_range);
-> +		find_early_table_space(start, end);
->  
->  	for (i = 0; i < nr_range; i++)
->  		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
-> -- 
-> 1.7.7
