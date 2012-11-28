@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2K1Sdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:33:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35758 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab2K1Sdn (ORCPT
+	id S1755922Ab2K1Sd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:33:59 -0500
+Received: from mail-we0-f202.google.com ([74.125.82.202]:33026 "EHLO
+	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab2K1Sd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:33:43 -0500
-Message-ID: <50B65903.1050400@wwwdotorg.org>
-Date: Wed, 28 Nov 2012 11:33:39 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V7 1/7] kbuild: centralize .dts->.dtb rule
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 13:33:57 -0500
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH] cgroup: avoid creating degenerate allcg_list
+Date: Wed, 28 Nov 2012 10:26:32 -0800
+Message-Id: <1354127192-22153-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 04:29 PM, Stephen Warren wrote:
-> All architectures that use cmd_dtc do so in almost the same way. Create
-> a central build rule to avoid duplication. The one difference is that
-> most current uses of dtc build $(obj)/%.dtb from $(src)/dts/%.dts rather
-> than building the .dtb in the same directory as the .dts file. This
-> difference will be eliminated arch-by-arch in future patches.
-> 
-> MIPS is the exception here; it already uses the exact same rule as the
-> new common rule, so the duplicate is removed in this patch to avoid any
-> conflict. arch/mips changes courtesy of Ralf Baechle.
-> 
-> Update Documentation/kbuild to remove the explicit call to cmd_dtc from
-> the example, now that the rule exists in a centralized location.
+Before this patch init_cgroup_root() created a degenerate list by
+first inserting a element into allcg_list and then initializing the
+inserted list element.  The initialization reset the element's
+prev/next fields forming a degenerate list where allcg_list pointed to
+element, but element pointed to itself.  This problem was introduced
+in 2243076ad128 "cgroup: initialize cgrp->allcg_node in
+init_cgroup_housekeeping()".  CONFIG_DEBUG_LIST reported a list_add
+corruption in cgroup_mkdir() running next-20121127 (ce2931a).
 
-Ben, Paul,
+This patch fixes the problem by performing element initialization
+before insertion.
 
-Following this patch (http://lkml.org/lkml/2012/11/27/555), I posted a
-series of patches to convert almost all architectures to using the
-centralized rule. The one architecture I didn't convert was PowerPC.
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ kernel/cgroup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I didn't convert it because arch/powerpc/boot/Makefile contains a large
-number of rules (to generate *Image.% where % is a board name) that
-depend on %.dtb, which is expected to be in arch/powerpc/boot rather
-than arch/powerpc/boot/dts. Now, I guess it's possible to convert them
-all to expect the .dtb files to be in dts/ and also have
-arch/powerpc/boot/Makefile call make in boot/dts/ to make each required
-.dtb file. However, the patch would be a bit larger than all the other
-architecture patches. Do you want me to do that conversion, or would you
-rather I leave PowerPC alone? Thanks for any feedback.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 01d5342..ece60d4 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1394,6 +1394,7 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ {
+ 	struct cgroup *cgrp = &root->top_cgroup;
+ 
++	init_cgroup_housekeeping(cgrp);
+ 	INIT_LIST_HEAD(&root->subsys_list);
+ 	INIT_LIST_HEAD(&root->root_list);
+ 	INIT_LIST_HEAD(&root->allcg_list);
+@@ -1401,7 +1402,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 	cgrp->root = root;
+ 	cgrp->top_cgroup = cgrp;
+ 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+-	init_cgroup_housekeeping(cgrp);
+ }
+ 
+ static bool init_root_id(struct cgroupfs_root *root)
+-- 
+1.7.7.3
+
