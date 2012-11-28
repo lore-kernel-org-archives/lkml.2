@@ -1,501 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab2K1RoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:44:08 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:34458 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2K1RoB (ORCPT
+	id S1755795Ab2K1RoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:44:19 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39412 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab2K1RoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:44:01 -0500
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: add support for modification of existing rules
-Date: Wed, 28 Nov 2012 18:43:29 +0100
-Message-id: <1354124609-16829-2-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1354124609-16829-1-git-send-email-r.krypa@samsung.com>
-References: <1354124609-16829-1-git-send-email-r.krypa@samsung.com>
-X-TM-AS-MML: No
+	Wed, 28 Nov 2012 12:44:13 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CAD=FV=WvDWrT_vCT8W48mKFU4O2n-_yDz+SpFpqx3B25tvmRKA@mail.gmail.com>
+References: <1354045994-8977-1-git-send-email-dianders@chromium.org>
+	<CAOesGMjyXZwKjycyVcEV0ty0LCM_i61QxykYPhAvXxx2rhgP+A@mail.gmail.com>
+	<50B53E37.40303@samsung.com>
+	<CAOesGMivs=NA6hcTYWO-MWUeUjVGZ0h258z1MpeexXGtVf9h-g@mail.gmail.com>
+	<18d701cdcd28$74198d70$5c4ca850$%kim@samsung.com>
+	<20121128060553.GA18166@quad.lixom.net>
+	<CAD=FV=WvDWrT_vCT8W48mKFU4O2n-_yDz+SpFpqx3B25tvmRKA@mail.gmail.com>
+Date: Wed, 28 Nov 2012 09:44:12 -0800
+Message-ID: <CAOesGMj9nw4230jBMyWR8L6c21iKvH-YHAQf8=MdTE-ANrZpgA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Avoid early use of of_machine_is_compatible()
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rule modifications are enabled via /smack/change-rule. Format is as follows:
-"Subject Object rwaxt rwaxt"
+On Wed, Nov 28, 2012 at 8:16 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Olof / Kukjin,
+>
+> On Tue, Nov 27, 2012 at 10:05 PM, Olof Johansson <olof@lixom.net> wrote:
+>> On Wed, Nov 28, 2012 at 02:23:09PM +0900, Kukjin Kim wrote:
+>>> Olof Johansson wrote:
+>>> >
+>>> > On Tue, Nov 27, 2012 at 2:27 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>>> > > On 11/28/12 07:11, Olof Johansson wrote:
+>>> > >>
+>>> > >> On Tue, Nov 27, 2012 at 11:53 AM, Doug Anderson<dianders@chromium.org>
+>>> > >> wrote:
+>>> > >>>
+>>> > >>> The recent commit "ARM: EXYNOS: add support for EXYNOS5440 SoC" broke
+>>> > >>> support for exynos5250 because of_machine_is_compatible() was used too
+>>> > >>> early in the boot process.  It also probably meant that the exynos5440
+>>> > >>> failed to use the proper iotable.  Switch to use
+>>> > >>> of_flat_dt_is_compatible() in both of these cases.
+>>> > >>>
+>>> > >>> The failure I was seeing in exynos5250 because of this was:
+>>> > >>>    Division by zero in kernel.
+>>> > >>>    [<80015ed4>] (unwind_backtrace+0x0/0xec) from [<8045c7a4>]
+>>> > >>> (dump_stack+0x20/0x24)
+>>> > >>>    [<8045c7a4>] (dump_stack+0x20/0x24) from [<80012990>]
+>>> > >>> (__div0+0x20/0x28)
+>>> > >>>    [<80012990>] (__div0+0x20/0x28) from [<8021ab04>]
+>>> (Ldiv0_64+0x8/0x18)
+>>> > >>>    [<8021ab04>] (Ldiv0_64+0x8/0x18) from [<80068560>]
+>>> > >>> (__clocksource_updatefreq_scale+0x54/0x134)
+>>> > >>>    [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134) from
+>>> > >>> [<8006865c>] (__clocksource_register_scale+0x1c/0x54)
+>>> > >>>    [<8006865c>] (__clocksource_register_scale+0x1c/0x54) from
+>>> > >>> [<80612a18>] (exynos_timer_init+0x100/0x1e8)
+>>> > >>>    [<80612a18>] (exynos_timer_init+0x100/0x1e8) from [<8060d184>]
+>>> > >>> (time_init+0x28/0x38)
+>>> > >>>    [<8060d184>] (time_init+0x28/0x38) from [<8060a754>]
+>>> > >>> (start_kernel+0x1e0/0x3c8)
+>>> > >>>    [<8060a754>] (start_kernel+0x1e0/0x3c8) from [<40008078>]
+>>> > (0x40008078)
+>>> > >>>
+>>> > >>> Signed-off-by: Doug Anderson<dianders@chromium.org>
+>>> > >>
+>>> > >>
+>>> > >> Thanks Doug.
+>>> > >>
+>>> > >> Kukjin, I'll apply this directly on top of the previous branch in
+>>> > >> arm-soc, if that's OK with you.
+>>> > >>
+>>> > > Sure, go ahead with my ack if you want,
+>>> > >
+>>> > > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>> > >
+>>> > > Note, actually there was a fix which uses soc_is_exynos5440() in my
+>>> > local
+>>> > > :-) I'm not sure which one is better at this moment, but I'm OK on this.
+>>> >
+>>> > Ok, applied. Thanks all.
+>>> >
+>>> Olof, just note, happens build error with exynos4_defconfig because of
+>>> non-DT.
+>>
+>> Ick, thanks for catching that.
+>
+> Sorry for this!  I will try to be more diligent about trying
+> exynos4_defconfig before submitting future patches to these files.
+>
+>>>
+>>> Following can resolve it or we should create null function for
+>>> of_get_flat_dt_root() and of_flat_dt_is_compatible()...
+>>>
+>>> 8<---------------------------------------
+>>> From: Kukjin Kim <kgene.kim@samsung.com>
+>>> Subject: ARM: EXYNOS: fix a build error with non-DT for exynos4
+>>>
+>>> This fixes following in case of non-DT:
+>>> arch/arm/mach-exynos/common.c: In function 'exynos_init_io':
+>>> arch/arm/mach-exynos/common.c:339: error: implicit declaration of function
+>>> 'of_get_flat_dt_root'
+>>> arch/arm/mach-exynos/common.c:342: error: implicit declaration of function
+>>> 'of_flat_dt_is_compatible'
+>>> make[1]: *** [arch/arm/mach-exynos/common.o] Error 1
+>>>
+>>> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+>>> ---
+>>> diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+>>> index b919f5f..2110091 100644
+>>> --- a/arch/arm/mach-exynos/common.c
+>>> +++ b/arch/arm/mach-exynos/common.c
+>>> @@ -336,12 +336,14 @@ void __init exynos_init_late(void)
+>>>
+>>>  void __init exynos_init_io(struct map_desc *mach_desc, int size)
+>>>  {
+>>> +#ifdef CONFIG_OF
+>>>       unsigned long root = of_get_flat_dt_root();
+>>>
+>>>       /* initialize the io descriptors we need for initialization */
+>>>       if (of_flat_dt_is_compatible(root, "samsung,exynos5440"))
+>>>               iotable_init(exynos5440_iodesc,
+>>> ARRAY_SIZE(exynos5440_iodesc));
+>>>       else
+>>> +#endif
+>>>               iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
+>>
+>> I really don't like splitting an if/else with an ifdef like this, it's fragile
+>> code and can be hard to follow.
+>
+> Agree.
+>
+>> There's also a second build error with exynos_defconfig in the
+>> exynos5-dt.c board file due to a missing include. Teaches me to just apply
+>> patches without trying to build. :(
+>
+> In the tree I was testing against (the arm-soc/for-next branch at
+> 659b19ca3a77e2ac32fe84d95242653c75dd07c7) I see the include file in
+> the exynos5-dt.c file already.  In my tree it was added by "2eae613b:
+> ARM: EXYNOS: Add MFC device tree support".
+>
+> Your patch applies cleanly on mine but I end up with:
+>
+>   #include <linux/of_platform.h>
+>   #include <linux/of_fdt.h>
+>   #include <linux/serial_core.h>
+>   #include <linux/io.h>
+>   #include <linux/memblock.h>
+>   #include <linux/of_fdt.h>
 
-First two strings are subject and object labels up to 255 characters.
-Third string contains permissions to enable.
-Fourth string contains permissions to disable.
+Sigh, this is because people add includes out of alphabetical order.
+We'll just have to fix it up later, if we don't add of_fdt.h in the
+exynos5440 branch, the code will not be bisectable.
 
-All unmentioned permissions will be left unchanged.
-If no rule previously existed, it will be created.
 
-Targeted for git://git.gitorious.org/smack-next/kernel.git
+>> I'll squash this into Doug's original patch, if that's OK?
+>
+> No objection to squashing a fix and your CL is better than what I
+> have, but see below for an issue.
+>
+>
+>> diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+>> index 796e0c9..77e7c5b 100644
+>> --- a/arch/arm/mach-exynos/common.c
+>> +++ b/arch/arm/mach-exynos/common.c
+>> @@ -122,6 +122,7 @@ static struct map_desc exynos_iodesc[] __initdata = {
+>>         },
+>>  };
+>>
+>> +#ifdef CONFIG_ARCH_EXYNOS5
+>
+> Are you sure you want this #ifdef?  If so it should match the ifdef
+> used below.  With your patch applied I can get a compile error with:
+>
+> make exynos_defconfig
+> echo '# CONFIG_ARCH_EXYNOS5 is not set' >> .config
+>
+> In other words your code will fail if someone wants a FDT-enabled exynos4 build.
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- Documentation/security/Smack.txt |   11 ++
- security/smack/smackfs.c         |  249 ++++++++++++++++++++++++++------------
- 2 files changed, 181 insertions(+), 79 deletions(-)
+Yep, the above needs to be:
+#if defined(CONFIG_OF) && defined(CONFIG_ARCH_EXYNOS5)
 
-diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
-index 8a177e4..7a2d30c 100644
---- a/Documentation/security/Smack.txt
-+++ b/Documentation/security/Smack.txt
-@@ -117,6 +117,17 @@ access2
- ambient
- 	This contains the Smack label applied to unlabeled network
- 	packets.
-+change-rule
-+	This interface allows modification of existing access control rules.
-+	The format accepted on write is:
-+		"%s %s %s %s"
-+	where the first string is the subject label, the second the
-+	object label, the third the access to allow and the fourth the
-+	access to deny. The access strings may contain only the characters
-+	"rwxat-". If a rule for a given subject and object exists it will be
-+	modified by enabling the permissions in the third string and disabling
-+	those in the fourth string. If there is no such rule it will be
-+	created using the access specified in the third and the fourth strings.
- cipso
- 	This interface allows a specific CIPSO header to be assigned
- 	to a Smack label. The format accepted on write is:
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 76a5dca..486c6d8 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -50,12 +50,12 @@ enum smk_inos {
- 	SMK_ACCESS2	= 16,	/* make an access check with long labels */
- 	SMK_CIPSO2	= 17,	/* load long label -> CIPSO mapping */
- 	SMK_REVOKE_SUBJ	= 18,	/* set rules with subject label to '-' */
-+	SMK_CHANGE_RULE	= 19,	/* change or add rules (long labels) */
- };
- 
- /*
-  * List locks
-  */
--static DEFINE_MUTEX(smack_list_lock);
- static DEFINE_MUTEX(smack_cipso_lock);
- static DEFINE_MUTEX(smack_ambient_lock);
- static DEFINE_MUTEX(smk_netlbladdr_lock);
-@@ -110,6 +110,13 @@ struct smack_master_list {
- 
- LIST_HEAD(smack_rule_list);
- 
-+struct smack_parsed_rule {
-+	char			*smk_subject;
-+	char			*smk_object;
-+	int			smk_access1;
-+	int			smk_access2;
-+};
-+
- static int smk_cipso_doi_value = SMACK_CIPSO_DOI_DEFAULT;
- 
- const char *smack_cipso_option = SMACK_CIPSO_OPTION;
-@@ -167,25 +174,28 @@ static void smk_netlabel_audit_set(struct netlbl_audit *nap)
- #define SMK_NETLBLADDRMIN	9
- 
- /**
-- * smk_set_access - add a rule to the rule list
-- * @srp: the new rule to add
-+ * smk_set_access - add a rule to the rule list or replace an old rule
-+ * @srp: the rule to add or replace
-  * @rule_list: the list of rules
-  * @rule_lock: the rule list lock
-+ * @global: if non-zero, indicates a global rule
-  *
-  * Looks through the current subject/object/access list for
-  * the subject/object pair and replaces the access that was
-  * there. If the pair isn't found add it with the specified
-  * access.
-  *
-- * Returns 1 if a rule was found to exist already, 0 if it is new
-  * Returns 0 if nothing goes wrong or -ENOMEM if it fails
-  * during the allocation of the new pair to add.
-  */
--static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
--				struct mutex *rule_lock)
-+static int smk_set_access(struct smack_parsed_rule *srp,
-+				struct list_head *rule_list,
-+				struct mutex *rule_lock, int global)
- {
- 	struct smack_rule *sp;
-+	struct smack_master_list *smlp;
- 	int found = 0;
-+	int rc = 0;
- 
- 	mutex_lock(rule_lock);
- 
-@@ -197,23 +207,89 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
- 		if (sp->smk_object == srp->smk_object &&
- 		    sp->smk_subject == srp->smk_subject) {
- 			found = 1;
--			sp->smk_access = srp->smk_access;
-+			sp->smk_access |= srp->smk_access1;
-+			sp->smk_access &= ~srp->smk_access2;
- 			break;
- 		}
- 	}
--	if (found == 0)
--		list_add_rcu(&srp->list, rule_list);
- 
-+	if (found == 0) {
-+		sp = kzalloc(sizeof(*sp), GFP_KERNEL);
-+		if (sp == NULL) {
-+			rc = -ENOMEM;
-+			goto out;
-+		}
-+
-+		sp->smk_subject = srp->smk_subject;
-+		sp->smk_object = srp->smk_object;
-+		sp->smk_access = srp->smk_access1 & ~srp->smk_access2;
-+
-+		list_add_rcu(&sp->list, rule_list);
-+		/*
-+		 * If this is a global as opposed to self and a new rule
-+		 * it needs to get added for reporting.
-+		 */
-+		if (global) {
-+			smlp = kzalloc(sizeof(*smlp), GFP_KERNEL);
-+			if (smlp != NULL) {
-+				smlp->smk_rule = sp;
-+				list_add_rcu(&smlp->list, &smack_rule_list);
-+			} else
-+				rc = -ENOMEM;
-+		}
-+	}
-+
-+out:
- 	mutex_unlock(rule_lock);
-+	return rc;
-+}
-+
-+/**
-+ * smk_perm_from_str - parse smack accesses from a text string
-+ * @string: a text string that contains a Smack accesses code
-+ *
-+ * Returns an integer with respective bits set for specified accesses.
-+ */
-+static int smk_perm_from_str(const char *string)
-+{
-+	int perm = 0;
-+	const char *cp;
- 
--	return found;
-+	for (cp = string; ; cp++)
-+		switch (*cp) {
-+		case '-':
-+			break;
-+		case 'r':
-+		case 'R':
-+			perm |= MAY_READ;
-+			break;
-+		case 'w':
-+		case 'W':
-+			perm |= MAY_WRITE;
-+			break;
-+		case 'x':
-+		case 'X':
-+			perm |= MAY_EXEC;
-+			break;
-+		case 'a':
-+		case 'A':
-+			perm |= MAY_APPEND;
-+			break;
-+		case 't':
-+		case 'T':
-+			perm |= MAY_TRANSMUTE;
-+			break;
-+		default:
-+			return perm;
-+		}
- }
- 
- /**
-  * smk_fill_rule - Fill Smack rule from strings
-  * @subject: subject label string
-  * @object: object label string
-- * @access: access string
-+ * @access1: access string
-+ * @access2: string with permissions to be removed
-  * @rule: Smack rule
-  * @import: if non-zero, import labels
-  * @len: label length limit
-@@ -221,8 +297,9 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
-  * Returns 0 on success, -1 on failure
-  */
- static int smk_fill_rule(const char *subject, const char *object,
--				const char *access, struct smack_rule *rule,
--				int import, int len)
-+				const char *access1, const char *access2,
-+				struct smack_parsed_rule *rule, int import,
-+				int len)
- {
- 	const char *cp;
- 	struct smack_known *skp;
-@@ -255,36 +332,11 @@ static int smk_fill_rule(const char *subject, const char *object,
- 		rule->smk_object = skp->smk_known;
- 	}
- 
--	rule->smk_access = 0;
--
--	for (cp = access; *cp != '\0'; cp++) {
--		switch (*cp) {
--		case '-':
--			break;
--		case 'r':
--		case 'R':
--			rule->smk_access |= MAY_READ;
--			break;
--		case 'w':
--		case 'W':
--			rule->smk_access |= MAY_WRITE;
--			break;
--		case 'x':
--		case 'X':
--			rule->smk_access |= MAY_EXEC;
--			break;
--		case 'a':
--		case 'A':
--			rule->smk_access |= MAY_APPEND;
--			break;
--		case 't':
--		case 'T':
--			rule->smk_access |= MAY_TRANSMUTE;
--			break;
--		default:
--			return 0;
--		}
--	}
-+	rule->smk_access1 = smk_perm_from_str(access1);
-+	if (access2)
-+		rule->smk_access2 = smk_perm_from_str(access2);
-+	else
-+		rule->smk_access2 = ~rule->smk_access1;
- 
- 	return 0;
- }
-@@ -297,30 +349,33 @@ static int smk_fill_rule(const char *subject, const char *object,
-  *
-  * Returns 0 on success, -1 on errors.
-  */
--static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
-+static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
-+				int import)
- {
- 	int rc;
- 
- 	rc = smk_fill_rule(data, data + SMK_LABELLEN,
--			   data + SMK_LABELLEN + SMK_LABELLEN, rule, import,
--			   SMK_LABELLEN);
-+			   data + SMK_LABELLEN + SMK_LABELLEN, NULL, rule,
-+			   import, SMK_LABELLEN);
- 	return rc;
- }
- 
- /**
-  * smk_parse_long_rule - parse Smack rule from rule string
-  * @data: string to be parsed, null terminated
-- * @rule: Smack rule
-+ * @rule: Will be filled with Smack parsed rule
-  * @import: if non-zero, import labels
-+ * @change: if non-zero, data is from /smack/change-rule
-  *
-  * Returns 0 on success, -1 on failure
-  */
--static int smk_parse_long_rule(const char *data, struct smack_rule *rule,
--				int import)
-+static int smk_parse_long_rule(const char *data, struct smack_parsed_rule *rule,
-+				int import, int change)
- {
- 	char *subject;
- 	char *object;
--	char *access;
-+	char *access1;
-+	char *access2;
- 	int datalen;
- 	int rc = -1;
- 
-@@ -334,14 +389,27 @@ static int smk_parse_long_rule(const char *data, struct smack_rule *rule,
- 	object = kzalloc(datalen, GFP_KERNEL);
- 	if (object == NULL)
- 		goto free_out_s;
--	access = kzalloc(datalen, GFP_KERNEL);
--	if (access == NULL)
-+	access1 = kzalloc(datalen, GFP_KERNEL);
-+	if (access1 == NULL)
- 		goto free_out_o;
-+	access2 = kzalloc(datalen, GFP_KERNEL);
-+	if (access2 == NULL)
-+		goto free_out_a;
-+
-+	if (change) {
-+		if (sscanf(data, "%s %s %s %s",
-+			subject, object, access1, access2) == 4)
-+			rc = smk_fill_rule(subject, object, access1, access2,
-+				rule, import, 0);
-+	} else {
-+		if (sscanf(data, "%s %s %s", subject, object, access1) == 3)
-+			rc = smk_fill_rule(subject, object, access1, NULL,
-+				rule, import, 0);
-+	}
- 
--	if (sscanf(data, "%s %s %s", subject, object, access) == 3)
--		rc = smk_fill_rule(subject, object, access, rule, import, 0);
--
--	kfree(access);
-+	kfree(access2);
-+free_out_a:
-+	kfree(access1);
- free_out_o:
- 	kfree(object);
- free_out_s:
-@@ -351,6 +419,7 @@ free_out_s:
- 
- #define SMK_FIXED24_FMT	0	/* Fixed 24byte label format */
- #define SMK_LONG_FMT	1	/* Variable long label format */
-+#define SMK_CHANGE_FMT	2	/* Rule modification format */
- /**
-  * smk_write_rules_list - write() for any /smack rule file
-  * @file: file pointer, not actually used
-@@ -359,22 +428,24 @@ free_out_s:
-  * @ppos: where to start - must be 0
-  * @rule_list: the list of rules to write to
-  * @rule_lock: lock for the rule list
-- * @format: /smack/load or /smack/load2 format.
-+ * @format: /smack/load or /smack/load2 or /smack/change-rule format.
-  *
-  * Get one smack access rule from above.
-  * The format for SMK_LONG_FMT is:
-  *	"subject<whitespace>object<whitespace>access[<whitespace>...]"
-  * The format for SMK_FIXED24_FMT is exactly:
-  *	"subject                 object                  rwxat"
-+ * The format for SMK_CHANGE_FMT is:
-+ *	"subject<whitespace>object<whitespace>
-+ *	 acc_enable<whitespace>acc_disable[<whitespace>...]"
-  */
- static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 					size_t count, loff_t *ppos,
- 					struct list_head *rule_list,
- 					struct mutex *rule_lock, int format)
- {
--	struct smack_master_list *smlp;
- 	struct smack_known *skp;
--	struct smack_rule *rule;
-+	struct smack_parsed_rule *rule;
- 	char *data;
- 	int datalen;
- 	int rc = -EINVAL;
-@@ -417,7 +488,11 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 		 * Be sure the data string is terminated.
- 		 */
- 		data[count] = '\0';
--		if (smk_parse_long_rule(data, rule, 1))
-+		if (smk_parse_long_rule(data, rule, 1, 0))
-+			goto out_free_rule;
-+	} else if (format == SMK_CHANGE_FMT) {
-+		data[count] = '\0';
-+		if (smk_parse_long_rule(data, rule, 1, 1))
- 			goto out_free_rule;
- 	} else {
- 		/*
-@@ -437,22 +512,9 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 		rule_lock = &skp->smk_rules_lock;
- 	}
- 
--	rc = count;
--	/*
--	 * If this is a global as opposed to self and a new rule
--	 * it needs to get added for reporting.
--	 * smk_set_access returns true if there was already a rule
--	 * for the subject/object pair, and false if it was new.
--	 */
--	if (!smk_set_access(rule, rule_list, rule_lock)) {
--		if (load) {
--			smlp = kzalloc(sizeof(*smlp), GFP_KERNEL);
--			if (smlp != NULL) {
--				smlp->smk_rule = rule;
--				list_add_rcu(&smlp->list, &smack_rule_list);
--			} else
--				rc = -ENOMEM;
--		}
-+	rc = smk_set_access(rule, rule_list, rule_lock, load);
-+	if (rc == 0) {
-+		rc = count;
- 		goto out;
- 	}
- 
-@@ -1774,7 +1836,7 @@ static const struct file_operations smk_load_self_ops = {
- static ssize_t smk_user_access(struct file *file, const char __user *buf,
- 				size_t count, loff_t *ppos, int format)
- {
--	struct smack_rule rule;
-+	struct smack_parsed_rule rule;
- 	char *data;
- 	char *cod;
- 	int res;
-@@ -1796,14 +1858,14 @@ static ssize_t smk_user_access(struct file *file, const char __user *buf,
- 			return -ENOMEM;
- 		memcpy(cod, data, count);
- 		cod[count] = '\0';
--		res = smk_parse_long_rule(cod, &rule, 0);
-+		res = smk_parse_long_rule(cod, &rule, 0, 0);
- 		kfree(cod);
- 	}
- 
- 	if (res)
- 		return -EINVAL;
- 
--	res = smk_access(rule.smk_subject, rule.smk_object, rule.smk_access,
-+	res = smk_access(rule.smk_subject, rule.smk_object, rule.smk_access1,
- 			  NULL);
- 	data[0] = res == 0 ? '1' : '0';
- 	data[1] = '\0';
-@@ -2077,6 +2139,33 @@ static int smk_init_sysfs(void)
- }
- 
- /**
-+ * smk_write_change_rule - write() for /smack/change-rule
-+ * @file: file pointer
-+ * @buf: data from user space
-+ * @count: bytes sent
-+ * @ppos: where to start - must be 0
-+ */
-+static ssize_t smk_write_change_rule(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	/*
-+	 * Must have privilege.
-+	 */
-+	if (!capable(CAP_MAC_ADMIN))
-+		return -EPERM;
-+
-+	return smk_write_rules_list(file, buf, count, ppos, NULL, NULL,
-+				    SMK_CHANGE_FMT);
-+}
-+
-+static const struct file_operations smk_change_rule_ops = {
-+	.write		= smk_write_change_rule,
-+	.read		= simple_transaction_read,
-+	.release	= simple_transaction_release,
-+	.llseek		= generic_file_llseek,
-+};
-+
-+/**
-  * smk_fill_super - fill the /smackfs superblock
-  * @sb: the empty superblock
-  * @data: unused
-@@ -2125,6 +2214,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 		[SMK_REVOKE_SUBJ] = {
- 			"revoke-subject", &smk_revoke_subj_ops,
- 			S_IRUGO|S_IWUSR},
-+		[SMK_CHANGE_RULE] = {
-+			"change-rule", &smk_change_rule_ops, S_IRUGO|S_IWUSR},
- 		/* last one */
- 			{""}
- 	};
--- 
-1.7.10.4
+I've pushed out the branch with the patch applied (with the above changed).
 
+
+-Olof
