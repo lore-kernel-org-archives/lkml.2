@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab2K1OGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:06:09 -0500
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:41885 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755057Ab2K1OGH (ORCPT
+	id S1755258Ab2K1OJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:09:08 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63519 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab2K1OJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:06:07 -0500
-Message-ID: <1354111565.1479.73.camel@tellur>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Lucas Stach <dev@lynxeye.de>
-To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Date: Wed, 28 Nov 2012 15:06:05 +0100
-In-Reply-To: <50B61845.6060102@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	  <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	  <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	  <50B46336.8030605@nvidia.com>
-	  <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	  <50B476E1.4070403@nvidia.com>
-	  <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-	  <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>
-	  <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-	  <50B4A483.8030305@nvidia.com>
-	  <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
-	  <50B60EFF.1050703@nvidia.com> <1354109602.1479.66.camel@tellur>
-	 <50B61845.6060102@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 28 Nov 2012 09:09:05 -0500
+Date: Wed, 28 Nov 2012 06:08:59 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] workqueue: exit rescuer_thread() as TASK_RUNNING
+Message-ID: <20121128140859.GD15971@htj.dyndns.org>
+References: <1354083438.4506.3.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354083438.4506.3.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 28.11.2012, 15:57 +0200 schrieb Terje Bergström:
-> On 28.11.2012 15:33, Lucas Stach wrote:
-> > So this is obviously wrong. Userspace has to allocate a pushbuffer from
-> > the kernel just as every other buffer, then map it into it's own address
-> > space to push in commands. At submit time of the pushbuf kernel has to
-> > make sure that userspace is not able to access the memory any more, i.e.
-> > kernel shoots down the vma or pagetable of the vma. To keep overhead low
-> > and not do any blocking you can just keep some pushbufs around for one
-> > channel and switch over the pagetable entries to the next free buffer,
-> > just make sure that userspace is never able to tamper with a buffer as
-> > long as the gpu isn't done with it.
+On Wed, Nov 28, 2012 at 07:17:18AM +0100, Mike Galbraith wrote:
 > 
-> That's really not something dma-buf APIs are equipped to handle. We need
-> something to ensure user space doesn't have the buffer mapped (either
-> return error if has, or zap the mapping), something to ensure user space
-> cannot mmap the buffer, and something to revert this all once we're done.
+> A rescue thread exiting TASK_INTERRUPTIBLE can lead to a task scheduling
+> off, never to be seen again.  In the case where this occurred, an exiting
+> thread hit reiserfs homebrew conditional resched while holding a mutex,
+> bringing the box to it's knees.
 > 
-> We could add these as special ops to tegradrm dmabuf code for now, and
-> assume that command streams are always allocated by tegradrm. Now we
-> allow any dmabuf to be used as buffers for command streams.
+> PID: 18105  TASK: ffff8807fd412180  CPU: 5   COMMAND: "kdmflush"
+>  #0 [ffff8808157e7670] schedule at ffffffff8143f489
+>  #1 [ffff8808157e77b8] reiserfs_get_block at ffffffffa038ab2d [reiserfs]
+>  #2 [ffff8808157e79a8] __block_write_begin at ffffffff8117fb14
+>  #3 [ffff8808157e7a98] reiserfs_write_begin at ffffffffa0388695 [reiserfs]
+>  #4 [ffff8808157e7ad8] generic_perform_write at ffffffff810ee9e2
+>  #5 [ffff8808157e7b58] generic_file_buffered_write at ffffffff810eeb41
+>  #6 [ffff8808157e7ba8] __generic_file_aio_write at ffffffff810f1a3a
+>  #7 [ffff8808157e7c58] generic_file_aio_write at ffffffff810f1c88
+>  #8 [ffff8808157e7cc8] do_sync_write at ffffffff8114f850
+>  #9 [ffff8808157e7dd8] do_acct_process at ffffffff810a268f
+> #10 [ffff8808157e7e78] acct_process at ffffffff810a27ba
+> #11 [ffff8808157e7e98] do_exit at ffffffff8105e29a
+> #12 [ffff8808157e7ee8] kthread at ffffffff8107afee
+> #13 [ffff8808157e7f48] kernel_thread_helper at ffffffff8144a5c4
+>     [exception RIP: kernel_thread_helper]
+>     RIP: ffffffff8144a5c0  RSP: ffff8808157e7f58  RFLAGS: 00000202
+>     RAX: 0000000000000000  RBX: 0000000000000000  RCX: 0000000000000000
+>     RDX: 0000000000000000  RSI: ffffffff8107af60  RDI: ffff8803ee491d18
+>     RBP: 0000000000000000   R8: 0000000000000000   R9: 0000000000000000
+>     R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
+>     R13: 0000000000000000  R14: 0000000000000000  R15: 0000000000000000
+>     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
 > 
-Why do even need/use dma-buf for this use case? This is all one DRM
-device, even if we separate host1x and gr2d as implementation modules.
+> Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+> Cc: stable@vger.kernel.org
 
-So standard way of doing this is:
-1. create gem object for pushbuffer
-2. create fake mmap offset for gem obj
-3. map pushbuf using the fake offset on the drm device
-4. at submit time zap the mapping
+Applied to wq/for-3.8.  Thanks!
 
-You need this logic anyway, as normally we don't rely on userspace to
-sync gpu and cpu, but use the kernel to handle the concurrency issues.
-
-Regards,
-Lucas
-
+-- 
+tejun
