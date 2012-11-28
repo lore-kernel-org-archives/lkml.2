@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2K1TNq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:13:46 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35634 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939Ab2K1TNp (ORCPT
+	id S932262Ab2K1TPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:15:36 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36876 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab2K1TPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:13:45 -0500
-Date: Wed, 28 Nov 2012 14:12:51 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 46/46] x86, mm: Let "memmap=" take more entries one
- time
-Message-ID: <20121128191251.GT21266@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
- <1353123563-3103-47-git-send-email-yinghai@kernel.org>
+	Wed, 28 Nov 2012 14:15:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353123563-3103-47-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+ <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
+ <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+ <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 11:15:12 -0800
+X-Google-Sender-Auth: Ks1eyTRbCmHR884BbOBOck01y00
+Message-ID: <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 07:39:23PM -0800, Yinghai Lu wrote:
-> Current "memmap=" only can take one entry every time.
-> when we have more entries, we have to use memmap= for each of them.
-> 
-> For pxe booting, we have command line length limitation, those extra
-> "memmap=" would waste too much space.
-> 
-> This patch make memmap= could take several entries one time,
-> and those entries will be split with ','
+No, this is crap.
 
-You should also document that in Documentation/kernel-parameters.txt?
+We don't introduce random hooks like this just because the block layer
+has shit-for-brains and cannot be bothered to do things right.
 
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/kernel/e820.c |   16 +++++++++++++++-
->  1 files changed, 15 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index df06ade..d32abea 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -835,7 +835,7 @@ static int __init parse_memopt(char *p)
->  }
->  early_param("mem", parse_memopt);
->  
-> -static int __init parse_memmap_opt(char *p)
-> +static int __init parse_memmap_one(char *p)
->  {
->  	char *oldp;
->  	u64 start_at, mem_size;
-> @@ -877,6 +877,20 @@ static int __init parse_memmap_opt(char *p)
->  
->  	return *p == '\0' ? 0 : -EINVAL;
->  }
-> +static int __init parse_memmap_opt(char *str)
-> +{
-> +	while (str) {
-> +		char *k = strchr(str, ',');
-> +
-> +		if (k)
-> +			*k++ = 0;
-> +
-> +		parse_memmap_one(str);
-> +		str = k;
-> +	}
-> +
-> +	return 0;
-> +}
->  early_param("memmap", parse_memmap_opt);
->  
->  void __init finish_e820_parsing(void)
-> -- 
-> 1.7.7
+The fact is, the whole locking in the block layer open routine is
+total and utter crap. It doesn't lock the right thing, even with your
+change *anyway* (or with the change Jens had). Absolutely nothing in
+"mmap_region()" cares at all about the block-size anywhere - it's
+generic, after all - so locking around it is f*cking pointless. There
+is no way in hell that the caller of ->mmap can *ever* care about the
+block size, since it never even looks at it.
+
+Don't do random crap like this.
+
+Why does the code think that mmap matters so much anyway? As you say,
+the mmap itself does *nothing*. It has no impact for the block size.
+
+                 Linus
+
+On Wed, Nov 28, 2012 at 9:25 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+>
+> On Wed, 28 Nov 2012, Jens Axboe wrote:
+>
+>> On 2012-11-28 04:57, Mikulas Patocka wrote:
+>> >
+>> > This patch is wrong because you must check if the device is mapped while
+>> > holding bdev->bd_block_size_semaphore (because
+>> > bdev->bd_block_size_semaphore prevents new mappings from being created)
+>>
+>> No it doesn't. If you read the patch, that was moved to i_mmap_mutex.
+>
+> Hmm, it was wrong before the patch and it is wrong after the patch too.
+>
+> The problem is that ->mmap method doesn't do the actual mapping, the
+> caller of ->mmap (mmap_region) does it. So we must actually catch
+> mmap_region and protect it with the lock, not ->mmap.
