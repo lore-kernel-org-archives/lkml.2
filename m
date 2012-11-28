@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab2K1Nd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:33:26 -0500
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:42008 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755143Ab2K1NdY (ORCPT
+	id S1755247Ab2K1Nde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:33:34 -0500
+Received: from nm38-vm9.bullet.mail.bf1.yahoo.com ([72.30.239.25]:37930 "EHLO
+	nm38-vm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755047Ab2K1Ndc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:33:24 -0500
-Message-ID: <1354109602.1479.66.camel@tellur>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Lucas Stach <dev@lynxeye.de>
-To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Date: Wed, 28 Nov 2012 14:33:22 +0100
-In-Reply-To: <50B60EFF.1050703@nvidia.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	 <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	 <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	 <50B46336.8030605@nvidia.com>
-	 <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
-	 <50B476E1.4070403@nvidia.com>
-	 <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
-	 <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>
-	 <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
-	 <50B4A483.8030305@nvidia.com>
-	 <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
-	 <50B60EFF.1050703@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 28 Nov 2012 08:33:32 -0500
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 08:33:31 EST
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 102482.24969.bm@omp1050.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=qfA1g9mvnd7BKnd5w/xNo/a0DDbzb3gQT1yEcA07/UZBEUEWSY/1kk8ZdKJzT+YDsW7V6SuJsn8upTv3AFOQ551/8W/1VvxpnF3O1sqvaPDeeJa//4PnBZ3FN7BnqYnvciftlOzmfpos1GCdwHT23DSldz7zwCwiH4RHy+VCGKE=;
+X-YMail-OSG: tnVxnfAVM1mjQUkraBDTTMYNqbWhCVkIa6.dVQXB2RiAdhm
+ 7JbIJ3FRxCfNxJVhKvIDM5ZAygUdPkvpssWI8WbHtN.8YWu2TmJGCE4ZzRuD
+ 9Lp29HLODpNueThv32uQ4zc7QycQ3mROChbK7kyEpe.PMRRC6OhOpo8MZKn8
+ PJ.b5o2jkKIQeNQdk9r_7YOoSq.lPvouCOsZQXarm5Szoz5B9yDtelNu0wN0
+ uFnIlQRAZJC.XSwXXZRJh8FHgD5MN9SzAACtgLmVQpRE4sRdLHfS_n0UoaHG
+ YmywE18zOvJ9qLxxGlnna6cflMOdJdeUMLybmTIh9WCJpX.k65LAZ5rowgGk
+ nONRGSoo55QzkRWnDRiwFSIiN0yf3.Yxew1S3vt0uOfi_S5N625ZKdmBvxQn
+ qLHNPWGCu0dGcx0G8EE8lxRxxMmqEuRkEluuO8jjzSDGRrkU.RJtgAnYfrtS
+ JK3DSA6wYehqm6UsAoVUhU9tjrW3yPyNNpOxXthGfBtQgk2Nf6C05
+X-Rocket-MIMEInfo: 001.001,SW0gdXNpbmcga2VybmVsIChMaW51eCBpbml0Ym94IDMuNi43LTEtQVJDSCAjMSBTTVAgUFJFRU1QVCBTdW4gTm92IDE4IDEwOjExOjIyIENFVCAyMDEyIHg4Nl82NCBHTlUvTGludXgpIGFuZCBpIHNlZSBzb21lIHByb2JsZW1zIGF0IGJvb3RpbmcuLi4gU28gZG1lc2cgb3V0cHV0IHdpdGggQlVHIGxpbmVzOgoKJCBkbWVzZyB8Z3JlcCBCdWcKWyAgICAxLjM2MzE1NF0gW0Zpcm13YXJlIEJ1Z106IEFDUEk6IEJJT1MgX09TSShMaW51eCkgcXVlcnkgaWdub3JlZApbICAgIDEuMzczNzg0XSBbRmlybXdhcmUgQnUBMAEBAQE-
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.127.475
+Message-ID: <1354109265.69986.YahooMailClassic@web163004.mail.bf1.yahoo.com>
+Date: Wed, 28 Nov 2012 05:27:45 -0800 (PST)
+From: Denis Lotarev <dlotarev@yahoo.com>
+Subject: [FIRMWARE BUG] Lenovo x120e
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 28.11.2012, 15:17 +0200 schrieb Terje Bergström:
-> On 28.11.2012 01:00, Dave Airlie wrote:
-> > We  generally aim for the first, to stop the gpu from reading/writing
-> > any memory it hasn't been granted access to,
-> > the second is nice to have though, but really requires a GPU with VM
-> > to implement properly.
-> 
-> I wonder if we should aim at root only access on Tegra20, and force
-> IOMMU on Tegra30 and fix the remaining issues we have with IOMMU. The
-> firewall turns out to be more complicated than I wished.
-> 
-> Biggest problem is that we aim at zero-copy for everything possible,
-> including command streams. Kernel gets a handle to a command stream, but
-> the command stream is allocated by the user space process. So the user
-> space can tamper with the stream once it's been written to the host1x 2D
-> channel.
-> 
-So this is obviously wrong. Userspace has to allocate a pushbuffer from
-the kernel just as every other buffer, then map it into it's own address
-space to push in commands. At submit time of the pushbuf kernel has to
-make sure that userspace is not able to access the memory any more, i.e.
-kernel shoots down the vma or pagetable of the vma. To keep overhead low
-and not do any blocking you can just keep some pushbufs around for one
-channel and switch over the pagetable entries to the next free buffer,
-just make sure that userspace is never able to tamper with a buffer as
-long as the gpu isn't done with it.
+Im using kernel (Linux initbox 3.6.7-1-ARCH #1 SMP PREEMPT Sun Nov 18 10:11:22 CET 2012 x86_64 GNU/Linux) and i see some problems at booting... So dmesg output with BUG lines:
 
-Regards,
-Lucas
+$ dmesg |grep Bug
+[    1.363154] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+[    1.373784] [Firmware Bug]: ACPI: No _BQC method, cannot determine initial brightness
+[    1.380827] [Firmware Bug]: ACPI: No _BQC method, cannot determine initial brightness
+[    1.433354] pnp 00:09: [Firmware Bug]: [mem 0x00000000-0xffffffffffffffff disabled] covers only part of AMD MMCONFIG area [mem 0xf8000000-0xf9ffffff]; adding more reservations
+[    3.349658] [Firmware Bug]: ACPI: No _BQC method, cannot determine initial brightness
 
+$ lspci 
+00:00.0 Host bridge: Advanced Micro Devices [AMD] Family 14h Processor Root Complex
+00:01.0 VGA compatible controller: Advanced Micro Devices [AMD] nee ATI Wrestler [Radeon HD 6310]
+00:01.1 Audio device: Advanced Micro Devices [AMD] nee ATI Wrestler HDMI Audio [Radeon HD 6250/6310]
+00:06.0 PCI bridge: Advanced Micro Devices [AMD] Family 14h Processor Root Port
+00:11.0 SATA controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
+00:12.0 USB controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
+00:12.2 USB controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 USB EHCI Controller
+00:13.0 USB controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
+00:13.2 USB controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 USB EHCI Controller
+00:14.0 SMBus: Advanced Micro Devices [AMD] nee ATI SBx00 SMBus Controller (rev 42)
+00:14.2 Audio device: Advanced Micro Devices [AMD] nee ATI SBx00 Azalia (Intel HDA) (rev 40)
+00:14.3 ISA bridge: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 LPC host controller (rev 40)
+00:14.4 PCI bridge: Advanced Micro Devices [AMD] nee ATI SBx00 PCI to PCI Bridge (rev 40)
+00:15.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
+00:15.1 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
+00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 0 (rev 43)
+00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 1
+00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 2
+00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 3
+00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 4
+00:18.5 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 6
+00:18.6 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 5
+00:18.7 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h Processor Function 7
+01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
+04:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless Network Adapter (PCI-Express) (rev 01)
+
+$ lsusb
+Bus 001 Device 003: ID 413c:8147 Dell Computer Corp. F3507g Mobile Broadband Module
+Bus 002 Device 003: ID 064e:e201 Suyin Corp. Lenovo Integrated Webcam
+Bus 003 Device 002: ID 0a5c:217f Broadcom Corp. Bluetooth Controller
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+
+
+Your sincerely, Denis Lotarev
