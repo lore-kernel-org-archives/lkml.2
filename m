@@ -1,228 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab2K1QsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:48:03 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35969 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab2K1QoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:44:23 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 17/25] aio: Kill batch allocation
-Date: Wed, 28 Nov 2012 08:43:41 -0800
-Message-Id: <1354121029-1376-18-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+	id S1755047Ab2K1Qs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55830 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857Ab2K1Qs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:48:26 -0500
+Date: Wed, 28 Nov 2012 17:48:24 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [PATCH -v2 -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121128164824.GC22201@dhcp22.suse.cz>
+References: <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <50B403CA.501@jp.fujitsu.com>
+ <20121127194813.GP24381@cmpxchg.org>
+ <20121127205431.GA2433@dhcp22.suse.cz>
+ <20121127205944.GB2433@dhcp22.suse.cz>
+ <20121128152631.GT24381@cmpxchg.org>
+ <20121128160447.GH12309@dhcp22.suse.cz>
+ <20121128163736.GV24381@cmpxchg.org>
+ <20121128164640.GB22201@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121128164640.GB22201@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, allocating a kiocb required touching quite a few global
-(well, per kioctx) cachelines... so batching up allocation to amortize
-those was worthwhile. But we've gotten rid of some of those, and in
-another couple of patches kiocb allocation won't require writing to any
-shared cachelines, so that means we can just rip this code out.
-
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
+On Wed 28-11-12 17:46:40, Michal Hocko wrote:
+> On Wed 28-11-12 11:37:36, Johannes Weiner wrote:
+> > On Wed, Nov 28, 2012 at 05:04:47PM +0100, Michal Hocko wrote:
+> > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > > index 095d2b4..5abe441 100644
+> > > --- a/include/linux/memcontrol.h
+> > > +++ b/include/linux/memcontrol.h
+> > > @@ -57,13 +57,14 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
+> > >  				gfp_t gfp_mask);
+> > >  /* for swap handling */
+> > >  extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+> > > -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
+> > > +		struct page *page, gfp_t mask, struct mem_cgroup **memcgp,
+> > > +		bool oom);
+> > 
+> > Ok, now I feel almost bad for asking, but why the public interface,
+> > too?
+> 
+> Would it work out if I tell it was to double check that your review
+> quality is not decreased after that many revisions? :P
+> 
+> Incremental update and the full patch in the reply
 ---
- fs/aio.c            | 117 +++++++---------------------------------------------
- include/linux/aio.h |   1 -
- 2 files changed, 15 insertions(+), 103 deletions(-)
+>From e21bb704947e9a477ec1df9121575c606dbfcb52 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 28 Nov 2012 17:46:32 +0100
+Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 0d5062d..f2d616e 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -468,109 +468,27 @@ void exit_aio(struct mm_struct *mm)
-  * This prevents races between the aio code path referencing the
-  * req (after submitting it) and aio_complete() freeing the req.
+memcg oom killer might deadlock if the process which falls down to
+mem_cgroup_handle_oom holds a lock which prevents other task to
+terminate because it is blocked on the very same lock.
+This can happen when a write system call needs to allocate a page but
+the allocation hits the memcg hard limit and there is nothing to reclaim
+(e.g. there is no swap or swap limit is hit as well and all cache pages
+have been reclaimed already) and the process selected by memcg OOM
+killer is blocked on i_mutex on the same inode (e.g. truncate it).
+
+Process A
+[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+[<ffffffff81121c90>] do_last+0x250/0xa30
+[<ffffffff81122547>] path_openat+0xd7/0x440
+[<ffffffff811229c9>] do_filp_open+0x49/0xa0
+[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+[<ffffffff8110f950>] sys_open+0x20/0x30
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Process B
+[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+[<ffffffff8111156a>] do_sync_write+0xea/0x130
+[<ffffffff81112183>] vfs_write+0xf3/0x1f0
+[<ffffffff81112381>] sys_write+0x51/0x90
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+This is not a hard deadlock though because administrator can still
+intervene and increase the limit on the group which helps the writer to
+finish the allocation and release the lock.
+
+This patch heals the problem by forbidding OOM from page cache charges
+(namely add_ro_page_cache_locked). mem_cgroup_cache_charge grows oom
+argument which is pushed down the call chain.
+
+As a possibly visible result add_to_page_cache_lru might fail more often
+with ENOMEM but this is to be expected if the limit is set and it is
+preferable than OOM killer IMO.
+
+Changes since v1
+- do not abuse gfp_flags and rather use oom parameter directly as per
+  Johannes
+- handle also shmem write fauls resp. fallocate properly as per Johannes
+
+Reported-by: azurIt <azurit@pobox.sk>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/memcontrol.h |    5 +++--
+ mm/filemap.c               |    9 +++++++--
+ mm/memcontrol.c            |   20 ++++++++++----------
+ mm/shmem.c                 |   17 ++++++++++++++---
+ 4 files changed, 34 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 095d2b4..8f48d5e 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -63,7 +63,7 @@ extern void mem_cgroup_commit_charge_swapin(struct page *page,
+ extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg);
+ 
+ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+-					gfp_t gfp_mask);
++					gfp_t gfp_mask, bool oom);
+ 
+ struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
+ struct lruvec *mem_cgroup_page_lruvec(struct page *, struct zone *);
+@@ -210,7 +210,8 @@ static inline int mem_cgroup_newpage_charge(struct page *page,
+ }
+ 
+ static inline int mem_cgroup_cache_charge(struct page *page,
+-					struct mm_struct *mm, gfp_t gfp_mask)
++					struct mm_struct *mm, gfp_t gfp_mask,
++					bool oom)
+ {
+ 	return 0;
+ }
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..ef8fbd5 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -447,8 +447,13 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(PageSwapBacked(page));
+ 
+-	error = mem_cgroup_cache_charge(page, current->mm,
+-					gfp_mask & GFP_RECLAIM_MASK);
++	/*
++	 * Cannot trigger OOM even if gfp_mask would allow that normally
++	 * because we might be called from a locked context and that
++	 * could lead to deadlocks if the killed process is waiting for
++	 * the same lock.
++	 */
++	error = mem_cgroup_cache_charge(page, current->mm, gfp_mask, false);
+ 	if (error)
+ 		goto out;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 02ee2f7..3c9b1c5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3709,11 +3709,10 @@ out:
+  * < 0 if the cgroup is over its limit
   */
--static struct kiocb *__aio_get_req(struct kioctx *ctx)
-+static inline struct kiocb *aio_get_req(struct kioctx *ctx)
+ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+-				gfp_t gfp_mask, enum charge_type ctype)
++				gfp_t gfp_mask, enum charge_type ctype, bool oom)
  {
--	struct kiocb *req = NULL;
-+	struct kiocb *req;
-+
-+	if (atomic_read(&ctx->reqs_active) >= ctx->ring_info.nr)
-+		return NULL;
-+
-+	if (atomic_inc_return(&ctx->reqs_active) > ctx->ring_info.nr)
-+		goto out_put;
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+-	bool oom = true;
+ 	int ret;
  
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
- 	if (unlikely(!req))
--		return NULL;
-+		goto out_put;
- 
- 	atomic_set(&req->ki_users, 2);
- 	req->ki_ctx = ctx;
- 
- 	return req;
--}
--
--/*
-- * struct kiocb's are allocated in batches to reduce the number of
-- * times the ctx lock is acquired and released.
-- */
--#define KIOCB_BATCH_SIZE	32L
--struct kiocb_batch {
--	struct list_head head;
--	long count; /* number of requests left to allocate */
--};
--
--static void kiocb_batch_init(struct kiocb_batch *batch, long total)
--{
--	INIT_LIST_HEAD(&batch->head);
--	batch->count = total;
--}
--
--static void kiocb_batch_free(struct kioctx *ctx, struct kiocb_batch *batch)
--{
--	struct kiocb *req, *n;
--
--	if (list_empty(&batch->head))
--		return;
--
--	spin_lock_irq(&ctx->ctx_lock);
--	list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
--		list_del(&req->ki_batch);
--		list_del(&req->ki_list);
--		kmem_cache_free(kiocb_cachep, req);
--		atomic_dec(&ctx->reqs_active);
--	}
--	spin_unlock_irq(&ctx->ctx_lock);
--}
--
--/*
-- * Allocate a batch of kiocbs.  This avoids taking and dropping the
-- * context lock a lot during setup.
-- */
--static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
--{
--	unsigned short allocated, to_alloc;
--	long avail;
--	struct kiocb *req, *n;
--
--	to_alloc = min(batch->count, KIOCB_BATCH_SIZE);
--	for (allocated = 0; allocated < to_alloc; allocated++) {
--		req = __aio_get_req(ctx);
--		if (!req)
--			/* allocation failed, go with what we've got */
--			break;
--		list_add(&req->ki_batch, &batch->head);
--	}
--
--	if (allocated == 0)
--		goto out;
--
--	spin_lock_irq(&ctx->ctx_lock);
--
--	avail = ctx->ring_info.nr - atomic_read(&ctx->reqs_active);
--	BUG_ON(avail < 0);
--	if (avail < allocated) {
--		/* Trim back the number of requests. */
--		list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
--			list_del(&req->ki_batch);
--			kmem_cache_free(kiocb_cachep, req);
--			if (--allocated <= avail)
--				break;
--		}
--	}
--
--	batch->count -= allocated;
--	atomic_add(allocated, &ctx->reqs_active);
--
--	spin_unlock_irq(&ctx->ctx_lock);
--
--out:
--	return allocated;
--}
--
--static inline struct kiocb *aio_get_req(struct kioctx *ctx,
--					struct kiocb_batch *batch)
--{
--	struct kiocb *req;
--
--	if (list_empty(&batch->head))
--		if (kiocb_batch_refill(ctx, batch) == 0)
--			return NULL;
--	req = list_first_entry(&batch->head, struct kiocb, ki_batch);
--	list_del(&req->ki_batch);
--	return req;
-+out_put:
-+	atomic_dec(&ctx->reqs_active);
-+	return NULL;
+ 	if (PageTransHuge(page)) {
+@@ -3742,7 +3741,7 @@ int mem_cgroup_newpage_charge(struct page *page,
+ 	VM_BUG_ON(page->mapping && !PageAnon(page));
+ 	VM_BUG_ON(!mm);
+ 	return mem_cgroup_charge_common(page, mm, gfp_mask,
+-					MEM_CGROUP_CHARGE_TYPE_ANON);
++					MEM_CGROUP_CHARGE_TYPE_ANON, true);
  }
  
- static void kiocb_free(struct kiocb *req)
-@@ -1159,8 +1077,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ /*
+@@ -3754,7 +3753,8 @@ int mem_cgroup_newpage_charge(struct page *page,
+ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 					  struct page *page,
+ 					  gfp_t mask,
+-					  struct mem_cgroup **memcgp)
++					  struct mem_cgroup **memcgp,
++					  bool oom)
+ {
+ 	struct mem_cgroup *memcg;
+ 	struct page_cgroup *pc;
+@@ -3776,13 +3776,13 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 	if (!memcg)
+ 		goto charge_cur_mm;
+ 	*memcgp = memcg;
+-	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
++	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, oom);
+ 	css_put(&memcg->css);
+ 	if (ret == -EINTR)
+ 		ret = 0;
+ 	return ret;
+ charge_cur_mm:
+-	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
++	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, oom);
+ 	if (ret == -EINTR)
+ 		ret = 0;
+ 	return ret;
+@@ -3808,7 +3808,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
+ 			ret = 0;
+ 		return ret;
+ 	}
+-	return __mem_cgroup_try_charge_swapin(mm, page, gfp_mask, memcgp);
++	return __mem_cgroup_try_charge_swapin(mm, page, gfp_mask, memcgp, true);
  }
  
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
--			 struct iocb *iocb, struct kiocb_batch *batch,
--			 bool compat)
-+			 struct iocb *iocb, bool compat)
+ void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
+@@ -3851,7 +3851,7 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
+ }
+ 
+ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+-				gfp_t gfp_mask)
++				gfp_t gfp_mask, bool oom)
  {
- 	struct kiocb *req;
- 	ssize_t ret;
-@@ -1181,7 +1098,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 		return -EINVAL;
+ 	struct mem_cgroup *memcg = NULL;
+ 	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+@@ -3863,10 +3863,10 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 		return 0;
+ 
+ 	if (!PageSwapCache(page))
+-		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
++		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type, oom);
+ 	else { /* page is swapcache/shmem */
+ 		ret = __mem_cgroup_try_charge_swapin(mm, page,
+-						     gfp_mask, &memcg);
++						     gfp_mask, &memcg, oom);
+ 		if (!ret)
+ 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
  	}
- 
--	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
-+	req = aio_get_req(ctx);  /* returns with 2 references to req */
- 	if (unlikely(!req))
- 		return -EAGAIN;
- 
-@@ -1257,7 +1174,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 	long ret = 0;
- 	int i = 0;
- 	struct blk_plug plug;
--	struct kiocb_batch batch;
- 
- 	if (unlikely(nr < 0))
- 		return -EINVAL;
-@@ -1274,8 +1190,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 		return -EINVAL;
- 	}
- 
--	kiocb_batch_init(&batch, nr);
--
- 	blk_start_plug(&plug);
- 
- 	/*
-@@ -1296,13 +1210,12 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 			break;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 55054a7..3b27db4 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -760,7 +760,7 @@ int shmem_unuse(swp_entry_t swap, struct page *page)
+ 	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
+ 	 * Charged back to the user (not to caller) when swap account is used.
+ 	 */
+-	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
++	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL, true);
+ 	if (error)
+ 		goto out;
+ 	/* No radix_tree_preload: swap entry keeps a place for page in tree */
+@@ -1152,8 +1152,17 @@ repeat:
+ 				goto failed;
  		}
  
--		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
-+		ret = io_submit_one(ctx, user_iocb, &tmp, compat);
- 		if (ret)
- 			break;
- 	}
- 	blk_finish_plug(&plug);
- 
--	kiocb_batch_free(ctx, &batch);
- 	put_ioctx(ctx);
- 	return i ? i : ret;
- }
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index ea048ee..7701a41 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -81,7 +81,6 @@ struct kiocb {
- 
- 	struct list_head	ki_list;	/* the aio core uses this
- 						 * for cancellation */
--	struct list_head	ki_batch;	/* batch allocation */
- 
- 	/*
- 	 * If the aio_resfd field of the userspace iocb is not zero,
++		 /*
++		  * Cannot trigger OOM even if gfp_mask would allow that
++		  * normally because we might be called from a locked
++		  * context (i_mutex held) if this is a write lock or
++		  * fallocate and that could lead to deadlocks if the
++		  * killed process is waiting for the same lock.
++		  */
+ 		error = mem_cgroup_cache_charge(page, current->mm,
+-						gfp & GFP_RECLAIM_MASK);
++						gfp & GFP_RECLAIM_MASK,
++						sgp != SGP_WRITE &&
++						sgp != SGP_FALLOC);
+ 		if (!error) {
+ 			error = shmem_add_to_page_cache(page, mapping, index,
+ 						gfp, swp_to_radix_entry(swap));
+@@ -1209,7 +1218,9 @@ repeat:
+ 		SetPageSwapBacked(page);
+ 		__set_page_locked(page);
+ 		error = mem_cgroup_cache_charge(page, current->mm,
+-						gfp & GFP_RECLAIM_MASK);
++						gfp & GFP_RECLAIM_MASK,
++						sgp != SGP_WRITE &&
++						sgp != SGP_FALLOC);
+ 		if (error)
+ 			goto decused;
+ 		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
 -- 
-1.7.12
+1.7.10.4
 
+-- 
+Michal Hocko
+SUSE Labs
