@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab2K2M5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 07:57:39 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36656 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754608Ab2K2M5h convert rfc822-to-8bit (ORCPT
+	id S1754371Ab2K2NFK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 08:05:10 -0500
+Received: from gate.crashing.org ([63.228.1.57]:42592 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752029Ab2K2NFI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 07:57:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAHp75VcDFG94wAhtf-4q699nuvFXwFrt=J94yD_c2EinjDTZdw@mail.gmail.com>
-References: <1353508271-30646-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20121128155650.cd20d6bf.akpm@linux-foundation.org>
-	<CAHp75VcDFG94wAhtf-4q699nuvFXwFrt=J94yD_c2EinjDTZdw@mail.gmail.com>
-Date: Thu, 29 Nov 2012 14:57:36 +0200
-Message-ID: <CAHp75VcF_F6BRjuGMsKu-u3aMHdXWGutd85jzzYcLRmSX6=8ow@mail.gmail.com>
-Subject: Re: [PATCH, resend] kfifo: initialize fifo accordingly to C99 standard
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 Nov 2012 08:05:08 -0500
+Subject: Re: [PATCH 1/4 v2] iommu/fsl: Store iommu domain information pointer in archdata.
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D29AE62@039-SN2MPN1-013.039d.mgd.msft.net>
+Date: Wed, 28 Nov 2012 11:35:28 -0600
+Cc: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Tabi Timur-B04825 <B04825@freescale.com>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <93330D7F-0A5A-4C42-A10C-92D6C7694D44@kernel.crashing.org>
+References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com> <1353419697-31269-2-git-send-email-Varun.Sethi@freescale.com> <C5ECD7A89D1DC44195F34B25E172658D29AE62@039-SN2MPN1-013.039d.mgd.msft.net>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 11:21 AM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Thu, Nov 29, 2012 at 1:56 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Wed, 21 Nov 2012 16:31:11 +0200
->> Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
->>
->>> When build a kernel with "make W=1" we will get a warning about missing
->>> initializer. It comes from kfifo usage style. The DEFINE_KFIFO macro doesn't
->>> initialize the buf[] field of the fifo structure. So, using C99 style helps in
->>> such case.
->>
->> I see no such warning.  When fixing warnings or compilation errors,
->> please always quote the compiler output in the changelog.
->
-> Oh, I did wrong assumption. However, it looks like linux-stable 3.0.y
-> is affected;
->
->   CC [M]  samples/kfifo/inttype-example.o
-> samples/kfifo/inttype-example.c:44:506: warning: missing initializer
-> [-Wmissing-field-initializers]
-> samples/kfifo/inttype-example.c:44:506: warning: (near initialization
-> for ‘(anonymous).buf’) [-Wmissing-field-initializers]
->
-> And it seems that my solution not the one which is used in linux-next.
 
-Okay. I found the commit f858ee8b8cd8c216ddbeefae6e047ce90cae9cca
-("kbuild: disable -Wmissing-field-initializers for W=1") hides the
-warning.
-After reverting this one I get the same warning as before:
+On Nov 25, 2012, at 11:33 PM, Sethi Varun-B16395 wrote:
 
-  CC [M]  samples/kfifo/inttype-example.o
-samples/kfifo/inttype-example.c:44:506: warning: missing initializer
-[-Wmissing-field-initializers]
-samples/kfifo/inttype-example.c:44:506: warning: (near initialization
-for ‘(anonymous).buf’) [-Wmissing-field-initializers]
+> Hi Kumar,
+> Can you please apply this patch.
+> 
+> Regards
+> Varun
 
-> gcc (Debian 4.7.2-2) 4.7.2
+Was waiting on the others to apply this all together.  (ie getting an Ack from Joerg, and follow comments from Timur to be resolved)
 
+- k
 
--- 
-With Best Regards,
-Andy Shevchenko
+> 
+>> -----Original Message-----
+>> From: Sethi Varun-B16395
+>> Sent: Tuesday, November 20, 2012 7:25 PM
+>> To: joerg.roedel@amd.com; iommu@lists.linux-foundation.org; linuxppc-
+>> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Wood Scott-B07421;
+>> Tabi Timur-B04825
+>> Cc: Sethi Varun-B16395
+>> Subject: [PATCH 1/4 v2] iommu/fsl: Store iommu domain information pointer
+>> in archdata.
+>> 
+>> Add a new field in the device (powerpc) archdata structure for storing
+>> iommu domain information pointer. This pointer is stored when the device
+>> is attached to a particular domain.
+>> 
+>> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+>> ---
+>> arch/powerpc/include/asm/device.h |    4 ++++
+>> 1 files changed, 4 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/arch/powerpc/include/asm/device.h
+>> b/arch/powerpc/include/asm/device.h
+>> index 77e97dd..6dc79fe 100644
+>> --- a/arch/powerpc/include/asm/device.h
+>> +++ b/arch/powerpc/include/asm/device.h
+>> @@ -28,6 +28,10 @@ struct dev_archdata {
+>> 		void		*iommu_table_base;
+>> 	} dma_data;
+>> 
+>> +	/* IOMMU domain information pointer. This would be set
+>> +	 * when this device is attached to an iommu_domain.
+>> +	 */
+>> +	void			*iommu_domain;
+>> #ifdef CONFIG_SWIOTLB
+>> 	dma_addr_t		max_direct_dma_addr;
+>> #endif
+>> --
+>> 1.7.4.1
+> 
+
