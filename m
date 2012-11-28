@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2K1KvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:51:23 -0500
-Received: from basicbox7.server-home.net ([195.137.212.29]:54312 "EHLO
-	basicbox7.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab2K1KvV (ORCPT
+	id S1754495Ab2K1Kvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:51:31 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:49442 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab2K1Kv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:51:21 -0500
-Message-ID: <50B5ECA3.9040407@leemhuis.info>
-Date: Wed, 28 Nov 2012 11:51:15 +0100
-From: Thorsten Leemhuis <fedora@leemhuis.info>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 28 Nov 2012 05:51:27 -0500
+Date: Wed, 28 Nov 2012 11:51:20 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] cpufreq: handle SW coordinated CPUs
+Message-ID: <20121128105120.GB22300@balto.lan>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+	cpufreq@vger.kernel.org,
+	Rickard Andersson <rickard.andersson@stericsson.com>,
+	Vincent Guittot <vincent.guittot@linaro.org>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+References: <1353947996-26723-1-git-send-email-fabio.baltieri@linaro.org>
+ <1353947996-26723-2-git-send-email-fabio.baltieri@linaro.org>
+ <1723557.AFJjisZlEm@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Bruno Wolff III <bruno@wolff.to>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org> <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com> <50B52DC4.5000109@redhat.com> <20121127214928.GA20253@cmpxchg.org> <50B5387C.1030005@redhat.com> <20121127222637.GG2301@cmpxchg.org> <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com> <20121128101359.GT8218@suse.de>
-In-Reply-To: <20121128101359.GT8218@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1723557.AFJjisZlEm@vostro.rjw.lan>
+X-Operating-System: Linux balto 3.7.0-rc6-00227-g28c4467-dirty x86_64
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman wrote on 28.11.2012 11:13:
-> On Tue, Nov 27, 2012 at 03:19:38PM -0800, Linus Torvalds wrote:
->> On Tue, Nov 27, 2012 at 2:26 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Tue, Nov 27, 2012 at 05:02:36PM -0500, Rik van Riel wrote:
->
->> And the one who comes out gets to explain to me which patch(es) I
->> should apply, and which I should revert, if any.
+Hello Rafael,
+
+On Tue, Nov 27, 2012 at 11:05:52PM +0100, Rafael J. Wysocki wrote:
+> >  static inline void dbs_timer_init(struct dbs_data *dbs_data,
+> > -		struct cpu_dbs_common_info *cdbs, unsigned int sampling_rate)
+> > +				  struct cpu_dbs_common_info *cdbs,
+> > +				  unsigned int sampling_rate,
+> > +				  int cpu)
+> >  {
+> >  	int delay = delay_for_sampling_rate(sampling_rate);
+> > +	struct cpu_dbs_common_info *cdbs_local = dbs_data->get_cpu_cdbs(cpu);
+> > +	struct od_cpu_dbs_info_s *od_dbs_info;
+> > +
+> > +	cancel_delayed_work_sync(&cdbs_local->work);
+> > +
+> > +	if (dbs_data->governor == GOV_ONDEMAND) {
+> > +		od_dbs_info = dbs_data->get_cpu_dbs_info_s(cpu);
+> > +		od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
+> > +	}
 > 
-> Based on the reports I've seen I expect the following to work for 3.7
+> The patch looks good in general except for the special case above.
 > 
-> Keep
->   96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
->   ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
-> 
-> Revert
->   82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
-> 
-> Merge
->   mm: vmscan: fix kswapd endless loop on higher order allocation
->   mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
+> Why exactly is it necessary?
 
-I'll build a kernel with this combination and will give it a try. Maybe
-one of those people that reported problems in
-https://bugzilla.redhat.com/show_bug.cgi?id=866988 can try them, too.
-There two people recently reported their problems were gone with kernels
-that contained 82b212f4.
+Now that you point it out... it's not!  It was part of ondemand init and
+moved in cpufreq_governor_dbs, I forgot to take it out the way.
 
-> Johannes' patch should remove the necessity for __GFP_NO_KSWAPD revert but I
-> think we should also avoid waking kswapd for THP allocations if compaction
-> is deferred. Johannes' patch might mean that kswapd goes quickly go back
-> to sleep but it's still busy work.
+Also, I think that cancel_delayed_work_sync can be removed too.
 
-Is there a way to trigger (some benchmark?) and detect (something in
-/proc/vmstat ?) the problem Hannes patch tries to fix?
+Should I send an updated version as soon as I get an ack for the other
+patches in the series or do you want me to wait until 3.8-rc1?
 
-Background: The two main problems that got me into this discussion
-vanished thx to 9671009 (mm: revert "mm: vmscan: scale number of pages
-reclaimed by reclaim/compaction based on failures") and ef6c5be (fix
-incorrect NR_FREE_PAGES accounting (appears like memory leak)). I
-thought all my problems had gone, but after a few days of uptime
-(suspended and resumed the particular machine a few times in between, as
-I was using it just in the evenings) kswap now and then started
-consuming nearly 100% of one cpu core for 10 to 15 seconds intervals (it
-seems watching a YouTube video triggered it; and the machine was using a
-little bit swap space). I just had started debugging this, but due to
-some stupid mistake
-(https://plus.google.com/107616711159256259828/posts/GXuhf1LTien ) then
-rebooted the machine :-/ So maybe I hit the problem Hannes patch tries
-to solve, but I'm not sure; and I have no easy way to verify quickly if
-the proposed patch combination helps.
+Thanks,
+Fabio
 
-Thorsten
+-- 
+Fabio Baltieri
