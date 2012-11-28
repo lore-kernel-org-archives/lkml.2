@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2K1VLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:11:17 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:17548 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab2K1VLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:11:15 -0500
-Message-ID: <1354136568.26955.312.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Wed, 28 Nov 2012 14:02:48 -0700
-In-Reply-To: <9212118.3s2xH6uJDI@vostro.rjw.lan>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <2804331.4p7pU4ARvy@vostro.rjw.lan>
-	 <1354118473.26955.208.camel@misato.fc.hp.com>
-	 <9212118.3s2xH6uJDI@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932354Ab2K1VOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:14:12 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51438 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932209Ab2K1VOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:14:10 -0500
+Date: Wed, 28 Nov 2012 22:14:07 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory leak &
+ confusing labels
+Message-ID: <20121128211407.GC2590@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
+ <CAP9qxA-ZmhZLVujmdM0YLqXony-s8oZggKZxTU6oYmtcuO5erQ@mail.gmail.com>
+ <20121128003750.GD2605@local>
+ <201211281137.23623.vitas@nppfactor.kiev.ua>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211281137.23623.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > > > > Consider the following case:
-> > > > > > > 
-> > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > 
-> > > > > > > CPUa                                                  CPUb
-> > > > > > > acpi_memory_device_notify()
-> > > > > > >                                        unbind it from the driver
-> > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > 
-> > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > > > > > bound with a driver?  If so, can we make the unbind operation to perform
-> > > > > > unbind only?
-> > > > > 
-> > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> > > > > if it's not present (dev->driver == NULL).
-> > > > > 
-> > > > > But there can still be a race between an eject and an unbind operation happening
-> > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
-> > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
-> > > > > for other acpi devices?
-> > > > > 
-> > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
-> > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
-> > > > > probably not grabbed on SCI-initiated acpi ejects.
-> > > > 
-> > > > Since driver_unbind() calls device_lock(dev->parent) before calling
-> > > > device_release_driver(), I am wondering if we can call
-> > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-> > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-> > > > parent lock is otherwise released after device_release_driver() is done.
-> > > 
-> > > I would be careful.  You may introduce some subtle locking-related issues
-> > > this way.
-> > 
-> > Right.  This requires careful inspection and testing.  As far as the
-> > locking is concerned, I am not keen on using fine grained locking for
-> > hot-plug.  It is much simpler and solid if we serialize such operations.
-> > 
-> > > Besides, there may be an alternative approach to all this.  For example,
-> > > what if we don't remove struct device objects on eject?  The ACPI handles
-> > > associated with them don't go away in that case after all, do they?
-> > 
-> > Umm...  Sorry, I am not getting your point.  The issue is that we need
-> > to be able to fail a request when memory range cannot be off-lined.
-> > Otherwise, we end up ejecting online memory range.
+On Wed, Nov 28, 2012 at 11:37:23AM +0200, Vitalii Demianets wrote:
+> On Wednesday 28 November 2012 02:37:50 Hans J. Koch wrote:
+> >
+> > In other words, the case of uioinfo AND pdev->dev.of_node both being NULL
+> > is not handled properly and will have ugly results.
+> >
 > 
-> Yes, this is the major one.  The minor issue, however, is a race condition
-> between unbinding a driver from a device and removing the device if I
-> understand it correctly.  Which will go away automatically if the device is
-> not removed in the first place.  Or so I would think. :-)
+> Moreover, the case of (uioinfo != NULL) && (pdev->dev.of_node != NULL) leads 
+> to equally ugly results too (freeing uoinfo when it is statically allocated).
 
-I see.  I do not think whether or not the device is removed on eject
-makes any difference here.  The issue is that after driver_unbind() is
-done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
-driver (hence, it cannot fail in prepare_remove), and goes ahead to call
-_EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
-it cannot off-line kernel memory ranges.  So, we basically need to
-either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
-2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
-during the operation.
+You're right. That wants to be fixed as well.
+
+> 
+> I think, we should sort out these problems, but in another patch. It is 
+> totally unrelated to the problem solved by the original patch (memory leak 
+> caused by not freeing priv in case platform_get_irq() fails).
+
+So far, no patch was applied. I don't mind if all fixes for uio_pdrv_genirq
+are in one patch as long as only this one file is altered.
 
 Thanks,
--Toshi
-
+Hans
