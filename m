@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744Ab2K1V4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:56:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37029 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab2K1Vsp (ORCPT
+	id S932806Ab2K1V57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:57:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44930 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab2K1Vso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:45 -0500
+	Wed, 28 Nov 2012 16:48:44 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,122 +14,149 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 08/46] x86, mm: Separate out calculate_table_space_size()
-Date: Wed, 28 Nov 2012 13:47:19 -0800
-Message-Id: <1354139277-17376-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 14/46] x86, mm: use pfn_range_is_mapped() with reserve_initrd
+Date: Wed, 28 Nov 2012 13:47:25 -0800
+Message-Id: <1354139277-17376-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should take physical address range that will need to be mapped.
-find_early_table_space should take range that pgt buff should be in.
+We are going to map ram only in patch:
+        x86, mm: Only direct map addresses that are marked as E820_RAM
 
-Separate out page table size calculation to reduce confusing.
+so range under max_low_pfn_mapped, ranges between 4g and max_pfn_mapped
+could have holes in them and the holes will not be mapped.
+
+Use pfn_range_is_mapped() to check if range is mapped for initrd.
+
+That could happen if the bootloader put initrd in range but user used
+"memmap=" to carve some of ranges out.
+
+Also during copying need to use early_memmap to map original initrd
+for accessing.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   38 +++++++++++++++++++++++++++-----------
- 1 files changed, 27 insertions(+), 11 deletions(-)
+ arch/x86/kernel/setup.c |   52 +++++++++++++++++++++++++---------------------
+ 1 files changed, 28 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index c618e4f..d4e777d 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -196,12 +196,10 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-  * pages. Then find enough contiguous space for those page tables.
-  */
--static void __init find_early_table_space(unsigned long start, unsigned long end)
-+static unsigned long __init calculate_table_space_size(unsigned long start, unsigned long end)
- {
- 	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
--	unsigned long good_end;
--	phys_addr_t base;
- 	struct map_range mr[NR_RANGE_MR];
- 	int nr_range;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d85cbd9..bd52f9d 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -317,20 +317,19 @@ static void __init relocate_initrd(void)
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
  
-@@ -240,9 +238,17 @@ static void __init find_early_table_space(unsigned long start, unsigned long end
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
- 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
--	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
+-	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = memblock_find_in_range(0, end_of_lowmem, area_size,
+-					 PAGE_SIZE);
++	/* We need to move the initrd down into directly mapped mem */
++	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_low_pfn_mapped),
++						 area_size, PAGE_SIZE);
  
-+	return tables;
-+}
-+
-+static void __init find_early_table_space(unsigned long start,
-+					  unsigned long good_end,
-+					  unsigned long tables)
-+{
-+	phys_addr_t base;
-+
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (!base)
- 		panic("Cannot find space for the kernel page tables");
-@@ -250,10 +256,6 @@ static void __init find_early_table_space(unsigned long start, unsigned long end
- 	pgt_buf_start = base >> PAGE_SHIFT;
- 	pgt_buf_end = pgt_buf_start;
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 	if (!ramdisk_here)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+ 			 ramdisk_size);
+ 
+-	/* Note: this includes all the lowmem currently occupied by
++	/* Note: this includes all the mem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+ 	memblock_reserve(ramdisk_here, area_size);
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+@@ -340,17 +339,7 @@ static void __init relocate_initrd(void)
+ 
+ 	q = (char *)initrd_start;
+ 
+-	/* Copy any lowmem portion of the initrd */
+-	if (ramdisk_image < end_of_lowmem) {
+-		clen = end_of_lowmem - ramdisk_image;
+-		p = (char *)__va(ramdisk_image);
+-		memcpy(q, p, clen);
+-		q += clen;
+-		ramdisk_image += clen;
+-		ramdisk_size  -= clen;
+-	}
 -
--	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
--		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
--		(pgt_buf_top << PAGE_SHIFT) - 1);
+-	/* Copy the highmem portion of the initrd */
++	/* Copy the initrd */
+ 	while (ramdisk_size) {
+ 		slop = ramdisk_image & ~PAGE_MASK;
+ 		clen = ramdisk_size;
+@@ -364,7 +353,7 @@ static void __init relocate_initrd(void)
+ 		ramdisk_image += clen;
+ 		ramdisk_size  -= clen;
+ 	}
+-	/* high pages is not converted by early_res_to_bootmem */
++
+ 	ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+@@ -373,13 +362,27 @@ static void __init relocate_initrd(void)
+ 		ramdisk_here, ramdisk_here + ramdisk_size - 1);
  }
  
- /*
-@@ -291,6 +293,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- void __init init_mem_mapping(void)
- {
-+	unsigned long tables, good_end, end;
++static u64 __init get_mem_size(unsigned long limit_pfn)
++{
++	int i;
++	u64 mapped_pages = 0;
++	unsigned long start_pfn, end_pfn;
 +
- 	probe_page_size_mask();
- 
- 	/*
-@@ -301,10 +305,18 @@ void __init init_mem_mapping(void)
- 	 * nodes are discovered.
- 	 */
- #ifdef CONFIG_X86_64
--	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
-+	end = max_pfn << PAGE_SHIFT;
-+	good_end = end;
- #else
--	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
-+	end = max_low_pfn << PAGE_SHIFT;
-+	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
-+	tables = calculate_table_space_size(0, end);
-+	find_early_table_space(0, good_end, tables);
-+	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
-+		end - 1, pgt_buf_start << PAGE_SHIFT,
-+		(pgt_buf_top << PAGE_SHIFT) - 1);
-+
- 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
- 	max_pfn_mapped = max_low_pfn_mapped;
- 
-@@ -331,9 +343,13 @@ void __init init_mem_mapping(void)
- 	 * RO all the pagetable pages, including the ones that are beyond
- 	 * pgt_buf_end at that time.
- 	 */
--	if (pgt_buf_end > pgt_buf_start)
-+	if (pgt_buf_end > pgt_buf_start) {
-+		printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] final\n",
-+			end - 1, pgt_buf_start << PAGE_SHIFT,
-+			(pgt_buf_end << PAGE_SHIFT) - 1);
- 		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
- 				PFN_PHYS(pgt_buf_end));
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
++		start_pfn = min_t(unsigned long, start_pfn, limit_pfn);
++		end_pfn = min_t(unsigned long, end_pfn, limit_pfn);
++		mapped_pages += end_pfn - start_pfn;
 +	}
++
++	return mapped_pages << PAGE_SHIFT;
++}
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
++	u64 mapped_size;
  
- 	/* stop early pgtable allocating after we conclude it */
- 	pgt_buf_top = 0;
+ 	if (!boot_params.hdr.type_of_loader ||
+ 	    !ramdisk_image || !ramdisk_size)
+@@ -387,18 +390,19 @@ static void __init reserve_initrd(void)
+ 
+ 	initrd_start = 0;
+ 
+-	if (ramdisk_size >= (end_of_lowmem>>1)) {
++	mapped_size = get_mem_size(max_low_pfn_mapped);
++	if (ramdisk_size >= (mapped_size>>1))
+ 		panic("initrd too large to handle, "
+ 		       "disabling initrd (%lld needed, %lld available)\n",
+-		       ramdisk_size, end_of_lowmem>>1);
+-	}
++		       ramdisk_size, mapped_size>>1);
+ 
+ 	printk(KERN_INFO "RAMDISK: [mem %#010llx-%#010llx]\n", ramdisk_image,
+ 			ramdisk_end - 1);
+ 
+-
+-	if (ramdisk_end <= end_of_lowmem) {
+-		/* All in lowmem, easy case */
++	if (ramdisk_end <= (max_low_pfn_mapped<<PAGE_SHIFT) &&
++	    pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
++				PFN_DOWN(ramdisk_end))) {
++		/* All are mapped, easy case */
+ 		/*
+ 		 * don't need to reserve again, already reserved early
+ 		 * in i386_start_kernel
 -- 
 1.7.7
 
