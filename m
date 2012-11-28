@@ -1,198 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab2K1UdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:33:07 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52820 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932085Ab2K1UdG (ORCPT
+	id S932277Ab2K1UfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:35:05 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36173 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085Ab2K1UfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:33:06 -0500
+	Wed, 28 Nov 2012 15:35:03 -0500
+Date: Wed, 28 Nov 2012 12:35:10 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: BUG_ON(inode->i_blocks);
+In-Reply-To: <20121127182738.GA13608@redhat.com>
+Message-ID: <alpine.LNX.2.00.1211281221140.14341@eggly.anvils>
+References: <20121127182738.GA13608@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
- <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 12:32:41 -0800
-X-Google-Sender-Auth: YcNtcKOwPVT7sPRX496R48fpRug
-Message-ID: <CA+55aFw+9FRKZRe4-eSE3m9rGNfiUMM4-QETHizwYCRso_=bsg@mail.gmail.com>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016e6d46a64c3021204cf9412a2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d46a64c3021204cf9412a2
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, 27 Nov 2012, Dave Jones wrote:
 
-On Wed, Nov 28, 2012 at 12:13 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I dunno. Maybe there is some fundamental reason why the above is
-> broken, but it seems to be a much simpler approach. Sure, you need to
-> guarantee that the people who get the write-lock cannot possibly cause
-> IO while holding it, but since the only reason to get the write lock
-> would be to change the block size, that should be pretty simple, no?
+> Hugh,
+> 
+> We had a user report hitting the BUG_ON at the end of shmem_evict_inode.
+> I see in 3.7 you changed this to a WARN instead.
+> 
+> Does the trace below match the one you described chasing in commit
+> 0f3c42f522dc1ad7e27affc0a4aa8c790bce0a66 ?
 
-Here is a *COMPLETELY* untested patch. Caveat emptor. It will probably
-do unspeakable things to your family and pets.
+The trace fits (apart from, I hit mine in the days before task_work_run
+was used for fput), but that doesn't tell us anything much.
 
-                              Linus
+> 
+> Full report at https://bugzilla.redhat.com/show_bug.cgi?id=879422, though
+> there's not much more than the trace tbh.
 
---0016e6d46a64c3021204cf9412a2
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ha2wvcct0
+It does say "system was idle", which makes me think that this has to
+have a different cause from my race between eviction and swapout.
 
-IGZzL2Jsb2NrX2Rldi5jIHwgMTM4ICsrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDUwIGluc2VydGlvbnMoKyks
-IDg4IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2Jsb2NrX2Rldi5jIGIvZnMvYmxvY2tf
-ZGV2LmMKaW5kZXggMWExZTVlM2IxZWFmLi45ODcwOTQ0NmY1ZjQgMTAwNjQ0Ci0tLSBhL2ZzL2Js
-b2NrX2Rldi5jCisrKyBiL2ZzL2Jsb2NrX2Rldi5jCkBAIC0xMTYsOCArMTE2LDYgQEAgRVhQT1JU
-X1NZTUJPTChpbnZhbGlkYXRlX2JkZXYpOwogCiBpbnQgc2V0X2Jsb2Nrc2l6ZShzdHJ1Y3QgYmxv
-Y2tfZGV2aWNlICpiZGV2LCBpbnQgc2l6ZSkKIHsKLQlzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqbWFw
-cGluZzsKLQogCS8qIFNpemUgbXVzdCBiZSBhIHBvd2VyIG9mIHR3bywgYW5kIGJldHdlZW4gNTEy
-IGFuZCBQQUdFX1NJWkUgKi8KIAlpZiAoc2l6ZSA+IFBBR0VfU0laRSB8fCBzaXplIDwgNTEyIHx8
-ICFpc19wb3dlcl9vZl8yKHNpemUpKQogCQlyZXR1cm4gLUVJTlZBTDsKQEAgLTEyNiwyOSArMTI0
-LDE4IEBAIGludCBzZXRfYmxvY2tzaXplKHN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYsIGludCBz
-aXplKQogCWlmIChzaXplIDwgYmRldl9sb2dpY2FsX2Jsb2NrX3NpemUoYmRldikpCiAJCXJldHVy
-biAtRUlOVkFMOwogCi0JLyogUHJldmVudCBzdGFydGluZyBJL08gb3IgbWFwcGluZyB0aGUgZGV2
-aWNlICovCi0JcGVyY3B1X2Rvd25fd3JpdGUoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBob3Jl
-KTsKLQotCS8qIENoZWNrIHRoYXQgdGhlIGJsb2NrIGRldmljZSBpcyBub3QgbWVtb3J5IG1hcHBl
-ZCAqLwotCW1hcHBpbmcgPSBiZGV2LT5iZF9pbm9kZS0+aV9tYXBwaW5nOwotCW11dGV4X2xvY2so
-Jm1hcHBpbmctPmlfbW1hcF9tdXRleCk7Ci0JaWYgKG1hcHBpbmdfbWFwcGVkKG1hcHBpbmcpKSB7
-Ci0JCW11dGV4X3VubG9jaygmbWFwcGluZy0+aV9tbWFwX211dGV4KTsKLQkJcGVyY3B1X3VwX3dy
-aXRlKCZiZGV2LT5iZF9ibG9ja19zaXplX3NlbWFwaG9yZSk7Ci0JCXJldHVybiAtRUJVU1k7Ci0J
-fQotCW11dGV4X3VubG9jaygmbWFwcGluZy0+aV9tbWFwX211dGV4KTsKLQogCS8qIERvbid0IGNo
-YW5nZSB0aGUgc2l6ZSBpZiBpdCBpcyBzYW1lIGFzIGN1cnJlbnQgKi8KIAlpZiAoYmRldi0+YmRf
-YmxvY2tfc2l6ZSAhPSBzaXplKSB7Ci0JCXN5bmNfYmxvY2tkZXYoYmRldik7CisJCXBlcmNwdV9k
-b3duX3dyaXRlKCZiZGV2LT5iZF9ibG9ja19zaXplX3NlbWFwaG9yZSk7CiAJCWJkZXYtPmJkX2Js
-b2NrX3NpemUgPSBzaXplOwogCQliZGV2LT5iZF9pbm9kZS0+aV9ibGtiaXRzID0gYmxrc2l6ZV9i
-aXRzKHNpemUpOworCQlwZXJjcHVfdXBfd3JpdGUoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBo
-b3JlKTsKKworCQkvKiBTeW5jIGFuZCBraWxsIGFueSBvbGQgc2l6ZSBidWZmZXJzICovCisJCXN5
-bmNfYmxvY2tkZXYoYmRldik7CiAJCWtpbGxfYmRldihiZGV2KTsKIAl9CiAKLQlwZXJjcHVfdXBf
-d3JpdGUoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBob3JlKTsKLQogCXJldHVybiAwOwogfQog
-CkBAIC0yMzMsOSArMjIwLDE0IEBAIGJsa2Rldl9kaXJlY3RfSU8oaW50IHJ3LCBzdHJ1Y3Qga2lv
-Y2IgKmlvY2IsIGNvbnN0IHN0cnVjdCBpb3ZlYyAqaW92LAogewogCXN0cnVjdCBmaWxlICpmaWxl
-ID0gaW9jYi0+a2lfZmlscDsKIAlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gZmlsZS0+Zl9tYXBwaW5n
-LT5ob3N0OworCXN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYgPSBJX0JERVYoaW5vZGUpOworCXNz
-aXplX3QgcmV0OwogCi0JcmV0dXJuIF9fYmxvY2tkZXZfZGlyZWN0X0lPKHJ3LCBpb2NiLCBpbm9k
-ZSwgSV9CREVWKGlub2RlKSwgaW92LCBvZmZzZXQsCisJcGVyY3B1X2Rvd25fcmVhZCgmYmRldi0+
-YmRfYmxvY2tfc2l6ZV9zZW1hcGhvcmUpOworCXJldCA9IF9fYmxvY2tkZXZfZGlyZWN0X0lPKHJ3
-LCBpb2NiLCBpbm9kZSwgSV9CREVWKGlub2RlKSwgaW92LCBvZmZzZXQsCiAJCQkJICAgIG5yX3Nl
-Z3MsIGJsa2Rldl9nZXRfYmxvY2tzLCBOVUxMLCBOVUxMLCAwKTsKKwlwZXJjcHVfdXBfcmVhZCgm
-YmRldi0+YmRfYmxvY2tfc2l6ZV9zZW1hcGhvcmUpOworCXJldHVybiByZXQ7CiB9CiAKIGludCBf
-X3N5bmNfYmxvY2tkZXYoc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiwgaW50IHdhaXQpCkBAIC0z
-NTgsMjAgKzM1MCw0OCBAQCBFWFBPUlRfU1lNQk9MKHRoYXdfYmRldik7CiAKIHN0YXRpYyBpbnQg
-YmxrZGV2X3dyaXRlcGFnZShzdHJ1Y3QgcGFnZSAqcGFnZSwgc3RydWN0IHdyaXRlYmFja19jb250
-cm9sICp3YmMpCiB7Ci0JcmV0dXJuIGJsb2NrX3dyaXRlX2Z1bGxfcGFnZShwYWdlLCBibGtkZXZf
-Z2V0X2Jsb2NrLCB3YmMpOworCWludCByZXQ7CisJc3RydWN0IGlub2RlICppbm9kZSA9IHBhZ2Vf
-bWFwcGluZyhwYWdlKS0+aG9zdDsKKwlzdHJ1Y3QgYmxvY2tfZGV2aWNlICpiZGV2ID0gSV9CREVW
-KGlub2RlKTsKKworCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBo
-b3JlKTsKKwlyZXQgPSBibG9ja193cml0ZV9mdWxsX3BhZ2UocGFnZSwgYmxrZGV2X2dldF9ibG9j
-aywgd2JjKTsKKwlwZXJjcHVfdXBfcmVhZCgmYmRldi0+YmRfYmxvY2tfc2l6ZV9zZW1hcGhvcmUp
-OworCisJcmV0dXJuIHJldDsKIH0KIAogc3RhdGljIGludCBibGtkZXZfcmVhZHBhZ2Uoc3RydWN0
-IGZpbGUgKiBmaWxlLCBzdHJ1Y3QgcGFnZSAqIHBhZ2UpCiB7Ci0JcmV0dXJuIGJsb2NrX3JlYWRf
-ZnVsbF9wYWdlKHBhZ2UsIGJsa2Rldl9nZXRfYmxvY2spOworCWludCByZXQ7CisJc3RydWN0IGlu
-b2RlICppbm9kZSA9IHBhZ2VfbWFwcGluZyhwYWdlKS0+aG9zdDsKKwlzdHJ1Y3QgYmxvY2tfZGV2
-aWNlICpiZGV2ID0gSV9CREVWKGlub2RlKTsKKworCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJk
-X2Jsb2NrX3NpemVfc2VtYXBob3JlKTsKKwlyZXQgPSBibG9ja19yZWFkX2Z1bGxfcGFnZShwYWdl
-LCBibGtkZXZfZ2V0X2Jsb2NrKTsKKwlwZXJjcHVfdXBfcmVhZCgmYmRldi0+YmRfYmxvY2tfc2l6
-ZV9zZW1hcGhvcmUpOworCisJcmV0dXJuIHJldDsKIH0KIAogc3RhdGljIGludCBibGtkZXZfd3Jp
-dGVfYmVnaW4oc3RydWN0IGZpbGUgKmZpbGUsIHN0cnVjdCBhZGRyZXNzX3NwYWNlICptYXBwaW5n
-LAogCQkJbG9mZl90IHBvcywgdW5zaWduZWQgbGVuLCB1bnNpZ25lZCBmbGFncywKIAkJCXN0cnVj
-dCBwYWdlICoqcGFnZXAsIHZvaWQgKipmc2RhdGEpCiB7Ci0JcmV0dXJuIGJsb2NrX3dyaXRlX2Jl
-Z2luKG1hcHBpbmcsIHBvcywgbGVuLCBmbGFncywgcGFnZXAsCisJaW50IHJldDsKKwlzdHJ1Y3Qg
-aW5vZGUgKmlub2RlID0gbWFwcGluZy0+aG9zdDsKKwlzdHJ1Y3QgYmxvY2tfZGV2aWNlICpiZGV2
-ID0gSV9CREVWKGlub2RlKTsKKworCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3Np
-emVfc2VtYXBob3JlKTsKKwlyZXQgPSBibG9ja193cml0ZV9iZWdpbihtYXBwaW5nLCBwb3MsIGxl
-biwgZmxhZ3MsIHBhZ2VwLAogCQkJCSBibGtkZXZfZ2V0X2Jsb2NrKTsKKwkvKgorCSAqIElmIHdl
-IGhhZCBhbiBlcnJvciwgd2UgbmVlZCB0byByZWxlYXNlIHRoZSBzaXplCisJICogc2VtYXBob3Jl
-LCBiZWNhdXNlIHdyaXRlX2VuZCgpIHdpbGwgbmV2ZXIgYmUgY2FsbGVkLgorCSAqLworCWlmIChy
-ZXQpCisJCXBlcmNwdV91cF9yZWFkKCZiZGV2LT5iZF9ibG9ja19zaXplX3NlbWFwaG9yZSk7CisJ
-cmV0dXJuIHJldDsKIH0KIAogc3RhdGljIGludCBibGtkZXZfd3JpdGVfZW5kKHN0cnVjdCBmaWxl
-ICpmaWxlLCBzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqbWFwcGluZywKQEAgLTM3OSw4ICszOTksMTEg
-QEAgc3RhdGljIGludCBibGtkZXZfd3JpdGVfZW5kKHN0cnVjdCBmaWxlICpmaWxlLCBzdHJ1Y3Qg
-YWRkcmVzc19zcGFjZSAqbWFwcGluZywKIAkJCXN0cnVjdCBwYWdlICpwYWdlLCB2b2lkICpmc2Rh
-dGEpCiB7CiAJaW50IHJldDsKLQlyZXQgPSBibG9ja193cml0ZV9lbmQoZmlsZSwgbWFwcGluZywg
-cG9zLCBsZW4sIGNvcGllZCwgcGFnZSwgZnNkYXRhKTsKKwlzdHJ1Y3QgaW5vZGUgKmlub2RlID0g
-bWFwcGluZy0+aG9zdDsKKwlzdHJ1Y3QgYmxvY2tfZGV2aWNlICpiZGV2ID0gSV9CREVWKGlub2Rl
-KTsKIAorCXJldCA9IGJsb2NrX3dyaXRlX2VuZChmaWxlLCBtYXBwaW5nLCBwb3MsIGxlbiwgY29w
-aWVkLCBwYWdlLCBmc2RhdGEpOworCXBlcmNwdV91cF9yZWFkKCZiZGV2LT5iZF9ibG9ja19zaXpl
-X3NlbWFwaG9yZSk7CiAJdW5sb2NrX3BhZ2UocGFnZSk7CiAJcGFnZV9jYWNoZV9yZWxlYXNlKHBh
-Z2UpOwogCkBAIC0xNTk2LDE2ICsxNjE5LDcgQEAgc3RhdGljIGxvbmcgYmxvY2tfaW9jdGwoc3Ry
-dWN0IGZpbGUgKmZpbGUsIHVuc2lnbmVkIGNtZCwgdW5zaWduZWQgbG9uZyBhcmcpCiBzc2l6ZV90
-IGJsa2Rldl9haW9fcmVhZChzdHJ1Y3Qga2lvY2IgKmlvY2IsIGNvbnN0IHN0cnVjdCBpb3ZlYyAq
-aW92LAogCQkJdW5zaWduZWQgbG9uZyBucl9zZWdzLCBsb2ZmX3QgcG9zKQogewotCXNzaXplX3Qg
-cmV0OwotCXN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYgPSBJX0JERVYoaW9jYi0+a2lfZmlscC0+
-Zl9tYXBwaW5nLT5ob3N0KTsKLQotCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3Np
-emVfc2VtYXBob3JlKTsKLQotCXJldCA9IGdlbmVyaWNfZmlsZV9haW9fcmVhZChpb2NiLCBpb3Ys
-IG5yX3NlZ3MsIHBvcyk7Ci0KLQlwZXJjcHVfdXBfcmVhZCgmYmRldi0+YmRfYmxvY2tfc2l6ZV9z
-ZW1hcGhvcmUpOwotCi0JcmV0dXJuIHJldDsKKwlyZXR1cm4gZ2VuZXJpY19maWxlX2Fpb19yZWFk
-KGlvY2IsIGlvdiwgbnJfc2VncywgcG9zKTsKIH0KIEVYUE9SVF9TWU1CT0xfR1BMKGJsa2Rldl9h
-aW9fcmVhZCk7CiAKQEAgLTE2MjAsNyArMTYzNCw2IEBAIHNzaXplX3QgYmxrZGV2X2Fpb193cml0
-ZShzdHJ1Y3Qga2lvY2IgKmlvY2IsIGNvbnN0IHN0cnVjdCBpb3ZlYyAqaW92LAogCQkJIHVuc2ln
-bmVkIGxvbmcgbnJfc2VncywgbG9mZl90IHBvcykKIHsKIAlzdHJ1Y3QgZmlsZSAqZmlsZSA9IGlv
-Y2ItPmtpX2ZpbHA7Ci0Jc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiA9IElfQkRFVihmaWxlLT5m
-X21hcHBpbmctPmhvc3QpOwogCXN0cnVjdCBibGtfcGx1ZyBwbHVnOwogCXNzaXplX3QgcmV0Owog
-CkBAIC0xNjI4LDggKzE2NDEsNiBAQCBzc2l6ZV90IGJsa2Rldl9haW9fd3JpdGUoc3RydWN0IGtp
-b2NiICppb2NiLCBjb25zdCBzdHJ1Y3QgaW92ZWMgKmlvdiwKIAogCWJsa19zdGFydF9wbHVnKCZw
-bHVnKTsKIAotCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBob3Jl
-KTsKLQogCXJldCA9IF9fZ2VuZXJpY19maWxlX2Fpb193cml0ZShpb2NiLCBpb3YsIG5yX3NlZ3Ms
-ICZpb2NiLT5raV9wb3MpOwogCWlmIChyZXQgPiAwIHx8IHJldCA9PSAtRUlPQ0JRVUVVRUQpIHsK
-IAkJc3NpemVfdCBlcnI7CkBAIC0xNjM5LDYxICsxNjUwLDEyIEBAIHNzaXplX3QgYmxrZGV2X2Fp
-b193cml0ZShzdHJ1Y3Qga2lvY2IgKmlvY2IsIGNvbnN0IHN0cnVjdCBpb3ZlYyAqaW92LAogCQkJ
-cmV0ID0gZXJyOwogCX0KIAotCXBlcmNwdV91cF9yZWFkKCZiZGV2LT5iZF9ibG9ja19zaXplX3Nl
-bWFwaG9yZSk7Ci0KIAlibGtfZmluaXNoX3BsdWcoJnBsdWcpOwogCiAJcmV0dXJuIHJldDsKIH0K
-IEVYUE9SVF9TWU1CT0xfR1BMKGJsa2Rldl9haW9fd3JpdGUpOwogCi1zdGF0aWMgaW50IGJsa2Rl
-dl9tbWFwKHN0cnVjdCBmaWxlICpmaWxlLCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSkKLXsK
-LQlpbnQgcmV0OwotCXN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYgPSBJX0JERVYoZmlsZS0+Zl9t
-YXBwaW5nLT5ob3N0KTsKLQotCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3NpemVf
-c2VtYXBob3JlKTsKLQotCXJldCA9IGdlbmVyaWNfZmlsZV9tbWFwKGZpbGUsIHZtYSk7Ci0KLQlw
-ZXJjcHVfdXBfcmVhZCgmYmRldi0+YmRfYmxvY2tfc2l6ZV9zZW1hcGhvcmUpOwotCi0JcmV0dXJu
-IHJldDsKLX0KLQotc3RhdGljIHNzaXplX3QgYmxrZGV2X3NwbGljZV9yZWFkKHN0cnVjdCBmaWxl
-ICpmaWxlLCBsb2ZmX3QgKnBwb3MsCi0JCQkJICBzdHJ1Y3QgcGlwZV9pbm9kZV9pbmZvICpwaXBl
-LCBzaXplX3QgbGVuLAotCQkJCSAgdW5zaWduZWQgaW50IGZsYWdzKQotewotCXNzaXplX3QgcmV0
-OwotCXN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYgPSBJX0JERVYoZmlsZS0+Zl9tYXBwaW5nLT5o
-b3N0KTsKLQotCXBlcmNwdV9kb3duX3JlYWQoJmJkZXYtPmJkX2Jsb2NrX3NpemVfc2VtYXBob3Jl
-KTsKLQotCXJldCA9IGdlbmVyaWNfZmlsZV9zcGxpY2VfcmVhZChmaWxlLCBwcG9zLCBwaXBlLCBs
-ZW4sIGZsYWdzKTsKLQotCXBlcmNwdV91cF9yZWFkKCZiZGV2LT5iZF9ibG9ja19zaXplX3NlbWFw
-aG9yZSk7Ci0KLQlyZXR1cm4gcmV0OwotfQotCi1zdGF0aWMgc3NpemVfdCBibGtkZXZfc3BsaWNl
-X3dyaXRlKHN0cnVjdCBwaXBlX2lub2RlX2luZm8gKnBpcGUsCi0JCQkJICAgc3RydWN0IGZpbGUg
-KmZpbGUsIGxvZmZfdCAqcHBvcywgc2l6ZV90IGxlbiwKLQkJCQkgICB1bnNpZ25lZCBpbnQgZmxh
-Z3MpCi17Ci0Jc3NpemVfdCByZXQ7Ci0Jc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiA9IElfQkRF
-VihmaWxlLT5mX21hcHBpbmctPmhvc3QpOwotCi0JcGVyY3B1X2Rvd25fcmVhZCgmYmRldi0+YmRf
-YmxvY2tfc2l6ZV9zZW1hcGhvcmUpOwotCi0JcmV0ID0gZ2VuZXJpY19maWxlX3NwbGljZV93cml0
-ZShwaXBlLCBmaWxlLCBwcG9zLCBsZW4sIGZsYWdzKTsKLQotCXBlcmNwdV91cF9yZWFkKCZiZGV2
-LT5iZF9ibG9ja19zaXplX3NlbWFwaG9yZSk7Ci0KLQlyZXR1cm4gcmV0OwotfQotCi0KIC8qCiAg
-KiBUcnkgdG8gcmVsZWFzZSBhIHBhZ2UgYXNzb2NpYXRlZCB3aXRoIGJsb2NrIGRldmljZSB3aGVu
-IHRoZSBzeXN0ZW0KICAqIGlzIHVuZGVyIG1lbW9yeSBwcmVzc3VyZS4KQEAgLTE3MjYsMTQgKzE2
-ODgsMTQgQEAgY29uc3Qgc3RydWN0IGZpbGVfb3BlcmF0aW9ucyBkZWZfYmxrX2ZvcHMgPSB7CiAJ
-LndyaXRlCQk9IGRvX3N5bmNfd3JpdGUsCiAgIAkuYWlvX3JlYWQJPSBibGtkZXZfYWlvX3JlYWQs
-CiAJLmFpb193cml0ZQk9IGJsa2Rldl9haW9fd3JpdGUsCi0JLm1tYXAJCT0gYmxrZGV2X21tYXAs
-CisJLm1tYXAJCT0gZ2VuZXJpY19maWxlX21tYXAsCiAJLmZzeW5jCQk9IGJsa2Rldl9mc3luYywK
-IAkudW5sb2NrZWRfaW9jdGwJPSBibG9ja19pb2N0bCwKICNpZmRlZiBDT05GSUdfQ09NUEFUCiAJ
-LmNvbXBhdF9pb2N0bAk9IGNvbXBhdF9ibGtkZXZfaW9jdGwsCiAjZW5kaWYKLQkuc3BsaWNlX3Jl
-YWQJPSBibGtkZXZfc3BsaWNlX3JlYWQsCi0JLnNwbGljZV93cml0ZQk9IGJsa2Rldl9zcGxpY2Vf
-d3JpdGUsCisJLnNwbGljZV9yZWFkCT0gZ2VuZXJpY19maWxlX3NwbGljZV9yZWFkLAorCS5zcGxp
-Y2Vfd3JpdGUJPSBnZW5lcmljX2ZpbGVfc3BsaWNlX3dyaXRlLAogfTsKIAogaW50IGlvY3RsX2J5
-X2JkZXYoc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiwgdW5zaWduZWQgY21kLCB1bnNpZ25lZCBs
-b25nIGFyZykK
---0016e6d46a64c3021204cf9412a2--
+Of course, the change from BUG_ON to WARN_ON would equally neuter
+this crash, but it looks to me like a sign of... something else.
+Please do let me know if more keep coming.
+
+Hugh
+
+> 
+> 	Dave
+> 
+> 
+> :kernel BUG at mm/shmem.c:657!
+> :invalid opcode: 0000 [#1] SMP 
+> :CPU 1 
+> :Pid: 1017, comm: kwin Not tainted 3.6.6-1.fc17.x86_64 #1 System manufacturer P5E-VM HDMI/P5E-VM HDMI
+> :RIP: 0010:[<ffffffff81145792>]  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
+> :RSP: 0018:ffff88012b94ddb8  EFLAGS: 00010282
+> :RAX: 0000000050aeab47 RBX: ffff880117a424a8 RCX: 0000000000000018
+> :RDX: 000000001fea11fd RSI: 0000000005537c1c RDI: ffffffff81f1d500
+> :RBP: ffff88012b94ddd8 R08: 0000000000000000 R09: 0000000000000000
+> :R10: 0000000000000000 R11: 0000000000000000 R12: ffff880117a424a8
+> :R13: ffff880117a424a8 R14: ffff880117a424b8 R15: ffff880139a79220
+> :FS:  00007fa606014880(0000) GS:ffff88013fc80000(0000) knlGS:0000000000000000
+> :CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> :CR2: 00007fa5f0021010 CR3: 000000012c2d0000 CR4: 00000000000007e0
+> :DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> :DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> :Process kwin (pid: 1017, threadinfo ffff88012b94c000, task ffff880134f30000)
+> :Stack:
+> : ffff880117a424b8 ffff880117a425b0 ffffffff81812f80 ffffffff81812f80
+> : ffff88012b94de08 ffffffff811a8da2 ffff88012b94dde8 ffff880117a424b8
+> : ffff880117a42540 ffff880139a34000 ffff88012b94de38 ffffffff811a8fa3
+> :Call Trace:
+> : [<ffffffff811a8da2>] evict+0xa2/0x1a0
+> : [<ffffffff811a8fa3>] iput+0x103/0x1f0
+> : [<ffffffff811a50e8>] d_kill+0xd8/0x110
+> : [<ffffffff811a5782>] dput+0xe2/0x1b0
+> : [<ffffffff811900d6>] __fput+0x166/0x240
+> : [<ffffffff811901be>] ____fput+0xe/0x10
+> : [<ffffffff8107beab>] task_work_run+0x6b/0x90
+> : [<ffffffff81013921>] do_notify_resume+0x71/0xb0
+> : [<ffffffff81625be2>] int_signal+0x12/0x17
+> :Code: c7 80 1c c4 81 e8 8f 5a 4d 00 48 89 df e8 77 80 1a 00 49 89 5e e0 49 89 5e e8 48 c7 c7 80 1c c4 81 e8 13 5a 4d 00 e9 1c ff ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 57 41 
+> :RIP  [<ffffffff81145792>] shmem_evict_inode+0x112/0x120
+> : RSP <ffff88012b94ddb8>
