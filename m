@@ -1,158 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab2K1Tz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:55:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab2K1Tz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:55:56 -0500
-Date: Wed, 28 Nov 2012 17:55:44 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 0/23] media: Replace memcpy with struct assignment
-Message-ID: <20121128175544.4266260d@redhat.com>
-In-Reply-To: <CALF0-+USC6ButEO0pMRPFj8hGtL90wi3FrxL-BkE1oF42qcggg@mail.gmail.com>
-References: <CALF0-+XH4AfJUcNHXdMTwXf-=f24Zpe3VOw_1eQ9WBV1-6ZVjQ@mail.gmail.com>
-	<CALF0-+USC6ButEO0pMRPFj8hGtL90wi3FrxL-BkE1oF42qcggg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753936Ab2K1UAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:00:09 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:57478
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2K1UAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 15:00:08 -0500
+X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 15:00:08 EST
+Date: Wed, 28 Nov 2012 20:52:33 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1916318379.20121128205233@eikelenboom.it>
+To: linux-kernel@vger.kernel.org
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [167986.379006] WARNING: at net/core/skbuff.c:3444 skb_try_coalesce+0x359/0x390()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 28 Nov 2012 16:06:31 -0300
-Ezequiel Garcia <elezegarcia@gmail.com> escreveu:
+On one of my virtual machines i got this splat(running a 3.7.0-rc7):
 
-> On Tue, Oct 23, 2012 at 4:57 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> > Hello everyone,
-> >
-> > This is a large patchset that replaces struct memcpy with struct assignment,
-> > whenever possible at drivers/media.
-> >
-> > The patches are hand applied and every change has been thoroughly reviewed.
-> > However, to avoid regressions and angry users we'd like to have Acks
-> > from maintainers.
-> >
-> > A simplified version of the semantic match that finds
-> > this problem is as follows: (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @@
-> > identifier struct_name;
-> > struct struct_name to;
-> > struct struct_name from;
-> > expression E;
-> > @@
-> > -memcpy(&(to), &(from), E);
-> > +to = from;
-> > // </smpl>
-> >
-> > If you're thinking this change is very minor and doesn't worh the pain,
-> > you might change your opinion reading this report from Dan Carpenter:
-> >
-> > http://comments.gmane.org/gmane.linux.drivers.video-input-infrastructure/49553
-> >
-> > The report clearly shows how copy-paste programming paradigm, combined with
-> > lack of memcpy type-safety can lead to very strange code.
-> >
-> > Not to mention, using struct assignment instead of memcpy
-> > is by far more readable.
-> >
-> > Comments, feedback and flames are welcome. Thanks!
-> >
-> > Peter Senna Tschudin, Ezequiel Garcia (23):
-> >  wl128x: Replace memcpy with struct assignment
-> >  radio-wl1273: Replace memcpy with struct assignment
-> >  dvb-frontends: Replace memcpy with struct assignment
-> >  dvb-core: Replace memcpy with struct assignment
-> >  bttv: Replace memcpy with struct assignment
-> >  cx18: Replace memcpy with struct assignment
-> >  cx23885: Replace memcpy with struct assignment
-> >  cx88: Replace memcpy with struct assignment
-> >  ivtv: Replace memcpy with struct assignment
-> >  tuners/tda18271: Replace memcpy with struct assignment
-> >  tuners/xc2028: Replace memcpy with struct assignment
-> >  tuners/xc4000: Replace memcpy with struct assignment
-> >  au0828: Replace memcpy with struct assignment
-> >  dvb-usb/friio-fe: Replace memcpy with struct assignment
-> >  zr36067: Replace memcpy with struct assignment
-> >  cx25840: Replace memcpy with struct assignment
-> >  hdpvr: Replace memcpy with struct assignment
-> >  pvrusb2: Replace memcpy with struct assignment
-> >  pwc: Replace memcpy with struct assignment
-> >  sn9c102: Replace memcpy with struct assignment
-> >  usbvision: Replace memcpy with struct assignment
-> >  cx231xx: Replace memcpy with struct assignment
-> >  uvc: Replace memcpy with struct assignment
-> >
-> >  drivers/media/dvb-core/dvb_frontend.c        |    2 +-
-> >  drivers/media/dvb-frontends/cx24116.c        |    2 +-
-> >  drivers/media/dvb-frontends/drxd_hard.c      |    5 ++---
-> >  drivers/media/dvb-frontends/stv0299.c        |    2 +-
-> >  drivers/media/i2c/cx25840/cx25840-ir.c       |    6 ++----
-> >  drivers/media/pci/bt8xx/bttv-i2c.c           |    3 +--
-> >  drivers/media/pci/cx18/cx18-i2c.c            |    6 ++----
-> >  drivers/media/pci/cx23885/cx23885-video.c    |    3 +--
-> >  drivers/media/pci/cx23885/cx23888-ir.c       |    6 ++----
-> >  drivers/media/pci/cx88/cx88-cards.c          |    2 +-
-> >  drivers/media/pci/cx88/cx88-i2c.c            |    3 +--
-> >  drivers/media/pci/cx88/cx88-vp3054-i2c.c     |    3 +--
-> >  drivers/media/pci/ivtv/ivtv-i2c.c            |   12 ++++--------
-> >  drivers/media/pci/zoran/zoran_card.c         |    3 +--
-> >  drivers/media/radio/radio-wl1273.c           |    3 +--
-> >  drivers/media/radio/wl128x/fmdrv_common.c    |    3 +--
-> >  drivers/media/tuners/tda18271-maps.c         |    6 ++----
-> >  drivers/media/tuners/tuner-xc2028.c          |    2 +-
-> >  drivers/media/tuners/xc4000.c                |    2 +-
-> >  drivers/media/usb/au0828/au0828-cards.c      |    2 +-
-> >  drivers/media/usb/au0828/au0828-i2c.c        |    9 +++------
-> >  drivers/media/usb/cx231xx/cx231xx-cards.c    |    2 +-
-> >  drivers/media/usb/cx231xx/cx231xx-video.c    |    3 +--
-> >  drivers/media/usb/dvb-usb/friio-fe.c         |    5 ++---
-> >  drivers/media/usb/hdpvr/hdpvr-i2c.c          |    3 +--
-> >  drivers/media/usb/pvrusb2/pvrusb2-encoder.c  |    3 +--
-> >  drivers/media/usb/pvrusb2/pvrusb2-i2c-core.c |    4 ++--
-> >  drivers/media/usb/pvrusb2/pvrusb2-v4l2.c     |    2 +-
-> >  drivers/media/usb/pwc/pwc-if.c               |    2 +-
-> >  drivers/media/usb/sn9c102/sn9c102_core.c     |    4 ++--
-> >  drivers/media/usb/usbvision/usbvision-i2c.c  |    3 +--
-> >  drivers/media/usb/uvc/uvc_v4l2.c             |    6 +++---
-> >  32 files changed, 47 insertions(+), 75 deletions(-)
-> >
-> 
-> Hi Mauro,
-> 
-> Given we're very near merge window, I'm wondering if you're
-> considering picking this series.
-> There's no rush, but if there's anything to review, please let me know.
 
-Hi Ezequiel,
+[167986.378985] ------------[ cut here ]------------
+[167986.379006] WARNING: at net/core/skbuff.c:3444 skb_try_coalesce+0x359/0x390()
+[167986.379012] Modules linked in:
+[167986.379021] Pid: 3231, comm: apache2 Not tainted 3.7.0-rc7-20121126-persistent #1
+[167986.379028] Call Trace:
+[167986.379032]  <IRQ>  [<ffffffff8106762a>] warn_slowpath_common+0x7a/0xb0
+[167986.379047]  [<ffffffff8106f8b5>] ? local_bh_enable+0xb5/0x160
+[167986.379053]  [<ffffffff81067675>] warn_slowpath_null+0x15/0x20
+[167986.379059]  [<ffffffff816a4879>] skb_try_coalesce+0x359/0x390
+[167986.379067]  [<ffffffff8175bdb9>] tcp_try_coalesce+0x69/0xc0
+[167986.379073]  [<ffffffff8175be64>] tcp_queue_rcv+0x54/0x100
+[167986.379079]  [<ffffffff8176023f>] ? tcp_rcv_state_process+0x84f/0xc70
+[167986.379086]  [<ffffffff8176091b>] tcp_rcv_established+0x2bb/0x6a0
+[167986.379093]  [<ffffffff8176903f>] ? tcp_v4_rcv+0x6cf/0xb10
+[167986.379098]  [<ffffffff81768625>] tcp_v4_do_rcv+0x135/0x480
+[167986.379106]  [<ffffffff8180db82>] ? _raw_spin_lock_nested+0x42/0x50
+[167986.379112]  [<ffffffff8176903f>] ? tcp_v4_rcv+0x6cf/0xb10
+[167986.379118]  [<ffffffff817692cd>] tcp_v4_rcv+0x95d/0xb10
+[167986.379125]  [<ffffffff810b24f8>] ? lock_acquire+0xd8/0x100
+[167986.379133]  [<ffffffff81745aa5>] ? ip_local_deliver_finish+0x45/0x230
+[167986.379140]  [<ffffffff81745b7a>] ip_local_deliver_finish+0x11a/0x230
+[167986.379149]  [<ffffffff81745aa5>] ? ip_local_deliver_finish+0x45/0x230
+[167986.379156]  [<ffffffff81745cc8>] ip_local_deliver+0x38/0x80
+[167986.379162]  [<ffffffff8174528a>] ip_rcv_finish+0x15a/0x630
+[167986.379169]  [<ffffffff81745978>] ip_rcv+0x218/0x300
+[167986.379176]  [<ffffffff816adc9d>] __netif_receive_skb+0x65d/0x8d0
+[167986.379182]  [<ffffffff816ad785>] ? __netif_receive_skb+0x145/0x8d0
+[167986.379189]  [<ffffffff810ae6ed>] ? trace_hardirqs_on+0xd/0x10
+[167986.379197]  [<ffffffff810fb243>] ? free_hot_cold_page+0x1b3/0x1e0
+[167986.379204]  [<ffffffff816b01f8>] netif_receive_skb+0x28/0xf0
+[167986.379210]  [<ffffffff816a5d13>] ? __pskb_pull_tail+0x253/0x340
+[167986.400668]  [<ffffffff814b5945>] xennet_poll+0xad5/0xe10
+[167986.400679]  [<ffffffff816b0fa6>] net_rx_action+0x136/0x260
+[167986.400692]  [<ffffffff8106f4f1>] ? __do_softirq+0x71/0x1a0
+[167986.400698]  [<ffffffff8106f549>] __do_softirq+0xc9/0x1a0
+[167986.400705]  [<ffffffff818106fc>] call_softirq+0x1c/0x30
+[167986.400709]  <EOI>  [<ffffffff8100fd95>] do_softirq+0x85/0xf0
+[167986.400721]  [<ffffffff8174c666>] ? ip_finish_output+0x246/0x530
+[167986.400727]  [<ffffffff8106f953>] local_bh_enable+0x153/0x160
+[167986.400733]  [<ffffffff8174c666>] ip_finish_output+0x246/0x530
+[167986.400739]  [<ffffffff8174c4ed>] ? ip_finish_output+0xcd/0x530
+[167986.400749]  [<ffffffff8174c9a9>] ip_output+0x59/0xe0
+[167986.400755]  [<ffffffff8174b4c8>] ip_local_out+0x28/0x90
+[167986.400760]  [<ffffffff8174ba7f>] ip_queue_xmit+0x17f/0x4a0
+[167986.400766]  [<ffffffff8174b900>] ? ip_send_unicast_reply+0x340/0x340
+[167986.400773]  [<ffffffff810a1ed7>] ? getnstimeofday+0x47/0xe0
+[167986.400779]  [<ffffffff816a24c9>] ? __skb_clone+0x29/0x120
+[167986.400786]  [<ffffffff81761ba0>] tcp_transmit_skb+0x400/0x8d0
+[167986.400793]  [<ffffffff81764b8c>] tcp_write_xmit+0x22c/0xa70
+[167986.400799]  [<ffffffff8176543d>] __tcp_push_pending_frames+0x2d/0x90
+[167986.400809]  [<ffffffff8175577d>] tcp_sendmsg+0x17d/0xe10
+[167986.400816]  [<ffffffff8177c0c9>] inet_sendmsg+0xa9/0x100
+[167986.400822]  [<ffffffff8177c020>] ? inet_autobind+0x70/0x70
+[167986.400829]  [<ffffffff816991d0>] ? sock_destroy_inode+0x40/0x40
+[167986.400835]  [<ffffffff816992fd>] sock_aio_write+0x12d/0x140
+[167986.400842]  [<ffffffff81144ceb>] do_sync_readv_writev+0x9b/0xe0
+[167986.400849]  [<ffffffff8114539f>] do_readv_writev+0xcf/0x1d0
+[167986.400855]  [<ffffffff811454de>] vfs_writev+0x3e/0x60
+[167986.400861]  [<ffffffff8114562a>] sys_writev+0x5a/0xc0
+[167986.400871]  [<ffffffff812b639e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[167986.400878]  [<ffffffff8180f469>] system_call_fastpath+0x16/0x1b
+[167986.400884] ---[ end trace 2f73b807ee74fc5a ]---
 
-Thanks for your offering.
-
-There are 400+ patches pending today at patchwork. I doubt I'll have enough
-time for all of them, so, I'll skip cleanup patches like the above, in order
-to try to focus on bug fixes and patches that brings new functionality to
-existing code and with a low risk of breaking anything.
-
-Next year, we'll start implementing the sub-maintainers, and, with their
-help, I suspect we'll be able to finally apply those patches.
-
-If you want us to help, feel free to review/test the individual patches
-submitted by non-maintainers to the ML. We tend to apply faster patches
-that are more reviewed. 
-
-Hmm... well, actually it is just the opposite: we explicitly delay 
-not-reviewed patches for unmaintained/bad maintained drivers,
-to see if someone acks or nacks them after testing.
-
-Regards,
-Mauro
