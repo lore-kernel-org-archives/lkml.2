@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab2K1PWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:22:36 -0500
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:53533 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754935Ab2K1PWf (ORCPT
+	id S932467Ab2K1PXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:23:43 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34071 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430Ab2K1PXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:22:35 -0500
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 10:22:34 EST
-X-AuditID: 1209190e-b7fd76d000005253-70-50b62b0c529b
-Date: Wed, 28 Nov 2012 10:17:28 -0500 (EST)
-From: Anders Kaseorg <andersk@MIT.EDU>
-To: Tejun Heo <tj@kernel.org>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "John W. Linville" <linville@tuxdriver.com>
-cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Wireless regression in workqueue: use mod_delayed_work() instead
- of __cancel + queue
-In-Reply-To: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
-Message-ID: <alpine.DEB.2.00.1211281016320.26602@dr-wily.mit.edu>
-References: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 28 Nov 2012 10:23:42 -0500
+Message-ID: <50B62C6E.4010202@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 09:23:26 -0600
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsUixG6nosujvS3A4PN3dot9G3ktLu+aw2bx
-	ZsUddoutPRIWxxaIWfxafpTRgc3j23tZj02rOtk8rnxfzejxeZNcAEsUl01Kak5mWWqRvl0C
-	V8a8fzPYCiawVXQv5W5g/MPSxcjJISFgIrHmWSMThC0mceHeerYuRi4OIYF9jBLzp89hhHA2
-	MEr0nIBx9jBJ7F+9hRmkhUVAW2J+dzM7iM0moCYxd8NkIJuDQ0SgTqJxfghImFkgUaJt3kRW
-	EFtYIFmipfMCWDmngJPEki/b2UBsXgFHiZ7bx8AuEgKy914+B3aRqICuxN5DZ9ghagQlTs58
-	wgIxU0ti+fRtLBMYBWYhSc1CklrAyLSKUTYlt0o3NzEzpzg1Wbc4OTEvL7VI11gvN7NELzWl
-	dBMjKIA5Jfl2MH49qHSIUYCDUYmH96H51gAh1sSy4srcQ4ySHExKorzZmtsChPiS8lMqMxKL
-	M+KLSnNSiw8xSnAwK4nwMj8CKudNSaysSi3Kh0lJc7AoifNeSbnpLySQnliSmp2aWpBaBJOV
-	4eBQkuB9BjJUsCg1PbUiLTOnBCHNxMEJMpwHaPgDkBre4oLE3OLMdIj8KUZFKXHe7yAJAZBE
-	RmkeXC8swbxiFAd6RZj3PEgVDzA5wXW/AhrMBDQ46CzI1cUliQgpqQbGksZvIt+Kq/Y8YZNc
-	cX29rm/fWeMvx5j9VBluuMe8kFdZ0S4r/Udz+UXjN+sXTrHKqCxJW+cYeHDBcqGso50/5HoU
-	eD5ld93uex++IXTjsxnszwJ7f7zx0jQ68UBm0tMZrCwef2YXdC+M33rc3+rG5OUdkrI715zm
-	8FGR5p82ry1ya4LtzwsSSizFGYmGWsxFxYkASLHgvQsDAAA=
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: linux-kernel@vger.kernel.org, riel@redhat.com, kvm@vger.kernel.org,
+        peterz@infradead.org, mtosatti@redhat.com, glommer@parallels.com,
+        mingo@redhat.com
+Subject: Re: [PATCH 2/5] Expand the steal time msr to also contain the consigned
+ time.
+References: <20121126203603.28840.38736.stgit@lambeau> <20121126203645.28840.56280.stgit@lambeau> <20121127210331.GA2710@phenom.dumpdata.com>
+In-Reply-To: <20121127210331.GA2710@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112815-5816-0000-0000-000005965714
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012, Anders Kaseorg wrote:
-> My Intel 6250 wireless card (iwldvm) can no longer associate with a 
-> WPA-Enterprise network (PEAP-MSCHAPv2).  To my surprise, I bisected this 
-> regression to commit e7c2f967445dd2041f0f8e3179cca22bb8bb7f79, 
-> workqueue: use mod_delayed_work() instead of __cancel + queue.
-> 
-> A bunch of logs collected by Ubuntu apport are in this bug report: 
->   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1083980
-> 
-> How can I help to debug this?
-> 
-> I see that someone else reported another regression with the same commit 
-> last week, although this looks unrelated at first glance: 
->   http://thread.gmane.org/gmane.linux.kernel/1395938
-> 
-> Anders
+On 11/27/2012 03:03 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Nov 26, 2012 at 02:36:45PM -0600, Michael Wolf wrote:
+>> Add a consigned field.  This field will hold the time lost due to capping or overcommit.
+>> The rest of the time will still show up in the steal-time field.
+>>
+>> Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
+>> ---
+>>   arch/x86/include/asm/paravirt.h       |    4 ++--
+>>   arch/x86/include/asm/paravirt_types.h |    2 +-
+>>   arch/x86/kernel/kvm.c                 |    7 ++-----
+>>   kernel/sched/core.c                   |   10 +++++++++-
+>>   kernel/sched/cputime.c                |    2 +-
+>>   5 files changed, 15 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+>> index a0facf3..a5f9f30 100644
+>> --- a/arch/x86/include/asm/paravirt.h
+>> +++ b/arch/x86/include/asm/paravirt.h
+>> @@ -196,9 +196,9 @@ struct static_key;
+>>   extern struct static_key paravirt_steal_enabled;
+>>   extern struct static_key paravirt_steal_rq_enabled;
+>>   
+>> -static inline u64 paravirt_steal_clock(int cpu)
+>> +static inline u64 paravirt_steal_clock(int cpu, u64 *steal)
+> So its u64 here.
+>>   {
+>> -	return PVOP_CALL1(u64, pv_time_ops.steal_clock, cpu);
+>> +	PVOP_VCALL2(pv_time_ops.steal_clock, cpu, steal);
+>>   }
+>>   
+>>   static inline unsigned long long paravirt_read_pmc(int counter)
+>> diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+>> index 142236e..5d4fc8b 100644
+>> --- a/arch/x86/include/asm/paravirt_types.h
+>> +++ b/arch/x86/include/asm/paravirt_types.h
+>> @@ -95,7 +95,7 @@ struct pv_lazy_ops {
+>>   
+>>   struct pv_time_ops {
+>>   	unsigned long long (*sched_clock)(void);
+>> -	unsigned long long (*steal_clock)(int cpu);
+>> +	void (*steal_clock)(int cpu, unsigned long long *steal);
+> But not u64 here? Any particular reason?
+>
+It should be void everywhere, thanks for catching that I will change the 
+code.
 
-(Oops, re-sending to fix a typo in the LKML address.)
 
-Anders
