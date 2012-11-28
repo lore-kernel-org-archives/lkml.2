@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2K1DdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:33:21 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57209 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab2K1DdU (ORCPT
+	id S1752413Ab2K1Diq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:38:46 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3576 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab2K1Dip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:33:20 -0500
-Message-ID: <50B585F7.7090902@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 11:33:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 27 Nov 2012 22:38:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 27 Nov 2012 19:38:31 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How about a gpio_get(device *, char *) function?
+Date: Wed, 28 Nov 2012 12:38:38 +0900
+Message-ID: <2022442.P80mCjSeu2@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.3 (Linux/3.6.7-1-ARCH; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121126111431.AE4C23E09C2@localhost>
+References: <38620644.IyR5R8rjKP@percival> <CACRpkdaUJKs7zx=JWRUb+0Qz2dQU=R5KUK+CoM+nLCgHL99AFA@mail.gmail.com> <20121126111431.AE4C23E09C2@localhost>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121127234203.GC8295@amt.cnet>
-In-Reply-To: <20121127234203.GC8295@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112803-1618-0000-0000-000002EF40D5
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 07:42 AM, Marcelo Tosatti wrote:
-> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
->> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
->>
->>>>
->>>> -	return false;
->>>> +again:
->>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
->>>> +
->>>> +	/*
->>>> +	 * if emulation was due to access to shadowed page table
->>>> +	 * and it failed try to unshadow page and re-enter the
->>>> +	 * guest to let CPU execute the instruction.
->>>> +	 */
->>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
->>>
->>> Can you explain what is the objective here?
->>>
->>
->> Sure. :)
->>
->> The instruction emulation is caused by fault access on cr3. After unprotect
->> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
->> if it return 1, mmu can not fix the mapping, we should report the error,
->> otherwise it is good to return to guest and let it re-execute the instruction
->> again.
->>
->> page_fault_count is used to avoid the race on other vcpus, since after we
->> unprotect the target page, other cpu can enter page fault path and let the
->> page be write-protected again.
->>
->> This way can help us to detect all the case that mmu can not be fixed.
-> 
-> How about recording the gfn number for shadow pages that have been
-> shadowed in the current pagefault run? (which is cheap, compared to
-> shadowing these pages).
-> 
+On Monday 26 November 2012 19:14:31 Grant Likely wrote:
+> I don't have any problem with a gpio_get function, but I do agree that
+> making it return an opaque handle is how it should be written with a new
+> set of accessors. The handle should probably be simply the pointer to
+> the &gpio_desc[number] which is a private table in gpiolib.c. The
+> definition of it isn't available outside of gpiolib.c
 
-Marcelo,
+That looks like a reasonable approach, but this would make the new API 
+available only to systems that use GPIOlib. Shouldn't we be concerned about 
+making this available to all GPIO implementations? Or is GPIOlib so widely 
+used that we don't care?
 
-Thanks for your idea!
+Right now I have a very simple wrapper (for testing purposes) around the 
+current integer-base GPIO namespace that accepts tables mapping consumers to 
+GPIO numbers, much like Thierry did for the PWM subsystem. Integrating it into 
+GPIOlib does not seem to be much more difficult ; it would require some 
+refactoring though as most of the code should be shared by the two APIs.
 
-If we use this way, we should cache gfns in vcpu struct.
+This also seems to be the right opportunity (although not directly related) to 
+switch the gpio_desc table into something more flexible. Two approaches come to 
+mind: either a linked-list of gpio_chips ordered by base GPIO, or a radix-
+tree. The small number of gpio chips in a system seem to make the first 
+approach reasonable enough - GPIO lookup time would become linear instead of 
+constant, but it should not be noticeable from the consumer perspective.
 
-Actually, i have considered the approach like yours, that is getting
-all page tables of the guest, then to see whether the page table gfns
-are contained in the target gfn. But we need changed mmu->gva_to_pfn
-or introduce a new method to get page tables of the guest.
-
-But reexecute_instruction is really the unlikely path, both of these
-ways can make the mmu code more complex and/or introduce unnecessary
-overload for the common cases.
-
-it looks like the way used in this patch is the simplest and no harmful to
-the core code.
-
-
+Alex.
 
