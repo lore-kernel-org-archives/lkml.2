@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2K1JZC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:25:02 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34992 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748Ab2K1JY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:24:59 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-Date: Wed, 28 Nov 2012 10:29:41 +0100
-Message-ID: <1408044.6czCGhbHJH@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CACVXFVODD9fRqQc3kR58OJm3ERgBWojnx=790xGwu=MPGaSmMA@mail.gmail.com>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com> <5434404.G1ERYjuorE@vostro.rjw.lan> <CACVXFVODD9fRqQc3kR58OJm3ERgBWojnx=790xGwu=MPGaSmMA@mail.gmail.com>
+	id S1753672Ab2K1JZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:25:54 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:6333
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753507Ab2K1JZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:25:52 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
+Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        shubhro <omaplinuxkernel@gmail.com>
+In-Reply-To: <20121127142358.9a4bc20d.akpm@linux-foundation.org>
+References: <1349952025.9228.3.camel@dhruva>
+	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
+	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Nov 2012 14:54:40 +0530
+Message-ID: <1354094680.10949.1.camel@dhruva>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 12:34:36 PM Ming Lei wrote:
-> On Wed, Nov 28, 2012 at 5:19 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > Please use counters instead of walking the whole path every time.  Ie. in
-> > addition to the flag add a counter to store the number of the device's
-> > children having that flag set.
+On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
+> On Fri, 23 Nov 2012 15:41:03 +0530
+> Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
 > 
-> Even though counter is added, walking the whole path can't be avoided too,
-> and may be a explicit walking or recursion, because pm_runtime_set_memalloc_noio
-> is required to set or clear the flag(or increase/decrease the counter) of
-> devices in the whole path.
+> > On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
+> > > Does this patch looks good?
+> > > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
+> > > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
+> > > > the DA9055 MFD core.
+> > > > 
+> > > > This patch is functionally tested on Samsung SMDKV6410.
+> > > > 
+> > >
+> 
+> (Top-posting repaired. Please don't top-post).
+> 
+> > Any comments on this patch.
+> 
+> "shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
+> 
+> : On Thu, 11 Oct 2012 16:53:34 +0530
+> : shubhro <omaplinuxkernel@gmail.com> wrote:
+> : 
+> : > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
+> : > > +#define da9055_rtc_freeze NULL
+> : > > +#endif
+> : > > +
+> : > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
+> : > > +	.suspend = da9055_rtc_suspend,
+> : > > +	.resume = da9055_rtc_resume,
+> : > > +
+> : > > +	.freeze = da9055_rtc_freeze,
+> : > > +	.thaw = da9055_rtc_resume,
+> : > > +	.restore = da9055_rtc_resume,
+> : > > +
+> : > > +	.poweroff = da9055_rtc_suspend,
+> : > > +};
+> : > You may want to use simple dev pm ops
+To support generic PM ops these additional ops were supported.
 
-But it doesn't have to walk the children.  Moreover, with counters it only
-needs to walk the whole path if all devices in it need to be updated.  For
-example, if you call pm_runtime_set_memalloc_noio(dev, true) for a device
-whose parent's counter is greater than zero already, you don't need to
-walk the path above the parent.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
