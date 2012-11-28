@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2K1JRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:17:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60232 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab2K1JRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:17:49 -0500
-Date: Wed, 28 Nov 2012 10:17:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
- iterators
-Message-ID: <20121128091745.GC12309@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-4-git-send-email-mhocko@suse.cz>
- <50B5CFBF.2090100@jp.fujitsu.com>
+	id S1753574Ab2K1JW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:22:57 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:46581 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751670Ab2K1JWy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:22:54 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B5CFBF.2090100@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Date: Wed, 28 Nov 2012 09:21:37 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+In-Reply-To: <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Thread-Index: Ac3M0I9PRiYxdUQZRLK4R2Nqf+WpVwAeFMSw
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net><1350926091-12642-3-git-send-email-krzysiek@podlesie.net><1354036592.2534.6.camel@shinybook.infradead.org><20121127173906.GA11390@shrek.podlesie.net><1354039349.2534.11.camel@shinybook.infradead.org> <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "chas williams - CONTRACTOR" <chas@cmf.nrl.navy.mil>,
+        "David Woodhouse" <dwmw2@infradead.org>
+Cc: "Krzysztof Mazur" <krzysiek@podlesie.net>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nathan@traverse.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-11-12 17:47:59, KAMEZAWA Hiroyuki wrote:
-> (2012/11/27 3:47), Michal Hocko wrote:
-[...]
-> > +		/*
-> > +		 * Even if we found a group we have to make sure it is alive.
-> > +		 * css && !memcg means that the groups should be skipped and
-> > +		 * we should continue the tree walk.
-> > +		 * last_visited css is safe to use because it is protected by
-> > +		 * css_get and the tree walk is rcu safe.
-> > +		 */
-> > +		if (css == &root->css || (css && css_tryget(css)))
-> > +			memcg = mem_cgroup_from_css(css);
+> On Tue, 27 Nov 2012 18:02:29 +0000
+> David Woodhouse <dwmw2@infradead.org> wrote:
 > 
-> Could you note that this iterator will never visit dangling(removed)
-> memcg, somewhere ?
-
-OK, I can add it to the function comment but the behavior hasn't changed
-so I wouldn't like to confuse anybody.
-
-> Hmm, I'm not sure but it may be trouble at shrkinking dangling
-> kmem_cache(slab).
-
-We do not shrink slab at all. Those objects that are in a dead memcg
-wait for their owner tho release them which will make the dangling group
-eventually go away
-
+> > In solos-pci at least, the ops->close() function doesn't flush all
+> > pending skbs for this vcc before returning. So can be a tasklet
+> > somewhere which has loaded the address of the vcc->pop function from one
+> > of them, and is going to call it in some unspecified amount of time.
+> >
+> > Should we make the device's ->close function wait for all TX and RX skbs
+> > for this vcc to complete?
 > 
-> Costa, how do you think ?
-> 
-> I guess there is no problem with swap and not against the way you go.
+> the driver's close routine should wait for any of the pending tx and rx
+> to complete.  take a look at the he.c in driver/atm
 
-Yes, swap should be OK. Pages charged against removed memcg will
-fallback to the the current's mm (try_get_mem_cgroup_from_page and
-__mem_cgroup_try_charge_swapin)
+I'm not sure that sleeping for long periods in close() is always a
+good idea. If the process is event driven it will be unable to
+handle events on other fd until the close completes.
+This may be known not to be true in this case, but is more generally
+a problem.
+In this case the close should probably (IMHO at least) only sleep
+while pending tx and rx are aborted/discarded.
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Even when it might make sense to sleep in close until tx drains
+there needs to be a finite timeout before it become abortive.
+
+	David
+
+
+
