@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2K1XyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:54:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44070 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754215Ab2K1XyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:54:18 -0500
-Date: Wed, 28 Nov 2012 23:54:12 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121128235412.GW8218@suse.de>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
- <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
- <50B52DC4.5000109@redhat.com>
- <20121127214928.GA20253@cmpxchg.org>
- <50B5387C.1030005@redhat.com>
- <20121127222637.GG2301@cmpxchg.org>
- <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
- <20121128101359.GT8218@suse.de>
- <20121128145215.d23aeb1b.akpm@linux-foundation.org>
+	id S1422630Ab2K1Xy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:54:29 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48173 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932519Ab2K1XyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:54:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121128145215.d23aeb1b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
+References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
+ <20121126224245.248f0901@neptune.home> <CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com>
+ <CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com>
+ <004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com> <CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com>
+ <00a501cdcca3$c2638510$472a8f30$@lucidpixels.com> <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 28 Nov 2012 16:54:03 -0700
+Message-ID: <CAErSpo6h4sOmmanXBE3EHBDh2u4yNbpMcs6p05XG1nrO2rwvXg@mail.gmail.com>
+Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
+ bug question
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        support@supermicro.com, linux-kernel@vger.kernel.org,
+        Dan Williams <djbw@fb.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 02:52:15PM -0800, Andrew Morton wrote:
-> On Wed, 28 Nov 2012 10:13:59 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > Based on the reports I've seen I expect the following to work for 3.7
-> > 
-> > Keep
-> >   96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
-> >   ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
-> > 
-> > Revert
-> >   82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
-> > 
-> > Merge
-> >   mm: vmscan: fix kswapd endless loop on higher order allocation
-> >   mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
-> 
-> "mm: Avoid waking kswapd for THP ..." is marked "I have not tested it
-> myself" and when Zdenek tested it he hit an unexplained oom.
-> 
+On Tue, Nov 27, 2012 at 6:49 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>> It looks like maybe you don't have CONFIG_PCI_MMCONFIG turned on?
+>
+> ===> FOR I/OAT DMA
+> Latest status, it _appears_ its working on the X9SRL-F now, thank you!
+>
+> 1) Supermicro X9SRL-F (GOOD)
+> [    0.738510] ioatdma: Intel(R) QuickData Technology Driver 4.00
+> [    0.738719] ioatdma 0000:00:04.0: irq 75 for MSI/MSI-X
+> [    0.739088] ioatdma 0000:00:04.1: irq 76 for MSI/MSI-X
+> [    0.739408] ioatdma 0000:00:04.2: irq 77 for MSI/MSI-X
+> [    0.739739] ioatdma 0000:00:04.3: irq 78 for MSI/MSI-X
+> [    0.740040] ioatdma 0000:00:04.4: irq 79 for MSI/MSI-X
+> [    0.740342] ioatdma 0000:00:04.5: irq 80 for MSI/MSI-X
+> [    0.740670] ioatdma 0000:00:04.6: irq 81 for MSI/MSI-X
+> [    0.740971] ioatdma 0000:00:04.7: irq 82 for MSI/MSI-X
 
-I thought Zdenek was testing with __GFP_NO_KSWAPD when he hit that OOM.
-Further, when he hit that OOM, it looked like a genuine OOM. He had no
-swap configured and inactive/active file pages were very low. Finally,
-the free pages for Normal looked off and could also have been affected by
-the accounting bug. I'm looking at https://lkml.org/lkml/2012/11/18/132
-here. Are you thinking of something else?
+Good.  You have two issues, and I'm going to separate them and only
+address the first one here.  I opened a bug report [1] against the
+IOAT driver.  It should do something more useful when
+CONFIG_PCI_MMCONFIG=n so we don't have to debug this again in the
+future.  But otherwise, it sounds like this issue is resolved.
 
-I have not tested with the patch admittedly but Thorsten has and seemed
-to be ok with it https://lkml.org/lkml/2012/11/23/276.
-
-> > Johannes' patch should remove the necessity for __GFP_NO_KSWAPD revert but I
-> > think we should also avoid waking kswapd for THP allocations if compaction
-> > is deferred. Johannes' patch might mean that kswapd goes quickly go back
-> > to sleep but it's still busy work.
-> > 
-> > 3.6 is still known to be screwed in terms of THP because of the amount of
-> > time it can spend in compaction after lumpy reclaim was removed. This is
-> > my old list of patches I felt needed to be backported after 3.7 came out.
-> > They are not tagged -stable, I'll be sending it to Greg manually.
-> > 
-> > e64c523 mm: compaction: abort compaction loop if lock is contended or run too long
-> > 3cc668f mm: compaction: move fatal signal check out of compact_checklock_irqsave
-> > 661c4cb mm: compaction: Update try_to_compact_pages()kerneldoc comment
-> > 2a1402a mm: compaction: acquire the zone->lru_lock as late as possible
-> > f40d1e4 mm: compaction: acquire the zone->lock as late as possible
-> > 753341a revert "mm: have order > 0 compaction start off where it left"
-> > bb13ffe mm: compaction: cache if a pageblock was scanned and no pages were isolated
-> > c89511a mm: compaction: Restart compaction from near where it left off
-> > 6299702 mm: compaction: clear PG_migrate_skip based on compaction and reclaim activity
-> > 0db63d7 mm: compaction: correct the nr_strict va isolated check for CMA
-> > 
-> > Only Johannes' patch needs to be added to this list. kswapd is not woken
-> > for THP in 3.6 but as it calls compaction for other high-order allocations
-> > it still makes sense.
-> 
-> Please identify "Johannes' patch"?
-
-mm: vmscan: fix kswapd endless loop on higher order allocation
-
--- 
-Mel Gorman
-SUSE Labs
+[1] https://bugzilla.kernel.org/show_bug.cgi?id=51101
