@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab2K1Xe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:34:28 -0500
-Received: from gate.crashing.org ([63.228.1.57]:50274 "EHLO gate.crashing.org"
+	id S1754921Ab2K1Xis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:38:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41745 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab2K1Xe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:34:26 -0500
-Message-ID: <1354145291.2179.147.camel@pasglop>
-Subject: Re: [PATCH V7 1/7] kbuild: centralize .dts->.dtb rule
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Paul Mackerras <paulus@samba.org>, Michal Marek <mmarek@suse.cz>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Kumar Gala <galak@kernel.crashing.org>
-Date: Thu, 29 Nov 2012 10:28:11 +1100
-In-Reply-To: <50B65903.1050400@wwwdotorg.org>
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-	 <50B65903.1050400@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753115Ab2K1Xir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:38:47 -0500
+Date: Wed, 28 Nov 2012 15:38:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kurachkin Michail <Michail.Kurachkin@promwad.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kuten Ivan <Ivan.Kuten@promwad.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: TDM bus support in Linux Kernel
+Message-ID: <20121128233845.GA16396@kroah.com>
+References: <CAKa7sPRgROFY2RfeVW0G_1EWzWXakuWu50tGQ2QuzrvEimU3FQ@mail.gmail.com>
+ <20120203110036.GA7732@leaf>
+ <F7F628C32E67B04DAECC5CA53521253E5F9D9350@sv-exmb01-lo1.promwad.corp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F7F628C32E67B04DAECC5CA53521253E5F9D9350@sv-exmb01-lo1.promwad.corp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 11:33 -0700, Stephen Warren wrote:
-
-> Following this patch (http://lkml.org/lkml/2012/11/27/555), I posted a
-> series of patches to convert almost all architectures to using the
-> centralized rule. The one architecture I didn't convert was PowerPC.
+On Mon, Nov 19, 2012 at 11:00:12AM +0000, Kurachkin Michail wrote:
+> Hi Greg,
 > 
-> I didn't convert it because arch/powerpc/boot/Makefile contains a large
-> number of rules (to generate *Image.% where % is a board name) that
-> depend on %.dtb, which is expected to be in arch/powerpc/boot rather
-> than arch/powerpc/boot/dts. Now, I guess it's possible to convert them
-> all to expect the .dtb files to be in dts/ and also have
-> arch/powerpc/boot/Makefile call make in boot/dts/ to make each required
-> .dtb file. However, the patch would be a bit larger than all the other
-> architecture patches. Do you want me to do that conversion, or would you
-> rather I leave PowerPC alone? Thanks for any feedback.
+> During the work on developing VoIP network router I designed TDM bus subsystem and wrote SLIC driver for si3226x. This code was developed for the commercial project, and now I am willing to release it under GPL.
+> Please review my sources (or give me a clue on what to do next) and give some feedback on my work.
+> https://github.com/stelhs/slic_tdm.git
 
-Kumar, any objection to moving the dtb's to arch/powerpc/boot/dtb/ ?
-Other than breaking a script or two out there ...
+It's really hard to review a random git tree somewhere, and having it in
+this form doesn't make it easy to add to the kernel tree itself.
 
-Cheers,
-Ben.
+So, could you take your git tree and convert it to a patch (or patches)
+to be applied to the kernel.org tree and send it in email so we can see
+what it looks like that way?
 
+I'd recommend putting everything under drivers/staging/ for now, to make
+it easier to accept at the moment, and it makes it easier to clean up
+and fix up any issues in-kernel, instead of having to keep huge patches
+outside of the tree.
 
+Take a look at the file, Documentation/SubmittingPatches for how to
+create a patch and what I need in order for it to be able to be applied.
+
+thanks,
+
+greg k-h
