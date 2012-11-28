@@ -1,101 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab2K1ISk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:18:40 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33065 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab2K1ISi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:18:38 -0500
-Message-ID: <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: [RFC PATCH v2] Add rcu user eqs exception hooks for async page fault
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
-Date: Wed, 28 Nov 2012 16:18:24 +0800
-In-Reply-To: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	 <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753007Ab2K1IWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:22:04 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:60968 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752700Ab2K1IWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 03:22:01 -0500
+Message-ID: <50B5C9A2.6000408@parallels.com>
+Date: Wed, 28 Nov 2012 12:21:54 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Chris Wilson <chris@chris-wilson.co.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <xfs@oss.sgi.com>
+Subject: Re: [PATCH 17/19] drivers: convert shrinkers to new count/scan API
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-18-git-send-email-david@fromorbit.com> <b94cdc$7i2bv3@fmsmga001.fm.intel.com> <20121128031719.GR6434@dastard>
+In-Reply-To: <20121128031719.GR6434@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12112808-1396-0000-0000-00000239B0F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you all for the review and education. 
+On 11/28/2012 07:17 AM, Dave Chinner wrote:
+> On Wed, Nov 28, 2012 at 01:13:11AM +0000, Chris Wilson wrote:
+>> On Wed, 28 Nov 2012 10:14:44 +1100, Dave Chinner <david@fromorbit.com> wrote:
+>>> +/*
+>>> + * XXX: (dchinner) This is one of the worst cases of shrinker abuse I've seen.
+>>> + *
+>>> + * i915_gem_purge() expects a byte count to be passed, and the minimum object
+>>> + * size is PAGE_SIZE.
+>>
+>> No, purge() expects a count of pages to be freed. Each pass of the
+>> shrinker therefore tries to free a minimum of 128 pages.
+> 
+> Ah, I got the shifts mixed up. I'd been looking at way too much crap
+> already when I saw this. But the fact this can be misunderstood says
+> something about the level of documentation that the code has (i.e.
+> none).
+> 
+>>> The shrinker doesn't work on bytes - it works on
+>>> + * *objects*.
+>>
+>> And I thought you were reviewing the shrinker API to be useful where a
+>> single object may range between 4K and 4G.
+> 
+> Which requires rewriting all the algorithms to not be dependent on
+> the subsystems using a fixed size object. The shrinker control
+> function is called shrink_slab() for a reason - it was expected to
+> be used to shrink caches of fixed sized objects allocated from slab
+> memory.
+> 
+> It has no concept of the amount of memory that each object consumes,
+> just an idea of how much *IO* it takes to replace the object in
+> memory once it's been reclaimed. The DEFAULT_SEEKS is design to
+> encode the fact it generally takes 2 IOs to replace either a LRU
+> page or a filesystem slab object, and so balances the scanning based
+> on that value. i.e. the shrinker algorithms are solidly based around
+> fixed sized objects that have some relationship to the cost of
+> physical IO operations to replace them in the cache.
 
-Below are my current understandings and an update version. Would you
-please help to review it again and give your comments? 
+One nit: It shouldn't take 2IOs to replace a slab object, right? This
+should be the cost of allocating a new page, that can contain, multiple
+objects.
 
-Thanks, Zhong
+Once the page is in, a new object should be quite cheap to come up with.
 
-Now it seems to me that it is legal to call rcu_irq_exit/enter() without
-a matching rcu_irq_enter/exit() if the cpu is in non rcu idle state.
+This is a very wild thought, but now that I am diving deep in the
+shrinker API, and seeing things like this:
 
-As opposite, it is illegal to call rcu_irq_exit() without a matching
-rcu_irq_enter() if the cpu is in rcu idle state.
+if (reclaim_state) {
+    sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+    reclaim_state->reclaimed_slab = 0;
+}
 
-But it seems legal to call rcu_irq_enter() without a matching
-rcu_irq_exit() if the cpu is in rcu idle state, regarding the
-dynticks_nesting value.   However, it seems not good to exit the rcu
-idle state, if we are actually entering into idle mode, so maybe it's
-better to call a matching rcu_irq_exit() before actually idle?
+I am becoming more convinced that we should have a page-based mechanism,
+like the rest of vmscan.
 
-As Frederic pointed out, we need a rcu_user_exit() to exit the user eqs
-(if we are in this state) in the beginning. But after some more
-thinking, I guess we might also need to call rcu_user_enter() after the
-waiting, if we get this page fault from user space. So maybe it's better
-to use rcu user eqs exception hooks here? 
+Also, if we are seeing pressure from someone requesting user pages, what
+good does it make to free, say, 35 Mb of memory, if this means we are
+freeing objects across 5k different pages, without actually releasing
+any of them? (still is TBD if this is a theoretical problem or a
+practical one). It would maybe be better to free objects that are
+moderately hot, but are on pages dominated by cold objects...
 
-With rcu_user_exit() at the beginning, now rcu_irq_enter() only protects
-the cpu idle eqs, but it's not good to call rcu_irq_exit() after the cpu
-halt and the page ready. 
 
-So I still want to remove it. And later if it shows that we really needs
-rcu somewhere in this code path, maybe we could use RCU_NONIDLE() to
-protect it. ( The suspicious RCU usage reported in commit
-c5e015d4949aa665 seems related to schedule(), which is not in the code
-path if we are in cpu idle eqs )
+> 
+> The API change is the first step in the path to removing these built
+> in assumptions. The current API is just insane and any attempt to
+> build on it is going to be futile. 
 
-I think we still need Gleb's patch about the idle check in
-kvm_async_pf_task_wait(), and maybe another patch for the
-exit_idle()/enter_idle() issue. 
+Amen, brother!
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
----
- arch/x86/kernel/kvm.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> The way I see this developing is
+> this:
+> 
+> 	- make the shrink_slab count -> scan algorithm per node
+> 
+pages are per-node.
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 4180a87..e3e7752 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -42,6 +42,7 @@
- #include <asm/apic.h>
- #include <asm/apicdef.h>
- #include <asm/hypervisor.h>
-+#include <asm/rcu.h>
- 
- static int kvmapf = 1;
- 
-@@ -247,10 +248,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- 		break;
- 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
- 		/* page is swapped out by the host. */
--		rcu_irq_enter();
-+		exception_enter(regs);
- 		exit_idle();
- 		kvm_async_pf_task_wait((u32)read_cr2());
--		rcu_irq_exit();
-+		exception_exit(regs);
- 		break;
- 	case KVM_PV_REASON_PAGE_READY:
- 		rcu_irq_enter();
--- 
-1.7.11.4
+> 	- add information about size of objects in the cache for
+> 	  fixed size object caches.
+> 		- the shrinker now has some idea of how many objects
+> 		  need to be freed to be able to free a page of
+> 		  memory, as well as the relative penalty for
+> 		  replacing them.
+this is still guesswork, telling how many pages it should free, could
+be a better idea.
+
+> 		- tells the shrinker the size of the cache
+> 		  in bytes so overall memory footprint of the caches
+> 		  can be taken into account
+
+> 	- add new count and scan operations for caches that are
+> 	  based on memory used, not object counts
+> 		- allows us to use the same count/scan algorithm for
+> 		  calculating how much pressure to put on caches
+> 		  with variable size objects.
+
+IOW, pages.
+
+> My care factor mostly ends here, as it will allow XFS to corectly
+> balance the metadata buffer cache (variable size objects) against the
+> inode, dentry and dquot caches which are object based. The next
+> steps that I'm about to give you are based on some discussions with
+> some MM people over bottles of red wine, so take it with a grain of
+> salt...
+> 
+> 	- calculate a "pressure" value for each cache controlled by a
+> 	  shrinker so that the relative memory pressure between
+> 	  caches can be compared. This allows the shrinkers to bias
+> 	  reclaim based on where the memory pressure is being
+> 	  generated
+> 
+
+Ok, if a cache is using a lot of memory, this would indicate it has the
+dominant workload, right? Should we free from it, or should we free from
+the others, so this ones gets the pages it needs?
+
+> 	- start grouping shrinkers into a heirarchy, allowing
+> 	  related shrinkers (e.g. all the caches in a memcg) to be
+> 	  shrunk according resource limits that can be placed on the
+> 	  group. i.e. memory pressure is proportioned across
+> 	  groups rather than many individual shrinkers.
+> 
+pages are already grouped like that!
+
+> 	- comments have been made to the extent that with generic
+> 	  per-node lists and a node aware shrinker, all of the page
+> 	  scanning could be driven by the shrinker infrastructure,
+> 	  rather than the shrinkers being driven by how many pages
+> 	  in the page cache just got scanned for reclaim.
+> 
+> 	  IOWs, the main memory reclaim algorithm walks all the
+> 	  shrinkers groups to calculate overall memory pressure,
+> 	  calculate how much reclaim is necessary, and then
+> 	  proportion reclaim across all the shrinker groups. i.e.
+> 	  everything is a shrinker.
+> 
+> This patch set is really just the start of a long process. balance
+> between the page cache and VFS/filesystem shrinkers is critical to
+> the efficient operation of the OS under many, many workloads, so I'm
+> not about to change more than oe little thing at a time. This API
+> change is just one little step. You'll get what you want eventually,
+> but you're not going to get it as a first step.
+> 
+
+I have to note again that this is my first *serious* look at the
+problem... but this is a summary of what I got, that fits in the context
+of this particular discussion =)
+
+I still have to go through all your other patches...
+
+But one thing we seem to agree is that we have quite a long road ahead
 
