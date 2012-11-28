@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2K1KOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:14:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35046 "EHLO mx2.suse.de"
+	id S1754004Ab2K1KOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:14:34 -0500
+Received: from skyrme.org ([193.175.80.135]:49558 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab2K1KOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:14:03 -0500
-Date: Wed, 28 Nov 2012 10:13:59 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121128101359.GT8218@suse.de>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
- <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
- <50B52DC4.5000109@redhat.com>
- <20121127214928.GA20253@cmpxchg.org>
- <50B5387C.1030005@redhat.com>
- <20121127222637.GG2301@cmpxchg.org>
- <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753654Ab2K1KOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 05:14:33 -0500
+Date: 28 Nov 2012 10:14:28 +0000
+Message-Id: <1354097668-3780-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: "Wolfram Sang" <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>,
+        "Liam Girdwood" <lrg@ti.com>,
+        "Fabio Estevam" <fabio.estevam@freescale.com>,
+        "Zeng Zhaoming" <zengzm.kernel@gmail.com>, alsa-devel@alsa-project.org,
+        "Jaroslav Kysela" <perex@perex.cz>, "Takashi Iwai" <tiwai@suse.de>,
+        "Oskar Schirmer" <oskar@scara.com>
+Subject: [PATCH] sound/sgtl5000: fix initial setting for DAC data source
+X-Mailer: git-send-email 1.6.0.3
+In-Reply-To: <50B5E03E.2080308@ti.com>
+References: <50B5E03E.2080308@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 03:19:38PM -0800, Linus Torvalds wrote:
-> On Tue, Nov 27, 2012 at 2:26 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Nov 27, 2012 at 05:02:36PM -0500, Rik van Riel wrote:
-> >>
-> >> Kswapd going crazy is certainly a large part of the problem.
-> >>
-> >> However, that leaves the issue of page_alloc.c waking up
-> >> kswapd when the system is not actually low on memory.
-> >>
-> >> Instead, kswapd is woken up because memory compaction failed,
-> >> potentially even due to lock contention during compaction!
-> >>
-> >> Ideally the allocation code would only wake up kswapd if
-> >> memory needs to be freed, or in order for kswapd to do
-> >> memory compaction (so the allocator does not have to).
-> >
-> > Maybe I missed something, but shouldn't this be solved with my patch?
-> 
-> Ok, guys. Cage fight!
-> 
-> The rules are simple: two men enter, one man leaves.
-> 
+According to documentation bit 3:2 in register SSS_CTRL are
+reserved and zero, so the setting of 0x0008 does not make much sense.
+Instead, bit 4 should be set as is with power up, to reflect
+routing of I2S_IN to DAC correctly.
 
-I'm fairly scorch damaged from this whole cycle already. I won't need a
-prop master to look the part for a thunderdome match.
+Looks much like an off by one error.
 
-> And the one who comes out gets to explain to me which patch(es) I
-> should apply, and which I should revert, if any.
-> 
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+---
+ sound/soc/codecs/sgtl5000.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Based on the reports I've seen I expect the following to work for 3.7
-
-Keep
-  96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
-  ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
-
-Revert
-  82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
-
-Merge
-  mm: vmscan: fix kswapd endless loop on higher order allocation
-  mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
-
-Johannes' patch should remove the necessity for __GFP_NO_KSWAPD revert but I
-think we should also avoid waking kswapd for THP allocations if compaction
-is deferred. Johannes' patch might mean that kswapd goes quickly go back
-to sleep but it's still busy work.
-
-3.6 is still known to be screwed in terms of THP because of the amount of
-time it can spend in compaction after lumpy reclaim was removed. This is
-my old list of patches I felt needed to be backported after 3.7 came out.
-They are not tagged -stable, I'll be sending it to Greg manually.
-
-e64c523 mm: compaction: abort compaction loop if lock is contended or run too long
-3cc668f mm: compaction: move fatal signal check out of compact_checklock_irqsave
-661c4cb mm: compaction: Update try_to_compact_pages()kerneldoc comment
-2a1402a mm: compaction: acquire the zone->lru_lock as late as possible
-f40d1e4 mm: compaction: acquire the zone->lock as late as possible
-753341a revert "mm: have order > 0 compaction start off where it left"
-bb13ffe mm: compaction: cache if a pageblock was scanned and no pages were isolated
-c89511a mm: compaction: Restart compaction from near where it left off
-6299702 mm: compaction: clear PG_migrate_skip based on compaction and reclaim activity
-0db63d7 mm: compaction: correct the nr_strict va isolated check for CMA
-
-Only Johannes' patch needs to be added to this list. kswapd is not woken
-for THP in 3.6 but as it calls compaction for other high-order allocations
-it still makes sense.
-
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index df2f99d..5b37891 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -37,7 +37,7 @@
+ static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
+ 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
+ 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
+-	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
++	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
+ 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
+ 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
+ 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
