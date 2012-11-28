@@ -1,128 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab2K1Jk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:40:58 -0500
-Received: from mail.gw90.de ([188.40.100.199]:38011 "EHLO mail.gw90.de"
+	id S1753947Ab2K1JpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:45:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33510 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab2K1Jkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:40:55 -0500
-X-Greylist: delayed 1266 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 04:40:54 EST
-Message-ID: <1354094368.4467.4.camel@mattotaupa>
-Subject: Re: [PATCH v2] sp5100_tco: Add SB8x0 chipset support
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Takahisa Tanaka <mc74hc00@gmail.com>
-Cc: linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Arkadiusz Miskiewicz <arekm@maven.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 28 Nov 2012 10:19:28 +0100
-In-Reply-To: <1352993009-3448-1-git-send-email-mc74hc00@gmail.com>
-References: <1352993009-3448-1-git-send-email-mc74hc00@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-CoO0JgjYCAjEaLw/kj/A"
-X-Mailer: Evolution 3.4.4-1.1~pre2 
-Mime-Version: 1.0
+	id S1753302Ab2K1JpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:45:19 -0500
+Date: Wed, 28 Nov 2012 09:45:11 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Thorsten Leemhuis <fedora@leemhuis.info>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis.Kletnieks@vt.edu, Jiri Slaby <jslaby@suse.cz>,
+        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121128094511.GS8218@suse.de>
+References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Adding Thorsten to cc)
 
---=-CoO0JgjYCAjEaLw/kj/A
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 27, 2012 at 03:48:34PM -0500, Johannes Weiner wrote:
+> Hi everyone,
+> 
+> I hope I included everybody that participated in the various threads
+> on kswapd getting stuck / exhibiting high CPU usage.  We were looking
+> at at least three root causes as far as I can see, so it's not really
+> clear who observed which problem.  Please correct me if the
+> reported-by, tested-by, bisected-by tags are incomplete.
+> 
+> One problem was, as it seems, overly aggressive reclaim due to scaling
+> up reclaim goals based on compaction failures.  This one was reverted
+> in 9671009 mm: revert "mm: vmscan: scale number of pages reclaimed by
+> reclaim/compaction based on failures".
+> 
 
-Dear Takahisa,
+This particular one would have been made worse by the accounting bug and
+if kswapd was staying awake longer than necessary. As scaling the amount
+of reclaim only for direct reclaim helped this problem a lot, I strongly
+suspect the accounting bug was a factor.
 
+However the benefit for this is marginal -- it primarily affects how
+many THP pages we can allocate under stress. There is already a graceful
+fallback path and a system under heavy reclaim pressure is not going to
+notice the performance benefit of THP.
 
-as replied to ticket #43176 in Bugzilla thanks a lot for your work.
+> Another one was an accounting problem where a freed higher order page
+> was underreported, and so kswapd had trouble restoring watermarks.
+> This one was fixed in ef6c5be fix incorrect NR_FREE_PAGES accounting
+> (appears like memory leak).
+> 
 
+This almost certainly also requires the follow-on fix at
+https://lkml.org/lkml/2012/11/26/225 for reasons I explained in
+https://lkml.org/lkml/2012/11/27/190 .
 
-Am Freitag, den 16.11.2012, 00:23 +0900 schrieb Takahisa Tanaka:
-> The current sp5100_tco driver only supports SP5100/SB7x0 chipset, doesn't
-> support SB8x0 chipset, because current sp5100_tco driver doesn't know tha=
-t the
-> offset address for watchdog timer was changed from SB8x0 chipset.
->=20
-> The offset address of SP5100 and SB7x0 chipsets are as follows, quote fro=
-m the
-> AMD SB700/710/750 Register Reference Guide(Page 164) and the AMD SP5100
+> The third one is a problem with small zones, like the DMA zone, where
+> the high watermark is lower than the low watermark plus compaction gap
+> (2 * allocation size).  The zonelist reclaim in kswapd would do
+> nothing because all high watermarks are met, but the compaction logic
+> would find its own requirements unmet and loop over the zones again.
+> Indefinitely, until some third party would free enough memory to help
+> meet the higher compaction watermark.  The problematic code has been
+> there since the 3.4 merge window for non-THP higher order allocations
+> but has been more prominent since the 3.7 merge window, where kswapd
+> is also woken up for the much more common THP allocations.
+> 
 
-In English you leave a space before parentheses: =E2=80=A6 Guide (page 164)=
- =E2=80=A6
+Yes. 
 
-> Register Reference Guide(Page 166).
+> The following patch should fix the third issue by making both reclaim
+> and compaction code in kswapd use the same predicate to determine
+> whether a zone is balanced or not.
+> 
+> Hopefully, the sum of all three fixes should tame kswapd enough for
+> 3.7.
+> 
 
-Dito.
+Not exactly sure of that. With just those patches it is possible for
+allocations for THP entering the slow path to keep kswapd continually awake
+doing busy work. This was an alternative to the revert that covered that
+https://lkml.org/lkml/2012/11/12/151 but it was not enough because kswapd
+would stay awake due to the bug you identified and fixed.
 
->   WatchDogTimerControl 69h
->   WatchDogTimerBase0   6Ch
->   WatchDogTimerBase1   6Dh
->   WatchDogTimerBase2   6Eh
->   WatchDogTimerBase3   6Fh
->=20
-> In contrast, the offset address of SB8x0 chipset is as follows, quote fro=
-m
-> AMD SB800-Series Southbridges Register Reference Guide(Page 147).
+I went with the __GFP_NO_KSWAPD patch in this cycle because 3.6 was/is
+very poor in how it handles THP after the removal of lumpy reclaim. 3.7
+was shaping up to be even worse with multiple root causes too close to the
+release date.  Taking kswapd out of the equation covered some of the
+problems (yes, by hiding them) so it could be revisited but Johannes may
+have finally squashed it.
 
-Dito.
+However, if we revert the revert then I strongly recommend that it be
+replaced with "Avoid waking kswapd for THP allocations when compaction is
+deferred or contended".
 
->   WatchDogTimerEn      48h
->   WatchDogTimerConfig  4Ch
->=20
-> So, In the case of SB8x0 chipset, sp5100_tco reads meaningless MMIO
-> address(for example, 0xbafe00) from wrong offset address, and the followi=
-ng
-
-Dito.
-
-> message is logged.
->=20
->    SP5100 TCO timer: mmio address 0xbafe00 already in use
->=20
-> With this patch, sp5100_tco driver supports SB8x0 chipset, and can avoid
-> iomem resource conflict.
->=20
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=3D43176
-> Tested-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-> Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
->=20
-> ---
-> v1 -> v2
->  -Fix typo in module description and source code.
->  -Fix a bug that can't correctly determine the watchdog fired.
->  -Improve syslog messages.
->  -Truncate the commit log, because previous commit log is too long.
-
-There are no too long commit messages. ;-)
-
-> ---
->  drivers/watchdog/sp5100_tco.c | 321 +++++++++++++++++++++++++++++++++++-=
-------
->  drivers/watchdog/sp5100_tco.h |  46 ++++--
->  2 files changed, 306 insertions(+), 61 deletions(-)
-
-[=E2=80=A6]
-
-Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
-
-
-Thanks,
-
-Paul
-
---=-CoO0JgjYCAjEaLw/kj/A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlC11yAACgkQPX1aK2wOHVgXAACaAsw75EUvCnPkJE4cO3DocpC+
-3kAAnjI6EAB3fTtQwBukMLgR7/HeUvuk
-=K1r7
------END PGP SIGNATURE-----
-
---=-CoO0JgjYCAjEaLw/kj/A--
-
+-- 
+Mel Gorman
+SUSE Labs
