@@ -1,236 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2K1QmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:42:21 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:26454 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab2K1QmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:42:18 -0500
-Message-ID: <1354120432.26955.229.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
- .sys_notify
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Date: Wed, 28 Nov 2012 09:33:52 -0700
-In-Reply-To: <4386143.a25EdxFGm5@vostro.rjw.lan>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
-	 <1534747.XBnkTFzSlv@vostro.rjw.lan>
-	 <1353951848.26955.73.camel@misato.fc.hp.com>
-	 <4386143.a25EdxFGm5@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754574Ab2K1Qma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:42:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55573 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754361Ab2K1QmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:42:24 -0500
+Date: Wed, 28 Nov 2012 16:42:18 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
+        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121128164217.GV8218@suse.de>
+References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+ <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
+ <50B52DC4.5000109@redhat.com>
+ <20121127214928.GA20253@cmpxchg.org>
+ <50B5387C.1030005@redhat.com>
+ <20121127222637.GG2301@cmpxchg.org>
+ <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
+ <20121128101359.GT8218@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121128101359.GT8218@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 01:29 +0100, Rafael J. Wysocki wrote:
-> On Monday, November 26, 2012 10:44:08 AM Toshi Kani wrote:
-> > Hi Rafael,
+On Wed, Nov 28, 2012 at 10:13:59AM +0000, Mel Gorman wrote:
+> On Tue, Nov 27, 2012 at 03:19:38PM -0800, Linus Torvalds wrote:
+> > On Tue, Nov 27, 2012 at 2:26 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > > On Tue, Nov 27, 2012 at 05:02:36PM -0500, Rik van Riel wrote:
+> > >>
+> > >> Kswapd going crazy is certainly a large part of the problem.
+> > >>
+> > >> However, that leaves the issue of page_alloc.c waking up
+> > >> kswapd when the system is not actually low on memory.
+> > >>
+> > >> Instead, kswapd is woken up because memory compaction failed,
+> > >> potentially even due to lock contention during compaction!
+> > >>
+> > >> Ideally the allocation code would only wake up kswapd if
+> > >> memory needs to be freed, or in order for kswapd to do
+> > >> memory compaction (so the allocator does not have to).
+> > >
+> > > Maybe I missed something, but shouldn't this be solved with my patch?
 > > 
-> > Thanks for reviewing!  My comments are in-line.
+> > Ok, guys. Cage fight!
 > > 
-> > On Sat, 2012-11-24 at 23:01 +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, November 08, 2012 01:23:44 PM Toshi Kani wrote:
-> > > > Added a new .sys_notify interface, which allows ACPI drivers to
-> > > > register their system-level (ex. hotplug) notify handlers through
-> > > > their acpi_driver table.  This removes redundant ACPI namespace
-> > > > walks from ACPI drivers for faster booting.
-> > > > 
-> > > > The global notify handler acpi_bus_notify() is called for all
-> > > > system-level ACPI notifications, which then calls an appropriate
-> > > > driver's handler if any.  ACPI drivers no longer need to register
-> > > > or unregister driver's handler to each ACPI device object.  It also
-> > > > supports dynamic ACPI namespace with LoadTable & Unload opcode
-> > > > without any modification in ACPI drivers.
-> > > > 
-> > > > Added a common system notify handler acpi_bus_sys_notify(), which
-> > > > allows ACPI drivers to set it to .sys_notify when this function is
-> > > > fully implemented.
-> > > 
-> > > I don't really understand this.
+> > The rules are simple: two men enter, one man leaves.
 > > 
-> > Currently, acpi_bus_notify() is partially implemented as the common
-> > notify handler, but it may not be fully implemented under the current
-> > design.  When a notify event is sent, ACPICA calls both
-> > acpi_bus_notify() and driver's handler registered through
-> > acpi_install_notify_handler().  However, a same event cannot be handled
-> > by both handlers.
 > 
-> Yes, it can, as long as they don't do conflicting things. :)
-
-True, if the things are defined in such way. :)
-
-> Usually, the event will be discarded by one of them.
+> I'm fairly scorch damaged from this whole cycle already. I won't need a
+> prop master to look the part for a thunderdome match.
 > 
-> > Since acpi_bus_notify() may not know if an event has
-> > already been handled by driver's handler, it cannot do anything that may
-> > conflict with the driver's handler.
-> 
-> Not really.  acpi_bus_notify() is always called first, so it actually
-> knows that no one has done anything with that event before.  However,
-> it doesn't know who else will be called for the same event going
-> forward.
-
-Right.
-
-> But I agree, acpi_bus_notify() shouldn't register for the same types of
-> events that are handled by drivers individually.  And we may not need
-> acpi_bus_notify() at all as far as I can say at the moment.
-
-Yes, if we can replace blocking_notifier_call_chain() and
-ACPI_DRIVER_ALL_NOTIFY_EVENTS interfaces.
-
-> > Therefore, the partially implemented common handler code in
-> > acpi_bus_notify() is moved to a separate function acpi_bus_sys_notify()
-> > in this patchset.  This function can now be fully implemented as
-> > necessary.
-> 
-> Not really, because notifiers that don't use it may be called for the
-> same events.
-> 
-> > > > It removes functional conflict between driver's
-> > > > notify handler and the global notify handler acpi_bus_notify().
-> > > > 
-> > > > Note that the changes maintain backward compatibility for ACPI
-> > > > drivers.  Any drivers registered their hotplug handler through the
-> > > > existing interfaces, such as acpi_install_notify_handler() and
-> > > > register_acpi_bus_notifier(), will continue to work as before.
-> > > 
-> > > I really wouldn't like to add new callbacks to struct acpi_device_ops, because
-> > > I'd like that whole thing to go away entirely eventually, along with struct
-> > > acpi_driver.
+> > And the one who comes out gets to explain to me which patch(es) I
+> > should apply, and which I should revert, if any.
 > > 
-> > acpi_device may need to be changed, but I think ACPI drivers are still
-> > necessary to support vendor-unique PNPIDs in an extendable way, which is
-> > currently done by adding drivers, such as asus_acpi_driver,
-> > cmpc_accel_acpi_driver, eeepc_acpi_driver, acpi_fujitsu_driver,
-> > lis3lv02d_driver, etc...
 > 
-> Well, not really.  Handling different PNPIDs has nothing to do with ACPI
-> drivers.  You only need a way for drivers in general to specify the ACPI
-> device IDs they can handle.  And after som changes that are waiting for the
-> v3.8 merge windown you'll be able to add a list of ACPI device IDs to other
-> types of drivers too (like platform drivers for one example).
-
-I see.  My point is that we need to be able to support different PNPIDs
-with drivers.  So, that works for me.
-
-> [...]
+> Based on the reports I've seen I expect the following to work for 3.7
 > 
-> > > > +
-> > > > +/* callback args for acpi_match_drv_notify() */
-> > > > +struct acpi_notify_args {
-> > > > +	struct acpi_device	*device;
-> > > > +	acpi_handle		handle;
-> > > > +	u32			event;
-> > > > +	void			*data;
-> > > > +};
-> > > > +
-> > > > +static int acpi_match_drv_notify(struct device_driver *drv, void *data)
-> > > > +{
-> > > > +	struct acpi_driver *driver = to_acpi_driver(drv);
-> > > > +	struct acpi_notify_args *args = (struct acpi_notify_args *) data;
-> > > > +
-> > > > +	/* check if this driver matches with the device */
-> > > > +	if (acpi_match_device_ids(args->device, driver->ids))
-> > > > +		return 0;
-> > > > +
-> > > > +	/* call the driver's notify handler */
-> > > > +	acpi_bus_drv_notify(driver, NULL, args->handle,
-> > > > +					args->event, args->data);
-> > > > +
-> > > > +	return 1;
-> > > > +}
-> > > > +
-> > > > +/**
-> > > > + * acpi_lookup_drv_notify: Look up and call driver's notify handler
-> > > > + * @handle: ACPI handle of the notified device object
-> > > > + * @event: Notify event
-> > > > + * @data: Context
-> > > > + *
-> > > > + * Look up and call the associated driver's notify handler for the ACPI
-> > > > + * device object by walking through the list of ACPI drivers.
-> > > 
-> > > What exactly is the purpose of this?
-> > 
-> > For hot-add, an acpi_device object is not created for the notified
-> > object yet.  Therefore, acpi_bus_notify() calls this function to find an
-> > associated driver for the device.  It walks thru the ACPI driver list to
-> > find a matching driver.  
+> Keep
+>   96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
+>   ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
 > 
-> This is just broken and not only because you're creating a struct acpi_device
-> object on the fly in there.
+> Revert
+>   82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
 > 
-> > > > + */
-> > > > +void acpi_lookup_drv_notify(acpi_handle handle, u32 event, void *data)
-> > > > +{
-> > > > +	struct acpi_notify_args args;
-> > > > +	struct acpi_device *device;
-> > > > +	unsigned long long sta;
-> > > > +	int type;
-> > > > +	int ret;
-> > > > +
-> > > > +	/* allocate a temporary device object */
-> > > > +	device = kzalloc(sizeof(struct acpi_device), GFP_KERNEL);
-> > > > +	if (!device) {
-> > > > +		pr_err(PREFIX "No memory to allocate a tmp device\n");
-> > > > +		return;
-> > > > +	}
-> > > > +	INIT_LIST_HEAD(&device->pnp.ids);
-> > > > +
-> > > > +	/* obtain device type */
-> > > > +	ret = acpi_bus_type_and_status(handle, &type, &sta);
-> > > > +	if (ret) {
-> > > > +		pr_err(PREFIX "Failed to get device type\n");
-> > > > +		goto out;
-> > > > +	}
-> > > > +
-> > > > +	/* setup this temporary device object */
-> > > > +	device->device_type = type;
-> > > > +	device->handle = handle;
-> > > > +	device->parent = acpi_bus_get_parent(handle);
-> > > > +	device->dev.bus = &acpi_bus_type;
-> > > > +	device->driver = NULL;
-> > > > +	STRUCT_TO_INT(device->status) = sta;
-> > > > +	device->status.present = 1;
-> > > > +
-> > > > +	/* set HID to this device object */
-> > > > +	acpi_device_set_id(device);
-> > > > +
-> > > > +	/* set args */
-> > > > +	args.device = device;
-> > > > +	args.handle = handle;
-> > > > +	args.event = event;
-> > > > +	args.data = data;
-> > > > +
-> > > > +	/* call a matched driver's notify handler */
-> > > > +	(void) bus_for_each_drv(device->dev.bus, NULL,
-> > > > +					&args, acpi_match_drv_notify);
-> > > 
-> > > Excuse me?  What makes you think I would accept anything like this?
-> > 
-> > Sorry, I admit that allocating a temporary acpi_device object is a hack
-> > since acpi_device_set_id() requires it.  I tried to change
-> > acpi_device_set_id(), but it needed more changes than I expected.  I can
-> > try to clean this up, if the overall design still makes sense.
+> Merge
+>   mm: vmscan: fix kswapd endless loop on higher order allocation
+>   mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
 > 
-> No, it doesn't.  It is not correct to look for a random driver that happens to
-> match your handle from within a notification handler and call a notify method
-> from it.  It's just bad design and please don't do that.
 
-I got your point.  The code is actually consistent with how we bind an
-ACPI driver with device_attach(), which goes thru the ACPI driver list
-to find a matching driver, but I agree that duplicating the code logic
-here is not good.
+and
+    mm: compaction: Fix return value of capture_free_page
 
-Thanks,
--Toshi
+but this one may already be in flight from Andrew's tree as he picked it
+up already.
 
-
-
-
+-- 
+Mel Gorman
+SUSE Labs
