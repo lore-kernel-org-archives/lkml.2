@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab2K1Tvu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:51:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22028 "EHLO mx1.redhat.com"
+	id S932328Ab2K1Tvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:51:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38785 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab2K1Tvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:51:46 -0500
-Date: Wed, 28 Nov 2012 14:50:56 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-In-Reply-To: <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
- <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755589Ab2K1Tu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:50:57 -0500
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mario Gzuk <mariogzuk@technikz.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3/8] x86, 386 removal: Remove CONFIG_XADD
+Date: Wed, 28 Nov 2012 11:50:25 -0800
+Message-Id: <1354132230-21854-4-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
+All 486+ CPUs support CMPXCHG, so remove the fallback 386 support
+code.
 
-On Wed, 28 Nov 2012, Linus Torvalds wrote:
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig              |  5 -----
+ arch/x86/Kconfig.cpu          |  3 ---
+ arch/x86/include/asm/atomic.h | 16 ----------------
+ arch/x86/include/asm/local.h  | 18 +-----------------
+ arch/x86/um/Kconfig           |  2 +-
+ 5 files changed, 2 insertions(+), 42 deletions(-)
 
-> No, this is crap.
-> 
-> We don't introduce random hooks like this just because the block layer
-> has shit-for-brains and cannot be bothered to do things right.
-> 
-> The fact is, the whole locking in the block layer open routine is
-> total and utter crap. It doesn't lock the right thing, even with your
-> change *anyway* (or with the change Jens had). Absolutely nothing in
-> "mmap_region()" cares at all about the block-size anywhere - it's
-> generic, after all - so locking around it is f*cking pointless. There
-> is no way in hell that the caller of ->mmap can *ever* care about the
-> block size, since it never even looks at it.
-> 
-> Don't do random crap like this.
-> 
-> Why does the code think that mmap matters so much anyway? As you say,
-> the mmap itself does *nothing*. It has no impact for the block size.
-> 
->                  Linus
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a1a6627..631b298 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -171,13 +171,8 @@ config ARCH_MAY_HAVE_PC_FDC
+ 	def_bool y
+ 	depends on ISA_DMA_API
+ 
+-config RWSEM_GENERIC_SPINLOCK
+-	def_bool y
+-	depends on !X86_XADD
+-
+ config RWSEM_XCHGADD_ALGORITHM
+ 	def_bool y
+-	depends on X86_XADD
+ 
+ config GENERIC_CALIBRATE_DELAY
+ 	def_bool y
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 1290a69..52955ee 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -304,9 +304,6 @@ config X86_L1_CACHE_SHIFT
+ 	default "4" if MELAN || M486 || MGEODEGX1
+ 	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+ 
+-config X86_XADD
+-	def_bool y
+-
+ config X86_PPRO_FENCE
+ 	bool "PentiumPro memory ordering errata workaround"
+ 	depends on M686 || M586MMX || M586TSC || M586 || M486 || MGEODEGX1
+diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
+index b6c3b82..722aa3b 100644
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -172,23 +172,7 @@ static inline int atomic_add_negative(int i, atomic_t *v)
+  */
+ static inline int atomic_add_return(int i, atomic_t *v)
+ {
+-#ifdef CONFIG_M386
+-	int __i;
+-	unsigned long flags;
+-	if (unlikely(boot_cpu_data.x86 <= 3))
+-		goto no_xadd;
+-#endif
+-	/* Modern 486+ processor */
+ 	return i + xadd(&v->counter, i);
+-
+-#ifdef CONFIG_M386
+-no_xadd: /* Legacy 386 processor */
+-	raw_local_irq_save(flags);
+-	__i = atomic_read(v);
+-	atomic_set(v, i + __i);
+-	raw_local_irq_restore(flags);
+-	return i + __i;
+-#endif
+ }
+ 
+ /**
+diff --git a/arch/x86/include/asm/local.h b/arch/x86/include/asm/local.h
+index c8bed0d..2d89e39 100644
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -124,27 +124,11 @@ static inline int local_add_negative(long i, local_t *l)
+  */
+ static inline long local_add_return(long i, local_t *l)
+ {
+-	long __i;
+-#ifdef CONFIG_M386
+-	unsigned long flags;
+-	if (unlikely(boot_cpu_data.x86 <= 3))
+-		goto no_xadd;
+-#endif
+-	/* Modern 486+ processor */
+-	__i = i;
++	long __i = i;
+ 	asm volatile(_ASM_XADD "%0, %1;"
+ 		     : "+r" (i), "+m" (l->a.counter)
+ 		     : : "memory");
+ 	return i + __i;
+-
+-#ifdef CONFIG_M386
+-no_xadd: /* Legacy 386 processor */
+-	local_irq_save(flags);
+-	__i = local_read(l);
+-	local_set(l, i + __i);
+-	local_irq_restore(flags);
+-	return i + __i;
+-#endif
+ }
+ 
+ static inline long local_sub_return(long i, local_t *l)
+diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
+index 0761175..b0c30da 100644
+--- a/arch/x86/um/Kconfig
++++ b/arch/x86/um/Kconfig
+@@ -31,7 +31,7 @@ config X86_64
+ 	select MODULES_USE_ELF_RELA
+ 
+ config RWSEM_XCHGADD_ALGORITHM
+-	def_bool X86_XADD && 64BIT
++	def_bool 64BIT
+ 
+ config RWSEM_GENERIC_SPINLOCK
+ 	def_bool !RWSEM_XCHGADD_ALGORITHM
+-- 
+1.7.11.7
 
-mmap_region() doesn't care about the block size. But a lot of 
-page-in/page-out code does.
-
-The problem is that once the block device is mapped, page faults or page 
-writeback can happen anytime - so the simplest solution is to not allow 
-the block device being mapped while we change block size.
-
-The function set_blocksize takes bd_block_size_semaphore for write (that 
-blocks read/write/mmap), then it calls sync_blockdev (now we are sure that 
-there is no more writeback), then it changes the block size, then it calls 
-kill_bdev (now we are sure that there are no more any pages with buffers 
-with the old blocksize).
-
-If you want to allow to change block size while a block device is mapped, 
-you'd have to add explicit locks around all mm callbacks (so that the 
-block size can't change while the callback is in progress) - and even 
-then, there are some unsolvable cases - i.e. what are you going to do if 
-the user mlocks a mapped block device and you change block size of that 
-device? - you can't drop the pages (that would violate mlock semantics) 
-and you can leave them there (because they have buffers with wrong size).
-
-If you don't like what I sent, propose a different solution.
-
-Mikulas
