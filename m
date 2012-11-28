@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2K1Qzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:55:31 -0500
-Received: from mail.supernet.ao ([66.110.113.4]:35515 "EHLO mail.supernet.ao"
+	id S1755653Ab2K1Qzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:55:45 -0500
+Received: from mail.supernet.ao ([66.110.113.4]:35796 "EHLO mail.supernet.ao"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab2K1Qza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:55:30 -0500
-Message-ID: <20121128175033.1192164walzy6clc@mail.supernet.ao>
-Date: Wed, 28 Nov 2012 17:50:33 -0600
+	id S1755154Ab2K1Qzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:55:43 -0500
+Message-ID: <20121128175036.16776r25g9pfv604@mail.supernet.ao>
+Date: Wed, 28 Nov 2012 17:50:36 -0600
 From: DESK <info@desk.com>
 Reply-to: hosting.center@live.co.uk
 To: undisclosed-recipients:;
