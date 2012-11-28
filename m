@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab2K1NP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:15:59 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61762 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab2K1NP6 (ORCPT
+	id S932208Ab2K1NQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:16:11 -0500
+Received: from smtp145.dfw.emailsrvr.com ([67.192.241.145]:41032 "EHLO
+	smtp145.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab2K1NQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:15:58 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 1/8] staging/rtl8187se: Fix include file issue in ieee80211/ieee80211_rx.c
-Date: Wed, 28 Nov 2012 22:15:50 +0900
-Message-Id: <1354108550-17553-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 28 Nov 2012 08:16:09 -0500
+Message-ID: <50B60E9C.9000405@calxeda.com>
+Date: Wed, 28 Nov 2012 07:16:12 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com> <20121128023240.GA28170@S2100-06.ap.freescale.net>
+In-Reply-To: <20121128023240.GA28170@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning fixed.
-- WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+On 11/27/2012 08:32 PM, Shawn Guo wrote:
+> On Tue, Nov 27, 2012 at 02:04:32PM -0600, Mark Langsdorf wrote:
+>> Highbank processors depend on the external ECME to perform voltage
+>> management based on a requested frequency. Communication between the
+>> A9 cores and the ECME happens over the pl320 IPC channel.
+> 
+> ...
+> 
+>> +static int hb_voltage_change(unsigned int freq)
+>> +{
+>> +	int i;
+>> +	u32 msg[7];
+>> +
+>> +	msg[0] = HB_CPUFREQ_CHANGE_NOTE;
+>> +	msg[1] = freq / 1000;
+>> +	for (i = 2; i < 7; i++)
+>> +		msg[i] = 0;
+>> +
+>> +	return pl320_ipc_transmit(msg);
+> 
+> Is it possible to have this handled inside clk_set_rate() call of cpu
+> clock?
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Standard practice is to have cpufreq_set_target() handle voltage
+transitions and leave clk_set_rate() handle the frequency changes. I'd
+have to move most of the logic of hb_set_target() into
+clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
+cpufreq is not enabled/loaded. I don't think the clk maintainers would
+take that patch, either.
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-index 3a72449..ef8bfab 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-@@ -39,7 +39,7 @@
- #include <linux/types.h>
- #include <linux/wireless.h>
- #include <linux/etherdevice.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/ctype.h>
- 
- #include "ieee80211.h"
--- 
-1.7.9.5
+So no.
+
+--Mark Langsdorf
+Calxeda, Inc.
 
