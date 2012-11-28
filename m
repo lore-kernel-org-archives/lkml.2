@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab2K1TvA (ORCPT <rfc822;w@1wt.eu>);
+	id S932239Ab2K1TvA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Nov 2012 14:51:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38782 "EHLO mail.zytor.com"
+Received: from terminus.zytor.com ([198.137.202.10]:38779 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754963Ab2K1Tu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:50:56 -0500
+	id S1754806Ab2K1Tuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:50:55 -0500
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -13,59 +13,157 @@ To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Mario Gzuk <mariogzuk@technikz.de>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 0/8] RFC: Remove 386 support
-Date: Wed, 28 Nov 2012 11:50:22 -0800
-Message-Id: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+Subject: [PATCH 4/8] x86, 386 removal: Remove CONFIG_BSWAP
+Date: Wed, 28 Nov 2012 11:50:26 -0800
+Message-Id: <1354132230-21854-5-git-send-email-hpa@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-According to kernel bugzilla 44931:
+All 486+ CPUs support BSWAP, so remove the fallback 386 support
+code.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=44931
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig.cpu         |  4 ----
+ arch/x86/include/asm/futex.h | 12 ------------
+ arch/x86/include/asm/swab.h  | 29 ++---------------------------
+ arch/x86/kernel/cpu/bugs.c   | 13 ++-----------
+ 4 files changed, 4 insertions(+), 54 deletions(-)
 
-... the Linux kernel hasn't actually been compiling for 386 for three
-releases now.  I have verified that it doesn't, because the 386
-fallback code for not having cmpxchg doesn't actually build.
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 52955ee..8e5867c 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -332,10 +332,6 @@ config X86_INVLPG
+ 	def_bool y
+ 	depends on X86_32
+ 
+-config X86_BSWAP
+-	def_bool y
+-	depends on X86_32
+-
+ config X86_POPAD_OK
+ 	def_bool y
+ 	depends on X86_32
+diff --git a/arch/x86/include/asm/futex.h b/arch/x86/include/asm/futex.h
+index f373046..be27ba1 100644
+--- a/arch/x86/include/asm/futex.h
++++ b/arch/x86/include/asm/futex.h
+@@ -55,12 +55,6 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
+ 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+ 		return -EFAULT;
+ 
+-#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
+-	/* Real i386 machines can only support FUTEX_OP_SET */
+-	if (op != FUTEX_OP_SET && boot_cpu_data.x86 == 3)
+-		return -ENOSYS;
+-#endif
+-
+ 	pagefault_disable();
+ 
+ 	switch (op) {
+@@ -118,12 +112,6 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+ {
+ 	int ret = 0;
+ 
+-#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
+-	/* Real i386 machines have no cmpxchg instruction */
+-	if (boot_cpu_data.x86 == 3)
+-		return -ENOSYS;
+-#endif
+-
+ 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+ 		return -EFAULT;
+ 
+diff --git a/arch/x86/include/asm/swab.h b/arch/x86/include/asm/swab.h
+index 557cd9f..7f235c7 100644
+--- a/arch/x86/include/asm/swab.h
++++ b/arch/x86/include/asm/swab.h
+@@ -6,22 +6,7 @@
+ 
+ static inline __attribute_const__ __u32 __arch_swab32(__u32 val)
+ {
+-#ifdef __i386__
+-# ifdef CONFIG_X86_BSWAP
+-	asm("bswap %0" : "=r" (val) : "0" (val));
+-# else
+-	asm("xchgb %b0,%h0\n\t"	/* swap lower bytes	*/
+-	    "rorl $16,%0\n\t"	/* swap words		*/
+-	    "xchgb %b0,%h0"	/* swap higher bytes	*/
+-	    : "=q" (val)
+-	    : "0" (val));
+-# endif
+-
+-#else /* __i386__ */
+-	asm("bswapl %0"
+-	    : "=r" (val)
+-	    : "0" (val));
+-#endif
++	asm("bswapl %0" : "=r" (val) : "0" (val));
+ 	return val;
+ }
+ #define __arch_swab32 __arch_swab32
+@@ -37,22 +22,12 @@ static inline __attribute_const__ __u64 __arch_swab64(__u64 val)
+ 		__u64 u;
+ 	} v;
+ 	v.u = val;
+-# ifdef CONFIG_X86_BSWAP
+ 	asm("bswapl %0 ; bswapl %1 ; xchgl %0,%1"
+ 	    : "=r" (v.s.a), "=r" (v.s.b)
+ 	    : "0" (v.s.a), "1" (v.s.b));
+-# else
+-	v.s.a = __arch_swab32(v.s.a);
+-	v.s.b = __arch_swab32(v.s.b);
+-	asm("xchgl %0,%1"
+-	    : "=r" (v.s.a), "=r" (v.s.b)
+-	    : "0" (v.s.a), "1" (v.s.b));
+-# endif
+ 	return v.u;
+ #else /* __i386__ */
+-	asm("bswapq %0"
+-	    : "=r" (val)
+-	    : "0" (val));
++	asm("bswapq %0" : "=r" (val) : "0" (val));
+ 	return val;
+ #endif
+ }
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index d0e910d..0cd07cc 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -136,24 +136,15 @@ static void __init check_popad(void)
+ /*
+  * Check whether we are able to run this kernel safely on SMP.
+  *
+- * - In order to run on a i386, we need to be compiled for i386
+- *   (for due to lack of "invlpg" and working WP on a i386)
++ * - i386 is no longer supported.
+  * - In order to run on anything without a TSC, we need to be
+  *   compiled for a i486.
+  */
+ 
+ static void __init check_config(void)
+ {
+-/*
+- * We'd better not be a i386 if we're configured to use some
+- * i486+ only features! (WP works in supervisor mode and the
+- * new "invlpg" and "bswap" instructions)
+- */
+-#if defined(CONFIG_X86_WP_WORKS_OK) || defined(CONFIG_X86_INVLPG) || \
+-	defined(CONFIG_X86_BSWAP)
+-	if (boot_cpu_data.x86 == 3)
++	if (boot_cpu_data.x86 < 4)
+ 		panic("Kernel requires i486+ for 'invlpg' and other features");
+-#endif
+ }
+ 
+ 
+-- 
+1.7.11.7
 
-Given that, I thought I'd refresh my patchset for completely removing
-386 support and am inviting comments.
-
-The code savings aren't huge, just under 400 lines of code, but this
-is all code that very few if any people still care about.
-
-Note that I have no inclination to remove support for 486.  486 and
-clones are widely used in embedded applications and there is enough
-traffic about them that I am quite sure people do still care about
-some versions of those.
-
-Comments appreciated.
-
- arch/x86/Kconfig                  | 11 ++----
- arch/x86/Kconfig.cpu              | 73 +++++++++++----------------------------
- arch/x86/Makefile_32.cpu          |  1 -
- arch/x86/include/asm/atomic.h     | 16 ---------
- arch/x86/include/asm/cmpxchg_32.h | 55 -----------------------------
- arch/x86/include/asm/cpufeature.h |  6 ----
- arch/x86/include/asm/futex.h      | 12 -------
- arch/x86/include/asm/local.h      | 18 +---------
- arch/x86/include/asm/module.h     |  2 --
- arch/x86/include/asm/percpu.h     |  3 --
- arch/x86/include/asm/processor.h  | 29 ++++++++++------
- arch/x86/include/asm/swab.h       | 29 ++--------------
- arch/x86/include/asm/tlbflush.h   |  3 --
- arch/x86/include/asm/uaccess.h    | 42 ----------------------
- arch/x86/kernel/cpu/amd.c         |  3 --
- arch/x86/kernel/cpu/bugs.c        | 41 ++--------------------
- arch/x86/kernel/cpu/intel.c       |  4 ---
- arch/x86/lib/Makefile             |  1 -
- arch/x86/lib/cmpxchg.c            | 54 -----------------------------
- arch/x86/lib/usercopy_32.c        | 57 ------------------------------
- arch/x86/mm/init_32.c             |  5 +--
- arch/x86/mm/tlb.c                 |  8 ++---
- arch/x86/um/Kconfig               |  2 +-
- arch/x86/xen/Kconfig              |  2 +-
- 24 files changed, 52 insertions(+), 425 deletions(-)
