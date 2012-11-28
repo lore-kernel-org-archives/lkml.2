@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177Ab2K1CE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 21:04:58 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45856 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab2K1CE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 21:04:57 -0500
-Date: Tue, 27 Nov 2012 18:04:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Gilad.Ben-Yossef.gilad@benyossef.com
-Subject: Re: [PATCH] context_tracking: New context tracking susbsystem
-Message-ID: <20121128020443.GW2474@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
- <20121128005942.GV2474@linux.vnet.ibm.com>
- <1354067438.6276.92.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354067438.6276.92.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112802-5806-0000-0000-00001C3FF36A
+	id S1751275Ab2K1CGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 21:06:01 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:56272 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750961Ab2K1CGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 21:06:00 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rpurdie@rpsys.net, FlorianSchandinat@gmx.de,
+        haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v2 6/7] mfd: max8925: support dt for backlight
+Date: Wed, 28 Nov 2012 10:06:45 +0800
+Message-Id: <1354068405-9779-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 28 Nov 2012 02:05:18.0074 (UTC) FILETIME=[D03F8DA0:01CDCD0C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 08:50:38PM -0500, Steven Rostedt wrote:
-> On Tue, 2012-11-27 at 16:59 -0800, Paul E. McKenney wrote:
-> > On Tue, Nov 27, 2012 at 07:33:25PM +0100, Frederic Weisbecker wrote:
-> > > Create a new subsystem that probes on kernel boundaries
-> > > to keep track of the transitions between level contexts
-> > > with two basic initial contexts: user or kernel.
-> > > 
-> > > This is an abstraction of some RCU code that use such tracking
-> > > to implement its userspace extended quiescent state.
-> > > 
-> > > We need to pull this up from RCU into this new level of indirection
-> > > because this tracking is also going to be used to implement an "on
-> > > demand" generic virtual cputime accounting. A necessary step to
-> > > shutdown the tick while still accounting the cputime.
-> > 
-> > I have queued this, and if it passes tests and inspection will try
-> > pushing it for 3.8.
-> > 
-> 
-> You can add my Reviewed-by: Steven Rostedt <rostedt@goodmis.org> if you
-> like.
+From: Qing Xu <qingx@marvell.com>
 
-Very happy to do so!  ;-)
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ drivers/video/backlight/max8925_bl.c |   31 ++++++++++++++++++++++++++++++-
+ 1 files changed, 30 insertions(+), 1 deletions(-)
 
-							Thanx, Paul
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index f72ba54..1682d00 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
+ 	.get_brightness	= max8925_backlight_get_brightness,
+ };
+ 
++#ifdef CONFIG_OF
++static int max8925_backlight_dt_init(struct platform_device *pdev,
++			      struct max8925_backlight_pdata *pdata)
++{
++	struct device_node *nproot = pdev->dev.parent->of_node, *np;
++	int dual_string;
++
++	if (!nproot)
++		return -ENODEV;
++	np = of_find_node_by_name(nproot, "backlight");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find backlight node\n");
++		return -ENODEV;
++	}
++
++	of_property_read_u32(np, "max8925-dual-string", &dual_string);
++	pdata->dual_string = dual_string;
++	return 0;
++}
++#else
++#define max8925_backlight_dt_init(x, y)	(-1)
++#endif
++
+ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -150,6 +173,13 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, bl);
+ 
+ 	value = 0;
++	if (pdev->dev.parent->of_node && !pdata) {
++		pdata = devm_kzalloc(&pdev->dev,
++				     sizeof(struct max8925_backlight_pdata),
++				     GFP_KERNEL);
++		max8925_backlight_dt_init(pdev, pdata);
++	}
++
+ 	if (pdata) {
+ 		if (pdata->lxw_scl)
+ 			value |= (1 << 7);
+@@ -161,7 +191,6 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ 	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
+ 	if (ret < 0)
+ 		goto out_brt;
+-
+ 	backlight_update_status(bl);
+ 	return 0;
+ out_brt:
+-- 
+1.7.0.4
 
