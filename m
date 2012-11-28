@@ -1,153 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2K1OTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:19:08 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47608 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab2K1OTG (ORCPT
+	id S1755216Ab2K1OUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:20:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51144 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab2K1OUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:19:06 -0500
+	Wed, 28 Nov 2012 09:20:10 -0500
+Date: Wed, 28 Nov 2012 15:20:00 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v4 0/3] pwm: Drivers for twl4030/6030 PWMs and LEDs
+Message-ID: <20121128141957.GA21042@avionic-0098.adnet.avionic-design.de>
+References: <1354010999-31371-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
-	<20121120180949.GG1408@quack.suse.cz>
-	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
-	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
-	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
-	<50AF7901.20401@kernel.dk>
-	<CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
-	<Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
-	<CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
-	<CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
-	<50B46E05.70906@kernel.dk>
-	<CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
-	<Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
-Date: Wed, 28 Nov 2012 22:19:04 +0800
-Message-ID: <CAAJw_Zuwy=BbOoKc6inAEXWuiSXCBNuFw97PO8iH5HTZv=ZRFw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] percpu-rwsem: use synchronize_sched_expedited
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <1354010999-31371-1-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:2zMUkHhPY+lfgJyVXlHMQMQuMpumVxnV+pucuFv4y5r
+ Itg7Q037Pb3StClfpic/QyW9faSFBeE7s2rtvfoSYr2qZYBrue
+ 8d8GlARqYIIgLViybegNG6cY5trfkrf3o+Ezgw3iYiF/1JoUpO
+ 119XuCW7mM6C7UjfL9DglseevRhMnDv8o87chkm2G4aBCyiXTP
+ sH0EupNy3jtdOoo9w5MQAZ0Y+BKO8KDlyK7Kuv7o9SnrfIcWl3
+ A9XTc591imCgqcuaQIynquPL88yNcZrDY7lhHKjHxpDmU/tI1N
+ fOr97yWFyZQOLzqXGKoLlPZlAs9jgEDM9A6nZHx3ndTSm+fmbR
+ +rbh60yCyHvwcuQkdCvVaxEwhgcK6teKfxyLembrXj1Z8yzXHX
+ uX82ksO8raUkSHxBcz5wJUg0p6HwwqiypbgBTVQhhpoXXjfEgz
+ JD6/Y
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 11:59 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
->
-> On Tue, 27 Nov 2012, Jeff Chua wrote:
->
->> On Tue, Nov 27, 2012 at 3:38 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> > On 2012-11-27 06:57, Jeff Chua wrote:
->> >> On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->> >>> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->> >>>> So it's better to slow down mount.
->> >>>
->> >>> I am quite proud of the linux boot time pitting against other OS. Even
->> >>> with 10 partitions. Linux can boot up in just a few seconds, but now
->> >>> you're saying that we need to do this semaphore check at boot up. By
->> >>> doing so, it's inducing additional 4 seconds during boot up.
->> >>
->> >> By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
->> >> (2.8GHz). I wonder if those on slower hard disk or slower CPU, what
->> >> kind of degradation would this cause or just the same?
->> >
->> > It'd likely be the same slow down time wise, but as a percentage it
->> > would appear smaller on a slower disk.
->> >
->> > Could you please test Mikulas' suggestion of changing
->> > synchronize_sched() in include/linux/percpu-rwsem.h to
->> > synchronize_sched_expedited()?
->>
->> Tested. It seems as fast as before, but may be a "tick" slower. Just
->> perception. I was getting pretty much 0.012s with everything reverted.
->> With synchronize_sched_expedited(), it seems to be 0.012s ~ 0.013s.
->> So, it's good.
->>
->>
->> > linux-next also has a re-write of the per-cpu rw sems, out of Andrews
->> > tree. It would be a good data point it you could test that, too.
->>
->> Tested. It's slower. 0.350s. But still faster than 0.500s without the patch.
->>
->> # time mount /dev/sda1 /mnt; sync; sync; umount /mnt
->>
->>
->> So, here's the comparison ...
->>
->> 0.500s     3.7.0-rc7
->> 0.168s     3.7.0-rc2
->> 0.012s     3.6.0
->> 0.013s     3.7.0-rc7 + synchronize_sched_expedited()
->> 0.350s     3.7.0-rc7 + Oleg's patch.
->>
->>
->> Thanks,
->> Jeff.
->
-> OK, I'm seinding two patches to reduce mount times. If it is possible to
-> put them to 3.7.0, put them there.
->
-> Mikulas
->
+
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Nov 27, 2012 at 11:09:56AM +0100, Peter Ujfalusi wrote:
+> Hello,
+>=20
+> Changes since v3:
+> - pwm-twl-led driver's comment fix patch squashed to the original patch
+> - Documentation for the DT bindings of the PWM drivers
+> Comments from Thierry Reding addressed:
+> - pwm-twl6030 has been removed in the last patch
+> - macro for twl_pwm_chip/twl_pwmled_chip lookup
+> - locking for read-modify-write sequences
+> - separate pwm_ops strictures for twl4030 and twl6030 class
+> - _devexit_P() removed
+> - Do not select HAVE_PWM in Kconfig file since it is going away AFAIK:
+>   https://patchwork.kernel.org/patch/1544851/
+> - Remaining (smaller) comments from Thierry also has been addressed.
+>=20
+> Changes since v2:
+> - New PWM cycle calculation for twl-pwm driver and twl4030's pwm-twl-led =
+with
+>   comment to document the expected behaviour.
+>=20
+> Changes cince v1:
+> - The turn on/off sequence has been corrected for twl4030 PWMs as suggest=
+ed by
+>   Grazvydas Ignotas
+> - Comment section added to the new drivers to describe what they are cont=
+rolling
+>=20
+> The series has been tested (with additional, pending patches):
+> Zoom2 for twl4030 PWM0 (keypad light), PWM1 (LCD backlight)
+> BeagleBoard for twl4030 LEDB (PWMB - pmu_stat led)
+> OMAP4 Blaze (SDP4430) for twl6030 PWM1 (keypad light), PWM2 (LCD backligh=
+t) and
+> LED (charging indication led).
+>=20
+> Intro mail from v1:
+>=20
+> The currently available pwm-twl6030.c driver only supports TWL6030's Char=
+ging
+> indication LED.
+> Remove this driver and add two new ones which implements support for all =
+PWM
+> driven outputs:
+> pwm-twl driver supports twl4030 (PWM 0/1) and twl6030 (PWM 1/2) instances
+> pwm-twl-led driver supports twl4030 (PWM driven LED A/B ports) and twl603=
+0's
+> Charging indication LED (PWM driven).
+>=20
+> Regards,
+> Peter
 > ---
->
-> percpu-rwsem: use synchronize_sched_expedited
->
-> Use synchronize_sched_expedited() instead of synchronize_sched()
-> to improve mount speed.
->
-> This patch improves mount time from 0.500s to 0.013s.
->
-> Note: if realtime people complain about the use
-> synchronize_sched_expedited() and synchronize_rcu_expedited(), I suggest
-> that they introduce an option CONFIG_REALTIME or
-> /proc/sys/kernel/realtime and turn off these *_expedited functions if
-> the option is enabled (i.e. turn synchronize_sched_expedited into
-> synchronize_sched and synchronize_rcu_expedited into synchronize_rcu).
->
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
->
-> ---
->  include/linux/percpu-rwsem.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> Index: linux-3.7-rc7/include/linux/percpu-rwsem.h
-> ===================================================================
-> --- linux-3.7-rc7.orig/include/linux/percpu-rwsem.h     2012-11-28 02:41:03.000000000 +0100
-> +++ linux-3.7-rc7/include/linux/percpu-rwsem.h  2012-11-28 02:41:15.000000000 +0100
-> @@ -13,7 +13,7 @@ struct percpu_rw_semaphore {
->  };
->
->  #define light_mb()     barrier()
-> -#define heavy_mb()     synchronize_sched()
-> +#define heavy_mb()     synchronize_sched_expedited()
->
->  static inline void percpu_down_read(struct percpu_rw_semaphore *p)
->  {
-> @@ -51,7 +51,7 @@ static inline void percpu_down_write(str
->  {
->         mutex_lock(&p->mtx);
->         p->locked = true;
-> -       synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
-> +       synchronize_sched_expedited(); /* make sure that all readers exit the rcu_read_lock_sched region */
->         while (__percpu_count(p->counters))
->                 msleep(1);
->         heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
+> Peter Ujfalusi (3):
+>   pwm: New driver to support PWMs on TWL4030/6030 series of PMICs
+>   pwm: New driver to support PWM driven LEDs on TWL4030/6030 series of
+>     PMICs
+>   pwm: Remove pwm-twl6030 driver
+>=20
+>  .../devicetree/bindings/pwm/ti,twl-pwm.txt         |  17 +
+>  .../devicetree/bindings/pwm/ti,twl-pwmled.txt      |  17 +
+>  drivers/pwm/Kconfig                                |  17 +-
+>  drivers/pwm/Makefile                               |   3 +-
+>  drivers/pwm/pwm-twl-led.c                          | 342 +++++++++++++++=
++++++
+>  drivers/pwm/pwm-twl.c                              | 357 +++++++++++++++=
+++++++
+>  drivers/pwm/pwm-twl6030.c                          | 184 -----------
+>  7 files changed, 748 insertions(+), 189 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
+>  create mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwmled.t=
+xt
+>  create mode 100644 drivers/pwm/pwm-twl-led.c
+>  create mode 100644 drivers/pwm/pwm-twl.c
+>  delete mode 100644 drivers/pwm/pwm-twl6030.c
 
+Applied with minor fixups, thanks.
 
-Mikulas,
+Thierry
 
-Tested this one and this is good! Back to 3.6.0 behavior.
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature
 
-As for the 2nd patch (block_dev.c),  it didn't really make any
-difference for ext2/3/4, but for reiserfs, it does. So, won't just the
-patch about(synchronize_sched_expedited) be good enough?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQth2NAAoJEN0jrNd/PrOhIz8QAJrLU7t9Af8zvzGCpz2+yKbW
+KSKUpGFZBVBibVqUMIoA6cCaD7yHWb1LoDcJaLUBOYBN/fDZWiWvBralearHyrnf
+l0pgG6tM+rhSF/A/gEZJN8f00BlrgELu5FMy3znaOkyQdMP9EWjbniIcekr80NDm
+2OU8n2ry3HfipxfxvDrV0lmE/zMqEKN/hCKDPLLNAxZsWr0HgDiF5GraUeifNk6u
+vA2t+usEOTlEghYsAayNdOf9h/c71QGd9d9cUjuag4BujjXTDfX/4bLCXwEuz1I4
+xF2aZ2/1bgUIwzpAa2FwwaYlaZCZfBHNefw5o+shNd6Oo+/p2CFdpVY8YAz5+DZb
+T4Pq5M1/48lGJ2C4kNNiBJIpnt5/Sds7qxuS5lEEhXivGG+JOUWrLaxha7Yms2vJ
+Nvkj5JN+NyQ8YwZ3fyzpMgVRgIEz+kzJwnlBtdRuYSZWGYw2mBG5RV86Th3BAPTc
+qSwnV55qJC8D5iPmwjtmCxN6qIX6joHFF58Y2vbHyTHZKjCWSzASHOCrtJ6Oe7mN
+5SjeY3mYR2xH3wgsP8KUPy4vSD4gKroDLv0gT0zsA+rLJXxcIj0QtWCeXtz4f7q2
+dq0MavSxmNM18HaDgPEFHhysdfxhDRtQzNsUi68wGiwVPXLA8h0ba7+HhhqJ5lxb
+CSiKjNFHQt0geAwTZBMF
+=1qMG
+-----END PGP SIGNATURE-----
 
-Thanks,
-Jeff
+--zYM0uCDKw75PZbzx--
