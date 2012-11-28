@@ -1,66 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab2K1Ibg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:31:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27082 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2K1Ibf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:31:35 -0500
-Message-ID: <50B5CBD2.5020804@oracle.com>
-Date: Wed, 28 Nov 2012 16:31:14 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753185Ab2K1IcY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:32:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:13034 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752876Ab2K1IcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 03:32:22 -0500
+X-IronPort-AV: E=Sophos;i="4.83,333,1352044800"; 
+   d="scan'208";a="6291994"
+Message-ID: <50B5CD9C.6010007@cn.fujitsu.com>
+Date: Wed, 28 Nov 2012 16:38:52 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "Fujinaka, Todd" <todd.fujinaka@intel.com>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com>  <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>  <50A30656.6090508@oracle.com>  <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>  <50A43828.6000702@oracle.com>  <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>  <50A9C5CC.1030300@oracle.com>  <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>  <50AB8471.7080607@oracle.com>  <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>  <50B41077.3080009@oracle.com>  <b46b84cf-3688-4fd7-b741-4e96f2663517@default>  <9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com> <1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jiang Liu <jiang.liu@huawei.com>
+CC: Bob Liu <lliubbo@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com> <50B479FA.6010307@cn.fujitsu.com> <CAA_GA1ezZJyqVL=Dp5U2zzNw6bkfMKJY_STkt3E7TXkUYcv+jQ@mail.gmail.com> <50B4B6BE.3000902@cn.fujitsu.com> <CAA_GA1fE0fhLVs50rRZ6OsTw7DV0hyVC2EuRyUrbzxLztPLoeg@mail.gmail.com> <50B58E30.9060804@huawei.com> <50B5CB4D.6070402@cn.fujitsu.com> <50B5CB23.8000904@huawei.com>
+In-Reply-To: <50B5CB23.8000904@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/28 16:31:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/28 16:31:54,
+	Serialize complete at 2012/11/28 16:31:54
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/12 02:10, Ben Hutchings wrote:
-> On Tue, 2012-11-27 at 17:32 +0000, Fujinaka, Todd wrote:
->> Forgive me if I'm being too repetitious as I think some of this has
->> been mentioned in the past.
+At 11/28/2012 04:28 PM, Jiang Liu Wrote:
+> On 2012-11-28 16:29, Wen Congyang wrote:
+>> At 11/28/2012 12:08 PM, Jiang Liu Wrote:
+>>> On 2012-11-28 11:24, Bob Liu wrote:
+>>>> On Tue, Nov 27, 2012 at 8:49 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+>>>>> On 11/27/2012 08:09 PM, Bob Liu wrote:
+>>>>>>
+>>>>>> On Tue, Nov 27, 2012 at 4:29 PM, Tang Chen<tangchen@cn.fujitsu.com>
+>>>>>> wrote:
+>>>>>>>
+>>>>>>> Hi Liu,
+>>>>>>>
+>>>>>>>
+>>>>>>> This feature is used in memory hotplug.
+>>>>>>>
+>>>>>>> In order to implement a whole node hotplug, we need to make sure the
+>>>>>>> node contains no kernel memory, because memory used by kernel could
+>>>>>>> not be migrated. (Since the kernel memory is directly mapped,
+>>>>>>> VA = PA + __PAGE_OFFSET. So the physical address could not be changed.)
+>>>>>>>
+>>>>>>> User could specify all the memory on a node to be movable, so that the
+>>>>>>> node could be hot-removed.
+>>>>>>>
+>>>>>>
+>>>>>> Thank you for your explanation. It's reasonable.
+>>>>>>
+>>>>>> But i think it's a bit duplicated with CMA, i'm not sure but maybe we
+>>>>>> can combine it with CMA which already in mainline?
+>>>>>>
+>>>>> Hi Liu,
+>>>>>
+>>>>> Thanks for your advice. :)
+>>>>>
+>>>>> CMA is Contiguous Memory Allocator, right?  What I'm trying to do is
+>>>>> controlling where is the start of ZONE_MOVABLE of each node. Could
+>>>>> CMA do this job ?
+>>>>
+>>>> cma will not control the start of ZONE_MOVABLE of each node, but it
+>>>> can declare a memory that always movable
+>>>> and all non movable allocate request will not happen on that area.
+>>>>
+>>>> Currently cma use a boot parameter "cma=" to declare a memory size
+>>>> that always movable.
+>>>> I think it might fulfill your requirement if extending the boot
+>>>> parameter with a start address.
+>>>>
+>>>> more info at http://lwn.net/Articles/468044/
+>>>>>
+>>>>> And also, after a short investigation, CMA seems need to base on
+>>>>> memblock. But we need to limit memblock not to allocate memory on
+>>>>> ZONE_MOVABLE. As a result, we need to know the ranges before memblock
+>>>>> could be used. I'm afraid we still need an approach to get the ranges,
+>>>>> such as a boot option, or from static ACPI tables such as SRAT/MPST.
+>>>>>
+>>>>
+>>>> Yes, it's based on memblock and with boot option.
+>>>> In setup_arch32()
+>>>>     dma_contiguous_reserve(0);   => will declare a cma area using
+>>>> memblock_reserve()
+>>>>
+>>>>> I'm don't know much about CMA for now. So if you have any better idea,
+>>>>> please share with us, thanks. :)
+>>>>
+>>>> My idea is reuse cma like below patch(even not compiled) and boot with
+>>>> "cma=size@start_address".
+>>>> I don't know whether it can work and whether suitable for your
+>>>> requirement, if not forgive me for this noises.
+>>>>
+>>>> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+>>>> index 612afcc..564962a 100644
+>>>> --- a/drivers/base/dma-contiguous.c
+>>>> +++ b/drivers/base/dma-contiguous.c
+>>>> @@ -59,11 +59,18 @@ struct cma *dma_contiguous_default_area;
+>>>>   */
+>>>>  static const unsigned long size_bytes = CMA_SIZE_MBYTES * SZ_1M;
+>>>>  static long size_cmdline = -1;
+>>>> +static long cma_start_cmdline = -1;
+>>>>
+>>>>  static int __init early_cma(char *p)
+>>>>  {
+>>>> +       char *oldp;
+>>>>         pr_debug("%s(%s)\n", __func__, p);
+>>>> +       oldp = p;
+>>>>         size_cmdline = memparse(p, &p);
+>>>> +
+>>>> +       if (*p == '@')
+>>>> +               cma_start_cmdline = memparse(p+1, &p);
+>>>> +       printk("cma start:0x%x, size: 0x%x\n", size_cmdline, cma_start_cmdline);
+>>>>         return 0;
+>>>>  }
+>>>>  early_param("cma", early_cma);
+>>>> @@ -127,8 +134,10 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+>>>>         if (selected_size) {
+>>>>                 pr_debug("%s: reserving %ld MiB for global area\n", __func__,
+>>>>                          selected_size / SZ_1M);
+>>>> -
+>>>> -               dma_declare_contiguous(NULL, selected_size, 0, limit);
+>>>> +               if (cma_size_cmdline != -1)
+>>>> +                       dma_declare_contiguous(NULL, selected_size,
+>>>> cma_start_cmdline, limit);
+>>>> +               else
+>>>> +                       dma_declare_contiguous(NULL, selected_size, 0, limit);
+>>>>         }
+>>>>  };
+>>> Seems a good idea to reserve memory by reusing CMA logic, though need more
+>>> investigation here. One of CMA goal is to ensure pages in CMA are really
+>>> movable, and this patchset tries to achieve the same goal at a first glance.
 >>
->> We (and by we I mean the Ethernet part and driver) can only change the
->> advertised availability of a larger MaxPayloadSize. The size is
->> negotiated by both sides of the link when the link is established. The
->> driver should not change the size of the link as it would be poking at
->> registers outside of its scope and is controlled by the upstream
->> bridge (not us).
-> [...]
+>> Hmm, I don't like to reuse CMA. Because CMA is used for DMA. If we reuse it
+>> for movable memory, I think movable zone is enough. And the start address is
+>> not acceptable, because we want to specify the start address for each node.
+>>
+>> I think we can implement movablecore_map like that:
+>> 1. parse the parameter
+>> 2. reserve the memory after efi_reserve_boot_services()
+> This sounds good, but the code to reserve memory for movable
+> nodes will be similar to dma_declare_contiguous().
+
+Yes, it may be very similar. I think we can move it into mm/page_alloc.c, and
+both cma and movablecore_map can use this function.
+
+Thanks
+Wen Congyang
+
 > 
-> MaxPayloadSize (MPS) is not negotiated between devices but is programmed
-> by the system firmware (at least for devices present at boot - the
-> kernel may be responsible in case of hotplug).  You can use the kernel
-> parameter 'pci=pcie_bus_perf' (or one of several others) to set a policy
-> that overrides this, but no policy will allow setting MPS above the
-> device's MaxPayloadSizeSupported (MPSS).
+>> 3. release the memory in mem_init
+>>
+>> What about this?
+>>
+>> Thanks
+>> Wen Congyang
+>>>
+>>>  
+>>>
+>>>
+>>>
+>>
+>>
+>> .
+>>
 > 
-
-Ben,
-
-Unfortunately I'm using 3.0.x kernel and this is not included in the kernel.
-So I'm trying to use ethtool modify it from eeprom to see if help or no.
-
-
-Todd, I'll review all MaxPayload for all devices, but need to say if it mismatch,
-customer could not modify it from BIOS for there was not entry at there, to
-test it, we have to find how to verify if this is the root cause, so still 
-need to find the offset in eeprom.
-
-Thanks in advance,
-Joe
+> 
+> 
 
