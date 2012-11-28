@@ -1,48 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab2K1WQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:16:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39187 "EHLO mail.kernel.org"
+	id S932661Ab2K1WRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:17:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35522 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755663Ab2K1WQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:16:15 -0500
-Date: Wed, 28 Nov 2012 14:16:13 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Bill Pemberton <wfp5p@virginia.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: HOTPLUG replated patches
-Message-ID: <20121128221613.GA13534@kroah.com>
-References: <20121129090412.4fc1a6e5a41f9bc24b827c7c@canb.auug.org.au>
+	id S1755683Ab2K1WRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:17:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Wed, 28 Nov 2012 23:21:59 +0100
+Message-ID: <1451747.3VlxbhJES4@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354140292.26955.337.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <7694340.3kLrC1FvE4@vostro.rjw.lan> <1354140292.26955.337.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129090412.4fc1a6e5a41f9bc24b827c7c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 09:04:12AM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Wednesday, November 28, 2012 03:04:52 PM Toshi Kani wrote:
+> On Wed, 2012-11-28 at 23:01 +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, November 28, 2012 02:40:09 PM Toshi Kani wrote:
+> > > On Wed, 2012-11-28 at 22:40 +0100, Rafael J. Wysocki wrote:
+> > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > > > > Consider the following case:
+> > > > > > > > > > > > 
+> > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > > > > 
+> > > > > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > > > > >                                        unbind it from the driver
+> > > > > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > > > > 
+> > > > > > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > > > > > > > unbind only?
+> > > > > > > > > > 
+> > > > > > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > > > > > > > if it's not present (dev->driver == NULL).
+> > > > > > > > > > 
+> > > > > > > > > > But there can still be a race between an eject and an unbind operation happening
+> > > > > > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > > > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > > > > > > > for other acpi devices?
+> > > > > > > > > > 
+> > > > > > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > > > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > > > > > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > > > > > > > 
+> > > > > > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > > > > > > > device_release_driver(), I am wondering if we can call
+> > > > > > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > > > > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > > > > > > > parent lock is otherwise released after device_release_driver() is done.
+> > > > > > > > 
+> > > > > > > > I would be careful.  You may introduce some subtle locking-related issues
+> > > > > > > > this way.
+> > > > > > > 
+> > > > > > > Right.  This requires careful inspection and testing.  As far as the
+> > > > > > > locking is concerned, I am not keen on using fine grained locking for
+> > > > > > > hot-plug.  It is much simpler and solid if we serialize such operations.
+> > > > > > > 
+> > > > > > > > Besides, there may be an alternative approach to all this.  For example,
+> > > > > > > > what if we don't remove struct device objects on eject?  The ACPI handles
+> > > > > > > > associated with them don't go away in that case after all, do they?
+> > > > > > > 
+> > > > > > > Umm...  Sorry, I am not getting your point.  The issue is that we need
+> > > > > > > to be able to fail a request when memory range cannot be off-lined.
+> > > > > > > Otherwise, we end up ejecting online memory range.
+> > > > > > 
+> > > > > > Yes, this is the major one.  The minor issue, however, is a race condition
+> > > > > > between unbinding a driver from a device and removing the device if I
+> > > > > > understand it correctly.  Which will go away automatically if the device is
+> > > > > > not removed in the first place.  Or so I would think. :-)
+> > > > > 
+> > > > > I see.  I do not think whether or not the device is removed on eject
+> > > > > makes any difference here.  The issue is that after driver_unbind() is
+> > > > > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> > > > > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> > > > > _EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
+> > > > > it cannot off-line kernel memory ranges.  So, we basically need to
+> > > > > either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
+> > > > > 2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> > > > > during the operation.
+> > > > 
+> > > > OK, I see the problem now.
+> > > > 
+> > > > What exactly is triggering the driver_unbind() in this scenario?
+> > > 
+> > > User can request driver_unbind() from sysfs as follows.  I do not see
+> > > much reason why user has to do for memory, though.
+> > > 
+> > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > 
+> > This is wrong.  Even if we want to permit user space to forcibly unbind
+> > drivers from anything like this, we should at least check for some
+> > situations in which it is plain dangerous.  Like in this case.  So I think
+> > the above should fail unless we know that the driver won't be necessary
+> > to handle hot-removal of memory.
 > 
-> I haven't been closely following things, but is there any reason that a
-> large number of these CONFIG_HOTPLUG and __dev* patches are being merged
-> via the driver-core tree rather than through the relevant maintainers
-> trees? They aren't particularly urgent as far as I can see.  And they
-> already have, and probably will, cause unnecessary conflicts between
-> trees.
+> Well, we tried twice already... :)
+> https://lkml.org/lkml/2012/11/16/649
 
-I merged the ones that were acked by the subsystem maintainer through my
-driver-core tree.  Others are coming in through the subsystem
-maintainer's trees, as they have applied them there.
+I didn't mean driver_unbind() should fail.  The code path that executes
+driver_unbind() eventually should fail _before_ executing it.
 
-So it's a mix, depending on the subsystem maintainer's wishes.
+> > Alternatively, this may actually try to carry out the hot-removal and only
+> > call driver_unbind() if that succeeds.  Whichever is preferable, I'd say.
+> 
+> Greg clarified in the above link that this interface is "unbind", not
+> remove.
 
-And yes, it's going to be a bunch of trivial merge issues, sorry about
-that, I don't know of any other way at the moment to deal with that.
+OK, so that's clear.
 
-thanks,
+Thanks,
+Rafael
 
-greg k-h
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
