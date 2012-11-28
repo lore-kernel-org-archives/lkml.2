@@ -1,127 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2K1RoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:44:17 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39487 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2K1RoK (ORCPT
+	id S1755445Ab2K1RoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:44:05 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:30180 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab2K1RoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:44:10 -0500
-Message-ID: <50B64D67.3080202@pobox.com>
-Date: Wed, 28 Nov 2012 12:44:07 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Olaf Hering <olaf@aepfle.de>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KY Srinivasan <kys@microsoft.com>
-Subject: Re: [PATCH] ata_piix: reenable MS Virtual PC guests
-References: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 12:44:01 -0500
+From: Rafal Krypa <r.krypa@samsung.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
+Subject: [PATCHv2] Smack: add support for modification of existing rules
+Date: Wed, 28 Nov 2012 18:43:28 +0100
+Message-id: <1354124609-16829-1-git-send-email-r.krypa@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2012 11:48 AM, Olaf Hering wrote:
-> An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
-> defer disks to the Hyper-V drivers by default") broke MS Virtual PC
-> guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
-> info. As a result the driver does currently ignore the emulated hardware
-> in Virtual PC guests and defers the handling to hv_blkvsc. Since Virtual
-> PC does not offer paravirtualized drivers no disks will be found in the
-> guest.
->
-> One difference in the DMI info is the product version. This patch adds a
-> match for MS Virtual PC 2007 and "unignores" the emulated hardware.
->
-> This was reported for openSuSE 12.1 in bugzilla:
-> https://bugzilla.novell.com/show_bug.cgi?id=737532
->
-> Here is a detailed list of DMI info from example guests:
->
-> hwinfo --bios:
->
-> virtual pc guest:
->
->    System Info: #1
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "VS2005R2"
->      Serial: "3178-9905-1533-4840-9282-0569-59"
->      UUID: undefined, but settable
->      Wake-up: 0x06 (Power Switch)
->    Board Info: #2
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "5.0"
->      Serial: "3178-9905-1533-4840-9282-0569-59"
->    Chassis Info: #3
->      Manufacturer: "Microsoft Corporation"
->      Version: "5.0"
->      Serial: "3178-9905-1533-4840-9282-0569-59"
->      Asset Tag: "7188-3705-6309-9738-9645-0364-00"
->      Type: 0x03 (Desktop)
->      Bootup State: 0x03 (Safe)
->      Power Supply State: 0x03 (Safe)
->      Thermal State: 0x01 (Other)
->      Security Status: 0x01 (Other)
->
-> win2k8 guest:
->
->    System Info: #1
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "7.0"
->      Serial: "9106-3420-9819-5495-1514-2075-48"
->      UUID: undefined, but settable
->      Wake-up: 0x06 (Power Switch)
->    Board Info: #2
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "7.0"
->      Serial: "9106-3420-9819-5495-1514-2075-48"
->    Chassis Info: #3
->      Manufacturer: "Microsoft Corporation"
->      Version: "7.0"
->      Serial: "9106-3420-9819-5495-1514-2075-48"
->      Asset Tag: "7076-9522-6699-1042-9501-1785-77"
->      Type: 0x03 (Desktop)
->      Bootup State: 0x03 (Safe)
->      Power Supply State: 0x03 (Safe)
->      Thermal State: 0x01 (Other)
->      Security Status: 0x01 (Other)
->
-> win2k12 guest:
->
->    System Info: #1
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "7.0"
->      Serial: "8179-1954-0187-0085-3868-2270-14"
->      UUID: undefined, but settable
->      Wake-up: 0x06 (Power Switch)
->    Board Info: #2
->      Manufacturer: "Microsoft Corporation"
->      Product: "Virtual Machine"
->      Version: "7.0"
->      Serial: "8179-1954-0187-0085-3868-2270-14"
->    Chassis Info: #3
->      Manufacturer: "Microsoft Corporation"
->      Version: "7.0"
->      Serial: "8179-1954-0187-0085-3868-2270-14"
->      Asset Tag: "8374-0485-4557-6331-0620-5845-25"
->      Type: 0x03 (Desktop)
->      Bootup State: 0x03 (Safe)
->      Power Supply State: 0x03 (Safe)
->      Thermal State: 0x01 (Other)
->      Security Status: 0x01 (Other)
->
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+The following patch introduces in-place modification of Smack rules.
+Until now Smack supported only overwriting of existing rules.
+To change permitted access for a given subject and object, user had
+to read list of rules to get current accesses, modify it and write
+modified rule back to kernel. This way was inefficient, non-atomic
+and unnecessarily difficult.
+New interface is intended to ease such modifications.
 
-applied.  Apologies for missing this one.  It was accidentally shifting 
-into the low-priority pile.
+Changes in v2:
+- dropped patches for smackfs seq list operations
+- changed modification approach to simple integer assignment
 
+Rafal Krypa (1):
 
+  Smack: add support for modification of existing rules
+
+ Documentation/security/Smack.txt |   11 ++
+ security/smack/smackfs.c         |  249 ++++++++++++++++++++++++++------------
+ 2 files changed, 181 insertions(+), 79 deletions(-)
+
+-- 
+1.7.10.4
 
