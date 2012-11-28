@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab2K1Uzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:55:33 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38196 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab2K1Uzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:55:32 -0500
+	id S1756099Ab2K1Uzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:55:47 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:36083 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755945Ab2K1Uzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 15:55:46 -0500
+Message-ID: <50B67A4B.8060800@parallels.com>
+Date: Thu, 29 Nov 2012 00:55:39 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20121128175544.4266260d@redhat.com>
-References: <CALF0-+XH4AfJUcNHXdMTwXf-=f24Zpe3VOw_1eQ9WBV1-6ZVjQ@mail.gmail.com>
-	<CALF0-+USC6ButEO0pMRPFj8hGtL90wi3FrxL-BkE1oF42qcggg@mail.gmail.com>
-	<20121128175544.4266260d@redhat.com>
-Date: Wed, 28 Nov 2012 17:55:30 -0300
-Message-ID: <CALF0-+UkZi5OwwTdE=U+-iudLFJuQQpuXAuXBk=dStoCSss0YQ@mail.gmail.com>
-Subject: Re: [PATCH 0/23] media: Replace memcpy with struct assignment
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-media <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michael Wolf <mjw@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <riel@redhat.com>, <kvm@vger.kernel.org>, <peterz@infradead.org>,
+        <mingo@redhat.com>
+Subject: Re: [PATCH 0/5] Alter steal time reporting in KVM
+References: <20121126203603.28840.38736.stgit@lambeau> <20121127232442.GA8295@amt.cnet> <50B65B4A.50508@linux.vnet.ibm.com>
+In-Reply-To: <50B65B4A.50508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.39.244.6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 4:55 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-[...]
->
-> There are 400+ patches pending today at patchwork. I doubt I'll have enough
-> time for all of them, so, I'll skip cleanup patches like the above, in order
-> to try to focus on bug fixes and patches that brings new functionality to
-> existing code and with a low risk of breaking anything.
->
+On 11/28/2012 10:43 PM, Michael Wolf wrote:
+> On 11/27/2012 05:24 PM, Marcelo Tosatti wrote:
+>> On Mon, Nov 26, 2012 at 02:36:24PM -0600, Michael Wolf wrote:
+>>> In the case of where you have a system that is running in a
+>>> capped or overcommitted environment the user may see steal time
+>>> being reported in accounting tools such as top or vmstat.
+>> The definition of stolen time is 'time during which the virtual CPU is
+>> runnable to not running'. Overcommit is the main scenario which steal
+>> time helps to detect.
+>>
+>> Can you describe the 'capped' case?
+> In the capped case, the time that the guest spends waiting due to it
+> having used its full allottment of time shows up as steal time.  The way
+> my patchset currently stands is that you would set up the
+> bandwidth control and you would have to pass it a  matching value from
+> qemu.  In the future, it would
+> be possible to have something parse the bandwidth setting and
+> automatically adjust the setting in the
+> host used for steal time reporting.
 
-I understand completely.
+Ok, so correct me if I am wrong, but I believe you would be using
+something like the bandwidth capper in the cpu cgroup to set those
+entitlements, right?
+
+Some time has passed since I last looked into it, but IIRC, after you
+get are out of your quota, you should be out of the runqueue. In the
+lovely world of KVM, we approximate steal time as runqueue time:
+
+arch/x86/kvm/x86.c:
+delta = current->sched_info.run_delay - vcpu->arch.st.last_steal;
+vcpu->arch.st.last_steal = current->sched_info.run_delay;
+vcpu->arch.st.accum_steal = delta;
+
+include/linux/sched.h:
+unsigned long long run_delay; /* time spent waiting on a runqueue */
+
+So if you are out of the runqueue, you won't get steal time accounted,
+and then I truly fail to understand what you are doing.
+
+In case I am wrong, and run_delay also includes the time you can't run
+because you are out of capacity, then maybe what we should do, is to
+just subtract it from run_delay in kvm/x86.c before we pass it on. In
+summary:
 
 
-> Next year, we'll start implementing the sub-maintainers, and, with their
-> help, I suspect we'll be able to finally apply those patches.
->
-> If you want us to help, feel free to review/test the individual patches
-> submitted by non-maintainers to the ML. We tend to apply faster patches
-> that are more reviewed.
->
-> Hmm... well, actually it is just the opposite: we explicitly delay
-> not-reviewed patches for unmaintained/bad maintained drivers,
-> to see if someone acks or nacks them after testing.
->
+>>>        Alter the amount of steal time reported by the guest.
+Maybe this should go away.
 
-I'll try to help whenever possible.
+>>>        Expand the steal time msr to also contain the consigned time.
+Maybe this should go away
 
-Thanks,
+>>>        Add the code to send the consigned time from the host to the
+>>> guest
+This definitely should be heavily modified
 
-    Ezequiel
+>>>        Add a timer to allow the separation of consigned from steal time.
+Maybe this should go away
+
+>>>        Add an ioctl to communicate the consign limit to the host.
+This definitely should go away.
+
+More specifically, *whatever* way we use to cap the processor, the host
+system will have all the information at all times.
+
+
+
