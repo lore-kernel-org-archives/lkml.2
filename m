@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab2K1PVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:21:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab2K1PVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:21:13 -0500
-Date: Wed, 28 Nov 2012 10:22:38 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Prasad Koya <prasad.koya@gmail.com>
-Cc: aarcange@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: vmalloc_sync_all(), 64bit kernel, patches
- 9c48f1c629ecfa114850c03f875c6691003214de,
- a79e53d85683c6dd9f99c90511028adc2043031f
-Message-ID: <20121128152238.GQ14805@redhat.com>
-References: <CAGXD9OfAMUmrdFBap3aOYXOhXE6=i8qL7=+SsJYnrdEr3kyMKw@mail.gmail.com>
- <20121127145505.GA14805@redhat.com>
- <CAGXD9OeokxUx_2WdpkYthyrYc52SCvne=H9vi45p_6ovo6EGpQ@mail.gmail.com>
+	id S932448Ab2K1PWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:22:36 -0500
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:53533 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754935Ab2K1PWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 10:22:35 -0500
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 10:22:34 EST
+X-AuditID: 1209190e-b7fd76d000005253-70-50b62b0c529b
+Date: Wed, 28 Nov 2012 10:17:28 -0500 (EST)
+From: Anders Kaseorg <andersk@MIT.EDU>
+To: Tejun Heo <tj@kernel.org>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "John W. Linville" <linville@tuxdriver.com>
+cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Wireless regression in workqueue: use mod_delayed_work() instead
+ of __cancel + queue
+In-Reply-To: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
+Message-ID: <alpine.DEB.2.00.1211281016320.26602@dr-wily.mit.edu>
+References: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXD9OeokxUx_2WdpkYthyrYc52SCvne=H9vi45p_6ovo6EGpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsUixG6nosujvS3A4PN3dot9G3ktLu+aw2bx
+	ZsUddoutPRIWxxaIWfxafpTRgc3j23tZj02rOtk8rnxfzejxeZNcAEsUl01Kak5mWWqRvl0C
+	V8a8fzPYCiawVXQv5W5g/MPSxcjJISFgIrHmWSMThC0mceHeerYuRi4OIYF9jBLzp89hhHA2
+	MEr0nIBx9jBJ7F+9hRmkhUVAW2J+dzM7iM0moCYxd8NkIJuDQ0SgTqJxfghImFkgUaJt3kRW
+	EFtYIFmipfMCWDmngJPEki/b2UBsXgFHiZ7bx8AuEgKy914+B3aRqICuxN5DZ9ghagQlTs58
+	wgIxU0ti+fRtLBMYBWYhSc1CklrAyLSKUTYlt0o3NzEzpzg1Wbc4OTEvL7VI11gvN7NELzWl
+	dBMjKIA5Jfl2MH49qHSIUYCDUYmH96H51gAh1sSy4srcQ4ySHExKorzZmtsChPiS8lMqMxKL
+	M+KLSnNSiw8xSnAwK4nwMj8CKudNSaysSi3Kh0lJc7AoifNeSbnpLySQnliSmp2aWpBaBJOV
+	4eBQkuB9BjJUsCg1PbUiLTOnBCHNxMEJMpwHaPgDkBre4oLE3OLMdIj8KUZFKXHe7yAJAZBE
+	RmkeXC8swbxiFAd6RZj3PEgVDzA5wXW/AhrMBDQ46CzI1cUliQgpqQbGksZvIt+Kq/Y8YZNc
+	cX29rm/fWeMvx5j9VBluuMe8kFdZ0S4r/Udz+UXjN+sXTrHKqCxJW+cYeHDBcqGso50/5HoU
+	eD5ld93uex++IXTjsxnszwJ7f7zx0jQ68UBm0tMZrCwef2YXdC+M33rc3+rG5OUdkrI715zm
+	8FGR5p82ry1ya4LtzwsSSizFGYmGWsxFxYkASLHgvQsDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 03:20:11PM -0800, Prasad Koya wrote:
-> I'm definitely seeing above lockup with 2.6.38.8. In 3.2 and up kernel
-> nmi_shootdown_cpus() replaced register_die_notifier() with
-> register_nmi_handler() which doesn't call vmalloc_sync_all. If I patch
-> my 2.6.38.8 so it behaves as 3.2 in this regard ie., skip
-> vmalloc_sync_all, I don't see any issue.
-
-I don't know what vmalloc_sync_all really does (or sync_global_pgds for
-that matter), but it seems like it is trying to sync up all the processors
-by flush tlbs.  If that is the case then that is going to cause issues
-with NMI or at least your use of lkdtm.
-
-The reason why is with NMIs and your use of lkdtm, IPIs are blocked (nmi
-has higher priority and lkdtm disabled interrupts).  This usually causes
-hangs with any mm flushing (tlbs, pgds, etc).
-
-I think that is why Andrea put in one of his changelog that it is
-forbidden to grab the page_lock with irqs disabled (namely IPIs blocked).
-
+On Wed, 28 Nov 2012, Anders Kaseorg wrote:
+> My Intel 6250 wireless card (iwldvm) can no longer associate with a 
+> WPA-Enterprise network (PEAP-MSCHAPv2).  To my surprise, I bisected this 
+> regression to commit e7c2f967445dd2041f0f8e3179cca22bb8bb7f79, 
+> workqueue: use mod_delayed_work() instead of __cancel + queue.
 > 
-> So my question is, is it safe to bypass calling vmalloc_sync_all() as
-> part of setting up NMI handler? Maybe with a patch like below:
+> A bunch of logs collected by Ubuntu apport are in this bug report: 
+>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1083980
 > 
-> --- linux-2.6.38.orig/kernel/notifier.c
-> +++ linux-2.6.38/kernel/notifier.c
-> @@ -574,7 +574,8 @@ int notrace __kprobes notify_die(enum di
+> How can I help to debug this?
 > 
->  int register_die_notifier(struct notifier_block *nb)
->  {
-> -       vmalloc_sync_all();
-> +       if (!oops_in_progress)
-> +               vmalloc_sync_all();
->         return atomic_notifier_chain_register(&die_chain, nb);
->  }
->  EXPORT_SYMBOL_GPL(register_die_notifier);
+> I see that someone else reported another regression with the same commit 
+> last week, although this looks unrelated at first glance: 
+>   http://thread.gmane.org/gmane.linux.kernel/1395938
+> 
+> Anders
 
-You are dying anyway, so this patch is probably ok and will get you by for
-now.  I am not sure how important sync'ing the pgds are at this point.
+(Oops, re-sending to fix a typo in the LKML address.)
 
-I wouldn't recommend this for 3.7 or anything, but if you want to use this
-as a private patch I can't see anything wrong with it.  I think the only
-caller that calls register_die_notifier within an oops is crash_kexec
-anyway.
-
-Cheers,
-Don
+Anders
