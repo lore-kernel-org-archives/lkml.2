@@ -1,102 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab2K1Lwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 06:52:31 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52777 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab2K1Lw3 convert rfc822-to-8bit (ORCPT
+	id S1754607Ab2K1LxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 06:53:21 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:58728 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754437Ab2K1LxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 06:52:29 -0500
-From: "Navada Kanyana, Mukund" <navada@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] regmap: Add support for continously numbered pages
- across regmap range
-Thread-Topic: [PATCH 1/1] regmap: Add support for continously numbered pages
- across regmap range
-Thread-Index: AQHNzUn3sp+aSR+ZB0iEZwLUiY4GmZf+nu6AgAB/Pg2AAAF0AA==
-Date: Wed, 28 Nov 2012 11:52:22 +0000
-Message-ID: <6817C817C9581447825BFB369EAC42163E959B6C@DBDE01.ent.ti.com>
-References: <n> <1354094577-14967-1-git-send-email-navada@ti.com>
- <20121128092924.GJ32691@opensource.wolfsonmicro.com>
- <6817C817C9581447825BFB369EAC42163E959AED@DBDE01.ent.ti.com>
- <20121128113443.GM32691@opensource.wolfsonmicro.com>
-In-Reply-To: <20121128113443.GM32691@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Nov 2012 06:53:18 -0500
+From: Rabin Vincent <rabin.vincent@stericsson.com>
+To: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [RFC 2/2] clk: per-user clock accounting for debug
+Date: Wed, 28 Nov 2012 12:52:51 +0100
+Message-ID: <1354103571-27394-2-git-send-email-rabin.vincent@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1354103571-27394-1-git-send-email-rabin.vincent@stericsson.com>
+References: <1354103571-27394-1-git-send-email-rabin.vincent@stericsson.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When a clock has multiple users, the WARNING on imbalance of
+enable/disable may not show the guilty party since although they may
+have commited the error earlier, the warning is emitted later when some
+other user, presumably innocent, disables the clock.
 
+Provide per-user clock enable/disable accounting and disabler tracking
+in order to help debug these problems.
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Wednesday, November 28, 2012 5:05 PM
-> To: Navada Kanyana, Mukund
-> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/1] regmap: Add support for continously numbered
-> pages across regmap range
-> 
-> On Wed, Nov 28, 2012 at 10:11:05AM +0000, Navada Kanyana, Mukund wrote:
-> 
-> Fix your mailer to word wrap within paragraphs.
-> 
-> > > I'm sorry but I can't understand what this is supposed to do.  The
-> > > current paging code expects pages to be numbered continuously with no
-> > > gaps.  Can you please clarify?
-> 
-> > But the page number is expected to increase only till end of range.
-> > But in devices like TLV320AIC3256, the page number increases beyond
-> > range.
-> 
-> What does this mean?  How can we have a page beyond the end of the
-> range?
-> 
-> > Pages 0 through Page 1 --> first register range for device
-> > configuration. Page 8 through Page 16 --> second range for DSP1
-> > coefficient memory Page 26 through Page 34 --> third range for DSP2
-> > coefficient memory
-> 
-> > Window length of each page is 128. So if we need to correctly write
-> > the page number in selector register for second range, start_page_num
-> > would be 8. If we did not have start_page_num, it would write 0 to
-> > selector register.
-> 
-> I'm sorry but I don't understand how that would happen?  What breaks
-> accessing page 8?  This sounds like you're doing something wrong when
-> you're trying ton use the paging.
+NOTE: with this patch, clk_get_parent() behaves like clk_get(), i.e. it
+needs to be matched with a clk_put().  Otherwise, memory will leak.
 
-I have my regmap_range_cfg as below
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+---
+ drivers/clk/clk-core.h      | 18 ++++++++++++++----
+ drivers/clk/clk.c           | 35 +++++++++++++++++++++++++++++++++--
+ drivers/clk/clkdev.c        |  9 ++++++---
+ include/linux/clk-private.h |  6 +++++-
+ 4 files changed, 58 insertions(+), 10 deletions(-)
 
-#define AIC325X_DSP_WINDOW_LEN  128
-#define AIC325X_ADSP_CM_A_BASE  (9 * AIC325X_DSP_WINDOW_LEN)
-static const struct regmap_range_cfg aic325x_ranges[] = {
-        { .name = "CONF", .range_min = 128,
-          .range_max = 383,
-          .selector_reg = 0x0,
-          .selector_mask = 0xff,
-          .selector_shift = 0,
-          .window_start = 0, .window_len =128,
-        },
-        { .name = "MINIDSP_A_CM_A", .range_min = AIC325X_ADSP_CM_A_BASE,
-          .range_max = AIC325X_ADSP_CM_A_BASE + 1152,
-          .selector_reg = 0x0,
-          .selector_mask = 0xff,
-          .selector_shift = 0,
-          .window_start = 0, .window_len =128,
-        },
-};
+diff --git a/drivers/clk/clk-core.h b/drivers/clk/clk-core.h
+index 341ae45..c8259c2 100644
+--- a/drivers/clk/clk-core.h
++++ b/drivers/clk/clk-core.h
+@@ -4,11 +4,21 @@
+ struct clk_core;
+ 
+ #ifdef CONFIG_COMMON_CLK
+-#define clk_to_clk_core(clk)	((struct clk_core *)(clk))
+-#define clk_core_to_clk(core)	((struct clk *)(core))
++struct clk_core *clk_to_clk_core(struct clk *clk);
++struct clk *clk_core_to_clk(struct clk_core *clk_core, const char *dev,
++			    const char *con);
++
++static inline void clk_free_clk(struct clk *clk)
++{
++	kfree(clk);
++}
+ #else
+-#define clk_to_clk_core(clk)	((clk))
+-#define clk_core_to_clk(core)	((core))
++#define clk_to_clk_core(clk)		((clk))
++#define clk_core_to_clk(core, dev, con)	((core))
++
++static inline void clk_free_clk(struct clk *clk)
++{
++}
+ #endif
+ 
+ #endif
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 1fb7043..57ba594 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -250,6 +250,27 @@ static int clk_disable_unused(void)
+ }
+ late_initcall(clk_disable_unused);
+ 
++struct clk *clk_core_to_clk(struct clk_core *clk_core, const char *dev,
++			    const char *con)
++{
++	struct clk *clk;
++
++	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
++	if (!clk)
++		return ERR_PTR(-ENOMEM);
++
++	clk->core = clk_core;
++	clk->dev_id = dev;
++	clk->con_id = con;
++
++	return clk;
++}
++
++struct clk_core *clk_to_clk_core(struct clk *clk)
++{
++	return clk->core;
++}
++
+ /***    helper functions   ***/
+ 
+ inline const char *__clk_get_name(struct clk_core *clk)
+@@ -504,7 +525,15 @@ void clk_disable(struct clk *clk_user)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&enable_lock, flags);
+-	__clk_disable(clk);
++	if (!WARN(clk_user->enable_count == 0,
++		  "incorrect disable clk dev %s con %s last disabler %pF\n",
++		  clk_user->dev_id, clk_user->con_id, clk_user->last_disable)) {
++
++		clk_user->last_disable = __builtin_return_address(0);
++		clk_user->enable_count--;
++
++		__clk_disable(clk);
++	}
+ 	spin_unlock_irqrestore(&enable_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(clk_disable);
+@@ -559,6 +588,8 @@ int clk_enable(struct clk *clk_user)
+ 
+ 	spin_lock_irqsave(&enable_lock, flags);
+ 	ret = __clk_enable(clk);
++	if (!ret)
++		clk_user->enable_count++;
+ 	spin_unlock_irqrestore(&enable_lock, flags);
+ 
+ 	return ret;
+@@ -976,7 +1007,7 @@ struct clk *clk_get_parent(struct clk *clk_user)
+ 	parent = __clk_get_parent(clk);
+ 	mutex_unlock(&prepare_lock);
+ 
+-	return clk_core_to_clk(parent);
++	return clk_core_to_clk(parent, clk_user->dev_id, clk_user->con_id);
+ }
+ EXPORT_SYMBOL_GPL(clk_get_parent);
+ 
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index 5ddcaf1..1321b7c 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -43,7 +43,7 @@ struct clk *of_clk_get(struct device_node *np, int index)
+ 
+ 	clk = of_clk_get_from_provider(&clkspec);
+ 	of_node_put(clkspec.np);
+-	return clk_core_to_clk(clk);
++	return clk_core_to_clk(clk, np->full_name, NULL);
+ }
+ EXPORT_SYMBOL(of_clk_get);
+ 
+@@ -151,7 +151,7 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id)
+ 	if (!cl)
+ 		return ERR_PTR(-ENOENT);
+ 
+-	return clk_core_to_clk(cl->clk);
++	return clk_core_to_clk(cl->clk, dev_id, con_id);
+ }
+ EXPORT_SYMBOL(clk_get_sys);
+ 
+@@ -172,7 +172,10 @@ EXPORT_SYMBOL(clk_get);
+ 
+ void clk_put(struct clk *clk)
+ {
+-	__clk_put(clk_to_clk_core(clk));
++	clk_core_t *core = clk_to_clk_core(clk);
++
++	clk_free_clk(clk);
++	__clk_put(core);
+ }
+ EXPORT_SYMBOL(clk_put);
+ 
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index e5b766e..406c951 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -47,7 +47,11 @@ struct clk_core {
+ };
+ 
+ struct clk {
+-	struct clk_core clk;
++	struct clk_core	*core;
++	unsigned int	enable_count;
++	const char	*dev_id;
++	const char	*con_id;
++	void		*last_disable;
+ };
+ 
+ /*
+-- 
+1.7.11.3
 
-In _regmap_select_page function that calculates win_page 
-
-win_page = (*reg - range->range_min) / range->window_len;
-
-So when my *reg is within MINIDSP_A_CM_A (that corresponds to Page 8), the above win_page calculation would be 0 instead of 8 for *reg value of AIC325X_ADSP_CM_A_BASE.
