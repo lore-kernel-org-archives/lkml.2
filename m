@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2K1OzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:55:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab2K1OzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:55:19 -0500
-Date: Wed, 28 Nov 2012 09:55:15 -0500
-From: Dave Jones <davej@redhat.com>
-To: linux-mm@kvack.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: livelock in __writeback_inodes_wb ?
-Message-ID: <20121128145515.GA26564@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755588Ab2K1Ozi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:55:38 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47697 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2K1Ozg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 09:55:36 -0500
+Message-ID: <50B625DE.5070001@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 22:55:26 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: x86: let reexecute_instruction work for tdp
+References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7CE.2050506@linux.vnet.ibm.com> <20121126223712.GA10634@amt.cnet> <50B42FC7.2080805@linux.vnet.ibm.com> <20121127233246.GB8295@amt.cnet> <50B581C1.2050406@linux.vnet.ibm.com> <20121128140155.GH928@redhat.com>
+In-Reply-To: <20121128140155.GH928@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112814-6102-0000-0000-000002A308FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a user report the soft lockup detector kicked after 22
-seconds of no progress, with this trace..
+On 11/28/2012 10:01 PM, Gleb Natapov wrote:
+> On Wed, Nov 28, 2012 at 11:15:13AM +0800, Xiao Guangrong wrote:
+>> On 11/28/2012 07:32 AM, Marcelo Tosatti wrote:
+>>> On Tue, Nov 27, 2012 at 11:13:11AM +0800, Xiao Guangrong wrote:
+>>>>>> +static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+>>>>>>  {
+>>>>>> -	gpa_t gpa;
+>>>>>> +	gpa_t gpa = cr2;
+>>>>>>  	pfn_t pfn;
+>>>>>>
+>>>>>> -	if (tdp_enabled)
+>>>>>> +	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
+>>>>>>  		return false;
+>>>>>
+>>>>> How is indirect_shadow_pages protected? Why is ACCESS_ONCE() being used
+>>>>> to read it?
+>>>>
+>>>> Hi Marcelo,
+>>>>
+>>>> It is protected by mmu-lock for it only be changed when mmu-lock is hold. And
+>>>> ACCESS_ONCE is used on read path avoiding magic optimization from compiler.
+>>>
+>>> Please switch to mmu_lock protection, there is no reason to have access
+>>> to this variable locklessly - not performance critical.
+>>>
+>>> For example, there is no use of barriers when modifying the variable.
+>>
+>> This is not bad, the worst case is, the direct mmu failed to unprotect the shadow
+>> pages, (meet indirect_shadow_pages = 0, but there has shadow pages being shadowed.),
+>> after enter to guest, we will go into reexecute_instruction again, then it will
+>> remove shadow pages.
+>>
+> Isn't the same scenario can happen even with mmu lock around
+> indirect_shadow_pages access?
 
-:BUG: soft lockup - CPU#1 stuck for 22s! [flush-8:16:3137]
-:Pid: 3137, comm: flush-8:16 Not tainted 3.6.7-4.fc17.x86_64 #1
-:RIP: 0010:[<ffffffff812eeb8c>]  [<ffffffff812eeb8c>] __list_del_entry+0x2c/0xd0
-:Call Trace:
-: [<ffffffff811b783e>] redirty_tail+0x5e/0x80
-: [<ffffffff811b8212>] __writeback_inodes_wb+0x72/0xd0
-: [<ffffffff811b980b>] wb_writeback+0x23b/0x2d0
-: [<ffffffff811b9b5c>] wb_do_writeback+0xac/0x1f0
-: [<ffffffff8106c0e0>] ? __internal_add_timer+0x130/0x130
-: [<ffffffff811b9d2b>] bdi_writeback_thread+0x8b/0x230
-: [<ffffffff811b9ca0>] ? wb_do_writeback+0x1f0/0x1f0
-: [<ffffffff8107fde3>] kthread+0x93/0xa0
-: [<ffffffff81627e04>] kernel_thread_helper+0x4/0x10
-: [<ffffffff8107fd50>] ? kthread_freezable_should_stop+0x70/0x70
-: [<ffffffff81627e00>] ? gs_change+0x13/0x13
-
-Looking over the code, is it possible that something could be
-dirtying pages faster than writeback can get them written out,
-keeping us in this loop indefitely ?
-
-Should there be something in this loop periodically poking
-the watchdog perhaps ?
-
-	Dave
+Hmm..., i also think it is no different. Even using mmu-lock, we can not
+prevent the target pfn can not be write-protected later. Marcelo?
 
