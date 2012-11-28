@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2K1WA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:00:29 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44900 "EHLO
+	id S932733Ab2K1WA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:00:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44908 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab2K1Vsn (ORCPT
+	with ESMTP id S1756204Ab2K1Vsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:43 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,66 +14,102 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 41/46] x86, mm: Use clamp_t() in init_range_memory_mapping
-Date: Wed, 28 Nov 2012 13:47:52 -0800
-Message-Id: <1354139277-17376-42-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 43/46] x86, mm: kill numa_64.h
+Date: Wed, 28 Nov 2012 13:47:54 -0800
+Message-Id: <1354139277-17376-44-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-save some lines, and make code more readable.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   21 +++++----------------
- 1 files changed, 5 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/numa.h    |    2 --
+ arch/x86/include/asm/numa_64.h |    4 ----
+ arch/x86/kernel/acpi/boot.c    |    1 -
+ arch/x86/kernel/cpu/amd.c      |    1 -
+ arch/x86/kernel/cpu/intel.c    |    1 -
+ arch/x86/kernel/setup.c        |    3 ---
+ 6 files changed, 0 insertions(+), 12 deletions(-)
+ delete mode 100644 arch/x86/include/asm/numa_64.h
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 1b8e80b..c8daa79 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -367,31 +367,20 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
-  * will be mapped in init_range_memory_mapping.
-  */
- static unsigned long __init init_range_memory_mapping(
--					   unsigned long range_start,
--					   unsigned long range_end)
-+					   unsigned long r_start,
-+					   unsigned long r_end)
- {
- 	unsigned long start_pfn, end_pfn;
- 	unsigned long mapped_ram_size = 0;
- 	int i;
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 49119fc..52560a2 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -54,8 +54,6 @@ static inline int numa_cpu_node(int cpu)
  
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
--		u64 start = (u64)start_pfn << PAGE_SHIFT;
--		u64 end = (u64)end_pfn << PAGE_SHIFT;
--
--		if (end <= range_start)
--			continue;
--
--		if (start < range_start)
--			start = range_start;
--
--		if (start >= range_end)
-+		u64 start = clamp_val(PFN_PHYS(start_pfn), r_start, r_end);
-+		u64 end = clamp_val(PFN_PHYS(end_pfn), r_start, r_end);
-+		if (start >= end)
- 			continue;
+ #ifdef CONFIG_X86_32
+ # include <asm/numa_32.h>
+-#else
+-# include <asm/numa_64.h>
+ #endif
  
--		if (end > range_end)
--			end = range_end;
+ #ifdef CONFIG_NUMA
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+deleted file mode 100644
+index fe4d2d4..0000000
+--- a/arch/x86/include/asm/numa_64.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef _ASM_X86_NUMA_64_H
+-#define _ASM_X86_NUMA_64_H
 -
- 		init_memory_mapping(start, end);
--
- 		mapped_ram_size += end - start;
- 	}
+-#endif /* _ASM_X86_NUMA_64_H */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index e651f7a..4b23aa1 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -51,7 +51,6 @@ EXPORT_SYMBOL(acpi_disabled);
  
+ #ifdef	CONFIG_X86_64
+ # include <asm/proto.h>
+-# include <asm/numa_64.h>
+ #endif				/* X86 */
+ 
+ #define BAD_MADT_ENTRY(entry, end) (					    \
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9619ba6..913f94f 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -12,7 +12,6 @@
+ #include <asm/pci-direct.h>
+ 
+ #ifdef CONFIG_X86_64
+-# include <asm/numa_64.h>
+ # include <asm/mmconfig.h>
+ # include <asm/cacheflush.h>
+ #endif
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 198e019..3b547cc 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -17,7 +17,6 @@
+ 
+ #ifdef CONFIG_X86_64
+ #include <linux/topology.h>
+-#include <asm/numa_64.h>
+ #endif
+ 
+ #include "cpu.h"
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 85b62f1..6d29d1f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -108,9 +108,6 @@
+ #include <asm/topology.h>
+ #include <asm/apicdef.h>
+ #include <asm/amd_nb.h>
+-#ifdef CONFIG_X86_64
+-#include <asm/numa_64.h>
+-#endif
+ #include <asm/mce.h>
+ #include <asm/alternative.h>
+ #include <asm/prom.h>
 -- 
 1.7.7
 
