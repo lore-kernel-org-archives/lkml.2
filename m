@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2K1MxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 07:53:24 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60437 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab2K1MxW (ORCPT
+	id S1754839Ab2K1MyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 07:54:25 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41413 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab2K1MyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 07:53:22 -0500
-Message-ID: <50B6093B.7040404@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 20:53:15 +0800
+	Wed, 28 Nov 2012 07:54:24 -0500
+Message-ID: <50B60976.7020905@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 20:54:14 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 1/2] KVM: VMX: fix invalid cpu passed to smp_call_function_single
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/2] KVM: VMX: fix memory order between loading vmcs and clearing
+ vmcs
+References: <50B6093B.7040404@linux.vnet.ibm.com>
+In-Reply-To: <50B6093B.7040404@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112812-1396-0000-0000-00000239EB51
+x-cbid: 12112812-1618-0000-0000-000002EFEA1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In loaded_vmcs_clear, loaded_vmcs->cpu is the fist parameter passed to
-smp_call_function_single, if the target cpu is downing (doing cpu hot remove),
-loaded_vmcs->cpu can become -1 then -1 is passed to smp_call_function_single
+vmcs->cpu indicates whether it exists on the target cpu, -1 means the vmcs
+does not exist on any vcpu
 
-It can be triggered when vcpu is being destroyed, loaded_vmcs_clear is called
-in the preemptionable context
+If vcpu load vmcs with vmcs.cpu = -1, it can be directly added to cpu's percpu
+list. The list can be corrupted if the cpu prefetch the vmcs's list before
+reading vmcs->cpu. Meanwhile, we should remove vmcs from the list before
+making vmcs->vcpu == -1 be visible
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/vmx.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/kvm/vmx.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6599e45..29e8f42 100644
+index 29e8f42..6056d88 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -1007,9 +1007,11 @@ static void __loaded_vmcs_clear(void *arg)
-
- static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
- {
--	if (loaded_vmcs->cpu != -1)
--		smp_call_function_single(
--			loaded_vmcs->cpu, __loaded_vmcs_clear, loaded_vmcs, 1);
-+	int cpu = loaded_vmcs->cpu;
+@@ -1002,6 +1002,15 @@ static void __loaded_vmcs_clear(void *arg)
+ 	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
+ 		per_cpu(current_vmcs, cpu) = NULL;
+ 	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
 +
-+	if (cpu != -1)
-+		smp_call_function_single(cpu,
-+			 __loaded_vmcs_clear, loaded_vmcs, 1);
++	/*
++	 * we should ensure updating loaded_vmcs->loaded_vmcss_on_cpu_link
++	 * is before setting loaded_vmcs->vcpu to -1 which is done in
++	 * loaded_vmcs_init. Otherwise, other cpu can see vcpu = -1 fist
++	 * then adds the vmcs into percpu list before it is deleted.
++	 */
++	smp_wmb();
++
+ 	loaded_vmcs_init(loaded_vmcs);
  }
 
- static inline void vpid_sync_vcpu_single(struct vcpu_vmx *vmx)
+@@ -1537,6 +1546,14 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+
+ 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 		local_irq_disable();
++
++		/*
++		 * Read loaded_vmcs->cpu should be before fetching
++		 * loaded_vmcs->loaded_vmcss_on_cpu_link.
++		 * See the comments in __loaded_vmcs_clear().
++		 */
++		smp_rmb();
++
+ 		list_add(&vmx->loaded_vmcs->loaded_vmcss_on_cpu_link,
+ 			 &per_cpu(loaded_vmcss_on_cpu, cpu));
+ 		local_irq_enable();
 -- 
 1.7.7.6
 
