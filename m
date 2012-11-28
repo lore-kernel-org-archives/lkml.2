@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab2K1QBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:01:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54967 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab2K1QBf convert rfc822-to-8bit (ORCPT
+	id S1751448Ab2K1QEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:04:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44201 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2K1QEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:01:35 -0500
-Content-Type: text/plain; charset="utf-8"
+	Wed, 28 Nov 2012 11:04:49 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Shawn Guo <shawn.guo@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <20121128151741.GC28170@S2100-06.ap.freescale.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com>
- <20121128023240.GA28170@S2100-06.ap.freescale.net>
- <50B60E9C.9000405@calxeda.com>
- <20121128145759.GB28170@S2100-06.ap.freescale.net>
- <20121128151741.GC28170@S2100-06.ap.freescale.net>
-Message-ID: <20121128160115.21126.3841@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
-Date: Wed, 28 Nov 2012 08:01:15 -0800
-X-Originating-IP: [10.188.36.112]
+In-Reply-To: <1353716576-19783-1-git-send-email-ciminaghi@gnudd.com>
+References: <CAOh2x=keCbnPQzxB+AT5hEt_ukQ6GhPLuxkaQJCML27H9LbWwg@mail.gmail.com>
+	<1353716576-19783-1-git-send-email-ciminaghi@gnudd.com>
+Date: Wed, 28 Nov 2012 17:04:44 +0100
+Message-ID: <CACRpkdYFfPVogqW3UTP4CU-ZfBE7_awGOYxcTZiTRrq-49FdwA@mail.gmail.com>
+Subject: Re: [PATCH 3/8 v3] pl080.h: moved from arm/include/asm/hardware to include/linux/amba/
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: viresh.linux@gmail.com, linux@arm.linux.org.uk, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
+        grant.likely@secretlab.ca, rubini@gnudd.com, wim@iguana.be,
+        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
+        ben-linux@fluff.org, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        giancarlo.asnaghi@st.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Shawn Guo (2012-11-28 07:17:44)
-> On Wed, Nov 28, 2012 at 10:58:02PM +0800, Shawn Guo wrote:
-> > On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
-> > > I'd
-> > > have to move most of the logic of hb_set_target() into
-> > > clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
-> > > cpufreq is not enabled/loaded.
-> > 
-> > You only need to move hb_voltage_change() into cpu clock's .set_rate()
-> > hook with no need of checking if cpufreq is enabled or not.
-> > 
-> Need to also check whether frequency or voltage should be changed first
-> in .set_rate() though.
-> 
-> Shawn
-> 
+On Sat, Nov 24, 2012 at 1:22 AM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
 
-The notifiers in the clk framework might be a better place for this than
-just simply hacking the logic into the .set_rate callback.
+> From: Alessandro Rubini <rubini@gnudd.com>
+>
+> The header is used by drivers/dma/amba-pl08x.c, which can be compiled
+> under x86, where PL080 exists under a PCI-to-AMBA bridge. This patche
+> moves it where it can be accessed by other architectures, and fixes
+> all users.
+>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 
-I haven't looked at the definition of hb_voltage_change but does the
-call graph make any clk api calls?  Are you talking over i2c to a
-regulator?  If so then you'll probably hit the same reentrancy problem I
-hit when trying to make a general solution.
+OK!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Regards,
-Mike
-
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Yours,
+Linus Walleij
