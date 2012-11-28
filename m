@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2K1O6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:58:55 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472Ab2K1O6x (ORCPT
+	id S1755557Ab2K1O7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:59:46 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37917 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab2K1O7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:58:53 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>
-Subject: [PATCH] media: davinci: vpbe: enable building of vpbe driver for DM355 and DM365
-Date: Wed, 28 Nov 2012 20:28:47 +0530
-Message-Id: <1354114727-12547-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 28 Nov 2012 09:59:45 -0500
+Message-ID: <50B626D7.7070608@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 22:59:35 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121128141230.GI928@redhat.com>
+In-Reply-To: <20121128141230.GI928@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112814-3864-0000-0000-000005C2595A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On 11/28/2012 10:12 PM, Gleb Natapov wrote:
+> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+>>
+>>>>
+>>>> -	return false;
+>>>> +again:
+>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+>>>> +
+>>>> +	/*
+>>>> +	 * if emulation was due to access to shadowed page table
+>>>> +	 * and it failed try to unshadow page and re-enter the
+>>>> +	 * guest to let CPU execute the instruction.
+>>>> +	 */
+>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+>>>
+>>> Can you explain what is the objective here?
+>>>
+>>
+>> Sure. :)
+>>
+>> The instruction emulation is caused by fault access on cr3. After unprotect
+>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+>> if it return 1, mmu can not fix the mapping, we should report the error,
+>> otherwise it is good to return to guest and let it re-execute the instruction
+>> again.
+>>
+>> page_fault_count is used to avoid the race on other vcpus, since after we
+>> unprotect the target page, other cpu can enter page fault path and let the
+>> page be write-protected again.
+>>
+>> This way can help us to detect all the case that mmu can not be fixed.
+>>
+> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
 
-This patch allows enabling building of VPBE display driver for DM365
-and DM355. This also removes unnecessary entry VIDEO_DM644X_VPBE
-in Kconfig, which could have been done with single entry, and
-appropriate changes in Makefile for building.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
----
- drivers/media/platform/davinci/Kconfig  |   22 ++++++----------------
- drivers/media/platform/davinci/Makefile |    4 ++--
- 2 files changed, 8 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/Kconfig b/drivers/media/platform/davinci/Kconfig
-index 3c56037..ccfde4e 100644
---- a/drivers/media/platform/davinci/Kconfig
-+++ b/drivers/media/platform/davinci/Kconfig
-@@ -97,25 +97,15 @@ config VIDEO_ISIF
- 	   To compile this driver as a module, choose M here: the
- 	   module will be called vpfe.
- 
--config VIDEO_DM644X_VPBE
--	tristate "DM644X VPBE HW module"
--	depends on ARCH_DAVINCI_DM644x
-+config VIDEO_DAVINCI_VPBE_DISPLAY
-+	tristate "DM644X/DM365/DM355 VPBE HW module"
-+	depends on ARCH_DAVINCI_DM644x || ARCH_DAVINCI_DM355 || ARCH_DAVINCI_DM365
- 	select VIDEO_VPSS_SYSTEM
- 	select VIDEOBUF2_DMA_CONTIG
- 	help
--	    Enables VPBE modules used for display on a DM644x
--	    SoC.
-+	    Enables Davinci VPBE module used for display devices.
-+	    This module is common for following DM644x/DM365/DM355
-+	    based display devices.
- 
- 	    To compile this driver as a module, choose M here: the
- 	    module will be called vpbe.
--
--
--config VIDEO_VPBE_DISPLAY
--	tristate "VPBE V4L2 Display driver"
--	depends on ARCH_DAVINCI_DM644x
--	select VIDEO_DM644X_VPBE
--	help
--	    Enables VPBE V4L2 Display driver on a DM644x device
--
--	    To compile this driver as a module, choose M here: the
--	    module will be called vpbe_display.
-diff --git a/drivers/media/platform/davinci/Makefile b/drivers/media/platform/davinci/Makefile
-index 74ed92d..f40f521 100644
---- a/drivers/media/platform/davinci/Makefile
-+++ b/drivers/media/platform/davinci/Makefile
-@@ -16,5 +16,5 @@ obj-$(CONFIG_VIDEO_VPFE_CAPTURE) += vpfe_capture.o
- obj-$(CONFIG_VIDEO_DM6446_CCDC) += dm644x_ccdc.o
- obj-$(CONFIG_VIDEO_DM355_CCDC) += dm355_ccdc.o
- obj-$(CONFIG_VIDEO_ISIF) += isif.o
--obj-$(CONFIG_VIDEO_DM644X_VPBE) += vpbe.o vpbe_osd.o vpbe_venc.o
--obj-$(CONFIG_VIDEO_VPBE_DISPLAY) += vpbe_display.o
-+obj-$(CONFIG_VIDEO_DAVINCI_VPBE_DISPLAY) += vpbe.o vpbe_osd.o \
-+	vpbe_venc.o vpbe_display.o
--- 
-1.7.4.1
+Okay, if Marcelo does not object this way. :)
 
