@@ -1,40 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab2K1F1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 00:27:50 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37613 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab2K1F1s (ORCPT
+	id S1751638Ab2K1Flz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 00:41:55 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39669 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2K1Flx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 00:27:48 -0500
-Message-ID: <50B5A0CA.8060807@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 13:27:38 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
-References: <20121112231032.GB5798@amt.cnet> <50A20428.1030004@linux.vnet.ibm.com> <20121114143747.GA7054@amt.cnet> <50A4267B.1030902@linux.vnet.ibm.com> <20121116030222.GA21822@amt.cnet> <50A5B560.2070604@linux.vnet.ibm.com> <20121116035655.GA27414@amt.cnet> <50A5C518.7030002@linux.vnet.ibm.com> <20121116095752.GA21401@amt.cnet> <50A799DA.7050900@linux.vnet.ibm.com> <20121118030040.GA5334@amt.cnet>
-In-Reply-To: <20121118030040.GA5334@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112805-7014-0000-0000-000002449A8C
+	Wed, 28 Nov 2012 00:41:53 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: [PATCH 2/2] Input: RMI4 - F11 - remove relreport attribute
+Date: Tue, 27 Nov 2012 21:41:48 -0800
+Message-Id: <1354081308-21636-2-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354081308-21636-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1354081308-21636-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2012 11:00 AM, Marcelo Tosatti wrote:
-map gfn 4?  See corrected step 7 above.
->>
->> Ah, this is a real bug, and unfortunately, it exists in current
->> code. I will make a separate patchset to fix it. Thank you, Marcelo!
-> 
-> Is it? Hum..
-> 
-> Anyway, it would be great if you can write a testcase (should be similar
-> in size to rmap_chain).
+This data item does not seem to be used anywhere.
 
-Marcelo, is this patch acceptable?
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/rmi4/rmi_f11.c | 37 -------------------------------------
+ include/linux/rmi.h          |  1 -
+ 2 files changed, 38 deletions(-)
+
+diff --git a/drivers/input/rmi4/rmi_f11.c b/drivers/input/rmi4/rmi_f11.c
+index 717e2d8..da3fd2a 100644
+--- a/drivers/input/rmi4/rmi_f11.c
++++ b/drivers/input/rmi4/rmi_f11.c
+@@ -832,42 +832,6 @@ enum finger_state_values {
+ 	F11_RESERVED	= 0x03
+ };
+ 
+-static ssize_t rmi_f11_relreport_show(struct device *dev,
+-				      struct device_attribute *attr,
+-				      char *buf)
+-{
+-	struct rmi_function *fn = to_rmi_function(dev);
+-	struct f11_data *data = fn->data;
+-
+-	return snprintf(buf, PAGE_SIZE, "%u\n",
+-			data->sensors[0].axis_align.rel_report_enabled);
+-}
+-
+-static ssize_t rmi_f11_relreport_store(struct device *dev,
+-				       struct device_attribute *attr,
+-				       const char *buf,
+-				       size_t count)
+-{
+-	struct rmi_function *fn = to_rmi_function(dev);
+-	struct f11_data *data = fn->data;
+-	unsigned int new_value;
+-	int error;
+-
+-	error = kstrtouint(buf, 0, &new_value);
+-	if (error)
+-		return error;
+-
+-	if (new_value > 1)
+-		return -ERANGE;
+-
+-	data->sensors[0].axis_align.rel_report_enabled = new_value;
+-
+-	return count;
+-}
+-
+-static DEVICE_ATTR(relreport, RMI_RW_ATTR,
+-		   rmi_f11_relreport_show, rmi_f11_relreport_store);
+-
+ static ssize_t rmi_f11_rezero_store(struct device *dev,
+ 				    struct device_attribute *attr,
+ 				    const char *buf, size_t count)
+@@ -906,7 +870,6 @@ static ssize_t rmi_f11_rezero_store(struct device *dev,
+ static DEVICE_ATTR(rezero, RMI_WO_ATTR, NULL, rmi_f11_rezero_store);
+ 
+ static struct attribute *rmi_f11_attrs[] = {
+-	&dev_attr_relreport.attr,
+ 	&dev_attr_rezero.attr,
+ 	NULL
+ };
+diff --git a/include/linux/rmi.h b/include/linux/rmi.h
+index d4e1438..3969e61 100644
+--- a/include/linux/rmi.h
++++ b/include/linux/rmi.h
+@@ -73,7 +73,6 @@ enum rmi_attn_polarity {
+  *               automatically enabled for this sensor.
+  */
+ struct rmi_f11_2d_axis_alignment {
+-	bool rel_report_enabled;
+ 	u32 swap_axes;	/* boolean, but u32 is needed by debugfs API */
+ 	u32 flip_x;	/* boolean */
+ 	u32 flip_y;	/* boolean */
+-- 
+1.7.11.7
 
