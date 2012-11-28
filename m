@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2K1D0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:26:16 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44075 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab2K1D0P (ORCPT
+	id S1752284Ab2K1DdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:33:21 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57209 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab2K1DdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:26:15 -0500
-Date: Wed, 28 Nov 2012 14:26:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the slave-dma
- tree
-Message-Id: <20121128142610.9fdfaf75a98ef83a12c32d9b@canb.auug.org.au>
-In-Reply-To: <CAKohpo=K2kX-M4NM9onrn-Rr4otJwcQ1HxN5cKPYvj+Tza_0Ug@mail.gmail.com>
-References: <20121127154430.36e87542081a7cc50f80d0f6@canb.auug.org.au>
-	<CAKohpo=K2kX-M4NM9onrn-Rr4otJwcQ1HxN5cKPYvj+Tza_0Ug@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO"
+	Tue, 27 Nov 2012 22:33:20 -0500
+Message-ID: <50B585F7.7090902@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 11:33:11 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121127234203.GC8295@amt.cnet>
+In-Reply-To: <20121127234203.GC8295@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112803-1618-0000-0000-000002EF40D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/28/2012 07:42 AM, Marcelo Tosatti wrote:
+> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+>>
+>>>>
+>>>> -	return false;
+>>>> +again:
+>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+>>>> +
+>>>> +	/*
+>>>> +	 * if emulation was due to access to shadowed page table
+>>>> +	 * and it failed try to unshadow page and re-enter the
+>>>> +	 * guest to let CPU execute the instruction.
+>>>> +	 */
+>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+>>>
+>>> Can you explain what is the objective here?
+>>>
+>>
+>> Sure. :)
+>>
+>> The instruction emulation is caused by fault access on cr3. After unprotect
+>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+>> if it return 1, mmu can not fix the mapping, we should report the error,
+>> otherwise it is good to return to guest and let it re-execute the instruction
+>> again.
+>>
+>> page_fault_count is used to avoid the race on other vcpus, since after we
+>> unprotect the target page, other cpu can enter page fault path and let the
+>> page be write-protected again.
+>>
+>> This way can help us to detect all the case that mmu can not be fixed.
+> 
+> How about recording the gfn number for shadow pages that have been
+> shadowed in the current pagefault run? (which is cheap, compared to
+> shadowing these pages).
+> 
 
-Hi,
+Marcelo,
 
-On Tue, 27 Nov 2012 11:08:36 +0530 Viresh Kumar <viresh.kumar@linaro.org> w=
-rote:
->
-> On 27 November 2012 10:14, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Today's linux-next merge of the arm-soc tree got a conflict in
-> > arch/arm/mach-spear13xx/spear1310.c between commit b47394911c26 ("ARM:
-> > SPEAr13xx: Pass DW DMAC platform data from DT") from the slave-dma tree
-> > and commit 300a6856324a ("ARM: SPEAr1310: Fix AUXDATA for compact flash
-> > controller") from the arm-soc tree.
-> >
-> > I have no idea how to fix this up, so I just effectively dropped the
-> > arm-doc tree patch.
->=20
-> So sorry for that, Can you please take arm-soc version here? Patch 300a68=
-56324a
-> is doing the correct thing. i.e. we need
->=20
-> +       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_pda=
-ta),
->=20
-> instead of
->=20
-> +       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
+Thanks for your idea!
 
-Done, it should be correct on today's linux-next.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+If we use this way, we should cache gfns in vcpu struct.
 
---Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO
-Content-Type: application/pgp-signature
+Actually, i have considered the approach like yours, that is getting
+all page tables of the guest, then to see whether the page table gfns
+are contained in the target gfn. But we need changed mmu->gva_to_pfn
+or introduce a new method to get page tables of the guest.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+But reexecute_instruction is really the unlikely path, both of these
+ways can make the mmu code more complex and/or introduce unnecessary
+overload for the common cases.
 
-iQIcBAEBCAAGBQJQtYRSAAoJEECxmPOUX5FEZT8P/12x7/C3h4ayWzgOmpiaY6l1
-iKkAfiw6t/8p1/lIO1sSLVgUqVVKiSb12l1xzMRUV1hGsN4/glS0lSf8JlIoYczj
-j283JHUOn7IThcskdykYl0xlhrs1FWkTLvfPKsml2zc0yb1Fmumqkazx7WPaWNfN
-Frp8xV8mbKbEa7W7xv471yKPCc2TfhlzT+TSD8WLH7KqRIg760fVsmzQfdh9yuJ5
-1GSqTbBE4eTqFFAAZXJPH2u8bwobFHHWQJs8itmz2uWNUnjkjO5PFbUu+kQr578R
-CkmzOVviOX/efTvkuDC8qcwZ9lKFvH17W/uZtTN+lAobgOpTy6wYvFhSTY5O2Bdu
-SyxmbEPHz2ahYLd3EpA4/kOdHl8Lj2VcCegsSRcotrJlxoaVaXGgres+He7LeLCl
-ak9IEaqwCuhH5y91avETO21r81OGt5bWbPlf5WY+7RDf3OFvuzu0GVwxrBy7H8Zm
-Mv/m1mUxv+W+9vs9/sExjkujcr4HYtCNX3c0MMlS8PHyYfdjf/m0gh/kka13pAOt
-B5p2X8vDWFbedg4pDrWkjPlUJLIl6SH9CdvUXsSORee30H+mopJpApL3hLgyM7mW
-SCT0n6j5bXKCPhFPTiehzvxNOV3i3ETLtJ9V/XV1UBHhmPLSr3LgXjYXBLcvs0rR
-xby4Qrp/npxXCw9MLlrH
-=e7QG
------END PGP SIGNATURE-----
+it looks like the way used in this patch is the simplest and no harmful to
+the core code.
 
---Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO--
+
+
